@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.5.6</gridgain.version>
+        <gridgain.version>10.0.0</gridgain.version>
         <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -33,6 +33,30 @@
     <artifactId>gridgain</artifactId>
     <version>${gridgain.version}</version>
     <packaging>pom</packaging>
+
+    <url>http://www.gridgain.com</url>
+
+    <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/gridgain/gridgain</url>
+        <connection>scm:git:git://github.com/gridgain/gridgain.git</connection>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>gridgain</id>
+            <name>GridGain</name>
+            <email>mvncentral@gridgain.com</email>
+        </developer>
+    </developers>
 
     <modules>
         <module>modules/core</module>
@@ -227,687 +251,6 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
-                <executions>
-                    <execution>
-                        <id>module-javadoc</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <taglets>
-                                <taglet>
-                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
-                                    <tagletArtifact>
-                                        <groupId>org.gridgain</groupId>
-                                        <artifactId>gridgain-tools</artifactId>
-                                        <version>${gridgain.version}</version>
-                                    </tagletArtifact>
-                                </taglet>
-                            </taglets>
-                            <doctitle>GridGain ${gridgain.version}</doctitle>
-                            <windowtitle>GridGain ${gridgain.version}</windowtitle>
-                            <breakiterator>true</breakiterator>
-                            <verbose>true</verbose>
-                            <show>protected</show>
-                            <use>true</use>
-                            <author>false</author>
-                            <version>false</version>
-                            <source>1.7</source>
-                            <links>
-                                <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                                <link>http://hadoop.apache.org/docs/current/api/</link>
-                            </links>
-                            <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <groups>
-                                <group>
-                                    <title>Common Grid APIs</title>
-                                    <packages>org.gridgain.grid:org.gridgain.grid.spi:org.gridgain.grid.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
-                                </group>
-                                <group>
-                                    <title>Messaging APIs</title>
-                                    <packages>org.gridgain.grid.messaging</packages>
-                                </group>
-                                <group>
-                                    <title>Event Notification APIs</title>
-                                    <packages>org.gridgain.grid.events</packages>
-                                </group>
-                                <group>
-                                    <title>Compute Grid APIs</title>
-                                    <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
-                                </group>
-                                <group>
-                                    <title>Data Grid APIs</title>
-                                    <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
-                                </group>
-                                <group>
-                                    <title>Hadoop Accelerator APIs</title>
-                                    <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
-                                </group>
-                                <group>
-                                    <title>Streaming APIs</title>
-                                    <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
-                                </group>
-                                <group>
-                                    <title>Security APIs</title>
-                                    <packages>org.gridgain.grid.security</packages>
-                                </group>
-                                <group>
-                                    <title>Distributed Services APIs</title>
-                                    <packages>org.gridgain.grid.service</packages>
-                                </group>
-                                <group>
-                                    <title>JDBC Driver</title>
-                                    <packages>org.gridgain.jdbc</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: CheckPoint</title>
-                                    <packages>org.gridgain.grid.spi.checkpoint:org.gridgain.grid.spi.checkpoint.jdbc:org.gridgain.grid.spi.checkpoint.s3:org.gridgain.grid.spi.checkpoint.cache:org.gridgain.grid.spi.checkpoint.noop:org.gridgain.grid.spi.checkpoint.sharedfs</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Collision</title>
-                                    <packages>org.gridgain.grid.spi.collision:org.gridgain.grid.spi.collision.fifoqueue:org.gridgain.grid.spi.collision.jobstealing:org.gridgain.grid.spi.collision.noop:org.gridgain.grid.spi.collision.priorityqueue</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Indexing</title>
-                                    <packages>org.gridgain.grid.spi.indexing:org.gridgain.grid.spi.indexing.h2</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Load Balancing</title>
-                                    <packages>org.gridgain.grid.spi.loadbalancing:org.gridgain.grid.spi.loadbalancing.adaptive:org.gridgain.grid.spi.loadbalancing.weightedrandom:org.gridgain.grid.spi.loadbalancing.roundrobin</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Communication</title>
-                                    <packages>org.gridgain.grid.spi.communication:org.gridgain.grid.spi.communication.tcp</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Deployment</title>
-                                    <packages>org.gridgain.grid.spi.deployment:org.gridgain.grid.spi.deployment.local:org.gridgain.grid.spi.deployment.uri</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Swap Space</title>
-                                    <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Discovery</title>
-                                    <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm:org.gridgain.grid.spi.discovery.tcp.metricsstore:org.gridgain.grid.spi.discovery.tcp.metricsstore.s3:org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc:org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs:org.gridgain.grid.spi.discovery.tcp.metricsstore.vm</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Failover</title>
-                                    <packages>org.gridgain.grid.spi.failover:org.gridgain.grid.spi.failover.never:org.gridgain.grid.spi.failover.jobstealing:org.gridgain.grid.spi.failover.always</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Event Storage</title>
-                                    <packages>org.gridgain.grid.spi.eventstorage:org.gridgain.grid.spi.eventstorage.memory</packages>
-                                </group>
-                                <group>
-                                    <title>Segmentation Detection</title>
-                                    <packages>org.gridgain.grid.segmentation</packages>
-                                </group>
-                                <group>
-                                    <title>Logging</title>
-                                    <packages>org.gridgain.grid.logger:org.gridgain.grid.logger.log4j:org.gridgain.grid.logger.java:org.gridgain.grid.logger.tomcat:org.gridgain.grid.logger.jcl:org.gridgain.grid.logger.slf4j:org.gridgain.grid.logger.jboss</packages>
-                                </group>
-                                <group>
-                                    <title>Loaders</title>
-                                    <packages>org.gridgain.grid.startup:org.gridgain.grid.startup.cmdline:org.gridgain.grid.startup.servlet:org.gridgain.grid.startup.tomcat</packages>
-                                </group>
-                                <group>
-                                    <title>Marshallers</title>
-                                    <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
-                                </group>
-                            </groups>
-                            <header>
-                                <![CDATA[
-                                    GridGain - In-Memory Data Fabric
-                                ]]>
-                            </header>
-                            <bottom>
-                                <![CDATA[
-                                    <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
-                                    <tr>
-                                        <td>
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                        <td width="100%" align="right" valign="center">
-                                            <table border=0 cellspacing=0 cellpadding=0>
-                                            <tr>
-                                                <td>
-                                                    <nobr>Follow us:&nbsp;&nbsp;</nobr>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
-                                                    </a>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="2" valign="top" align="left">
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>GridGain Fabric</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${gridgain.version}</strong>
-                                                        </td>
-                                                    </tr>
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>Release Date</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ${maven.build.timestamp}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    </table>
-                                ]]>
-                            </bottom>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>core-javadoc</id>
-                        <goals>
-                            <goal>aggregate</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <taglets>
-                                <taglet>
-                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
-                                    <tagletArtifact>
-                                        <groupId>org.gridgain</groupId>
-                                        <artifactId>gridgain-tools</artifactId>
-                                        <version>${gridgain.version}</version>
-                                    </tagletArtifact>
-                                </taglet>
-                            </taglets>
-                            <reportOutputDirectory>target/javadoc</reportOutputDirectory>
-                            <destDir>core</destDir>
-                            <doctitle>GridGain ${gridgain.version}</doctitle>
-                            <windowtitle>GridGain ${gridgain.version}</windowtitle>
-                            <breakiterator>true</breakiterator>
-                            <verbose>true</verbose>
-                            <show>protected</show>
-                            <use>true</use>
-                            <author>false</author>
-                            <version>false</version>
-                            <source>1.7</source>
-                            <links>
-                                <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                                <link>http://hadoop.apache.org/docs/current/api/</link>
-                            </links>
-                            <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.grid.portables</excludePackageNames>
-                            <groups>
-                                <group>
-                                    <title>Common Grid APIs</title>
-                                    <packages>org.gridgain.grid:org.gridgain.grid.spi:org.gridgain.grid.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
-                                </group>
-                                <group>
-                                    <title>Messaging APIs</title>
-                                    <packages>org.gridgain.grid.messaging</packages>
-                                </group>
-                                <group>
-                                    <title>Event Notification APIs</title>
-                                    <packages>org.gridgain.grid.events</packages>
-                                </group>
-                                <group>
-                                    <title>Compute Grid APIs</title>
-                                    <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
-                                </group>
-                                <group>
-                                    <title>Data Grid APIs</title>
-                                    <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
-                                </group>
-                                <group>
-                                    <title>Hadoop Accelerator APIs</title>
-                                    <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
-                                </group>
-                                <group>
-                                    <title>Streaming APIs</title>
-                                    <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
-                                </group>
-                                <group>
-                                    <title>Security APIs</title>
-                                    <packages>org.gridgain.grid.security</packages>
-                                </group>
-                                <group>
-                                    <title>Distributed Services APIs</title>
-                                    <packages>org.gridgain.grid.service</packages>
-                                </group>
-                                <group>
-                                    <title>JDBC Driver</title>
-                                    <packages>org.gridgain.jdbc</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: CheckPoint</title>
-                                    <packages>org.gridgain.grid.spi.checkpoint:org.gridgain.grid.spi.checkpoint.jdbc:org.gridgain.grid.spi.checkpoint.s3:org.gridgain.grid.spi.checkpoint.cache:org.gridgain.grid.spi.checkpoint.noop:org.gridgain.grid.spi.checkpoint.sharedfs</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Collision</title>
-                                    <packages>org.gridgain.grid.spi.collision:org.gridgain.grid.spi.collision.fifoqueue:org.gridgain.grid.spi.collision.jobstealing:org.gridgain.grid.spi.collision.noop:org.gridgain.grid.spi.collision.priorityqueue</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Indexing</title>
-                                    <packages>org.gridgain.grid.spi.indexing:org.gridgain.grid.spi.indexing.h2</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Load Balancing</title>
-                                    <packages>org.gridgain.grid.spi.loadbalancing:org.gridgain.grid.spi.loadbalancing.adaptive:org.gridgain.grid.spi.loadbalancing.weightedrandom:org.gridgain.grid.spi.loadbalancing.roundrobin</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Communication</title>
-                                    <packages>org.gridgain.grid.spi.communication:org.gridgain.grid.spi.communication.tcp</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Deployment</title>
-                                    <packages>org.gridgain.grid.spi.deployment:org.gridgain.grid.spi.deployment.local:org.gridgain.grid.spi.deployment.uri</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Swap Space</title>
-                                    <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Discovery</title>
-                                    <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm:org.gridgain.grid.spi.discovery.tcp.metricsstore:org.gridgain.grid.spi.discovery.tcp.metricsstore.s3:org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc:org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs:org.gridgain.grid.spi.discovery.tcp.metricsstore.vm</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Failover</title>
-                                    <packages>org.gridgain.grid.spi.failover:org.gridgain.grid.spi.failover.never:org.gridgain.grid.spi.failover.jobstealing:org.gridgain.grid.spi.failover.always</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Event Storage</title>
-                                    <packages>org.gridgain.grid.spi.eventstorage:org.gridgain.grid.spi.eventstorage.memory</packages>
-                                </group>
-                                <group>
-                                    <title>Segmentation Detection</title>
-                                    <packages>org.gridgain.grid.segmentation</packages>
-                                </group>
-                                <group>
-                                    <title>Logging</title>
-                                    <packages>org.gridgain.grid.logger:org.gridgain.grid.logger.log4j:org.gridgain.grid.logger.java:org.gridgain.grid.logger.tomcat:org.gridgain.grid.logger.jcl:org.gridgain.grid.logger.slf4j:org.gridgain.grid.logger.jboss</packages>
-                                </group>
-                                <group>
-                                    <title>Loaders</title>
-                                    <packages>org.gridgain.grid.startup:org.gridgain.grid.startup.cmdline:org.gridgain.grid.startup.servlet:org.gridgain.grid.startup.tomcat</packages>
-                                </group>
-                                <group>
-                                    <title>Marshallers</title>
-                                    <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
-                                </group>
-                                <group>
-                                    <title>Visor Plugins</title>
-                                    <packages>org.gridgain.visor.plugin</packages>
-                                </group>
-                                <group>
-                                    <title>Spring Caching</title>
-                                    <packages>org.gridgain.grid.cache.spring</packages>
-                                </group>
-                                <group>
-                                    <title>.Net Configuration</title>
-                                    <packages>org.gridgain.grid.dotnet</packages>
-                                </group>
-                            </groups>
-                            <header>
-                                <![CDATA[
-                                    GridGain - In-Memory Data Fabric
-                                ]]>
-                            </header>
-                            <bottom>
-                                <![CDATA[
-                                    <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
-                                    <tr>
-                                        <td>
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                        <td width="100%" align="right" valign="center">
-                                            <table border=0 cellspacing=0 cellpadding=0>
-                                            <tr>
-                                                <td>
-                                                    <nobr>Follow us:&nbsp;&nbsp;</nobr>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
-                                                    </a>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="2" valign="top" align="left">
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>GridGain Fabric</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${gridgain.version}</strong>
-                                                        </td>
-                                                    </tr>
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>Release Date</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ${maven.build.timestamp}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    </table>
-                                ]]>
-                            </bottom>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>client-javadoc</id>
-                        <goals>
-                            <goal>aggregate</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <taglets>
-                                <taglet>
-                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
-                                    <tagletArtifact>
-                                        <groupId>org.gridgain</groupId>
-                                        <artifactId>gridgain-tools</artifactId>
-                                        <version>${gridgain.version}</version>
-                                    </tagletArtifact>
-                                </taglet>
-                            </taglets>
-                            <reportOutputDirectory>target/javadoc</reportOutputDirectory>
-                            <destDir>client</destDir>
-                            <doctitle>GridGain ${gridgain.version} - Java Client</doctitle>
-                            <windowtitle>GridGain ${gridgain.version} - Java Client</windowtitle>
-                            <breakiterator>true</breakiterator>
-                            <verbose>true</verbose>
-                            <show>protected</show>
-                            <use>true</use>
-                            <author>false</author>
-                            <version>false</version>
-                            <source>1.7</source>
-                            <links>
-                                <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                            </links>
-                            <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <subpackages>org.gridgain.client</subpackages>
-                            <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.router.impl</additionalparam>
-                            <groups>
-                                <group>
-                                    <title>Client APIs</title>
-                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop:org.gridgain.client.hadoop.counter</packages>
-                                </group>
-                                <group>
-                                    <title>Router APIs</title>
-                                    <packages>org.gridgain.client.router</packages>
-                                </group>
-                                <group>
-                                    <title>Marshallers</title>
-                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.portable</packages>
-                                </group>
-                            </groups>
-                            <header>
-                                <![CDATA[
-                                    Java Client
-                                    <br>
-                                    GridGain ver. <b>${gridgain.version}</b>
-                                ]]>
-                            </header>
-                            <bottom>
-                                <![CDATA[
-                                    <table width="100%" border="0">
-                                        <tr>
-                                            <td>
-                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${gridgain.version}</strong></nobr>
-                                                <br>
-                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
-                                            </td>
-                                            <td width="100%" align="right" valign="center">
-                                                <table border=0>
-                                                <tr>
-                                                    <td>
-                                                        <nobr>Follow us:&nbsp;&nbsp;</nobr>
-                                                    </td>
-                                                    <td style="padding-right: 5px">
-                                                        <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
-                                                            <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
-                                                        </a>
-                                                    </td>
-                                                    <td style="padding-right: 5px">
-                                                        <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
-                                                            <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                ]]>
-                            </bottom>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <inherited>false</inherited>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.gridgain</groupId>
-                        <artifactId>gridgain-tools</artifactId>
-                        <version>${gridgain.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <id>javadoc-postprocessing</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <target>
-                                <copy todir="target/javadoc/core">
-                                    <fileset dir="assembly/docfiles">
-                                        <include name="img/**"/>
-                                        <include name="*.js"/>
-                                    </fileset>
-                                </copy>
-
-                                <copy todir="target/javadoc/client">
-                                    <fileset dir="assembly/docfiles">
-                                        <include name="img/**"/>
-                                        <include name="*.js"/>
-                                    </fileset>
-                                </copy>
-
-                                <taskdef name="doctask"
-                                    classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
-
-                                <doctask css="dotted" dir="target/javadoc/core">
-                                    <include name="**/*.html"/>
-                                    <exclude name="overview-frame.html"/>
-                                    <exclude name="allclasses-frame.html"/>
-                                    <exclude name="**/class-use/*"/>
-                                </doctask>
-
-                                <doctask css="dotted" dir="target/javadoc/client">
-                                    <include name="**/*.html"/>
-                                    <exclude name="overview-frame.html"/>
-                                    <exclude name="allclasses-frame.html"/>
-                                    <exclude name="**/class-use/*"/>
-                                </doctask>
-                            </target>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>release-postprocessing</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <target>
-                                <replaceregexp byline="true">
-                                    <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
-                                    <substitution expression='pushd "%~dp0"/..'/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"(\s*#.*)?'/>
-                                    <substitution expression=""/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin(\s*&amp;::.*)?'/>
-                                    <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"(\s*#.*)?'/>
-                                    <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
-                                    <substitution expression=""/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
-                                    <substitution expression=""/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
-                                    <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
-                                    <substitution expression="ENABLE_ASSERTIONS=0"/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replace token="@sh.file.version" value="${gridgain.version}">
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                    </fileset>
-                                </replace>
-
-                                <replace token="@bat.file.version" value="${gridgain.version}">
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replace>
-
-                                <replace token="@xml.file.version" value="${gridgain.version}">
-                                    <fileset dir="target/release-package">
-                                        <include name="**/*.xml"/>
-                                    </fileset>
-                                </replace>
-
-                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}.zip"
-                                     encoding="UTF-8">
-                                    <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}"
-                                                filemode="755">
-                                        <include name="**/*.sh"/>
-                                        <include name="**/configure"/>
-                                        <include name="**/install-sh"/>
-                                        <include name="**/compile"/>
-                                        <include name="**/missing"/>
-                                    </zipfileset>
-                                    <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}">
-                                        <exclude name="**/*.sh"/>
-                                        <exclude name="**/configure"/>
-                                        <exclude name="**/install-sh"/>
-                                        <exclude name="**/compile"/>
-                                        <exclude name="**/missing"/>
-                                    </zipfileset>
-                                </zip>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
@@ -1052,35 +395,69 @@
             </plugin>
 
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.0.0-beta-3</version>
+
+                <configuration>
+                    <flattenMode>minimum</flattenMode>
+                    <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                </configuration>
+
+                <executions>
+                    <!-- enable flattening -->
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- ensure proper cleanup before start -->
+                    <execution>
+                        <id>flatten.clean.before</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- ensure proper cleanup after install -->
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
+                <inherited>false</inherited>
                 <executions>
                     <execution>
-                        <phase>clean</phase>
+                        <id>flatten.clean.after</id>
+                        <phase>install</phase>
                         <goals>
                             <goal>clean</goal>
                         </goals>
                         <configuration>
                             <filesets>
                                 <fileset>
-                                    <directory>libs</directory>
-                                </fileset>
-
-                                <fileset>
-                                    <directory>bin/include/visor-common</directory>
-                                </fileset>
-
-                                <fileset>
-                                    <directory>bin/include/visorcmd</directory>
-                                </fileset>
-
-                                <fileset>
-                                    <directory>bin/include/visorui</directory>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>**/pom-installed.xml</include>
+                                    </includes>
                                 </fileset>
                             </filesets>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <inherited>false</inherited>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -1135,6 +512,739 @@
                         <configuration>
                             <forkCount>1</forkCount>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>clean-libs</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>libs</directory>
+                                        </fileset>
+
+                                        <fileset>
+                                            <directory>bin/include/visor-common</directory>
+                                        </fileset>
+
+                                        <fileset>
+                                            <directory>bin/include/visorcmd</directory>
+                                        </fileset>
+
+                                        <fileset>
+                                            <directory>bin/include/visorui</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>module-javadoc</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <taglets>
+                                        <taglet>
+                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletArtifact>
+                                                <groupId>org.gridgain</groupId>
+                                                <artifactId>gridgain-tools</artifactId>
+                                                <version>${gridgain.version}</version>
+                                            </tagletArtifact>
+                                        </taglet>
+                                    </taglets>
+                                    <doctitle>GridGain ${gridgain.version}</doctitle>
+                                    <windowtitle>GridGain ${gridgain.version}</windowtitle>
+                                    <breakiterator>true</breakiterator>
+                                    <verbose>true</verbose>
+                                    <show>protected</show>
+                                    <use>true</use>
+                                    <author>false</author>
+                                    <version>false</version>
+                                    <source>1.7</source>
+                                    <links>
+                                        <link>http://docs.oracle.com/javase/7/docs/api/</link>
+                                        <link>http://hadoop.apache.org/docs/current/api/</link>
+                                    </links>
+                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <groups>
+                                        <group>
+                                            <title>Common Grid APIs</title>
+                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.gridgain.grid.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                        </group>
+                                        <group>
+                                            <title>Messaging APIs</title>
+                                            <packages>org.gridgain.grid.messaging</packages>
+                                        </group>
+                                        <group>
+                                            <title>Event Notification APIs</title>
+                                            <packages>org.gridgain.grid.events</packages>
+                                        </group>
+                                        <group>
+                                            <title>Compute Grid APIs</title>
+                                            <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
+                                        </group>
+                                        <group>
+                                            <title>Data Grid APIs</title>
+                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
+                                        </group>
+                                        <group>
+                                            <title>Hadoop Accelerator APIs</title>
+                                            <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
+                                        </group>
+                                        <group>
+                                            <title>Streaming APIs</title>
+                                            <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
+                                        </group>
+                                        <group>
+                                            <title>Security APIs</title>
+                                            <packages>org.gridgain.grid.security</packages>
+                                        </group>
+                                        <group>
+                                            <title>Distributed Services APIs</title>
+                                            <packages>org.gridgain.grid.service</packages>
+                                        </group>
+                                        <group>
+                                            <title>JDBC Driver</title>
+                                            <packages>org.gridgain.jdbc</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: CheckPoint</title>
+                                            <packages>org.gridgain.grid.spi.checkpoint:org.gridgain.grid.spi.checkpoint.jdbc:org.gridgain.grid.spi.checkpoint.s3:org.gridgain.grid.spi.checkpoint.cache:org.gridgain.grid.spi.checkpoint.noop:org.gridgain.grid.spi.checkpoint.sharedfs</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Collision</title>
+                                            <packages>org.gridgain.grid.spi.collision:org.gridgain.grid.spi.collision.fifoqueue:org.gridgain.grid.spi.collision.jobstealing:org.gridgain.grid.spi.collision.noop:org.gridgain.grid.spi.collision.priorityqueue</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Indexing</title>
+                                            <packages>org.gridgain.grid.spi.indexing:org.gridgain.grid.spi.indexing.h2</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Load Balancing</title>
+                                            <packages>org.gridgain.grid.spi.loadbalancing:org.gridgain.grid.spi.loadbalancing.adaptive:org.gridgain.grid.spi.loadbalancing.weightedrandom:org.gridgain.grid.spi.loadbalancing.roundrobin</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Communication</title>
+                                            <packages>org.gridgain.grid.spi.communication:org.gridgain.grid.spi.communication.tcp</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Deployment</title>
+                                            <packages>org.gridgain.grid.spi.deployment:org.gridgain.grid.spi.deployment.local:org.gridgain.grid.spi.deployment.uri</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Swap Space</title>
+                                            <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Discovery</title>
+                                            <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm:org.gridgain.grid.spi.discovery.tcp.metricsstore:org.gridgain.grid.spi.discovery.tcp.metricsstore.s3:org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc:org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs:org.gridgain.grid.spi.discovery.tcp.metricsstore.vm</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Failover</title>
+                                            <packages>org.gridgain.grid.spi.failover:org.gridgain.grid.spi.failover.never:org.gridgain.grid.spi.failover.jobstealing:org.gridgain.grid.spi.failover.always</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Event Storage</title>
+                                            <packages>org.gridgain.grid.spi.eventstorage:org.gridgain.grid.spi.eventstorage.memory</packages>
+                                        </group>
+                                        <group>
+                                            <title>Segmentation Detection</title>
+                                            <packages>org.gridgain.grid.segmentation</packages>
+                                        </group>
+                                        <group>
+                                            <title>Logging</title>
+                                            <packages>org.gridgain.grid.logger:org.gridgain.grid.logger.log4j:org.gridgain.grid.logger.java:org.gridgain.grid.logger.tomcat:org.gridgain.grid.logger.jcl:org.gridgain.grid.logger.slf4j:org.gridgain.grid.logger.jboss</packages>
+                                        </group>
+                                        <group>
+                                            <title>Loaders</title>
+                                            <packages>org.gridgain.grid.startup:org.gridgain.grid.startup.cmdline:org.gridgain.grid.startup.servlet:org.gridgain.grid.startup.tomcat</packages>
+                                        </group>
+                                        <group>
+                                            <title>Marshallers</title>
+                                            <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
+                                        </group>
+                                    </groups>
+                                    <header>
+                                        <![CDATA[
+                                    GridGain - In-Memory Data Fabric
+                                ]]>
+                                    </header>
+                                    <bottom>
+                                        <![CDATA[
+                                    <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
+                                    <tr>
+                                        <td>
+                                            <table style="padding-left: 0; margin: 0">
+                                                <tbody style="padding: 0; margin: 0">
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                        <td width="100%" align="right" valign="center">
+                                            <table border=0 cellspacing=0 cellpadding=0>
+                                            <tr>
+                                                <td>
+                                                    <nobr>Follow us:&nbsp;&nbsp;</nobr>
+                                                </td>
+                                                <td style="padding-right: 5px">
+                                                    <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
+                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
+                                                    </a>
+                                                </td>
+                                                <td style="padding-right: 5px">
+                                                    <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
+                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" valign="top" align="left">
+                                            <table style="padding-left: 0; margin: 0">
+                                                <tbody style="padding: 0; margin: 0">
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <b>GridGain Fabric</b>
+                                                        </td>
+                                                        <td>:&nbsp;&nbsp;
+                                                            ver. <strong>${gridgain.version}</strong>
+                                                        </td>
+                                                    </tr>
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <b>Release Date</b>
+                                                        </td>
+                                                        <td>:&nbsp;&nbsp;
+                                                            ${maven.build.timestamp}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    </table>
+                                ]]>
+                                    </bottom>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>core-javadoc</id>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <taglets>
+                                        <taglet>
+                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletArtifact>
+                                                <groupId>org.gridgain</groupId>
+                                                <artifactId>gridgain-tools</artifactId>
+                                                <version>${gridgain.version}</version>
+                                            </tagletArtifact>
+                                        </taglet>
+                                    </taglets>
+                                    <reportOutputDirectory>target/javadoc</reportOutputDirectory>
+                                    <destDir>core</destDir>
+                                    <doctitle>GridGain ${gridgain.version}</doctitle>
+                                    <windowtitle>GridGain ${gridgain.version}</windowtitle>
+                                    <breakiterator>true</breakiterator>
+                                    <verbose>true</verbose>
+                                    <show>protected</show>
+                                    <use>true</use>
+                                    <author>false</author>
+                                    <version>false</version>
+                                    <source>1.7</source>
+                                    <links>
+                                        <link>http://docs.oracle.com/javase/7/docs/api/</link>
+                                        <link>http://hadoop.apache.org/docs/current/api/</link>
+                                    </links>
+                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.grid.portables</excludePackageNames>
+                                    <groups>
+                                        <group>
+                                            <title>Common Grid APIs</title>
+                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.gridgain.grid.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                        </group>
+                                        <group>
+                                            <title>Messaging APIs</title>
+                                            <packages>org.gridgain.grid.messaging</packages>
+                                        </group>
+                                        <group>
+                                            <title>Event Notification APIs</title>
+                                            <packages>org.gridgain.grid.events</packages>
+                                        </group>
+                                        <group>
+                                            <title>Compute Grid APIs</title>
+                                            <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
+                                        </group>
+                                        <group>
+                                            <title>Data Grid APIs</title>
+                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
+                                        </group>
+                                        <group>
+                                            <title>Hadoop Accelerator APIs</title>
+                                            <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
+                                        </group>
+                                        <group>
+                                            <title>Streaming APIs</title>
+                                            <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
+                                        </group>
+                                        <group>
+                                            <title>Security APIs</title>
+                                            <packages>org.gridgain.grid.security</packages>
+                                        </group>
+                                        <group>
+                                            <title>Distributed Services APIs</title>
+                                            <packages>org.gridgain.grid.service</packages>
+                                        </group>
+                                        <group>
+                                            <title>JDBC Driver</title>
+                                            <packages>org.gridgain.jdbc</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: CheckPoint</title>
+                                            <packages>org.gridgain.grid.spi.checkpoint:org.gridgain.grid.spi.checkpoint.jdbc:org.gridgain.grid.spi.checkpoint.s3:org.gridgain.grid.spi.checkpoint.cache:org.gridgain.grid.spi.checkpoint.noop:org.gridgain.grid.spi.checkpoint.sharedfs</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Collision</title>
+                                            <packages>org.gridgain.grid.spi.collision:org.gridgain.grid.spi.collision.fifoqueue:org.gridgain.grid.spi.collision.jobstealing:org.gridgain.grid.spi.collision.noop:org.gridgain.grid.spi.collision.priorityqueue</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Indexing</title>
+                                            <packages>org.gridgain.grid.spi.indexing:org.gridgain.grid.spi.indexing.h2</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Load Balancing</title>
+                                            <packages>org.gridgain.grid.spi.loadbalancing:org.gridgain.grid.spi.loadbalancing.adaptive:org.gridgain.grid.spi.loadbalancing.weightedrandom:org.gridgain.grid.spi.loadbalancing.roundrobin</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Communication</title>
+                                            <packages>org.gridgain.grid.spi.communication:org.gridgain.grid.spi.communication.tcp</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Deployment</title>
+                                            <packages>org.gridgain.grid.spi.deployment:org.gridgain.grid.spi.deployment.local:org.gridgain.grid.spi.deployment.uri</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Swap Space</title>
+                                            <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Discovery</title>
+                                            <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm:org.gridgain.grid.spi.discovery.tcp.metricsstore:org.gridgain.grid.spi.discovery.tcp.metricsstore.s3:org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc:org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs:org.gridgain.grid.spi.discovery.tcp.metricsstore.vm</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Failover</title>
+                                            <packages>org.gridgain.grid.spi.failover:org.gridgain.grid.spi.failover.never:org.gridgain.grid.spi.failover.jobstealing:org.gridgain.grid.spi.failover.always</packages>
+                                        </group>
+                                        <group>
+                                            <title>SPI: Event Storage</title>
+                                            <packages>org.gridgain.grid.spi.eventstorage:org.gridgain.grid.spi.eventstorage.memory</packages>
+                                        </group>
+                                        <group>
+                                            <title>Segmentation Detection</title>
+                                            <packages>org.gridgain.grid.segmentation</packages>
+                                        </group>
+                                        <group>
+                                            <title>Logging</title>
+                                            <packages>org.gridgain.grid.logger:org.gridgain.grid.logger.log4j:org.gridgain.grid.logger.java:org.gridgain.grid.logger.tomcat:org.gridgain.grid.logger.jcl:org.gridgain.grid.logger.slf4j:org.gridgain.grid.logger.jboss</packages>
+                                        </group>
+                                        <group>
+                                            <title>Loaders</title>
+                                            <packages>org.gridgain.grid.startup:org.gridgain.grid.startup.cmdline:org.gridgain.grid.startup.servlet:org.gridgain.grid.startup.tomcat</packages>
+                                        </group>
+                                        <group>
+                                            <title>Marshallers</title>
+                                            <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
+                                        </group>
+                                        <group>
+                                            <title>Visor Plugins</title>
+                                            <packages>org.gridgain.visor.plugin</packages>
+                                        </group>
+                                        <group>
+                                            <title>Spring Caching</title>
+                                            <packages>org.gridgain.grid.cache.spring</packages>
+                                        </group>
+                                        <group>
+                                            <title>.Net Configuration</title>
+                                            <packages>org.gridgain.grid.dotnet</packages>
+                                        </group>
+                                    </groups>
+                                    <header>
+                                        <![CDATA[
+                                    GridGain - In-Memory Data Fabric
+                                ]]>
+                                    </header>
+                                    <bottom>
+                                        <![CDATA[
+                                    <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
+                                    <tr>
+                                        <td>
+                                            <table style="padding-left: 0; margin: 0">
+                                                <tbody style="padding: 0; margin: 0">
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                        <td width="100%" align="right" valign="center">
+                                            <table border=0 cellspacing=0 cellpadding=0>
+                                            <tr>
+                                                <td>
+                                                    <nobr>Follow us:&nbsp;&nbsp;</nobr>
+                                                </td>
+                                                <td style="padding-right: 5px">
+                                                    <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
+                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
+                                                    </a>
+                                                </td>
+                                                <td style="padding-right: 5px">
+                                                    <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
+                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" valign="top" align="left">
+                                            <table style="padding-left: 0; margin: 0">
+                                                <tbody style="padding: 0; margin: 0">
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <b>GridGain Fabric</b>
+                                                        </td>
+                                                        <td>:&nbsp;&nbsp;
+                                                            ver. <strong>${gridgain.version}</strong>
+                                                        </td>
+                                                    </tr>
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <b>Release Date</b>
+                                                        </td>
+                                                        <td>:&nbsp;&nbsp;
+                                                            ${maven.build.timestamp}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    </table>
+                                ]]>
+                                    </bottom>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>client-javadoc</id>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <taglets>
+                                        <taglet>
+                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletArtifact>
+                                                <groupId>org.gridgain</groupId>
+                                                <artifactId>gridgain-tools</artifactId>
+                                                <version>${gridgain.version}</version>
+                                            </tagletArtifact>
+                                        </taglet>
+                                    </taglets>
+                                    <reportOutputDirectory>target/javadoc</reportOutputDirectory>
+                                    <destDir>client</destDir>
+                                    <doctitle>GridGain ${gridgain.version} - Java Client</doctitle>
+                                    <windowtitle>GridGain ${gridgain.version} - Java Client</windowtitle>
+                                    <breakiterator>true</breakiterator>
+                                    <verbose>true</verbose>
+                                    <show>protected</show>
+                                    <use>true</use>
+                                    <author>false</author>
+                                    <version>false</version>
+                                    <source>1.7</source>
+                                    <links>
+                                        <link>http://docs.oracle.com/javase/7/docs/api/</link>
+                                    </links>
+                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <subpackages>org.gridgain.client</subpackages>
+                                    <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.router.impl</additionalparam>
+                                    <groups>
+                                        <group>
+                                            <title>Client APIs</title>
+                                            <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop:org.gridgain.client.hadoop.counter</packages>
+                                        </group>
+                                        <group>
+                                            <title>Router APIs</title>
+                                            <packages>org.gridgain.client.router</packages>
+                                        </group>
+                                        <group>
+                                            <title>Marshallers</title>
+                                            <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.portable</packages>
+                                        </group>
+                                    </groups>
+                                    <header>
+                                        <![CDATA[
+                                    Java Client
+                                    <br>
+                                    GridGain ver. <b>${gridgain.version}</b>
+                                ]]>
+                                    </header>
+                                    <bottom>
+                                        <![CDATA[
+                                    <table width="100%" border="0">
+                                        <tr>
+                                            <td>
+                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${gridgain.version}</strong></nobr>
+                                                <br>
+                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                            </td>
+                                            <td width="100%" align="right" valign="center">
+                                                <table border=0>
+                                                <tr>
+                                                    <td>
+                                                        <nobr>Follow us:&nbsp;&nbsp;</nobr>
+                                                    </td>
+                                                    <td style="padding-right: 5px">
+                                                        <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
+                                                            <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
+                                                        </a>
+                                                    </td>
+                                                    <td style="padding-right: 5px">
+                                                        <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
+                                                            <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                ]]>
+                                    </bottom>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.gridgain</groupId>
+                                <artifactId>gridgain-tools</artifactId>
+                                <version>${gridgain.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>javadoc-postprocessing</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <target>
+                                        <copy todir="target/javadoc/core">
+                                            <fileset dir="assembly/docfiles">
+                                                <include name="img/**"/>
+                                                <include name="*.js"/>
+                                            </fileset>
+                                        </copy>
+
+                                        <copy todir="target/javadoc/client">
+                                            <fileset dir="assembly/docfiles">
+                                                <include name="img/**"/>
+                                                <include name="*.js"/>
+                                            </fileset>
+                                        </copy>
+
+                                        <taskdef name="doctask"
+                                                 classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+
+                                        <doctask css="dotted" dir="target/javadoc/core">
+                                            <include name="**/*.html"/>
+                                            <exclude name="overview-frame.html"/>
+                                            <exclude name="allclasses-frame.html"/>
+                                            <exclude name="**/class-use/*"/>
+                                        </doctask>
+
+                                        <doctask css="dotted" dir="target/javadoc/client">
+                                            <include name="**/*.html"/>
+                                            <exclude name="overview-frame.html"/>
+                                            <exclude name="allclasses-frame.html"/>
+                                            <exclude name="**/class-use/*"/>
+                                        </doctask>
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>release-postprocessing</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <target>
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
+                                            <substitution expression='pushd "%~dp0"/..'/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"(\s*#.*)?'/>
+                                            <substitution expression=""/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin(\s*&amp;::.*)?'/>
+                                            <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"(\s*#.*)?'/>
+                                            <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
+                                            <substitution expression=""/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
+                                            <substitution expression=""/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                            <substitution expression="ENABLE_ASSERTIONS=0"/>
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replace token="@sh.file.version" value="${gridgain.version}">
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replace>
+
+                                        <replace token="@bat.file.version" value="${gridgain.version}">
+                                            <fileset dir="target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replace>
+
+                                        <replace token="@xml.file.version" value="${gridgain.version}">
+                                            <fileset dir="target/release-package">
+                                                <include name="**/*.xml"/>
+                                            </fileset>
+                                        </replace>
+
+                                        <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}.zip"
+                                             encoding="UTF-8">
+                                            <zipfileset dir="target/release-package"
+                                                        prefix="gridgain-${gridgain.edition}-os-${gridgain.version}"
+                                                        filemode="755">
+                                                <include name="**/*.sh"/>
+                                                <include name="**/configure"/>
+                                                <include name="**/install-sh"/>
+                                                <include name="**/compile"/>
+                                                <include name="**/missing"/>
+                                            </zipfileset>
+                                            <zipfileset dir="target/release-package"
+                                                        prefix="gridgain-${gridgain.edition}-os-${gridgain.version}">
+                                                <exclude name="**/*.sh"/>
+                                                <exclude name="**/configure"/>
+                                                <exclude name="**/install-sh"/>
+                                                <exclude name="**/compile"/>
+                                                <exclude name="**/missing"/>
+                                            </zipfileset>
+                                        </zip>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
