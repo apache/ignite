@@ -196,12 +196,15 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /**
      *
      */
-    void cloneEntries() {
+    public void cloneEntries() {
         reads(cloneEntries(reads()));
         writes(cloneEntries(writes()));
     }
 
     /**
+     * Clones entries so that tx entries with initialized near entries are not passed to DHT transaction.
+     * Used only when local part of prepare is invoked.
+     *
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
@@ -214,12 +217,9 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         for (GridCacheTxEntry<K, V> e : c) {
             GridCacheContext<K, V> cacheCtx = e.context();
 
-            if (cacheCtx.isNear())
-                cacheCtx = cacheCtx.nearTx().dht().context();
-
             // Clone only if it is a near cache.
             if (cacheCtx.isNear())
-                cp.add(e.cleanCopy(cacheCtx));
+                cp.add(e.cleanCopy(cacheCtx.nearTx().dht().context()));
             else
                 cp.add(e);
         }

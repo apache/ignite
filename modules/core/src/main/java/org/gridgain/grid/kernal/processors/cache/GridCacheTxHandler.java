@@ -119,6 +119,9 @@ public class GridCacheTxHandler<K, V> {
 
                     locTx.userPrepare();
 
+                    // Make sure not to provide Near entries to DHT cache.
+                    req.cloneEntries();
+
                     return prepareNearTx(nearNodeId, req);
                 }
                 else

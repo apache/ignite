@@ -546,9 +546,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            // Make sure not to provide Near entries to DHT cache.
-            req.cloneEntries();
-
             req.miniId(GridUuid.randomUuid());
 
             // At this point, if any new node joined, then it is
