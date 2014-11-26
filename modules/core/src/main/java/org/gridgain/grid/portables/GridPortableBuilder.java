@@ -37,7 +37,7 @@ import java.util.*;
  * </p>
  *
  * If you need to modify nested portable object you can get builder for nested object using
- * {@link GridPortableBuilder#field(String)}, changes made on nested builder will be taken on build parent object,
+ * {@link GridPortableBuilder#getField(String)}, changes made on nested builder will be taken on build parent object,
  * for example:
  *
  * <pre name=code class=java>
@@ -75,7 +75,7 @@ public interface GridPortableBuilder {
      * @param name Field name.
      * @return Value assigned to the field.
      */
-    public <T> T field(String name);
+    public <T> T getField(String name);
 
     /**
      * Sets value to the field.
@@ -87,7 +87,7 @@ public interface GridPortableBuilder {
      * @param name Field name.
      * @param val Field value.
      */
-    public GridPortableBuilder field(String name, @Nullable Object val);
+    public GridPortableBuilder setField(String name, @Nullable Object val);
 
     /**
      * Sets value to the field.
@@ -99,7 +99,7 @@ public interface GridPortableBuilder {
      * @param name Field name.
      * @param val Field value.
      */
-    public <T> GridPortableBuilder field(String name, @Nullable T val, GridPortableType<T> type);
+    public <T> GridPortableBuilder setField(String name, @Nullable T val, GridPortableType<T> type);
 
     /**
      * Sets value to the field.
@@ -111,7 +111,7 @@ public interface GridPortableBuilder {
      * @param name Field name.
      * @param builder Field value.
      */
-    public GridPortableBuilder field(String name, @Nullable GridPortableBuilder builder);
+    public GridPortableBuilder setField(String name, @Nullable GridPortableBuilder builder);
 
     /**
      * Sets hash code for the portable object. If not set, GridGain will generate
