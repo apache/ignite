@@ -20,8 +20,8 @@ import java.util.*;
  * Here is an example of how a portable object can be built dynamically:
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder("org.project.MyObject");
- * builder.stringField("fieldA", "A");
- * build.intField("fieldB", "B");
+ * builder.setField("fieldA", "A");
+ * builder.setField("fieldB", "B");
  *
  * GridPortableObject portableObj = builder.build();
  * </pre>
@@ -31,7 +31,7 @@ import java.util.*;
  * other fields.
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder(person);
- * builder.stringField("name", "John");
+ * builder.setField("name", "John");
  * person = builder.build();
  * </pre>
  * </p>
@@ -42,25 +42,14 @@ import java.util.*;
  *
  * <pre name=code class=java>
  * GridPortableBuilder personBuilder = grid.portables().createBuilder(personPortableObj);
- * GridPortableBuilder addressBuilder = personBuilder.field("addr");
- * addressBuilder.field("houseNumber", 15)
+ * GridPortableBuilder addressBuilder = personBuilder.setField("address");
+ * addressBuilder.setField("houseNumber", 15)
  *
  * personPortableObj = personBuilder.build();
  *
  * assert 15 == personPortableObj.<Person>deserialize().getAddr().getHouseNumber();
  * </pre>
  *
- * For the cases when class definition is present
- * in the class path, it is also possible to populate a standard POJO and then
- * convert it to portable format, like so:
- * <pre name=code class=java>
- * MyObject obj = new MyObject();
- *
- * obj.setFieldA("A");
- * obj.setFieldB(123);
- *
- * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
- * </pre>
  * @see GridPortables#builder(int)
  * @see GridPortables#builder(String)
  * @see GridPortables#builder(GridPortableObject)
@@ -81,8 +70,7 @@ public interface GridPortableBuilder {
      * Sets value to the field.
      *
      * Note: This method may be used for fields that already present in the metadata, if you need to add a new field you
-     * have to use methods like {@code stringField(String, String)}, {@code intField(String, String)} to specify field
-     * type explicitly.
+     * have to use {@code setField(String, T, GridPortableType)} to specify field type explicitly.
      *
      * @param name Field name.
      * @param val Field value.
@@ -90,26 +78,20 @@ public interface GridPortableBuilder {
     public GridPortableBuilder setField(String name, @Nullable Object val);
 
     /**
-     * Sets value to the field.
-     *
-     * Note: This method may be used for fields that already present in the metadata, if you need to add a new field you
-     * have to use methods like {@code stringField(String, String)}, {@code intField(String, String)} to specify field
-     * type explicitly.
+     * Sets value to the field with type specification. Type of the field is needed for metadata updating. If you are
+     * sure that the field already present in metadata you can use {@code setField(String, Object)} method.
      *
      * @param name Field name.
      * @param val Field value.
+     * @param type Type of the field.
      */
     public <T> GridPortableBuilder setField(String name, @Nullable T val, GridPortableType<T> type);
 
     /**
-     * Sets value to the field.
-     *
-     * Note: This method may be used for fields that already present in the metadata, if you need to add a new field you
-     * have to use methods like {@code stringField(String, String)}, {@code intField(String, String)} to specify field
-     * type explicitly.
+     * Sets value to the field. Used when field value is a portable object.
      *
      * @param name Field name.
-     * @param builder Field value.
+     * @param builder Builder for nested object.
      */
     public GridPortableBuilder setField(String name, @Nullable GridPortableBuilder builder);
 
