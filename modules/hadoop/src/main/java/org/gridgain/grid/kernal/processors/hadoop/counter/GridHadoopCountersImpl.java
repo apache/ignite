@@ -13,10 +13,12 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+
 
 /**
  * Default in-memory counters store.
@@ -26,6 +28,9 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
      * The tuple of counter identifier components for more readable code.
      */
     private static class CounterKey extends GridTuple3<Class<? extends GridHadoopCounter>, String, String> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * Constructor.
          *
@@ -49,7 +54,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Map<CounterKey, GridHadoopCounter> cntrsMap = new HashMap<>();
+    private final Map<CounterKey, GridHadoopCounter> cntrsMap = new ConcurrentHashMap8<>();
 
     /**
      * Default constructor. Creates new instance without counters.
@@ -118,11 +123,16 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
 
         T cntr = (T)cntrsMap.get(mapKey);
 
-        if (cntr == null) {
-            cntr = createCounter(cls, grp, name);
+        if (cntr == null)
+            synchronized(cntrsMap) {
+                cntr = (T)cntrsMap.get(mapKey);
 
-            cntrsMap.put(mapKey, cntr);
-        }
+                if (cntr == null) {
+                    cntr = createCounter(cls, grp, name);
+
+                    cntrsMap.put(mapKey, cntr);
+                }
+            }
 
         return cntr;
     }

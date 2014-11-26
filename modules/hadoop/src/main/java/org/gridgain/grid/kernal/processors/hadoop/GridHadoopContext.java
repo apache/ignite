@@ -186,4 +186,11 @@ public class GridHadoopContext {
 
         return c;
     }
+
+    /**
+     * @return Job statistics writer.
+     */
+    public GridHadoopStatWriter statWriter() {
+        return cfg.getStatWriter();
+    }
 }

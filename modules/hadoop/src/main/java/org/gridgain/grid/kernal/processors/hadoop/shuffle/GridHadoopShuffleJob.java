@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -197,6 +197,11 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         assert msg.offset() > 0;
 
         GridHadoopTaskContext taskCtx = reducersCtx.get(msg.reducer());
+
+        GridHadoopStatCounter stat = taskCtx.counters().counter(GridHadoopStatCounter.GROUP_NAME,
+            GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+
+        stat.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
 
         GridHadoopMultimap map = getOrCreateMap(maps, msg.reducer());
 

@@ -30,7 +30,7 @@ public abstract class GridHadoopTaskContext {
     private GridHadoopTaskInfo taskInfo;
 
     /** */
-    private GridHadoopCounters counters;
+    private volatile GridHadoopCounters counters;
 
     /**
      * @param taskInfo Task info.

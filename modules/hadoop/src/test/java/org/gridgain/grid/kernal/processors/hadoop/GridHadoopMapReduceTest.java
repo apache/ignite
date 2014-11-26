@@ -21,8 +21,10 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.U;
 
 import java.util.*;
+import java.util.regex.Matcher;
 
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
@@ -121,8 +123,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
         phaseOrders.put("Crun", 4);
         phaseOrders.put("finish", 5);
 
-
         String prevTaskId = null;
+
         for (T2<String, Long> evt : statCntr.evts()) {
             //We expect string pattern: COMBINE 1 run 7fa86a14-5a08-40e3-a7cb-98109b52a706
             String[] parsedEvt = evt.get1().split(" ");
@@ -135,7 +137,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
                 taskPhase = parsedEvt[1];
             }
             else {
-                taskId = ("COMBINE".equals(parsedEvt[0]) ? "M" : parsedEvt[0].substring(0, 1)) + parsedEvt[1];
+                taskId = ("COMBINE".equals(parsedEvt[0]) ? "MAP" : parsedEvt[0].substring(0, 3)) + parsedEvt[1];
                 taskPhase = ("COMBINE".equals(parsedEvt[0]) ? "C" : "") + parsedEvt[2];
             }
 

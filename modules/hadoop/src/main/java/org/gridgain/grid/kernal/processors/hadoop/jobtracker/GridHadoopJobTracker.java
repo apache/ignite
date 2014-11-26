@@ -27,7 +27,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -785,17 +784,20 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 job.dispose(false);
 
-//                if (ctx.jobUpdateLeader()) {
-//                    GridHadoopCounter<GridHadoopJobStatistics> cntr = meta.counters().counter(
-//                        GridHadoopStatCounter.GROUP_NAME, GridHadoopStatCounter.COUNTER_NAME,
-//                        GridHadoopStatCounter.class);
-//
-//                    GridHadoopJobStatistics stat = cntr.value();
-//
-//                    stat.onJobFinish(U.currentTimeMillis());
-//
-//                    //TODO: dump statistics
-//                }
+                if (ctx.jobUpdateLeader()) {
+                    GridHadoopStatWriter writer = ctx.statWriter();
+
+                    if (writer != null) {
+                        GridHadoopCounters cntrs = meta.counters();
+
+                        GridHadoopStatCounter cntr = cntrs.counter(GridHadoopStatCounter.GROUP_NAME,
+                            GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+
+                        cntr.onJobFinish(U.currentTimeMillis());
+
+                        writer.write(jobId, cntrs);
+                    }
+                }
 
                 break;
             }

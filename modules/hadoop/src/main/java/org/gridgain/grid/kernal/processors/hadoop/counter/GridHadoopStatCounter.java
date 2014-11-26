@@ -22,6 +22,9 @@ import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
  * Counter for the job statistics accumulation.
  */
 public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** The group name for this counter. */
     public static final String GROUP_NAME = "SYSTEM";
 
@@ -33,6 +36,15 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
 
     /** Node id to insert into the event info. */
     private UUID nodeId;
+
+    /** */
+    private int reducerNum;
+
+    /** */
+    private Long firstShuffleMsg;
+
+    /** */
+    private volatile Long lastShuffleMsg;
 
     /**
      * Default constructor required by {@link Externalizable}.
@@ -77,6 +89,13 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
 
     /** {@inheritDoc} */
     @Override public void merge(GridHadoopCounter cntr) {
+        if (lastShuffleMsg != null) {
+            evts.add(new T2<>("SHUFFLE " + reducerNum + " start", firstShuffleMsg));
+            evts.add(new T2<>("SHUFFLE " + reducerNum + " finish", lastShuffleMsg));
+
+            lastShuffleMsg = null;
+        }
+
         evts.addAll(((GridHadoopStatCounter) cntr).evts);
     }
 
@@ -199,4 +218,18 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
         }
     }
 
+    /**
+     * Registers shuffle message event.
+     *
+     * @param reducerNum Number of reducer that receives the data.
+     * @param ts Timestamp of the event.
+     */
+    public void onShuffleMessage(int reducerNum, long ts) {
+        this.reducerNum = reducerNum;
+
+        if (firstShuffleMsg == null)
+            firstShuffleMsg =ts;
+
+        lastShuffleMsg = ts;
+    }
 }

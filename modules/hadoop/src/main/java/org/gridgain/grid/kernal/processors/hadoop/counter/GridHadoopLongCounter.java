@@ -16,6 +16,10 @@ import java.io.*;
  * Standard hadoop counter to use via original Hadoop API in Hadoop jobs.
  */
 public class GridHadoopLongCounter extends GridHadoopCounterAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** The counter value. */
     private long val;
 
     /**
