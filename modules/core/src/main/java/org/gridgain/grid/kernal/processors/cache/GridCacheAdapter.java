@@ -3613,7 +3613,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Transaction commit future.
      */
     @SuppressWarnings("unchecked")
-    GridFuture<GridCacheTx> commitTxAsync(final GridCacheTx tx) {
+    public GridFuture<GridCacheTx> commitTxAsync(final GridCacheTx tx) {
         FutureHolder holder = lastFut.get();
 
         holder.lock();
@@ -3687,7 +3687,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * Awaits for previous async operation to be completed.
      */
     @SuppressWarnings("unchecked")
-    private void awaitLastFut() {
+    public void awaitLastFut() {
         FutureHolder holder = lastFut.get();
 
         GridFuture fut = holder.future();

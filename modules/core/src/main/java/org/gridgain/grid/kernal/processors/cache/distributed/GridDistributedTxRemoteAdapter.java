@@ -135,6 +135,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         return nodeId;
     }
 
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> activeCacheIds() {
+        return Collections.emptyList();
+    }
+
     /**
      * @return Checks if transaction has no entries.
      */

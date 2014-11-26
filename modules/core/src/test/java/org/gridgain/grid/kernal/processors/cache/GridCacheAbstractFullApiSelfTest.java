@@ -788,7 +788,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertNull(cache.get("key3"));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull(cache(i).peek("key3"));
+            assertNull("Failed for cache: " + i, cache(i).peek("key3"));
 
         cache.remove("key1");
         cache.put("key2", 1);
@@ -2163,7 +2163,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert cache().replacexAsync("key", 2).get();
 
-        assert cache().get("key") == 2;
+        U.debug(log, "Finished replace.");
+
+        assertEquals((Integer)2, cache().get("key"));
 
         assert !cache().replacexAsync("wrong", 2).get();
 
@@ -2367,7 +2369,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert !cache().removexAsync("key1", gte100).get();
         assert cache().get("key1") != null && cache().get("key1") == 1;
         assert cache().removexAsync("key2", gte100).get();
-        assert cache().get("key2") == null;
+        assertNull(cache().get("key2"));
     }
 
     /**
@@ -4342,11 +4344,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put(key2, 102);
         cache().put(key3, 3);
 
+        U.debug(log, "Before evictAll");
+
         cache().projection(gte100).evictAll();
 
-        assert cache().peek(key1) == 1;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == 3;
+        U.debug(log, "After evictAll");
+
+        assertEquals((Integer)1, cache().peek(key1));
+        assertNull(cache().peek(key2));
+        assertEquals((Integer)3, cache().peek(key3));
 
         cache().put(key1, 1);
         cache().put(key2, 102);

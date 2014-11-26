@@ -168,7 +168,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
         enter();
 
         try {
-            tx.commit();
+            cctx.commitTxAsync(tx).get();
         }
         finally {
             leave();

@@ -58,6 +58,11 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     public boolean implicitSingle();
 
     /**
+     * @return Collection of cache IDs involved in this transaction.
+     */
+    public Collection<Integer> activeCacheIds();
+
+    /**
      * Attempts to set topology version and returns the current value.
      * If topology version was previously set, then it's value will
      * be returned (but not updated).

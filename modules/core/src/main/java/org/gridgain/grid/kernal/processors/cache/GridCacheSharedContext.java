@@ -408,7 +408,13 @@ public class GridCacheSharedContext<K, V> {
      * @throws GridException If failed.
      */
     public void endTx(GridCacheTxEx<K, V> tx) throws GridException {
-        // TODO GG-9141 sync with all caches.
+        Collection<Integer> cacheIds = tx.activeCacheIds();
+
+        if (!cacheIds.isEmpty()) {
+            for (Integer cacheId : cacheIds)
+                cacheContext(cacheId).cache().awaitLastFut();
+        }
+
         tx.close();
     }
 
@@ -417,8 +423,21 @@ public class GridCacheSharedContext<K, V> {
      * @return Commit future.
      */
     public GridFuture<GridCacheTx> commitTxAsync(GridCacheTxEx<K, V> tx) {
-        // TODO GG-9141 sync with all caches.
-        return tx.commitAsync();
+        Collection<Integer> cacheIds = tx.activeCacheIds();
+
+        if (cacheIds.isEmpty())
+            return tx.commitAsync();
+        else if (cacheIds.size() == 1) {
+            int cacheId = F.first(cacheIds);
+
+            return cacheContext(cacheId).cache().commitTxAsync(tx);
+        }
+        else {
+            for (Integer cacheId : cacheIds)
+                cacheContext(cacheId).cache().awaitLastFut();
+
+            return tx.commitAsync();
+        }
     }
 
     /**
@@ -426,7 +445,12 @@ public class GridCacheSharedContext<K, V> {
      * @throws GridException If failed.
      */
     public void rollbackTx(GridCacheTxEx<K, V> tx) throws GridException {
-        // TODO GG-9141 sync with all caches.
+        Collection<Integer> cacheIds = tx.activeCacheIds();
+
+        if (!cacheIds.isEmpty()) {
+            for (Integer cacheId : cacheIds)
+                cacheContext(cacheId).cache().awaitLastFut();
+        }
 
         tx.rollback();
     }
