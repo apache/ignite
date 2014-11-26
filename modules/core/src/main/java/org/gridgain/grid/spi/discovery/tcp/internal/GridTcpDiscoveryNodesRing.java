@@ -112,7 +112,6 @@ public class GridTcpDiscoveryNodesRing {
         finally {
             rwLock.readLock().unlock();
         }
-
     }
 
     /**
