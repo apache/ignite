@@ -35,12 +35,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /** Mini future ID. */
     private GridUuid miniId;
 
-    /** Synchronous commit flag. */
-    private boolean syncCommit;
-
-    /** Synchronous rollback flag. */
-    private boolean syncRollback;
-
     /** Near mapping flag. */
     private boolean near;
 
@@ -77,8 +71,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param writes Write entries.
      * @param grpLockKey Group lock key if preparing group-lock transaction.
      * @param partLock {@code True} if preparing group-lock transaction with partition lock.
-     * @param syncCommit Synchronous commit.
-     * @param syncRollback Synchronous rollback.
      * @param near {@code True} if mapping is for near caches.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
@@ -92,8 +84,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         Collection<GridCacheTxEntry<K, V>> writes,
         GridCacheTxKey grpLockKey,
         boolean partLock,
-        boolean syncCommit,
-        boolean syncRollback,
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
@@ -107,8 +97,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         this.futId = futId;
         this.topVer = topVer;
-        this.syncCommit = syncCommit;
-        this.syncRollback = syncRollback;
         this.near = near;
         this.last = last;
         this.lastBackups = lastBackups;
@@ -173,20 +161,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     }
 
     /**
-     * @return Synchronous commit.
-     */
-    public boolean syncCommit() {
-        return syncCommit;
-    }
-
-    /**
-     * @return Synchronous rollback.
-     */
-    public boolean syncRollback() {
-        return syncRollback;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public long topologyVersion() {
@@ -245,8 +219,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.syncCommit = syncCommit;
-        _clone.syncRollback = syncRollback;
         _clone.topVer = topVer;
         _clone.last = last;
         _clone.lastBackups = lastBackups;
@@ -316,36 +288,24 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 commState.idx++;
 
             case 25:
-                if (!commState.putBoolean(syncCommit))
-                    return false;
-
-                commState.idx++;
-
-            case 26:
-                if (!commState.putBoolean(syncRollback))
-                    return false;
-
-                commState.idx++;
-
-            case 27:
                 if (!commState.putBoolean(near))
                     return false;
 
                 commState.idx++;
 
-            case 28:
+            case 26:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 29:
+            case 27:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 30:
+            case 28:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
@@ -426,27 +386,11 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 1)
                     return false;
 
-                syncCommit = commState.getBoolean();
-
-                commState.idx++;
-
-            case 26:
-                if (buf.remaining() < 1)
-                    return false;
-
-                syncRollback = commState.getBoolean();
-
-                commState.idx++;
-
-            case 27:
-                if (buf.remaining() < 1)
-                    return false;
-
                 near = commState.getBoolean();
 
                 commState.idx++;
 
-            case 28:
+            case 26:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -454,7 +398,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 29:
+            case 27:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -464,7 +408,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 30:
+            case 28:
                 if (buf.remaining() < 4)
                     return false;
 

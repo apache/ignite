@@ -498,6 +498,7 @@ public class GridCacheTxHandler<K, V> {
                     return null;
                 }
 
+                tx.syncCommit(req.syncCommit());
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
                 tx.recoveryWrites(req.recoveryWrites());
@@ -525,6 +526,8 @@ public class GridCacheTxHandler<K, V> {
             else {
                 assert tx != null : "Transaction is null for near rollback request [nodeId=" +
                     nodeId + ", req=" + req + "]";
+
+                tx.syncRollback(req.syncRollback());
 
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
@@ -672,11 +675,16 @@ public class GridCacheTxHandler<K, V> {
             log.debug("Processing dht tx finish request [nodeId=" + nodeId + ", req=" + req + ']');
 
         GridDhtTxRemote<K, V> dhtTx = ctx.tm().tx(req.version());
-        GridCacheTxEx<K, V> nearTx = ctx.tm().nearTx(req.version());
+        GridNearTxRemote<K, V> nearTx = ctx.tm().nearTx(req.version());
 
         try {
             if (dhtTx == null && !F.isEmpty(req.writes()))
                 dhtTx = startRemoteTxForFinish(nodeId, req);
+
+            if (dhtTx != null) {
+                dhtTx.syncCommit(req.syncCommit());
+                dhtTx.syncRollback(req.syncRollback());
+            }
 
             // One-phase commit transactions send finish requests to backup nodes.
             if (dhtTx != null && req.onePhaseCommit()) {
@@ -686,7 +694,12 @@ public class GridCacheTxHandler<K, V> {
             }
 
             if (nearTx == null && !F.isEmpty(req.nearWrites()) && req.groupLock())
-                nearTx = startRemoteTxForFinish(nodeId, req);
+                nearTx = startNearRemoteTxForFinish(nodeId, req);
+
+            if (nearTx != null) {
+                nearTx.syncCommit(req.syncCommit());
+                nearTx.syncRollback(req.syncRollback());
+            }
         }
         catch (GridCacheTxRollbackException e) {
             if (log.isDebugEnabled())
@@ -725,7 +738,7 @@ public class GridCacheTxHandler<K, V> {
         finish(nodeId, dhtTx, req, req.writes());
 
         if (nearTx != null)
-            finish(nodeId, (GridCacheTxRemoteEx<K, V>)nearTx, req, req.nearWrites());
+            finish(nodeId, nearTx, req, req.nearWrites());
 
         sendReply(nodeId, req);
     }

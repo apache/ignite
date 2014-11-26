@@ -31,6 +31,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Replicated user transaction.
@@ -171,6 +172,30 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture<K, V> fut) {
         prepFut.compareAndSet(fut, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean syncCommit() {
+        return sync();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean syncRollback() {
+        return sync();
+    }
+
+    /**
+     * Checks if transaction is fully synchronous.
+     *
+     * @return {@code True} if transaction is fully synchronous.
+     */
+    private boolean sync() {
+        for (int cacheId : activeCacheIds()) {
+            if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
+                return true;
+        }
+
+        return false;
     }
 
     /**

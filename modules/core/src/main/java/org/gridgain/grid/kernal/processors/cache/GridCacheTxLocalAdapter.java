@@ -30,7 +30,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheTxState.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
@@ -172,7 +171,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @return Collection of active cache IDs.
      */
-    public Collection<Integer> activeCacheIds() {
+    @Override public Collection<Integer> activeCacheIds() {
         return activeCacheIds;
     }
 
@@ -247,30 +246,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
         if (writeView != null)
             writeView.seal();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncCommit() {
-        return sync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncRollback() {
-        return sync();
-    }
-
-    /**
-     * Checks if transaction is fully synchronous.
-     *
-     * @return {@code True} if transaction is fully synchronous.
-     */
-    private boolean sync() {
-        for (int cacheId : activeCacheIds()) {
-            if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
-                return true;
-        }
-
-        return false;
     }
 
     /**

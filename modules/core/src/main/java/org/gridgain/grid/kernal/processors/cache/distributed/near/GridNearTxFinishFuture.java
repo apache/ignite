@@ -337,6 +337,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.threadId(),
             commit,
             tx.isInvalidate(),
+            tx.syncCommit(),
+            tx.syncRollback(),
             m.explicitLock(),
             tx.topologyVersion(),
             null,
@@ -345,7 +347,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.size(),
             commit && tx.pessimistic() ? m.writes() : null,
             commit && tx.pessimistic() ? F.view(tx.writeEntries(), CU.<K, V>transferRequired()) : null,
-            commit ? tx.syncCommit() : tx.syncRollback(),
             tx.subjectId(),
             tx.taskNameHash()
         );

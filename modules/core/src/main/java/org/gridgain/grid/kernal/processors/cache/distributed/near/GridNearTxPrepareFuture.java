@@ -530,8 +530,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             m.writes(),
             tx.groupLockKey(),
             tx.partitionLock(),
-            tx.syncCommit(),
-            tx.syncRollback(),
             m.near(),
             txMapping.transactionNodes(),
             m.last(),

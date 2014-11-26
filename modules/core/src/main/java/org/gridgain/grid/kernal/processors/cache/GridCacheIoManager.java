@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -74,10 +73,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         @Override public void onMessage(final UUID nodeId, Object msg) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
-                    ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
-
-            if (!(msg instanceof GridDhtPartitionsFullMessage) && !(msg instanceof GridDhtPartitionsSingleMessage))
-                U.debug(log, "Received unordered cache communication message [nodeId=" + nodeId +
                     ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
 
             final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
@@ -355,9 +350,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
-        if (!(msg instanceof GridDhtPartitionsFullMessage) && !(msg instanceof GridDhtPartitionsSingleMessage))
-            U.debug(log, "Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
-
         int cnt = 0;
         boolean first = true;
 
@@ -423,9 +415,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
-
-        if (!(msg instanceof GridDhtPartitionsFullMessage) && !(msg instanceof GridDhtPartitionsSingleMessage))
-            U.debug(log, "Sending cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
 
         final Collection<UUID> leftIds = new GridLeanSet<>();
 

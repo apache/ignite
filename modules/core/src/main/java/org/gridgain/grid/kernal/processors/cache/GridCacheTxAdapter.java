@@ -124,6 +124,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** */
     protected boolean onePhaseCommit;
 
+    /** */
+    protected boolean syncCommit;
+
+    /** */
+    protected boolean syncRollback;
+
     /** If this transaction contains transform entries. */
     protected boolean transform;
 
@@ -572,12 +578,26 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public boolean syncCommit() {
-        return false;
+        return syncCommit;
     }
 
     /** {@inheritDoc} */
     @Override public boolean syncRollback() {
-        return false;
+        return syncRollback;
+    }
+
+    /**
+     * @param syncCommit Synchronous commit flag.
+     */
+    public void syncCommit(boolean syncCommit) {
+        this.syncCommit = syncCommit;
+    }
+
+    /**
+     * @param syncRollback Synchronous rollback flag.
+     */
+    public void syncRollback(boolean syncRollback) {
+        this.syncRollback = syncRollback;
     }
 
     /** {@inheritDoc} */

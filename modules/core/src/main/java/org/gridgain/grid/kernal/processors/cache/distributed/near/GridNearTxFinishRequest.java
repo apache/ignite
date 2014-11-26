@@ -65,7 +65,6 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
      * @param writeEntries Write entries.
-     * @param reply Reply flag.
      * @param recoverEntries Recover entries.
      */
     public GridNearTxFinishRequest(
@@ -74,6 +73,8 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         long threadId,
         boolean commit,
         boolean invalidate,
+        boolean syncCommit,
+        boolean syncRollback,
         boolean explicitLock,
         long topVer,
         GridCacheVersion baseVer,
@@ -82,11 +83,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         int txSize,
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoverEntries,
-        boolean reply,
         @Nullable UUID subjId,
         int taskNameHash) {
-        super(xidVer, futId, null, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
-            writeEntries, recoverEntries, reply, null);
+        super(xidVer, futId, null, threadId, commit, invalidate, syncCommit, syncRollback, baseVer, committedVers,
+            rolledbackVers, txSize, writeEntries, recoverEntries, null);
 
         this.explicitLock = explicitLock;
         this.topVer = topVer;
@@ -175,31 +175,31 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         }
 
         switch (commState.idx) {
-            case 19:
+            case 20:
                 if (!commState.putBoolean(explicitLock))
                     return false;
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
@@ -219,7 +219,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         switch (commState.idx) {
-            case 19:
+            case 20:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -227,7 +227,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -237,7 +237,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -245,7 +245,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -255,7 +255,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (buf.remaining() < 4)
                     return false;
 

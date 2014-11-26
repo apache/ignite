@@ -1513,11 +1513,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutxFiltered() throws Exception {
         GridCacheTx tx = txEnabled() ? cache().txStart() : null;
 
-        cache().putx("key1", 1, F.<String, Integer>cacheHasPeekValue());
-        cache().putx("key2", 100, F.<String, Integer>cacheNoPeekValue());
+        try {
+            cache().putx("key1", 1, F.<String, Integer>cacheHasPeekValue());
+            cache().putx("key2", 100, F.<String, Integer>cacheNoPeekValue());
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key2"));
 
