@@ -271,7 +271,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
     /** {@inheritDoc} */
     @Override public Collection<GridNode> getRemoteNodes() {
-        return new ArrayList<GridNode>(rmtNodes.values());
+        return F.view(U.<GridTcpDiscoveryNode, GridNode>arrayList(rmtNodes.values(), new P1<GridTcpDiscoveryNode>() {
+            @Override public boolean apply(GridTcpDiscoveryNode node) {
+                return node.visible();
+            }
+        }));
     }
 
     /** {@inheritDoc} */
@@ -327,11 +331,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 while (shuffledAddrs == null || shuffledAddrs.isEmpty()) {
                     addrs = resolvedAddresses();
 
-                    if (addrs != null && !addrs.isEmpty()) {
-                        shuffledAddrs = new ArrayList<>(addrs);
-
-                        Collections.shuffle(shuffledAddrs);
-
+                    if (!F.isEmpty(addrs)) {
                         if (log.isDebugEnabled())
                             log.debug("Resolved addresses from IP finder: " + addrs);
                     }
@@ -1014,7 +1014,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
             Collection<GridNode> allNodes = new ArrayList<>(rmtNodes.size() + 1);
 
-            allNodes.addAll(F.view(rmtNodes.values(), VISIBLE_NODES));
+            for (GridTcpDiscoveryNode node : rmtNodes.values()) {
+                if (node.visible())
+                    allNodes.add(node);
+            }
+
             allNodes.add(locNode);
 
             if (!topHist.containsKey(topVer)) {

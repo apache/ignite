@@ -61,7 +61,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     public GridTcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
         super(creatorNodeId);
 
-        metrics = new HashMap<>(1, 1.0f);
+        metrics = U.newHashMap(1);
         clientNodeIds = new HashSet<>();
     }
 
@@ -227,7 +227,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
 
         int metricsSize = in.readInt();
 
-        metrics = new HashMap<>(metricsSize + 1, 1.0f);
+        metrics = U.newHashMap(metricsSize + 1);
 
         for (int i = 0; i < metricsSize; i++)
             metrics.put(U.readUuid(in), new T2<>(U.readByteArray(in), U.<UUID, byte[]>readMap(in)));

@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -69,13 +68,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
 
     /** Response WAIT. */
     protected static final int RES_WAIT = 200;
-
-    /** Predicate to filter visible nodes. */
-    protected static final GridPredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
-        @Override public boolean apply(GridTcpDiscoveryNode node) {
-            return node.visible();
-        }
-    };
 
     /** Local address. */
     protected String locAddr;
@@ -613,9 +605,8 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
      *      empty but never null).
      * @throws GridSpiException If an error occurs.
      */
-    @SuppressWarnings("BusyWait")
     protected Collection<InetSocketAddress> resolvedAddresses() throws GridSpiException {
-        Collection<InetSocketAddress> res = new LinkedHashSet<>();
+        List<InetSocketAddress> res = new ArrayList<>();
 
         Collection<InetSocketAddress> addrs;
 
@@ -656,6 +647,9 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
                 res.add(addr);
             }
         }
+
+        if (!res.isEmpty())
+            Collections.shuffle(res);
 
         return res;
     }

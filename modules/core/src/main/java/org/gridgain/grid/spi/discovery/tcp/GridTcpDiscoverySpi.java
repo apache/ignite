@@ -604,11 +604,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
     /** {@inheritDoc} */
     @Override public Collection<GridNode> getRemoteNodes() {
-        Collection<GridNode> nodes = new ArrayList<>();
-
-        nodes.addAll(F.view(ring.remoteNodes(), VISIBLE_NODES));
-
-        return nodes;
+        return F.<GridTcpDiscoveryNode, GridNode>upcast(ring.visibleRemoteNodes());
     }
 
     /** {@inheritDoc} */
@@ -940,7 +936,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         Collection<SocketReader> tmp;
 
         synchronized (mux) {
-            tmp = new ArrayList<>(readers);
+            tmp = U.arrayList(readers);
         }
 
         U.interrupt(tmp);
@@ -979,7 +975,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         else {
             getSpiContext().deregisterPorts();
 
-            rmts = ring.remoteNodes();
+            rmts = ring.visibleRemoteNodes();
         }
 
         long topVer = ring.topologyVersion();
@@ -995,18 +991,17 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 Collection<GridNode> processed = new LinkedList<>();
 
                 for (GridTcpDiscoveryNode n : rmts) {
+                    assert n.visible();
+
                     processed.add(n);
 
-                    if (n.visible()) {
-                        Collection<GridNode> top = F.viewReadOnly(rmts, F.<GridNode>identity(),
-                            F.and(F.notIn(processed), VISIBLE_NODES));
+                    Collection<GridNode> top = F.viewReadOnly(rmts, F.<GridNode>identity(), F.notIn(processed));
 
-                        topVer++;
+                    topVer++;
 
-                        Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
+                    Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
 
-                        lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist);
-                    }
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist);
                 }
             }
         }
@@ -1371,18 +1366,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         while (true) {
             Collection<InetSocketAddress> addrs = resolvedAddresses();
 
-            if (addrs.isEmpty())
+            if (F.isEmpty(addrs))
                 return false;
-
-            List<InetSocketAddress> shuffled = new ArrayList<>(addrs);
-
-            // Shuffle addresses to send join request to different nodes.
-            Collections.shuffle(shuffled);
 
             boolean retry = false;
             GridException errs = null;
 
-            for (InetSocketAddress addr : shuffled) {
+            for (InetSocketAddress addr : addrs) {
                 try {
                     Integer res = sendMessageDirectly(joinReq, addr);
 
@@ -1692,7 +1682,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
+            Collection<GridNode> top = F.<GridTcpDiscoveryNode, GridNode>upcast(ring.visibleNodes());
 
             Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -1753,7 +1743,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private LinkedHashSet<InetSocketAddress> getNodeAddresses(GridTcpDiscoveryNode node, boolean sameHost) {
-        ArrayList<InetSocketAddress> addrs = new ArrayList<>(node.socketAddresses());
+        List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
         Collections.sort(addrs, U.inetAddressesComparator(sameHost));
 
@@ -1938,7 +1928,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         Collection<SocketReader> tmp;
 
         synchronized (mux) {
-            tmp = new ArrayList<>(readers);
+            tmp = U.arrayList(readers);
         }
 
         U.interrupt(tmp);
@@ -2453,7 +2443,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
                     GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
 
-                    Collection<ClientMessageWorker> clientMsgWorkers0 = new ArrayList<>(clientMsgWorkers.values());
+                    Collection<ClientMessageWorker> clientMsgWorkers0 = U.arrayList(clientMsgWorkers.values());
 
                     final Collection<List<Object>> discoData = new GridConcurrentHashSet<>();
                     final CountDownLatch latch = new CountDownLatch(clientMsgWorkers0.size());
@@ -2497,7 +2487,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             GridTcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = new ArrayList<>(GridTcpDiscoverySpi.this.failedNodes);
+                failedNodes = U.arrayList(GridTcpDiscoverySpi.this.failedNodes);
 
                 state = spiState;
             }

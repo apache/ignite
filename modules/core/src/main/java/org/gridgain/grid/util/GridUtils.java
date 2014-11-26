@@ -8958,4 +8958,36 @@ public abstract class GridUtils {
 
         return null;
     }
+
+    /**
+     * @param c Collection.
+     * @param p Optional filters.
+     * @return Resulting array list.
+     */
+    public static <T extends R, R> ArrayList<R> arrayList(Collection<T> c, @Nullable GridPredicate<? super T>... p) {
+        assert c != null;
+
+        return GridUtils.<T, R>arrayList(c, c.size(), p);
+    }
+
+    /**
+     * @param c Collection.
+     * @param cap Initial capacity.
+     * @param p Optional filters.
+     * @return Resulting array list.
+     */
+    public static <T extends R, R> ArrayList<R> arrayList(Iterable<T> c, int cap,
+        @Nullable GridPredicate<? super T>... p) {
+        assert c != null;
+        assert cap >= 0;
+
+        ArrayList<R> list = new ArrayList<>(cap);
+
+        for (T t : c) {
+            if (F.isAll(t, p))
+                list.add(t);
+        }
+
+        return list;
+    }
 }
