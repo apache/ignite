@@ -19,7 +19,6 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-
 /**
  * Default in-memory counters store.
  */
@@ -39,7 +38,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
          * @param name Counter name.
          */
         private CounterKey(Class<? extends GridHadoopCounter> cls, String grp, String name) {
-            super((Class<GridHadoopCounter>) cls, grp, name);
+            super(cls, grp, name);
         }
 
         /**

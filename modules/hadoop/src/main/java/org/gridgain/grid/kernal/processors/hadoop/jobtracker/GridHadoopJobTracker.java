@@ -27,6 +27,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -795,7 +796,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                         cntr.onJobFinish(U.currentTimeMillis());
 
-                        writer.write(jobId, cntrs);
+                        try {
+                            writer.write(jobId, cntrs);
+                        }
+                        catch (IOException e) {
+                            log.error("Error on write job statistics.", e);
+                        }
                     }
                 }
 
