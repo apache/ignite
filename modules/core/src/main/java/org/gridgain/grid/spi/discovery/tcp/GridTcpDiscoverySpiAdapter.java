@@ -199,11 +199,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
         this.ipFinder = ipFinder;
     }
 
-    /** {@inheritDoc} */
-    public long getSocketTimeout() {
-        return sockTimeout;
-    }
-
     /**
      * Sets socket operations timeout. This timeout is used to limit connection time and
      * write-to-socket time.
@@ -218,11 +213,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     @GridSpiConfiguration(optional = true)
     public void setSocketTimeout(long sockTimeout) {
         this.sockTimeout = sockTimeout;
-    }
-
-    /** {@inheritDoc} */
-    public long getAckTimeout() {
-        return ackTimeout;
     }
 
     /**
@@ -240,11 +230,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
         this.ackTimeout = ackTimeout;
     }
 
-    /** {@inheritDoc} */
-    public long getNetworkTimeout() {
-        return netTimeout;
-    }
-
     /**
      * Sets maximum network timeout to use for network operations.
      * <p>
@@ -257,11 +242,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
         this.netTimeout = netTimeout;
     }
 
-    /** {@inheritDoc} */
-    public int getThreadPriority() {
-        return threadPri;
-    }
-
     /**
      * Sets thread priority. All threads within SPI will be started with it.
      * <p>
@@ -272,11 +252,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     @GridSpiConfiguration(optional = true)
     public void setThreadPriority(int threadPri) {
         this.threadPri = threadPri;
-    }
-
-    /** {@inheritDoc} */
-    public long getHeartbeatFrequency() {
-        return hbFreq;
     }
 
     /**
@@ -402,7 +377,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     }
 
     /**
-     * Writes message to the socket limiting write time to {@link #getSocketTimeout()}.
+     * Writes message to the socket.
      *
      * @param sock Socket.
      * @param data Raw data to write.
@@ -445,7 +420,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     }
 
     /**
-     * Writes message to the socket limiting write time to {@link #getSocketTimeout()}.
+     * Writes message to the socket.
      *
      * @param sock Socket.
      * @param msg Message.
@@ -457,7 +432,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     }
 
     /**
-     * Writes message to the socket limiting write time to {@link #getSocketTimeout()}.
+     * Writes message to the socket.
      *
      * @param sock Socket.
      * @param msg Message.
@@ -507,7 +482,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     }
 
     /**
-     * Writes response to the socket limiting write time to {@link #getSocketTimeout()}.
+     * Writes response to the socket.
      *
      * @param sock Socket.
      * @param res Integer response.

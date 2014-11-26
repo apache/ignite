@@ -483,6 +483,31 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public long getSocketTimeout() {
+        return sockTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getAckTimeout() {
+        return ackTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNetworkTimeout() {
+        return netTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getThreadPriority() {
+        return threadPri;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeartbeatFrequency() {
+        return hbFreq;
+    }
+
+    /** {@inheritDoc} */
     @Override public String getIpFinderFormatted() {
         return ipFinder.toString();
     }

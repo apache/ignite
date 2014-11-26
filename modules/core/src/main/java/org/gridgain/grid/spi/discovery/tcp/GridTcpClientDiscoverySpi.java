@@ -36,7 +36,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 @GridSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
 @GridDiscoverySpiHistorySupport(true)
-public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
+public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpClientDiscoverySpiMBean {
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
@@ -67,12 +67,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     /** Disconnect check interval. */
     private long disconnectCheckInt = DFLT_DISCONNECT_CHECK_INT;
 
-    /**
-     * Gets disconnect check interval.
-     *
-     * @return Disconnect check interval.
-     */
-    public long getDisconnectCheckInterval() {
+    /** {@inheritDoc} */
+    @Override public long getDisconnectCheckInterval() {
         return disconnectCheckInt;
     }
 
@@ -84,6 +80,88 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     @GridSpiConfiguration(optional = true)
     public void setDisconnectCheckInterval(long disconnectCheckInt) {
         this.disconnectCheckInt = disconnectCheckInt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSocketTimeout() {
+        return sockTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getAckTimeout() {
+        return ackTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNetworkTimeout() {
+        return netTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getThreadPriority() {
+        return threadPri;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeartbeatFrequency() {
+        return hbFreq;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getIpFinderFormatted() {
+        return ipFinder.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMessageWorkerQueueSize() {
+        SocketReader sockRdr0 = sockRdr;
+
+        return sockRdr0 != null ? sockRdr0.msgWrk.queueSize() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNodesJoined() {
+        return stats.joinedNodesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNodesLeft() {
+        return stats.leftNodesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNodesFailed() {
+        return stats.failedNodesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getAvgMessageProcessingTime() {
+        return stats.avgMessageProcessingTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMaxMessageProcessingTime() {
+        return stats.maxMessageProcessingTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalReceivedMessages() {
+        return stats.totalReceivedMessages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Integer> getReceivedMessages() {
+        return stats.receivedMessages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalProcessedMessages() {
+        return stats.totalProcessedMessages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Integer> getProcessedMessages() {
+        return stats.processedMessages();
     }
 
     /** {@inheritDoc} */
@@ -208,7 +286,14 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
-        return true; // TODO: GG-9174
+        assert nodeId != null;
+
+        if (nodeId.equals(locNodeId))
+            return true;
+
+        GridTcpDiscoveryNode node = rmtNodes.get(nodeId);
+
+        return node != null && node.visible();
     }
 
     /** {@inheritDoc} */
