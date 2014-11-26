@@ -11,8 +11,6 @@ package org.gridgain.grid.portables;
 
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Portable object builder. Provides ability to build portable objects dynamically
  * without having class definitions.
@@ -20,6 +18,7 @@ import java.util.*;
  * Here is an example of how a portable object can be built dynamically:
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder("org.project.MyObject");
+ *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
  *
@@ -27,27 +26,31 @@ import java.util.*;
  * </pre>
  *
  * <p>
- * Also builder can be initialized by existing portable object. This allow to change some fields without modification
+ * Also builder can be initialized by existing portable object. This allows changing some fields without affecting
  * other fields.
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder(person);
+ *
  * builder.setField("name", "John");
+ *
  * person = builder.build();
  * </pre>
  * </p>
  *
  * If you need to modify nested portable object you can get builder for nested object using
- * {@link GridPortableBuilder#getField(String)}, changes made on nested builder will be taken on build parent object,
+ * {@link #getField(String)}, changes made on nested builder will affect parent object,
  * for example:
  *
  * <pre name=code class=java>
  * GridPortableBuilder personBuilder = grid.portables().createBuilder(personPortableObj);
  * GridPortableBuilder addressBuilder = personBuilder.setField("address");
- * addressBuilder.setField("houseNumber", 15)
+ *
+ * addressBuilder.setField("city", "New York");
  *
  * personPortableObj = personBuilder.build();
  *
- * assert 15 == personPortableObj.<Person>deserialize().getAddr().getHouseNumber();
+ * // Should be "New York".
+ * String city = personPortableObj.getField("address").getField("city");
  * </pre>
  *
  * @see GridPortables#builder(int)
@@ -56,47 +59,55 @@ import java.util.*;
  */
 public interface GridPortableBuilder {
     /**
-     * Returns the value assigned to specified field.
-     * If the value is a portable object instance of {@code GridPortableBuilder} will be returned, you can modify nested
-     * builder.
+     * Returns value assigned to the specified field.
+     * If the value is a portable object instance of {@code GridPortableBuilder} will be returned,
+     * which can be modified.
+     * <p>
      * Collections and maps returned from this method are modifiable.
      *
      * @param name Field name.
-     * @return Value assigned to the field.
+     * @return Filed value.
      */
     public <T> T getField(String name);
 
     /**
-     * Sets value to the field.
-     *
-     * Note: This method may be used for fields that already present in the metadata, if you need to add a new field you
-     * have to use {@code setField(String, T, GridPortableType)} to specify field type explicitly.
+     * Sets field value.
+     * <p>
+     * Note: This method can only be used for fields that already present in type metadata.
+     * If field is not yet in type metadata, {@link #setField(String, Object, GridPortableType)}
+     * should be used to specify field type explicitly.
      *
      * @param name Field name.
      * @param val Field value.
+     * @see GridPortableObject#metaData()
      */
     public GridPortableBuilder setField(String name, @Nullable Object val);
 
     /**
-     * Sets value to the field with type specification. Type of the field is needed for metadata updating. If you are
-     * sure that the field already present in metadata you can use {@code setField(String, Object)} method.
+     * Sets field value with value type specification.
+     * <p>
+     * Field type is needed for proper metadata update.
+     * If field already present in metadata, {@link #setField(String, Object)} can be used.
      *
      * @param name Field name.
      * @param val Field value.
-     * @param type Type of the field.
+     * @param type Field type.
+     * @see GridPortableObject#metaData()
      */
     public <T> GridPortableBuilder setField(String name, @Nullable T val, GridPortableType<T> type);
 
     /**
-     * Sets value to the field. Used when field value is a portable object.
+     * Sets field value.
+     * <p>
+     * This method should be used if field is portable object.
      *
      * @param name Field name.
-     * @param builder Builder for nested object.
+     * @param builder Builder for object field.
      */
     public GridPortableBuilder setField(String name, @Nullable GridPortableBuilder builder);
 
     /**
-     * Removes field from portable object.
+     * Removes field from this builder.
      *
      * @param fieldName Field name.
      * @return {@code this} instance for chaining.
@@ -104,8 +115,9 @@ public interface GridPortableBuilder {
     public GridPortableBuilder removeField(String fieldName);
 
     /**
-     * Sets hash code for the portable object. If not set, GridGain will generate
-     * one automatically.
+     * Sets hash code for resulting portable object returned by {@link #build()} method.
+     * <p>
+     * If not set {@code 0} is used.
      *
      * @param hashCode Hash code.
      * @return {@code this} instance for chaining.

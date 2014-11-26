@@ -12,7 +12,7 @@ package org.gridgain.grid.portables;
 import java.util.*;
 
 /**
- * Type of field in portable object.
+ * Portable object field types.
  */
 public class GridPortableType<T> {
     /** */
@@ -135,8 +135,9 @@ public class GridPortableType<T> {
     }
 
     /**
+     * Gets type name.
      *
-     * @return
+     * @return Type name.
      */
     public String getTypeName() {
         return typeName;
