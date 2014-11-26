@@ -132,7 +132,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
                     info("Size after [idx=" + i +
                         ", size=" + size +
-                        ", size=" + keySize +
+                        ", keySize=" + keySize +
                         ", primarySize=" + primaryKeySize +
                         ", globalSize=" + globalSize +
                         ", globalPrimarySize=" + globalPrimarySize +
@@ -165,7 +165,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         assert cache().tx() == null;
         assert cache().isEmpty() : "Cache is not empty: " + cache().entrySet();
-        assert cache().size() == 0 : "Cache is not empty: " + cache().entrySet();
+        assertEquals("Cache is not empty: " + cache().entrySet(), 0, cache().size());
         assert cache().keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
 
         resetStore();

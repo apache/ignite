@@ -1069,6 +1069,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             if (key == null)
                 continue;
 
+            if (pessimistic() && !readCommitted())
+                addActiveCache(cacheCtx);
+
             GridCacheTxKey<K> txKey = cacheCtx.txKey(key);
 
             // Check write map (always check writes first).
