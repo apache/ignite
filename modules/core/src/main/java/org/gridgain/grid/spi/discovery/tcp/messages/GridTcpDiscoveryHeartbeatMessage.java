@@ -41,7 +41,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
 
     /** Map to store nodes metrics. */
     @GridToStringExclude
-    private Map<UUID, T2<byte[], Map<UUID, byte[]>>> metrics;
+    private Map<UUID, MetricsSet> metrics;
 
     /** Client node IDs. */
     private Collection<UUID> clientNodeIds;
@@ -76,7 +76,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         assert metrics != null;
         assert !this.metrics.containsKey(nodeId);
 
-        this.metrics.put(nodeId, new T2<byte[], Map<UUID, byte[]>>(serializeMetrics(metrics), null));
+        this.metrics.put(nodeId, new MetricsSet(metrics));
     }
 
     /**
@@ -92,14 +92,9 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         assert this.metrics.containsKey(nodeId);
 
         if (metrics != null) {
-            T2<byte[], Map<UUID, byte[]>> t = this.metrics.get(nodeId);
+            MetricsSet set = this.metrics.get(nodeId);
 
-            Map<UUID, byte[]> map = t.get2();
-
-            if (map == null)
-                t.set2(map = new HashMap<>());
-
-            map.put(clientNodeId, serializeMetrics(metrics));
+            set.addClientMetrics(clientNodeId, metrics);
         }
 
         clientNodeIds.add(clientNodeId);
@@ -121,62 +116,8 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      *
      * @return Metrics map.
      */
-    public Map<UUID, GridNodeMetrics> metrics() {
-        final Iterator<Map.Entry<UUID, T2<byte[], Map<UUID, byte[]>>>> it = metrics.entrySet().iterator();
-
-        return new AbstractMap<UUID, GridNodeMetrics>() {
-            @Override public Set<Entry<UUID, GridNodeMetrics>> entrySet() {
-                return new AbstractSet<Entry<UUID, GridNodeMetrics>>() {
-                    @Override public Iterator<Entry<UUID, GridNodeMetrics>> iterator() {
-                        return new Iterator<Entry<UUID, GridNodeMetrics>>() {
-                            private Entry<UUID, T2<byte[], Map<UUID, byte[]>>> cur = it.hasNext() ? it.next() : null;
-
-                            private Iterator<Entry<UUID, byte[]>> clientsIt;
-
-                            @Override public boolean hasNext() {
-                                return clientsIt == null ? cur != null : clientsIt.hasNext() || it.hasNext();
-                            }
-
-                            @Override public Entry<UUID, GridNodeMetrics> next() {
-                                if (clientsIt == null) {
-                                    if (cur == null)
-                                        throw new NoSuchElementException();
-
-                                    Map<UUID, byte[]> map = cur.getValue().get2();
-
-                                    clientsIt = map != null ? map.entrySet().iterator() :
-                                        Collections.<Entry<UUID, byte[]>>emptyIterator();
-
-                                    return new T2<>(cur.getKey(), deserialize(cur.getValue().get1(), 0));
-                                }
-                                else {
-                                    if (clientsIt.hasNext()) {
-                                        Entry<UUID, byte[]> nextClient = clientsIt.next();
-
-                                        return new T2<>(nextClient.getKey(), deserialize(nextClient.getValue(), 0));
-                                    }
-                                    else {
-                                        clientsIt = null;
-
-                                        cur = it.hasNext() ? it.next() : null;
-
-                                        return next();
-                                    }
-                                }
-                            }
-
-                            @Override public void remove() {
-                                throw new UnsupportedOperationException();
-                            }
-                        };
-                    }
-
-                    @Override public int size() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        };
+    public Map<UUID, MetricsSet> metrics() {
+        return metrics;
     }
 
     /**
@@ -211,10 +152,9 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         out.writeInt(metrics.size());
 
         if (!metrics.isEmpty()) {
-            for (Map.Entry<UUID, T2<byte[], Map<UUID, byte[]>>> e : metrics.entrySet()) {
+            for (Map.Entry<UUID, MetricsSet> e : metrics.entrySet()) {
                 U.writeUuid(out, e.getKey());
-                U.writeByteArray(out, e.getValue().get1());
-                U.writeMap(out, e.getValue().get2());
+                out.writeObject(e.getValue());
             }
         }
 
@@ -227,10 +167,10 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
 
         int metricsSize = in.readInt();
 
-        metrics = U.newHashMap(metricsSize + 1);
+        metrics = U.newHashMap(metricsSize);
 
         for (int i = 0; i < metricsSize; i++)
-            metrics.put(U.readUuid(in), new T2<>(U.readByteArray(in), U.<UUID, byte[]>readMap(in)));
+            metrics.put(U.readUuid(in), (MetricsSet)in.readObject());
 
         clientNodeIds = U.readCollection(in);
     }
@@ -244,7 +184,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      * @param metrics Metrics.
      * @return Serialized metrics.
      */
-    private byte[] serializeMetrics(GridNodeMetrics metrics) {
+    private static byte[] serializeMetrics(GridNodeMetrics metrics) {
         assert metrics != null;
 
         byte[] buf = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
@@ -252,5 +192,105 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         serialize(buf, 0, metrics);
 
         return buf;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param metrics Metrics.
+     * @return Serialized metrics.
+     */
+    private static byte[] serializeMetrics(UUID nodeId, GridNodeMetrics metrics) {
+        assert nodeId != null;
+        assert metrics != null;
+
+        byte[] buf = new byte[16 + GridDiscoveryMetricsHelper.METRICS_SIZE];
+
+        U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
+        U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
+
+        serialize(buf, 16, metrics);
+
+        return buf;
+    }
+
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class MetricsSet implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Metrics. */
+        private byte[] metrics;
+
+        /** Client metrics. */
+        private Collection<byte[]> clientMetrics;
+
+        /**
+         * @param metrics Metrics.
+         */
+        public MetricsSet(GridNodeMetrics metrics) {
+            assert metrics != null;
+
+            this.metrics = serializeMetrics(metrics);
+        }
+
+        /**
+         * @return Deserialized metrics.
+         */
+        public GridNodeMetrics metrics() {
+            return deserialize(metrics, 0);
+        }
+
+        /**
+         * @return Client metrics.
+         */
+        public Collection<T2<UUID, GridNodeMetrics>> clientMetrics() {
+            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, GridNodeMetrics>>() {
+                @Override public T2<UUID, GridNodeMetrics> apply(byte[] bytes) {
+                    UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
+
+                    return new T2<>(nodeId, deserialize(bytes, 16));
+                }
+            });
+        }
+
+        /**
+         * @param nodeId Client node ID.
+         * @param metrics Client metrics.
+         */
+        private void addClientMetrics(UUID nodeId, GridNodeMetrics metrics) {
+            assert nodeId != null;
+            assert metrics != null;
+
+            if (clientMetrics == null)
+                clientMetrics = new ArrayList<>();
+
+            clientMetrics.add(serializeMetrics(nodeId, metrics));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeByteArray(out, metrics);
+
+            out.writeInt(clientMetrics != null ? clientMetrics.size() : -1);
+
+            for (byte[] arr : clientMetrics)
+                U.writeByteArray(out, arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            metrics = U.readByteArray(in);
+
+            int clientMetricsSize = in.readInt();
+
+            if (clientMetricsSize >= 0) {
+                clientMetrics = new ArrayList<>(clientMetricsSize);
+
+                for (int i = 0; i < clientMetricsSize; i++)
+                    clientMetrics.add(U.readByteArray(in));
+            }
+        }
     }
 }

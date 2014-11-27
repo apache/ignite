@@ -47,6 +47,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.spi.GridPortProtocol.*;
 import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiState.*;
+import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeartbeatMessage.*;
 import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatusCheckMessage.*;
 
 /**
@@ -4145,18 +4146,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             if (spiStateCopy() == CONNECTED) {
                 if (msg.hasMetrics()) {
-                    for (Map.Entry<UUID, GridNodeMetrics> e : msg.metrics().entrySet()) {
-                        GridTcpDiscoveryNode node = ring.node(e.getKey());
+                    for (Map.Entry<UUID, MetricsSet> e : msg.metrics().entrySet()) {
+                        MetricsSet metricsSet = e.getValue();
 
-                        if (node != null) {
-                            node.setMetrics(e.getValue());
+                        updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
 
-                            node.lastUpdateTime(tstamp);
-
-                            notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Received metrics from unknown node: " + e.getKey());
+                        for (T2<UUID, GridNodeMetrics> t : metricsSet.clientMetrics())
+                            updateMetrics(t.get1(), t.get2(), tstamp);
                     }
                 }
             }
@@ -4181,6 +4177,28 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), locNode);
             }
+        }
+
+        /**
+         * @param nodeId Node ID.
+         * @param metrics Metrics.
+         * @param tstamp Timestamp.
+         */
+        private void updateMetrics(UUID nodeId, GridNodeMetrics metrics, long tstamp) {
+            assert nodeId != null;
+            assert metrics != null;
+
+            GridTcpDiscoveryNode node = ring.node(nodeId);
+
+            if (node != null) {
+                node.setMetrics(metrics);
+
+                node.lastUpdateTime(tstamp);
+
+                notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Received metrics from unknown node: " + nodeId);
         }
 
         /**
@@ -4944,7 +4962,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 GridTcpDiscoveryHeartbeatMessage hbMsg = (GridTcpDiscoveryHeartbeatMessage)msg;
 
                 if (hbMsg.creatorNodeId().equals(nodeId)) {
-                    metrics = hbMsg.metrics().get(nodeId);
+                    metrics = hbMsg.metrics().get(nodeId).metrics();
 
                     hbMsg.removeMetrics(nodeId);
 

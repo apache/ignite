@@ -28,6 +28,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeartbeatMessage.*;
 
 /**
  * TODO
@@ -985,23 +986,40 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
             }
             else {
                 if (msg.hasMetrics()) {
-                    for (Map.Entry<UUID, GridNodeMetrics> e : msg.metrics().entrySet()) {
-                        UUID nodeId = e.getKey();
+                    long tstamp = U.currentTimeMillis();
 
-                        GridTcpDiscoveryNode node = nodeId.equals(locNodeId) ? locNode : rmtNodes.get(nodeId);
+                    for (Map.Entry<UUID, MetricsSet> e : msg.metrics().entrySet()) {
+                        MetricsSet metricsSet = e.getValue();
 
-                        if (node != null) {
-                            node.setMetrics(e.getValue());
+                        updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
 
-                            node.lastUpdateTime(U.currentTimeMillis());
-
-                            notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, updateTopology(topVer));
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Received metrics from unknown node: " + nodeId);
+                        for (T2<UUID, GridNodeMetrics> t : metricsSet.clientMetrics())
+                            updateMetrics(t.get1(), t.get2(), tstamp);
                     }
                 }
             }
+        }
+
+        /**
+         * @param nodeId Node ID.
+         * @param metrics Metrics.
+         * @param tstamp Timestamp.
+         */
+        private void updateMetrics(UUID nodeId, GridNodeMetrics metrics, long tstamp) {
+            assert nodeId != null;
+            assert metrics != null;
+
+            GridTcpDiscoveryNode node = nodeId.equals(locNodeId) ? locNode : rmtNodes.get(nodeId);
+
+            if (node != null) {
+                node.setMetrics(metrics);
+
+                node.lastUpdateTime(tstamp);
+
+                notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, updateTopology(topVer));
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Received metrics from unknown node: " + nodeId);
         }
 
         /**

@@ -98,7 +98,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         super.writeExternal(out);
 
         out.writeObject(node);
-        out.writeObject(discoData);
+        U.writeCollection(out, discoData);
     }
 
     /** {@inheritDoc} */
@@ -106,7 +106,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         super.readExternal(in);
 
         node = (GridTcpDiscoveryNode)in.readObject();
-        discoData = (List<Object>)in.readObject();
+        discoData = U.readList(in);
     }
 
     /** {@inheritDoc} */

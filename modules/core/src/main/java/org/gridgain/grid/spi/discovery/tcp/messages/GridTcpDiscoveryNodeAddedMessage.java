@@ -189,9 +189,15 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
         U.writeCollection(out, msgs);
         U.writeCollection(out, top);
         U.writeMap(out, topHist);
-        out.writeObject(newNodeDiscoData);
-        U.writeCollection(out, oldNodesDiscoData);
         out.writeLong(gridStartTime);
+        U.writeCollection(out, newNodeDiscoData);
+
+        out.writeInt(oldNodesDiscoData != null ? oldNodesDiscoData.size() : -1);
+
+        if (oldNodesDiscoData != null) {
+            for (List<Object> list : oldNodesDiscoData)
+                U.writeCollection(out, list);
+        }
     }
 
     /** {@inheritDoc} */
@@ -202,9 +208,17 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
         msgs = U.readCollection(in);
         top = U.readCollection(in);
         topHist = U.readTreeMap(in);
-        newNodeDiscoData = (List<Object>)in.readObject();
-        oldNodesDiscoData = U.readCollection(in);
         gridStartTime = in.readLong();
+        newNodeDiscoData = U.readList(in);
+
+        int oldNodesDiscoDataSize = in.readInt();
+
+        if (oldNodesDiscoDataSize >= 0) {
+            oldNodesDiscoData = new ArrayList<>(oldNodesDiscoDataSize);
+
+            for (int i = 0; i < oldNodesDiscoDataSize; i++)
+                oldNodesDiscoData.add(U.readList(in));
+        }
     }
 
     /** {@inheritDoc} */
