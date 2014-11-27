@@ -74,7 +74,7 @@ public interface GridPortableBuilder {
      * Sets field value.
      *
      * @param name Field name.
-     * @param val Field value. May not be {@code null}.
+     * @param val Field value (cannot not be {@code null}).
      * @see GridPortableObject#metaData()
      */
     public GridPortableBuilder setField(String name, Object val);
