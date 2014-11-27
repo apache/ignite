@@ -197,8 +197,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
             addrs.get2(),
             0,
             metricsProvider,
-            locNodeVer,
-            true);
+            locNodeVer);
 
         locNode.setAttributes(locNodeAttrs);
         locNode.local(true);

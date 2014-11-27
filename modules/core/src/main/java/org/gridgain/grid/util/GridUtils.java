@@ -8964,7 +8964,7 @@ public abstract class GridUtils {
      * @param p Optional filters.
      * @return Resulting array list.
      */
-    public static <T extends R, R> ArrayList<R> arrayList(Collection<T> c, @Nullable GridPredicate<? super T>... p) {
+    public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable GridPredicate<? super T>... p) {
         assert c != null;
 
         return GridUtils.<T, R>arrayList(c, c.size(), p);
@@ -8976,7 +8976,7 @@ public abstract class GridUtils {
      * @param p Optional filters.
      * @return Resulting array list.
      */
-    public static <T extends R, R> ArrayList<R> arrayList(Iterable<T> c, int cap,
+    public static <T extends R, R> List<R> arrayList(Iterable<T> c, int cap,
         @Nullable GridPredicate<? super T>... p) {
         assert c != null;
         assert cap >= 0;

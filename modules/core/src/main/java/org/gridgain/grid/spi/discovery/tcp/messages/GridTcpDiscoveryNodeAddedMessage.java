@@ -41,10 +41,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     /** Topology snapshots history. */
     private Map<Long, Collection<GridNode>> topHist;
 
-    /** If {@code true} messages will be processed, otherwise registered. */
-    @Deprecated
-    private boolean procPendingMsgs; // Not used any more.
-
     /** Discovery data from new node. */
     private List<Object> newNodeDiscoData;
 
@@ -193,7 +189,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
         U.writeCollection(out, msgs);
         U.writeCollection(out, top);
         U.writeMap(out, topHist);
-        out.writeBoolean(procPendingMsgs);
         out.writeObject(newNodeDiscoData);
         U.writeCollection(out, oldNodesDiscoData);
         out.writeLong(gridStartTime);
@@ -207,7 +202,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
         msgs = U.readCollection(in);
         top = U.readCollection(in);
         topHist = U.readTreeMap(in);
-        procPendingMsgs = in.readBoolean();
         newNodeDiscoData = (List<Object>)in.readObject();
         oldNodesDiscoData = U.readCollection(in);
         gridStartTime = in.readLong();

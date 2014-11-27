@@ -596,7 +596,9 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            return Collections.unmodifiableCollection(U.arrayList(nodes, p));
+            List<GridTcpDiscoveryNode> list = U.arrayList(nodes, p);
+
+            return Collections.unmodifiableCollection(list);
         }
         finally {
             rwLock.readLock().unlock();

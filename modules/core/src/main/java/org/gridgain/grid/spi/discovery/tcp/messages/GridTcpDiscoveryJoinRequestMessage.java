@@ -29,12 +29,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
     /** Discovery data. */
     private List<Object> discoData;
 
-    /** Responded flag. */
-    private boolean responded;
-
-    /** Client reconnection flag. */
-    private boolean clientRecon;
-
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -75,28 +69,28 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
      * @return {@code true} flag.
      */
     public boolean responded() {
-        return responded;
+        return getFlag(RESPONDED_FLAG_POS);
     }
 
     /**
      * @param responded Responded flag.
      */
     public void responded(boolean responded) {
-        this.responded = responded;
+        setFlag(RESPONDED_FLAG_POS, responded);
     }
 
     /**
      * @return Client reconnection flag.
      */
     public boolean clientReconnect() {
-        return clientRecon;
+        return getFlag(CLIENT_RECON_FLAG_POS);
     }
 
     /**
      * @param clientRecon Client reconnection flag.
      */
     public void clientReconnect(boolean clientRecon) {
-        this.clientRecon = clientRecon;
+        setFlag(CLIENT_RECON_FLAG_POS, clientRecon);
     }
 
     /** {@inheritDoc} */
@@ -105,8 +99,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
 
         out.writeObject(node);
         out.writeObject(discoData);
-        out.writeBoolean(responded);
-        out.writeBoolean(clientRecon);
     }
 
     /** {@inheritDoc} */
@@ -115,8 +107,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
 
         node = (GridTcpDiscoveryNode)in.readObject();
         discoData = (List<Object>)in.readObject();
-        responded = in.readBoolean();
-        clientRecon = in.readBoolean();
     }
 
     /** {@inheritDoc} */

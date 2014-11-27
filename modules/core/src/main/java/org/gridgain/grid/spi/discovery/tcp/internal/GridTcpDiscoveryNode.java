@@ -92,9 +92,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     /** Version. */
     private GridProductVersion ver;
 
-    /** Client node. */
-    private boolean client;
-
     /** Alive check (used by clients). */
     @GridToStringExclude
     private transient int aliveCheck;
@@ -119,10 +116,9 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      * @param discPort Port.
      * @param metricsProvider Metrics provider.
      * @param ver Version.
-     * @param client Client node.
      */
     public GridTcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
-        GridDiscoveryMetricsProvider metricsProvider, GridProductVersion ver, boolean client) {
+        GridDiscoveryMetricsProvider metricsProvider, GridProductVersion ver) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -134,7 +130,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         this.discPort = discPort;
         this.metricsProvider = metricsProvider;
         this.ver = ver;
-        this.client = client;
 
         consistentId = U.consistentId(addrs, discPort);
 
@@ -336,14 +331,14 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public boolean isClient() {
-        return client;
+        return clientRouterNodeId != null;
     }
 
     /**
      * @return Alive check value.
      */
     public int aliveCheck() {
-        assert client;
+        assert isClient();
 
         return aliveCheck;
     }
@@ -352,7 +347,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      * @param aliveCheck Alive check value.
      */
     public void aliveCheck(int aliveCheck) {
-        assert client;
+        assert isClient();
 
         this.aliveCheck = aliveCheck;
     }
@@ -404,7 +399,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         out.writeLong(order);
         out.writeLong(intOrder);
         out.writeObject(ver);
-        out.writeBoolean(client);
         U.writeUuid(out, clientRouterNodeId);
     }
 
@@ -429,7 +423,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         order = in.readLong();
         intOrder = in.readLong();
         ver = (GridProductVersion)in.readObject();
-        client = in.readBoolean();
         clientRouterNodeId = U.readUuid(in);
     }
 

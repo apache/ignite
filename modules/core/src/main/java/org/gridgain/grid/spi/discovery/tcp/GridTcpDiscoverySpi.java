@@ -675,8 +675,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             addrs.get2(),
             tcpSrvr.port,
             metricsProvider,
-            locNodeVer,
-            false);
+            locNodeVer);
 
         try {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :

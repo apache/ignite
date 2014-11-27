@@ -22,6 +22,15 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    protected static final int CLIENT_FLAG_POS = 0;
+
+    /** */
+    protected static final int CLIENT_RECON_FLAG_POS = 1;
+
+    /** */
+    protected static final int RESPONDED_FLAG_POS = 2;
+
     /** Sender of the message (transient). */
     private UUID senderNodeId;
 
@@ -34,13 +43,13 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /** Topology version. */
     private long topVer;
 
-    /** Client node flag. */
-    private boolean client;
-
     /** Destination client node ID. */
     private UUID destClientNodeId;
 
-    /** Whether to redirect to client nodes. */
+    /** Flags. */
+    private int flags;
+
+    /** Whether to redirect to client nodes (transient). */
     private boolean redirectToClients = true;
 
     /**
@@ -146,7 +155,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
      * @return Client node flag.
      */
     public boolean client() {
-        return client;
+        return getFlag(CLIENT_FLAG_POS);
     }
 
     /**
@@ -155,7 +164,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
      * @param client Client node flag.
      */
     public void client(boolean client) {
-        this.client = client;
+        setFlag(CLIENT_FLAG_POS, client);
     }
 
     /**
@@ -186,13 +195,40 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         this.redirectToClients = redirectToClients;
     }
 
+    /**
+     * @param pos Flag position.
+     * @return Flag value.
+     */
+    protected boolean getFlag(int pos) {
+        assert pos >= 0 && pos < 32;
+
+        int mask = 1 << pos;
+
+        return (flags & mask) == mask;
+    }
+
+    /**
+     * @param pos Flag position.
+     * @param val Flag value.
+     */
+    protected void setFlag(int pos, boolean val) {
+        assert pos >= 0 && pos < 32;
+
+        int mask = 1 << pos;
+
+        if (val)
+            flags |= mask;
+        else
+            flags &= ~mask;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         U.writeUuid(out, verifierNodeId);
         out.writeLong(topVer);
-        out.writeBoolean(client);
         U.writeUuid(out, destClientNodeId);
+        out.writeInt(flags);
     }
 
     /** {@inheritDoc} */
@@ -200,8 +236,8 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         id = U.readGridUuid(in);
         verifierNodeId = U.readUuid(in);
         topVer = in.readLong();
-        client = in.readBoolean();
         destClientNodeId = U.readUuid(in);
+        flags = in.readInt();
     }
 
     /** {@inheritDoc} */
