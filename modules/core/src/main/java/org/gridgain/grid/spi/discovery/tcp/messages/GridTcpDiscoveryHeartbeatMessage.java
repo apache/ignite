@@ -227,6 +227,12 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         private Collection<byte[]> clientMetrics;
 
         /**
+         */
+        public MetricsSet() {
+            // No-op.
+        }
+
+        /**
          * @param metrics Metrics.
          */
         public MetricsSet(GridNodeMetrics metrics) {
@@ -275,8 +281,10 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
 
             out.writeInt(clientMetrics != null ? clientMetrics.size() : -1);
 
-            for (byte[] arr : clientMetrics)
-                U.writeByteArray(out, arr);
+            if (clientMetrics != null) {
+                for (byte[] arr : clientMetrics)
+                    U.writeByteArray(out, arr);
+            }
         }
 
         /** {@inheritDoc} */

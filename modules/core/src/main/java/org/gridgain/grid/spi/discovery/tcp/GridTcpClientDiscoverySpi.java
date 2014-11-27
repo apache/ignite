@@ -324,11 +324,10 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
         req.clientReconnect(recon);
 
         Collection<InetSocketAddress> addrs = null;
-        List<InetSocketAddress> shuffledAddrs = null;
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                while (shuffledAddrs == null || shuffledAddrs.isEmpty()) {
+                while (addrs == null || addrs.isEmpty()) {
                     addrs = resolvedAddresses();
 
                     if (!F.isEmpty(addrs)) {
@@ -342,7 +341,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     }
                 }
 
-                Iterator<InetSocketAddress> it = shuffledAddrs.iterator();
+                Iterator<InetSocketAddress> it = addrs.iterator();
 
                 while (it.hasNext() && !Thread.currentThread().isInterrupted()) {
                     InetSocketAddress addr = it.next();
@@ -432,7 +431,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     }
                 }
 
-                if (shuffledAddrs.isEmpty()) {
+                if (addrs.isEmpty()) {
                     U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                         "in 2000ms): " + addrs);
 
