@@ -957,10 +957,10 @@ public class GridGainEx {
     public static GridKernal gridx(@Nullable String name) {
         GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
-        GridKernal res = null;
+        GridKernal res;
 
         if (grid == null || (res = grid.gridx()) == null)
-            U.warn(null, "Grid instance was not properly started or was already stopped: " + name);
+            throw new IllegalStateException("Grid instance was not properly started or was already stopped: " + name);
 
         return res;
     }
