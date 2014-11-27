@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -84,5 +86,10 @@ public class GridCacheTxKey<K> implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheId = in.readInt();
         key = (K)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheTxKey.class, this);
     }
 }

@@ -437,7 +437,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         assert entry != null;
 
         assert entry.context() == ctx : "Invalid entry assigned to tx entry [txEntry=" + this +
-            ", entry=" + entry + ']';
+            ", entry=" + entry + ", ctxNear=" + ctx.isNear() + ", ctxDht=" + ctx.isDht() + ']';
 
         this.entry = entry;
 
@@ -737,8 +737,14 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @throws GridException If un-marshalling failed.
      */
     public void unmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
-        if (this.ctx == null)
-            this.ctx = ctx.cacheContext(cacheId);
+        if (this.ctx == null) {
+            GridCacheContext<K, V> cacheCtx = ctx.cacheContext(cacheId);
+
+            if (cacheCtx.isNear())
+                cacheCtx = cacheCtx.near().dht().context();
+
+            this.ctx = cacheCtx;
+        }
 
         if (depEnabled) {
             // Don't unmarshal more than once by checking key for null.

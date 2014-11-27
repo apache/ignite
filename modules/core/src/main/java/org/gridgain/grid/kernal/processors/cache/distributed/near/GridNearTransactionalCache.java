@@ -175,11 +175,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     log.debug("Received unlock request for unknown candidate " +
                                         "(added to cancelled locks set): " + req);
                             }
+
+                            ctx.evicts().touch(entry, topVer);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Received unlock request for entry that could not be found: " + req);
-
-                        ctx.evicts().touch(entry, topVer);
 
                         break;
                     }

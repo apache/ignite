@@ -542,6 +542,18 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 req.addDhtVersion(txEntry.txKey(), null);
         }
 
+        // Must lock near entries separately.
+        if (m.near()) {
+            try {
+                tx.optimisticLockEntries(req.writes());
+
+                tx.userPrepare();
+            }
+            catch (GridException e) {
+                onError(null, null, e);
+            }
+        }
+
         // If this is the primary node for the keys.
         if (n.isLocal()) {
             req.miniId(GridUuid.randomUuid());

@@ -94,6 +94,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+
+        for (int i = 0; i < gridCount(); i++)
+            info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assertEquals("Primary key set: " + cache().primaryKeySet(), 0, cache().primaryKeySet().size());
         assertEquals(0, cache().primarySize());
@@ -250,7 +259,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             try {
                 cache.remove("a");
 
-                // This will fail with "Transaction lock is not acquired."
+                // Make sure single-key operation did not remove lock.
                 cache.putAll(F.asMap("b", 2, "c", 3, "d", 4));
             }
             finally {
@@ -3526,8 +3535,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             List<String> keys = primaryKeysForCache(cache(), 2);
 
-            String key1 = keys.get(0);
-            String key2 = keys.get(1);
+            info("Keys: " + keys);
+
+            final String key1 = keys.get(0);
+            final String key2 = keys.get(1);
 
             cache().put(key1, 1);
             cache().put(key2, 100);
@@ -3544,21 +3555,38 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache().unlock(key1, gte100);
             cache().unlock(key2, gte100);
 
-            for (int i = 0; i < 100; i++)
-                if (cache().isLocked(key2))
-                    Thread.sleep(10);
-                else
-                    break;
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int g = 0; g < gridCount(); g++) {
+                        if (cache(g).isLocked(key2)) {
+                            info(key2 + " is locked on grid: " + g);
+
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }, 2000);
 
             assert cache().isLocked(key1);
             assert !cache().isLocked(key2);
 
             cache().unlockAll(F.asList(key1, key2));
 
-            for (int i = 0; i < gridCount(); i++) {
-                assertFalse("Key1 is locked [i=" + i + ']', cache(i).isLocked(key1));
-                assertFalse("Key2 is locked [i=" + i + ']', cache(i).isLocked(key2));
-            }
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int g = 0; g < gridCount(); g++) {
+                        if (cache(g).isLocked(key1))
+                            info(key1 + " is locked on grid: " + g);
+
+                        if (cache(g).isLocked(key2))
+                            info(key2 + " is locked on grid: " + g);
+                    }
+
+                    return true;
+                }
+            }, 2000);
         }
     }
 

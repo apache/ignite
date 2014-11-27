@@ -112,27 +112,18 @@ public class GridCacheTxHandler<K, V> {
         assert nearNodeId != null;
         assert req != null;
 
-        try {
-            if (locTx != null) {
-                if (req.near()) {
-                    locTx.optimisticLockEntries(req.writes());
+        if (locTx != null) {
+            if (req.near()) {
+                // Make sure not to provide Near entries to DHT cache.
+                req.cloneEntries();
 
-                    locTx.userPrepare();
-
-                    // Make sure not to provide Near entries to DHT cache.
-                    req.cloneEntries();
-
-                    return prepareNearTx(nearNodeId, req);
-                }
-                else
-                    return prepareColocatedTx(locTx, req);
+                return prepareNearTx(nearNodeId, req);
             }
             else
-                return prepareNearTx(nearNodeId, req);
+                return prepareColocatedTx(locTx, req);
         }
-        catch (GridException e) {
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
-        }
+        else
+            return prepareNearTx(nearNodeId, req);
     }
 
     /**
@@ -392,8 +383,12 @@ public class GridCacheTxHandler<K, V> {
 
         GridFuture<GridCacheTx> nearFinishFut = null;
 
-        if (locTx == null || locTx.nearLocallyMapped())
+        if (locTx == null || locTx.nearLocallyMapped()) {
+            if (locTx != null)
+                req.cloneEntries();
+
             nearFinishFut = finishDhtLocal(nodeId, locTx, req);
+        }
 
         if (colocatedFinishFut != null && nearFinishFut != null) {
             GridCompoundFuture<GridCacheTx, GridCacheTx> res = new GridCompoundFuture<>(ctx.kernalContext());

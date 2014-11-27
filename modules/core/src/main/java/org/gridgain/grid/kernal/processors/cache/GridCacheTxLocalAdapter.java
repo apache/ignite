@@ -326,7 +326,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @throws GridException If prepare step failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void userPrepare() throws GridException {
+    public void userPrepare() throws GridException {
         if (state() != PREPARING) {
             if (timedOut())
                 throw new GridCacheTxTimeoutException("Transaction timed out: " + this);

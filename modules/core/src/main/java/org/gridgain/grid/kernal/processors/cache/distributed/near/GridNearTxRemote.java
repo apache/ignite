@@ -287,7 +287,12 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     private boolean addEntry(GridCacheTxEntry<K, V> entry) throws GridException {
         checkInternal(entry.txKey());
 
-        GridNearCacheEntry<K, V> cached = entry.context().near().peekExx(entry.key());
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
+        if (!cacheCtx.isNear())
+            cacheCtx = cacheCtx.dht().near().context();
+
+        GridNearCacheEntry<K, V> cached = cacheCtx.near().peekExx(entry.key());
 
         if (cached == null) {
             evicted.add(entry.txKey());

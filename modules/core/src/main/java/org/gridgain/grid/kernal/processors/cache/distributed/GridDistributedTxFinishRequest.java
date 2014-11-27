@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -137,6 +138,28 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.grpLockKey = grpLockKey;
 
         completedVersions(committedVers, rolledbackVers);
+    }
+
+    /**
+     * Clones write entries so that near entries are not passed to DHT cache.
+     */
+    public void cloneEntries() {
+        if (F.isEmpty(writeEntries))
+            return;
+
+        Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(writeEntries.size());
+
+        for (GridCacheTxEntry<K, V> e : writeEntries) {
+            GridCacheContext<K, V> cacheCtx = e.context();
+
+            // Clone only if it is a near cache.
+            if (cacheCtx.isNear())
+                cp.add(e.cleanCopy(cacheCtx.nearTx().dht().context()));
+            else
+                cp.add(e);
+        }
+
+        writeEntries = cp;
     }
 
     /**
