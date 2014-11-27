@@ -123,9 +123,9 @@ public class GridDataLoadCacheUpdaters {
                 V val = entry.getValue();
 
                 if (val == null)
-                    cache.remove(key);
+                    cache.removex(key);
                 else
-                    cache.put(key, val);
+                    cache.putx(key, val);
             }
         }
     }
