@@ -1859,9 +1859,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             GridKernal grid = GridGainEx.gridx(t.get1());
 
-            if (grid == null)
-                throw new IllegalStateException("Failed to find grid for name: " + t.get1());
-
             GridCacheAdapter<K, V> cache = grid.internalCache(t.get2());
 
             if (cache == null)
