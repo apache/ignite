@@ -72,29 +72,24 @@ public interface GridPortableBuilder {
 
     /**
      * Sets field value.
-     * <p>
-     * Note: This method can only be used for fields that already present in type metadata.
-     * If field is not yet in type metadata, {@link #setField(String, Object, GridPortableType)}
-     * should be used to specify field type explicitly.
      *
      * @param name Field name.
-     * @param val Field value.
+     * @param val Field value. May not be {@code null}.
      * @see GridPortableObject#metaData()
      */
-    public GridPortableBuilder setField(String name, @Nullable Object val);
+    public GridPortableBuilder setField(String name, Object val);
 
     /**
      * Sets field value with value type specification.
      * <p>
      * Field type is needed for proper metadata update.
-     * If field already present in metadata, {@link #setField(String, Object)} can be used.
      *
      * @param name Field name.
      * @param val Field value.
      * @param type Field type.
      * @see GridPortableObject#metaData()
      */
-    public <T> GridPortableBuilder setField(String name, @Nullable T val, GridPortableType<T> type);
+    public <T> GridPortableBuilder setField(String name, @Nullable T val, Class<? super T> type);
 
     /**
      * Sets field value.
