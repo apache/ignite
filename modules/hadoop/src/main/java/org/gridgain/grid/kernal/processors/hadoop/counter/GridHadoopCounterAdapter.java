@@ -117,5 +117,4 @@ public abstract class GridHadoopCounterAdapter implements GridHadoopCounter, Ext
      * @throws IOException If failed.
      */
     protected abstract void readValue(ObjectInput in) throws IOException;
-
 }

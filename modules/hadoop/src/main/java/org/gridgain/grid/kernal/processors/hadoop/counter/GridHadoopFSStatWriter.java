@@ -15,7 +15,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Statistic writer implementation that writes info into any Hadoop file system.
