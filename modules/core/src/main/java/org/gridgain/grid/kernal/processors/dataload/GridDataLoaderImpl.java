@@ -67,6 +67,12 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** Portable enabled flag. */
     private final boolean portableEnabled;
 
+    /**
+     *  If {@code true} then data will be transferred in compact format (only keys and values).
+     *  Otherwise full map entry will be transferred (this is requires by DR internal logic).
+     */
+    private final boolean compact;
+
     /** Per-node buffer size. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private int bufSize = DFLT_PER_NODE_BUFFER_SIZE;
@@ -138,14 +144,17 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
      * @param flushQ Flush queue.
+     * @param compact If {@code true} data will be transferred in compact format (only keys and values).
+     *                Otherwise full map entry will be transferred (this is requires by DR internal logic).
      */
     public GridDataLoaderImpl(final GridKernalContext ctx, @Nullable final String cacheName,
-        DelayQueue<GridDataLoaderImpl<K, V>> flushQ) {
+        DelayQueue<GridDataLoaderImpl<K, V>> flushQ, Boolean compact) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.cacheName = cacheName;
         this.flushQ = flushQ;
+        this.compact = compact;
 
         log = U.logger(ctx, logRef, GridDataLoaderImpl.class);
 
@@ -905,21 +914,25 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 byte[] entriesBytes;
 
                 try {
-                    if (node.version().compareTo(COMPACT_MAP_ENTRIES_SINCE) < 0) {
-                        Collection<Map.Entry<K, V>> entries0 = new ArrayList<>(entries.size());
+                    if (compact) {
+                        if (node.version().compareTo(COMPACT_MAP_ENTRIES_SINCE) < 0) {
+                            Collection<Map.Entry<K, V>> entries0 = new ArrayList<>(entries.size());
 
-                        GridPortableProcessor portable = ctx.portable();
+                            GridPortableProcessor portable = ctx.portable();
 
-                        for (Map.Entry<K, V> entry : entries)
-                            entries0.add(new Entry0<>(
-                                portableEnabled ? (K)portable.marshalToPortable(entry.getKey()) : entry.getKey(),
-                                portableEnabled ? (V)portable.marshalToPortable(entry.getValue()) : entry.getValue()));
+                            for (Map.Entry<K, V> entry : entries)
+                                entries0.add(new Entry0<>(
+                                    portableEnabled ? (K)portable.marshalToPortable(entry.getKey()) : entry.getKey(),
+                                    portableEnabled ? (V)portable.marshalToPortable(entry.getValue()) : entry.getValue()));
 
-                        entriesBytes = ctx.config().getMarshaller().marshal(entries0);
+                            entriesBytes = ctx.config().getMarshaller().marshal(entries0);
+                        }
+                        else
+                            entriesBytes = ctx.config().getMarshaller()
+                                .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
                     }
                     else
-                        entriesBytes = ctx.config().getMarshaller()
-                            .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
+                        entriesBytes = ctx.config().getMarshaller().marshal(entries);
 
                     if (updaterBytes == null) {
                         assert updater != null;
