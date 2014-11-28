@@ -31,7 +31,6 @@ public class GridHadoopTestUtils {
         phases.add("submit");
         phases.add("prepare");
         phases.add("start");
-        phases.add("run");
         phases.add("finish");
         phases.add("requestId");
         phases.add("responseId");

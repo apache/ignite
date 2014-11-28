@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.counter;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -21,15 +22,15 @@ import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 /**
  * Counter for the job statistics accumulation.
  */
-public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
+public class GridHadoopPerformanceCounter extends GridHadoopCounterAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** The group name for this counter. */
-    public static final String GROUP_NAME = "SYSTEM";
+    private static final String GROUP_NAME = "SYSTEM";
 
     /** The counter name for this counter. */
-    public static final String COUNTER_NAME = "STATISTICS";
+    private static final String COUNTER_NAME = "STATISTICS";
 
     /** Events collections. */
     private Collection<T2<String,Long>> evts = new ArrayList<>();
@@ -41,7 +42,7 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
     private int reducerNum;
 
     /** */
-    private Long firstShuffleMsg;
+    private volatile Long firstShuffleMsg;
 
     /** */
     private volatile Long lastShuffleMsg;
@@ -49,7 +50,7 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
     /**
      * Default constructor required by {@link Externalizable}.
      */
-    public GridHadoopStatCounter() {
+    public GridHadoopPerformanceCounter() {
         // No-op.
     }
 
@@ -59,7 +60,7 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      * @param grp Group name.
      * @param name Counter name.
      */
-    public GridHadoopStatCounter(String grp, String name) {
+    public GridHadoopPerformanceCounter(String grp, String name) {
         super(grp, name);
     }
 
@@ -68,7 +69,7 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      *
      * @param nodeId Id of the work node.
      */
-    public GridHadoopStatCounter(UUID nodeId) {
+    public GridHadoopPerformanceCounter(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
@@ -89,23 +90,7 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
 
     /** {@inheritDoc} */
     @Override public void merge(GridHadoopCounter cntr) {
-        if (lastShuffleMsg != null) {
-            evts.add(new T2<>("SHUFFLE " + reducerNum + " start", firstShuffleMsg));
-            evts.add(new T2<>("SHUFFLE " + reducerNum + " finish", lastShuffleMsg));
-
-            lastShuffleMsg = null;
-        }
-
-        evts.addAll(((GridHadoopStatCounter)cntr).evts);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopCounter copy() {
-        GridHadoopStatCounter cp = new GridHadoopStatCounter(group(), name());
-
-        cp.merge(this);
-
-        return cp;
+        evts.addAll(((GridHadoopPerformanceCounter)cntr).evts);
     }
 
     public Collection<T2<String, Long>> evts() {
@@ -120,6 +105,8 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      * @return String contains necessary event information.
      */
     private String eventName(GridHadoopTaskInfo info, String evtType) {
+        assert nodeId != null;
+
         return info.type() + " " + info.taskNumber() + " " + evtType + " " + nodeId;
     }
 
@@ -150,6 +137,13 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      * @param ts Timestamp of the event.
      */
     public void onTaskFinish(GridHadoopTaskInfo info, long ts) {
+        if (info.type() == GridHadoopTaskType.REDUCE && lastShuffleMsg != null) {
+            evts.add(new T2<>("SHUFFLE " + reducerNum + " start", firstShuffleMsg));
+            evts.add(new T2<>("SHUFFLE " + reducerNum + " finish", lastShuffleMsg));
+
+            lastShuffleMsg = null;
+        }
+
         evts.add(new T2<>(eventName(info, "finish"), ts));
     }
 
@@ -159,8 +153,8 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      * @param info Task info.
      * @param ts Timestamp of the event.
      */
-    public void onTaskRun(GridHadoopTaskInfo info, long ts) {
-        evts.add(new T2<>(eventName(info, "run"), ts));
+    public void onTaskStart(GridHadoopTaskInfo info, long ts) {
+        evts.add(new T2<>(eventName(info, "start"), ts));
     }
 
     /**
@@ -169,6 +163,8 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      * @param ts Timestamp of the event.
      */
     public void onJobPrepare(long ts) {
+        assert nodeId != null;
+
         evts.add(new T2<>("JOB prepare " + nodeId, ts));
     }
 
@@ -178,6 +174,8 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      * @param ts Timestamp of the event.
      */
     public void onJobStart(long ts) {
+        assert nodeId != null;
+
         evts.add(new T2<>("JOB start " + nodeId, ts));
     }
 
@@ -187,6 +185,8 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      * @param info Job info.
      */
     public void clientSubmissionEvents(GridHadoopJobInfo info) {
+        assert nodeId != null;
+
         try {
             evts.add(new T2<>("JOB requestId " + nodeId,
                 Long.parseLong(info.property(REQ_NEW_JOBID_TS_PROPERTY))));
@@ -219,8 +219,33 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
         this.reducerNum = reducerNum;
 
         if (firstShuffleMsg == null)
-            firstShuffleMsg =ts;
+            firstShuffleMsg = ts;
 
         lastShuffleMsg = ts;
+    }
+
+    /**
+     * Gets system predefined performance counter from the GridHadoopCounters object.
+     *
+     * @param cntrs GridHadoopCounters object.
+     * @param nodeId Node id for methods that adds events. It may be null if you don't use ones.
+     * @return Predefined performance counter.
+     */
+    public static GridHadoopPerformanceCounter getCounter(GridHadoopCounters cntrs, @Nullable UUID nodeId) {
+        GridHadoopPerformanceCounter cntr = cntrs.counter(GROUP_NAME, COUNTER_NAME, GridHadoopPerformanceCounter.class);
+
+        if (nodeId != null)
+            cntr.nodeId(nodeId);
+
+        return cntrs.counter(GROUP_NAME, COUNTER_NAME, GridHadoopPerformanceCounter.class);
+    }
+
+    /**
+     * Sets the nodeId field.
+     *
+     * @param nodeId Node id.
+     */
+    private void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
     }
 }

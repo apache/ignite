@@ -50,7 +50,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     private long execEndTs;
 
     /** */
-    private GridHadoopMultimap local;
+    private GridHadoopMultimap combinerInput;
 
     /** */
     private volatile GridHadoopTaskContext ctx;
@@ -58,8 +58,8 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
 
-    /** Task part of the job statistics. */
-    private GridHadoopStatCounter stats;
+    /** Node id. */
+    private UUID nodeId;
 
     /**
      * @param log Log.
@@ -70,12 +70,11 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
      */
     protected GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
         UUID nodeId) {
+        this.nodeId = nodeId;
         this.log = log.getLogger(GridHadoopRunnableTask.class);
         this.job = job;
         this.mem = mem;
         this.info = info;
-
-        stats = new GridHadoopStatCounter(nodeId);
     }
 
     /**
@@ -96,25 +95,29 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     @Override public Void call() throws GridException {
         execStartTs = U.currentTimeMillis();
 
-        stats.onTaskSubmit(info, submitTs);
-        stats.onTaskPrepare(info, execStartTs);
-
         Throwable err = null;
 
         GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
 
+        GridHadoopPerformanceCounter perfCntr = null;
+
         try {
             ctx = job.getTaskContext(info);
 
+            perfCntr = GridHadoopPerformanceCounter.getCounter(ctx.counters(), nodeId);
+
+            perfCntr.onTaskSubmit(info, submitTs);
+            perfCntr.onTaskPrepare(info, execStartTs);
+
             ctx.prepareTaskEnvironment();
 
-            runTask();
+            runTask(perfCntr);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
                 ctx.taskInfo(new GridHadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
 
                 try {
-                    runTask();
+                    runTask(perfCntr);
                 }
                 finally {
                     ctx.taskInfo(info);
@@ -133,17 +136,13 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
         finally {
             execEndTs = U.currentTimeMillis();
 
-            stats.onTaskFinish(info, execEndTs);
+            if (perfCntr != null)
+                perfCntr.onTaskFinish(info, execEndTs);
 
-            GridHadoopCounters counters = ctx.counters();
+            onTaskFinished(new GridHadoopTaskStatus(state, err, ctx==null ? null : ctx.counters()));
 
-            counters.counter(GridHadoopStatCounter.GROUP_NAME, GridHadoopStatCounter.COUNTER_NAME,
-                GridHadoopStatCounter.class).merge(stats);
-
-            onTaskFinished(new GridHadoopTaskStatus(state, err, counters));
-
-            if (local != null)
-                local.close();
+            if (combinerInput != null)
+                combinerInput.close();
 
             if (ctx != null)
                 ctx.cleanupTaskEnvironment();
@@ -153,9 +152,10 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     }
 
     /**
+     * @param perfCntr Performance counter.
      * @throws GridException If failed.
      */
-    private void runTask() throws GridException {
+    private void runTask(GridHadoopPerformanceCounter perfCntr) throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -165,7 +165,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
             ctx.input(in);
             ctx.output(out);
 
-            stats.onTaskRun(ctx.taskInfo(), U.currentTimeMillis());
+            perfCntr.onTaskStart(ctx.taskInfo(), U.currentTimeMillis());
 
             ctx.run();
         }
@@ -201,9 +201,9 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
                 return null;
 
             case COMBINE:
-                assert local != null;
+                assert combinerInput != null;
 
-                return local.input(ctx);
+                return combinerInput.input(ctx);
 
             default:
                 return createInput(ctx);
@@ -239,13 +239,13 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
 
             case MAP:
                 if (job.info().hasCombiner()) {
-                    assert local == null;
+                    assert combinerInput == null;
 
-                    local = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
+                    combinerInput = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
                         new GridHadoopHashMultimap(job.info(), mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
                         new GridHadoopSkipList(job.info(), mem); // TODO replace with red-black tree
 
-                    return local.startAdding(ctx);
+                    return combinerInput.startAdding(ctx);
                 }
 
             default:

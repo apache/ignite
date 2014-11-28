@@ -198,10 +198,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         GridHadoopTaskContext taskCtx = reducersCtx.get(msg.reducer());
 
-        GridHadoopStatCounter stat = taskCtx.counters().counter(GridHadoopStatCounter.GROUP_NAME,
-            GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+        GridHadoopPerformanceCounter perfCntr = GridHadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
-        stat.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
+        perfCntr.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
 
         GridHadoopMultimap map = getOrCreateMap(maps, msg.reducer());
 

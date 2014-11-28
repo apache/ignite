@@ -33,11 +33,4 @@ public interface GridHadoopCounter {
      * @param cntr Counter to merge into this counter.
      */
     public void merge(GridHadoopCounter cntr);
-
-    /**
-     * Creates the copy of this counter.
-     *
-     * @return Copy of this counter.
-     */
-    public GridHadoopCounter copy();
 }

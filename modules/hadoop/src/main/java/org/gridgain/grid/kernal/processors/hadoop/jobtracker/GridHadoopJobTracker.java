@@ -200,10 +200,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         try {
-            GridHadoopStatCounter stats = new GridHadoopStatCounter(ctx.localNodeId());
-
-            stats.clientSubmissionEvents(info);
-            stats.onJobPrepare(U.currentTimeMillis());
+            long jobPrepare = U.currentTimeMillis();
 
             if (jobs.containsKey(jobId) || jobMetaCache().containsKey(jobId))
                 throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
@@ -228,12 +225,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             if (log.isDebugEnabled())
                 log.debug("Submitting job metadata [jobId=" + jobId + ", meta=" + meta + ']');
 
-            stats.onJobStart(U.currentTimeMillis());
+            long jobStart = U.currentTimeMillis();
 
-            GridHadoopStatCounter cntr = meta.counters().counter(GridHadoopStatCounter.GROUP_NAME,
-                    GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+            GridHadoopPerformanceCounter perfCntr = GridHadoopPerformanceCounter.getCounter(meta.counters(),
+                ctx.localNodeId());
 
-            cntr.merge(stats);
+            perfCntr.clientSubmissionEvents(info);
+            perfCntr.onJobPrepare(jobPrepare);
+            perfCntr.onJobStart(jobStart);
 
             if (jobMetaCache().putIfAbsent(jobId, meta) != null)
                 throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
@@ -793,7 +792,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         if (statWriterClsName != null) {
                             Class<?> cls = ldr.loadClass(statWriterClsName);
 
-                            GridHadoopStatWriter writer = (GridHadoopStatWriter)cls.newInstance();
+                            GridHadoopCounterWriter writer = (GridHadoopCounterWriter)cls.newInstance();
 
                             GridHadoopCounters cntrs = meta.counters();
 

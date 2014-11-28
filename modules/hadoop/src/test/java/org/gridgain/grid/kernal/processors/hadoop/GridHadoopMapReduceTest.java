@@ -60,7 +60,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             JobConf jobConf = new JobConf();
 
-            jobConf.set(JOB_STATISTICS_WRITER_PROPERTY, GridHadoopFSStatWriter.class.getName());
+            jobConf.set(JOB_STATISTICS_WRITER_PROPERTY, GridHadoopFSCounterWriter.class.getName());
 
             //To split into about 40 items for v2
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
@@ -111,10 +111,9 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * @throws GridException
      */
     private void checkJobStatistics(GridHadoopJobId jobId) throws GridException, IOException {
-        GridHadoopCounters counters = grid(0).hadoop().counters(jobId);
+        GridHadoopCounters cntrs = grid(0).hadoop().counters(jobId);
 
-        GridHadoopStatCounter statCntr = counters.counter(GridHadoopStatCounter.GROUP_NAME,
-            GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+        GridHadoopPerformanceCounter perfCntr = GridHadoopPerformanceCounter.getCounter(cntrs, null);
 
         Map<String, SortedMap<Integer,Long>> tasks = new TreeMap<>();
 
@@ -122,15 +121,14 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
         phaseOrders.put("submit", 0);
         phaseOrders.put("prepare", 1);
         phaseOrders.put("start", 2);
-        phaseOrders.put("run", 3);
-        phaseOrders.put("Crun", 4);
-        phaseOrders.put("finish", 5);
+        phaseOrders.put("Cstart", 3);
+        phaseOrders.put("finish", 4);
 
         String prevTaskId = null;
 
         long apiEvtCnt = 0;
 
-        for (T2<String, Long> evt : statCntr.evts()) {
+        for (T2<String, Long> evt : perfCntr.evts()) {
             //We expect string pattern: COMBINE 1 run 7fa86a14-5a08-40e3-a7cb-98109b52a706
             String[] parsedEvt = evt.get1().split(" ");
 

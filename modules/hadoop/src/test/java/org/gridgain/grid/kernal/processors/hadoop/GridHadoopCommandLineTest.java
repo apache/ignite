@@ -163,7 +163,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
                     out.println(
                         "    <property>\n" +
                         "        <name>" + GridHadoopUtils.JOB_STATISTICS_WRITER_PROPERTY + "</name>\n" +
-                        "        <value>" + GridHadoopFSStatWriter.class.getName() + "</value>\n" +
+                        "        <value>" + GridHadoopFSCounterWriter.class.getName() + "</value>\n" +
                         "    </property>\n");
 
                 out.println(line);

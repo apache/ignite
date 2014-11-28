@@ -213,8 +213,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
             GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId,
                 new DataInputStream(new ByteArrayInputStream(jobConfData)));
 
-            res.counters(new GridHadoopCountersImpl());
-
             fut.onDone(res);
 
             return res;

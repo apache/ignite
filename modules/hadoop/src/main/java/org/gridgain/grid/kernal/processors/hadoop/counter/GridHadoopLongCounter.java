@@ -54,15 +54,6 @@ public class GridHadoopLongCounter extends GridHadoopCounterAdapter {
         val += ((GridHadoopLongCounter)cntr).val;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridHadoopCounter copy() {
-        GridHadoopLongCounter cp = new GridHadoopLongCounter(group(), name());
-
-        cp.val = val;
-
-        return cp;
-    }
-
     /**
      * Gets current value of this counter.
      *

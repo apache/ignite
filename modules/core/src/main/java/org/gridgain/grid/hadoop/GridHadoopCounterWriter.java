@@ -9,20 +9,20 @@
 
 package org.gridgain.grid.hadoop;
 
-import java.io.*;
+import org.gridgain.grid.*;
 
 /**
  * The object that writes some system counters to some storage for each running job. This operation is a part of
  * whole statistics collection process.
  */
-public interface GridHadoopStatWriter {
+public interface GridHadoopCounterWriter {
     /**
      * Writes counters of given job to some statistics storage.
      *
      * @param jobInfo Job info.
      * @param jobId Job id.
      * @param cntrs Counters.
-     * @throws IOException If failed.
+     * @throws GridException If failed.
      */
-    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IOException;
+    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws GridException;
 }

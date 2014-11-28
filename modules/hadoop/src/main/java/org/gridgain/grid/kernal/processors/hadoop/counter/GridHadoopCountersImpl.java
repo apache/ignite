@@ -23,32 +23,6 @@ import java.util.*;
  * Default in-memory counters store.
  */
 public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizable {
-    /**
-     * The tuple of counter identifier components for more readable code.
-     */
-    private static class CounterKey extends GridTuple3<Class<? extends GridHadoopCounter>, String, String> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Constructor.
-         *
-         * @param cls Class of the counter.
-         * @param grp Group name.
-         * @param name Counter name.
-         */
-        private CounterKey(Class<? extends GridHadoopCounter> cls, String grp, String name) {
-            super(cls, grp, name);
-        }
-
-        /**
-         * Empty constructor required by {@link Externalizable}.
-         */
-        public CounterKey() {
-            // No-op.
-        }
-    }
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -109,22 +83,30 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     private void addCounters(Iterable<GridHadoopCounter> cntrs, boolean cp) {
         assert cntrs != null;
 
-        for (GridHadoopCounter cntr : cntrs)
-            cntrsMap.put(new CounterKey(cntr.getClass(), cntr.group(), cntr.name()), cp ? cntr.copy() : cntr);
+        for (GridHadoopCounter cntr : cntrs) {
+            if (cp) {
+                GridHadoopCounter cntrCp = createCounter(cntr.getClass(), cntr.group(), cntr.name());
+
+                cntrCp.merge(cntr);
+
+                cntr = cntrCp;
+            }
+
+            cntrsMap.put(new CounterKey(cntr.getClass(), cntr.group(), cntr.name()), cntr);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridHadoopCounter> T counter(String grp, String name,
-        Class<? extends GridHadoopCounter> cls) {
+    @Override public <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls) {
         assert cls != null;
 
         CounterKey mapKey = new CounterKey(cls, grp, name);
 
         T cntr = (T)cntrsMap.get(mapKey);
 
-        if (cntr == null)
-            synchronized(cntrsMap) {
-                cntr = (T)cntrsMap.get(mapKey);
+        if (cntr == null) {
+            synchronized (cntrsMap) {
+                cntr = (T) cntrsMap.get(mapKey);
 
                 if (cntr == null) {
                     cntr = createCounter(cls, grp, name);
@@ -132,6 +114,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
                     cntrsMap.put(mapKey, cntr);
                 }
             }
+        }
 
         return cntr;
     }
@@ -179,5 +162,31 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopCountersImpl.class, this, "counters", cntrsMap.values());
+    }
+
+    /**
+     * The tuple of counter identifier components for more readable code.
+     */
+    private static class CounterKey extends GridTuple3<Class<? extends GridHadoopCounter>, String, String> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Constructor.
+         *
+         * @param cls Class of the counter.
+         * @param grp Group name.
+         * @param name Counter name.
+         */
+        private CounterKey(Class<? extends GridHadoopCounter> cls, String grp, String name) {
+            super(cls, grp, name);
+        }
+
+        /**
+         * Empty constructor required by {@link Externalizable}.
+         */
+        public CounterKey() {
+            // No-op.
+        }
     }
 }
