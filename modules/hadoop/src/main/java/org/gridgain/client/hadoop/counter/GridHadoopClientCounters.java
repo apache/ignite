@@ -194,7 +194,15 @@ public class GridHadoopClientCounters extends Counters {
      * @return The counter that was found or added or {@code null} if create is false.
      */
     public Counter findCounter(String grpName, String cntrName, boolean create) {
-        final GridHadoopLongCounter internalCntr = cntrs.get(new T2<>(grpName, cntrName));
+        T2<String, String> key = new T2<>(grpName, cntrName);
+
+        GridHadoopLongCounter internalCntr = cntrs.get(key);
+
+        if (internalCntr == null & create) {
+            internalCntr = new GridHadoopLongCounter(grpName,cntrName);
+
+            cntrs.put(key, new GridHadoopLongCounter(grpName,cntrName));
+        }
 
         return internalCntr == null ? null : new GridHadoopV2Counter(internalCntr);
     }
