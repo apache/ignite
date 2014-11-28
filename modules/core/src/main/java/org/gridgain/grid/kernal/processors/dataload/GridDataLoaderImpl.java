@@ -144,11 +144,15 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
      * @param flushQ Flush queue.
-     * @param compact If {@code true} data will be transferred in compact format (only keys and values).
-     *                Otherwise full map entry will be transferred (this is requires by DR internal logic).
+     * @param compact If {@code true} data is transferred in compact mode (only keys and values).
+     *                Otherwise full map entry will be transferred (this is required by DR internal logic).
      */
-    public GridDataLoaderImpl(final GridKernalContext ctx, @Nullable final String cacheName,
-        DelayQueue<GridDataLoaderImpl<K, V>> flushQ, Boolean compact) {
+    public GridDataLoaderImpl(
+        final GridKernalContext ctx,
+        @Nullable final String cacheName,
+        DelayQueue<GridDataLoaderImpl<K, V>> flushQ,
+        boolean compact
+    ) {
         assert ctx != null;
 
         this.ctx = ctx;
