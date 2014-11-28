@@ -42,9 +42,6 @@ public class GridHadoopConfiguration {
     /** */
     private int maxTaskQueueSize = DFLT_MAX_TASK_QUEUE_SIZE;
 
-    /** */
-    private GridHadoopStatWriter statWriter;
-
     /**
      * Default constructor.
      */
@@ -64,7 +61,6 @@ public class GridHadoopConfiguration {
         planner = cfg.getMapReducePlanner();
         maxParallelTasks = cfg.getMaxParallelTasks();
         maxTaskQueueSize = cfg.getMaxTaskQueueSize();
-        statWriter = cfg.getStatWriter();
     }
 
     /**
@@ -159,24 +155,6 @@ public class GridHadoopConfiguration {
      */
     public void setMapReducePlanner(GridHadoopMapReducePlanner planner) {
         this.planner = planner;
-    }
-
-    /**
-     * Gets writer for job statistics.
-     *
-     * @return Statistics writer.
-     */
-    public GridHadoopStatWriter getStatWriter() {
-        return statWriter;
-    }
-
-    /**
-     * Sets writer for job statistics.
-     *
-     * @param statWriter Statistics writer.
-     */
-    public void setStatWriter(GridHadoopStatWriter statWriter) {
-        this.statWriter = statWriter;
     }
 
     /** {@inheritDoc} */

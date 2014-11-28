@@ -11,9 +11,10 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import com.google.common.base.Joiner;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.GridGgfsPath;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.GridHadoopFSStatWriter;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -149,7 +150,27 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
         testWorkDir = Files.createTempDirectory("hadoop-cli-test").toFile();
 
         U.copy(U.resolveGridGainPath("docs/core-site.gridgain.xml"), new File(testWorkDir, "core-site.xml"), false);
-        U.copy(U.resolveGridGainPath("docs/mapred-site.gridgain.xml"), new File(testWorkDir, "mapred-site.xml"), false);
+
+        File srcFile = U.resolveGridGainPath("docs/mapred-site.gridgain.xml");
+        File dstFile = new File(testWorkDir, "mapred-site.xml");
+
+        try (BufferedReader in = new BufferedReader(new FileReader(srcFile));
+             PrintWriter out = new PrintWriter(dstFile)) {
+            String line;
+
+            while ((line = in.readLine()) != null) {
+                if (line.startsWith("</configuration>"))
+                    out.println(
+                        "    <property>\n" +
+                        "        <name>" + GridHadoopUtils.JOB_STATISTICS_WRITER_PROPERTY + "</name>\n" +
+                        "        <value>" + GridHadoopFSStatWriter.class.getName() + "</value>\n" +
+                        "    </property>\n");
+
+                out.println(line);
+            }
+
+            out.flush();
+        }
 
         generateTestFile(new File(testWorkDir, "test-data"), "red", 100, "green", 200, "blue", 150, "yellow", 50);
 
@@ -182,8 +203,8 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
         String sep = ":";
 
         String ggClsPath = GridHadoopJob.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-                GridHadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-                ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+            GridHadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
+            ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 
         ProcessBuilder res = new ProcessBuilder();
 
@@ -282,6 +303,26 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
         assertTrue(ggfs.exists(new GridGgfsPath("/input/test-data")));
 
         assertEquals(0, executeHadoopCmd("jar", examplesJar.getAbsolutePath(), "wordcount", "/input", "/output"));
+
+        GridGgfsPath path = new GridGgfsPath("/users/" + System.getProperty("user.name") + "/");
+
+        assertTrue(ggfs.exists(path));
+
+        GridGgfsPath jobStatPath = null;
+
+        for (GridGgfsPath jobPath : ggfs.listPaths(path)) {
+            assertNull(jobStatPath);
+
+            jobStatPath = jobPath;
+        }
+
+        File locStatFile = new File(testWorkDir, "statistics");
+
+        assertEquals(0, executeHadoopCmd("fs", "-get", jobStatPath.toString() + "/statistics", locStatFile.toString()));
+
+        long evtCnt = GridHadoopTestUtils.simpleCheckJobStatFile(new BufferedReader(new FileReader(locStatFile)));
+
+        assertTrue(evtCnt >= 22); //It's the minimum amount of events for job with combiner.
 
         assertTrue(ggfs.exists(new GridGgfsPath("/output")));
 

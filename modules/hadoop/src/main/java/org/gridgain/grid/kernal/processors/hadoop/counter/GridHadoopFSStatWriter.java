@@ -15,54 +15,48 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
+import java.util.Map;
 
 /**
  * Statistic writer implementation that writes info into any Hadoop file system.
  */
 public class GridHadoopFSStatWriter implements GridHadoopStatWriter {
-    /** */
-    private String statDir = ".gridgain-hadoop/jobs";
-
     /** {@inheritDoc} */
-    @Override public void write(GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IOException {
-        Configuration cfg = new Configuration();
+    @Override public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs)
+        throws IOException {
 
-        Path jobStatPath = new Path(new Path(statDir), jobId.toString());
+        Configuration hadoopCfg = new Configuration();
+
+        for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo)jobInfo).properties().entrySet())
+            hadoopCfg.set(e.getKey(), e.getValue());
+
+        String user = jobInfo.user();
+
+        if (F.isEmpty(user))
+            user = "anonymous";
+
+        String dir = jobInfo.property("gridgain.hadoop.fsStatWriter.directory");
+
+        if (dir == null)
+            dir = "/users/${USER}";
+
+        Path jobStatPath = new Path(new Path(dir.replace("${USER}", user)), jobId.toString());
 
         GridHadoopStatCounter cntr = cntrs.counter(GridHadoopStatCounter.GROUP_NAME, GridHadoopStatCounter.COUNTER_NAME,
             GridHadoopStatCounter.class);
 
-        FileSystem fs = jobStatPath.getFileSystem(cfg);
+        FileSystem fs = jobStatPath.getFileSystem(hadoopCfg);
 
         fs.mkdirs(jobStatPath);
 
-        try (FSDataOutputStream out = fs.create(new Path(jobStatPath, "statistics"))) {
+        try (PrintStream out = new PrintStream(fs.create(new Path(jobStatPath, "statistics")))) {
             for (T2<String, Long> evt : cntr.evts()) {
-                out.writeUTF(evt.get1());
-                out.writeChar(':');
-                out.writeUTF(evt.get2().toString());
-                out.writeChar('\n');
+                out.print(evt.get1());
+                out.print(':');
+                out.println(evt.get2().toString());
             }
 
             out.flush();
         }
-    }
-
-    /**
-     * Gets directory for job statistics.
-     *
-     * @return Directory path.
-     */
-    public String getStatDir() {
-        return statDir;
-    }
-
-    /**
-     * Sets directory for job statistics.
-     *
-     * @param statDir Directory path.
-     */
-    public void setStatDir(String statDir) {
-        this.statDir = statDir;
     }
 }

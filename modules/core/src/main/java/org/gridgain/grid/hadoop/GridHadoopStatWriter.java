@@ -19,9 +19,10 @@ public interface GridHadoopStatWriter {
     /**
      * Writes counters of given job to some statistics storage.
      *
+     * @param jobInfo Job info.
      * @param jobId Job id.
      * @param cntrs Counters.
      * @throws IOException If failed.
      */
-    public void write(GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IOException;
+    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IOException;
 }

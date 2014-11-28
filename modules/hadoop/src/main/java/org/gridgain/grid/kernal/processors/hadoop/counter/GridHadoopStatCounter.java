@@ -96,7 +96,7 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
             lastShuffleMsg = null;
         }
 
-        evts.addAll(((GridHadoopStatCounter) cntr).evts);
+        evts.addAll(((GridHadoopStatCounter)cntr).evts);
     }
 
     /** {@inheritDoc} */
@@ -179,15 +179,6 @@ public class GridHadoopStatCounter extends GridHadoopCounterAdapter {
      */
     public void onJobStart(long ts) {
         evts.add(new T2<>("JOB start " + nodeId, ts));
-    }
-
-    /**
-     * Adds event of the job finish.
-     *
-     * @param ts Timestamp of the event.
-     */
-    public void onJobFinish(long ts) {
-        evts.add(new T2<>("JOB finish " + nodeId, ts));
     }
 
     /**

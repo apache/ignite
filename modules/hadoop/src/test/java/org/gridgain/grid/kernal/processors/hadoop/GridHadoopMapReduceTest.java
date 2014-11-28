@@ -20,11 +20,12 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.U;
+import org.gridgain.testframework.*;
 
+import java.io.*;
 import java.util.*;
-import java.util.regex.Matcher;
 
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
@@ -58,6 +59,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             boolean useNewReducer = (i & 4) == 0;
 
             JobConf jobConf = new JobConf();
+
+            jobConf.set(JOB_STATISTICS_WRITER_PROPERTY, GridHadoopFSStatWriter.class.getName());
 
             //To split into about 40 items for v2
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
@@ -107,7 +110,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * @param jobId Job id.
      * @throws GridException
      */
-    private void checkJobStatistics(GridHadoopJobId jobId) throws GridException {
+    private void checkJobStatistics(GridHadoopJobId jobId) throws GridException, IOException {
         GridHadoopCounters counters = grid(0).hadoop().counters(jobId);
 
         GridHadoopStatCounter statCntr = counters.counter(GridHadoopStatCounter.GROUP_NAME,
@@ -124,6 +127,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
         phaseOrders.put("finish", 5);
 
         String prevTaskId = null;
+
+        long apiEvtCnt = 0;
 
         for (T2<String, Long> evt : statCntr.evts()) {
             //We expect string pattern: COMBINE 1 run 7fa86a14-5a08-40e3-a7cb-98109b52a706
@@ -151,6 +156,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             tasks.get(taskId).put(pos, evt.get2());
 
             prevTaskId = taskId;
+
+            apiEvtCnt++;
         }
 
         for (Map.Entry<String ,SortedMap<Integer,Long>> task : tasks.entrySet()) {
@@ -164,5 +171,22 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
                 prev = phase.getValue();
             }
         }
+
+        final GridGgfsPath statPath = new GridGgfsPath("/users/anonymous/" + jobId + "/statistics");
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return ggfs.exists(statPath);
+                }
+                catch (GridException e) {
+                    throw new GridRuntimeException(e);
+                }
+            }
+        }, 10000);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(statPath)));
+
+        assertEquals(apiEvtCnt, GridHadoopTestUtils.simpleCheckJobStatFile(reader));
     }
 }

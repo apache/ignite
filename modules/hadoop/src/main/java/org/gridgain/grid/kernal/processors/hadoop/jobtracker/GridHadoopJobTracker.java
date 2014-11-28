@@ -786,22 +786,23 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 job.dispose(false);
 
                 if (ctx.jobUpdateLeader()) {
-                    GridHadoopStatWriter writer = ctx.statWriter();
+                    ClassLoader ldr = job.getClass().getClassLoader();
 
-                    if (writer != null) {
-                        GridHadoopCounters cntrs = meta.counters();
+                    try {
+                        String statWriterClsName = job.info().property(GridHadoopUtils.JOB_STATISTICS_WRITER_PROPERTY);
 
-                        GridHadoopStatCounter cntr = cntrs.counter(GridHadoopStatCounter.GROUP_NAME,
-                            GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+                        if (statWriterClsName != null) {
+                            Class<?> cls = ldr.loadClass(statWriterClsName);
 
-                        cntr.onJobFinish(U.currentTimeMillis());
+                            GridHadoopStatWriter writer = (GridHadoopStatWriter)cls.newInstance();
 
-                        try {
-                            writer.write(jobId, cntrs);
+                            GridHadoopCounters cntrs = meta.counters();
+
+                            writer.write(job.info(), jobId, cntrs);
                         }
-                        catch (IOException e) {
-                            log.error("Error on write job statistics.", e);
-                        }
+                    }
+                    catch (Exception e) {
+                        log.error("Can't write statistic due to: ", e);
                     }
                 }
 
