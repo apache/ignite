@@ -710,6 +710,14 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     }
 
     /**
+     * @param msg Message.
+     * @return Whether delivery of the message is ensured.
+     */
+    protected boolean ensured(GridTcpDiscoveryAbstractMessage msg) {
+        return U.getAnnotation(msg.getClass(), GridTcpDiscoveryEnsureDelivery.class) != null;
+    }
+
+    /**
      * @param msg Failed message.
      * @return {@code True} if specified failed message relates to version incompatibility, {@code false} otherwise.
      * @deprecated Parsing of error message was used for preserving backward compatibility. We should remove it

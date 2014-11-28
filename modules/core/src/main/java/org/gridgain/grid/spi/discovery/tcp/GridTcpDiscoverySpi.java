@@ -1848,10 +1848,12 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
     /**
      * @param msg Message to prepare.
+     * @param destNodeId Destination node ID.
      * @param msgs Messages to include.
+     * @param discardMsgId Discarded message ID.
      */
     private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg, UUID destNodeId,
-        @Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs) {
+        @Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardMsgId) {
         assert destNodeId != null;
 
         if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
@@ -1875,7 +1877,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 }
 
                 nodeAddedMsg.topology(topToSend);
-                nodeAddedMsg.messages(msgs);
+                nodeAddedMsg.messages(msgs, discardMsgId);
 
                 Map<Long, Collection<GridNode>> hist;
 
@@ -1898,7 +1900,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             nodeAddedMsg.topology(null);
             nodeAddedMsg.topologyHistory(null);
-            nodeAddedMsg.messages(null);
+            nodeAddedMsg.messages(null, null);
         }
     }
 
@@ -2348,6 +2350,84 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         }
     }
 
+    private static class PendingMessages {
+        /** */
+        private static final int MAX = 1024;
+
+        /** Pending messages. */
+        private final Queue<GridTcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
+
+        /** Discarded message ID. */
+        private GridUuid discardId;
+
+        void add(GridTcpDiscoveryAbstractMessage msg) {
+            msgs.add(msg);
+
+            while (msgs.size() > MAX) {
+                GridTcpDiscoveryAbstractMessage polled = msgs.poll();
+
+                assert polled != null;
+
+                if (polled.id().equals(discardId))
+                    break;
+            }
+        }
+
+        Collection<GridTcpDiscoveryAbstractMessage> messages() {
+            if (msgs.isEmpty() || discardId == null)
+                return msgs;
+            else {
+                Collection<GridTcpDiscoveryAbstractMessage> msgs0 = messages(discardId);
+
+                assert msgs0 != null;
+
+                return msgs0;
+            }
+        }
+
+        @Nullable Collection<GridTcpDiscoveryAbstractMessage> messages(GridUuid lastMsgId) {
+            assert lastMsgId != null;
+
+            Collection<GridTcpDiscoveryAbstractMessage> copy = new ArrayList<>(msgs.size());
+
+            boolean skip = true;
+
+            for (GridTcpDiscoveryAbstractMessage msg : msgs) {
+                if (skip) {
+                    if (msg.id().equals(lastMsgId))
+                        skip = false;
+                }
+                else
+                    copy.add(msg);
+            }
+
+            return !skip ? copy : null;
+        }
+
+        GridUuid discardedMessageId() {
+            return discardId;
+        }
+
+        void reset(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardId) {
+            this.msgs.clear();
+
+            if (msgs != null)
+                this.msgs.addAll(msgs);
+
+            this.discardId = discardId;
+        }
+
+        void clear() {
+            msgs.clear();
+
+            discardId = null;
+        }
+
+        void discard(GridUuid id) {
+            discardId = id;
+        }
+    }
+
     /**
      * Message worker thread for messages processing.
      */
@@ -2357,8 +2437,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private GridTcpDiscoveryNode next;
 
         /** Pending messages. */
-        private final Queue<GridTcpDiscoveryAbstractMessage> pendingMsgs =
-            new ArrayDeque<>(256);
+        private final PendingMessages pendingMsgs = new PendingMessages();
 
         /** Last message that updated topology. */
         private GridTcpDiscoveryAbstractMessage lastMsg;
@@ -2389,6 +2468,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             if (msg instanceof GridTcpDiscoveryJoinRequestMessage)
                 processJoinRequestMessage((GridTcpDiscoveryJoinRequestMessage)msg);
+
+            else if (msg instanceof GridTcpDiscoveryClientReconnectMessage)
+                processClientReconnectMessage((GridTcpDiscoveryClientReconnectMessage)msg);
 
             else if (msg instanceof GridTcpDiscoveryNodeAddedMessage)
                 processNodeAddedMessage((GridTcpDiscoveryNodeAddedMessage)msg);
@@ -2672,6 +2754,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                             assert !forceSndPending || msg instanceof GridTcpDiscoveryNodeLeftMessage;
 
+                            Collection<GridTcpDiscoveryAbstractMessage> pendingMsgs0 = pendingMsgs.messages();
+                            GridUuid discardMsgId = pendingMsgs.discardedMessageId();
+
                             if (failure || forceSndPending) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
@@ -2681,10 +2766,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                     debugLog("Pending messages will be sent [failure=" + failure +
                                         ", forceSndPending=" + forceSndPending + ']');
 
-                                for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
+                                for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs0) {
                                     long tstamp = U.currentTimeMillis();
 
-                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs);
+                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs0, discardMsgId);
 
                                     try {
                                         writeToSocket(sock, pendingMsg);
@@ -2709,7 +2794,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 }
                             }
 
-                            prepareNodeAddedMessage(msg, next.id(), pendingMsgs);
+                            prepareNodeAddedMessage(msg, next.id(), pendingMsgs0, discardMsgId);
 
                             try {
                                 long tstamp = U.currentTimeMillis();
@@ -2850,7 +2935,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private void registerPendingMessage(GridTcpDiscoveryAbstractMessage msg) {
             assert msg != null;
 
-            if (U.getAnnotation(msg.getClass(), GridTcpDiscoveryEnsureDelivery.class) != null) {
+            if (ensured(msg)) {
                 pendingMsgs.add(msg);
 
                 stats.onPendingMessageRegistered();
@@ -2867,6 +2952,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          */
         private void processJoinRequestMessage(GridTcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
+
+            msg.redirectToClients(false);
 
             GridTcpDiscoveryNode node = msg.node();
 
@@ -2913,48 +3000,39 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 GridTcpDiscoveryNode existingNode = ring.node(node.id());
 
                 if (existingNode != null) {
-                    if (msg.clientReconnect()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Sending node failed message for reconnecting client node: " + existingNode);
+                    if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
+                        if (!pingNode(existingNode)) {
+                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                                existingNode.id(), existingNode.internalOrder()));
 
-                        processNodeFailedMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
-                            existingNode.id(), existingNode.internalOrder()));
-                    }
-                    else {
-                        if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
-                            if (!pingNode(existingNode)) {
-                                addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
-                                    existingNode.id(), existingNode.internalOrder()));
-
-                                // Ignore this join request since existing node is about to fail
-                                // and new node can continue.
-                                return;
-                            }
-
-                            try {
-                                trySendMessageDirectly(node, new GridTcpDiscoveryDuplicateIdMessage(locNodeId,
-                                    existingNode));
-                            }
-                            catch (GridSpiException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send duplicate ID message to node " +
-                                        "[node=" + node + ", existingNode=" + existingNode +
-                                        ", err=" + e.getMessage() + ']');
-                            }
-
-                            // Output warning.
-                            LT.warn(log, null, "Ignoring join request from node (duplicate ID) [node=" + node +
-                                ", existingNode=" + existingNode + ']');
-
-                            // Ignore join request.
+                            // Ignore this join request since existing node is about to fail
+                            // and new node can continue.
                             return;
                         }
 
-                        if (log.isDebugEnabled())
-                            log.debug("Ignoring join request message since node is already in topology: " + msg);
+                        try {
+                            trySendMessageDirectly(node, new GridTcpDiscoveryDuplicateIdMessage(locNodeId,
+                                existingNode));
+                        }
+                        catch (GridSpiException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send duplicate ID message to node " +
+                                    "[node=" + node + ", existingNode=" + existingNode +
+                                    ", err=" + e.getMessage() + ']');
+                        }
 
+                        // Output warning.
+                        LT.warn(log, null, "Ignoring join request from node (duplicate ID) [node=" + node +
+                            ", existingNode=" + existingNode + ']');
+
+                        // Ignore join request.
                         return;
                     }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Ignoring join request message since node is already in topology: " + msg);
+
+                    return;
                 }
 
                 // Authenticate node first.
@@ -3318,6 +3396,72 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         }
 
         /**
+         * Processes client reconnect message.
+         *
+         * @param msg Client reconnect message.
+         */
+        private void processClientReconnectMessage(GridTcpDiscoveryClientReconnectMessage msg) {
+            msg.redirectToClients(false);
+
+            boolean isLocalNodeRouter = locNodeId.equals(msg.routerNodeId());
+
+            if (!msg.verified()) {
+                assert isLocalNodeRouter;
+
+                msg.verify(locNodeId);
+            }
+            else {
+                UUID nodeId = msg.creatorNodeId();
+
+                GridTcpDiscoveryNode node = ring.node(nodeId);
+
+                assert node == null || node.isClient();
+
+                if (node != null) {
+                    assert node.isClient();
+
+                    node.clientRouterNodeId(msg.routerNodeId());
+                    node.aliveCheck(maxMissedHbs);
+
+                    if (isLocalNodeCoordinator()) {
+                        Collection<GridTcpDiscoveryAbstractMessage> pending =
+                            pendingMsgs.messages(msg.lastMessageId());
+
+                        if (pending != null) {
+                            msg.pendingMessages(pending);
+                            msg.success(true);
+                        }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Failing reconnecting client node because failed to restore pending " +
+                                    "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+
+                            processNodeFailedMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                                node.id(), node.order()));
+                        }
+                    }
+                }
+                else if (log.isDebugEnabled())
+                    log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
+
+                if (isLocalNodeRouter) {
+                    ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+
+                    if (wrk != null)
+                        wrk.addMessage(msg);
+                    else if (log.isDebugEnabled())
+                        log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                            locNodeId + ", clientNodeId=" + nodeId + ']');
+
+                    return;
+                }
+            }
+
+            if (ring.hasRemoteNodes())
+                sendMessageAcrossRing(msg);
+        }
+
+        /**
          * Processes node added message.
          *
          * @param msg Node added message.
@@ -3485,11 +3629,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             topHist.putAll(msg.topologyHistory());
 
                             // Restore pending messages.
-                            pendingMsgs.clear();
-                            pendingMsgs.addAll(msg.messages());
+                            pendingMsgs.reset(msg.messages(), msg.discardedMessageId());
 
                             // Clear data to minimize message size.
-                            msg.messages(null);
+                            msg.messages(null, null);
                             msg.topology(null);
                             msg.topologyHistory(null);
                             msg.clearDiscoveryData();
@@ -3976,6 +4119,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private void processStatusCheckMessage(GridTcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
+            msg.redirectToClients(false);
+
             if (msg.failedNodeId() != null) {
                 if (locNodeId.equals(msg.failedNodeId())) {
                     if (log.isDebugEnabled())
@@ -4117,25 +4262,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
 
             if (locNodeId.equals(msg.creatorNodeId()) && !msg.hasMetrics(locNodeId) && msg.senderNodeId() != null) {
-                Collection<UUID> clientNodeIds = msg.clientNodeIds();
-
-                for (GridTcpDiscoveryNode clientNode : ring.clientNodes()) {
-                    if (clientNode.order() > 0) {
-                        if (clientNodeIds.contains(clientNode.id()))
-                            clientNode.aliveCheck(maxMissedHbs);
-                        else {
-                            int aliveCheck = clientNode.aliveCheck();
-
-                            if (--aliveCheck == 0) {
-                                addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, clientNode.id(),
-                                    clientNode.order()));
-                            }
-                            else
-                                clientNode.aliveCheck(aliveCheck);
-                        }
-                    }
-                }
-
                 if (log.isDebugEnabled())
                     log.debug("Discarding heartbeat message that has made two passes: " + msg);
 
@@ -4163,12 +4289,37 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     // Message is on its first ring or just created on coordinator.
                     msg.setMetrics(locNodeId, metricsProvider.getMetrics());
 
-                    for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet())
-                        msg.setClientMetrics(locNodeId, e.getKey(), e.getValue().metrics());
+                    for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
+                        UUID nodeId = e.getKey();
+                        GridNodeMetrics metrics = e.getValue().metrics();
+
+                        if (metrics != null)
+                            msg.setClientMetrics(locNodeId, nodeId, metrics);
+
+                        msg.addClientNodeId(nodeId);
+                    }
                 }
-                else
+                else {
                     // Message is on its second ring.
                     msg.removeMetrics(locNodeId);
+
+                    Collection<UUID> clientNodeIds = msg.clientNodeIds();
+
+                    for (GridTcpDiscoveryNode clientNode : ring.clientNodes()) {
+                        if (clientNode.visible()) {
+                            if (clientNodeIds.contains(clientNode.id()))
+                                clientNode.aliveCheck(maxMissedHbs);
+                            else {
+                                int aliveCheck = clientNode.decrementAliveCheck();
+
+                                if (aliveCheck == 0 && isLocalNodeCoordinator()) {
+                                    processNodeFailedMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                                        clientNode.id(), clientNode.order()));
+                                }
+                            }
+                        }
+                    }
+                }
 
                 sendMessageAcrossRing(msg);
             }
@@ -4210,6 +4361,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private void processDiscardMessage(GridTcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
+            msg.redirectToClients(false);
+
             GridUuid msgId = msg.msgId();
 
             assert msgId != null;
@@ -4223,12 +4376,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     return;
             }
 
-            if (msg.verified()) {
-                for (GridTcpDiscoveryAbstractMessage m = pendingMsgs.poll();
-                     m != null && !msgId.equals(m.id());
-                     m = pendingMsgs.poll())
-                    ;
-            }
+            if (msg.verified())
+                pendingMsgs.discard(msgId);
 
             if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
@@ -4662,7 +4811,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             continue;
                         }
 
-                        if (client || msg instanceof GridTcpDiscoveryDiscardMessage)
+                        if (client)
                             msg.redirectToClients(false);
 
                         msgWorker.addMessage(msg);
@@ -4982,7 +5131,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
 
                     try {
-                        prepareNodeAddedMessage(msg, nodeId, null);
+                        prepareNodeAddedMessage(msg, nodeId, null, null);
 
                         writeToSocket(sock, msg);
                     }

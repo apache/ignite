@@ -77,4 +77,9 @@ public class GridTcpDiscoveryNodeAddedClientResponse extends GridTcpDiscoveryAbs
         nodeAddedMsgId = U.readGridUuid(in);
         discoData = (List<Object>)in.readObject();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridTcpDiscoveryNodeAddedClientResponse.class, this, "super", super.toString());
+    }
 }

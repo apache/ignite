@@ -166,6 +166,10 @@ public interface GridEventType {
     @Deprecated
     public static final int EVT_NODE_RECONNECTED = 15;
 
+    public static final int EVT_CLIENT_NODE_DISCONNECTED = 16;
+
+    public static final int EVT_CLIENT_NODE_RECONNECTED = 17;
+
     /**
      * Built-in event type: task started.
      * <p>
@@ -1088,6 +1092,8 @@ public interface GridEventType {
         EVT_NODE_LEFT,
         EVT_NODE_FAILED,
         EVT_NODE_SEGMENTED,
+        EVT_CLIENT_NODE_DISCONNECTED,
+        EVT_CLIENT_NODE_RECONNECTED
     };
 
     /**
@@ -1101,8 +1107,10 @@ public interface GridEventType {
         EVT_NODE_JOINED,
         EVT_NODE_LEFT,
         EVT_NODE_FAILED,
-        EVT_NODE_METRICS_UPDATED,
         EVT_NODE_SEGMENTED,
+        EVT_NODE_METRICS_UPDATED,
+        EVT_CLIENT_NODE_DISCONNECTED,
+        EVT_CLIENT_NODE_RECONNECTED
     };
 
     /**
@@ -1114,7 +1122,7 @@ public interface GridEventType {
      */
     public static final int[] EVTS_JOB_EXECUTION = {
         EVT_JOB_MAPPED,
-        EVT_JOB_RESULTED,
+        EVT_JOB_RESULTED,+
         EVT_JOB_FAILED_OVER,
         EVT_JOB_STARTED,
         EVT_JOB_FINISHED,

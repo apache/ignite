@@ -95,17 +95,6 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     }
 
     /**
-     * Creates new discovery event with given parameters.
-     *
-     * @param node Local node.
-     * @param msg Optional event message.
-     * @param type Event type.
-     */
-    public GridDiscoveryEvent(GridNode node, String msg, int type) {
-        super(node, msg, type);
-    }
-
-    /**
      * Sets node this event is referring to.
      *
      * @param evtNode Event node.

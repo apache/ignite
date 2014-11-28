@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
@@ -56,8 +57,14 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     /** Disconnect handler. */
     private volatile DisconnectHandler disconnectHnd;
 
+    /** Last message ID. */
+    private volatile GridUuid lastMsgId;
+
     /** Join error. */
     private GridSpiException joinErr;
+
+    /** Whether reconnect failed. */
+    private boolean reconFailed;
 
     /** Joined latch. */
     private CountDownLatch joinLatch;
@@ -312,16 +319,12 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
     /**
      * @param recon Reconnect flag.
+     * @return Whether reconnect failed.
      * @throws GridSpiException In case of error.
      */
-    private void joinTopology(boolean recon) throws GridSpiException {
-        stats.onJoinStarted();
-
-        GridTcpDiscoveryJoinRequestMessage req = new GridTcpDiscoveryJoinRequestMessage(locNode,
-            exchange.collect(locNodeId));
-
-        req.client(true);
-        req.clientReconnect(recon);
+    private boolean joinTopology(boolean recon) throws GridSpiException {
+        if (!recon)
+            stats.onJoinStarted();
 
         Collection<InetSocketAddress> addrs = null;
 
@@ -361,7 +364,13 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                         locNode.clientRouterNodeId(rmtNodeId);
 
-                        writeToSocket(sock, req);
+                        GridTcpDiscoveryAbstractMessage msg = recon ?
+                            new GridTcpDiscoveryClientReconnectMessage(locNodeId, rmtNodeId, lastMsgId) :
+                            new GridTcpDiscoveryJoinRequestMessage(locNode, exchange.collect(locNodeId));
+
+                        msg.client(true);
+
+                        writeToSocket(sock, msg);
 
                         int res = readReceipt(sock, ackTimeout);
 
@@ -369,7 +378,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                             case RES_OK:
                                 this.sock = sock;
 
-                                sockRdr = new SocketReader(rmtNodeId, new MessageWorker());
+                                sockRdr = new SocketReader(rmtNodeId, new MessageWorker(recon));
                                 sockRdr.start();
 
                                 if (U.await(joinLatch, netTimeout, MILLISECONDS)) {
@@ -377,6 +386,21 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                                     if (joinErr0 != null)
                                         throw joinErr0;
+
+                                    if (reconFailed) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Failed to reconnect, will try to rejoin [locNode=" +
+                                                locNode + ']');
+
+                                        U.closeQuiet(sock);
+
+                                        U.interrupt(sockRdr);
+                                        U.join(sockRdr, log);
+
+                                        this.sock = null;
+
+                                        return true;
+                                    }
 
                                     if (log.isDebugEnabled())
                                         log.debug("Successfully connected to topology [sock=" + sock + ']');
@@ -386,7 +410,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                                     stats.onJoinFinished();
 
-                                    return;
+                                    return false;
                                 }
                                 else {
                                     U.warn(log, "Join process timed out (will try other address) [sock=" + sock +
@@ -419,7 +443,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                         if (log.isDebugEnabled())
                             log.debug("Joining thread was interrupted.");
 
-                        return;
+                        return recon;
                     }
                     catch (IOException | GridException e) {
                         if (log.isDebugEnabled())
@@ -443,6 +467,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     log.debug("Joining thread was interrupted.");
             }
         }
+
+        return recon;
     }
 
     /**
@@ -521,11 +547,18 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                         U.interrupt(sockRdr);
                         U.join(sockRdr, log);
 
-                        rmtNodes.clear();
+                        // If reconnection fails, try to rejoin.
+                        if (!joinTopology(true)) {
+                            rmtNodes.clear();
 
-                        locNode.order(0);
+                            locNode.order(0);
 
-                        joinTopology(true);
+                            joinTopology(false);
+
+                            getSpiContext().recordEvent(new GridDiscoveryEvent(locNode,
+                                "Client node reconnected: " + locNode,
+                                EVT_CLIENT_NODE_RECONNECTED, locNode));
+                        }
                     }
                 }
                 catch (GridInterruptedException ignored) {
@@ -723,10 +756,19 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
         /** Current topology version. */
         private long topVer;
 
+        /** Indicates that reconnection is in progress. */
+        private boolean recon;
+
+        /** Indicates that pending messages are currently processed. */
+        private boolean pending;
+
         /**
+         * @param recon Whether reconnection is in progress.
          */
-        protected MessageWorker() {
+        protected MessageWorker(boolean recon) {
             super("tcp-client-disco-msg-worker");
+
+            this.recon = recon;
         }
 
         /** {@inheritDoc} */
@@ -735,6 +777,13 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
             assert msg.verified() || msg.senderNodeId() == null;
 
             stats.onMessageProcessingStarted(msg);
+
+            if (recon && !pending) {
+                if (log.isDebugEnabled())
+                    log.debug("Discarding message received during reconnection: " + msg);
+
+                return;
+            }
 
             if (msg instanceof GridTcpDiscoveryNodeAddedMessage)
                 processNodeAddedMessage((GridTcpDiscoveryNodeAddedMessage)msg);
@@ -746,6 +795,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 processNodeFailedMessage((GridTcpDiscoveryNodeFailedMessage)msg);
             else if (msg instanceof GridTcpDiscoveryHeartbeatMessage)
                 processHeartbeatMessage((GridTcpDiscoveryHeartbeatMessage)msg);
+            else if (msg instanceof GridTcpDiscoveryClientReconnectMessage)
+                processClientReconnectMessage((GridTcpDiscoveryClientReconnectMessage)msg);
+
+            if (ensured(msg))
+                lastMsgId = msg.id();
 
             stats.onMessageProcessingFinished(msg);
         }
@@ -871,7 +925,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                 Collection<GridNode> top = updateTopology(topVer);
 
-                if (joinLatch.getCount() > 0) {
+                if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Discarding node add finished message (join process is not finished): " + msg);
 
@@ -908,7 +962,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
-                if (joinLatch.getCount() > 0) {
+                if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Discarding node left message (join process is not finished): " + msg);
 
@@ -935,7 +989,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
-                if (joinLatch.getCount() > 0) {
+                if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Discarding node failed message (join process is not finished): " + msg);
 
@@ -997,6 +1051,41 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     }
                 }
             }
+        }
+
+        /**
+         * @param msg Message.
+         */
+        private void processClientReconnectMessage(GridTcpDiscoveryClientReconnectMessage msg) {
+            if (locNodeId.equals(msg.creatorNodeId())) {
+                if (msg.success()) {
+                    pending = true;
+
+                    try {
+                        for (GridTcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages())
+                            processMessage(pendingMsg);
+                    }
+                    finally {
+                        pending = false;
+                    }
+
+                    joinErr = null;
+                    reconFailed = false;
+
+                    joinLatch.countDown();
+                }
+                else {
+                    joinErr = null;
+                    reconFailed = true;
+
+                    getSpiContext().recordEvent(new GridDiscoveryEvent(locNode, "Client node disconnected: " + locNode,
+                        EVT_CLIENT_NODE_DISCONNECTED, locNode));
+
+                    joinLatch.countDown();
+                }
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Discarding reconnect message for another client: " + msg);
         }
 
         /**

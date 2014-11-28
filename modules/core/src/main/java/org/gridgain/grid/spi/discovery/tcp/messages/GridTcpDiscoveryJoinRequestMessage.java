@@ -79,20 +79,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         setFlag(RESPONDED_FLAG_POS, responded);
     }
 
-    /**
-     * @return Client reconnection flag.
-     */
-    public boolean clientReconnect() {
-        return getFlag(CLIENT_RECON_FLAG_POS);
-    }
-
-    /**
-     * @param clientRecon Client reconnection flag.
-     */
-    public void clientReconnect(boolean clientRecon) {
-        setFlag(CLIENT_RECON_FLAG_POS, clientRecon);
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);

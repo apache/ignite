@@ -26,10 +26,10 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     protected static final int CLIENT_FLAG_POS = 0;
 
     /** */
-    protected static final int CLIENT_RECON_FLAG_POS = 1;
+    protected static final int RESPONDED_FLAG_POS = 1;
 
     /** */
-    protected static final int RESPONDED_FLAG_POS = 2;
+    protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** Sender of the message (transient). */
     private UUID senderNodeId;
@@ -48,6 +48,9 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
 
     /** Flags. */
     private int flags;
+
+    /** Pending message index. */
+    private short pendingIdx;
 
     /** Whether to redirect to client nodes (transient). */
     private boolean redirectToClients = true;
@@ -182,6 +185,20 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     }
 
     /**
+     * @return Pending message index.
+     */
+    public short pendingIndex() {
+        return pendingIdx;
+    }
+
+    /**
+     * @param pendingIdx Pending message index.
+     */
+    public void pendingIndex(short pendingIdx) {
+        this.pendingIdx = pendingIdx;
+    }
+
+    /**
      * @return Whether to redirect to clients.
      */
     public boolean redirectToClients() {
@@ -229,6 +246,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         out.writeLong(topVer);
         U.writeUuid(out, destClientNodeId);
         out.writeInt(flags);
+        out.writeShort(pendingIdx);
     }
 
     /** {@inheritDoc} */
@@ -238,6 +256,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         topVer = in.readLong();
         destClientNodeId = U.readUuid(in);
         flags = in.readInt();
+        pendingIdx = in.readShort();
     }
 
     /** {@inheritDoc} */

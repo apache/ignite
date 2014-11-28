@@ -335,12 +335,14 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     }
 
     /**
+     * Decrements alive check value and returns new one.
+     *
      * @return Alive check value.
      */
-    public int aliveCheck() {
+    public int decrementAliveCheck() {
         assert isClient();
 
-        return aliveCheck;
+        return --aliveCheck;
     }
 
     /**

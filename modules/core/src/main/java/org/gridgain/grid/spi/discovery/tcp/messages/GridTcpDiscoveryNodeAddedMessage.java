@@ -34,6 +34,9 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     /** Pending messages from previous node. */
     private Collection<GridTcpDiscoveryAbstractMessage> msgs;
 
+    /** Discarded message ID. */
+    private GridUuid discardMsgId;
+
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private Collection<GridTcpDiscoveryNode> top;
@@ -98,12 +101,23 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     }
 
     /**
+     * Gets discarded message ID.
+     *
+     * @return Discarded message ID.
+     */
+    @Nullable public GridUuid discardedMessageId() {
+        return discardMsgId;
+    }
+
+    /**
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.
+     * @param discardMsgId Discarded message ID.
      */
-    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs) {
+    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardMsgId) {
         this.msgs = msgs;
+        this.discardMsgId = discardMsgId;
     }
 
     /**
@@ -187,6 +201,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
 
         out.writeObject(node);
         U.writeCollection(out, msgs);
+        U.writeGridUuid(out, discardMsgId);
         U.writeCollection(out, top);
         U.writeMap(out, topHist);
         out.writeLong(gridStartTime);
@@ -206,6 +221,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
 
         node = (GridTcpDiscoveryNode)in.readObject();
         msgs = U.readCollection(in);
+        discardMsgId = U.readGridUuid(in);
         top = U.readCollection(in);
         topHist = U.readTreeMap(in);
         gridStartTime = in.readLong();

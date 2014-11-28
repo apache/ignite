@@ -14,7 +14,6 @@ import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -86,18 +85,13 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      * @param clientNodeId Client node ID.
      * @param metrics Node metrics.
      */
-    public void setClientMetrics(UUID nodeId, UUID clientNodeId, @Nullable GridNodeMetrics metrics) {
+    public void setClientMetrics(UUID nodeId, UUID clientNodeId, GridNodeMetrics metrics) {
         assert nodeId != null;
         assert clientNodeId != null;
+        assert metrics != null;
         assert this.metrics.containsKey(nodeId);
 
-        if (metrics != null) {
-            MetricsSet set = this.metrics.get(nodeId);
-
-            set.addClientMetrics(clientNodeId, metrics);
-        }
-
-        clientNodeIds.add(clientNodeId);
+        this.metrics.get(nodeId).addClientMetrics(clientNodeId, metrics);
     }
 
     /**
@@ -143,6 +137,15 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      */
     public Collection<UUID> clientNodeIds() {
         return clientNodeIds;
+    }
+
+    /**
+     * Adds client node ID.
+     *
+     * @param clientNodeId Client node ID.
+     */
+    public void addClientNodeId(UUID clientNodeId) {
+        clientNodeIds.add(clientNodeId);
     }
 
     /** {@inheritDoc} */
