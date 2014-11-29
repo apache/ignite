@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiState.*;
 
 /**
- * TODO
+ * Base class for TCP discovery SPIs.
  */
 abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements GridDiscoverySpi {
     /** Default port to listen (value is <tt>47500</tt>). */

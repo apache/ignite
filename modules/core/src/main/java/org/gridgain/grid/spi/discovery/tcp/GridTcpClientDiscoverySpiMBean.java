@@ -16,7 +16,7 @@ import org.gridgain.grid.util.mbean.*;
 import java.util.*;
 
 /**
- * TODO
+ * Management bean for {@link GridTcpClientDiscoverySpi}.
  */
 public interface GridTcpClientDiscoverySpiMBean extends GridSpiManagementMBean {
     /**

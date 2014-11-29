@@ -15,6 +15,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
 import org.gridgain.grid.util.typedef.*;
@@ -32,7 +33,14 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeartbeatMessage.*;
 
 /**
- * TODO
+ * Client discovery SPI implementation that uses TCP/IP for node discovery.
+ * <p>
+ * This discovery SPI requires at least on server node configured with
+ * {@link GridTcpDiscoverySpi}. It will try to connect to random IP taken from
+ * {@link GridTcpDiscoveryIpFinder} which should point to one of these server
+ * nodes and will maintain connection only with this node (will not enter the ring).
+ * If this connection is broken, it will try to reconnect using addresses from
+ * the same IP finder.
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @GridSpiMultipleInstancesSupport(true)
