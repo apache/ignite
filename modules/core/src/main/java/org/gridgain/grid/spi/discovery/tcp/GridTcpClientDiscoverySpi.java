@@ -355,7 +355,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
     /**
      * @param recon Reconnect flag.
-     * @return Whether reconnect failed.
+     * @return Whether joined successfully.
      * @throws GridSpiException In case of error.
      */
     private boolean joinTopology(boolean recon) throws GridSpiException {
@@ -435,7 +435,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                                         this.sock = null;
 
-                                        return true;
+                                        return false;
                                     }
 
                                     if (log.isDebugEnabled())
@@ -446,7 +446,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                                     stats.onJoinFinished();
 
-                                    return false;
+                                    return true;
                                 }
                                 else {
                                     U.warn(log, "Join process timed out (will try other address) [sock=" + sock +
@@ -479,7 +479,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                         if (log.isDebugEnabled())
                             log.debug("Joining thread was interrupted.");
 
-                        return recon;
+                        return false;
                     }
                     catch (IOException | GridException e) {
                         if (log.isDebugEnabled())
@@ -504,7 +504,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
             }
         }
 
-        return recon;
+        return false;
     }
 
     /**
