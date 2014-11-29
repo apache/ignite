@@ -151,6 +151,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Default max heartbeats count node can miss without initiating status check (value is <tt>1</tt>). */
     public static final int DFLT_MAX_MISSED_HEARTBEATS = 1;
 
+    /** Default max heartbeats count node can miss without failing client node (value is <tt>5</tt>). */
+    public static final int DFLT_MAX_MISSED_CLIENT_HEARTBEATS = 5;
+
     /** Default IP finder clean frequency in milliseconds (value is <tt>60,000ms</tt>). */
     public static final long DFLT_IP_FINDER_CLEAN_FREQ = 60 * 1000;
 
@@ -185,6 +188,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
     /** Max heartbeats count node can miss without initiating status check. */
     private int maxMissedHbs = DFLT_MAX_MISSED_HEARTBEATS;
+
+    /** Max heartbeats count node can miss without failing client node. */
+    private int maxMissedClientHbs = DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
 
     /** IP finder clean frequency. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -417,6 +423,23 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     @GridSpiConfiguration(optional = true)
     public void setMaxMissedHeartbeats(int maxMissedHbs) {
         this.maxMissedHbs = maxMissedHbs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMaxMissedClientHeartbeats() {
+        return maxMissedClientHbs;
+    }
+
+    /**
+     * Sets max heartbeats count node can miss without failing client node.
+     * <p>
+     * If not provided, default value is {@link #DFLT_MAX_MISSED_CLIENT_HEARTBEATS}.
+     *
+     * @param maxMissedClientHbs Max missed client heartbeats.
+     */
+    @GridSpiConfiguration(optional = true)
+    public void setMaxMissedClientHeartbeats(int maxMissedClientHbs) {
+        this.maxMissedClientHbs = maxMissedClientHbs;
     }
 
     /** {@inheritDoc} */
@@ -792,6 +815,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         assertParameter(reconCnt > 0, "reconnectCnt > 0");
         assertParameter(hbFreq > 0, "heartbeatFreq > 0");
         assertParameter(maxMissedHbs > 0, "maxMissedHeartbeats > 0");
+        assertParameter(maxMissedClientHbs > 0, "maxMissedClientHeartbeats > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
         assertParameter(statsPrintFreq >= 0, "statsPrintFreq >= 0");
 
@@ -3404,7 +3428,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     assert node.isClient();
 
                     node.clientRouterNodeId(msg.routerNodeId());
-                    node.aliveCheck(maxMissedHbs);
+                    node.aliveCheck(maxMissedClientHbs);
 
                     if (isLocalNodeCoordinator()) {
                         Collection<GridTcpDiscoveryAbstractMessage> pending =
@@ -3559,7 +3583,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 }
 
                 if (msg.client())
-                    node.aliveCheck(maxMissedHbs);
+                    node.aliveCheck(maxMissedClientHbs);
 
                 boolean topChanged = ring.add(node);
 
@@ -4291,7 +4315,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     for (GridTcpDiscoveryNode clientNode : ring.clientNodes()) {
                         if (clientNode.visible()) {
                             if (clientNodeIds.contains(clientNode.id()))
-                                clientNode.aliveCheck(maxMissedHbs);
+                                clientNode.aliveCheck(maxMissedClientHbs);
                             else {
                                 int aliveCheck = clientNode.decrementAliveCheck();
 
@@ -4661,13 +4685,31 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             GridTcpDiscoveryJoinRequestMessage req = (GridTcpDiscoveryJoinRequestMessage)msg;
 
                             if (!req.responded()) {
-                                processJoinRequestMessage(req);
+                                boolean ok = processJoinRequestMessage(req);
 
-                                if (client)
+                                if (client && ok)
                                     continue;
                                 else
                                     // Direct join request - no need to handle this socket anymore.
                                     break;
+                            }
+                        }
+                        else if (msg instanceof GridTcpDiscoveryClientReconnectMessage) {
+                            if (client) {
+                                GridTcpDiscoverySpiState state = spiStateCopy();
+
+                                if (state == CONNECTED) {
+                                    writeToSocket(sock, RES_OK);
+
+                                    msgWorker.addMessage(msg);
+
+                                    continue;
+                                }
+                                else {
+                                    writeToSocket(sock, RES_CONTINUE_JOIN);
+
+                                    break;
+                                }
                             }
                         }
                         else if (msg instanceof GridTcpDiscoveryDuplicateIdMessage) {
@@ -4875,10 +4917,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
         /**
          * @param msg Join request message.
+         * @return Whether connection was successful.
          * @throws IOException If IO failed.
          */
         @SuppressWarnings({"IfMayBeConditional"})
-        private void processJoinRequestMessage(GridTcpDiscoveryJoinRequestMessage msg) throws IOException {
+        private boolean processJoinRequestMessage(GridTcpDiscoveryJoinRequestMessage msg) throws IOException {
             assert msg != null;
             assert !msg.responded();
 
@@ -4893,6 +4936,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 msg.responded(true);
 
                 msgWorker.addMessage(msg);
+
+                return true;
             }
             else {
                 stats.onMessageProcessingStarted(msg);
@@ -4921,6 +4966,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 fromAddrs.addAll(msg.node().socketAddresses());
 
                 stats.onMessageProcessingFinished(msg);
+
+                return false;
             }
         }
 

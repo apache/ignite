@@ -176,6 +176,40 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
         startStopwatch();
 
+        assertParameter(ipFinder != null, "ipFinder != null");
+        assertParameter(netTimeout > 0, "networkTimeout > 0");
+        assertParameter(sockTimeout > 0, "sockTimeout > 0");
+        assertParameter(ackTimeout > 0, "ackTimeout > 0");
+        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
+        assertParameter(threadPri > 0, "threadPri > 0");
+
+        try {
+            locHost = U.resolveLocalHost(locAddr);
+        }
+        catch (IOException e) {
+            throw new GridSpiException("Unknown local address: " + locAddr, e);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(configInfo("localHost", locHost.getHostAddress()));
+            log.debug(configInfo("threadPri", threadPri));
+            log.debug(configInfo("networkTimeout", netTimeout));
+            log.debug(configInfo("sockTimeout", sockTimeout));
+            log.debug(configInfo("ackTimeout", ackTimeout));
+            log.debug(configInfo("ipFinder", ipFinder));
+            log.debug(configInfo("heartbeatFreq", hbFreq));
+        }
+
+        // Warn on odd network timeout.
+        if (netTimeout < 3000)
+            U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
+
+        // Warn on odd heartbeat frequency.
+        if (hbFreq < 2000)
+            U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
+
+        registerMBean(gridName, this, GridTcpClientDiscoverySpiMBean.class);
+
         try {
             locHost = U.resolveLocalHost(locAddr);
         }
@@ -266,6 +300,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
         U.interrupt(sockTimeoutWorker);
         U.join(sockTimeoutWorker, log);
+
+        unregisterMBean();
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -778,28 +814,29 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
             stats.onMessageProcessingStarted(msg);
 
-            if (recon && !pending) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding message received during reconnection: " + msg);
-
-                return;
-            }
-
-            if (msg instanceof GridTcpDiscoveryNodeAddedMessage)
-                processNodeAddedMessage((GridTcpDiscoveryNodeAddedMessage)msg);
-            else if (msg instanceof GridTcpDiscoveryNodeAddFinishedMessage)
-                processNodeAddFinishedMessage((GridTcpDiscoveryNodeAddFinishedMessage)msg);
-            else if (msg instanceof GridTcpDiscoveryNodeLeftMessage)
-                processNodeLeftMessage((GridTcpDiscoveryNodeLeftMessage)msg);
-            else if (msg instanceof GridTcpDiscoveryNodeFailedMessage)
-                processNodeFailedMessage((GridTcpDiscoveryNodeFailedMessage)msg);
-            else if (msg instanceof GridTcpDiscoveryHeartbeatMessage)
-                processHeartbeatMessage((GridTcpDiscoveryHeartbeatMessage)msg);
-            else if (msg instanceof GridTcpDiscoveryClientReconnectMessage)
+            if (msg instanceof GridTcpDiscoveryClientReconnectMessage)
                 processClientReconnectMessage((GridTcpDiscoveryClientReconnectMessage)msg);
+            else {
+                if (recon && !pending) {
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding message received during reconnection: " + msg);
+                }
+                else {
+                    if (msg instanceof GridTcpDiscoveryNodeAddedMessage)
+                        processNodeAddedMessage((GridTcpDiscoveryNodeAddedMessage)msg);
+                    else if (msg instanceof GridTcpDiscoveryNodeAddFinishedMessage)
+                        processNodeAddFinishedMessage((GridTcpDiscoveryNodeAddFinishedMessage)msg);
+                    else if (msg instanceof GridTcpDiscoveryNodeLeftMessage)
+                        processNodeLeftMessage((GridTcpDiscoveryNodeLeftMessage)msg);
+                    else if (msg instanceof GridTcpDiscoveryNodeFailedMessage)
+                        processNodeFailedMessage((GridTcpDiscoveryNodeFailedMessage)msg);
+                    else if (msg instanceof GridTcpDiscoveryHeartbeatMessage)
+                        processHeartbeatMessage((GridTcpDiscoveryHeartbeatMessage)msg);
 
-            if (ensured(msg))
-                lastMsgId = msg.id();
+                    if (ensured(msg))
+                        lastMsgId = msg.id();
+                }
+            }
 
             stats.onMessageProcessingFinished(msg);
         }
@@ -1054,7 +1091,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     joinErr = null;
                     reconFailed = true;
 
-                    getSpiContext().recordEvent(new GridDiscoveryEvent(locNode, "Client node disconnected: " + locNode,
+                    getSpiContext().recordEvent(new GridDiscoveryEvent(locNode,
+                        "Client node disconnected: " + locNode,
                         EVT_CLIENT_NODE_DISCONNECTED, locNode));
 
                     joinLatch.countDown();

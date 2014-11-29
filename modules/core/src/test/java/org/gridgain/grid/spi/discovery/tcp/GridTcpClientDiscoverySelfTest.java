@@ -278,19 +278,15 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         resetClientIpFinder(2);
 
-        srvFailedLatch = new CountDownLatch(4);
-        clientFailedLatch = new CountDownLatch(4);
-        srvJoinedLatch = new CountDownLatch(2);
-        clientJoinedLatch = new CountDownLatch(2);
+        srvFailedLatch = new CountDownLatch(2);
+        clientFailedLatch = new CountDownLatch(3);
 
-        attachListeners(2, 2);
+        attachListeners(2, 3);
 
         failServer(2);
 
         await(srvFailedLatch);
         await(clientFailedLatch);
-        await(srvJoinedLatch);
-        await(clientJoinedLatch);
 
         checkNodes(2, 3);
     }
@@ -665,7 +661,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If interrupted.
      */
     private void await(CountDownLatch latch) throws InterruptedException {
-        assertTrue("Latch count: " + latch.getCount(), latch.await(5000, MILLISECONDS));
+        assertTrue("Latch count: " + latch.getCount(), latch.await(10000, MILLISECONDS));
     }
 
     /**

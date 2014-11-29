@@ -85,6 +85,14 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
     public int getMaxMissedHeartbeats();
 
     /**
+     * Gets max heartbeats count node can miss without failing client node.
+     *
+     * @return Max missed client heartbeats.
+     */
+    @GridMBeanDescription("Max missed client heartbeats.")
+    public int getMaxMissedClientHeartbeats();
+
+    /**
      * Gets thread priority. All threads within SPI will be started with it.
      *
      * @return Thread priority.
