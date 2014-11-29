@@ -41,7 +41,6 @@ import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
@@ -2537,46 +2536,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             onBeforeMessageSentAcrossRing(msg);
 
             if (msg.redirectToClients()) {
-                if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
-                    GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
-
-                    Collection<ClientMessageWorker> clientMsgWorkers0 = U.arrayList(clientMsgWorkers.values());
-
-                    final Collection<List<Object>> discoData = new GridConcurrentHashSet<>();
-                    final CountDownLatch latch = new CountDownLatch(clientMsgWorkers0.size());
-
-                    for (ClientMessageWorker clientMsgWorker : clientMsgWorkers0) {
-                        boolean added = clientMsgWorker.addNodeAddedMessage(nodeAddedMsg,
-                            new CI1<GridTcpDiscoveryNodeAddedClientResponse>() {
-                                @Override public void apply(GridTcpDiscoveryNodeAddedClientResponse res) {
-                                    if (res != null)
-                                        discoData.add(res.discoveryData());
-
-                                    latch.countDown();
-                                }
-                            });
-
-                        if (!added)
-                            latch.countDown();
-                    }
-
-                    try {
-                        if (!U.await(latch, netTimeout, TimeUnit.MILLISECONDS)) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to receive node added responses from all client nodes: " + msg);
-                        }
-                    }
-                    catch (GridInterruptedException ignored) {
-                        return;
-                    }
-
-                    for (List<Object> discoDataItem : discoData)
-                        nodeAddedMsg.addDiscoveryData(discoDataItem);
-                }
-                else {
-                    for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
-                        clientMsgWorker.addMessage(msg);
-                }
+                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
+                    clientMsgWorker.addMessage(msg);
             }
 
             Collection<GridTcpDiscoveryNode> failedNodes;
@@ -4696,15 +4657,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         if (debugMode && recordable(msg))
                             debugLog("Message has been received: " + msg);
 
-                        if (msg instanceof GridTcpDiscoveryNodeAddedClientResponse) {
-                            ClientMessageWorker wrk = clientMsgWorkers.get(msg.senderNodeId());
-
-                            if (wrk != null)
-                                wrk.onNodeAddedResponse((GridTcpDiscoveryNodeAddedClientResponse)msg);
-
-                            continue;
-                        }
-                        else if (msg instanceof GridTcpDiscoveryJoinRequestMessage) {
+                        if (msg instanceof GridTcpDiscoveryJoinRequestMessage) {
                             GridTcpDiscoveryJoinRequestMessage req = (GridTcpDiscoveryJoinRequestMessage)msg;
 
                             if (!req.responded()) {
@@ -5037,12 +4990,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** Socket. */
         private final Socket sock;
 
-        /** Lock. */
-        private final Lock lock = new ReentrantLock();
-
-        /** Node added callbacks. */
-        private Map<GridUuid, CI1<GridTcpDiscoveryNodeAddedClientResponse>> nodeAddedCbs = new HashMap<>();
-
         /** Current client metrics. */
         private volatile GridNodeMetrics metrics;
 
@@ -5055,70 +5002,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             this.sock = sock;
             this.nodeId = nodeId;
-        }
-
-        /**
-         * @param msg Message.
-         * @param cb Response callback.
-         * @return Whether message was added.
-         */
-        boolean addNodeAddedMessage(GridTcpDiscoveryNodeAddedMessage msg,
-            CI1<GridTcpDiscoveryNodeAddedClientResponse> cb) {
-            assert msg != null;
-            assert cb != null;
-
-            boolean added = false;
-
-            if (msg.node().id().equals(nodeId))
-                addMessage(msg);
-            else {
-                lock.lock();
-
-                try {
-                    if (nodeAddedCbs != null) {
-                        CI1<GridTcpDiscoveryNodeAddedClientResponse> old = nodeAddedCbs.put(msg.id(), cb);
-
-                        assert old == null;
-
-                        added = true;
-                    }
-                }
-                finally {
-                    lock.unlock();
-                }
-            }
-
-            if (added) {
-                if (log.isDebugEnabled())
-                    log.debug("Waiting for node added response from client [msg=" + msg +
-                        ", clientNodeId=" + nodeId + ']');
-
-                addMessage(msg);
-            }
-
-            return added;
-        }
-
-        /**
-         * @param res Node added message response.
-         */
-        void onNodeAddedResponse(GridTcpDiscoveryNodeAddedClientResponse res) {
-            CI1<GridTcpDiscoveryNodeAddedClientResponse> cb = null;
-
-            lock.lock();
-
-            try {
-                if (nodeAddedCbs != null)
-                    cb = nodeAddedCbs.remove(res.nodeAddedMessageId());
-            }
-            finally {
-                lock.unlock();
-            }
-
-            if (cb != null)
-                cb.apply(res);
-            else if (log.isDebugEnabled())
-                log.debug("Discarding node added response because there is no callback: " + res);
         }
 
         /**
@@ -5177,22 +5060,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** {@inheritDoc} */
         @Override protected void cleanup() {
             super.cleanup();
-
-            Collection<CI1<GridTcpDiscoveryNodeAddedClientResponse>> cbs;
-
-            lock.lock();
-
-            try {
-                cbs = nodeAddedCbs.values();
-
-                nodeAddedCbs = null;
-            }
-            finally {
-                lock.unlock();
-            }
-
-            for (CI1<GridTcpDiscoveryNodeAddedClientResponse> cb : cbs)
-                cb.apply(null);
 
             U.closeQuiet(sock);
         }

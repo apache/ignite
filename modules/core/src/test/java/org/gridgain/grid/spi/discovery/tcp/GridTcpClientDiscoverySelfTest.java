@@ -422,7 +422,8 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDataExchangeFromClient() throws Exception {
+    // TODO: GG-9174
+    public void _testDataExchangeFromClient() throws Exception {
         testDataExchange("client-0");
     }
 

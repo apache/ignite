@@ -366,7 +366,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                         GridTcpDiscoveryAbstractMessage msg = recon ?
                             new GridTcpDiscoveryClientReconnectMessage(locNodeId, rmtNodeId, lastMsgId) :
-                            new GridTcpDiscoveryJoinRequestMessage(locNode, exchange.collect(locNodeId));
+                            new GridTcpDiscoveryJoinRequestMessage(locNode, null);
 
                         msg.client(true);
 
@@ -852,30 +852,6 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 if (topChanged) {
                     if (log.isDebugEnabled())
                         log.debug("Added new node to topology: " + node);
-
-                    Socket sock0 = sock;
-
-                    if (sock0 != null) {
-                        try {
-                            GridTcpDiscoveryNodeAddedClientResponse res =
-                                new GridTcpDiscoveryNodeAddedClientResponse(locNodeId, msg.id(),
-                                    exchange.collect(newNodeId));
-
-                            res.client(true);
-
-                            writeToSocket(sock0, res);
-                        }
-                        catch (IOException | GridException e) {
-                            if (log.isDebugEnabled())
-                                U.error(log, "Failed to send node added response [sock=" + sock0 + ']', e);
-
-                            U.closeQuiet(sock0);
-
-                            sock = null;
-
-                            interrupt();
-                        }
-                    }
 
                     List<Object> data = msg.newNodeDiscoveryData();
 
