@@ -2350,6 +2350,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         }
     }
 
+    /**
+     * Pending messages container.
+     */
     private static class PendingMessages {
         /** */
         private static final int MAX = 1024;
@@ -2360,6 +2363,12 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** Discarded message ID. */
         private GridUuid discardId;
 
+        /**
+         * Adds pending message and shrinks queue if it exceeds limit
+         * (messages that were not discarded yet are never removed).
+         *
+         * @param msg Message to add.
+         */
         void add(GridTcpDiscoveryAbstractMessage msg) {
             msgs.add(msg);
 
@@ -2373,18 +2382,14 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
         }
 
-        Collection<GridTcpDiscoveryAbstractMessage> messages() {
-            if (msgs.isEmpty() || discardId == null)
-                return msgs;
-            else {
-                Collection<GridTcpDiscoveryAbstractMessage> msgs0 = messages(discardId);
-
-                assert msgs0 != null;
-
-                return msgs0;
-            }
-        }
-
+        /**
+         * Gets messages starting from provided ID (exclusive). If such
+         * message is not found, {@code null} is returned (this indicates
+         * a failure condition when it was already removed from queue).
+         *
+         * @param lastMsgId Last message ID.
+         * @return Collection of messages.
+         */
         @Nullable Collection<GridTcpDiscoveryAbstractMessage> messages(GridUuid lastMsgId) {
             assert lastMsgId != null;
 
@@ -2404,10 +2409,12 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             return !skip ? copy : null;
         }
 
-        GridUuid discardedMessageId() {
-            return discardId;
-        }
-
+        /**
+         * Resets pending messages.
+         *
+         * @param msgs Message.
+         * @param discardId Discarded message ID.
+         */
         void reset(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardId) {
             this.msgs.clear();
 
@@ -2417,12 +2424,20 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             this.discardId = discardId;
         }
 
+        /**
+         * Clears pending messages.
+         */
         void clear() {
             msgs.clear();
 
             discardId = null;
         }
 
+        /**
+         * Discards message with provided ID and all before it.
+         *
+         * @param id Discarded message ID.
+         */
         void discard(GridUuid id) {
             discardId = id;
         }
@@ -2754,9 +2769,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                             assert !forceSndPending || msg instanceof GridTcpDiscoveryNodeLeftMessage;
 
-                            Collection<GridTcpDiscoveryAbstractMessage> pendingMsgs0 = pendingMsgs.messages();
-                            GridUuid discardMsgId = pendingMsgs.discardedMessageId();
-
                             if (failure || forceSndPending) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
@@ -2766,10 +2778,20 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                     debugLog("Pending messages will be sent [failure=" + failure +
                                         ", forceSndPending=" + forceSndPending + ']');
 
-                                for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs0) {
+                                boolean skip = pendingMsgs.discardId != null;
+
+                                for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs.msgs) {
+                                    if (skip) {
+                                        if (pendingMsg.id().equals(pendingMsgs.discardId))
+                                            skip = false;
+
+                                        continue;
+                                    }
+
                                     long tstamp = U.currentTimeMillis();
 
-                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs0, discardMsgId);
+                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs,
+                                        pendingMsgs.discardId);
 
                                     try {
                                         writeToSocket(sock, pendingMsg);
@@ -2794,7 +2816,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 }
                             }
 
-                            prepareNodeAddedMessage(msg, next.id(), pendingMsgs0, discardMsgId);
+                            prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs, pendingMsgs.discardId);
 
                             try {
                                 long tstamp = U.currentTimeMillis();
@@ -4321,7 +4343,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     }
                 }
 
-                sendMessageAcrossRing(msg);
+                if (ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
             }
             else {
                 locNode.lastUpdateTime(tstamp);

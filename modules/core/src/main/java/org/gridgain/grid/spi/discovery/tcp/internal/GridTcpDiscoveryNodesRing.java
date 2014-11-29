@@ -541,6 +541,8 @@ public class GridTcpDiscoveryNodesRing {
                 return true;
             }
 
+            U.debug("KARAMBA [old=" + this.topVer + ", new=" + topVer + ']');
+
             return false;
         }
         finally {
