@@ -127,6 +127,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
      */
     public void testAddDataFromMap() throws Exception {
         try {
+            cnt = 0;
             portables = false;
 
             startGrids(2);
@@ -176,6 +177,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
      */
     public void testAddPortableDataFromMap() throws Exception {
         try {
+            cnt = 0;
             portables = true;
 
             startGrids(2);
