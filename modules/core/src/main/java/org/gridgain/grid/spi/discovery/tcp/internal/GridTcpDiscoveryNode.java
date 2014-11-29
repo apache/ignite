@@ -71,7 +71,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     private volatile long order;
 
     /** Node order in the topology (internal). */
-    @GridToStringExclude
     private volatile long intOrder;
 
     /** The most recent time when heartbeat message was received from the node. */
@@ -215,7 +214,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      * @param intOrder Internal order of the node.
      */
     public void internalOrder(long intOrder) {
-        assert intOrder >= 0;
+        assert intOrder > 0;
 
         this.intOrder = intOrder;
     }
@@ -440,6 +439,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNode.class, this);
+        return S.toString(GridTcpDiscoveryNode.class, this, "isClient", isClient());
     }
 }

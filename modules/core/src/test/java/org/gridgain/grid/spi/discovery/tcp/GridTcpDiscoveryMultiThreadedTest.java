@@ -26,10 +26,10 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
-    private static final int GRID_CNT = 2;
+    private static final int GRID_CNT = 5;
 
     /** */
-    private static final int CLIENT_GRID_CNT = 2;
+    private static final int CLIENT_GRID_CNT = 5;
 
     /** */
     private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocal<>();

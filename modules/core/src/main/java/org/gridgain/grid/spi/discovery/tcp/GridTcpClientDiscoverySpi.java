@@ -60,6 +60,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     /** Last message ID. */
     private volatile GridUuid lastMsgId;
 
+    /** Current topology version. */
+    private volatile long topVer;
+
     /** Join error. */
     private GridSpiException joinErr;
 
@@ -789,9 +792,6 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
         /** Topology history. */
         private final NavigableMap<Long, Collection<GridNode>> topHist = new TreeMap<>();
 
-        /** Current topology version. */
-        private long topVer;
-
         /** Indicates that reconnection is in progress. */
         private boolean recon;
 
@@ -1113,12 +1113,12 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
             GridTcpDiscoveryNode node = nodeId.equals(locNodeId) ? locNode : rmtNodes.get(nodeId);
 
-            if (node != null) {
+            if (node != null && node.visible()) {
                 node.setMetrics(metrics);
 
                 node.lastUpdateTime(tstamp);
 
-                notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, updateTopology(topVer));
+                notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, allNodes());
             }
             else if (log.isDebugEnabled())
                 log.debug("Received metrics from unknown node: " + nodeId);
@@ -1129,16 +1129,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @return Topology snapshot.
          */
         private Collection<GridNode> updateTopology(long topVer) {
-            this.topVer = topVer;
+            GridTcpClientDiscoverySpi.this.topVer = topVer;
 
-            Collection<GridNode> allNodes = new ArrayList<>(rmtNodes.size() + 1);
-
-            for (GridTcpDiscoveryNode node : rmtNodes.values()) {
-                if (node.visible())
-                    allNodes.add(node);
-            }
-
-            allNodes.add(locNode);
+            Collection<GridNode> allNodes = allNodes();
 
             if (!topHist.containsKey(topVer)) {
                 assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
@@ -1152,6 +1145,22 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 assert topHist.lastKey() == topVer;
                 assert topHist.size() <= topHistSize;
             }
+
+            return allNodes;
+        }
+
+        /**
+         * @return All nodes.
+         */
+        private Collection<GridNode> allNodes() {
+            Collection<GridNode> allNodes = new ArrayList<>(rmtNodes.size() + 1);
+
+            for (GridTcpDiscoveryNode node : rmtNodes.values()) {
+                if (node.visible())
+                    allNodes.add(node);
+            }
+
+            allNodes.add(locNode);
 
             return allNodes;
         }
