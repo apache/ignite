@@ -132,14 +132,15 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name ({@code null} for default cache).
+     * @param compact {@code true} if data loader should transfer data in compact format.
      * @return Data loader.
      */
-    public GridDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    public GridDataLoader<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data loader (grid is stopping).");
 
         try {
-            final GridDataLoaderImpl<K, V> ldr = new GridDataLoaderImpl<>(ctx, cacheName, flushQ);
+            final GridDataLoaderImpl<K, V> ldr = new GridDataLoaderImpl<>(ctx, cacheName, flushQ, compact);
 
             ldrs.add(ldr);
 
@@ -159,6 +160,14 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @param cacheName Cache name ({@code null} for default cache).
+     * @return Data loader.
+     */
+    public GridDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+        return dataLoader(cacheName, true);
     }
 
     /**
