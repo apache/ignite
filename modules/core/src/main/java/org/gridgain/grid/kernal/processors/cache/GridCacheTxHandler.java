@@ -973,7 +973,7 @@ public class GridCacheTxHandler<K, V> {
         assert F.isEmpty(req.candidatesByKey());
 
         if (!F.isEmpty(req.nearWrites())) {
-            GridNearTxRemote<K, V> tx = ctx.tm().tx(req.version());
+            GridNearTxRemote<K, V> tx = ctx.tm().nearTx(req.version());
 
             if (tx == null) {
                 tx = new GridNearTxRemote<>(
