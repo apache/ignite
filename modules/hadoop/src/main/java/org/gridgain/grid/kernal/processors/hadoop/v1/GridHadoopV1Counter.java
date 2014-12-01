@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapreduce.*;
-import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 import java.io.*;
@@ -23,14 +23,14 @@ import static org.apache.hadoop.mapreduce.util.CountersStrings.*;
  */
 public class GridHadoopV1Counter extends Counters.Counter {
     /** Delegate. */
-    private final GridHadoopCounter cntr;
+    private final GridHadoopLongCounter cntr;
 
     /**
      * Creates new instance.
      *
      * @param cntr Delegate counter.
      */
-    public GridHadoopV1Counter(GridHadoopCounter cntr) {
+    public GridHadoopV1Counter(GridHadoopLongCounter cntr) {
         this.cntr = cntr;
     }
 

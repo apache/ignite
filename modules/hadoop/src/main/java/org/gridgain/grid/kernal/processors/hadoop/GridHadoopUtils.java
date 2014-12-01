@@ -26,6 +26,18 @@ import java.util.*;
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
+    /** Property to store timestamp of new job id request. */
+    public static final String REQ_NEW_JOBID_TS_PROPERTY = "gridgain.job.requestNewIdTs";
+
+    /** Property to store timestamp of response of new job id request. */
+    public static final String RESPONSE_NEW_JOBID_TS_PROPERTY = "gridgain.job.responseNewIdTs";
+
+    /** Property to store timestamp of job submission. */
+    public static final String JOB_SUBMISSION_START_TS_PROPERTY = "gridgain.job.submissionStartTs";
+
+    /** Property to set custom writer of job statistics. */
+    public static final String JOB_COUNTER_WRITER_PROPERTY = "gridgain.counters.writer";
+
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 
@@ -45,7 +57,7 @@ public class GridHadoopUtils {
      */
     public static GridHadoopSplitWrapper wrapSplit(int id, Object split, String[] hosts) throws IOException {
         ByteArrayOutputStream arr = new ByteArrayOutputStream();
-        ObjectOutputStream out = new ObjectOutputStream(arr);
+        ObjectOutput out = new ObjectOutputStream(arr);
 
         assert split instanceof Writable;
 
