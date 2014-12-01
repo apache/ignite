@@ -34,41 +34,17 @@ The easiest way to get started with GridGain in your project is to use Maven dep
 </dependency>
 ```
 
-### HPC Edition
+### Legacy Editions
+Following editions are supported for legacy downloads and projects started before `Fabric` edition has been introduced. It is strongly recommended to use `Fabric` edition.
+
+#### HPC Edition
 `HPC` edition includes all GridGain functionality except for `data grid`, `streaming` and `hadoop accelerator`.
 
-```xml
-<dependency>
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-hpc</artifactId>
-    <version>${gridgain.version}</version>
-    <type>pom</type>
-</dependency>
-```
-
-### Data Grid Edition
+#### Data Grid Edition
 `Data Grid` edition includes all GridGain functionality except for `streaming` and `hadoop accelerator`.
 
-```xml
-<dependency>
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-datagrid</artifactId>
-    <version>${gridgain.version}</version>
-    <type>pom</type>
-</dependency>
-```
-
-### Streaming Edition
+#### Streaming Edition
 `Streaming` edition includes all GridGain functionality except for `data grid` and `hadoop accelerator`.
-
-```xml
-<dependency>
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-streaming</artifactId>
-    <version>${gridgain.version}</version>
-    <type>pom</type>
-</dependency>
-```
 
 You can copy and paste this snippet into your Maven POM file. Make sure to replace version with the one you need.
 
