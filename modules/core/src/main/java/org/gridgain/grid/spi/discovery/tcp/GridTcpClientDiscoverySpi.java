@@ -853,6 +853,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param msg Message.
          */
         private void processNodeAddedMessage(GridTcpDiscoveryNodeAddedMessage msg) {
+            if (leaveLatch != null)
+                return;
+
             GridTcpDiscoveryNode node = msg.node();
 
             UUID newNodeId = node.id();
@@ -910,6 +913,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param msg Message.
          */
         private void processNodeAddFinishedMessage(GridTcpDiscoveryNodeAddFinishedMessage msg) {
+            if (leaveLatch != null)
+                return;
+
             if (locNodeId.equals(msg.nodeId())) {
                 if (joinLatch.getCount() > 0) {
                     long topVer = msg.topologyVersion();
@@ -974,6 +980,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 leaveLatch0.countDown();
             }
             else {
+                if (leaveLatch != null)
+                    return;
+
                 GridTcpDiscoveryNode node = rmtNodes.remove(msg.creatorNodeId());
 
                 if (node == null) {
@@ -1002,6 +1011,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param msg Message.
          */
         private void processNodeFailedMessage(GridTcpDiscoveryNodeFailedMessage msg) {
+            if (leaveLatch != null)
+                return;
+
             if (!locNodeId.equals(msg.creatorNodeId())) {
                 GridTcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
 
@@ -1031,6 +1043,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param msg Message.
          */
         private void processHeartbeatMessage(GridTcpDiscoveryHeartbeatMessage msg) {
+            if (leaveLatch != null)
+                return;
+
             if (locNodeId.equals(msg.creatorNodeId())) {
                 if (msg.senderNodeId() == null) {
                     Socket sock0 = sock;
@@ -1082,6 +1097,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param msg Message.
          */
         private void processClientReconnectMessage(GridTcpDiscoveryClientReconnectMessage msg) {
+            if (leaveLatch != null)
+                return;
+
             if (locNodeId.equals(msg.creatorNodeId())) {
                 if (msg.success()) {
                     pending = true;
