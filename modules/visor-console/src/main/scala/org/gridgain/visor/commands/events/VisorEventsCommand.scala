@@ -18,7 +18,7 @@ import java.util.UUID
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
-import VisorNodeEventsCollectorTask.VisorEventsCollectArgs
+import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands._
@@ -287,7 +287,7 @@ class VisorEventsCommand {
 
             val evts = try
                 grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
-                    toTaskArgument(nid, VisorEventsCollectArgs.createEventsArg(tpFilter, tmFilter)))
+                    toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
             catch {
                 case e: GridException =>
                     scold(e.getMessage)

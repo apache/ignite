@@ -469,8 +469,6 @@ class VisorAlertCommand {
         val subj = "Visor alert triggered: '" + a.spec + '\''
         val headline = "GridGain ver. " + grid.product().version()
 
-        val lic = grid.product().license()
-
         val stat = stats(a.id)
 
         assert(stat != null)
@@ -493,12 +491,6 @@ class VisorAlertCommand {
             "Last send: " + (if (stat.lastSnd == 0) "n/a" else formatDateTime(stat.lastSnd)) + NL +
             "----" + NL +
             "Grid name: " + grid.name + NL
-
-        if (lic != null) {
-            body +=
-                "License ID: " + lic.id.toString.toUpperCase + NL +
-                "Licensed to: " + lic.userOrganization + NL
-        }
 
         body +=
             "----" + NL +
@@ -835,5 +827,5 @@ object VisorAlertCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromAlert2Visor(vs: VisorTag) = cmd
+    implicit def fromAlert2Visor(vs: VisorTag): VisorAlertCommand = cmd
 }

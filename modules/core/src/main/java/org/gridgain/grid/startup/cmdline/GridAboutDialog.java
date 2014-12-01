@@ -9,9 +9,6 @@
 
 package org.gridgain.grid.startup.cmdline;
 
-import org.gridgain.grid.product.*;
-import org.jetbrains.annotations.*;
-
 import javax.imageio.*;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -51,9 +48,6 @@ public class GridAboutDialog extends JDialog {
     /** Copyright. */
     private final String copyright;
 
-    /** License. */
-    private final GridProductLicense lic;
-
     /** Grid bag constraints. */
     private final GridBagConstraints gbc;
 
@@ -63,9 +57,8 @@ public class GridAboutDialog extends JDialog {
      * @param ver Version.
      * @param release Release date.
      * @param copyright Copyright.
-     * @param lic License.
      */
-    GridAboutDialog(String appName, String bannerSpec, String ver, Date release, String copyright, GridProductLicense lic) {
+    GridAboutDialog(String appName, String bannerSpec, String ver, Date release, String copyright) {
         this.appName = appName;
 
         this.bannerSpec = bannerSpec;
@@ -73,8 +66,6 @@ public class GridAboutDialog extends JDialog {
         this.ver = ver;
         this.release = release;
         this.copyright = copyright;
-
-        this.lic = lic;
 
         gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -209,22 +200,6 @@ public class GridAboutDialog extends JDialog {
         addAboutItem(licPanel, "Release Date:", new SimpleDateFormat("dd MMM yyyy").format(release));
         addAboutItem(licPanel, "Copyright:", copyright);
 
-        if (lic != null) {
-            licPanel.add(new JSeparator(), gbcSeparator());
-
-            addAboutItem(licPanel, "License ID:", lic.id());
-            addAboutItem(licPanel, "Issue Date:", new SimpleDateFormat("dd MMM yyyy").format(lic.issueDate()));
-            addAboutItem(licPanel, "Issue Org.:", lic.issueOrganization());
-            addAboutItem(licPanel, "License Note:", lic.licenseNote());
-
-            licPanel.add(new JSeparator(), gbcSeparator());
-
-            addAboutItem(licPanel, "Licensee Name:", lic.userName());
-            addAboutItem(licPanel, "Licensee Org.:", lic.userOrganization());
-            addAboutItem(licPanel, "Licensee URL:", lic.userWww());
-            addAboutItem(licPanel, "Licensee E-mail:", lic.userEmail());
-        }
-
         return licPanel;
     }
 
@@ -322,16 +297,15 @@ public class GridAboutDialog extends JDialog {
      * @param ver Version number.
      * @param release Release date.
      * @param copyright Copyright blurb.
-     * @param lic License not {@code null} if node running.
      */
     public static void centerShow(final String appName, final String bannerSpec,
-        final String ver, final Date release, final String copyright, @Nullable final GridProductLicense lic) {
+        final String ver, final Date release, final String copyright) {
         SwingUtilities.invokeLater(new Runnable() {
             @SuppressWarnings("NonThreadSafeLazyInitialization")
             @Override public void run() {
                 if (aboutDlg == null) {
                     try {
-                        aboutDlg = new GridAboutDialog(appName, bannerSpec, ver, release, copyright, lic);
+                        aboutDlg = new GridAboutDialog(appName, bannerSpec, ver, release, copyright);
 
                         aboutDlg.setLocationRelativeTo(null);
                         aboutDlg.setVisible(true);

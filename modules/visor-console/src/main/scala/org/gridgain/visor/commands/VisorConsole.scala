@@ -16,8 +16,6 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util
 import javax.swing.ImageIcon
-import org.gridgain.grid.GridGainState._
-import org.gridgain.grid.{GridGain => G}
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.startup.cmdline.GridAboutDialog
@@ -38,7 +36,6 @@ import disco.VisorDiscoveryCommand
 import events.VisorEventsCommand
 import gc.VisorGcCommand
 import kill.VisorKillCommand
-import license.VisorLicenseCommand
 import node.VisorNodeCommand
 import ping.VisorPingCommand
 import start.VisorStartCommand
@@ -75,7 +72,6 @@ object VisorConsole extends App {
     VisorEventsCommand
     VisorGcCommand
     VisorKillCommand
-    VisorLicenseCommand
     VisorNodeCommand
     VisorPingCommand
     VisorTopologyCommand
@@ -202,8 +198,7 @@ object VisorConsole extends App {
                 new java.lang.reflect.InvocationHandler {
                     def invoke(proxy: Any, mth: java.lang.reflect.Method, args: Array[Object]) = {
                         GridAboutDialog.centerShow("Visor - GridGain Shell Console", bannerIconUrl.toExternalForm,
-                            VISOR_VER, releaseDate, VISOR_COPYRIGHT,
-                            if (G.state() == STARTED) G.grid().product().license() else null)
+                            VISOR_VER, releaseDate, VISOR_COPYRIGHT)
 
                         null
                     }
