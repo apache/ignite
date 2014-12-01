@@ -213,7 +213,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         ClassLoader ldr = ctx.deploy().globalLoader();
 
         if (ldr != null) {
-            Collection<T2<GridCacheTxKey<K>, byte[]>> evicted = null;
+            Collection<GridCacheTxKey<K>> evicted = null;
 
             for (int i = 0; i < nearKeys.size(); i++) {
                 K key = nearKeys.get(i);
@@ -299,7 +299,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             if (evicted == null)
                                 evicted = new LinkedList<>();
 
-                            evicted.add(new T2<>(txKey, bytes));
+                            evicted.add(txKey);
                         }
 
                         // Double-check in case if sender node left the grid.
@@ -337,8 +337,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (tx != null && evicted != null) {
                 assert !evicted.isEmpty();
 
-                for (T2<GridCacheTxKey<K>, byte[]> evict : evicted)
-                    tx.addEvicted(evict.get1(), evict.get2());
+                for (GridCacheTxKey<K> evict : evicted)
+                    tx.addEvicted(evict);
             }
         }
         else {

@@ -410,7 +410,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         if (writeEntriesBytes != null) {
             writeEntries = ctx.marshaller().unmarshal(writeEntriesBytes, ldr);
 
-            unmarshalTx(writeEntries, ctx, ldr);
+            unmarshalTx(writeEntries, false, ctx, ldr);
         }
     }
 

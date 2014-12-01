@@ -392,7 +392,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         assert state == ACTIVE || (state == PREPARING && optimistic()) : "Invalid tx state for " +
             "adding entry [msgId=" + msgId + ", e=" + e + ", tx=" + this + ']';
 
-        e.unmarshal(cctx, cctx.deploy().globalLoader());
+        e.unmarshal(cctx, false, cctx.deploy().globalLoader());
 
         checkInternal(e.txKey());
 

@@ -369,17 +369,21 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
 
-            if (nearTx != null) {
-                // This check allows to avoid extra serialization.
-                if (nearTx.hasEvictedBytes())
-                    res.nearEvictedBytes(nearTx.evictedBytes());
-                else
-                    res.nearEvicted(nearTx.evicted());
+            if (nearTx != null && !nearTx.empty())
+                res.nearEvicted(nearTx.evicted());
+            else {
+                if (!F.isEmpty(req.nearKeys())) {
+                    Collection<GridCacheTxKey<K>> nearEvicted = new ArrayList<>(req.nearKeys().size());
+
+                    nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<K, GridCacheTxKey<K>>() {
+                        @Override public GridCacheTxKey<K> apply(K k) {
+                            return ctx.txKey(k);
+                        }
+                    }));
+
+                    res.nearEvicted(nearEvicted);
+                }
             }
-            else if (!F.isEmpty(req.nearKeyBytes()))
-                res.nearEvictedBytes(req.nearKeyBytes());
-//            else if (!F.isEmpty(req.nearKeys())) TODO GG-9141 revisit lock logic: startRemoteTx will return null in case of evicted keys.
-//                res.nearEvicted(req.nearKeys());
         }
         catch (GridCacheTxRollbackException e) {
             String err = "Failed processing DHT lock request (transaction has been completed): " + req;

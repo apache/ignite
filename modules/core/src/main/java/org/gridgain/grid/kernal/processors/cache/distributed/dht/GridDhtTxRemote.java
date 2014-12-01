@@ -246,7 +246,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @throws GridException If failed.
      */
     public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws GridException {
-        entry.unmarshal(cctx, ldr);
+        entry.unmarshal(cctx, false, ldr);
 
         GridCacheContext<K, V> cacheCtx = entry.context();
 

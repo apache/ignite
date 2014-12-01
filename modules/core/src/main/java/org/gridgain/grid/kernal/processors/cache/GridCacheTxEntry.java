@@ -736,12 +736,14 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param clsLdr Class loader.
      * @throws GridException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
+    public void unmarshal(GridCacheSharedContext<K, V> ctx, boolean near, ClassLoader clsLdr) throws GridException {
         if (this.ctx == null) {
             GridCacheContext<K, V> cacheCtx = ctx.cacheContext(cacheId);
 
-            if (cacheCtx.isNear())
+            if (cacheCtx.isNear() && !near)
                 cacheCtx = cacheCtx.near().dht().context();
+            else if (!cacheCtx.isNear() && near)
+                cacheCtx = cacheCtx.dht().near().context();
 
             this.ctx = cacheCtx;
         }

@@ -101,7 +101,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
         if (committedTxInfoBytes != null) {
             committedTxInfo = ctx.marshaller().unmarshal(committedTxInfoBytes, ldr);
 
-            unmarshalTx(committedTxInfo.recoveryWrites(), ctx, ldr);
+            unmarshalTx(committedTxInfo.recoveryWrites(), false, ctx, ldr);
         }
     }
 

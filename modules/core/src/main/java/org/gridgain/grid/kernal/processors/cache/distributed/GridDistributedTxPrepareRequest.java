@@ -300,7 +300,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             for (byte[] arr : writesBytes)
                 writes.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
 
-            unmarshalTx(writes, ctx, ldr);
+            unmarshalTx(writes, false, ctx, ldr);
         }
 
         if (readsBytes != null) {
@@ -309,7 +309,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             for (byte[] arr : readsBytes)
                 reads.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
 
-            unmarshalTx(reads, ctx, ldr);
+            unmarshalTx(reads, false, ctx, ldr);
         }
 
         if (grpLockKeyBytes != null && grpLockKey == null)

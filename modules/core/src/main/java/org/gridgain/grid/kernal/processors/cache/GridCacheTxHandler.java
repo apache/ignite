@@ -192,7 +192,7 @@ public class GridCacheTxHandler<K, V> {
 
         try {
             for (GridCacheTxEntry<K, V> e : F.concat(false, req.reads(), req.writes()))
-                e.unmarshal(ctx, ctx.deploy().globalLoader());
+                e.unmarshal(ctx, false, ctx.deploy().globalLoader());
         }
         catch (GridException e) {
             return new GridFinishedFuture<>(ctx.kernalContext(), e);
@@ -606,12 +606,8 @@ public class GridCacheTxHandler<K, V> {
             dhtTx = startRemoteTx(nodeId, req, res);
 
             // Set evicted keys from near transaction.
-            if (nearTx != null) {
-                if (nearTx.hasEvictedBytes())
-                    res.nearEvictedBytes(nearTx.evictedBytes());
-                else
-                    res.nearEvicted(nearTx.evicted());
-            }
+            if (nearTx != null)
+                res.nearEvicted(nearTx.evicted());
 
             if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
                 res.invalidPartitions(dhtTx.invalidPartitions());

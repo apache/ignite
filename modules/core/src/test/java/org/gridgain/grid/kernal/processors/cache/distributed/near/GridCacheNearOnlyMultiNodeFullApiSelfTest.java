@@ -207,6 +207,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
+        info("Keys: " + keys);
+
         Map<String, Integer> vals = new HashMap<>(keys.size());
 
         int i = 0;
@@ -345,7 +347,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         cache().globalClearAll();
 
         for (int i = 0; i < gridCount(); i++)
-            assertTrue(cache(i).isEmpty());
+            assertTrue(String.valueOf(cache(i).entrySet()), cache(i).isEmpty());
     }
 
     /** {@inheritDoc} */

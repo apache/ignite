@@ -294,7 +294,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             for (byte[] arr : nearWritesBytes)
                 nearWrites.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
 
-            unmarshalTx(nearWrites, ctx, ldr);
+            unmarshalTx(nearWrites, true, ctx, ldr);
         }
     }
 

@@ -303,7 +303,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             for (byte[] arr : writeEntriesBytes)
                 writeEntries.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
 
-            unmarshalTx(writeEntries, ctx, ldr);
+            unmarshalTx(writeEntries, false, ctx, ldr);
         }
 
         if (recoveryWritesBytes != null) {
@@ -312,7 +312,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             for (byte[] arr : recoveryWritesBytes)
                 recoveryWrites.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
 
-            unmarshalTx(recoveryWrites, ctx, ldr);
+            unmarshalTx(recoveryWrites, false, ctx, ldr);
         }
 
         if (grpLockKeyBytes != null && grpLockKey == null)

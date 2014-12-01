@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -19,6 +20,7 @@ import java.io.*;
  */
 public class GridCacheTxKey<K> implements Externalizable {
     /** Key. */
+    @GridToStringInclude
     private K key;
 
     /** Cache ID. */

@@ -348,14 +348,14 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ldr Loader.
      * @throws GridException If failed.
      */
-    protected final void unmarshalTx(Iterable<GridCacheTxEntry<K, V>> txEntries, GridCacheSharedContext<K, V> ctx,
-        ClassLoader ldr) throws GridException {
+    protected final void unmarshalTx(Iterable<GridCacheTxEntry<K, V>> txEntries, boolean near,
+        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         assert ldr != null;
         assert ctx != null;
 
         if (txEntries != null) {
             for (GridCacheTxEntry<K, V> e : txEntries)
-                e.unmarshal(ctx, ldr);
+                e.unmarshal(ctx, near, ldr);
         }
     }
 
