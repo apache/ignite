@@ -34,6 +34,7 @@ import static org.gridgain.grid.spi.discovery.GridDiscoveryMetricsHelper.*;
  * When message reaches coordinator second time it is discarded (it finishes the
  * second pass).
  */
+@GridTcpDiscoveryRedirectToClient
 public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;

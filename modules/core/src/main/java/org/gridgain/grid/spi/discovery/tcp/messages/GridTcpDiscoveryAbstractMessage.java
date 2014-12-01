@@ -52,9 +52,6 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /** Pending message index. */
     private short pendingIdx;
 
-    /** Whether to redirect to client nodes (transient). */
-    private boolean redirectToClients = true;
-
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
      */
@@ -196,20 +193,6 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
      */
     public void pendingIndex(short pendingIdx) {
         this.pendingIdx = pendingIdx;
-    }
-
-    /**
-     * @return Whether to redirect to clients.
-     */
-    public boolean redirectToClients() {
-        return redirectToClients;
-    }
-
-    /**
-     * @param redirectToClients Whether to redirect to clients.
-     */
-    public void redirectToClients(boolean redirectToClients) {
-        this.redirectToClients = redirectToClients;
     }
 
     /**

@@ -1161,7 +1161,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @return All nodes.
          */
         private Collection<GridNode> allNodes() {
-            Collection<GridNode> allNodes = new ArrayList<>(rmtNodes.size() + 1);
+            Collection<GridNode> allNodes = new TreeSet<>();
 
             for (GridTcpDiscoveryNode node : rmtNodes.values()) {
                 if (node.visible())

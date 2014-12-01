@@ -269,7 +269,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     private final Object mux = new Object();
 
     /** Map with proceeding ping requests. */
-    private final ConcurrentMap<InetSocketAddress, GridFuture<UUID>> pingMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<InetSocketAddress, GridFuture<GridBiTuple<UUID, Boolean>>> pingMap =
+        new ConcurrentHashMap8<>();
 
     /** Debug mode. */
     private boolean debugMode;
@@ -1113,10 +1114,23 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         if (node.id().equals(locNodeId))
             return true;
 
-        for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node)) ) {
+        UUID clientNodeId = null;
+
+        if (node.isClient()) {
+            clientNodeId = node.id();
+
+            node = ring.node(node.clientRouterNodeId());
+
+            if (node == null || !node.visible())
+                return false;
+        }
+
+        for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
-                return node.id().equals(pingNode(addr));
+                GridBiTuple<UUID, Boolean> t = pingNode(addr, clientNodeId);
+
+                return node.id().equals(t.get1()) && (clientNodeId == null || t.get2());
             }
             catch (GridException e) {
                 if (log.isDebugEnabled())
@@ -1136,15 +1150,16 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @return ID of the remote node if node alive.
      * @throws GridSpiException If an error occurs.
      */
-    private UUID pingNode(InetSocketAddress addr) throws GridException {
+    private GridBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
+        throws GridException {
         assert addr != null;
 
         if (F.contains(locNodeAddrs, addr))
-            return locNodeId;
+            return F.t(locNodeId, false);
 
-        GridFutureAdapterEx<UUID> fut = new GridFutureAdapterEx<>();
+        GridFutureAdapterEx<GridBiTuple<UUID, Boolean>> fut = new GridFutureAdapterEx<>();
 
-        GridFuture<UUID> oldFut = pingMap.putIfAbsent(addr, fut);
+        GridFuture<GridBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
 
         if (oldFut != null)
             return oldFut.get();
@@ -1163,23 +1178,24 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                         sock = openSocket(addr);
 
-                        // Handshake response will act as ping response.
-                        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                        writeToSocket(sock, new GridTcpDiscoveryPingRequest(locNodeId, clientNodeId));
 
-                        GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
+                        GridTcpDiscoveryPingResponse res = readMessage(sock, null, netTimeout);
 
                         if (locNodeId.equals(res.creatorNodeId())) {
                             if (log.isDebugEnabled())
-                                log.debug("Handshake response from local node: " + res);
+                                log.debug("Ping response from local node: " + res);
 
                             break;
                         }
 
                         stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
 
-                        fut.onDone(res.creatorNodeId());
+                        GridBiTuple<UUID, Boolean> t = F.t(res.creatorNodeId(), res.clientExists());
 
-                        return res.creatorNodeId();
+                        fut.onDone(t);
+
+                        return t;
                     }
                     catch (IOException | GridException e) {
                         if (errs == null)
@@ -2325,9 +2341,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         @Override public boolean apply(InetSocketAddress addr) {
                             Boolean res = pingResMap.get(addr);
 
-                            if (res == null)
+                            if (res == null) {
                                 try {
-                                    res = pingNode(addr) != null;
+                                    res = pingNode(addr, null).get1() != null;
                                 }
                                 catch (GridException e) {
                                     if (log.isDebugEnabled())
@@ -2339,6 +2355,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 finally {
                                     pingResMap.put(addr, res);
                                 }
+                            }
 
                             return !res;
                         }
@@ -2559,7 +2576,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             onBeforeMessageSentAcrossRing(msg);
 
-            if (msg.redirectToClients()) {
+            if (redirectToClients(msg)) {
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
                     clientMsgWorker.addMessage(msg);
             }
@@ -2935,6 +2952,14 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         }
 
         /**
+         * @param msg Message.
+         * @return Whether to redirect message to client nodes.
+         */
+        private boolean redirectToClients(GridTcpDiscoveryAbstractMessage msg) {
+            return msg.verified() && U.getAnnotation(msg.getClass(), GridTcpDiscoveryRedirectToClient.class) != null;
+        }
+
+        /**
          * Registers pending message.
          *
          * @param msg Message to register.
@@ -2959,8 +2984,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          */
         private void processJoinRequestMessage(GridTcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
-
-            msg.redirectToClients(false);
 
             GridTcpDiscoveryNode node = msg.node();
 
@@ -3408,8 +3431,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          * @param msg Client reconnect message.
          */
         private void processClientReconnectMessage(GridTcpDiscoveryClientReconnectMessage msg) {
-            msg.redirectToClients(false);
-
             boolean isLocalNodeRouter = locNodeId.equals(msg.routerNodeId());
 
             if (!msg.verified()) {
@@ -3459,8 +3480,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     else if (log.isDebugEnabled())
                         log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
                             locNodeId + ", clientNodeId=" + nodeId + ']');
-
-                    return;
                 }
             }
 
@@ -4126,8 +4145,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private void processStatusCheckMessage(GridTcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
-            msg.redirectToClients(false);
-
             if (msg.failedNodeId() != null) {
                 if (locNodeId.equals(msg.failedNodeId())) {
                     if (log.isDebugEnabled())
@@ -4369,8 +4386,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private void processDiscardMessage(GridTcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
-            msg.redirectToClients(false);
-
             GridUuid msgId = msg.msgId();
 
             assert msgId != null;
@@ -4567,8 +4582,24 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     // Restore timeout.
                     sock.setSoTimeout(timeout);
 
+                    GridTcpDiscoveryAbstractMessage msg = readMessage(sock, in, netTimeout);
+
+                    // Ping.
+                    if (msg instanceof GridTcpDiscoveryPingRequest) {
+                        GridTcpDiscoveryPingRequest req = (GridTcpDiscoveryPingRequest)msg;
+
+                        GridTcpDiscoveryPingResponse res = new GridTcpDiscoveryPingResponse(locNodeId);
+
+                        if (req.clientNodeId() != null)
+                            res.clientExists(clientMsgWorkers.containsKey(req.clientNodeId()));
+
+                        writeToSocket(sock, res);
+
+                        return;
+                    }
+
                     // Handshake.
-                    GridTcpDiscoveryHandshakeRequest req = readMessage(sock, in, netTimeout);
+                    GridTcpDiscoveryHandshakeRequest req = (GridTcpDiscoveryHandshakeRequest)msg;
 
                     UUID nodeId = req.creatorNodeId();
                     boolean client = req.client();
@@ -4829,9 +4860,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             continue;
                         }
 
-                        if (client)
-                            msg.redirectToClients(false);
-
                         msgWorker.addMessage(msg);
 
                         // Send receipt back.
@@ -5078,19 +5106,19 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** {@inheritDoc} */
         @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
             try {
-                if (msg.verified()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" + locNodeId +
-                            ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+                assert msg.verified();
 
-                    try {
-                        prepareNodeAddedMessage(msg, nodeId, null, null);
+                if (log.isDebugEnabled())
+                    log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" + locNodeId +
+                        ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
 
-                        writeToSocket(sock, msg);
-                    }
-                    finally {
-                        clearNodeAddedMessage(msg);
-                    }
+                try {
+                    prepareNodeAddedMessage(msg, nodeId, null, null);
+
+                    writeToSocket(sock, msg);
+                }
+                finally {
+                    clearNodeAddedMessage(msg);
                 }
             }
             catch (GridException | IOException e) {
