@@ -113,7 +113,7 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, null, mem,
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
                     req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
@@ -168,7 +168,7 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new GridHadoopRunnableTask(log, job, null, mem, taskInfo) {
+                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo, nodeDesc.parentNodeId()) {
                             @Override protected void onTaskFinished(GridHadoopTaskStatus status) {
                                 onTaskFinished0(this, status);
                             }

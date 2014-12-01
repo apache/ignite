@@ -64,6 +64,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
     }
 
     /**
+     * Generates test file.
      *
      * @param path File name.
      * @param wordCounts Words and counts.

@@ -9,13 +9,16 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.counter;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Default in-memory counters store.
@@ -25,7 +28,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Map<GridBiTuple<String, String>, GridHadoopCounter> cntrsMap = new HashMap<>();
+    private final ConcurrentMap<CounterKey, GridHadoopCounter> cntrsMap = new ConcurrentHashMap8<>();
 
     /**
      * Default constructor. Creates new instance without counters.
@@ -39,7 +42,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
      *
      * @param cntrs Counters to store.
      */
-    public GridHadoopCountersImpl(Collection<GridHadoopCounter> cntrs) {
+    public GridHadoopCountersImpl(Iterable<GridHadoopCounter> cntrs) {
         addCounters(cntrs, true);
     }
 
@@ -53,31 +56,65 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     }
 
     /**
+     * Creates counter instance.
+     *
+     * @param cls Class of the counter.
+     * @param grp Group name.
+     * @param name Counter name.
+     * @return Counter.
+     */
+    private <T extends GridHadoopCounter> T createCounter(Class<? extends GridHadoopCounter> cls, String grp,
+        String name) {
+        try {
+            Constructor constructor = cls.getConstructor(String.class, String.class);
+
+            return (T)constructor.newInstance(grp, name);
+        }
+        catch (Exception e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /**
      * Adds counters collection in addition to existing counters.
      *
      * @param cntrs Counters to add.
-     * @param copy Whether to copy counters or not.
+     * @param cp Whether to copy counters or not.
      */
-    private void addCounters(Iterable<GridHadoopCounter> cntrs, boolean copy) {
+    private void addCounters(Iterable<GridHadoopCounter> cntrs, boolean cp) {
         assert cntrs != null;
 
-        for (GridHadoopCounter cntr : cntrs)
-            cntrsMap.put(new T2<>(cntr.group(), cntr.name()), copy ? new GridHadoopCounterImpl(cntr) : cntr);
+        for (GridHadoopCounter cntr : cntrs) {
+            if (cp) {
+                GridHadoopCounter cntrCp = createCounter(cntr.getClass(), cntr.group(), cntr.name());
+
+                cntrCp.merge(cntr);
+
+                cntr = cntrCp;
+            }
+
+            cntrsMap.put(new CounterKey(cntr.getClass(), cntr.group(), cntr.name()), cntr);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopCounter counter(String group, String name, boolean create) {
-        final T2<String, String> mapKey = new T2<>(group, name);
+    @Override public <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls) {
+        assert cls != null;
 
-        GridHadoopCounter counter = cntrsMap.get(mapKey);
+        CounterKey mapKey = new CounterKey(cls, grp, name);
 
-        if (counter == null && create) {
-            counter = new GridHadoopCounterImpl(group, name, 0);
+        T cntr = (T)cntrsMap.get(mapKey);
 
-            cntrsMap.put(mapKey, counter);
+        if (cntr == null) {
+            cntr = createCounter(cls, grp, name);
+
+            T old = (T)cntrsMap.putIfAbsent(mapKey, cntr);
+
+            if (old != null)
+                return old;
         }
 
-        return counter;
+        return cntr;
     }
 
     /** {@inheritDoc} */
@@ -88,7 +125,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     /** {@inheritDoc} */
     @Override public void merge(GridHadoopCounters other) {
         for (GridHadoopCounter counter : other.all())
-            counter(counter.group(), counter.name(), true).increment(counter.value());
+            counter(counter.group(), counter.name(), counter.getClass()).merge(counter);
     }
 
     /** {@inheritDoc} */
@@ -123,5 +160,31 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopCountersImpl.class, this, "counters", cntrsMap.values());
+    }
+
+    /**
+     * The tuple of counter identifier components for more readable code.
+     */
+    private static class CounterKey extends GridTuple3<Class<? extends GridHadoopCounter>, String, String> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Constructor.
+         *
+         * @param cls Class of the counter.
+         * @param grp Group name.
+         * @param name Counter name.
+         */
+        private CounterKey(Class<? extends GridHadoopCounter> cls, String grp, String name) {
+            super(cls, grp, name);
+        }
+
+        /**
+         * Empty constructor required by {@link Externalizable}.
+         */
+        public CounterKey() {
+            // No-op.
+        }
     }
 }

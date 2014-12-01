@@ -27,7 +27,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -46,18 +45,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /** */
     private volatile GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaPrj;
 
-    /** */
-    private volatile GridCacheProjection<StatId, GridHadoopJobStatistics> jobStatPrj;
-
     /** Map-reduce execution planner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridHadoopMapReducePlanner mrPlanner;
 
     /** All the known jobs. */
     private final ConcurrentMap<GridHadoopJobId, GridFutureAdapterEx<GridHadoopJob>> jobs = new ConcurrentHashMap8<>();
-
-    /** */
-    private final ConcurrentMap<GridHadoopJobId, GridHadoopJobStatistics> stats = new ConcurrentHashMap8<>();
 
     /** Locally active jobs. */
     private final ConcurrentMap<GridHadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
@@ -73,10 +66,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     private GridSpinReadWriteLock busyLock;
 
     /** Closure to check result of async transform of system cache. */
-    private final GridInClosure<GridFuture<?>> failsLogger = new CI1<GridFuture<?>>() {
-        @Override public void apply(GridFuture<?> gridFuture) {
+    private final GridInClosure<GridFuture<?>> failsLog = new CI1<GridFuture<?>>() {
+        @Override public void apply(GridFuture<?> gridFut) {
             try {
-                gridFuture.get();
+                gridFut.get();
             }
             catch (GridException e) {
                 U.error(log, "Failed to transform system cache.", e);
@@ -120,8 +113,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     }
 
                     jobMetaPrj = prj = sysCache.projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
-
-                    jobStatPrj = sysCache.projection(StatId.class, GridHadoopJobStatistics.class);
                 }
             }
         }
@@ -209,7 +200,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         try {
-            long start = U.currentTimeMillis();
+            long jobPrepare = U.currentTimeMillis();
 
             if (jobs.containsKey(jobId) || jobMetaCache().containsKey(jobId))
                 throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
@@ -234,13 +225,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             if (log.isDebugEnabled())
                 log.debug("Submitting job metadata [jobId=" + jobId + ", meta=" + meta + ']');
 
+            long jobStart = U.currentTimeMillis();
+
+            GridHadoopPerformanceCounter perfCntr = GridHadoopPerformanceCounter.getCounter(meta.counters(),
+                ctx.localNodeId());
+
+            perfCntr.clientSubmissionEvents(info);
+            perfCntr.onJobPrepare(jobPrepare);
+            perfCntr.onJobStart(jobStart);
+
             if (jobMetaCache().putIfAbsent(jobId, meta) != null)
                 throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
-
-            GridHadoopJobStatistics s = statistics(jobId);
-
-            s.onSubmitStart(start);
-            s.onSubmitEnd();
 
             return completeFut;
         }
@@ -438,7 +433,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     entry.timeToLive(ctx.configuration().getFinishedJobInfoTtl());
 
-                    entry.transformAsync(new UpdatePhaseClosure(incrCntrs, PHASE_COMPLETE)).listenAsync(failsLogger);
+                    entry.transformAsync(new UpdatePhaseClosure(incrCntrs, PHASE_COMPLETE)).listenAsync(failsLog);
 
                     break;
                 }
@@ -454,7 +449,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param c Closure of operation.
      */
     private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> c) {
-        jobMetaCache().transformAsync(jobId, c).listenAsync(failsLogger);
+        jobMetaCache().transformAsync(jobId, c).listenAsync(failsLog);
     }
 
     /**
@@ -762,7 +757,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             case PHASE_COMPLETE: {
                 if (log.isDebugEnabled())
                     log.debug("Job execution is complete, will remove local state from active jobs " +
-                            "[jobId=" + jobId + ", meta=" + meta + ']');
+                        "[jobId=" + jobId + ", meta=" + meta + ']');
 
                 if (state != null) {
                     state = activeJobs.remove(jobId);
@@ -771,11 +766,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     ctx.shuffle().jobFinished(jobId);
                 }
-
-                GridHadoopJobStatistics s = stats.remove(jobId);
-
-//                if (s != null)
-//                    jobStatPrj.transform(new StatId(jobId), new StatUpdateClosure(s));
 
                 GridFutureAdapter<GridHadoopJobId> finishFut = activeFinishFuts.remove(jobId);
 
@@ -793,19 +783,26 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 job.dispose(false);
 
-//                if (ctx.jobUpdateLeader()) { // TODO remove this
-//                    U.sleep(1000);
-//
-//                    s = jobStatPrj.remove(new StatId(jobId));
-//
-//                    if (s != null) {
-//                        log.info("=== Stats for " + jobId);
-//
-//                        s.print(log);
-//
-//                        log.info("===_");
-//                    }
-//                }
+                if (ctx.jobUpdateLeader()) {
+                    ClassLoader ldr = job.getClass().getClassLoader();
+
+                    try {
+                        String statWriterClsName = job.info().property(GridHadoopUtils.JOB_COUNTER_WRITER_PROPERTY);
+
+                        if (statWriterClsName != null) {
+                            Class<?> cls = ldr.loadClass(statWriterClsName);
+
+                            GridHadoopCounterWriter writer = (GridHadoopCounterWriter)cls.newInstance();
+
+                            GridHadoopCounters cntrs = meta.counters();
+
+                            writer.write(job.info(), jobId, cntrs);
+                        }
+                    }
+                    catch (Exception e) {
+                        log.error("Can't write statistic due to: ", e);
+                    }
+                }
 
                 break;
             }
@@ -915,30 +912,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      */
     private JobLocalState initState(GridHadoopJobId jobId) {
         return F.addIfAbsent(activeJobs, jobId, new JobLocalState());
-    }
-
-    /**
-     * Gets job runtime statistics.
-     *
-     * @param jobId Job ID.
-     * @return Statistics.
-     * @throws GridException If failed.
-     */
-    public GridHadoopJobStatistics statistics(GridHadoopJobId jobId) throws GridException {
-        GridHadoopJobStatistics res = stats.get(jobId);
-
-        if (res == null) {
-            GridHadoopMapReducePlan plan = plan(jobId);
-
-            res = new GridHadoopJobStatistics(plan.mappers(), plan.reducers());
-
-            GridHadoopJobStatistics old = stats.putIfAbsent(jobId, res);
-
-            if (old != null)
-                return old;
-        }
-
-        return res;
     }
 
     /**
@@ -1326,7 +1299,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override protected void update(GridHadoopJobMetadata meta, GridHadoopJobMetadata cp) {
-            HashMap<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
+            Map<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
 
             for (GridHadoopInputSplit s : splits)
                 splitsCp.remove(s);
@@ -1498,7 +1471,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingReducers(rdcCp);
 
-            HashMap<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
+            Map<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
 
             if (splits != null) {
                 for (GridHadoopInputSplit s : splits)
@@ -1543,88 +1516,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             cntrs.merge(counters);
 
             cp.counters(cntrs);
-        }
-    }
-
-    /**
-     * Merge job runtime statistics from different nodes.
-     */
-    private static class StatUpdateClosure implements GridClosure<GridHadoopJobStatistics, GridHadoopJobStatistics> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private GridHadoopJobStatistics stats;
-
-        /**
-         * @param stats Statistics.
-         */
-        private StatUpdateClosure(GridHadoopJobStatistics stats) {
-            assert stats != null;
-
-            this.stats = stats;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridHadoopJobStatistics apply(GridHadoopJobStatistics old) {
-            return new GridHadoopJobStatistics(stats, old);
-        }
-    }
-
-    /**
-     * Job statistics cache key.
-     */
-    private static class StatId implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 3564457418556193461L;
-
-        /** */
-        private GridHadoopJobId jobId;
-
-        /**
-         *
-         */
-        public StatId() {
-            // No-op.
-        }
-
-        /**
-         * @param jobId Job ID.
-         */
-        public StatId(GridHadoopJobId jobId) {
-            assert jobId != null;
-
-            this.jobId = jobId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            StatId statId = (StatId)o;
-
-            return jobId.equals(statId.jobId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return jobId.hashCode() + 100500;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            jobId.writeExternal(out);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            jobId = new GridHadoopJobId();
-
-            jobId.readExternal(in);
         }
     }
 

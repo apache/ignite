@@ -35,6 +35,16 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopCounters counters() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public GridHadoopPartitioner partitioner() throws GridException {
             assert false;
 
