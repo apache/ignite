@@ -14,7 +14,7 @@ import org.gridgain.grid.lang.*;
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Task argument.
  */
 public class VisorTaskArgument<A> extends GridBiTuple<Collection<UUID>, A> {
     /** */
