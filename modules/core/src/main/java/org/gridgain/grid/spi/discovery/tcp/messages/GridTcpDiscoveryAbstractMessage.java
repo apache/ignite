@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -47,6 +48,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     private UUID destClientNodeId;
 
     /** Flags. */
+    @GridToStringExclude
     private int flags;
 
     /** Pending message index. */
@@ -259,6 +261,6 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryAbstractMessage.class, this);
+        return S.toString(GridTcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS));
     }
 }

@@ -916,7 +916,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                     locNode.order(topVer);
 
-                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, updateTopology(topVer));
+                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, updateTopologyHistory(topVer));
 
                     joinErr = null;
 
@@ -944,7 +944,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 if (locNodeVer.equals(node.version()))
                     node.version(locNodeVer);
 
-                Collection<GridNode> top = updateTopology(topVer);
+                Collection<GridNode> top = updateTopologyHistory(topVer);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -983,6 +983,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
+                Collection<GridNode> top = updateTopologyHistory(msg.topologyVersion());
+
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Discarding node left message (join process is not finished): " + msg);
@@ -990,7 +992,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
-                notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, updateTopology(msg.topologyVersion()));
+                notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, top);
 
                 stats.onNodeLeft();
             }
@@ -1010,6 +1012,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
+                Collection<GridNode> top = updateTopologyHistory(msg.topologyVersion());
+
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Discarding node failed message (join process is not finished): " + msg);
@@ -1017,7 +1021,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
-                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, updateTopology(msg.topologyVersion()));
+                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, top);
 
                 stats.onNodeFailed();
             }
@@ -1134,9 +1138,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
         /**
          * @param topVer New topology version.
-         * @return Topology snapshot.
+         * @return Latest topology snapshot.
          */
-        private Collection<GridNode> updateTopology(long topVer) {
+        private Collection<GridNode> updateTopologyHistory(long topVer) {
             GridTcpClientDiscoverySpi.this.topVer = topVer;
 
             Collection<GridNode> allNodes = allNodes();

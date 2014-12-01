@@ -26,7 +26,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
-    private static final int GRID_CNT = 1;
+    private static final int GRID_CNT = 2;
 
     /** */
     private static final int CLIENT_GRID_CNT = 5;
@@ -152,8 +152,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     int idx = clientIdx.getAndIncrement();
 
                     while (!done.get()) {
-                        Thread.sleep(100);
-
                         stopGrid(idx);
                         startGrid(idx);
                     }

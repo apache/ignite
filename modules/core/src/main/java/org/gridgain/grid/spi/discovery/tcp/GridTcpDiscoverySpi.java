@@ -2543,8 +2543,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 if (msg.client()) {
                     ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
-                    if (wrk != null)
+                    if (wrk != null) {
+                        msg.verify(locNodeId);
+
                         wrk.addMessage(msg);
+                    }
                     else if (log.isDebugEnabled())
                         log.debug("Received heartbeat message from unknown client node: " + msg);
                 }
@@ -5106,7 +5109,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** {@inheritDoc} */
         @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
             try {
-                assert msg.verified();
+                assert msg.verified() : msg;
 
                 if (log.isDebugEnabled())
                     log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" + locNodeId +
