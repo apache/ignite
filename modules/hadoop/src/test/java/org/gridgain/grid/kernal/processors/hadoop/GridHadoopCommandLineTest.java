@@ -162,7 +162,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
                 if (line.startsWith("</configuration>"))
                     out.println(
                         "    <property>\n" +
-                        "        <name>" + GridHadoopUtils.JOB_STATISTICS_WRITER_PROPERTY + "</name>\n" +
+                        "        <name>" + GridHadoopUtils.JOB_COUNTER_WRITER_PROPERTY + "</name>\n" +
                         "        <value>" + GridHadoopFSCounterWriter.class.getName() + "</value>\n" +
                         "    </property>\n");
 
@@ -316,9 +316,9 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
             jobStatPath = jobPath;
         }
 
-        File locStatFile = new File(testWorkDir, "statistics");
+        File locStatFile = new File(testWorkDir, "performance");
 
-        assertEquals(0, executeHadoopCmd("fs", "-get", jobStatPath.toString() + "/statistics", locStatFile.toString()));
+        assertEquals(0, executeHadoopCmd("fs", "-get", jobStatPath.toString() + "/performance", locStatFile.toString()));
 
         long evtCnt = GridHadoopTestUtils.simpleCheckJobStatFile(new BufferedReader(new FileReader(locStatFile)));
 

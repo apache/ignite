@@ -23,13 +23,13 @@ import java.util.*;
  */
 public class GridHadoopFSCounterWriter implements GridHadoopCounterWriter {
     /** */
-    public static final String PERFORMANCE_COUNTER_FILE_NAME = "statistics";
+    public static final String PERFORMANCE_COUNTER_FILE_NAME = "performance";
 
     /** */
     private static final String DEFAULT_USER_NAME = "anonymous";
 
     /** */
-    private static final String COUNTER_WRITER_DIR_PROPERTY = "gridgain.hadoop.fsStatWriter.directory";
+    private static final String COUNTER_WRITER_DIR_PROPERTY = "gridgain.counters.fswriter.directory";
 
     /** */
     private static final String USER_MACRO = "${USER}";

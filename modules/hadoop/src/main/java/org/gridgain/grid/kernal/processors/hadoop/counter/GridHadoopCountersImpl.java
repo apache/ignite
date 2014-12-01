@@ -18,6 +18,7 @@ import org.jdk8.backport.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Default in-memory counters store.
@@ -27,7 +28,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Map<CounterKey, GridHadoopCounter> cntrsMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<CounterKey, GridHadoopCounter> cntrsMap = new ConcurrentHashMap8<>();
 
     /**
      * Default constructor. Creates new instance without counters.
@@ -105,15 +106,12 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
         T cntr = (T)cntrsMap.get(mapKey);
 
         if (cntr == null) {
-            synchronized (cntrsMap) {
-                cntr = (T) cntrsMap.get(mapKey);
+            cntr = createCounter(cls, grp, name);
 
-                if (cntr == null) {
-                    cntr = createCounter(cls, grp, name);
+            T old = (T)cntrsMap.putIfAbsent(mapKey, cntr);
 
-                    cntrsMap.put(mapKey, cntr);
-                }
-            }
+            if (old != null)
+                return old;
         }
 
         return cntr;

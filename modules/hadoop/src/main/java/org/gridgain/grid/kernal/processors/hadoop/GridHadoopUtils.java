@@ -36,7 +36,7 @@ public class GridHadoopUtils {
     public static final String JOB_SUBMISSION_START_TS_PROPERTY = "gridgain.job.submissionStartTs";
 
     /** Property to set custom writer of job statistics. */
-    public static final String JOB_STATISTICS_WRITER_PROPERTY = "gridgain.hadoop.statWriter";
+    public static final String JOB_COUNTER_WRITER_PROPERTY = "gridgain.counters.writer";
 
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";

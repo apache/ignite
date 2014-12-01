@@ -30,7 +30,7 @@ public class GridHadoopPerformanceCounter extends GridHadoopCounterAdapter {
     private static final String GROUP_NAME = "SYSTEM";
 
     /** The counter name for this counter. */
-    private static final String COUNTER_NAME = "STATISTICS";
+    private static final String COUNTER_NAME = "PERFORMANCE";
 
     /** Events collections. */
     private Collection<T2<String,Long>> evts = new ArrayList<>();
@@ -93,6 +93,11 @@ public class GridHadoopPerformanceCounter extends GridHadoopCounterAdapter {
         evts.addAll(((GridHadoopPerformanceCounter)cntr).evts);
     }
 
+    /**
+     * Gets the events collection.
+     *
+     * @return Collection of event.
+     */
     public Collection<T2<String, Long>> evts() {
         return evts;
     }
@@ -187,25 +192,28 @@ public class GridHadoopPerformanceCounter extends GridHadoopCounterAdapter {
     public void clientSubmissionEvents(GridHadoopJobInfo info) {
         assert nodeId != null;
 
-        try {
-            evts.add(new T2<>("JOB requestId " + nodeId,
-                Long.parseLong(info.property(REQ_NEW_JOBID_TS_PROPERTY))));
-        }
-        catch (NumberFormatException ignore) {
-        }
+        addEventFromProperty("JOB requestId", info, REQ_NEW_JOBID_TS_PROPERTY);
+        addEventFromProperty("JOB responseId", info, RESPONSE_NEW_JOBID_TS_PROPERTY);
+        addEventFromProperty("JOB submit", info, JOB_SUBMISSION_START_TS_PROPERTY);
+    }
 
-        try {
-            evts.add(new T2<>("JOB responseId " + nodeId,
-                Long.parseLong(info.property(RESPONSE_NEW_JOBID_TS_PROPERTY))));
-        }
-        catch (NumberFormatException ignore) {
-        }
+    /**
+     * Adds event with timestamp from some property in job info.
+     *
+     * @param evt Event type and phase.
+     * @param info Job info.
+     * @param propName Property name to get timestamp.
+     */
+    private void addEventFromProperty(String evt, GridHadoopJobInfo info, String propName) {
+        String val = info.property(propName);
 
-        try {
-            evts.add(new T2<>("JOB submit " + nodeId,
-                Long.parseLong(info.property(JOB_SUBMISSION_START_TS_PROPERTY))));
-        }
-        catch (NumberFormatException ignore) {
+        if (!F.isEmpty(val)) {
+            try {
+                evts.add(new T2<>(evt + " " + nodeId, Long.parseLong(val)));
+            }
+            catch (NumberFormatException e) {
+                throw new IllegalStateException("Invalid value '" + val + "' of property '" + propName + "'", e);
+            }
         }
     }
 

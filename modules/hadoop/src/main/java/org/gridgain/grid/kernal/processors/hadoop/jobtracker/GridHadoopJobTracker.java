@@ -787,7 +787,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     ClassLoader ldr = job.getClass().getClassLoader();
 
                     try {
-                        String statWriterClsName = job.info().property(GridHadoopUtils.JOB_STATISTICS_WRITER_PROPERTY);
+                        String statWriterClsName = job.info().property(GridHadoopUtils.JOB_COUNTER_WRITER_PROPERTY);
 
                         if (statWriterClsName != null) {
                             Class<?> cls = ldr.loadClass(statWriterClsName);

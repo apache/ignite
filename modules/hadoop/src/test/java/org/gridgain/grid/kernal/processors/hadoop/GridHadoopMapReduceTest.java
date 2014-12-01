@@ -60,7 +60,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             JobConf jobConf = new JobConf();
 
-            jobConf.set(JOB_STATISTICS_WRITER_PROPERTY, GridHadoopFSCounterWriter.class.getName());
+            jobConf.set(JOB_COUNTER_WRITER_PROPERTY, GridHadoopFSCounterWriter.class.getName());
 
             //To split into about 40 items for v2
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
@@ -170,7 +170,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             }
         }
 
-        final GridGgfsPath statPath = new GridGgfsPath("/users/anonymous/" + jobId + "/statistics");
+        final GridGgfsPath statPath = new GridGgfsPath("/users/anonymous/" + jobId + "/performance");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
