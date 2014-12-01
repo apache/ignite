@@ -18,12 +18,12 @@ public interface GridHadoopCounters {
     /**
      * Returns counter for the specified group and counter name. Creates new if it does not exist.
      *
-     * @param group Counter group name.
+     * @param grp Counter group name.
      * @param name Counter name.
-     * @param create Allows to create new counter if it was not found.
+     * @param cls Class for new instance creation if it's needed.
      * @return The counter that was found or added or {@code null} if create is false.
      */
-    GridHadoopCounter counter(String group, String name, boolean create);
+    <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls);
 
     /**
      * Returns all existing counters.

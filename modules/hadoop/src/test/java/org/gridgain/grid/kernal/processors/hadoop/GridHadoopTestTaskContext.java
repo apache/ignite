@@ -185,9 +185,8 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
     private static DataInput jobConfDataInput(GridHadoopJob job) throws GridException {
         JobConf jobConf = new JobConf();
 
-        for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo) job.info()).properties().entrySet())
+        for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo)job.info()).properties().entrySet())
             jobConf.set(e.getKey(), e.getValue());
-
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 

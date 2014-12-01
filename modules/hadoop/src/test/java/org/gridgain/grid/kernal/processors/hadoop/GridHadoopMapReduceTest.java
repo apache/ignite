@@ -18,8 +18,13 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
@@ -55,6 +60,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             JobConf jobConf = new JobConf();
 
+            jobConf.set(JOB_COUNTER_WRITER_PROPERTY, GridHadoopFSCounterWriter.class.getName());
+
             //To split into about 40 items for v2
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
 
@@ -78,12 +85,15 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
-            GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-                createJobInfo(job.getConfiguration()));
+            GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
+
+            GridFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
 
             fut.get();
 
-            assertEquals("Use new mapper = " + useNewMapper + ", combiner = " + useNewCombiner + "reducer = " +
+            checkJobStatistics(jobId);
+
+            assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
                 "blue\t200000\n" +
                 "green\t150000\n" +
@@ -92,5 +102,89 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
                 readAndSortFile(PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") + "00000")
             );
         }
+    }
+
+    /**
+     * Simple test job statistics.
+     *
+     * @param jobId Job id.
+     * @throws GridException
+     */
+    private void checkJobStatistics(GridHadoopJobId jobId) throws GridException, IOException {
+        GridHadoopCounters cntrs = grid(0).hadoop().counters(jobId);
+
+        GridHadoopPerformanceCounter perfCntr = GridHadoopPerformanceCounter.getCounter(cntrs, null);
+
+        Map<String, SortedMap<Integer,Long>> tasks = new TreeMap<>();
+
+        Map<String, Integer> phaseOrders = new HashMap<>();
+        phaseOrders.put("submit", 0);
+        phaseOrders.put("prepare", 1);
+        phaseOrders.put("start", 2);
+        phaseOrders.put("Cstart", 3);
+        phaseOrders.put("finish", 4);
+
+        String prevTaskId = null;
+
+        long apiEvtCnt = 0;
+
+        for (T2<String, Long> evt : perfCntr.evts()) {
+            //We expect string pattern: COMBINE 1 run 7fa86a14-5a08-40e3-a7cb-98109b52a706
+            String[] parsedEvt = evt.get1().split(" ");
+
+            String taskId;
+            String taskPhase;
+
+            if ("JOB".equals(parsedEvt[0])) {
+                taskId = parsedEvt[0];
+                taskPhase = parsedEvt[1];
+            }
+            else {
+                taskId = ("COMBINE".equals(parsedEvt[0]) ? "MAP" : parsedEvt[0].substring(0, 3)) + parsedEvt[1];
+                taskPhase = ("COMBINE".equals(parsedEvt[0]) ? "C" : "") + parsedEvt[2];
+            }
+
+            if (!taskId.equals(prevTaskId))
+                tasks.put(taskId, new TreeMap<Integer,Long>());
+
+            Integer pos = phaseOrders.get(taskPhase);
+
+            assertNotNull("Invalid phase " + taskPhase, pos);
+
+            tasks.get(taskId).put(pos, evt.get2());
+
+            prevTaskId = taskId;
+
+            apiEvtCnt++;
+        }
+
+        for (Map.Entry<String ,SortedMap<Integer,Long>> task : tasks.entrySet()) {
+            Map<Integer, Long> order = task.getValue();
+
+            long prev = 0;
+
+            for (Map.Entry<Integer, Long> phase : order.entrySet()) {
+                assertTrue("Phase order of " + task.getKey() + " is invalid", phase.getValue() >= prev);
+
+                prev = phase.getValue();
+            }
+        }
+
+        final GridGgfsPath statPath = new GridGgfsPath("/users/anonymous/" + jobId + "/performance");
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return ggfs.exists(statPath);
+                }
+                catch (GridException e) {
+                    throw new GridRuntimeException(e);
+                }
+            }
+        }, 10000);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(statPath)));
+
+        assertEquals(apiEvtCnt, GridHadoopTestUtils.simpleCheckJobStatFile(reader));
     }
 }

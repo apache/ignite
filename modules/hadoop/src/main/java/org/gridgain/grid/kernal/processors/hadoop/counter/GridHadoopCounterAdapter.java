@@ -18,49 +18,35 @@ import java.io.*;
 /**
  * Default Hadoop counter implementation.
  */
-public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable {
+public abstract class GridHadoopCounterAdapter implements GridHadoopCounter, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Counter group name. */
-    private String group;
+    private String grp;
 
     /** Counter name. */
     private String name;
 
-    /** Counter current value. */
-    private long val;
-
     /**
      * Default constructor required by {@link Externalizable}.
      */
-    public GridHadoopCounterImpl() {
+    protected GridHadoopCounterAdapter() {
         // No-op.
     }
 
     /**
      * Creates new counter with given group and name.
      *
-     * @param group Counter group name.
+     * @param grp Counter group name.
      * @param name Counter name.
-     * @param val Counter value.
      */
-    public GridHadoopCounterImpl(String group, String name, long val) {
-        assert group != null : "counter must have group";
+    protected GridHadoopCounterAdapter(String grp, String name) {
+        assert grp != null : "counter must have group";
         assert name != null : "counter must have name";
 
-        this.group = group;
+        this.grp = grp;
         this.name = name;
-        this.val = val;
-    }
-
-    /**
-     * Copy constructor.
-     *
-     * @param cntr Counter to copy.
-     */
-    public GridHadoopCounterImpl(GridHadoopCounter cntr) {
-        this(cntr.group(), cntr.name(), cntr.value());
     }
 
     /** {@inheritDoc} */
@@ -70,36 +56,21 @@ public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable 
 
     /** {@inheritDoc} */
     @Override @Nullable public String group() {
-        return group;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long value() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void value(long val) {
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void increment(long i) {
-        val += i;
+        return grp;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(group);
+        out.writeUTF(grp);
         out.writeUTF(name);
-        out.writeLong(val);
+        writeValue(out);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        group = in.readUTF();
+        grp = in.readUTF();
         name = in.readUTF();
-        val = in.readLong();
+        readValue(in);
     }
 
     /** {@inheritDoc} */
@@ -109,11 +80,11 @@ public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable 
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridHadoopCounterImpl counter = (GridHadoopCounterImpl)o;
+        GridHadoopCounterAdapter cntr = (GridHadoopCounterAdapter)o;
 
-        if (!group.equals(counter.group))
+        if (!grp.equals(cntr.grp))
             return false;
-        if (!name.equals(counter.name))
+        if (!name.equals(cntr.name))
             return false;
 
         return true;
@@ -121,12 +92,29 @@ public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable 
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = group.hashCode();
-        result = 31 * result + name.hashCode();
-        return result;
+        int res = grp.hashCode();
+        res = 31 * res + name.hashCode();
+        return res;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridHadoopCounterImpl.class, this);
+        return S.toString(GridHadoopCounterAdapter.class, this);
     }
+
+    /**
+     * Writes value of this counter to output.
+     *
+     * @param out Output.
+     * @throws IOException If failed.
+     */
+    protected abstract void writeValue(ObjectOutput out) throws IOException;
+
+    /**
+     * Read value of this counter from input.
+     *
+     * @param in Input.
+     * @throws IOException If failed.
+     */
+    protected abstract void readValue(ObjectInput in) throws IOException;
 }

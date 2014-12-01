@@ -16,6 +16,7 @@ import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 
 import java.io.*;
 import java.util.*;
@@ -163,7 +164,7 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(String grpName, String cntrName) {
-        return new GridHadoopV2Counter(ctx.counter(grpName, cntrName));
+        return new GridHadoopV2Counter(ctx.counter(grpName, cntrName, GridHadoopLongCounter.class));
     }
 
     /** {@inheritDoc} */
