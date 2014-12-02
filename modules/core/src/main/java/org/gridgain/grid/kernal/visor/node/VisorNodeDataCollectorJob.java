@@ -16,6 +16,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.visor.compute.VisorComputeMonitoringHolder.*;
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
@@ -66,7 +67,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
 
-            res.events().addAll(collectEvents(g, arg.eventsOrderKey(), arg.eventsThrottleCntrKey(),
+            res.events().addAll(collectEvents(g, arg.eventsOrderKey(), arg.eventsThrottleCounterKey(),
                 arg.taskMonitoringEnabled()));
         }
         catch (Throwable eventsEx) {
@@ -77,8 +78,14 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect caches. */
     private void caches(VisorNodeDataCollectorJobResult res, VisorNodeDataCollectorTaskArg arg) {
         try {
-            for (GridCache cache : g.cachesx())
-                res.caches().add(VisorCache.from(g, cache, arg.sample()));
+            GridConfiguration cfg = g.configuration();
+
+            for (GridCache cache : g.cachesx()) {
+                String cacheName = cache.name();
+
+                if (arg.systemCaches() || !(isSystemCache(cacheName) || isGgfsCache(cfg, cacheName)))
+                    res.caches().add(VisorCache.from(g, cache, arg.sample()));
+            }
         }
         catch (Throwable cachesEx) {
             res.cachesEx(cachesEx);
