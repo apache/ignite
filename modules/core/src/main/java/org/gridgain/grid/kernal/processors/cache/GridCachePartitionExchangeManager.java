@@ -23,6 +23,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -63,6 +64,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     @GridToStringInclude
     private ExchangeWorker exchWorker;
+
+    /** */
+    @GridToStringExclude
+    private final ConcurrentMap<Integer, GridClientPartitionTopology<K, V>> clientTops = new ConcurrentHashMap8<>();
 
     /** */
     private volatile GridDhtPartitionsExchangeFuture<K, V> lastCompletedFuture;
@@ -265,6 +270,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             cctx.time().removeTimeoutObject(resendTimeoutObj);
     }
 
+    public GridDhtPartitionTopology<K, V> clientTopology(int cacheId, GridDhtPartitionExchangeId exchId) {
+        GridClientPartitionTopology<K, V> top = clientTops.get(cacheId);
+
+        if (top != null)
+            return top;
+
+        GridClientPartitionTopology<K, V> old = clientTops.putIfAbsent(cacheId,
+            top = new GridClientPartitionTopology<>(cctx, cacheId, exchId));
+
+        return old != null ? old : top;
+    }
+
+    /**
+     * @return Collection of client topologies.
+     */
+    public Collection<GridClientPartitionTopology<K, V>> clientTopologies() {
+        return clientTops.values();
+    }
+
     /**
      * Gets topology version of last completed partition exchange.
      *
@@ -462,8 +486,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         throws GridException {
         GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-            m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+            if (!cacheCtx.isLocal())
+                m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
+        }
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
@@ -591,9 +617,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 boolean updated = false;
 
                 for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                    GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
+                    if (!cacheCtx.isLocal()) {
+                        GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
 
-                    updated |= top.update(null, msg.partitions().get(cacheCtx.cacheId())) != null;
+                        GridDhtPartitionMap parts = msg.partitions().get(cacheCtx.cacheId());
+
+                        if (parts != null)
+                            updated |= top.update(null, parts) != null;
+                    }
                 }
 
                 if (updated)

@@ -474,6 +474,12 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                     top.beforeExchange(exchId);
                 }
+
+                for (GridClientPartitionTopology<K, V> top : cctx.exchange().clientTopologies()) {
+                    top.updateTopologyVersion(exchId, this);
+
+                    top.beforeExchange(exchId);
+                }
             }
             catch (GridInterruptedException e) {
                 onDone(e);
@@ -531,8 +537,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private void sendLocalPartitions(GridNode node, @Nullable GridDhtPartitionExchangeId id) throws GridException {
         GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-            m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+            if (!cacheCtx.isLocal())
+                m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
+        }
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
@@ -550,8 +558,13 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(id, lastVer.get(),
             id.topologyVersion());
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-            m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+            if (!cacheCtx.isLocal())
+                m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
+        }
+
+        for (GridClientPartitionTopology<K, V> top : cctx.exchange().clientTopologies())
+            m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
 
         if (log.isDebugEnabled())
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
@@ -818,8 +831,16 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param msg Partitions full messages.
      */
     private void updatePartitionFullMap(GridDhtPartitionsFullMessage<K, V> msg) {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts())
-            cacheCtx.topology().update(exchId, msg.partitions().get(cacheCtx.cacheId()));
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
+            Integer cacheId = entry.getKey();
+
+            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+            if (cacheCtx != null)
+                cacheCtx.topology().update(exchId, entry.getValue());
+            else if (CU.oldest(cctx).isLocal())
+                cctx.exchange().clientTopology(cacheId, exchId).update(exchId, entry.getValue());
+        }
     }
 
     /**
@@ -828,8 +849,15 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage<K, V> msg) {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts())
-            cacheCtx.topology().update(exchId, msg.partitions().get(cacheCtx.cacheId()));
+        for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
+            Integer cacheId = entry.getKey();
+            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+            GridDhtPartitionTopology<K, V> top = cacheCtx != null ? cacheCtx.topology() :
+                cctx.exchange().clientTopology(cacheId, exchId);
+
+            top.update(exchId, entry.getValue());
+        }
     }
 
     /**

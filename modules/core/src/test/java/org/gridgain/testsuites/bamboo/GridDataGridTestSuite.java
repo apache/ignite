@@ -58,8 +58,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
-        suite.addTestSuite(GridDataLoaderProcessorSelfTest.class);
-        suite.addTestSuite(GridDataLoaderImplSelfTest.class);
+        //suite.addTestSuite(GridDataLoaderProcessorSelfTest.class); TODO GG-9141
+        //suite.addTestSuite(GridDataLoaderImplSelfTest.class); TODO GG-9141
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
         suite.addTestSuite(GridCacheGlobalClearAllSelfTest.class);
