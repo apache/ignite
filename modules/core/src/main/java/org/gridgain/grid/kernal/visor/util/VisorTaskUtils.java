@@ -10,6 +10,10 @@
 package org.gridgain.grid.kernal.visor.util;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.eviction.*;
+import org.gridgain.grid.cache.eviction.fifo.*;
+import org.gridgain.grid.cache.eviction.lru.*;
+import org.gridgain.grid.cache.eviction.random.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -598,4 +602,25 @@ public class VisorTaskUtils {
         URL logsDirUrl = U.resolveGridGainUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
 
         return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
-    }}
+    }
+
+
+    /**
+     * Extract max size from eviction policy if available.
+     *
+     * @param policy Eviction policy.
+     * @return Extracted max size.
+     */
+    public static Integer evictionPolicyMaxSize(GridCacheEvictionPolicy policy) {
+        if (policy instanceof GridCacheLruEvictionPolicyMBean)
+            return ((GridCacheLruEvictionPolicyMBean)policy).getMaxSize();
+
+        if (policy instanceof GridCacheRandomEvictionPolicyMBean)
+            return ((GridCacheRandomEvictionPolicyMBean)policy).getMaxSize();
+
+        if (policy instanceof GridCacheFifoEvictionPolicyMBean)
+            return ((GridCacheFifoEvictionPolicyMBean)policy).getMaxSize();
+
+        return null;
+    }
+}

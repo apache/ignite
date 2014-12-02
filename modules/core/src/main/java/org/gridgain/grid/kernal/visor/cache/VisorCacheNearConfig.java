@@ -34,6 +34,9 @@ public class VisorCacheNearConfig implements Serializable {
     /** Near cache eviction policy. */
     private String nearEvictPlc;
 
+    /** Near cache eviction policy maximum size. */
+    private Integer nearEvictMaxSize;
+
     /**
      * @param ccfg Cache configuration.
      * @return Data transfer object for near cache configuration properties.
@@ -44,6 +47,7 @@ public class VisorCacheNearConfig implements Serializable {
         cfg.nearEnabled(GridCacheUtils.isNearEnabled(ccfg));
         cfg.nearStartSize(ccfg.getNearStartSize());
         cfg.nearEvictPolicy(compactClass(ccfg.getNearEvictionPolicy()));
+        cfg.nearEvictMaxSize(evictionPolicyMaxSize(ccfg.getNearEvictionPolicy()));
 
         return cfg;
     }
@@ -93,5 +97,19 @@ public class VisorCacheNearConfig implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorCacheNearConfig.class, this);
+    }
+
+    /**
+     * @return Near cache eviction policy max size.
+     */
+    @Nullable public Integer nearEvictMaxSize() {
+        return nearEvictMaxSize;
+    }
+
+    /**
+     * @param nearEvictMaxSize New near cache eviction policy max size.
+     */
+    public void nearEvictMaxSize(@Nullable Integer nearEvictMaxSize) {
+        this.nearEvictMaxSize = nearEvictMaxSize;
     }
 }

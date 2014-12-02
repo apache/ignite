@@ -62,19 +62,10 @@ public class VisorCacheEvictionConfig implements Serializable {
     public static VisorCacheEvictionConfig from(GridCacheConfiguration ccfg) {
         VisorCacheEvictionConfig cfg = new VisorCacheEvictionConfig();
 
-        Integer policyMaxSize = null;
-
         final GridCacheEvictionPolicy policy = ccfg.getEvictionPolicy();
 
-        if (policy instanceof GridCacheLruEvictionPolicyMBean)
-            policyMaxSize = ((GridCacheLruEvictionPolicyMBean)policy).getMaxSize();
-        else if (policy instanceof GridCacheRandomEvictionPolicyMBean)
-            policyMaxSize = ((GridCacheRandomEvictionPolicyMBean)policy).getMaxSize();
-        else if (policy instanceof GridCacheFifoEvictionPolicyMBean)
-            policyMaxSize = ((GridCacheFifoEvictionPolicyMBean)policy).getMaxSize();
-
-        cfg.policy(compactClass(ccfg.getEvictionPolicy()));
-        cfg.policyMaxSize(policyMaxSize);
+        cfg.policy(compactClass(policy));
+        cfg.policyMaxSize(evictionPolicyMaxSize(policy));
         cfg.filter(compactClass(ccfg.getEvictionFilter()));
         cfg.synchronizedConcurrencyLevel(ccfg.getEvictSynchronizedConcurrencyLevel());
         cfg.synchronizedTimeout(ccfg.getEvictSynchronizedTimeout());
