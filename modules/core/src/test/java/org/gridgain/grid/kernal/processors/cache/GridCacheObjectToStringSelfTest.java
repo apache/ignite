@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.eviction.lru.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -147,6 +148,13 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
+
+            for (int i = 0; i < 10; i++) {
+                GridCacheEntryEx<Object, Object> entry = ((GridKernal)g).context().cache().internalCache().peekEx(i);
+
+                if (entry != null)
+                    assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());
+            }
 
             Set<GridCacheEntry<Object, Object>> entries = cache.entrySet();
 

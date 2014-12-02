@@ -629,10 +629,24 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
             throw err;
         }
-        else if (!state(commit ? COMMITTED : ROLLED_BACK)) {
-            state(UNKNOWN);
+        else {
+            // Committed state will be set in finish future onDone callback.
+            if (commit) {
+                if (!onePhaseCommit()) {
+                    if (!state(COMMITTED)) {
+                        state(UNKNOWN);
 
-            throw new GridException("Invalid transaction state for commit or rollback: " + this);
+                        throw new GridException("Invalid transaction state for commit: " + this);
+                    }
+                }
+            }
+            else {
+                if (!state(ROLLED_BACK)) {
+                    state(UNKNOWN);
+
+                    throw new GridException("Invalid transaction state for rollback: " + this);
+                }
+            }
         }
 
         return true;

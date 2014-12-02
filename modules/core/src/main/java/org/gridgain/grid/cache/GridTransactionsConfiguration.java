@@ -10,7 +10,7 @@
 package org.gridgain.grid.cache;
 
 /**
- * TODO: Add class description.
+ * Transactions configuration.
  */
 public class GridTransactionsConfiguration {
     /** Default value for 'txSerializableEnabled' flag. */
@@ -46,9 +46,16 @@ public class GridTransactionsConfiguration {
     /** Pessimistic tx log linger. */
     private int pessimisticTxLogLinger = DFLT_PESSIMISTIC_TX_LOG_LINGER;
 
+    /**
+     * Empty constructor.
+     */
     public GridTransactionsConfiguration() {
+        // No-op.
     }
 
+    /**
+     * @param cfg Configuration to copy.
+     */
     public GridTransactionsConfiguration(GridTransactionsConfiguration cfg) {
         dfltConcurrency = cfg.getDefaultTxConcurrency();
         dfltIsolation = cfg.getDefaultTxIsolation();
@@ -56,7 +63,6 @@ public class GridTransactionsConfiguration {
         pessimisticTxLogLinger = cfg.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cfg.getPessimisticTxLogSize();
         txSerEnabled = cfg.isTxSerializableEnabled();
-
     }
 
     /**
