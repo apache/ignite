@@ -28,23 +28,9 @@ public interface GridHadoopCounter {
     public String group();
 
     /**
-     * Gets current value of this counter.
+     * Merge the given counter to this counter.
      *
-     * @return Current value.
+     * @param cntr Counter to merge into this counter.
      */
-    public long value();
-
-    /**
-     * Set this counter by the given value.
-     *
-     * @param val Value to set.
-     */
-    public void value(long val);
-
-    /**
-     * Increment this counter by the given value.
-     *
-     * @param i Value to increase this counter by.
-     */
-    public void increment(long i);
+    public void merge(GridHadoopCounter cntr);
 }
