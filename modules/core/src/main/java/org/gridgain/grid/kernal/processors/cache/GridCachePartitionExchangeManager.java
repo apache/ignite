@@ -584,9 +584,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 boolean updated = false;
 
                 for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                    GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
+                    if (!cacheCtx.isLocal()) {
+                        GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
 
-                    updated |= top.update(null, msg.partitions().get(cacheCtx.cacheId())) != null;
+                        updated |= top.update(null, msg.partitions().get(cacheCtx.cacheId())) != null;
+                    }
                 }
 
                 if (updated)

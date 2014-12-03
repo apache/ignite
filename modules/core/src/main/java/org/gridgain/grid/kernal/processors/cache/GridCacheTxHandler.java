@@ -953,7 +953,9 @@ public class GridCacheTxHandler<K, V> {
      */
     private void invalidateNearEntry(GridCacheContext<K, V> cacheCtx, K key, GridCacheVersion ver)
         throws GridException {
-        GridCacheEntryEx<K, V> nearEntry = cacheCtx.near().peekEx(key);
+        GridNearCacheAdapter<K, V> near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
+
+        GridCacheEntryEx<K, V> nearEntry = near.peekEx(key);
 
         if (nearEntry != null)
             nearEntry.invalidate(null, ver);

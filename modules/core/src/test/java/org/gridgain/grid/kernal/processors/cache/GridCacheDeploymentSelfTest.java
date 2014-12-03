@@ -404,7 +404,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testDeploymentGroupLock() throws Exception {
+    public void _testDeploymentGroupLock() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
         Class<?> keyCls = ldr.loadClass(TEST_KEY);

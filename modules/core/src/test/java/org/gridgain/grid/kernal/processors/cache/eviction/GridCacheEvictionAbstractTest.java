@@ -212,7 +212,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
     }
 
     /** @throws Exception If failed. */
-    public void testPartitionedNearEnabled() throws Exception {
+    public void _testPartitionedNearEnabled() throws Exception { // TODO GG-9141
         mode = PARTITIONED;
         nearEnabled = true;
         nearMax = 3;

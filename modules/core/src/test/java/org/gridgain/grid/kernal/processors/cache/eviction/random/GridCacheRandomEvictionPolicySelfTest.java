@@ -211,7 +211,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override public void testPartitionedNearEnabled() throws Exception {
+    @Override public void _testPartitionedNearEnabled() throws Exception {
         // No-op.
     }
 

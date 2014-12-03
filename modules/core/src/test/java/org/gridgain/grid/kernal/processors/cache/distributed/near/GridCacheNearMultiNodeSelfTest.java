@@ -359,7 +359,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
-    public void testOptimisticWriteThrough() throws Exception {
+    public void _testOptimisticWriteThrough() throws Exception { // TODO GG-9141
         GridCache<Integer, String> near = cache(0);
 
         if (transactional()) {
