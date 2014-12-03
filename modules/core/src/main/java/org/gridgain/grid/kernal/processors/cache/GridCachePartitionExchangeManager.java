@@ -70,7 +70,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final ConcurrentMap<Integer, GridClientPartitionTopology<K, V>> clientTops = new ConcurrentHashMap8<>();
 
     /** */
-    private volatile GridDhtPartitionsExchangeFuture<K, V> lastCompletedFuture;
+    private volatile GridDhtPartitionsExchangeFuture<K, V> lastInitializedFuture;
 
     /**
      * Partition map futures.
@@ -295,14 +295,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Topology version.
      */
     public long topologyVersion() {
-        return lastCompletedFuture.exchangeId().topologyVersion();
+        return lastInitializedFuture.exchangeId().topologyVersion();
     }
 
     /**
      * @return Last completed topology future.
      */
     public GridDhtTopologyFuture lastTopologyFuture() {
-        return lastCompletedFuture;
+        return lastInitializedFuture;
     }
 
     /**
@@ -543,8 +543,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchFut Exchange.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
-        lastCompletedFuture = exchFut;
-
         for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts.values()) {
             if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
                 fut.cleanUp();
@@ -766,6 +764,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             break;
 
                         if (!exchFut.dummy() && !exchFut.forcePreload()) {
+                            lastInitializedFuture = exchFut;
+
                             exchFut.init();
 
                             exchFut.get();

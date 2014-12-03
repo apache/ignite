@@ -423,15 +423,15 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
 
-                for (Map.Entry<UUID, GridDhtPartitionsSingleMessage<K, V>> m : singleMsgs.entrySet()) {
+                for (Map.Entry<UUID, GridDhtPartitionsSingleMessage<K, V>> m : singleMsgs.entrySet())
                     // If received any messages, process them.
                     onReceive(m.getKey(), m.getValue());
-                }
 
-                for (Map.Entry<UUID, GridDhtPartitionsFullMessage<K, V>> m : fullMsgs.entrySet()) {
+                for (Map.Entry<UUID, GridDhtPartitionsFullMessage<K, V>> m : fullMsgs.entrySet())
                     // If received any messages, process them.
                     onReceive(m.getKey(), m.getValue());
-                }
+
+                long topVer = exchId.topologyVersion();
 
                 for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
                     if (cacheCtx.isLocal())
@@ -441,26 +441,24 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     initTopology(cacheCtx);
 
                     cacheCtx.preloader().updateLastExchangeFuture(this);
+                }
 
-                    long topVer = exchId.topologyVersion();
+                GridFuture<?> partReleaseFut = cctx.partitionReleaseFuture(topVer);
 
-                    GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
+                // Assign to class variable so it will be included into toString() method.
+                this.partReleaseFut = partReleaseFut;
 
-                    assert topVer == top.topologyVersion() :
-                        "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
+                if (log.isDebugEnabled())
+                    log.debug("Before waiting for partition release future: " + this);
 
-                    GridFuture<?> partReleaseFut = cctx.partitionReleaseFuture(topVer);
+                partReleaseFut.get();
 
-                    // Assign to class variable so it will be included into toString() method.
-                    this.partReleaseFut = partReleaseFut;
+                if (log.isDebugEnabled())
+                    log.debug("After waiting for partition release future: " + this);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Before waiting for partition release future: " + this);
-
-                    partReleaseFut.get();
-
-                    if (log.isDebugEnabled())
-                        log.debug("After waiting for partition release future: " + this);
+                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                    if (cacheCtx.isLocal())
+                        continue;
 
                     // Notify replication manager.
                     if (cacheCtx.isDrEnabled())
@@ -471,6 +469,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                     // Process queued undeploys prior to sending/spreading map.
                     cacheCtx.preloader().unwindUndeploys();
+
+                    GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
+
+                    assert topVer == top.topologyVersion() :
+                        "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
 
                     top.beforeExchange(exchId);
                 }
