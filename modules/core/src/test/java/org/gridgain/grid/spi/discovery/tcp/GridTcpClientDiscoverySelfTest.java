@@ -361,7 +361,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertTrue(checkMetrics(3, 3, 0));
 
-        G.grid("client-0").compute().broadcast(F.noop()).get();
+        G.grid("client-0").compute().broadcast(F.noop());
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -371,7 +371,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkMetrics(3, 3, 1);
 
-        G.grid("server-0").compute().broadcast(F.noop()).get();
+        G.grid("server-0").compute().broadcast(F.noop());
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -390,7 +390,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < srvCnt; i++) {
             Grid g = G.grid("server-" + i);
 
-            for (GridNode n : g.nodes()) {
+            for (GridNode n : g.cluster().nodes()) {
                 if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
                     return false;
             }
@@ -399,7 +399,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < clientCnt; i++) {
             Grid g = G.grid("client-" + i);
 
-            for (GridNode n : g.nodes()) {
+            for (GridNode n : g.cluster().nodes()) {
                 if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
                     return false;
             }
@@ -437,7 +437,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         UUID id = null;
 
         try {
-            id = msg.remoteListen(null, new MessageListener()).get();
+            id = msg.remoteListen(null, new MessageListener());
 
             msgLatch = new CountDownLatch(4);
 
@@ -488,7 +488,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++) {
             Grid g = startGrid("server-" + srvIdx.getAndIncrement());
 
-            srvNodeIds.add(g.localNode().id());
+            srvNodeIds.add(g.cluster().localNode().id());
         }
     }
 
@@ -500,7 +500,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++) {
             Grid g = startGrid("client-" + clientIdx.getAndIncrement());
 
-            clientNodeIds.add(g.localNode().id());
+            clientNodeIds.add(g.cluster().localNode().id());
         }
     }
 
@@ -616,9 +616,9 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < srvCnt; i++) {
             Grid g = G.grid("server-" + i);
 
-            assertTrue(srvNodeIds.contains(g.localNode().id()));
+            assertTrue(srvNodeIds.contains(g.cluster().localNode().id()));
 
-            assertFalse(g.localNode().isClient());
+            assertFalse(g.cluster().localNode().isClient());
 
             checkRemoteNodes(g, srvCnt + clientCnt - 1);
         }
@@ -626,9 +626,9 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < clientCnt; i++) {
             Grid g = G.grid("client-" + i);
 
-            assertTrue(clientNodeIds.contains(g.localNode().id()));
+            assertTrue(clientNodeIds.contains(g.cluster().localNode().id()));
 
-            assertTrue(g.localNode().isClient());
+            assertTrue(g.cluster().localNode().isClient());
 
             checkRemoteNodes(g, srvCnt + clientCnt - 1);
         }
@@ -640,7 +640,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private void checkRemoteNodes(Grid grid, int expCnt) {
-        Collection<GridNode> nodes = grid.forRemotes().nodes();
+        Collection<GridNode> nodes = grid.cluster().forRemotes().nodes();
 
         assertEquals(expCnt, nodes.size());
 

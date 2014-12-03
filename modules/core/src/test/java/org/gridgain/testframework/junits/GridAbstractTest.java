@@ -719,7 +719,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Grid> grids = G.allGrids();
 
         for (Grid g : grids) {
-            if (g.localNode().isClient())
+            if (g.cluster().localNode().isClient())
                 stopGrid(g.name(), cancel);
         }
     }
@@ -731,7 +731,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Grid> grids = G.allGrids();
 
         for (Grid g : grids) {
-            if (!g.localNode().isClient())
+            if (!g.cluster().localNode().isClient())
                 stopGrid(g.name(), cancel);
         }
     }
