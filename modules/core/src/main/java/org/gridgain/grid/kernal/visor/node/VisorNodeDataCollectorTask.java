@@ -32,7 +32,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         @Nullable VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg) throws GridException {
         assert arg != null;
 
-        taskArg = arg.get2();
+        taskArg = arg.argument();
 
         Collection<GridNode> nodes = g.nodes();
 

@@ -9,41 +9,75 @@
 
 package org.gridgain.grid.kernal.visor;
 
-import org.gridgain.grid.lang.*;
-
+import java.io.*;
 import java.util.*;
 
 /**
- * Task argument.
+ * Visor tasks argument.
  */
-public class VisorTaskArgument<A> extends GridBiTuple<Collection<UUID>, A> {
+public class VisorTaskArgument<A> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    public VisorTaskArgument(Collection<UUID> nodes, A arg) {
-        super(nodes, arg);
+    /** Node IDs task should be mapped to. */
+    private final Collection<UUID> nodes;
 
+    /** Task argument. */
+    private final A arg;
+
+    /**
+     * Create Visor task argument.
+     *
+     * @param nodes Node IDs task should be mapped to.
+     * @param arg Task argument.
+     */
+    public VisorTaskArgument(Collection<UUID> nodes, A arg) {
         assert nodes != null;
         assert !nodes.isEmpty();
+
+        this.nodes = nodes;
+        this.arg = arg;
     }
 
+    /**
+     * Create Visor task argument with nodes, but without actual argument.
+     *
+     * @param nodes Node IDs task should be mapped to.
+     */
     public VisorTaskArgument(Collection<UUID> nodes) {
         this(nodes, null);
     }
 
+    /**
+     * Create Visor task argument.
+     *
+     * @param node Node ID task should be mapped to.
+     * @param arg Task argument.
+     */
     public VisorTaskArgument(UUID node, A arg) {
         this(Collections.singleton(node), arg);
     }
 
+    /**
+     * Create Visor task argument with nodes, but without actual argument.
+     *
+     * @param node Node ID task should be mapped to.
+     */
     public VisorTaskArgument(UUID node) {
         this(node, null);
     }
 
+    /**
+     * @return Node IDs task should be mapped to.
+     */
     public Collection<UUID> nodes() {
-        return get1();
+        return nodes;
     }
 
+    /**
+     * @return Task argument.
+     */
     public A argument() {
-        return get2();
+        return arg;
     }
 }
