@@ -166,7 +166,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadStartStopSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadUnloadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAffinityFilterSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedPreloadLifecycleSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedPreloadLifecycleSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
         //suite.addTest(new TestSuite(GridCachePartitionedFailoverSelfTest.class));  TODO-gg-4813
         //suite.addTest(new TestSuite(GridCacheColocatedFailoverSelfTest.class)); TODO-gg-4813
@@ -233,7 +233,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadOffHeapSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
         // suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO: uncomment when fix GG-2239
         suite.addTestSuite(GridCacheDeploymentSelfTest.class);
@@ -256,10 +256,10 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Test for byte array value special case.
 //        suite.addTestSuite(GridCacheLocalByteArrayValuesSelfTest.class);
-//        suite.addTestSuite(GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest.class);
-//        suite.addTestSuite(GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedOnlyP2PEnabledByteArrayValuesSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedOnlyP2PDisabledByteArrayValuesSelfTest.class);
+        suite.addTestSuite(GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest.class);
+        suite.addTestSuite(GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOnlyP2PEnabledByteArrayValuesSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOnlyP2PDisabledByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedP2PEnabledByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedP2PDisabledByteArrayValuesSelfTest.class);
 

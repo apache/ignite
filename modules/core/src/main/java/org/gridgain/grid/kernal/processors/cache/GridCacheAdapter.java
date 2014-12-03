@@ -3765,9 +3765,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             GridTransactionsConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
 
             tx = ctx.tm().newTx(
-                true, op.single(),
-                tCfg.getDefaultTxConcurrency(),
-                tCfg.getDefaultTxIsolation(),
+                true,
+                op.single(),
+                PESSIMISTIC,
+                READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
                 0,
                 /** group lock keys */null,

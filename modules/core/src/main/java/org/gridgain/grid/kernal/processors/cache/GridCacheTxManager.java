@@ -1379,21 +1379,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (tx.internal() && !tx.groupLock())
             return;
 
-        GridCacheContext<K, V> lastCtx = null;
-
-        int lastCacheId = 0;
-
-        for (GridCacheTxEntry<K, V> txEntry : tx.allEntries()) {
-            int cacheId = txEntry.cacheId();
-
-            if (lastCtx == null || lastCacheId != cacheId) {
-                lastCtx = cctx.cacheContext(cacheId);
-
-                lastCacheId = cacheId;
-            }
-
-            lastCtx.evicts().touch(txEntry, tx.local());
-        }
+        for (GridCacheTxEntry<K, V> txEntry : tx.allEntries())
+            txEntry.cached().context().evicts().touch(txEntry, tx.local());
     }
 
     /**

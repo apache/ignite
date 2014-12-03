@@ -42,7 +42,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private int retryCnt;
 
     /** Indexed class handlers. */
-    private GridBiInClosure[] idxClsHandlers = new GridBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
+    private Map<Integer, GridBiInClosure[]> idxClsHandlers = new HashMap<>();
 
     /** Handler registry. */
     private ConcurrentMap<ListenerKey, GridBiInClosure<UUID, GridCacheMessage<K, V>>>
@@ -81,8 +81,12 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             GridBiInClosure<UUID, GridCacheMessage<K, V>> c = null;
 
-            if (msgIdx >= 0)
-                c = idxClsHandlers[msgIdx];
+            if (msgIdx >= 0) {
+                GridBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
+
+                if (cacheClsHandlers != null)
+                    c = cacheClsHandlers[msgIdx];
+            }
 
             if (c == null)
                 c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
@@ -602,10 +606,19 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
-            if (idxClsHandlers[msgIdx] != null)
-                throw new GridRuntimeException("Duplicate cache message ID found: " + type);
+            GridBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheId);
 
-            idxClsHandlers[msgIdx] = c;
+            if (cacheClsHandlers == null) {
+                cacheClsHandlers = new GridBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
+
+                idxClsHandlers.put(cacheId, cacheClsHandlers);
+            }
+
+            if (cacheClsHandlers[msgIdx] != null)
+                throw new GridRuntimeException("Duplicate cache message ID found [cacheId=" + cacheId +
+                    ", type=" + type + ']');
+
+            cacheClsHandlers[msgIdx] = c;
 
             return;
         }
