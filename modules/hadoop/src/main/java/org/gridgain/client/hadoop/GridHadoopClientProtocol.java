@@ -27,6 +27,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -73,7 +74,11 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public JobID getNewJobID() throws IOException, InterruptedException {
         try {
+            conf.setLong(REQ_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
+
             GridHadoopJobId jobID = cli.compute().execute(GridHadoopProtocolNextTaskIdTask.class.getName(), null);
+
+            conf.setLong(RESPONSE_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
 
             return new JobID(jobID.globalId().toString(), jobID.localId());
         }
@@ -86,6 +91,8 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     @Override public JobStatus submitJob(JobID jobId, String jobSubmitDir, Credentials ts) throws IOException,
         InterruptedException {
         try {
+            conf.setLong(JOB_SUBMISSION_START_TS_PROPERTY, U.currentTimeMillis());
+
             GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolSubmitJobTask.class.getName(),
                 new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf)));
 

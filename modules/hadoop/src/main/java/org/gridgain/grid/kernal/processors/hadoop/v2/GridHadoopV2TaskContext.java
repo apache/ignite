@@ -21,6 +21,7 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -78,14 +79,18 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** Local node ID */
     private UUID locNodeId;
 
+    /** Counters for task. */
+    private final GridHadoopCounters cntrs = new GridHadoopCountersImpl();
+
     /**
      * @param taskInfo Task info.
      * @param job Job.
      * @param jobId Job ID.
      * @param locNodeId Local node ID.
+     * @param jobConfDataInput DataInput for read JobConf.
      */
     public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopJobId jobId,
-        @Nullable UUID locNodeId) {
+        @Nullable UUID locNodeId, DataInput jobConfDataInput) throws GridException {
         super(taskInfo, job);
         this.locNodeId = locNodeId;
 
@@ -95,10 +100,12 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         try {
             JobConf jobConf = new JobConf();
 
-            GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
-
-            for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo) job.info()).properties().entrySet())
-                jobConf.set(e.getKey(), e.getValue());
+            try {
+                jobConf.readFields(jobConfDataInput);
+            }
+            catch (IOException e) {
+                throw new GridException(e);
+            }
 
             // For map-reduce jobs prefer local writes.
             jobConf.setBooleanIfUnset(PARAM_GGFS_PREFER_LOCAL_WRITES, true);
@@ -112,6 +119,16 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         finally {
             Thread.currentThread().setContextClassLoader(null);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls) {
+        return cntrs.counter(grp, name, cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopCounters counters() {
+        return cntrs;
     }
 
     /**

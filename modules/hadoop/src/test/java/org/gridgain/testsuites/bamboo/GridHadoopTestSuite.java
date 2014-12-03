@@ -24,7 +24,10 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 import java.util.*;
+
+import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
  * Test suite for Hadoop Map Reduce engine.
@@ -36,9 +39,10 @@ public class GridHadoopTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         downloadHadoop();
-        
+        downloadHive();
+
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
-        
+
         TestSuite suite = new TestSuite("Gridgain Hadoop MR Test Suite");
 
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class.getName())));
@@ -107,31 +111,60 @@ public class GridHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(GridHadoopClientProtocolSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(GridHadoopClientProtocolEmbeddedSelfTest.class.getName())));
 
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopCommandLineTest.class.getName())));
+
         return suite;
     }
 
     /**
      * @throws Exception If failed.
      */
+    public static void downloadHive() throws Exception {
+        String ver = GridSystemProperties.getString("hive.version", "0.13.1");
+
+        X.println("Will use Hive version: " + ver);
+
+        String downloadPath = "hive/hive-" + ver + "/apache-hive-" + ver + "-bin.tar.gz";
+
+        download("Hive", "HIVE_HOME", downloadPath, "apache-hive-" + ver + "-bin");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public static void downloadHadoop() throws Exception {
-        String hadoopHome = GridSystemProperties.getString("HADOOP_HOME");
-
-        if (!F.isEmpty(hadoopHome) && new File(hadoopHome).isDirectory()) {
-            X.println("HADOOP_HOME is set to: " + hadoopHome);
-
-            return;
-        }
-
         String ver = GridSystemProperties.getString("hadoop.version", "2.4.1");
 
         X.println("Will use Hadoop version: " + ver);
 
-        String path = "hadoop-" + ver + "/hadoop-" + ver + ".tar.gz";
+        String downloadPath = "hadoop/common/hadoop-" + ver + "/hadoop-" + ver + ".tar.gz";
+
+        download("Hadoop", "HADOOP_HOME", downloadPath, "hadoop-" + ver);
+    }
+
+    /**
+     *  Downloads and extracts an Apache product.
+     *
+     * @param appName Name of application for log messages.
+     * @param homeVariable Pointer to home directory of the component.
+     * @param downloadPath Relative download path of tar package.
+     * @param destName Local directory name to install component.
+     * @throws Exception If failed.
+     */
+    private static void download(String appName, String homeVariable, String downloadPath, String destName)
+        throws Exception {
+        String homeVal = GridSystemProperties.getString(homeVariable);
+
+        if (!F.isEmpty(homeVal) && new File(homeVal).isDirectory()) {
+            X.println(homeVariable + " is set to: " + homeVal);
+
+            return;
+        }
 
         List<String> urls = F.asList(
-            "http://apache-mirror.rbc.ru/pub/apache/hadoop/common/",
-            "http://www.eu.apache.org/dist/hadoop/common/",
-            "http://www.us.apache.org/dist/hadoop/common/");
+            "http://apache-mirror.rbc.ru/pub/apache/",
+            "http://www.eu.apache.org/dist/",
+            "http://www.us.apache.org/dist/");
 
         String tmpPath = System.getProperty("java.io.tmpdir");
 
@@ -139,23 +172,32 @@ public class GridHadoopTestSuite extends TestSuite {
 
         File install = new File(tmpPath + File.separatorChar + "__hadoop");
 
-        File home = new File(install, "hadoop-" + ver);
+        File home = new File(install, destName);
 
-        X.println("Setting HADOOP_HOME to " + home.getAbsolutePath());
+        X.println("Setting " + homeVariable + " to " + home.getAbsolutePath());
 
-        System.setProperty("HADOOP_HOME", home.getAbsolutePath());
+        System.setProperty(homeVariable, home.getAbsolutePath());
+
+        File successFile = new File(home, "__success");
 
         if (home.exists()) {
-            X.println("Destination directory already exists.");
+            if (successFile.exists()) {
+                X.println(appName + " distribution already exists.");
 
-            return;
+                return;
+            }
+
+            X.println(appName + " distribution is invalid and it will be deleted.");
+
+            if (!U.delete(home))
+                throw new IOException("Failed to delete directory: " + install.getAbsolutePath());
         }
 
         for (String url : urls) {
-            if (!install.mkdirs())
+            if (!(install.exists() || install.mkdirs()))
                 throw new IOException("Failed to create directory: " + install.getAbsolutePath());
 
-            URL u = new URL(url + path);
+            URL u = new URL(url + downloadPath);
 
             X.println("Attempting to download from: " + u);
 
@@ -177,6 +219,11 @@ public class GridHadoopTestSuite extends TestSuite {
                                 throw new IllegalStateException();
                         }
                         else {
+                            File parent = dest.getParentFile();
+
+                            if (!(parent.exists() || parent.mkdirs()))
+                                throw new IllegalStateException();
+
                             X.print(" [" + dest);
 
                             try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(dest, false),
@@ -186,12 +233,15 @@ public class GridHadoopTestSuite extends TestSuite {
                                 out.flush();
                             }
 
+                            Files.setPosixFilePermissions(dest.toPath(), modeToPermissionSet(entry.getMode()));
+
                             X.println("]");
                         }
                     }
                 }
 
-                return;
+                if (successFile.createNewFile())
+                    return;
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -200,6 +250,6 @@ public class GridHadoopTestSuite extends TestSuite {
             }
         }
 
-        throw new IllegalStateException("Failed to install Hadoop.");
+        throw new IllegalStateException("Failed to install " + appName + ".");
     }
 }

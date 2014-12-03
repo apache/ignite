@@ -18,8 +18,10 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -31,6 +33,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -43,6 +46,9 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  * Data loader implementation.
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
+    /** */
+    public static final GridProductVersion COMPACT_MAP_ENTRIES_SINCE = GridProductVersion.fromString("6.5.6");
+
     /** Cache updater. */
     private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
@@ -60,6 +66,12 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
     /** Portable enabled flag. */
     private final boolean portableEnabled;
+
+    /**
+     *  If {@code true} then data will be transferred in compact format (only keys and values).
+     *  Otherwise full map entry will be transferred (this is requires by DR internal logic).
+     */
+    private final boolean compact;
 
     /** Per-node buffer size. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -132,14 +144,21 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
      * @param flushQ Flush queue.
+     * @param compact If {@code true} data is transferred in compact mode (only keys and values).
+     *                Otherwise full map entry will be transferred (this is required by DR internal logic).
      */
-    public GridDataLoaderImpl(final GridKernalContext ctx, @Nullable final String cacheName,
-        DelayQueue<GridDataLoaderImpl<K, V>> flushQ) {
+    public GridDataLoaderImpl(
+        final GridKernalContext ctx,
+        @Nullable final String cacheName,
+        DelayQueue<GridDataLoaderImpl<K, V>> flushQ,
+        boolean compact
+    ) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.cacheName = cacheName;
         this.flushQ = flushQ;
+        this.compact = compact;
 
         log = U.logger(ctx, logRef, GridDataLoaderImpl.class);
 
@@ -338,12 +357,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             Collection<K> keys = new GridConcurrentHashSet<>(entries.size(), 1.0f, 16);
 
-            for (Map.Entry<K, V> entry : entries) {
+            for (Map.Entry<K, V> entry : entries)
                 keys.add(entry.getKey());
-
-                if (portableEnabled)
-                    entry.setValue((V)ctx.portable().marshalToPortable(entry.getValue()));
-            }
 
             load0(entries, resFut, keys, 0);
 
@@ -868,7 +883,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * @param curFut Current future.
          * @throws GridInterruptedException If interrupted.
          */
-        private void submit(final List<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
+        private void submit(final Collection<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
             throws GridInterruptedException {
             assert entries != null;
             assert !entries.isEmpty();
@@ -903,7 +918,25 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 byte[] entriesBytes;
 
                 try {
-                    entriesBytes = ctx.config().getMarshaller().marshal(entries);
+                    if (compact) {
+                        if (node.version().compareTo(COMPACT_MAP_ENTRIES_SINCE) < 0) {
+                            Collection<Map.Entry<K, V>> entries0 = new ArrayList<>(entries.size());
+
+                            GridPortableProcessor portable = ctx.portable();
+
+                            for (Map.Entry<K, V> entry : entries)
+                                entries0.add(new Entry0<>(
+                                    portableEnabled ? (K)portable.marshalToPortable(entry.getKey()) : entry.getKey(),
+                                    portableEnabled ? (V)portable.marshalToPortable(entry.getValue()) : entry.getValue()));
+
+                            entriesBytes = ctx.config().getMarshaller().marshal(entries0);
+                        }
+                        else
+                            entriesBytes = ctx.config().getMarshaller()
+                                .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
+                    }
+                    else
+                        entriesBytes = ctx.config().getMarshaller().marshal(entries);
 
                     if (updaterBytes == null) {
                         assert updater != null;
@@ -1214,6 +1247,78 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             key = (K)in.readObject();
             val = (V)in.readObject();
+        }
+    }
+
+    /**
+     * Wrapper list with special compact serialization of map entries.
+     */
+    private static class Entries0<K, V> extends AbstractCollection<Map.Entry<K, V>> implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**  Wrapped delegate. */
+        private Collection<Map.Entry<K, V>> delegate;
+
+        /** Optional portable processor for converting values. */
+        private GridPortableProcessor portable;
+
+        /**
+         * @param delegate Delegate.
+         * @param portable Portable processor.
+         */
+        private Entries0(Collection<Map.Entry<K, V>> delegate, GridPortableProcessor portable) {
+            this.delegate = delegate;
+            this.portable = portable;
+        }
+
+        /**
+         * For {@link Externalizable}.
+         */
+        public Entries0() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Entry<K, V>> iterator() {
+            return delegate.iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return delegate.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(delegate.size());
+
+            boolean portableEnabled = portable != null;
+
+            for (Map.Entry<K, V> entry : delegate) {
+                if (portableEnabled) {
+                    out.writeObject(portable.marshalToPortable(entry.getKey()));
+                    out.writeObject(portable.marshalToPortable(entry.getValue()));
+                }
+                else {
+                    out.writeObject(entry.getKey());
+                    out.writeObject(entry.getValue());
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            int sz = in.readInt();
+
+            delegate = new ArrayList<>(sz);
+
+            for (int i = 0; i < sz; i++) {
+                Object k = in.readObject();
+                Object v = in.readObject();
+
+                delegate.add(new Entry0<>((K)k, (V)v));
+            }
         }
     }
 }
