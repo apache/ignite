@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.interop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.portable.*;
+import org.jetbrains.annotations.*;
 
 /**
  * Interop target abstraction.
@@ -59,6 +60,20 @@ public interface GridInteropTarget {
      */
     public void inOutOp(int type, GridPortableInputStream inStream, long outStream, long outArr, int outCap)
         throws GridException;
+
+    /**
+     * Synchronous IN-OUT operation with optional argument.
+     *
+     * @param type Operation type.
+     * @param inStream Input stream.
+     * @param outStream Native stream address.
+     * @param outArr Native array address.
+     * @param outCap Capacity.
+     * @param arg Argument (optional).
+     * @throws GridException In case of failure.
+     */
+    public void inOutOp(int type, GridPortableInputStream inStream, long outStream, long outArr, int outCap,
+        @Nullable Object arg) throws GridException;
 
     /**
      * Asynchronous IN operation.
