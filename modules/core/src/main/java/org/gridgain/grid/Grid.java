@@ -75,7 +75,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      *
      * @return Name of the grid, or {@code null} for default grid.
      */
-    public String name();
+    public String name();;
 
     /**
      * Gets grid's logger.
