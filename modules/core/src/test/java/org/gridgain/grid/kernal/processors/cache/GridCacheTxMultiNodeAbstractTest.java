@@ -148,7 +148,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     private void onItemNear(boolean putCntr, Grid grid, String itemKey, int retry) throws GridException {
         GridCache<String, Integer> cache = grid.cache(null);
 
-        UUID locId = grid.localNode().id();
+        UUID locId = grid.cluster().localNode().id();
         UUID itemPrimaryId = primaryId(grid, itemKey);
         UUID cntrPrimaryId = primaryId(grid, CNTR_KEY);
 
@@ -200,7 +200,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     private void onItemPrimary(boolean putCntr, Grid grid, String itemKey, int retry) throws GridException {
         GridCache<String, Integer> cache = grid.cache(null);
 
-        UUID locId = grid.localNode().id();
+        UUID locId = grid.cluster().localNode().id();
         UUID itemPrimaryId = primaryId(grid, itemKey);
         UUID cntrPrimaryId = primaryId(grid, CNTR_KEY);
 
@@ -253,7 +253,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     private void onRemoveItemQueried(boolean putCntr, Grid grid, int retry) throws GridException {
         GridCache<String, Integer> cache = grid.cache(null);
 
-        UUID locId = grid.localNode().id();
+        UUID locId = grid.cluster().localNode().id();
         UUID cntrPrimaryId = primaryId(grid, RMVD_CNTR_KEY);
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
@@ -343,7 +343,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     private void onRemoveItemSimple(boolean putCntr, Grid grid, int retry) throws GridException {
         GridCache<String, Integer> cache = grid.cache(null);
 
-        UUID locId = grid.localNode().id();
+        UUID locId = grid.cluster().localNode().id();
         UUID cntrPrimaryId = primaryId(grid, RMVD_CNTR_KEY);
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
@@ -408,7 +408,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @throws GridException If failed.
      */
     private void retries(Grid grid, boolean putCntr) throws GridException {
-        UUID nodeId = grid.localNode().id();
+        UUID nodeId = grid.cluster().localNode().id();
 
         for (int i = 0; i < RETRIES; i++) {
             int cnt = cntr.getAndIncrement();
@@ -487,7 +487,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         try {
             grid(0).cache(null).put(CNTR_KEY, 0);
 
-            grid(0).compute().call(new PutOneEntryInTxJob()).get();
+            grid(0).compute().call(new PutOneEntryInTxJob());
         }
         finally {
             stopAllGrids();
@@ -507,7 +507,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         try {
             grid(0).cache(null).put(CNTR_KEY, 0);
 
-            grid(0).compute().call(new PutTwoEntriesInTxJob()).get();
+            grid(0).compute().call(new PutTwoEntriesInTxJob());
 
             printCounter();
 
@@ -637,7 +637,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             cntrRmvd.set(0);
 
-            grid(0).compute().call(new RemoveInTxJobQueried()).get();
+            grid(0).compute().call(new RemoveInTxJobQueried());
 
             for (int i = 0; i < GRID_CNT * RETRIES; i++)
                 for (int ii = 0; ii < GRID_CNT; ii++)
@@ -678,7 +678,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             cntrRmvd.set(0);
 
-            grid(0).compute().call(new RemoveInTxJobSimple()).get();
+            grid(0).compute().call(new RemoveInTxJobSimple());
 
             // Check using cache.
             for (int i = 0; i < GRID_CNT * RETRIES; i++)
@@ -819,7 +819,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         @Override public Integer call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             retries(grid, true);
 
@@ -846,7 +846,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         @Override public Integer call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             retries(grid, false);
 
@@ -873,7 +873,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         @Override public Integer call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             removeRetriesQueried(grid, true);
 
@@ -900,7 +900,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         @Override public Integer call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             removeRetriesSimple(grid, true);
 

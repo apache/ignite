@@ -126,7 +126,7 @@ public class GridCacheDgcManagerTest extends GridCommonAbstractTest {
                     }
                 }).get());
             }
-        }).get();
+        });
 
         assertEquals(1000, res.intValue());
     }
@@ -164,7 +164,7 @@ public class GridCacheDgcManagerTest extends GridCommonAbstractTest {
                     }
                 }).get());
             }
-        }).get();
+        });
 
         assertEquals(1000, res.intValue());
     }

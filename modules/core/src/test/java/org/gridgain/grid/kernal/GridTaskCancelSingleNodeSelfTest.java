@@ -93,7 +93,11 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
             }
         }, EVT_JOB_FINISHED, EVT_JOB_CANCELLED, EVT_JOB_REJECTED);
 
-        GridComputeTaskFuture<?> fut = grid().compute().execute(TestTask.class, null);
+        GridCompute comp = grid().compute().enableAsync();
+
+        comp.execute(TestTask.class, null);
+
+        GridComputeTaskFuture<?> fut = comp.future();
 
         if (timeoutBeforeCancel > 0L)
             Thread.sleep(timeoutBeforeCancel);
@@ -150,7 +154,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
                 /** {@inheritDoc} */
                 @Override public Object execute() {
-                    log.info("Executing job on node: " + g.localNode().id());
+                    log.info("Executing job on node: " + g.cluster().localNode().id());
 
                     try {
                         Thread.sleep(5000);

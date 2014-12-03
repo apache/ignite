@@ -62,7 +62,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
             grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
 
-            grid1.compute().execute(UserResourceTask.class, null).get();
+            grid1.compute().execute(UserResourceTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 4);
             checkUsageCount(createClss, UserResource2.class, 4);

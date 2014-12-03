@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -530,7 +529,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     if (cached == null)
                                         txEntry.cached(cached = cctx.cache().entryEx(txEntry.key()), null);
 
-                                    if (near() && cctx.config().getDrReceiverConfiguration() != null) {
+                                    if (near() && cctx.dr().receiveEnabled()) {
                                         cached.markObsolete(xidVer);
 
                                         break;
@@ -562,37 +561,22 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         if (explicitVer == null)
                                             explicitVer = writeVersion(); // Force write version to be used.
 
-                                        boolean drNeedResolve = cctx.drNeedResolve(cached.version(), explicitVer);
+                                        GridDrResolveResult<V> drRes = cctx.dr().resolveTx(cached,
+                                            txEntry,
+                                            explicitVer,
+                                            op,
+                                            val,
+                                            valBytes,
+                                            txEntry.ttl(),
+                                            txEntry.drExpireTime());
 
-                                        if (drNeedResolve) {
-                                            GridBiTuple<GridCacheOperation, GridDrReceiverConflictContextImpl<K, V>>
-                                                drRes = drResolveConflict(op, txEntry.key(), val, valBytes,
-                                                txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
+                                        if (drRes != null) {
+                                            op = drRes.operation();
+                                            val = drRes.value();
+                                            valBytes = drRes.valueBytes();
 
-                                            assert drRes != null;
-
-                                            GridDrReceiverConflictContextImpl<K, V> drCtx = drRes.get2();
-
-                                            if (drCtx.isUseOld())
-                                                op = NOOP;
-                                            else if (drCtx.isUseNew()) {
-                                                txEntry.ttl(drCtx.ttl());
-
-                                                if (drCtx.newEntry().dataCenterId() !=
-                                                    cctx.gridConfig().getDataCenterId())
-                                                    txEntry.drExpireTime(drCtx.expireTime());
-                                                else
-                                                    txEntry.drExpireTime(-1L);
-                                            }
-                                            else if (drCtx.isMerge()) {
-                                                op = drRes.get1();
-                                                val = drCtx.mergeValue();
-                                                valBytes = null;
+                                            if (drRes.isMerge())
                                                 explicitVer = writeVersion();
-
-                                                txEntry.ttl(drCtx.ttl());
-                                                txEntry.drExpireTime(-1L);
-                                            }
                                         }
                                         else
                                             // Nullify explicit version so that innerSet/innerRemove will work as usual.

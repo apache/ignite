@@ -31,7 +31,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
             Grid grid = startGrid(0);
             startGrid(1);
 
-            grid.compute().execute(TestAllMethodsTask.class, null).get();
+            grid.compute().execute(TestAllMethodsTask.class, null);
         }
         finally {
             stopGrid(0);
@@ -46,7 +46,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = startGrid(0);
 
-            grid.compute().execute(TestLifeCycleTask.class, null).get();
+            grid.compute().execute(TestLifeCycleTask.class, null);
         }
         finally {
             stopGrid(0);
@@ -60,7 +60,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = startGrid(0);
 
-            grid.compute().execute(TestNegativeTask.class, null).get();
+            grid.compute().execute(TestNegativeTask.class, null);
         }
         finally {
             stopGrid(0);

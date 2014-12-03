@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -21,7 +22,7 @@ import java.util.*;
 /**
  * {@link GridCompute} implementation.
  */
-public class GridServicesImpl implements GridServices, Externalizable {
+public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -29,7 +30,7 @@ public class GridServicesImpl implements GridServices, Externalizable {
     private GridKernalContext ctx;
 
     /** */
-    private GridProjection prj;
+    private GridProjectionAdapter prj;
 
     /**
      * Required by {@link Externalizable}.
@@ -41,8 +42,11 @@ public class GridServicesImpl implements GridServices, Externalizable {
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
+     * @param async Async support flag.
      */
-    public GridServicesImpl(GridKernalContext ctx, GridProjection prj) {
+    public GridServicesImpl(GridKernalContext ctx, GridProjectionAdapter prj, boolean async) {
+        super(async);
+
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -53,14 +57,14 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployNodeSingleton(String name, GridService svc) {
+    @Override public void deployNodeSingleton(String name, GridService svc) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deployNodeSingleton(prj, name, svc);
+            saveOrGet(ctx.service().deployNodeSingleton(prj, name, svc));
         }
         finally {
             unguard();
@@ -68,14 +72,14 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployClusterSingleton(String name, GridService svc) {
+    @Override public void deployClusterSingleton(String name, GridService svc) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deployClusterSingleton(prj, name, svc);
+            saveOrGet(ctx.service().deployClusterSingleton(prj, name, svc));
         }
         finally {
             unguard();
@@ -83,14 +87,15 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) {
+    @Override public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt)
+        throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt);
+            saveOrGet(ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt));
         }
         finally {
             unguard();
@@ -98,8 +103,8 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
-        Object affKey) {
+    @Override public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
+        Object affKey) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
         A.notNull(affKey, "affKey");
@@ -107,7 +112,7 @@ public class GridServicesImpl implements GridServices, Externalizable {
         guard();
 
         try {
-            return ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey);
+            saveOrGet(ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey));
         }
         finally {
             unguard();
@@ -115,13 +120,13 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deploy(GridServiceConfiguration cfg) {
+    @Override public void deploy(GridServiceConfiguration cfg) throws GridException {
         A.notNull(cfg, "cfg");
 
         guard();
 
         try {
-            return ctx.service().deploy(cfg);
+            saveOrGet(ctx.service().deploy(cfg));
         }
         finally {
             unguard();
@@ -129,13 +134,13 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> cancel(String name) {
+    @Override public void cancel(String name) throws GridException {
         A.notNull(name, "name");
 
         guard();
 
         try {
-            return ctx.service().cancel(name);
+            saveOrGet(ctx.service().cancel(name));
         }
         finally {
             unguard();
@@ -143,11 +148,11 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> cancelAll() {
+    @Override public void cancelAll() throws GridException {
         guard();
 
         try {
-            return ctx.service().cancelAll();
+            saveOrGet(ctx.service().cancelAll());
         }
         finally {
             unguard();
@@ -222,13 +227,21 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public GridServices enableAsync() {
+        if (isAsync())
+            return this;
+
+        return new GridServicesImpl(ctx, prj, true);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection)in.readObject();
+        prj = (GridProjectionAdapter)in.readObject();
     }
 
     /**
@@ -237,7 +250,7 @@ public class GridServicesImpl implements GridServices, Externalizable {
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private Object readResolve() throws ObjectStreamException {
+    protected Object readResolve() throws ObjectStreamException {
         return prj.services();
     }
 }

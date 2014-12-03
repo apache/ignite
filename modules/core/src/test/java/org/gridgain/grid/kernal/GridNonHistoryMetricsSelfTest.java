@@ -55,7 +55,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
     public void testSingleTaskMetrics() throws Exception {
         final Grid grid = grid();
 
-        grid.compute().execute(new TestTask(), "testArg").get();
+        grid.compute().execute(new TestTask(), "testArg");
 
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
@@ -74,13 +74,13 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                GridNodeMetrics metrics = grid.localNode().metrics();
+                GridNodeMetrics metrics = grid.cluster().localNode().metrics();
 
                 return metrics.getTotalExecutedJobs() == 5;
             }
         }, 5000);
 
-        GridNodeMetrics metrics = grid.localNode().metrics();
+        GridNodeMetrics metrics = grid.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 

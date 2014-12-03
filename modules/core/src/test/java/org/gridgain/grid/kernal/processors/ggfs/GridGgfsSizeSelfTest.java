@@ -601,7 +601,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         Grid g = startGrid(GRID_CNT);
 
-        info("Started grid: " + g.localNode().id());
+        info("Started grid: " + g.cluster().localNode().id());
 
         U.awaitQuiet(latch);
 

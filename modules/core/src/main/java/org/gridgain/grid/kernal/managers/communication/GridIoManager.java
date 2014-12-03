@@ -79,8 +79,8 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     /** Affinity assignment executor service. */
     private ExecutorService affPool;
 
-    /** Internal DR pool. */
-    private ExecutorService drPool;
+    /** Utility cache pool. */
+    private ExecutorService utilityCachePool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -166,7 +166,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         p2pPool = ctx.config().getPeerClassLoadingExecutorService();
         sysPool = ctx.config().getSystemExecutorService();
         mgmtPool = ctx.config().getManagementExecutorService();
-        drPool = ctx.drPool();
+        utilityCachePool = ctx.utilityCachePool();
         affPool = Executors.newFixedThreadPool(1);
 
         getSpi().setListener(commLsnr = new GridCommunicationListener<Serializable>() {
@@ -473,7 +473,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 case SYSTEM_POOL:
                 case MANAGEMENT_POOL:
                 case AFFINITY_POOL:
-                case DR_POOL: {
+                case UTILITY_CACHE_POOL: {
                     if (msg.isOrdered())
                         processOrderedMessage(node, msg, plc, msgC);
                     else
@@ -509,10 +509,10 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 return mgmtPool;
             case AFFINITY_POOL:
                 return affPool;
-            case DR_POOL:
-                assert drPool != null : "DR pool is not configured.";
+            case UTILITY_CACHE_POOL:
+                assert utilityCachePool != null : "Utility cache pool is not configured.";
 
-                return drPool;
+                return utilityCachePool;
 
             default: {
                 assert false : "Invalid communication policy: " + plc;

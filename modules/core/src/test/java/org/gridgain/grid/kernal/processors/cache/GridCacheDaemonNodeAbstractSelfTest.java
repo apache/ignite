@@ -162,13 +162,13 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
                 GridNode n;
 
                 // Call mapKeyToNode for normal node.
-                assertNotNull(n = g1.mapKeyToNode(null, i));
+                assertNotNull(n = g1.cluster().mapKeyToNode(null, i));
 
                 // Call mapKeyToNode for daemon node.
                 if (cacheMode() == PARTITIONED)
-                    assertEquals(n, g2.mapKeyToNode(null, i));
+                    assertEquals(n, g2.cluster().mapKeyToNode(null, i));
                 else
-                    assertNotNull(g2.mapKeyToNode(null, i));
+                    assertNotNull(g2.cluster().mapKeyToNode(null, i));
             }
         }
         finally {

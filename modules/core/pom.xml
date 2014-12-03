@@ -29,6 +29,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>1.0.0-PFD</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>jdk8-backport</artifactId>
             <version>${gridgain.version}</version>

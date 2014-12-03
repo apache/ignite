@@ -102,8 +102,7 @@ class VisorAckCommand {
             try {
                 val nodeIds = grid.nodes().map(_.id())
 
-                grid.forNodeIds(nodeIds)
-                    .compute()
+                grid.compute(grid.forNodeIds(nodeIds))
                     .withName("visor-ack")
                     .withNoFailover()
                     .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))

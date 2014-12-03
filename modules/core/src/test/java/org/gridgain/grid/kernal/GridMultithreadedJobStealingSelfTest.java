@@ -66,7 +66,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             /** */
             @Override public void run() {
                 try {
-                    JobStealingResult res = grid.compute().execute(JobStealingTask.class, null).get();
+                    JobStealingResult res = grid.compute().execute(JobStealingTask.class, null);
 
                     info("Task result: " + res);
 
@@ -98,8 +98,8 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }, threadsNum, "JobStealingThread");
 
         for (Grid g : G.allGrids())
-            info("Metrics [nodeId=" + g.localNode().id() +
-                ", metrics=" + g.localNode().metrics() + ']');
+            info("Metrics [nodeId=" + g.cluster().localNode().id() +
+                ", metrics=" + g.cluster().localNode().metrics() + ']');
 
         assert fail.get() == null : "Test failed with exception: " + fail.get();
 
@@ -155,7 +155,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
             // Put all jobs onto local node.
             for (int i = 0; i < subgrid.size(); i++)
-                map.put(new GridJobStealingJob(2000L), grid.localNode());
+                map.put(new GridJobStealingJob(2000L), grid.cluster().localNode());
 
             return map;
         }

@@ -86,7 +86,7 @@ public class GridCacheLoadPopulationTask extends GridComputeTaskSplitAdapter<Voi
                 map.put(key, new TestValue(key, i));
             }
 
-            g.log().info("Putting values to partitioned cache [nodeId=" + g.localNode().id() + ", mapSize=" +
+            g.log().info("Putting values to partitioned cache [nodeId=" + g.cluster().localNode().id() + ", mapSize=" +
                 map.size() + ']');
 
             g.cache(GridCacheMultiNodeLoadTest.CACHE_NAME).putAll(map);

@@ -104,13 +104,13 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
             Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
             Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            nodeToExec = grid2.localNode().id();
+            nodeToExec = grid2.cluster().localNode().id();
 
             cnt = new CountDownLatch(2);
 
-            GridComputeTaskFuture<?> res = grid1.compute().execute(UserResourceTask1.class, true);
+            GridComputeTaskFuture<?> res = executeAsync(grid1.compute(), UserResourceTask1.class, true);
 
-            grid3.compute().execute(UserResourceTask2.class, false).get();
+            executeAsync(grid3.compute(), UserResourceTask2.class, false).get();
 
             cnt.await();
 
@@ -151,11 +151,11 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         try {
             Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            nodeToExec = grid.localNode().id();
+            nodeToExec = grid.cluster().localNode().id();
 
             cnt = new CountDownLatch(1);
 
-            GridComputeTaskFuture<?> res = grid.compute().execute(UserResourceTask1.class, true);
+            GridComputeTaskFuture<?> res = executeAsync(grid.compute(), UserResourceTask1.class, true);
 
             cnt.await();
 
@@ -189,11 +189,11 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
             Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
             Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            nodeToExec = grid2.localNode().id();
+            nodeToExec = grid2.cluster().localNode().id();
 
             cnt = new CountDownLatch(1);
 
-            GridComputeTaskFuture<?> res = grid1.compute().execute(UserResourceTask1.class, true);
+            GridComputeTaskFuture<?> res = executeAsync(grid1.compute(), UserResourceTask1.class, true);
 
             cnt.await();
 
@@ -235,7 +235,8 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
 
             Class task1 = ldr.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            GridComputeTaskFuture res = grid1.compute().execute(task1, new Object[] {grid2.localNode().id(), true});
+            GridComputeTaskFuture res =
+                executeAsync(grid1.compute(), task1, new Object[] {grid2.cluster().localNode().id(), true});
 
             waitForEvent(grid2, EVT_JOB_STARTED);
 

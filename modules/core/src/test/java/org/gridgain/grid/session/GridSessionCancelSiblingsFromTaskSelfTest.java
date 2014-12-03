@@ -122,7 +122,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
     private void checkTask(int num) throws InterruptedException, GridException {
         Grid grid = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class, num);
+        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridTaskSessionTestTask.class, num);
 
         assert fut != null;
 

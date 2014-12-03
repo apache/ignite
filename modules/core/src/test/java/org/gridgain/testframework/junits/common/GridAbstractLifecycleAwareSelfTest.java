@@ -51,7 +51,7 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         @Override public void start() {
             startCnt.incrementAndGet();
 
-            assertEquals(expCacheName, cacheName);
+            assertEquals("Unexpected cache name for " + this, expCacheName, cacheName);
         }
 
         /** {@inheritDoc} */

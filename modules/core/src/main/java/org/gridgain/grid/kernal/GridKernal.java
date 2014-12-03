@@ -11,8 +11,11 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.dr.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.*;
@@ -35,13 +38,13 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.plugin.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
@@ -52,15 +55,16 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
@@ -91,7 +95,6 @@ import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrUtils.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
 
@@ -210,10 +213,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     @GridToStringExclude
     private GridPortables portables;
 
-    /** DR pool. */
-    @GridToStringExclude
-    private ExecutorService drPool;
-
     /** Kernal gateway. */
     @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
@@ -251,6 +250,36 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             compatibleVers[i] = compatibleVers[i].trim();
 
         this.compatibleVers = Collections.unmodifiableList(Arrays.asList(compatibleVers));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCluster cluster() {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final GridCompute compute(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final GridMessaging message(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).message();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final GridEvents events(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).events();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridServices services(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).services();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService executorService(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).executorService();
     }
 
     /** {@inheritDoc} */
@@ -512,12 +541,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * @param cfg Grid configuration to use.
-     * @param drPool Dr executor service.
+     * @param utilityCachePool Utility cache pool.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(final GridConfiguration cfg, @Nullable ExecutorService drPool, GridAbsClosure errHnd)
+    public void start(final GridConfiguration cfg, ExecutorService utilityCachePool, GridAbsClosure errHnd)
         throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
@@ -626,7 +655,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(log, this, cfg, gw, ENT);
+            GridKernalContextImpl ctx =
+                new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -643,8 +673,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             scheduler = new GridSchedulerImpl(ctx);
 
-            this.drPool = drPool;
-
             startProcessor(ctx, rsrcProc, attrs);
 
             // Inject resources into lifecycle beans.
@@ -659,13 +687,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, ctx);
-
             addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
 
-            // Start version converter processor before all other
-            // components so they can register converters.
-            startProcessor(ctx, verProc, attrs);
+            startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
 
             // Off-heap processor has no dependencies.
             startProcessor(ctx, new GridOffHeapProcessor(ctx), attrs);
@@ -722,11 +746,15 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 GridComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
                 GridComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
-            startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
-            // Put version converters to attributes after
-            // all components are started.
-            verProc.addConvertersToAttributes(attrs);
+            // Start plugins.
+            for (PluginProvider provider : ctx.plugins().allProviders()) {
+                ctx.add(new GridPluginComponent(provider));
+
+                provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
+            }
+
+            ctx.createMessageFactory();
 
             if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx);
@@ -1099,24 +1127,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         A.ensure(cfg.getNetworkTimeout() > 0, "cfg.getNetworkTimeout() > 0");
         A.ensure(cfg.getNetworkSendRetryDelay() > 0, "cfg.getNetworkSendRetryDelay() > 0");
         A.ensure(cfg.getNetworkSendRetryCount() > 0, "cfg.getNetworkSendRetryCount() > 0");
-        A.ensure(cfg.getDataCenterId() >= 0, "cfg.getDataCenterId() >= 0");
-        A.ensure(cfg.getDataCenterId() < MAX_DATA_CENTERS, "cfg.getDataCenterId() <= 31");
 
-        boolean hasHubCfg = cfg.getDrSenderHubConfiguration() != null ||
-            cfg.getDrReceiverHubConfiguration() != null;
-
-        if (!hasHubCfg)
-            for (GridCacheConfiguration cacheCfg : cfg.getCacheConfiguration()) {
-                if (cacheCfg.getDrSenderConfiguration() != null || cacheCfg.getDrReceiverConfiguration() != null) {
-                    hasHubCfg = true;
-
-                    break;
-                }
-            }
-
-        if (hasHubCfg)
-            A.ensure(cfg.getDataCenterId() != 0, "cfg.getDataCenterId() must have non-zero value if grid has " +
-                "send or receiver hub configuration.");
+        if (!F.isEmpty(cfg.getPluginConfigurations())) {
+            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
+                A.notNull(pluginCfg.providerClass(), "PluginConfiguration.providerClass()");
+        }
     }
 
     /**
@@ -1184,9 +1199,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             msgs.add("Network segmentation detection.");
-
-        if (cfg.getDrReceiverHubConfiguration() != null || cfg.getDrSenderHubConfiguration() != null)
-            msgs.add("Data center replication.");
 
         if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
             msgs.add("Secure session SPI.");
@@ -1338,9 +1350,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getClientConnectionConfiguration() != null)
             add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
-
-        // Add data center ID.
-        add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
         try {
             GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();
@@ -2494,7 +2503,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     @SuppressWarnings("unchecked")
     @Override public String executeTask(String taskName, String arg) throws JMException {
         try {
-            return compute().<String, String>execute(taskName, arg).get();
+            return compute().<String, String>execute(taskName, arg);
         }
         catch (GridException e) {
             throw U.jmException(e);
@@ -2599,19 +2608,63 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(File file, boolean restart,
+    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
         int timeout, int maxConn) throws GridException {
+        return startNodesAsync(file, restart, timeout, maxConn).get();
+    }
+
+    /**
+     * @param file Configuration file.
+     * @param restart Whether to stop existing nodes.
+     * @param timeout Connection timeout.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return Future with results.
+     * @throws GridException In case of error.
+     * @see {@link GridCluster#startNodes(java.io.File, boolean, int, int)}.
+     */
+    GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws GridException {
         A.notNull(file, "file");
         A.ensure(file.exists(), "file doesn't exist.");
         A.ensure(file.isFile(), "file is a directory.");
 
         GridBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
 
-        return startNodes(t.get1(), t.get2(), restart, timeout, maxConn);
+        return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(
+    @Override public GridCluster enableAsync() {
+        return new GridClusterAsyncImpl(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridFuture<R> future() {
+        throw new IllegalStateException("Asynchronous mode is not enabled.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
+        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
+        int maxConn) throws GridException {
+        return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
+    }
+
+    /**
+     * @param hosts Startup parameters.
+     * @param dflts Default values.
+     * @param restart Whether to stop existing nodes
+     * @param timeout Connection timeout in milliseconds.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return Future with results.
+     * @throws GridException In case of error.
+     * @see {@link GridCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
+     */
+    GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
         int maxConn) throws GridException {
         A.notNull(hosts, "hosts");
@@ -2658,7 +2711,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
                         try {
-                            forNodes(neighbors).compute().execute(GridKillTask.class, false).get();
+                            compute(forNodes(neighbors)).execute(GridKillTask.class, false);
                         }
                         catch (GridEmptyProjectionException ignored) {
                             // No-op, nothing to restart.
@@ -2710,11 +2763,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         finally {
             unguard();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public ExecutorService drPool() {
-        return drPool;
     }
 
     /**
@@ -2778,7 +2826,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            compute().execute(GridKillTask.class, false).get();
+            compute().execute(GridKillTask.class, false);
         }
         finally {
             unguard();
@@ -2790,7 +2838,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            forNodeIds(ids).compute().execute(GridKillTask.class, false).get();
+            compute(forNodeIds(ids)).execute(GridKillTask.class, false);
         }
         finally {
             unguard();
@@ -2802,7 +2850,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            compute().execute(GridKillTask.class, true).get();
+            compute().execute(GridKillTask.class, true);
         }
         finally {
             unguard();
@@ -2814,7 +2862,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            forNodeIds(ids).compute().execute(GridKillTask.class, true).get();
+            compute(forNodeIds(ids)).execute(GridKillTask.class, true);
         }
         finally {
             unguard();
@@ -3004,6 +3052,18 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
+        guard();
+
+        try {
+            return (T)ctx.pluginProvider(name).plugin();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GridInteropProcessor interop() {
         return ctx.interop();
     }
@@ -3116,7 +3176,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public GridDr dr() {
-        return ctx.dr().dr();
+        // FIXME 9341.
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -3135,27 +3196,22 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * Creates grid component which has different implementations for enterprise and open source versions.
-     * For such components following convention is used:
-     * <ul>
-     *     <li>component has an interface (org.gridgain.xxx.GridXXXComponent)</li>
-     *     <li>there are two component implementations in the subpackages 'ent' and 'os' where
-     *     component implementations are named correspondingly GridEntXXXComponent and GridOSXXXComponent</li>
-     *     <li>component implementation has public constructor with single parameter {@link GridKernalContext}</li>
-     * </ul>
-     * This method first tries to find component implementation from 'ent' package, if it is not found it
-     * uses implementation from 'os' subpackage.
+     * Creates optional component.
      *
      * @param cls Component interface.
      * @param ctx Kernal context.
      * @return Created component.
      * @throws GridException If failed to create component.
      */
-    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx)
-        throws GridException {
+    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx) throws GridException {
         assert cls.isInterface() : cls;
-        assert cls.getSimpleName().startsWith("Grid") : cls;
 
+        T comp = ctx.plugins().createComponent(cls);
+
+        if (comp != null)
+            return comp;
+
+        // TODO 9341: get rid of ent/os after moving ent code to plugin.
         Class<T> implCls = null;
 
         try {

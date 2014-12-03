@@ -46,7 +46,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
             grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            grid1.compute().execute(MethodResourceOverrideTask.class, null).get();
+            grid1.compute().execute(MethodResourceOverrideTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 4);
             checkUsageCount(createClss, UserResource2.class, 4);

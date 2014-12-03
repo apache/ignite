@@ -88,7 +88,11 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
     private void checkTask(int num) throws GridException {
         Grid grid = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class.getName(), num);
+        GridCompute comp = grid.compute().enableAsync();
+
+        comp.execute(GridTaskSessionTestTask.class.getName(), num);
+
+        GridComputeTaskFuture<?> fut = comp.future();
 
         Object res = fut.get();
 

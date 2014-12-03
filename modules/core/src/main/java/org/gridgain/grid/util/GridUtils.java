@@ -7215,7 +7215,7 @@ public abstract class GridUtils {
     public static Collection<UUID> gridIds(@Nullable Collection<? extends Grid> grids) {
         return F.viewReadOnly(grids, new C1<Grid, UUID>() {
             @Override public UUID apply(Grid g) {
-                return g.localNode().id();
+                return g.cluster().localNode().id();
             }
         });
     }

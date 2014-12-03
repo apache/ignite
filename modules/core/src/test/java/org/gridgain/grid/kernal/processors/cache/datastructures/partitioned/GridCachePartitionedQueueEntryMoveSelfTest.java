@@ -153,7 +153,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                                 U.sleep(2000);
                             }
                         }
-                        catch (GridException | Error | RuntimeException e) {
+                        catch (Error | RuntimeException e) {
                             error("Failed to poll value.", e);
 
                             throw e;

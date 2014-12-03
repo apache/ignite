@@ -12,6 +12,7 @@ package org.gridgain.grid;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
@@ -398,6 +399,9 @@ public class GridConfiguration {
     /** Configuration for .Net nodes. */
     private GridDotNetConfiguration dotNetCfg;
 
+    /** */
+    private Collection<? extends PluginConfiguration> pluginCfgs;
+
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
 
@@ -622,6 +626,7 @@ public class GridConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pSvc = cfg.getPeerClassLoadingExecutorService();
         p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
+        pluginCfgs = cfg.getPluginConfigurations();
         portableCfg = cfg.getPortableConfiguration();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
         restEnabled = cfg.isRestEnabled();
@@ -3207,6 +3212,20 @@ public class GridConfiguration {
      */
     public void setDotNetConfiguration(@Nullable GridDotNetConfiguration dotNetCfg) {
         this.dotNetCfg = dotNetCfg;
+    }
+
+    /**
+     * @return Plugin configurations.
+     */
+    public Collection<? extends PluginConfiguration> getPluginConfigurations() {
+        return pluginCfgs;
+    }
+
+    /**
+     * @param pluginCfgs Plugin configurations.
+     */
+    public void setPluginConfigurations(Collection<? extends PluginConfiguration> pluginCfgs) {
+        this.pluginCfgs = pluginCfgs;
     }
 
     /** {@inheritDoc} */

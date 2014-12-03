@@ -37,10 +37,10 @@ public class GridCacheDaemonNodeLocalSelfTest extends GridCacheDaemonNodeAbstrac
 
             for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
                 // Call mapKeyToNode for normal node.
-                g1.mapKeyToNode(null, i);
+                g1.cluster().mapKeyToNode(null, i);
 
                 try {
-                    g2.mapKeyToNode(null, i);
+                    g2.cluster().mapKeyToNode(null, i);
 
                     assert false;
                 }

@@ -116,18 +116,6 @@ public final class GridNodeAttributes {
     /** Time server port attribute name. */
     public static final String ATTR_TIME_SERVER_PORT = ATTR_PREFIX + ".time.port";
 
-    /** Internal attribute name constant. */
-    public static final String ATTR_REPLICATION_SND_HUB = ATTR_PREFIX + ".replication.snd.hub";
-
-    /** Internal attribute name constant. */
-    public static final String ATTR_REPLICATION_CACHES = ATTR_PREFIX + ".replication.caches";
-
-    /** Version converters attribute name. */
-    public static final String ATTR_VER_CONVERTERS = ATTR_PREFIX + ".ver.converters";
-
-    /** Internal attribute name constant. */
-    public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".data.center.id";
-
     /** Security credentials attribute name. Attribute is not available via public API. */
     public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
 

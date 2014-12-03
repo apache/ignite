@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.managers;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.design.plugin.extensions.communication.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -460,12 +461,22 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return null;
                     }
 
-                    @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        return ctx.versionConverter().writeDelta(nodeId, msgCls, buf);
+                    @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
+                        for (MessageCallback patcher : ctx.plugins().extensions(MessageCallback.class)) {
+                            if (!patcher.onSend(nodeId, msg, buf))
+                                return false;
+                        }
+
+                        return true;
                     }
 
                     @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        return ctx.versionConverter().readDelta(nodeId, msgCls, buf);
+                        for (MessageCallback patcher : ctx.plugins().extensions(MessageCallback.class)) {
+                            if (!patcher.onReceive(nodeId, msgCls, buf))
+                                return false;
+                        }
+
+                        return true;
                     }
 
                     @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
@@ -489,6 +500,10 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         GridCacheSwapEntry e = cctx.swap().read(key);
 
                         return e != null ? (V)e.value() : null;
+                    }
+
+                    @Override public GridTcpMessageFactory messageFactory() {
+                        return ctx.messageFactory();
                     }
 
                     /**

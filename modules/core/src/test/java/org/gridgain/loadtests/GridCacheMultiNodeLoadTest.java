@@ -93,6 +93,6 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testMany() throws Exception {
-        grid1.compute().execute(GridCacheLoadPopulationTask.class, null).get();
+        grid1.compute().execute(GridCacheLoadPopulationTask.class, null);
     }
 }

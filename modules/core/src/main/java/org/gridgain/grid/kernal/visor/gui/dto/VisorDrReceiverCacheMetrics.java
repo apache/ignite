@@ -42,7 +42,7 @@ public class VisorDrReceiverCacheMetrics implements Serializable {
         assert cache != null;
 
         try {
-            GridDrReceiverCacheMetrics m = cache.metrics().drReceiveMetrics();
+            GridDrReceiverCacheMetrics m = cache.gridProjection().grid().dr().receiverCacheMetrics(cache.name());
 
             VisorDrReceiverCacheMetrics metrics = new VisorDrReceiverCacheMetrics();
 

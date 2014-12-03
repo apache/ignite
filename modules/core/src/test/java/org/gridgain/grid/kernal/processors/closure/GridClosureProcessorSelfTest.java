@@ -19,6 +19,7 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -96,7 +97,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         /** @{inheritDoc} */
         @Override public void run() {
-            log.info("Runnable job executed on node: " + grid.localNode().id());
+            log.info("Runnable job executed on node: " + grid.cluster().localNode().id());
 
             assert grid != null;
 
@@ -123,7 +124,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     private static class TestCallable extends AbstractTestCallable {
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.localNode().id());
+            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
 
             assert grid != null;
 
@@ -144,7 +145,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.localNode().id());
+            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
 
             return null;
         }
@@ -177,14 +178,22 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param job Runnable job.
      * @param p Optional node predicate.
      * @return Future object.
+     * @throws GridException If failed.
      */
-    private GridFuture<?> runAsync(int idx, Runnable job, @Nullable GridPredicate<GridNode> p) {
+    private GridFuture<?> runAsync(int idx, Runnable job, @Nullable GridPredicate<GridNode> p)
+        throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().run(job) : grid(idx).compute().run(job);
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.run(job);
+
+        return comp.future();
     }
 
     /**
@@ -192,8 +201,10 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param job Runnable job.
      * @param p Optional node predicate.
      * @return Future object.
+     * @throws GridException If failed.
      */
-    private GridFuture<?> broadcast(int idx, Runnable job, @Nullable GridPredicate<GridNode> p) {
+    private GridFuture<?> broadcast(int idx, Runnable job, @Nullable GridPredicate<GridNode> p)
+        throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
@@ -204,7 +215,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         if (p != null)
             prj = prj.forPredicate(p);
 
-        return prj.compute().broadcast(job);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.broadcast(job);
+
+        return comp.future();
     }
 
     /**
@@ -212,14 +227,22 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param jobs Runnable jobs.
      * @param p Optional node predicate.
      * @return Future object.
+     * @throws GridException If failed.
      */
-    private GridFuture<?> runAsync(int idx, Collection<TestRunnable> jobs, @Nullable GridPredicate<GridNode> p) {
+    private GridFuture<?> runAsync(int idx, Collection<TestRunnable> jobs, @Nullable GridPredicate<GridNode> p)
+        throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().run(jobs) : grid(idx).compute().run(jobs);
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.run(jobs);
+
+        return comp.future();
     }
 
     /**
@@ -227,14 +250,22 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param job Callable job.
      * @param p Optional node predicate.
      * @return Future object.
+     * @throws GridException If failed.
      */
-    private GridFuture<Integer> callAsync(int idx, Callable<Integer> job, @Nullable GridPredicate<GridNode> p) {
+    private GridFuture<Integer> callAsync(int idx, Callable<Integer> job, @Nullable GridPredicate<GridNode> p)
+        throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().call(job) : grid(idx).compute().call(job);
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.call(job);
+
+        return comp.future();
     }
 
     /**
@@ -242,15 +273,22 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param job Callable job.
      * @param p Optional node predicate.
      * @return Future object.
+     * @throws GridException If failed.
      */
     private GridFuture<Collection<Integer>> broadcast(int idx, Callable<Integer> job,
-        @Nullable GridPredicate<GridNode> p) {
+        @Nullable GridPredicate<GridNode> p) throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().broadcast(job) : grid(idx).compute().broadcast(job);
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.broadcast(job);
+
+        return comp.future();
     }
 
     /**
@@ -258,15 +296,22 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param jobs Callable job.
      * @param p Optional node predicate.
      * @return Future object.
+     * @throws GridException If failed.
      */
     private GridFuture<Collection<Integer>> callAsync(int idx, Collection<TestCallable> jobs,
-        @Nullable GridPredicate<GridNode> p) {
+        @Nullable GridPredicate<GridNode> p) throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().call(jobs) : grid(idx).compute().call(jobs);
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.call(jobs);
+
+        return comp.future();
     }
 
     /**
@@ -353,8 +398,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncErrorNoFailover() throws Exception {
-        GridFuture<Integer> fut = grid(0).forPredicate(F.notEqualTo(grid(0).localNode())).compute().
-            withNoFailover().call(new TestCallableError());
+        GridCompute comp = compute(grid(0).forPredicate(F.notEqualTo(grid(0).localNode()))).enableAsync();
+
+        comp.withNoFailover().call(new TestCallableError());
+
+        GridFuture<Integer> fut = comp.future();
 
         try {
             fut.get();
@@ -370,7 +418,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithName() throws Exception {
-        grid(0).compute().withName("TestTaskName").call(new TestCallable()).get();
+        grid(0).compute().withName("TestTaskName").call(new TestCallable());
     }
 
     /**
@@ -383,7 +431,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             // Ensure that we will get timeout exception.
-            grid(0).compute().withTimeout(JOB_TIMEOUT).call(jobs).get();
+            grid(0).compute().withTimeout(JOB_TIMEOUT).call(jobs);
         }
         catch (GridComputeTaskTimeoutException ignore) {
             timedOut = true;
@@ -395,7 +443,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             // Previous task invocation cleared the timeout.
-            grid(0).compute().call(jobs).get();
+            grid(0).compute().call(jobs);
         }
         catch (GridComputeTaskTimeoutException ignore) {
             timedOut = true;
@@ -429,7 +477,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testReduceAsync() throws Exception {
         Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
 
-        GridFuture<Integer> fut = grid(0).compute().call(jobs, F.sumIntReducer());
+        GridCompute comp = grid(0).compute().enableAsync();
+
+        comp.call(jobs, F.sumIntReducer());
+
+        GridFuture<Integer> fut = comp.future();
 
         // Sum of arithmetic progression.
         int exp = (1 + jobs.size()) * jobs.size() / 2;
@@ -447,11 +499,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReducerError() throws Exception {
-        Grid g = grid(0);
+        final Grid g = grid(0);
 
-        Collection<Callable<Integer>> jobs = new ArrayList<>();
+        final Collection<Callable<Integer>> jobs = new ArrayList<>();
 
-        for (int i = 0; i < g.nodes().size(); i++) {
+        for (int i = 0; i < g.cluster().nodes().size(); i++) {
             jobs.add(new GridCallable<Integer>() {
                 @Override public Integer call() throws Exception {
                     throw new RuntimeException("Test exception.");
@@ -459,16 +511,22 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
             });
         }
 
-        g.compute().call(jobs, new GridReducer<Integer, Object>() {
-                @Override public boolean collect(@Nullable Integer e) {
-                    fail("Expects failed jobs never call 'collect' method.");
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                g.compute().call(jobs, new GridReducer<Integer, Object>() {
+                    @Override public boolean collect(@Nullable Integer e) {
+                        fail("Expects failed jobs never call 'collect' method.");
 
-                    return true;
-                }
+                        return true;
+                    }
 
-                @Override public Object reduce() {
-                    return null;
-                }
-            });
+                    @Override public Object reduce() {
+                        return null;
+                    }
+                });
+
+                return null;
+            }
+        }, GridException.class, null);
     }
 }

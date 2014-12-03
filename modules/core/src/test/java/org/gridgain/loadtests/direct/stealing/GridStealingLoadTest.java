@@ -87,9 +87,9 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
 
         assert grid != null;
 
-        assert !grid.forRemotes().nodes().isEmpty() : "Test requires at least 2 nodes.";
+        assert !grid.cluster().forRemotes().nodes().isEmpty() : "Test requires at least 2 nodes.";
 
-        final UUID stealingNodeId = grid.forRemotes().nodes().iterator().next().id();
+        final UUID stealingNodeId = grid.cluster().forRemotes().nodes().iterator().next().id();
 
         info("Set stealing node id to: " + stealingNodeId);
 

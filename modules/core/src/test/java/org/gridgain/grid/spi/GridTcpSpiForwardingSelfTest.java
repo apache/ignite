@@ -145,7 +145,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
                 @Override public Integer call() throws Exception {
                     return 13;
                 }
-            }).get();
+            });
 
             assertEquals(F.asList(13, 13), t);
         }

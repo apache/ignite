@@ -74,7 +74,11 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         for (int i = 0; i < 5; i++) {
             refreshInitialData();
 
-            GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class.getName(), null);
+            GridCompute comp = grid.compute().enableAsync();
+
+            comp.execute(GridTaskSessionTestTask.class.getName(), null);
+
+            GridComputeTaskFuture<?> fut = comp.future();
 
             assert fut != null;
 
@@ -82,7 +86,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
                 // Wait until jobs begin execution.
                 boolean await = startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS);
 
-                assert await == true : "Jobs did not start.";
+                assert await : "Jobs did not start.";
 
                 Object res = fut.get();
 

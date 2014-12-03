@@ -78,7 +78,7 @@ public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, 
 
         GridComputeJob job = new GridifyJobAdapter(arg);
 
-        GridNode node = balancer.getBalancedNode(job, Collections.<GridNode>singletonList(grid.localNode()));
+        GridNode node = balancer.getBalancedNode(job, Collections.<GridNode>singletonList(grid.cluster().localNode()));
 
         if (node != null) {
             // Give preference to remote nodes.

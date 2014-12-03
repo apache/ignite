@@ -679,7 +679,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             assert grid != null : "GridGain returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.localNode().id() + ']');
+            info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.cluster().localNode().id() + ']');
 
             G.stop(gridName, cancel);
         }
@@ -744,7 +744,7 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"BusyWait"})
     protected void waitForRemoteNodes(Grid grid, int cnt) throws GridException {
         while (true) {
-            Collection<GridNode> nodes = grid.forRemotes().nodes();
+            Collection<GridNode> nodes = grid.cluster().forRemotes().nodes();
 
             if (nodes != null && nodes.size() >= cnt)
                 return;
@@ -898,7 +898,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             assert grid != null : "GridGain returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.localNode().id() + ']');
+            info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.cluster().localNode().id() + ']');
 
             G.stop(gridName, cancel);
         }

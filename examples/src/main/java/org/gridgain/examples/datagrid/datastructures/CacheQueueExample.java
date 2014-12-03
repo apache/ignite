@@ -76,7 +76,7 @@ public class CacheQueueExample {
 
         // Initialize queue items.
         // We will be use blocking operation and queue size must be appropriated.
-        for (int i = 0; i < g.nodes().size() * RETRIES * 2; i++)
+        for (int i = 0; i < g.cluster().nodes().size() * RETRIES * 2; i++)
             queue.put(Integer.toString(i));
 
         System.out.println("Queue size after initializing: " + queue.size());
@@ -90,11 +90,11 @@ public class CacheQueueExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void readFromQueue(GridProjection g) throws GridException {
+    private static void readFromQueue(Grid g) throws GridException {
         final String queueName = queue.name();
 
         // Read queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, false)).get();
+        g.compute().run(new QueueClosure(CACHE_NAME, queueName, false));
 
         System.out.println("Queue size after reading [expected=0, actual=" + queue.size() + ']');
     }
@@ -105,13 +105,13 @@ public class CacheQueueExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void writeToQueue(GridProjection g) throws GridException {
+    private static void writeToQueue(Grid g) throws GridException {
         final String queueName = queue.name();
 
         // Write queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, true)).get();
+        g.compute().run(new QueueClosure(CACHE_NAME, queueName, true));
 
-        System.out.println("Queue size after writing [expected=" + g.nodes().size() * RETRIES +
+        System.out.println("Queue size after writing [expected=" + g.cluster().nodes().size() * RETRIES +
             ", actual=" + queue.size() + ']');
 
         System.out.println("Iterate over queue.");
@@ -178,7 +178,7 @@ public class CacheQueueExample {
                     queue(queueName, 0, false, true);
 
                 if (put) {
-                    UUID locId = GridGain.grid().localNode().id();
+                    UUID locId = GridGain.grid().cluster().localNode().id();
 
                     for (int i = 0; i < RETRIES; i++) {
                         String item = locId + "_" + Integer.toString(i);

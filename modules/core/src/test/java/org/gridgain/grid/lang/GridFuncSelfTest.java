@@ -2966,12 +2966,12 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Grid g3 = startGrid(3);
 
         try {
-            GridEvent evt1 = new TestEvent(g1.localNode());
-            GridEvent evt2 = new TestEvent(g3.localNode());
-            GridEvent evt3 = new TestEvent(g1.localNode());
-            GridEvent evt4 = new TestEvent(g2.localNode());
+            GridEvent evt1 = new TestEvent(g1.cluster().localNode());
+            GridEvent evt2 = new TestEvent(g3.cluster().localNode());
+            GridEvent evt3 = new TestEvent(g1.cluster().localNode());
+            GridEvent evt4 = new TestEvent(g2.cluster().localNode());
 
-            Collection<GridNode> nodes = Arrays.asList(g1.localNode(), g3.localNode());
+            Collection<GridNode> nodes = Arrays.asList(g1.cluster().localNode(), g3.cluster().localNode());
 
             p = F.eventNode(nodes);
 
@@ -2997,10 +2997,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         final Grid g1 = startGrid(1);
         Grid g2 = startGrid(2);
 
-        GridEvent evt1 = new TestEvent(g1.localNode());
-        GridEvent evt2 = new TestEvent(g1.localNode());
-        GridEvent evt3 = new TestEvent(g1.localNode());
-        GridEvent evt4 = new TestEvent(g2.localNode());
+        GridEvent evt1 = new TestEvent(g1.cluster().localNode());
+        GridEvent evt2 = new TestEvent(g1.cluster().localNode());
+        GridEvent evt3 = new TestEvent(g1.cluster().localNode());
+        GridEvent evt4 = new TestEvent(g2.cluster().localNode());
 
         try {
             GridPredicate<GridEvent> p = F.eventNode(getTestGridName(1), null);
@@ -3014,7 +3014,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
             p = F.eventNode(getTestGridName(1), new GridPredicate<GridNode>() {
                 @Override public boolean apply(GridNode n) {
-                    return n != null && n.id().equals(g1.localNode().id());
+                    return n != null && n.id().equals(g1.cluster().localNode().id());
                 }
             });
 
@@ -3239,29 +3239,5 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         GridFuture<Object> fut = F.awaitOne(Arrays.asList((GridFuture<Object>)null, null, null));
 
         assert fut.isDone();
-    }
-
-    /**
-     * Tests usage of F.cInvoke() in conjunction with reduce() method.
-     * This test is based on book example and sanity checks the internal
-     * peerDeployAware() and peerDeployLike() calls in combination with
-     * cInvoke().
-     *
-     * @throws Exception If test failed.
-     */
-    public void testCInvokeWithReduce() throws Exception {
-        Grid grid = startGrid();
-
-        try {
-            GridClosure<String, Integer> cInvoke = GridFunc.cInvoke("length");
-
-            Integer res = grid.compute().apply(cInvoke, Arrays.asList("Hello", "World", "!"),
-                GridFunc.sumIntReducer()).get();
-
-            assertEquals("Hello".length() + "World".length() + "!".length(), res.intValue());
-        }
-        finally {
-            stopGrid();
-        }
     }
 }

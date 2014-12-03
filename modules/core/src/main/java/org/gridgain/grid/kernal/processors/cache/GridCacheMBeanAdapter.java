@@ -206,29 +206,4 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
     @Override public int getWriteBehindBufferSize() {
         return store != null ? store.getWriteBehindBufferSize() : -1;
     }
-
-    /** {@inheritDoc} */
-    @Override public int getDrQueuedKeysCount() {
-        return cctx.dr().queuedKeysCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getDrBackupQueueSize() {
-        return cctx.dr().queuedKeysCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getDrBatchWaitingSendCount() {
-        return cctx.dr().queuedKeysCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getDrBatchWaitingAcknowledgeCount() {
-        return cctx.dr().queuedKeysCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getDrSenderHubsCount() {
-        return cctx.dr().queuedKeysCount();
-    }
 }

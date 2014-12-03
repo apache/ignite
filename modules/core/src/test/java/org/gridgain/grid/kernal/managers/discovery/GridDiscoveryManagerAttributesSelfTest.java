@@ -81,7 +81,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
             for (int i = 0; i < 2; i++) {
                 Grid g = startGrid(i);
 
-                assert "true".equals(g.localNode().attribute(PREFER_IPV4));
+                assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
             }
 
             System.setProperty(PREFER_IPV4, "false");
@@ -141,35 +141,6 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testDifferentDataCenterIds() throws Exception {
-        try {
-            GridConfiguration cfg1 = getConfiguration(getTestGridName(1));
-
-            cfg1.setDataCenterId((byte)1);
-
-            G.start(cfg1);
-
-            try {
-                GridConfiguration cfg2 = getConfiguration(getTestGridName(2));
-
-                cfg2.setDataCenterId((byte)2);
-
-                G.start(cfg2);
-
-                fail();
-            }
-            catch (GridException e) {
-                assertTrue(e.getCause().getMessage().startsWith("Remote node has data center ID different from"));
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
      * @param preferIpV4 {@code java.net.preferIPv4Stack} system property value.
      * @throws Exception If failed.
      */
@@ -182,7 +153,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
             for (int i = 0; i < 2; i++) {
                 Grid g = startGrid(i);
 
-                assert val.equals(g.localNode().attribute(PREFER_IPV4));
+                assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
             }
         }
         finally {

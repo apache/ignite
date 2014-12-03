@@ -66,7 +66,7 @@ public final class DeploymentExample {
 
             // Execute the task passing its name as a parameter. The system will find
             // the deployed task by its name and execute it.
-            g.compute().execute(TASK_NAME, null).get();
+            g.compute().execute(TASK_NAME, null);
 
             // Execute the task passing class name as a parameter. The system will find
             // the deployed task by its class name and execute it.

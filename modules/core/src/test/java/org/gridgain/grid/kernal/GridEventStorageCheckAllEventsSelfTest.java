@@ -279,11 +279,17 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @param timeout Timeout.
      * @param job Job.
      * @return Task future.
+     * @throws Exception If failed.
      */
-    private GridComputeTaskFuture<?> generateEvents(@Nullable Long timeout, GridComputeJob job) {
-        return timeout == null ?
-            grid.compute().execute(GridAllEventsTestTask.class.getName(), job) :
-            grid.compute().withTimeout(timeout).execute(GridAllEventsTestTask.class.getName(), job);
+    private GridComputeTaskFuture<?> generateEvents(@Nullable Long timeout, GridComputeJob job) throws Exception {
+        GridCompute comp = grid.compute().enableAsync();
+
+        if (timeout == null)
+            comp.execute(GridAllEventsTestTask.class.getName(), job);
+        else
+            comp.withTimeout(timeout).execute(GridAllEventsTestTask.class.getName(), job);
+
+        return comp.future();
     }
 
     /**

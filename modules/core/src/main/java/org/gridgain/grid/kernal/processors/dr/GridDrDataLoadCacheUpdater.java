@@ -47,7 +47,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdate
             f.get();
 
         for (Map.Entry<K, V> entry0 : col) {
-            GridDrRawEntry<K, V> entry = (GridDrRawEntry<K, V>)entry0;
+            GridVersionedEntry<K, V> entry = (GridVersionedEntry<K, V>)entry0;
 
             entry.unmarshal(ctx.config().getMarshaller());
 

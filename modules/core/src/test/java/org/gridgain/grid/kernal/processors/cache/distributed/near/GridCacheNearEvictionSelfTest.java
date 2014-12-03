@@ -118,7 +118,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }).get();
+            });
 
             for (int i = 0; i < gridCnt; i++) {
                 assertEquals(cnt, grid(i).cache(null).size());
@@ -152,7 +152,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }).get();
+            });
 
             for (int i = 0; i < gridCnt; i++) {
                 final Grid g = grid(i);

@@ -53,7 +53,7 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(TestTask.class, TestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(TestTask.class.getName(), null);
+        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), TestTask.class.getName(), null);
 
         fut.listenAsync(lsnr);
 

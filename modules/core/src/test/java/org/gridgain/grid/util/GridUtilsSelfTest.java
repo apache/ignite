@@ -285,7 +285,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
          * @param grid Grid.
          */
         private SelfReferencedJob(Grid grid) {
-            node = grid.localNode();
+            node = grid.cluster().localNode();
 
             ref = this;
 
@@ -295,7 +295,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
 
             GridTestKernalContext ctx = newContext();
 
-            subGrid = grid.forNodes(Collections.singleton(node));
+            subGrid = grid.cluster().forNodes(Collections.singleton(node));
         }
 
         /** {@inheritDoc} */

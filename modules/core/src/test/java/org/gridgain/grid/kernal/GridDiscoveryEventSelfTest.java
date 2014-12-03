@@ -77,7 +77,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
         try {
             Grid g0 = startGrid(0);
 
-            UUID id0 = g0.localNode().id();
+            UUID id0 = g0.cluster().localNode().id();
 
             final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 
@@ -93,9 +93,9 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_JOINED);
 
-            UUID id1 = startGrid(1).localNode().id();
-            UUID id2 = startGrid(2).localNode().id();
-            UUID id3 = startGrid(3).localNode().id();
+            UUID id1 = startGrid(1).cluster().localNode().id();
+            UUID id2 = startGrid(2).cluster().localNode().id();
+            UUID id3 = startGrid(3).cluster().localNode().id();
 
             U.sleep(100);
 
@@ -137,10 +137,10 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
         try {
             Grid g0 = startGrid(0);
 
-            UUID id0 = g0.localNode().id();
-            UUID id1 = startGrid(1).localNode().id();
-            UUID id2 = startGrid(2).localNode().id();
-            UUID id3 = startGrid(3).localNode().id();
+            UUID id0 = g0.cluster().localNode().id();
+            UUID id1 = startGrid(1).cluster().localNode().id();
+            UUID id2 = startGrid(2).cluster().localNode().id();
+            UUID id3 = startGrid(3).cluster().localNode().id();
 
             final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 
@@ -203,7 +203,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
         try {
             Grid g0 = startGrid(0);
 
-            UUID id0 = g0.localNode().id();
+            UUID id0 = g0.cluster().localNode().id();
 
             final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 
@@ -219,15 +219,15 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_JOINED, EVT_NODE_LEFT);
 
-            UUID id1 = startGrid(1).localNode().id();
-            UUID id2 = startGrid(2).localNode().id();
-            UUID id3 = startGrid(3).localNode().id();
+            UUID id1 = startGrid(1).cluster().localNode().id();
+            UUID id2 = startGrid(2).cluster().localNode().id();
+            UUID id3 = startGrid(3).cluster().localNode().id();
 
             stopGrid(3);
             stopGrid(2);
             stopGrid(1);
 
-            UUID id4 = startGrid(4).localNode().id();
+            UUID id4 = startGrid(4).cluster().localNode().id();
 
             stopGrid(4);
 
@@ -318,7 +318,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
         try {
             Grid g0 = startGrid(0);
 
-            UUID id0 = g0.localNode().id();
+            UUID id0 = g0.cluster().localNode().id();
 
             final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 

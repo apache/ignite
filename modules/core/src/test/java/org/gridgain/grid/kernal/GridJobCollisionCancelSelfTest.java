@@ -59,7 +59,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         grid.compute().localDeployTask(GridCancelTestTask.class, GridCancelTestTask.class.getClassLoader());
 
         GridComputeTaskFuture<?> res0 =
-            grid.compute().withTimeout(maxJobExecTime * 2).execute(GridCancelTestTask.class.getName(), null);
+            executeAsync(grid.compute().withTimeout(maxJobExecTime * 2), GridCancelTestTask.class.getName(), null);
 
         try {
             Object res = res0.get();

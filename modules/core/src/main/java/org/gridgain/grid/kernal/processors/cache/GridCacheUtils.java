@@ -43,9 +43,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Cache utility methods.
  */
 public class GridCacheUtils {
-    /** DR system cache name prefix. */
-    public static final String SYS_CACHE_DR_PREFIX = "gg-dr-sys-cache-";
-
     /**  Hadoop syste cache name. */
     public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
@@ -1414,22 +1411,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @return {@code True} if this is DR system cache.
-     */
-    public static boolean isDrSystemCache(String cacheName) {
-        return cacheName != null && cacheName.startsWith(SYS_CACHE_DR_PREFIX);
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Name of internal replicated cache used by data center replication component.
-     */
-    public static String cacheNameForDrSystemCache(String cacheName) {
-        return SYS_CACHE_DR_PREFIX + cacheName;
-    }
-
-    /**
      * Create system cache used by Hadoop component.
      *
      * @return Hadoop cache configuration.
@@ -1453,23 +1434,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Creates system cache configuration used by data center replication component.
-     *
-     * @param cacheName Cache name.
-     * @return DR cache configuration.
-     */
-    public static GridCacheConfiguration drSystemCache(String cacheName) {
-        GridCacheConfiguration cache = new GridCacheConfiguration();
-
-        cache.setName(cacheName);
-        cache.setCacheMode(REPLICATED);
-        cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-
-        return cache;
-    }
-
-    /**
      * @param cacheName Cache name.
      * @return {@code True} if this is security system cache.
      */
@@ -1482,7 +1446,7 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isDrSystemCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
     }
 
     /**

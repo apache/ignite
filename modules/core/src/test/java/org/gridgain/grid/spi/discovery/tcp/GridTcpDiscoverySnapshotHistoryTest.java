@@ -91,7 +91,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
 
             assertTopVer(1, g1);
 
-            assertEquals(1, g1.topologyVersion());
+            assertEquals(1, g1.cluster().topologyVersion());
 
             // Add grid # 2
             final Grid g2 = startGrid(2);
@@ -99,7 +99,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
             assertTopVer(2, g1, g2);
 
             for (int i = 1; i <= 2; i++)
-                assertEquals(i, g2.topology(i).size());
+                assertEquals(i, g2.cluster().topology(i).size());
 
             // Add grid # 3
             final Grid g3 = startGrid(3);
@@ -107,7 +107,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
             assertTopVer(3, g1, g2, g3);
 
             for (int i = 1; i <= 3; i++)
-                assertEquals(i, g3.topology(i).size());
+                assertEquals(i, g3.cluster().topology(i).size());
         }
         finally {
             stopAllGrids();
@@ -124,7 +124,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
 
             assertTopVer(1, g1);
 
-            assertEquals(1, g1.topologyVersion());
+            assertEquals(1, g1.cluster().topologyVersion());
 
             // Add grid #2
             final Grid g2 = startGrid(2);
@@ -132,7 +132,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
             assertTopVer(2, g1, g2);
 
             for (int i = 1; i <= 2; i++)
-                assertEquals(i, g2.topology(i).size());
+                assertEquals(i, g2.cluster().topology(i).size());
 
             // Add grid #3
             final Grid g3 = startGrid(3);
@@ -140,7 +140,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
             assertTopVer(3, g1, g2, g3);
 
             for (int i = 1; i <= 3; i++)
-                assertEquals(i, g3.topology(i).size());
+                assertEquals(i, g3.cluster().topology(i).size());
 
             // Stop grid #3
             stopGrid(g3.name());
@@ -160,6 +160,6 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
      */
     private static void assertTopVer(long expTopVer, Grid... grids) {
         for (Grid g : grids)
-            assertEquals("Grid has wrong topology version.", expTopVer, g.topologyVersion());
+            assertEquals("Grid has wrong topology version.", expTopVer, g.cluster().topologyVersion());
     }
 }

@@ -310,11 +310,6 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         return val != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridDrEntry<K, V> drEntry() throws GridException {
-        return null;
-    }
-
     /** @inheritDoc */
     @Override public V rawPut(V val, long ttl) {
         V old = this.val;

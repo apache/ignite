@@ -160,7 +160,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
         Grid grid = grid(gridIdx);
 
         if (isTestDebug())
-            debug("Checking commit on grid: " + grid.localNode().id());
+            debug("Checking commit on grid: " + grid.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
             GridCache<Integer, String> cache = cache(gridIdx);
@@ -297,7 +297,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
         Grid grid = grid(gridIdx);
 
         if (isTestDebug())
-            debug("Checking commit on grid: " + grid.localNode().id());
+            debug("Checking commit on grid: " + grid.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
             GridCache<Integer, String> cache = cache(gridIdx);

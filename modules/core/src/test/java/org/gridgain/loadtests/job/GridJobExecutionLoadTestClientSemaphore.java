@@ -54,12 +54,16 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
             }
         };
 
-        GridProjection rmts = g.forRemotes();
+        GridProjection rmts = g.cluster().forRemotes();
+
+        GridCompute comp = g.compute(rmts).enableAsync();
 
         while (!finish) {
             tasksSem.acquire();
 
-            GridComputeTaskFuture<Object> f = rmts.compute().execute(GridJobExecutionLoadTestTask.class, null);
+            comp.execute(GridJobExecutionLoadTestTask.class, null);
+
+            GridComputeTaskFuture<Object> f = comp.future();
 
             f.listenAsync(lsnr);
 
@@ -196,12 +200,12 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     private static void warmUp(int noThreads) {
         X.println("Warming up...");
 
-        final GridProjection rmts = g.forRemotes();
+        final GridCompute rmts = g.compute(g.cluster().forRemotes());
 
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
             @Nullable @Override public Object call() {
                 try {
-                    rmts.compute().execute(GridJobExecutionLoadTestTask.class, null).get();
+                    rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
                 catch (GridException e) {
                     e.printStackTrace();
@@ -217,7 +221,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 @Override public void apply() {
                     System.gc();
                 }
-            }).get();
+            });
         }
         catch (GridException e) {
             throw new IllegalStateException(e);

@@ -91,7 +91,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).ggfs(ggfsName).format().get();
+        grid(0).ggfs(ggfsName).format();
     }
 
     /** {@inheritDoc} */

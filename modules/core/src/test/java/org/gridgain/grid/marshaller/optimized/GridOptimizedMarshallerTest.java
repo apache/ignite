@@ -313,7 +313,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
             grid.compute().localDeployTask(taskCls, ldr);
 
-            grid.compute().execute(taskClsName, 2).get();
+            grid.compute().execute(taskClsName, 2);
 
             ConcurrentMap<Class<?>, GridOptimizedClassDescriptor> cache =
                 U.staticField(GridOptimizedMarshallerUtils.class, "CLS_DESC_CACHE");

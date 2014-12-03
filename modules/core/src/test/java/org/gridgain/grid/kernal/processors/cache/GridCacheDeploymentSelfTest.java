@@ -121,11 +121,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Class cls = ldr.loadClass(TEST_TASK_1);
 
-            g0.compute().execute(cls, g1.localNode()).get();
+            g0.compute().execute(cls, g1.cluster().localNode());
 
             cls = ldr.loadClass(TEST_TASK_2);
 
-            g0.compute().execute(cls, g2.localNode()).get();
+            g0.compute().execute(cls, g2.cluster().localNode());
         }
         finally {
             stopAllGrids();
@@ -152,15 +152,15 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.mapKeyToNode(null, key).id().equals(g2.localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
-            g0.compute().execute(cls, new T2<>(g1.localNode(), key)).get();
+            g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
             cls = ldr.loadClass(TEST_TASK_2);
 
-            g0.compute().execute(cls, g2.localNode()).get();
+            g0.compute().execute(cls, g2.cluster().localNode());
         }
         finally {
             stopAllGrids();
@@ -187,11 +187,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.mapKeyToNode(null, key).id().equals(g2.localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
-            g0.compute().execute(cls, new T2<>(g1.localNode(), key)).get();
+            g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
             stopGrid(GRID_NAME);
 
@@ -224,9 +224,9 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Grid g0 = startGrid(GRID_NAME);
 
             info("Started grids:");
-            info("g0: " + g0.localNode().id());
-            info("g1: " + g1.localNode().id());
-            info("g2: " + g2.localNode().id());
+            info("g0: " + g0.cluster().localNode().id());
+            info("g1: " + g1.cluster().localNode().id());
+            info("g2: " + g2.cluster().localNode().id());
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -237,11 +237,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.mapKeyToNode(null, key).id().equals(g2.localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
-            g0.compute().execute(cls, new T2<>(g1.localNode(), key)).get();
+            g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
             stopGrid(GRID_NAME);
 
@@ -274,13 +274,13 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Grid g1 = startGrid(1);
             Grid g2 = startGrid(2);
 
-            info(">>>>>>> Grid 0: " + g0.localNode().id());
-            info(">>>>>>> Grid 1: " + g1.localNode().id());
-            info(">>>>>>> Grid 2: " + g2.localNode().id());
+            info(">>>>>>> Grid 0: " + g0.cluster().localNode().id());
+            info(">>>>>>> Grid 1: " + g1.cluster().localNode().id());
+            info(">>>>>>> Grid 2: " + g2.cluster().localNode().id());
 
             int key = 0;
 
-            key = getNextKey(key, g0, g1.localNode(), g2.localNode(), g0.localNode());
+            key = getNextKey(key, g0, g1.cluster().localNode(), g2.cluster().localNode(), g0.cluster().localNode());
 
             info("Key: " + key);
 
@@ -292,7 +292,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info(">>>>>>> First put completed.");
 
-            key = getNextKey(key + 1, g0, g2.localNode(), g0.localNode(), g1.localNode());
+            key = getNextKey(key + 1, g0, g2.cluster().localNode(), g0.cluster().localNode(), g1.cluster().localNode());
 
             info("Key: " + key);
 
@@ -300,7 +300,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info(">>>>>>> Second put completed.");
 
-            key = getNextKey(key + 1, g0, g1.localNode(), g2.localNode(), g0.localNode());
+            key = getNextKey(key + 1, g0, g1.cluster().localNode(), g2.cluster().localNode(), g0.cluster().localNode());
 
             info("Key: " + key);
 
@@ -308,7 +308,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info(">>>>>>> Third put completed.");
 
-            g0.compute().execute(task2Cls, g1.localNode()).get();
+            g0.compute().execute(task2Cls, g1.cluster().localNode());
         }
         finally {
             stopAllGrids();
@@ -333,11 +333,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.mapKeyToNode(null, key).id().equals(g2.localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
-            g1.compute().execute(cls, new T2<>(g2.localNode(), key)).get();
+            g1.compute().execute(cls, new T2<>(g2.cluster().localNode(), key));
 
             stopGrid(1);
 
@@ -366,11 +366,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.mapKeyToNode(null, key).id().equals(g2.localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
-            g2.compute().execute(cls, new T2<>(g2.localNode(), key)).get();
+            g2.compute().execute(cls, new T2<>(g2.cluster().localNode(), key));
 
             stopGrid(2);
 
@@ -426,7 +426,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
                 i++;
             }
-            while (!g1.mapKeyToNode(null, affKey).id().equals(g1.localNode().id()));
+            while (!g1.cluster().mapKeyToNode(null, affKey).id().equals(g1.cluster().localNode().id()));
 
             GridCache<Object, Object> cache = g1.cache(null);
 

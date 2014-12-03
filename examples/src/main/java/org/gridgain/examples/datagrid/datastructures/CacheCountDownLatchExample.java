@@ -54,7 +54,7 @@ public class CacheCountDownLatchExample {
 
             // Start waiting on the latch on all grid nodes.
             for (int i = 0; i < INITIAL_COUNT; i++)
-                g.compute().run(new LatchClosure(CACHE_NAME, latchName)).get();
+                g.compute().run(new LatchClosure(CACHE_NAME, latchName));
 
             // Wait for latch to go down which essentially means that all remote closures completed.
             latch.await();
@@ -94,7 +94,7 @@ public class CacheCountDownLatchExample {
 
                 int newCnt = latch.countDown();
 
-                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + GridGain.grid().localNode().id() + ']');
+                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + GridGain.grid().cluster().localNode().id() + ']');
             }
             catch (GridException e) {
                 throw new RuntimeException(e);

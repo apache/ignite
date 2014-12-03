@@ -45,7 +45,11 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         assert task.getState() != null;
         assert task.getState() == testState;
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(task,  "testArg");
+        GridCompute comp = grid.compute().enableAsync();
+
+        assertNull(comp.execute(task,  "testArg"));
+
+        GridComputeTaskFuture<?> fut = comp.future();
 
         assert fut != null;
 

@@ -99,7 +99,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         Grid grid2  = startGridWithSpi(2, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
 
-        if (!grid1.mapKeyToNode(null, kv).id().equals(grid1.localNode().id())) {
+        if (!grid1.cluster().mapKeyToNode(null, kv).id().equals(grid1.cluster().localNode().id())) {
             Grid tmp = grid1;
             grid1 = grid2;
             grid2 = tmp;
@@ -109,8 +109,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         final GridCache<Integer, String> cache1 = grid1.cache(null);
         final GridCache<Integer, String> cache2 = grid2.cache(null);
 
-        info(">>> Primary: " + grid1.localNode().id());
-        info(">>>  Backup: " + grid2.localNode().id());
+        info(">>> Primary: " + grid1.cluster().localNode().id());
+        info(">>>  Backup: " + grid2.cluster().localNode().id());
 
         final CountDownLatch l1 = new CountDownLatch(1);
 

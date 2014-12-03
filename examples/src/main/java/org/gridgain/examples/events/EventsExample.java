@@ -80,7 +80,7 @@ public class EventsExample {
             @Override public void run() {
                 System.out.println("Executing sample job.");
             }
-        }).get();
+        });
 
         // Unsubscribe local task event listener.
         g.events().stopLocalListen(lsnr);
@@ -118,10 +118,7 @@ public class EventsExample {
         Grid g = GridGain.grid();
 
         // Register event listeners on all nodes to listen for task events.
-        GridFuture<?> fut = g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
-
-        // Wait until event listeners are subscribed on all nodes.
-        fut.get();
+        g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
         for (int i = 0; i < 10; i++) {
@@ -133,7 +130,7 @@ public class EventsExample {
                 @Override public void run() {
                     System.out.println("Executing sample job for task: " + ses.getTaskName());
                 }
-            }).get();
+            });
         }
     }
 }

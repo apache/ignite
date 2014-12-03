@@ -72,7 +72,7 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
             // but we check if local node is primary or backup anyway just to demonstrate that we can.
             // Ideally, partition ID of a key would be stored  in the database and only keys
             // for partitions that belong on this node would be loaded from database.
-            if (cache.affinity().isPrimaryOrBackup(grid.localNode(), p.getId())) {
+            if (cache.affinity().isPrimaryOrBackup(grid.cluster().localNode(), p.getId())) {
                 // Update dummy database.
                 // In real life data would be loaded from database.
                 dummyDB.put(p.getId(), p);

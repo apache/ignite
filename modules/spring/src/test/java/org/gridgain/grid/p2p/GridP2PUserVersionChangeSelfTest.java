@@ -139,7 +139,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id()).get();
+            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
 
             stopGrid(1);
 
@@ -147,7 +147,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             grid1 = startGrid(1);
 
-            int[] res2 = (int[])grid1.compute().execute(task1, grid2.localNode().id()).get();
+            int[] res2 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
 
             assert res1[0] != res2[0];
             assert res1[1] != res2[1];
@@ -188,13 +188,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id()).get();
+            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
 
             stopGrid(1);
 
             grid1 = startGrid(1);
 
-            int[] res2 = (int[]) grid1.compute().execute(task1, grid2.localNode().id()).get();
+            int[] res2 = (int[]) grid1.compute().execute(task1, grid2.cluster().localNode().id());
 
             assert !undeployed.await(3000, MILLISECONDS);
 
@@ -245,7 +245,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_LEFT);
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id()).get();
+            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
 
             stopGrid(1);
 
@@ -255,7 +255,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             grid1 = startGrid(1);
 
-            int[] res2 = (int[]) grid1.compute().execute(task1, grid2.localNode().id()).get();
+            int[] res2 = (int[]) grid1.compute().execute(task1, grid2.cluster().localNode().id());
 
             assert res1[0] != res2[0];
             assert res1[1] != res2[1];

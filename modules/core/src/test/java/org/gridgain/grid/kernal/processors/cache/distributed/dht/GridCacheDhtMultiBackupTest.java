@@ -36,7 +36,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
         try {
             Grid g = G.start("examples/config/example-cache.xml");
 
-            if (g.nodes().size() < 5)
+            if (g.cluster().nodes().size() < 5)
                 U.warn(log, "Topology is too small for this test. " +
                     "Run with 4 remote nodes or more having large number of backup nodes.");
 
@@ -52,7 +52,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
                         assert cache.isEmpty();
                     }
                 }
-            ).get();
+            );
 
             GridCache<SampleKey, SampleValue> cache = g.cache("partitioned");
 
@@ -61,7 +61,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
             for (int key = 0; key < 1000; key++) {
                 SampleKey key1 = new SampleKey(key);
 
-                if (!g.localNode().id().equals(g.mapKeyToNode("partitioned", key1))) {
+                if (!g.cluster().localNode().id().equals(g.cluster().mapKeyToNode("partitioned", key1).id())) {
                     cache.put(key1, new SampleValue(key));
 
                     cnt++;

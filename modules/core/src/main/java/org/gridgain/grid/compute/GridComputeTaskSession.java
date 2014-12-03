@@ -255,32 +255,6 @@ public interface GridComputeTaskSession {
      * this method will return immediately.
      *
      * @param key Attribute key to wait for.
-     * @param <K> Attribute key type.
-     * @param <V> Attribute value type.
-     * @return Value of newly set attribute.
-     * @throws InterruptedException Thrown if wait was interrupted.
-     */
-    @Nullable public <K, V> V waitForAttribute(K key) throws InterruptedException;
-
-    /**
-     * Waits for the specified attribute to be set or updated with given value. Note that
-     * this method will block even if attribute is set for as long as its value is not equal
-     * to the specified.
-     *
-     * @param key Attribute key to wait for.
-     * @param val Attribute value to wait for. Can be {@code null}.
-     * @param <K> Attribute key type.
-     * @param <V> Attribute value type.
-     * @return Whether or not key/value pair has been received.
-     * @throws InterruptedException Thrown if wait was interrupted.
-     */
-    public <K, V> boolean waitForAttribute(K key, @Nullable V val) throws InterruptedException;
-
-    /**
-     * Waits for the specified attribute to be set. If this attribute is already in session
-     * this method will return immediately.
-     *
-     * @param key Attribute key to wait for.
      * @param timeout Timeout in milliseconds to wait for. {@code 0} means indefinite wait.
      * @param <K> Attribute key type.
      * @param <V> Attribute value type.
@@ -303,27 +277,6 @@ public interface GridComputeTaskSession {
      * @throws InterruptedException Thrown if wait was interrupted.
      */
     public <K, V> boolean waitForAttribute(K key, @Nullable V val, long timeout) throws InterruptedException;
-
-    /**
-     * Waits for the specified attributes to be set. If these attributes are already in session
-     * this method will return immediately.
-     *
-     * @param keys Attribute keys to wait for.
-     * @return Attribute values mapped by their keys.
-     * @throws InterruptedException Thrown if wait was interrupted.
-     */
-    public Map<?, ?> waitForAttributes(Collection<?> keys) throws InterruptedException;
-
-    /**
-     * Waits for the specified attributes to be set or updated with given values. Note that
-     * this method will block even if attributes are set for as long as their values are not equal
-     * to the specified.
-     *
-     * @param attrs Key/value pairs to wait for.
-     * @return Whether or not key/value pairs have been set.
-     * @throws InterruptedException Thrown if wait was interrupted.
-     */
-    public boolean waitForAttributes(Map<?, ?> attrs) throws InterruptedException;
 
     /**
      * Waits for the specified attributes to be set. If these attributes are already in session
@@ -472,4 +425,12 @@ public interface GridComputeTaskSession {
      * @return Collection of grid nodes IDs for the task's split.
      */
     public Collection<UUID> getTopology();
+
+    /**
+     * Gets future that will be completed when task "<tt>map</tt>" step has completed
+     * (which means that {@link GridComputeTask#map(List, Object)} method has finished).
+     *
+     * @return Future that will be completed when task "<tt>map</tt>" step has completed.
+     */
+    public GridFuture<?> mapFuture();
 }

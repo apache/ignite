@@ -48,7 +48,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     public void testAnonymousBroadcast() throws Exception {
         Grid g = grid();
 
-        assert g.nodes().size() >= 2;
+        assert g.cluster().nodes().size() >= 2;
 
         g.compute().run(new CA() {
             @Override public void apply() {
@@ -65,15 +65,15 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     public void testAnonymousUnicast() throws Exception {
         Grid g = grid();
 
-        assert g.nodes().size() >= 2;
+        assert g.cluster().nodes().size() >= 2;
 
-        GridNode rmt = F.first(g.forRemotes().nodes());
+        GridNode rmt = F.first(g.cluster().forRemotes().nodes());
 
-        g.forNode(rmt).compute().run(new CA() {
+        compute(g.cluster().forNode(rmt)).run(new CA() {
             @Override public void apply() {
                 System.out.println("UNICASTING....");
             }
-        }).get();
+        });
 
         Thread.sleep(2000);
     }
@@ -85,14 +85,14 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     public void testAnonymousUnicastRequest() throws Exception {
         Grid g = grid();
 
-        assert g.nodes().size() >= 2;
+        assert g.cluster().nodes().size() >= 2;
 
-        GridNode rmt = F.first(g.forRemotes().nodes());
-        final GridNode loc = g.localNode();
+        GridNode rmt = F.first(g.cluster().forRemotes().nodes());
+        final GridNode loc = g.cluster().localNode();
 
-        g.forNode(rmt).compute().run(new CA() {
+        compute(g.cluster().forNode(rmt)).run(new CA() {
             @Override public void apply() {
-                grid().forNode(loc).message().localListen(new GridBiPredicate<UUID, String>() {
+                message(grid().forNode(loc)).localListen(new GridBiPredicate<UUID, String>() {
                     @Override public boolean apply(UUID uuid, String s) {
                         System.out.println("Received test message [nodeId: " + uuid + ", s=" + s + ']');
 
@@ -100,9 +100,9 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
                     }
                 }, null);
             }
-        }).get();
+        });
 
-        g.forNode(rmt).message().send(null, "TESTING...");
+        message(g.cluster().forNode(rmt)).send(null, "TESTING...");
 
         Thread.sleep(2000);
     }

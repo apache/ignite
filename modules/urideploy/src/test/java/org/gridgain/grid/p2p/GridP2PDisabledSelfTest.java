@@ -91,7 +91,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
             Class task = extLdr.loadClass(TASK_NAME);
 
             try {
-                grid1.compute().execute(task, grid2.localNode().id()).get();
+                grid1.compute().execute(task, grid2.cluster().localNode().id());
 
                 assert false;
             }
@@ -136,7 +136,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
                     Grid grid1 = startGrid(1);
                     Grid grid2 = startGrid(2);
 
-                    int[] res = grid1.compute().<UUID, int[]>execute(TASK_NAME, grid2.localNode().id()).get();
+                    int[] res = grid1.compute().<UUID, int[]>execute(TASK_NAME, grid2.cluster().localNode().id());
 
                     assert res != null;
                     assert res.length == 2;

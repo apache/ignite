@@ -17,6 +17,7 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.swapspace.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -480,7 +481,7 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
+    @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
         return false;
     }
 
@@ -503,6 +504,15 @@ public class GridSpiTestContext implements GridSpiContext {
     @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
         @Nullable ClassLoader ldr) throws GridException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridTcpMessageFactory messageFactory() {
+        return new GridTcpMessageFactory() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+                return GridTcpCommunicationMessageFactory.create(type);
+            }
+        };
     }
 
     /**

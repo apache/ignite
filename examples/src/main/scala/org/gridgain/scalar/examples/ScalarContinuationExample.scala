@@ -40,14 +40,14 @@ object ScalarContinuationExample {
             // Calculate fibonacci for N.
             val N: Long = 100
 
-            val thisNode = grid$.localNode
+            val thisNode = grid$.cluster().localNode
 
             val start = System.currentTimeMillis
 
             // Projection that excludes this node if others exists.
-            val prj = if (grid$.nodes().size() > 1) grid$.forOthers(thisNode) else grid$.forNode(thisNode)
+            val prj = if (grid$.cluster().nodes().size() > 1) grid$.cluster().forOthers(thisNode) else grid$.cluster().forNode(thisNode)
 
-            val fib = prj.compute().apply(new FibonacciClosure(thisNode.id()), N).get()
+            val fib = grid$.compute(prj).apply(new FibonacciClosure(thisNode.id()), N)
 
             val duration = System.currentTimeMillis - start
 
@@ -96,25 +96,33 @@ class FibonacciClosure (
                     BigInteger.ONE
 
             // Get properly typed node-local storage.
-            val store = g.nodeLocalMap[Long, GridFuture[BigInteger]]()
+            val store = g.cluster().nodeLocalMap[Long, GridFuture[BigInteger]]()
 
             // Check if value is cached in node-local store first.
             fut1 = store.get(n - 1)
             fut2 = store.get(n - 2)
 
-            val excludeNode = grid$.node(excludeNodeId)
+            val excludeNode = grid$.cluster().node(excludeNodeId)
 
             // Projection that excludes node with id passed in constructor if others exists.
-            val prj = if (grid$.nodes().size() > 1) grid$.forOthers(excludeNode) else grid$.forNode(excludeNode)
+            val prj = if (grid$.cluster().nodes().size() > 1) grid$.cluster().forOthers(excludeNode) else grid$.cluster().forNode(excludeNode)
+
+            val comp = grid$.compute(prj).enableAsync()
 
             // If future is not cached in node-local store, cache it.
             // Note recursive grid execution!
-            if (fut1 == null)
-                fut1 = store.addIfAbsent(n - 1, prj.compute().apply(new FibonacciClosure(excludeNodeId), n - 1))
+            if (fut1 == null) {
+                comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
+
+                fut1 = store.addIfAbsent(n - 1, comp.future[BigInteger]())
+            }
 
             // If future is not cached in node-local store, cache it.
-            if (fut2 == null)
-                fut2 = store.addIfAbsent(n - 2, prj.compute().apply(new FibonacciClosure(excludeNodeId), n - 2))
+            if (fut2 == null) {
+                comp.apply(new FibonacciClosure(excludeNodeId), n - 2)
+
+                fut2 = store.addIfAbsent(n - 2, comp.future[BigInteger]())
+            }
 
             // If futures are not done, then wait asynchronously for the result
             if (!fut1.isDone || !fut2.isDone) {

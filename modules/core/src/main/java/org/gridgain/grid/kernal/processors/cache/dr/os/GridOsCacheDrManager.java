@@ -10,18 +10,20 @@
 package org.gridgain.grid.kernal.processors.cache.dr.os;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * No-op implementation for {@link GridCacheDrManager}.
  */
 public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
+    /** {@inheritDoc} */
+    @Override public boolean enabled() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(GridCacheContext<K, V> cctx) throws GridException {
         // No-op.
@@ -48,8 +50,44 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void replicate(GridDrRawEntry<K, V> entry, GridDrType drType) {
+    @Override public byte dataCenterId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void replicate(K key,
+        @Nullable byte[] keyBytes,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        long ttl,
+        long expireTime,
+        GridCacheVersion ver,
+        GridDrType drType) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDrResolveResult<V> resolveAtomic(GridCacheEntryEx<K, V> e,
+        GridCacheOperation op,
+        @Nullable Object writeObj,
+        @Nullable byte[] valBytes,
+        long ttl,
+        long drTtl,
+        long drExpireTime,
+        @Nullable GridCacheVersion drVer) throws GridException, GridCacheEntryRemovedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDrResolveResult<V> resolveTx(GridCacheEntryEx<K, V> e,
+        GridCacheTxEntry<K, V> txEntry,
+        GridCacheVersion newVer,
+        GridCacheOperation op,
+        V newVal,
+        byte[] newValBytes,
+        long newTtl,
+        long newDrExpireTime) throws GridException, GridCacheEntryRemovedException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -63,52 +101,17 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stateTransfer(Collection<Byte> dataCenterIds) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransferDescriptor> listStateTransfers() throws GridException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void pause() throws GridException {
+    @Override public void onReceiveCacheEntriesReceived(int entriesCnt) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void resume() throws GridException {
+    @Override public void resetMetrics() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridDrStatus drPauseState() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int queuedKeysCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int backupQueueSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int batchWaitingSendCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int batchWaitingAcknowledgeCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int senderHubsCount() {
-        return 0;
+    @Override public boolean receiveEnabled() {
+        return false;
     }
 }

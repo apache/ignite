@@ -182,9 +182,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local flag array. */
     private static final GridCacheFlag[] FLAG_LOCAL = new GridCacheFlag[]{LOCAL};
 
-    /** Data center ID. */
-    private byte dataCenterId;
-
     /** Cache name. */
     private String cacheName;
 
@@ -301,8 +298,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         gate = new GridCacheGateway<>(this);
 
-        dataCenterId = ctx.config().getDataCenterId();
-
         cacheName = cacheCfg.getName();
     }
 
@@ -384,9 +379,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} in case replication is enabled.
      */
     public boolean isDrEnabled() {
-        assert cache != null;
-
-        return cacheCfg.getDrSenderConfiguration() != null && !cache.isNear();
+        return dr().enabled();
     }
 
     /**
@@ -491,7 +484,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Grid instance.
      */
-    public Grid grid() {
+    public GridEx grid() {
         return ctx.grid();
     }
 
@@ -1564,75 +1557,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Check whether DR conflict resolution is required.
-     *
-     * @param oldVer Old version.
-     * @param newVer New version.
-     * @return {@code True} in case DR is required.
+     * @return Data center ID.
      */
-    public boolean drNeedResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
-        GridDrReceiverCacheConfiguration drRcvCfg = cacheCfg.getDrReceiverConfiguration();
-
-        if (drRcvCfg != null) {
-            GridDrReceiverCacheConflictResolverMode mode = drRcvCfg.getConflictResolverMode();
-
-            assert mode != null;
-
-            return oldVer.dataCenterId() != dataCenterId || newVer.dataCenterId() != dataCenterId || mode == DR_ALWAYS;
-        }
-        else
-            return false;
-    }
-    /**
-     * Resolve DR conflict.
-     *
-     * @param key Key.
-     * @param oldEntry Old entry.
-     * @param newEntry New entry.
-     * @return Conflict resolution result.
-     * @throws GridException In case of exception.
-     */
-    public GridDrReceiverConflictContextImpl<K, V> drResolveConflict(K key, GridDrEntry<K, V> oldEntry,
-        GridDrEntry<K, V> newEntry) throws GridException {
-        GridDrReceiverCacheConfiguration drRcvCfg = cacheCfg.getDrReceiverConfiguration();
-
-        assert drRcvCfg != null;
-
-        GridDrReceiverCacheConflictResolverMode mode = drRcvCfg.getConflictResolverMode();
-
-        assert mode != null;
-
-        GridDrReceiverConflictContextImpl<K, V> ctx = new GridDrReceiverConflictContextImpl<>(oldEntry, newEntry);
-
-        if (newEntry.dataCenterId() != oldEntry.dataCenterId() || mode == DR_ALWAYS) {
-            // Cannot resolve conflict manually, fallback to resolver.
-            GridDrReceiverCacheConflictResolver<K, V> rslvr = drRcvCfg != null ?
-                (GridDrReceiverCacheConflictResolver<K, V>)drRcvCfg.getConflictResolver() : null;
-
-            assert mode == DR_ALWAYS && rslvr != null || mode == DR_AUTO;
-
-            if (rslvr != null)
-                rslvr.resolve(ctx);
-            else
-                ctx.useNew();
-        }
-        else {
-            // Resolve the conflict automatically.
-            long topVerDiff = newEntry.topologyVersion() - oldEntry.topologyVersion();
-
-            if (topVerDiff > 0)
-                ctx.useNew();
-            else if (topVerDiff < 0)
-                ctx.useOld();
-            else if (newEntry.order() > oldEntry.order())
-                ctx.useNew();
-            else
-                ctx.useOld();
-        }
-
-        cache.metrics0().onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
-
-        return ctx;
+    public byte dataCenterId() {
+        return dr().dataCenterId();
     }
 
     /**

@@ -28,7 +28,7 @@ import java.util
  */
 object ScalarTaskExample extends App {
     scalar("examples/config/example-compute.xml") {
-        grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!").get
+        grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!")
     }
 
     /**

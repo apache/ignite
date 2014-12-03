@@ -75,7 +75,11 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                 GridComputeTaskFuture<String> fut;
 
                 synchronized(mux){
-                    fut = grid1.compute().execute(JobTask.class, null);
+                    GridCompute comp = grid1.compute().enableAsync();
+
+                    comp.execute(JobTask.class, null);
+
+                    fut = comp.future();
 
                     mux.wait();
                 }

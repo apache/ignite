@@ -48,8 +48,8 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
      */
     public void testTopologyHeapSizeInOneJvm() throws Exception {
         try {
-            GridNode node1 = startGrid(1).node();
-            GridNode node2 = startGrid(2).node();
+            GridNode node1 = startGrid(1).cluster().node();
+            GridNode node2 = startGrid(2).cluster().node();
 
             double allSize = U.heapSize(F.asList(node1, node2), 10);
 

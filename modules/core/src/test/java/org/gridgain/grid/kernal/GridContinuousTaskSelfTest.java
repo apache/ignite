@@ -37,8 +37,15 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = startGrid(0);
 
-            GridComputeTaskFuture<Integer> fut1 = grid.compute().execute(TestJobsChainTask.class, true);
-            GridComputeTaskFuture<Integer> fut2 = grid.compute().execute(TestJobsChainTask.class, false);
+            GridCompute comp = grid.compute().enableAsync();
+
+            comp.execute(TestJobsChainTask.class, true);
+
+            GridComputeTaskFuture<Integer> fut1 = comp.future();
+
+            comp.execute(TestJobsChainTask.class, false);
+
+            GridComputeTaskFuture<Integer> fut2 = comp.future();
 
             assert fut1.get() == 55;
             assert fut2.get() == 55;
@@ -59,10 +66,17 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    GridComputeTaskFuture<Integer> fut1 = grid.compute().execute(TestJobsChainTask.class, true);
-                    GridComputeTaskFuture<Integer> fut2 = grid.compute().execute(TestJobsChainTask.class, false);
-
                     try {
+                        GridCompute comp = grid.compute().enableAsync();
+
+                        comp.execute(TestJobsChainTask.class, true);
+
+                        GridComputeTaskFuture<Integer> fut1 = comp.future();
+
+                        comp.execute(TestJobsChainTask.class, false);
+
+                        GridComputeTaskFuture<Integer> fut2 = comp.future();
+
                         assert fut1.get() == 55;
                         assert fut2.get() == 55;
                     }
@@ -87,7 +101,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
             Grid grid = startGrid(0);
             startGrid(1);
 
-            grid.compute().execute(SessionChainTestTask.class, false).get();
+            grid.compute().execute(SessionChainTestTask.class, false);
         }
         finally {
             stopGrid(0);
@@ -102,7 +116,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = startGrid(0);
 
-            Integer cnt = grid.compute().execute(SlowMapTestTask.class, null).get();
+            Integer cnt = grid.compute().execute(SlowMapTestTask.class, null);
 
             assert cnt != null;
             assert cnt == 2 : "Unexpected result: " + cnt;

@@ -10,6 +10,7 @@
 package org.gridgain.testframework.junits;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -24,7 +25,12 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      *
      */
     public GridTestKernalContext() {
-        super(null, new GridKernal(null), new GridConfiguration(), new GridKernalGatewayImpl(null), false);
+        super(null,
+            new GridKernal(null),
+            new GridConfiguration(),
+            new GridKernalGatewayImpl(null),
+            null,
+            false);
     }
 
     /**

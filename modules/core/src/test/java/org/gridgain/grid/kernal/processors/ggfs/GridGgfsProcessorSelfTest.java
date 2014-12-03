@@ -76,7 +76,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        ggfs.format().get();
+        ggfs.format();
     }
 
     /** {@inheritDoc} */
@@ -753,7 +753,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         create(filePath, false, "Some text.");
 
-        ggfs.format().get();
+        ggfs.format();
 
         assert !ggfs.exists(path(dirPath));
         assert !ggfs.exists(path(filePath));
@@ -767,10 +767,15 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFormatEmpty() throws Exception {
-        ggfs.format().get();
+        ggfs.format();
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @param chunkSize Chunk size.
+     * @param bufSize Buffer size.
+     * @param cnt Count.
+     * @throws Exception If failed.
+     */
     private void checkCreateAppendLongData(int chunkSize, int bufSize, int cnt) throws Exception {
         GridGgfsPath path = new GridGgfsPath("/someFile");
 

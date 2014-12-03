@@ -70,14 +70,13 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        boolean isDrSndCache = cacheCfg.getDrSenderConfiguration() != null;
-        boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
-
-        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
+        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter();
 
         m.delegate(ctx.dht().near().metrics0());
 
         metrics = m;
+
+        ctx.dr().resetMetrics();
     }
 
     /**

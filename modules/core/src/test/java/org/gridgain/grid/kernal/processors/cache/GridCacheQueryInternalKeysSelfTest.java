@@ -96,7 +96,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @Nullable private Grid findGridForNodeId(final UUID nodeId) {
         return F.find(G.allGrids(), null, new P1<Grid>() {
             @Override public boolean apply(Grid e) {
-                return nodeId.equals(e.localNode().id());
+                return nodeId.equals(e.cluster().localNode().id());
             }
         });
     }

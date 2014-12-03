@@ -41,7 +41,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
     public void testSameVmStartup() throws Exception {
         Grid grid1 = startGrid(1);
 
-        Collection<GridNode> top1 = grid1.forRemotes().nodes();
+        Collection<GridNode> top1 = grid1.cluster().forRemotes().nodes();
 
         try {
             assert top1.isEmpty() : "Grid1 topology is not empty: " + top1;
@@ -51,13 +51,13 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            int size1 = grid1.forRemotes().nodes().size();
-            int size2 = grid2.forRemotes().nodes().size();
+            int size1 = grid1.cluster().forRemotes().nodes().size();
+            int size2 = grid2.cluster().forRemotes().nodes().size();
 
             assert size1 == 1 : "Invalid number of remote nodes discovered: " + size1;
             assert size2 == 1 : "Invalid number of remote nodes discovered: " + size2;
 
-            final UUID grid1LocNodeId = grid1.localNode().id();
+            final UUID grid1LocNodeId = grid1.cluster().localNode().id();
 
             grid2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
@@ -84,7 +84,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            Collection<GridNode> top2 = grid2.forRemotes().nodes();
+            Collection<GridNode> top2 = grid2.cluster().forRemotes().nodes();
 
             assert top2.isEmpty() : "Grid2 topology is not empty: " + top2;
         }

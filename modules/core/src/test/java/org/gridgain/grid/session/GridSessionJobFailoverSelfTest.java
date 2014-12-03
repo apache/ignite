@@ -51,7 +51,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
 
             grid1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
 
-            Object res = grid1.compute().execute(SessionTestTask.class.getName(), "1").get();
+            Object res = grid1.compute().execute(SessionTestTask.class.getName(), "1");
 
             assert (Integer)res == 1;
         }
@@ -90,7 +90,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
                     boolean fail;
 
                     try {
-                        fail = (Boolean)ses.waitForAttribute("fail");
+                        fail = ses.waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
                         throw new GridException("Got interrupted while waiting for attribute to be set.", e);

@@ -60,7 +60,7 @@ public class GridMergeSortLoadTest {
 
                 int arrWarmupSize = args.length > 2 ? Integer.parseInt(args[2]) : ARR_SIZE;
 
-                X.println("Test is being executed on the gird of size " + g.nodes().size() + ".");
+                X.println("Test is being executed on the gird of size " + g.cluster().nodes().size() + ".");
 
                 X.println("Performing warm up sorting of int[" + arrWarmupSize + "]...");
 
@@ -69,11 +69,11 @@ public class GridMergeSortLoadTest {
                 X.println("Cleaning up after warm-up...");
 
                 // Run GC on all nodes.
-                g.compute().run(new GridAbsClosure() {
+                g.compute().broadcast(new GridAbsClosure() {
                     @Override public void apply() {
                         System.gc();
                     }
-                }).get();
+                });
 
                 X.println("Performing measured sorting of int[" + arrRealSize + "]...");
 
@@ -98,16 +98,16 @@ public class GridMergeSortLoadTest {
      * @param g Grid to run sorting on.
      * @param size Size of the generated array, which we sort.
      * @return Sort execution time in milliseconds.
-     * @throws GridException
+     * @throws GridException If failed.
      */
-    private static long sort(GridProjection g, int size) throws GridException {
+    private static long sort(Grid g, int size) throws GridException {
         int[] bigArr = generateRandomArray(size);
 
         X.println("Array is generated.");
 
         long startTime = System.currentTimeMillis();
 
-        g.compute().execute(new GridMergeSortLoadTask(), bigArr).get();
+        g.compute().execute(new GridMergeSortLoadTask(), bigArr);
 
         long execTime = System.currentTimeMillis() - startTime;
 

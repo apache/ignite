@@ -80,7 +80,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
         Grid g1 = grid(1);
 
         for (int i = 0; i < 100; i++)
-            assertEquals(g0.mapKeyToNode(null, i).id(), g1.mapKeyToNode(null, i).id());
+            assertEquals(g0.cluster().mapKeyToNode(null, i).id(), g1.cluster().mapKeyToNode(null, i).id());
     }
 
     /** @throws Exception If failed. */
@@ -91,12 +91,14 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
         Grid g0 = grid(0);
         Grid g1 = grid(1);
 
-        GridProjection g0Pinned = g0.forNodeIds(F.asList(g0.localNode().id()));
+        GridProjection g0Pinned = g0.cluster().forNodeIds(F.asList(g0.cluster().localNode().id()));
 
-        GridProjection g01Pinned = g1.forNodeIds(F.asList(g0.localNode().id(), g1.localNode().id()));
+        GridProjection g01Pinned =
+            g1.cluster().forNodeIds(F.asList(g0.cluster().localNode().id(), g1.cluster().localNode().id()));
 
         for (int i = 0; i < 100; i++)
-            assertEquals(g0Pinned.grid().mapKeyToNode(null, i).id(), g01Pinned.grid().mapKeyToNode(null, i).id());
+            assertEquals(g0Pinned.grid().cluster().mapKeyToNode(null, i).id(),
+                g01Pinned.grid().cluster().mapKeyToNode(null, i).id());
     }
 
     /** @throws Exception If failed. */

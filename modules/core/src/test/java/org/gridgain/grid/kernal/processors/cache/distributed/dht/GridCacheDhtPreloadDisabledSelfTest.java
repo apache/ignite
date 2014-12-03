@@ -192,7 +192,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
             Collection<Integer> keys = new LinkedList<>();
 
             for (int i = 0; i < keyCnt; i++)
-                if (cache1.affinity().mapKeyToNode(i).equals(grid1.localNode()))
+                if (cache1.affinity().mapKeyToNode(i).equals(grid1.cluster().localNode()))
                     keys.add(i);
 
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +

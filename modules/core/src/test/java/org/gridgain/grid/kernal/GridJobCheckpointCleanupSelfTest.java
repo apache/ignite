@@ -46,7 +46,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
 
             Grid jobGrid = startGrid(1);
 
-            taskGrid.compute().execute(new CheckpointCountingTestTask(), jobGrid.localNode()).get();
+            taskGrid.compute().execute(new CheckpointCountingTestTask(), jobGrid.cluster().localNode());
         }
         finally {
             stopAllGrids();

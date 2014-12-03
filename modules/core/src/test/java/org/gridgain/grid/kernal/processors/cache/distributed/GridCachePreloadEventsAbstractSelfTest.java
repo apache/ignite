@@ -112,8 +112,8 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
             GridCacheEvent cacheEvt = (GridCacheEvent)evt;
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_LOADED, cacheEvt.type());
             assertEquals(g.cache(null).name(), cacheEvt.cacheName());
-            assertEquals(g.localNode().id(), cacheEvt.node().id());
-            assertEquals(g.localNode().id(), cacheEvt.eventNode().id());
+            assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
+            assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue(cacheEvt.hasNewValue());
             assertNotNull(cacheEvt.newValue());
             assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));

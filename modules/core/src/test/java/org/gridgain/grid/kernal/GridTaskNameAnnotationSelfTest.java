@@ -42,29 +42,28 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClass() throws Exception {
-        assert grid().compute().execute(TestTask.class, null).get().equals(TASK_NAME);
+        assert grid().compute().execute(TestTask.class, null).equals(TASK_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassPeerDeployAware() throws Exception {
-        assert grid().compute().execute(PeerDeployAwareTestTask.class, null).get().
-            equals(PEER_DEPLOY_AWARE_TASK_NAME);
+        assert grid().compute().execute(PeerDeployAwareTestTask.class, null).equals(PEER_DEPLOY_AWARE_TASK_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInstance() throws Exception {
-        assert grid().compute().execute(new TestTask(), null).get().equals(TASK_NAME);
+        assert grid().compute().execute(new TestTask(), null).equals(TASK_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInstancePeerDeployAware() throws Exception {
-        assert grid().compute().execute(new PeerDeployAwareTestTask(), null).get().
+        assert grid().compute().execute(new PeerDeployAwareTestTask(), null).
             equals(PEER_DEPLOY_AWARE_TASK_NAME);
     }
 

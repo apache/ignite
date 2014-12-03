@@ -26,10 +26,10 @@ public class GridTestMessageListener implements P2<UUID, Object> {
 
     /** {@inheritDoc} */
     @Override public boolean apply(UUID nodeId, Object msg) {
-        grid.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.localNode().id() +
+        grid.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.cluster().localNode().id() +
             ", msg=" + msg + ']');
 
-        GridNodeLocalMap<String, AtomicInteger> map = grid.nodeLocalMap();
+        GridNodeLocalMap<String, AtomicInteger> map = grid.cluster().nodeLocalMap();
 
         AtomicInteger cnt = map.get("msgCnt");
 

@@ -602,7 +602,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             Grid grid = grid(gridIdx);
 
-                            UUID locNodeId = grid.localNode().id();
+                            UUID locNodeId = grid.cluster().localNode().id();
 
                             GridCache<Integer, String> cache = grid.cache(CACHE_NAME);
 
@@ -752,7 +752,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             Grid grid = grid(gridIdx);
 
-                            UUID locNodeId = grid.localNode().id();
+                            UUID locNodeId = grid.cluster().localNode().id();
 
                             GridCache<Integer, String> cache = grid.cache(CACHE_NAME);
 
@@ -870,6 +870,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         error("Key: " + key);
         error("Partition: " + c.configuration().getAffinity().partition(key));
         error("Attempt: " + attempt);
-        error("Node: " + c.gridProjection().grid().localNode().id());
+        error("Node: " + c.gridProjection().grid().cluster().localNode().id());
     }
 }

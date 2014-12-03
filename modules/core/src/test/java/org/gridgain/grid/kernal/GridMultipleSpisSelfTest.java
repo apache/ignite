@@ -99,7 +99,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
                 GridTestMultipleSpisTask.class.getClassLoader());
 
             try {
-                grid1.compute().execute(GridTestMultipleSpisTask.class.getName(), grid1.localNode().id()).get();
+                grid1.compute().execute(GridTestMultipleSpisTask.class.getName(), grid1.cluster().localNode().id());
             }
             catch (GridException e) {
                 e.printStackTrace();
@@ -229,12 +229,12 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
             assert subgrid.size() == 2;
             assert taskSes != null;
             assert grid != null;
-            assert grid.localNode().id().equals(arg);
+            assert grid.cluster().localNode().id().equals(arg);
 
             taskSes.saveCheckpoint("test", arg);
 
             // Always map job to the local node where it will fail.
-            return Collections.singletonMap(new GridTestMultipleSpisJob(arg), grid.localNode());
+            return Collections.singletonMap(new GridTestMultipleSpisJob(arg), grid.cluster().localNode());
         }
 
         /** {@inheritDoc} */

@@ -394,7 +394,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         info("Registering event listener...");
 
         // Register event listener on remote nodes.
-        mg.forRemotes().compute().run(new ListenerJob(keyCnt, mg.name())).get();
+        compute(mg.cluster().forRemotes()).run(new ListenerJob(keyCnt, mg.name()));
 
         for (int i = 0; i < keyCnt; i++) {
             if (failFlag.get())
@@ -479,7 +479,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
                             Collection<? extends GridNode> affNodes = nodes(affinity(grid), e.<Object>key());
 
-                            if (!affNodes.contains(grid.localNode())) {
+                            if (!affNodes.contains(grid.cluster().localNode())) {
                                 failFlag.set(true);
 
                                 fail("Key should not be mapped to node [key=" + e.key() + ", node=" + grid.name() + ']');

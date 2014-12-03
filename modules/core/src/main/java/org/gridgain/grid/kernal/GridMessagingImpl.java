@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
@@ -23,7 +24,7 @@ import java.util.*;
 /**
  * {@link GridMessaging} implementation.
  */
-public class GridMessagingImpl implements GridMessaging, Externalizable {
+public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements GridMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +32,7 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     private GridKernalContext ctx;
 
     /** */
-    private GridProjection prj;
+    private GridProjectionAdapter prj;
 
     /**
      * Required by {@link Externalizable}.
@@ -43,8 +44,11 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
+     * @param async Async support flag.
      */
-    public GridMessagingImpl(GridKernalContext ctx, GridProjection prj) {
+    public GridMessagingImpl(GridKernalContext ctx, GridProjectionAdapter prj, boolean async) {
+        super(async);
+
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -147,7 +151,7 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<UUID> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+    @Override public UUID remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) throws GridException {
         A.notNull(p, "p");
 
         guard();
@@ -155,7 +159,7 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
         try {
             GridContinuousHandler hnd = new GridMessageListenHandler(topic, (GridBiPredicate<UUID, Object>)p);
 
-            return ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate());
+            return saveOrGet(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
         }
         finally {
             unguard();
@@ -163,10 +167,10 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stopRemoteListen(UUID opId) {
+    @Override public void stopRemoteListen(UUID opId) throws GridException {
         A.notNull(opId, "opId");
 
-        return ctx.continuous().stopRoutine(opId);
+        saveOrGet(ctx.continuous().stopRoutine(opId));
     }
 
     /**
@@ -184,13 +188,18 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public GridMessaging enableAsync() {
+        return new GridMessagingImpl(ctx, prj, true);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection)in.readObject();
+        prj = (GridProjectionAdapter)in.readObject();
     }
 
     /**
@@ -199,7 +208,7 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private Object readResolve() throws ObjectStreamException {
+    protected Object readResolve() throws ObjectStreamException {
         return prj.message();
     }
 }

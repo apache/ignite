@@ -35,12 +35,12 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
      * @throws Exception If an error occurs.
      */
     public void testTasksInstantiation() throws Exception {
-        grid().compute().execute(PrivateClassTask.class, null).get();
+        grid().compute().execute(PrivateClassTask.class, null);
 
-        grid().compute().execute(NonPublicDefaultConstructorTask.class, null).get();
+        grid().compute().execute(NonPublicDefaultConstructorTask.class, null);
 
         try {
-            grid().compute().execute(NoDefaultConstructorTask.class, null).get();
+            grid().compute().execute(NoDefaultConstructorTask.class, null);
 
             assert false : "Exception should have been thrown.";
         }

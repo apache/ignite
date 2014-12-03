@@ -86,6 +86,8 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and whole partition should be locked.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
      */
     public GridDhtColocatedTxLocal(
         boolean implicit,

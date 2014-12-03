@@ -154,6 +154,6 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).ggfs("ggfs").format().get();
+        grid(0).ggfs("ggfs").format();
     }
 }

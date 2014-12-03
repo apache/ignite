@@ -63,21 +63,24 @@ public final class GridSingleExecutionTest {
             }
         }
 
-        boolean useSession = false;
+        boolean useSes = false;
 
         if (args.length == 3) {
             if ("-session".equals(args[2].trim()))
-                useSession = true;
+                useSes = true;
         }
 
         try {
             Grid grid = G.grid();
 
-            // Execute Hello World task.
-            GridComputeTaskFuture<Object> fut = grid.compute().execute(!useSession ? TestTask.class : TestSessionTask.class,
-                null);
+            GridCompute comp = grid.compute().enableAsync();
 
-            if (useSession) {
+            // Execute Hello World task.
+            comp.execute(!useSes ? TestTask.class : TestSessionTask.class, null);
+
+            GridComputeTaskFuture<Object> fut = comp.future();
+
+            if (useSes) {
                 fut.getTaskSession().setAttribute("attr1", 1);
                 fut.getTaskSession().setAttribute("attr2", 2);
             }
@@ -230,6 +233,7 @@ public final class GridSingleExecutionTest {
 
     /** */
     public static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+        /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
             Collection<GridComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
@@ -290,11 +294,12 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received) throws GridException {
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
+            List<GridComputeJobResult> received) throws GridException {
             ses.setAttribute("attr7", 7);
             ses.setAttribute("attr8", 8);
 
-            return super.result(result, received);
+            return super.result(res, received);
         }
 
         /** {@inheritDoc} */

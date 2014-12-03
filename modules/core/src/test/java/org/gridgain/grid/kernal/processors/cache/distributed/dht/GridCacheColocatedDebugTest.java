@@ -938,10 +938,10 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private static Integer forPrimary(Grid g, int prev) {
         for (int i = prev + 1; i < 10000; i++) {
-            if (g.cache(null).affinity().mapKeyToNode(i).id().equals(g.localNode().id()))
+            if (g.cache(null).affinity().mapKeyToNode(i).id().equals(g.cluster().localNode().id()))
                 return i;
         }
 
-        throw new IllegalArgumentException("Can not find key being primary for node: " + g.localNode().id());
+        throw new IllegalArgumentException("Can not find key being primary for node: " + g.cluster().localNode().id());
     }
 }

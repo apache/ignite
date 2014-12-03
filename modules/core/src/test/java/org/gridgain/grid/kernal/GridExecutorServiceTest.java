@@ -256,7 +256,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
     private ExecutorService createExecutorService(Grid grid) {
         assert grid != null;
 
-        return new GridExecutorService(grid, log());
+        return new GridExecutorService((GridProjectionAdapter)grid, log());
     }
 
     /**

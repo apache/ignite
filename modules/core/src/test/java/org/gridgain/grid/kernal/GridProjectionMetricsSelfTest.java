@@ -99,7 +99,7 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
             for (Grid g0 : G.allGrids())
                 g0.events().localListen(jobFinishLock, EVT_JOB_FINISHED);
 
-            g.compute().execute(new GridTestTask(), "testArg").get();
+            g.compute().execute(new GridTestTask(), "testArg");
 
             // Wait until all nodes fire JOB FINISH event.
             jobFinishLock.await();
@@ -109,7 +109,7 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
             // Wait until local node will have updated metrics.
             metricsUpdLock.await();
 
-            GridProjectionMetrics m = g.metrics();
+            GridProjectionMetrics m = g.cluster().metrics();
 
             checkMetrics(m);
         }

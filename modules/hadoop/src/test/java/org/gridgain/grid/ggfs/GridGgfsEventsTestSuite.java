@@ -31,7 +31,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
-        
+
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite");
 
         suite.addTest(new TestSuite(ldr.loadClass(ShmemPrivate.class.getName())));
@@ -141,7 +141,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
             super.afterTest();
 
             // Clean up secondary file system.
-            ggfsSec.format().get();
+            ggfsSec.format();
         }
 
         /**

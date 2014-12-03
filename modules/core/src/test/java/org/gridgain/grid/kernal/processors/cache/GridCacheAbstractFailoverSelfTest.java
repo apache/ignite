@@ -376,14 +376,25 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws GridException If failed.
      */
     private void check(GridCacheProjection<String,Integer> cache, int expSize) throws GridException {
-        int size = cacheMode() == PARTITIONED ? cache.gridProjection().compute().call(F.asSet(new GridCallable<Integer>() {
-            @GridInstanceResource
-            private Grid g;
+        int size;
 
-            @Override public Integer call() {
-                return cache(g).projection(F.<String, Integer>cachePrimary()).size();
-            }
-        }), F.sumIntReducer()).get() : cache.size();
+        if (cacheMode() == PARTITIONED) {
+            Collection<Integer> res = compute(cache.gridProjection()).broadcast(new GridCallable<Integer>() {
+                @GridInstanceResource
+                private Grid g;
+
+                @Override public Integer call() {
+                    return cache(g).projection(F.<String, Integer>cachePrimary()).size();
+                }
+            });
+
+            size = 0 ;
+
+            for (Integer size0 : res)
+                size += size0;
+        }
+        else
+            size = cache.size();
 
         assertTrue("Key set size is lesser then the expected size [size=" + size + ", expSize=" + expSize + ']',
             size >= expSize);

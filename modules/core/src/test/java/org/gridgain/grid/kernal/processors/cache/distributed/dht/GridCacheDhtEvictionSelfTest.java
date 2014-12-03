@@ -234,10 +234,10 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         assertTrue(entryBackup.readers().isEmpty());
 
         GridFuture<GridEvent> futBackup =
-            grid(backup).events().waitForLocal(nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
+            waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
         GridFuture<GridEvent> futPrimary =
-            grid(primary).events().waitForLocal(nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
+            waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Evict on primary node.
         // It should trigger dht eviction and eviction on backup node.
@@ -277,7 +277,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         Collection<Integer> keys = new ArrayList<>(keyCnt);
 
         for (int key = 0; keys.size() < keyCnt; key++)
-            if (F.eqNodes(primaryGrid.localNode(), F.first(keyNodes(key))))
+            if (F.eqNodes(primaryGrid.cluster().localNode(), F.first(keyNodes(key))))
                 keys.add(key++);
 
         info("Test keys: " + keys);
@@ -298,17 +298,19 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntBackup = new AtomicInteger();
 
-        GridFuture<GridEvent> futBackup = backupGrid.events().waitForLocal(new P1<GridEvent>() {
+        GridFuture<GridEvent> futBackup = waitForLocalEvent(backupGrid.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.node().id().equals(backupGrid.localNode().id()) && cntBackup.incrementAndGet() == keyCnt;
+                return e.node().id().equals(backupGrid.cluster().localNode().id()) &&
+                    cntBackup.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 
         final AtomicInteger cntPrimary = new AtomicInteger();
 
-        GridFuture<GridEvent> futPrimary = primaryGrid.events().waitForLocal(new P1<GridEvent>() {
+        GridFuture<GridEvent> futPrimary = waitForLocalEvent(primaryGrid.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.node().id().equals(primaryGrid.localNode().id()) && cntPrimary.incrementAndGet() == keyCnt;
+                return e.node().id().equals(primaryGrid.cluster().localNode().id()) &&
+                    cntPrimary.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 

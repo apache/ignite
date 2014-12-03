@@ -36,21 +36,6 @@ public enum GridSegmentationPolicy {
     STOP,
 
     /**
-     * When segmentation policy is {@code RECONNECT}, all listeners will receive
-     * {@link GridEventType#EVT_NODE_SEGMENTED} and then discovery manager will
-     * try to reconnect discovery SPI to topology issuing
-     * {@link GridEventType#EVT_NODE_RECONNECTED} event on reconnect.
-     * <p>
-     * Note, that this policy is not allowed when in-memory data grid is enabled.
-     * <p>
-     * This policy can be used only with {@link GridDiscoverySpi} implementation that
-     * has support for reconnect (i.e. annotated with {@link GridDiscoverySpiReconnectSupport}
-     * annotation).
-     */
-    @Deprecated
-    RECONNECT,
-
-    /**
      * When segmentation policy is {@code NOOP}, all listeners will receive
      * {@link GridEventType#EVT_NODE_SEGMENTED} event and it is up to user to
      * implement logic to handle this event.

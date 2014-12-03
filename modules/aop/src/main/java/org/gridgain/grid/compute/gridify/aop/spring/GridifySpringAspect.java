@@ -78,15 +78,15 @@ public class GridifySpringAspect implements MethodInterceptor {
 
             if (!ann.taskClass().equals(GridifyDefaultTask.class))
                 return grid.compute().withTimeout(ann.timeout()).execute(
-                    (Class<? extends GridComputeTask<GridifyArgument, Object>>)ann.taskClass(), arg).get();
+                    (Class<? extends GridComputeTask<GridifyArgument, Object>>)ann.taskClass(), arg);
 
             // If task name was not specified.
             if (ann.taskName().isEmpty())
                 return grid.compute().withTimeout(ann.timeout()).execute(
-                    new GridifyDefaultTask(invoc.getMethod().getDeclaringClass()), arg).get();
+                    new GridifyDefaultTask(invoc.getMethod().getDeclaringClass()), arg);
 
             // If task name was specified.
-            return grid.compute().withTimeout(ann.timeout()).execute(ann.taskName(), arg).get();
+            return grid.compute().withTimeout(ann.timeout()).execute(ann.taskName(), arg);
         }
         catch (Throwable e) {
             for (Class<?> ex : invoc.getMethod().getExceptionTypes()) {

@@ -13,15 +13,10 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.*;
 
 /**
  * This class provide implementation for task future.
@@ -33,13 +28,6 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridC
 
     /** */
     private GridComputeTaskSession ses;
-
-    /** Mapped flag. */
-    private volatile boolean mapped;
-
-    /** Mapped latch. */
-    @GridToStringExclude
-    private CountDownLatch mappedLatch = new CountDownLatch(1);
 
     /** */
     private GridKernalContext ctx;
@@ -119,81 +107,7 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMapped() {
-        return mapped;
-    }
-
-    /**
-     * Callback for completion of task mapping stage.
-     */
-    public void onMapped() {
-        mapped = true;
-
-        mappedLatch.countDown();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable R res, @Nullable Throwable err) {
-        if (super.onDone(res, err)) {
-            if (mappedLatch.getCount() > 0)
-                mappedLatch.countDown();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onCancelled() {
-        if (super.onCancelled()) {
-            if (mappedLatch.getCount() > 0)
-                mappedLatch.countDown();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForMap() throws GridException {
-        if (!mapped && !isDone())
-            U.await(mappedLatch);
-
-        return mapped;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForMap(long timeout) throws GridException {
-        return waitForMap(timeout, MILLISECONDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForMap(long timeout, TimeUnit unit) throws GridException {
-        if (!mapped && !isDone())
-            U.await(mappedLatch, timeout, unit);
-
-        return mapped;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeBoolean(mapped);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        mapped = in.readBoolean();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTaskFutureImpl.class, this, "mappedLatchCnt", mappedLatch.getCount(),
-            "super", super.toString());
+        return S.toString(GridTaskFutureImpl.class, this, "super", super.toString());
     }
 }

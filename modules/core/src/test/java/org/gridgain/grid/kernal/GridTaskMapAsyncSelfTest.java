@@ -55,11 +55,11 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
 
         info("Executing sync mapped task.");
 
-        grid.compute().execute(SyncMappedTask.class, null).get();
+        grid.compute().execute(SyncMappedTask.class, null);
 
         info("Executing async mapped task.");
 
-        grid.compute().execute(AsyncMappedTask.class, null).get();
+        grid.compute().execute(AsyncMappedTask.class, null);
     }
 
     /**

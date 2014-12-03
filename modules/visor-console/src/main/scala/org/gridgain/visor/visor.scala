@@ -2411,16 +2411,16 @@ object visor extends VisorTag {
                 if (g != null) {
                     try {
                         // Discovery events collected only locally.
-                        val loc = g.forLocal().compute().withName("visor-log-collector").withNoFailover().
+                        val loc = g.compute(g.forLocal()).withName("visor-log-collector").withNoFailover().
                             execute(classOf[VisorEventsCollectTask], toTaskArgument(g.localNode().id(),
-                            VisorEventsCollectArgs.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).get.toSeq
+                            VisorEventsCollectArgs.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).toSeq
 
                         val evts = if (!rmtLogDisabled) {
                             val prj = g.forRemotes()
 
-                            loc ++ prj.compute().withName("visor-log-collector").withNoFailover().
+                            loc ++ g.compute(prj).withName("visor-log-collector").withNoFailover().
                                 execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes().map(_.id()),
-                                    VisorEventsCollectArgs.createLogArg(key, LOG_EVTS))).get.toSeq
+                                    VisorEventsCollectArgs.createLogArg(key, LOG_EVTS))).toSeq
                         }
                         else
                             loc

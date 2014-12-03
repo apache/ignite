@@ -100,7 +100,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
         Grid g2 = startGrid("g2");
 
         Map<GridNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(keys);
-        Collection<Object> g2Keys = keysMap.get(g2.localNode());
+        Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());

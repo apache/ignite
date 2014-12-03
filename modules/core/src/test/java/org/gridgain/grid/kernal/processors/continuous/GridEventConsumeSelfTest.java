@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.continuous;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
@@ -152,12 +153,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     }
                 },
                 EVTS_DISCOVERY
-            ).get();
+            );
 
             assertNotNull(consumeId);
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
 
         try {
@@ -172,12 +173,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                         return false;
                     }
                 }
-            ).get();
+            );
 
             assertNotNull(consumeId);
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
 
         try {
@@ -192,12 +193,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                         return false;
                     }
                 }
-            ).get();
+            );
 
             assertNotNull(consumeId);
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -224,12 +225,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 }
             },
             null
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -237,7 +238,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -265,12 +266,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             null,
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -278,7 +279,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -309,12 +310,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     return evt.type() == EVT_JOB_STARTED;
                 }
             }
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -322,7 +323,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -354,13 +355,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 }
             },
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
-            grid(0).compute().withName("exclude").run(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().withName("exclude").run(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -368,7 +369,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -380,7 +381,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
-        UUID consumeId = grid(0).forRemotes().events().remoteListen(
+        UUID consumeId = events(grid(0).forRemotes()).remoteListen(
             new P2<UUID, GridEvent>() {
                 @Override public boolean apply(UUID nodeId, GridEvent evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -396,12 +397,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             null,
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -409,7 +410,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT - 1, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -421,7 +422,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
-        UUID consumeId = grid(0).forAttribute("include", null).events().remoteListen(
+        UUID consumeId = events(grid(0).forAttribute("include", null)).remoteListen(
             new P2<UUID, GridEvent>() {
                 @Override public boolean apply(UUID nodeId, GridEvent evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -437,12 +438,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             null,
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -450,7 +451,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT - 1, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -462,7 +463,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        UUID consumeId = grid(0).forLocal().events().remoteListen(
+        UUID consumeId = events(grid(0).forLocal()).remoteListen(
             new P2<UUID, GridEvent>() {
                 @Override public boolean apply(UUID nodeId, GridEvent evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -478,12 +479,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             null,
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -493,7 +494,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(grid(0).localNode().id(), F.first(nodeIds));
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -502,14 +503,14 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyProjection() throws Exception {
         try {
-            grid(0).forPredicate(F.<GridNode>alwaysFalse()).events().remoteListen(
+            events(grid(0).forPredicate(F.<GridNode>alwaysFalse())).remoteListen(
                 new P2<UUID, GridEvent>() {
                     @Override public boolean apply(UUID nodeId, GridEvent evt) {
                         return true;
                     }
                 },
                 null
-            ).get();
+            );
 
             assert false : "Exception was not thrown.";
         }
@@ -543,12 +544,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             null,
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -556,7 +557,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(1, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -584,21 +585,21 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             null,
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().run(F.noop()).get();
+            grid(0).compute().run(F.noop());
 
             assert latch.await(2, SECONDS);
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
 
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
 
-            grid(0).compute().run(F.noop()).get();
+            grid(0).compute().run(F.noop());
 
             U.sleep(500);
 
@@ -606,7 +607,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(1, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -632,13 +633,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             EVT_JOB_STARTED);
 
-        grid(0).forLocal().compute().run(F.noop()).get();
+        compute(grid(0).forLocal()).run(F.noop());
 
         assert latch.await(2, SECONDS);
 
         assertEquals(1, cnt.get());
 
-        grid(0).forLocal().compute().run(F.noop()).get();
+        compute(grid(0).forLocal()).run(F.noop());
 
         U.sleep(500);
 
@@ -673,7 +674,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 }
             },
             EVT_JOB_STARTED, EVT_JOB_FINISHED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
@@ -682,7 +683,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             startGrid("anotherGrid");
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -692,7 +693,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         finally {
             stopGrid("anotherGrid");
 
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -704,7 +705,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
-        UUID consumeId = grid(0).forAttribute("include", null).events().remoteListen(
+        UUID consumeId = events(grid(0).forAttribute("include", null)).remoteListen(
             new P2<UUID, GridEvent>() {
                 @Override public boolean apply(UUID nodeId, GridEvent evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -720,7 +721,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             null,
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
@@ -733,7 +734,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             startGrid("anotherGrid2");
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -744,7 +745,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             stopGrid("anotherGrid1");
             stopGrid("anotherGrid2");
 
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -762,7 +763,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         GridPredicate<GridNode> prjPred = (GridPredicate<GridNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
         GridPredicate<GridEvent> filter = (GridPredicate<GridEvent>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
 
-        UUID consumeId = grid(0).forPredicate(prjPred).events().remoteListen(new P2<UUID, GridEvent>() {
+        UUID consumeId = events(grid(0).forPredicate(prjPred)).remoteListen(new P2<UUID, GridEvent>() {
             @Override public boolean apply(UUID nodeId, GridEvent evt) {
                 info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
@@ -774,7 +775,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, filter, EVT_JOB_STARTED).get();
+        }, filter, EVT_JOB_STARTED);
 
         try {
             assertNotNull(consumeId);
@@ -792,7 +793,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             stopGrid("anotherGrid1");
             stopGrid("anotherGrid2");
 
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -833,12 +834,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 }
             },
             EVT_JOB_STARTED
-        ).get();
+        );
 
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop()).get();
+            grid(0).compute().broadcast(F.noop());
 
             assert latch.await(2, SECONDS);
 
@@ -846,7 +847,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT, cnt.get());
         }
         finally {
-            grid(0).events().stopRemoteListen(consumeId).get();
+            grid(0).events().stopRemoteListen(consumeId);
         }
     }
 
@@ -856,7 +857,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     public void testMasterNodeLeave() throws Exception {
         Grid g = startGrid("anotherGrid");
 
-        final UUID nodeId = g.localNode().id();
+        final UUID nodeId = g.cluster().localNode().id();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
@@ -878,7 +879,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 }
             },
             EVTS_ALL
-        ).get();
+        );
 
         stopGrid("anotherGrid");
 
@@ -891,7 +892,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     public void testMasterNodeLeaveNoAutoUnsubscribe() throws Exception {
         Grid g = startGrid("anotherGrid");
 
-        final UUID nodeId = g.localNode().id();
+        final UUID nodeId = g.cluster().localNode().id();
         final CountDownLatch discoLatch = new CountDownLatch(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
@@ -922,15 +923,15 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 }
             },
             EVT_JOB_STARTED
-        ).get();
+        );
 
-        grid(0).compute().broadcast(F.noop()).get();
+        grid(0).compute().broadcast(F.noop());
 
         stopGrid("anotherGrid");
 
         discoLatch.await();
 
-        grid(0).compute().broadcast(F.noop()).get();
+        grid(0).compute().broadcast(F.noop());
 
         assert consumeLatch.await(2, SECONDS);
 
@@ -954,11 +955,15 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        UUID consumeId = grid(idx).events().remoteListen(new P2<UUID, GridEvent>() {
+                        GridEvents evts = grid(idx).events().enableAsync();
+
+                        evts.remoteListen(new P2<UUID, GridEvent>() {
                             @Override public boolean apply(UUID uuid, GridEvent evt) {
                                 return true;
                             }
-                        }, null, EVT_JOB_STARTED).get(3000);
+                        }, null, EVT_JOB_STARTED);
+
+                        UUID consumeId = evts.<UUID>future().get(3000);
 
                         started.add(consumeId);
 
@@ -989,7 +994,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     UUID consumeId = t.get2();
 
                     try {
-                        grid(idx).events().stopRemoteListen(consumeId).get(3000);
+                        GridEvents evts = grid(idx).events().enableAsync();
+
+                        evts.stopRemoteListen(consumeId);
+
+                        evts.future().get(3000);
 
                         stopped.add(consumeId);
                     }
@@ -1019,7 +1028,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        grid(idx).compute().run(F.noop()).get(3000);
+                        GridCompute comp = grid(idx).compute().enableAsync();
+
+                        comp.run(F.noop());
+
+                        comp.future().get(3000);
                     }
                     catch (GridException ignored) {
                         // Ignore all job execution related errors.
@@ -1041,7 +1054,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             int idx = t.get1();
             UUID consumeId = t.get2();
 
-            grid(idx).events().stopRemoteListen(consumeId).get(3000);
+            GridEvents evts = grid(idx).events().enableAsync();
+
+            evts.stopRemoteListen(consumeId);
+
+            evts.future().get(3000);
 
             stopped.add(consumeId);
         }

@@ -69,13 +69,13 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
 
         Grid g = grid(0);
 
-        assert "name1".equals(g.compute().withName("name1").call(f).get());
-        assert "name2".equals(g.compute().withName("name2").call(f).get());
-        assert f.getClass().getName().equals(g.compute().call(f).get());
+        assert "name1".equals(g.compute().withName("name1").call(f));
+        assert "name2".equals(g.compute().withName("name2").call(f));
+        assert f.getClass().getName().equals(g.compute().call(f));
 
-        assert "name1".equals(g.compute().withName("name1").execute(new TestTask(false), null).get());
-        assert "name2".equals(g.compute().withName("name2").execute(new TestTask(false), null).get());
-        assert TestTask.class.getName().equals(g.compute().execute(new TestTask(false), null).get());
+        assert "name1".equals(g.compute().withName("name1").execute(new TestTask(false), null));
+        assert "name2".equals(g.compute().withName("name2").execute(new TestTask(false), null));
+        assert TestTask.class.getName().equals(g.compute().execute(new TestTask(false), null));
     }
 
     /**
@@ -96,7 +96,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    g.compute().withNoFailover().run(r).get();
+                    g.compute().withNoFailover().run(r);
 
                     return null;
                 }
@@ -118,7 +118,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    g.compute().withNoFailover().execute(new TestTask(true), null).get();
+                    g.compute().withNoFailover().execute(new TestTask(true), null);
 
                     return null;
                 }

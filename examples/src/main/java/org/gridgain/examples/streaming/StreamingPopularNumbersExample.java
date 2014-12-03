@@ -120,7 +120,7 @@ public class StreamingPopularNumbersExample {
                         streamer.reset();
                     }
                 }
-            }).get();
+            });
         }
         finally {
             GridGain.stop(true);

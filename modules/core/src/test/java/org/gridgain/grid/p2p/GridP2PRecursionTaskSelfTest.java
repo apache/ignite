@@ -49,11 +49,11 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
             Grid grid1 = startGrid(1);
             startGrid(2);
 
-            long res = grid1.compute().execute(FactorialTask.class, 3L).get();
+            long res = grid1.compute().execute(FactorialTask.class, 3L);
 
             assert res == factorial(3);
 
-            res = grid1.compute().execute(FactorialTask.class, 3L).get();
+            res = grid1.compute().execute(FactorialTask.class, 3L);
 
             assert res == factorial(3);
         }
@@ -177,7 +177,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
 
             grid.compute().localDeployTask(FactorialTask.class, FactorialTask.class.getClassLoader());
 
-            return grid.compute().execute(FactorialTask.class, arg).get();
+            return grid.compute().execute(FactorialTask.class, arg);
         }
     }
 }

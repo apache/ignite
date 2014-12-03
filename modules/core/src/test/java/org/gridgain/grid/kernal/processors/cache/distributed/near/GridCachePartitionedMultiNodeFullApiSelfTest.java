@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -435,9 +436,10 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
-            GridFuture<Boolean> f = dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
+            GridCompute comp = compute(dfltGrid.cluster().forLocal()).enableAsync();
+
+            comp.call(new Callable<Boolean>() {
+                    @Override public Boolean call() throws Exception {
                         syncLatch.countDown();
 
                         GridFuture<Boolean> f = e.lockAsync(15000);
@@ -461,6 +463,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                         return true;
                     }
                 });
+
+            GridFuture<Boolean> f = comp.future();
 
             syncLatch.await();
 

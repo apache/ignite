@@ -88,7 +88,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         // Put and get a few keys.
         for (int i = 0; ; i++) {
-            if (cache0.affinity().isPrimary(g0.localNode(), i)) {
+            if (cache0.affinity().isPrimary(g0.cluster().localNode(), i)) {
                 cache0.put(i, i); // +1 read
 
                 cache0.get(i); // +1 read.
@@ -111,12 +111,12 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             info("Writes: " + g.cache(null).metrics().writes());
             info("Reads: " + g.cache(null).metrics().reads());
 
-            if (g.cache(null).affinity().isPrimaryOrBackup(g.localNode(), key))
+            if (g.cache(null).affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals(1, g.cache(null).metrics().writes());
             else
                 assertEquals(0, g.cache(null).metrics().writes());
 
-            if (g.cache(null).affinity().isPrimary(g.localNode(), key)) {
+            if (g.cache(null).affinity().isPrimary(g.cluster().localNode(), key)) {
                 assertEquals(2, g.cache(null).metrics().reads());
                 assertEquals(1, g.cache(null).metrics().hits());
                 assertEquals(1, g.cache(null).metrics().misses());
@@ -141,7 +141,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         // Put and get a few keys.
         for (int i = 0; ; i++) {
-            if (cache0.affinity().isBackup(g0.localNode(), i)) {
+            if (cache0.affinity().isBackup(g0.cluster().localNode(), i)) {
                 cache0.put(i, i); // +1 read.
 
                 cache0.get(i); // +1 read.
@@ -159,17 +159,17 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         for (int j = 0; j < gridCount(); j++) {
             Grid g = grid(j);
 
-            if (g.cache(null).affinity().isPrimaryOrBackup(g.localNode(), key))
+            if (g.cache(null).affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals(1, g.cache(null).metrics().writes());
             else
                 assertEquals(0, g.cache(null).metrics().writes());
 
-            if (g.cache(null).affinity().isPrimary(g.localNode(), key)) {
+            if (g.cache(null).affinity().isPrimary(g.cluster().localNode(), key)) {
                 assertEquals(1, g.cache(null).metrics().reads());
                 assertEquals(0, g.cache(null).metrics().hits());
                 assertEquals(1, g.cache(null).metrics().misses());
             }
-            else if (g.cache(null).affinity().isBackup(g.localNode(), key)){
+            else if (g.cache(null).affinity().isBackup(g.cluster().localNode(), key)){
                 assertEquals(2, g.cache(null).metrics().reads());
                 assertEquals(1, g.cache(null).metrics().hits());
                 assertEquals(1, g.cache(null).metrics().misses());
@@ -194,7 +194,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         // Put and get a few keys.
         for (int i = 0; ; i++) {
-            if (!cache0.affinity().isPrimaryOrBackup(g0.localNode(), i)) {
+            if (!cache0.affinity().isPrimaryOrBackup(g0.cluster().localNode(), i)) {
                 cache0.put(i, i); // +1 read.
 
                 cache0.get(i); // +1 read.
@@ -214,12 +214,12 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             assertEquals(1, g.cache(null).metrics().writes());
 
-            if (g.cache(null).affinity().isPrimary(g.localNode(), key)) {
+            if (g.cache(null).affinity().isPrimary(g.cluster().localNode(), key)) {
                 assertEquals(1, g.cache(null).metrics().reads());
                 assertEquals(0, g.cache(null).metrics().hits());
                 assertEquals(1, g.cache(null).metrics().misses());
             }
-            else if (g.cache(null).affinity().isBackup(g.localNode(), key)){
+            else if (g.cache(null).affinity().isBackup(g.cluster().localNode(), key)){
                 assertEquals(0, g.cache(null).metrics().reads());
                 assertEquals(0, g.cache(null).metrics().hits());
                 assertEquals(0, g.cache(null).metrics().misses());
@@ -244,7 +244,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         // Put and get a few keys.
         for (int i = 0; ; i++) {
-            if (cache0.affinity().isPrimary(g0.localNode(), i)) {
+            if (cache0.affinity().isPrimary(g0.cluster().localNode(), i)) {
                 cache0.get(i); // +1 read.
 
                 key = i;
@@ -273,7 +273,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             assertEquals(0, g.cache(null).metrics().writes());
 
-            if (g.cache(null).affinity().isPrimary(g.localNode(), key)) {
+            if (g.cache(null).affinity().isPrimary(g.cluster().localNode(), key)) {
                 assertEquals(2, g.cache(null).metrics().reads());
                 assertEquals(0, g.cache(null).metrics().hits());
                 assertEquals(2, g.cache(null).metrics().misses());
@@ -298,7 +298,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         // Put and get a few keys.
         for (int i = 0; ; i++) {
-            if (cache0.affinity().isBackup(g0.localNode(), i)) {
+            if (cache0.affinity().isBackup(g0.cluster().localNode(), i)) {
                 cache0.get(i); // +1 read.
 
                 key = i;
@@ -322,7 +322,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             assertEquals(0, g.cache(null).metrics().writes());
 
-            if (g.cache(null).affinity().isPrimaryOrBackup(g.localNode(), key)) {
+            if (g.cache(null).affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                 assertEquals(2, g.cache(null).metrics().reads());
                 assertEquals(0, g.cache(null).metrics().hits());
                 assertEquals(2, g.cache(null).metrics().misses());
@@ -347,7 +347,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         // Put and get a few keys.
         for (int i = 0; ; i++) {
-            if (!cache0.affinity().isPrimaryOrBackup(g0.localNode(), i)) {
+            if (!cache0.affinity().isPrimaryOrBackup(g0.cluster().localNode(), i)) {
                 cache0.get(i); // +1 read.
                 cache0.get(i); // +1 read.
 
@@ -368,12 +368,12 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             assertEquals(0, g.cache(null).metrics().writes());
 
-            if (g.cache(null).affinity().isPrimary(g.localNode(), key)) {
+            if (g.cache(null).affinity().isPrimary(g.cluster().localNode(), key)) {
                 assertEquals(2, g.cache(null).metrics().reads());
                 assertEquals(0, g.cache(null).metrics().hits());
                 assertEquals(2, g.cache(null).metrics().misses());
             }
-            else if (g.cache(null).affinity().isBackup(g.localNode(), key)){
+            else if (g.cache(null).affinity().isBackup(g.cluster().localNode(), key)){
                 assertEquals(0, g.cache(null).metrics().reads());
                 assertEquals(0, g.cache(null).metrics().hits());
                 assertEquals(0, g.cache(null).metrics().misses());

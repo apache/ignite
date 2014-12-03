@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.service.*;
@@ -21,6 +22,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
@@ -185,48 +187,65 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public final GridCompute compute() {
+    /**
+     * @return {@link GridCompute} for this projection.
+     */
+    public final GridCompute compute() {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new GridComputeImpl(ctx, this, subjId);
+            compute = new GridComputeImpl(ctx, this, subjId, false);
         }
 
         return compute;
     }
 
-    /** {@inheritDoc} */
-    @Override public final GridMessaging message() {
+    /**
+     * @return {@link GridMessaging} for this projection.
+     */
+    public final GridMessaging message() {
         if (messaging == null) {
             assert ctx != null;
 
-            messaging = new GridMessagingImpl(ctx, this);
+            messaging = new GridMessagingImpl(ctx, this, false);
         }
 
         return messaging;
     }
 
-    /** {@inheritDoc} */
-    @Override public final GridEvents events() {
+    /**
+     * @return {@link GridEvents} for this projection.
+     */
+    public final GridEvents events() {
         if (evts == null) {
             assert ctx != null;
 
-            evts = new GridEventsImpl(ctx, this);
+            evts = new GridEventsImpl(ctx, this, false);
         }
 
         return evts;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridServices services() {
+    /**
+     * @return {@link GridServices} for this projection.
+     */
+    public GridServices services() {
         if (svcs == null) {
             assert ctx != null;
 
-            svcs = new GridServicesImpl(ctx, this);
+            svcs = new GridServicesImpl(ctx, this, false);
         }
 
         return svcs;
+    }
+
+    /**
+     * @return {@link ExecutorService} for this projection.
+     */
+    public ExecutorService executorService() {
+        assert ctx != null;
+
+        return new GridExecutorService(this, ctx.log());
     }
 
     /** {@inheritDoc} */

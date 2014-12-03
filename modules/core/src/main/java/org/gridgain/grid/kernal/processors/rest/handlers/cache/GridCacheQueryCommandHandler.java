@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
@@ -115,7 +116,17 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 return new GridFinishedFutureEx<>(new GridException("Destination node ID has left the grid (retry " +
                     "the query): " + destId));
 
-            return ctx.grid().forNodeId(destId).compute().withNoFailover().call(c);
+            try {
+                GridCompute comp = ctx.grid().compute(ctx.grid().forNodeId(destId)).withNoFailover().enableAsync();
+
+                comp.call(c);
+
+                return comp.future();
+            }
+            catch (GridException e) {
+                // Should not be thrown since uses asynchronous execution.
+                return new GridFinishedFutureEx<>(e);
+            }
         }
     }
 
@@ -125,30 +136,42 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        GridFuture<Collection<Object>> fut = ctx.grid().forCache(cacheName).
-            compute().withNoFailover().broadcast(c);
+        GridCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().enableAsync();
 
-        return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
-            @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
-                try {
-                    fut.get();
+        try {
+            comp.broadcast(c);
 
-                    return new GridRestResponse();
+            GridFuture<Collection<Object>> fut = comp.future();
+
+            return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
+                @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
+                    try {
+                        fut.get();
+
+                        return new GridRestResponse();
+                    }
+                    catch (GridException e) {
+                        throw new GridClosureException(e);
+                    }
                 }
-                catch (GridException e) {
-                    throw new GridClosureException(e);
-                }
-            }
-        });
+            });
+        }
+        catch (GridException e) {
+            // Should not be thrown since uses asynchronous execution.
+            return new GridFinishedFutureEx<>(e);
+        }
     }
 
     /**
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param wrapper Query future wrapper.
+     * @param locMap Queries map.
+     * @param locNodeId Local node ID.
      * @return Rest response.
+     * @throws GridException If failed.
      */
     private static GridRestResponse fetchQueryResults(
-        long queryId,
+        long qryId,
         QueryFutureWrapper wrapper,
         ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap,
         UUID locNodeId
@@ -169,11 +192,11 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             qryRes.last(true);
 
-            locMap.remove(new QueryExecutionKey(queryId), wrapper);
+            locMap.remove(new QueryExecutionKey(qryId), wrapper);
         }
 
         qryRes.items(col);
-        qryRes.queryId(queryId);
+        qryRes.queryId(qryId);
         qryRes.nodeId(locNodeId);
 
         res.setResponse(qryRes);
@@ -311,7 +334,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());
 
             GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.nodeLocalMap();
+                g.cluster().nodeLocalMap();
 
             QueryFutureWrapper wrapper = new QueryFutureWrapper(fut);
 
@@ -319,7 +342,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             assert old == null;
 
-            return fetchQueryResults(qryId, wrapper, locMap, g.localNode().id());
+            return fetchQueryResults(qryId, wrapper, locMap, g.cluster().localNode().id());
         }
     }
 
@@ -347,10 +370,10 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
             GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.nodeLocalMap();
+                g.cluster().nodeLocalMap();
 
             return fetchQueryResults(req.queryId(), locMap.get(new QueryExecutionKey(req.queryId())),
-                locMap, g.localNode().id());
+                locMap, g.cluster().localNode().id());
         }
     }
 

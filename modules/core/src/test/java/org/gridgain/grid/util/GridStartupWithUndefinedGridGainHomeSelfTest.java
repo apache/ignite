@@ -90,7 +90,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
                 assert ggHome0 == null;
 
-                X.println("Stopping grid " + g.localNode().id());
+                X.println("Stopping grid " + g.cluster().localNode().id());
             }
         }
     }

@@ -80,7 +80,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         for (int i = 0; i < 1; i++) {
             refreshInitialData();
 
-            GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class.getName(), null);
+            GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridTaskSessionTestTask.class.getName(), null);
 
             assert fut != null;
 
@@ -88,7 +88,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
                 // Wait until jobs begin execution.
                 boolean await = startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS);
 
-                assert await == true : "Jobs did not start.";
+                assert await : "Jobs did not start.";
 
                 fut.getTaskSession().addAttributeListener(lsnr, true);
 
@@ -167,10 +167,10 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null)
-                throw result.getException();
+            if (res.getException() != null)
+                throw res.getException();
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
@@ -203,7 +203,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
         /** {@inheritDoc} */
         @SuppressWarnings({"NakedNotify"})
-        public void onAttributeSet(Object key, Object val) {
+        @Override public void onAttributeSet(Object key, Object val) {
             assert key != null;
 
             info("Received attribute [name=" + key + ",val=" + val + ']');

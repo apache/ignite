@@ -211,8 +211,8 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        var evts = grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
-            toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get.toSeq
+        var evts = grid.compute(grid.forNode(node)).execute(classOf[VisorEventsCollectTask],
+            toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).toSeq
 
         val nodeStartTime = node.metrics().getStartTime
 

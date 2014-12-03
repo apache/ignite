@@ -129,7 +129,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
 
         assert reader != null;
 
-        info(">>> Reader is " + reader.localNode().id());
+        info(">>> Reader is " + reader.cluster().localNode().id());
 
         // Add reader.
         if (touchAffKey)

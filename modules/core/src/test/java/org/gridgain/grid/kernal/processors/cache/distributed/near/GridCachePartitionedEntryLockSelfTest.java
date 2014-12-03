@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import java.util.concurrent.*;
@@ -48,9 +49,9 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
 
                 assert e.isLocked();
 
+                GridCompute comp = compute(grid(i).forLocal()).enableAsync();
 
-
-                GridFuture<Boolean> f = grid(i).forLocal().compute().call(new Callable<Boolean>() {
+                comp.call(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
                         GridFuture<Boolean> f = e.lockAsync(1000);
 
@@ -73,6 +74,8 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
                         return true;
                     }
                 });
+
+                GridFuture<Boolean> f = comp.future();
 
                 // Let another thread start.
                 Thread.sleep(300);

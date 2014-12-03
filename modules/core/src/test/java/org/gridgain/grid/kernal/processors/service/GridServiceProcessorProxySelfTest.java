@@ -34,7 +34,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         Grid grid = randomGrid();
 
-        grid.services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+        grid.services().deployNodeSingleton(name, new CounterServiceImpl());
 
         CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
 
@@ -43,11 +43,13 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         assertEquals(10, svc.get());
         assertEquals(10, svc.localIncrements());
-        assertEquals(10, grid.forLocal().services().serviceProxy(name, CounterService.class, false).localIncrements());
+        assertEquals(10, grid.services(grid.cluster().forLocal()).
+            serviceProxy(name, CounterService.class, false).localIncrements());
 
         // Make sure that remote proxies were not called.
-        for (GridNode n : grid.forRemotes().nodes()) {
-            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
+        for (GridNode n : grid.cluster().forRemotes().nodes()) {
+            CounterService rmtSvc =
+                    grid.services(grid.cluster().forNode(n)).serviceProxy(name, CounterService.class, false);
 
             assertEquals(0, rmtSvc.localIncrements());
         }
@@ -61,7 +63,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         Grid grid = randomGrid();
 
-        grid.services().deployClusterSingleton(name, new CounterServiceImpl()).get();
+        grid.services().deployClusterSingleton(name, new CounterServiceImpl());
 
         CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
 
@@ -83,7 +85,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         String name = "testMultiNodeProxy";
 
-        grid.services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+        grid.services().deployNodeSingleton(name, new CounterServiceImpl());
 
         CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
 
@@ -105,7 +107,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         Grid grid = randomGrid();
 
         // Deploy only on remote nodes.
-        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+        grid.services(grid.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
 
         info("Deployed service: " + name);
 
@@ -119,8 +121,9 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int total = 0;
 
-        for (GridNode n : grid.forRemotes().nodes()) {
-            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
+        for (GridNode n : grid.cluster().forRemotes().nodes()) {
+            CounterService rmtSvc =
+                    grid.services(grid.cluster().forNode(n)).serviceProxy(name, CounterService.class, false);
 
             int cnt = rmtSvc.localIncrements();
 
@@ -142,7 +145,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         Grid grid = randomGrid();
 
         // Deploy only on remote nodes.
-        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+        grid.services(grid.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
 
         // Get local proxy.
         CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
@@ -154,8 +157,9 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int total = 0;
 
-        for (GridNode n : grid.forRemotes().nodes()) {
-            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
+        for (GridNode n : grid.cluster().forRemotes().nodes()) {
+            CounterService rmtSvc =
+                    grid.services(grid.cluster().forNode(n)).serviceProxy(name, CounterService.class, false);
 
             int cnt = rmtSvc.localIncrements();
 
@@ -175,7 +179,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final Grid grid = grid(0);
 
-        grid.forLocal().services().deployClusterSingleton(name, new MapServiceImpl<String, Integer>()).get();
+        grid.services(grid.cluster().forLocal()).deployClusterSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 1; i < nodeCount(); i++) {
             MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
@@ -197,7 +201,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final Grid grid = grid(0);
 
-        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 0; i < nodeCount(); i++) {
             MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
@@ -222,10 +226,11 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final Grid grid = grid(0);
 
-        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         // Get remote proxy.
-        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, false);
+        MapService<Integer, String> svc =  grid.services(grid.cluster().forRemotes()).
+            serviceProxy(name, MapService.class, false);
 
         // Make sure service is a local instance.
         assertFalse(svc instanceof GridService);
@@ -235,8 +240,9 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int size = 0;
 
-        for (GridNode n : grid.forRemotes().nodes()) {
-            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+        for (GridNode n : grid.cluster().forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.services(grid.cluster().forNode(n)).
+                serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
             assertFalse(map instanceof GridService);
@@ -255,10 +261,11 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final Grid grid = grid(0);
 
-        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         // Get remote proxy.
-        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, true);
+        MapService<Integer, String> svc =  grid.services(grid.cluster().forRemotes()).
+            serviceProxy(name, MapService.class, true);
 
         // Make sure service is a local instance.
         assertFalse(svc instanceof GridService);
@@ -268,8 +275,9 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int size = 0;
 
-        for (GridNode n : grid.forRemotes().nodes()) {
-            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+        for (GridNode n : grid.cluster().forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.services(grid.cluster().forNode(n)).
+                serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
             assertFalse(map instanceof GridService);

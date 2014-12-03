@@ -64,7 +64,7 @@ class ScalarProjectionSpec extends FlatSpec with ShouldMatchers with BeforeAndAf
 
     it should "return all nodes" in scalar(gridConfig("node-scalar", true)) {
         assertResult(3) {
-            grid$("node-scalar").get.nodes().size
+            grid$("node-scalar").get.cluster().nodes().size
         }
     }
 

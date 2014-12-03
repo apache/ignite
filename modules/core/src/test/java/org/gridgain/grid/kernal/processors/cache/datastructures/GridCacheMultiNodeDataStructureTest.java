@@ -33,7 +33,7 @@ public class GridCacheMultiNodeDataStructureTest {
     public static void main(String[] args) throws GridException {
         try (Grid g = G.start("examples/config/example-cache.xml")) {
             // All available nodes.
-            if (g.nodes().size() <= 2)
+            if (g.cluster().nodes().size() <= 2)
                 throw new GridException("At least 2 nodes must be started.");
 
             sample(g, "partitioned");

@@ -56,7 +56,7 @@ public final class CacheAtomicReferenceExample {
             Runnable c = new ReferenceClosure(CACHE_NAME, refName);
 
             // Check atomic reference on all grid nodes.
-            g.compute().run(c).get();
+            g.compute().run(c);
 
             // Make new value of atomic reference.
             String newVal = UUID.randomUUID().toString();
@@ -67,7 +67,7 @@ public final class CacheAtomicReferenceExample {
 
             // Check atomic reference on all grid nodes.
             // Atomic reference value shouldn't be changed.
-            g.compute().run(c).get();
+            g.compute().run(c);
 
             System.out.println("Try to change value of atomic reference with correct expected value.");
 
@@ -75,7 +75,7 @@ public final class CacheAtomicReferenceExample {
 
             // Check atomic reference on all grid nodes.
             // Atomic reference value should be changed.
-            g.compute().run(c).get();
+            g.compute().run(c);
         }
 
         System.out.println();
