@@ -31,7 +31,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * Tests starting with "testLocal" are checking
  * {@link GridGgfsProcessor#validateLocalGgfsConfigurations(GridGgfsConfiguration[])}.
  * <p>
- * Tests starting with "testRemote" are checking {@link GridGgfsProcessor#checkGgfsOnRemoteNode(org.gridgain.grid.ClusterNode)}.
+ * Tests starting with "testRemote" are checking {@link GridGgfsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
 public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */

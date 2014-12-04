@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.streamer.router;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.streamer.*;
 
 import java.util.*;

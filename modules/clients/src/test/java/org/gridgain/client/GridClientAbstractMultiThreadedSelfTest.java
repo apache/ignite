@@ -10,6 +10,7 @@
 package org.gridgain.client;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.ssl.*;

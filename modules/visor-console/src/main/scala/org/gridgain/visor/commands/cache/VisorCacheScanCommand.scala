@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.ClusterNode
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid.kernal.visor.query.VisorQueryTask.VisorQueryArg
 import org.gridgain.grid.kernal.visor.query.{VisorQueryNextPageTask, VisorQueryResult, VisorQueryTask}
 import org.gridgain.grid.lang.GridBiTuple

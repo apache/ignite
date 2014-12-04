@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.failover.never;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.testframework.*;

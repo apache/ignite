@@ -23,7 +23,7 @@ import org.gridgain.grid.util.tostring.*;
  * by their respective implementing classes:
  * <ul>
  * <li>{@link org.apache.ignite.Ignite}</li>
- * <li>{@link org.gridgain.grid.ClusterNode}</li>
+ * <li>{@link org.apache.ignite.cluster.ClusterNode}</li>
  * </ul>
  * Kernal gateway is also responsible for notifying various futures about the change in
  * kernal state so that issued futures could properly interrupt themselves when kernal

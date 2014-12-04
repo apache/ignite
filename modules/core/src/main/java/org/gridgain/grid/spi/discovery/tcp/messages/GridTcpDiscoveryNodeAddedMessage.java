@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -10,6 +10,7 @@
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

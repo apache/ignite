@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;

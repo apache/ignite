@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.communication;
 
 import mx4j.tools.adaptor.http.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.direct.*;

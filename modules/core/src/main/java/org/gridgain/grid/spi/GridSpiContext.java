@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -113,7 +114,7 @@ public interface GridSpiContext {
      * communication mechanism is defined by {@link GridCommunicationSpi} implementation used.
      * <p>
      * This method can be used by jobs to communicate with other nodes in the grid. Remote nodes
-     * can send messages by calling {@link #send(org.gridgain.grid.ClusterNode, Serializable, String)} method.
+     * can send messages by calling {@link #send(org.apache.ignite.cluster.ClusterNode, Serializable, String)} method.
      *
      * @param lsnr Message listener to register.
      * @param topic Topic to register listener for.

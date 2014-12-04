@@ -10,6 +10,7 @@
 package org.gridgain.grid.gridify;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;

@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.loadbalancing.adaptive;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 
 /**
  * Pluggable implementation of node load probing. Implementations
@@ -17,7 +17,7 @@ import org.gridgain.grid.*;
  * by setting {@link GridAdaptiveLoadBalancingSpi#setLoadProbe(GridAdaptiveLoadProbe)}
  * configuration parameter.
  * <p>
- * Note that if {@link #getLoad(org.gridgain.grid.ClusterNode, int)} returns a value of {@code 0},
+ * Note that if {@link #getLoad(org.apache.ignite.cluster.ClusterNode, int)} returns a value of {@code 0},
  * then implementation will assume that load value is simply not available and
  * will try to calculate an average of load values for other nodes. If such
  * average cannot be obtained (all node load values are {@code 0}), then a value
@@ -71,7 +71,7 @@ public interface GridAdaptiveLoadProbe {
     /**
      * Calculates load value for a given node. Specific implementations would
      * usually take into account some of the values provided by
-     * {@link org.gridgain.grid.ClusterNode#metrics()} method. For example, load can be calculated
+     * {@link org.apache.ignite.cluster.ClusterNode#metrics()} method. For example, load can be calculated
      * based on job execution time or number of active jobs, or CPU/Heap utilization.
      * <p>
      * Note that if this method returns a value of {@code 0},

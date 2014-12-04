@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.discovery;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.extensions.discovery.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;

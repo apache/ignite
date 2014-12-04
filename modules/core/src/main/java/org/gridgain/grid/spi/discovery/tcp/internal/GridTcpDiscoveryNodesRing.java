@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.discovery.tcp.internal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.tostring.*;

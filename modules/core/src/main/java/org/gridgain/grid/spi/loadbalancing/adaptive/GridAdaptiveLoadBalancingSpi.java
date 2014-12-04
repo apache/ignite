@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.loadbalancing.adaptive;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
@@ -51,7 +52,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <li>{@link GridAdaptiveProcessingTimeLoadProbe}</li>
  * <li>{@link GridAdaptiveJobCountLoadProbe}</li>
  * </ul>
- * Note that if {@link GridAdaptiveLoadProbe#getLoad(org.gridgain.grid.ClusterNode, int)} returns a value of {@code 0},
+ * Note that if {@link GridAdaptiveLoadProbe#getLoad(org.apache.ignite.cluster.ClusterNode, int)} returns a value of {@code 0},
  * then implementation will assume that load value is simply not available and
  * will try to calculate an average of load values for other nodes. If such
  * average cannot be obtained (all node load values are {@code 0}), then a value

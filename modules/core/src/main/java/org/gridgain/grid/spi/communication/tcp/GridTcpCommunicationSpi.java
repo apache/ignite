@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.communication.tcp;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -49,7 +50,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * TCP/IP protocol and Java NIO to communicate with other nodes.
  * <p>
  * To enable communication with other nodes, this SPI adds {@link #ATTR_ADDRS}
- * and {@link #ATTR_PORT} local node attributes (see {@link org.gridgain.grid.ClusterNode#attributes()}.
+ * and {@link #ATTR_PORT} local node attributes (see {@link org.apache.ignite.cluster.ClusterNode#attributes()}.
  * <p>
  * At startup, this SPI tries to start listening to local port specified by
  * {@link #setLocalPort(int)} method. If local port is occupied, then SPI will

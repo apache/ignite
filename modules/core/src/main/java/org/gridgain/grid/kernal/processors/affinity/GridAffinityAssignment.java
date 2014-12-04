@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.affinity;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 
 import java.io.*;
 import java.util.*;

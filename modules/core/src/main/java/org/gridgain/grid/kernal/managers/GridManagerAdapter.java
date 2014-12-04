@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;

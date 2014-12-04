@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.alert
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._

@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.direct.newnodes;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;

@@ -10,6 +10,7 @@
 package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.lang.*;

@@ -7,9 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.cluster;
 
 import org.apache.ignite.IgniteCluster;
+import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.product.*;
@@ -33,7 +34,7 @@ import java.util.*;
  * You can use grid node attributes to provide static information about a node.
  * This information is initialized once within grid, during node startup, and
  * remains the same throughout the lifetime of a node. Use
- * {@link GridConfiguration#getUserAttributes()} method to initialize your custom
+ * {@link org.gridgain.grid.GridConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">

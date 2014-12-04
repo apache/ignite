@@ -10,6 +10,7 @@
 package org.apache.ignite.plugin;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;

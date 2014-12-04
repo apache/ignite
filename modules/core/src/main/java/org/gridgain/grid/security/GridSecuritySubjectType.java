@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  */
 public enum GridSecuritySubjectType {
     /**
-     * Subject type for a remote {@link org.gridgain.grid.ClusterNode}.
+     * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
      */
     REMOTE_NODE,
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.testframework.junits.spi;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.security.*;

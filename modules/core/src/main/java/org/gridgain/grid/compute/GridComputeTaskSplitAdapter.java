@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.compute;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;

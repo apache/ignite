@@ -13,6 +13,7 @@ package org.gridgain.visor.commands.node
 
 import java.util.UUID
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.typedef.X

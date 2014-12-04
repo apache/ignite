@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.pimps
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.lang._
 import org.jetbrains.annotations._

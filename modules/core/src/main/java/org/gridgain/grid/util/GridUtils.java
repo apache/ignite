@@ -10,6 +10,7 @@
 package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -827,7 +828,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Returns current JVM maxMemory in the same format as {@link #heapSize(org.gridgain.grid.ClusterNode, int)}.
+     * Returns current JVM maxMemory in the same format as {@link #heapSize(org.apache.ignite.cluster.ClusterNode, int)}.
      *
      * @param precision Precision.
      * @return Maximum memory size in GB.
@@ -8058,7 +8059,7 @@ public abstract class GridUtils {
     /**
      * @param addrs Node's addresses.
      * @param port Port discovery number.
-     * @return A string compatible with {@link org.gridgain.grid.ClusterNode#consistentId()} requirements.
+     * @return A string compatible with {@link org.apache.ignite.cluster.ClusterNode#consistentId()} requirements.
      */
     public static String consistentId(Collection<String> addrs, int port) {
         assert !F.isEmpty(addrs);

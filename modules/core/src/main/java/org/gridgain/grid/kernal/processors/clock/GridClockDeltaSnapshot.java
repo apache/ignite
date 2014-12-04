@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.clock;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;

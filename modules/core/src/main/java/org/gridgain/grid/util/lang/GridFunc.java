@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -7627,15 +7628,15 @@ public class GridFunc {
     }
 
     /**
-     * Compares two {@link org.gridgain.grid.ClusterNode} instances for equality.
+     * Compares two {@link org.apache.ignite.cluster.ClusterNode} instances for equality.
      * <p>
-     * Since introduction of {@link org.gridgain.grid.ClusterNode} in GridGain 3.0 the semantic of equality between
+     * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in GridGain 3.0 the semantic of equality between
      * grid nodes has changed. Since rich node wraps thin node instance and in the same time
-     * implements {@link org.gridgain.grid.ClusterNode} interface, the proper semantic of comparing two grid node is
+     * implements {@link org.apache.ignite.cluster.ClusterNode} interface, the proper semantic of comparing two grid node is
      * to ignore their runtime types and compare only by their IDs. This method implements this logic.
      * <p>
      * End users rarely, if ever, need to directly compare two grid nodes for equality. This method is
-     * intended primarily for discovery SPI developers that provide implementations of {@link org.gridgain.grid.ClusterNode}
+     * intended primarily for discovery SPI developers that provide implementations of {@link org.apache.ignite.cluster.ClusterNode}
      * interface.
      *
      * @param n1 Grid node 1.

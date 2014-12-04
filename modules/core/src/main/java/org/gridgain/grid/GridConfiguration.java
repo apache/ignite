@@ -1057,8 +1057,8 @@ public class GridConfiguration {
 
     /**
      * Should return any user-defined attributes to be added to this node. These attributes can
-     * then be accessed on nodes by calling {@link ClusterNode#attribute(String)} or
-     * {@link ClusterNode#attributes()} methods.
+     * then be accessed on nodes by calling {@link org.apache.ignite.cluster.ClusterNode#attribute(String)} or
+     * {@link org.apache.ignite.cluster.ClusterNode#attributes()} methods.
      * <p>
      * Note that system adds the following (among others) attributes automatically:
      * <ul>

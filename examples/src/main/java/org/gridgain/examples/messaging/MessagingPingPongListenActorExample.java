@@ -10,6 +10,7 @@
 package org.gridgain.examples.messaging;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.messaging.*;

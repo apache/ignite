@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.affinity;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
@@ -79,7 +80,7 @@ public interface GridCacheAffinity<K> {
      * {@link org.apache.ignite.Ignite#localNode()} as first parameter.
      * <p>
      * This method is essentially equivalent to calling
-     * <i>"{@link #isPrimary(org.gridgain.grid.ClusterNode, Object)} || {@link #isBackup(org.gridgain.grid.ClusterNode, Object)})"</i>,
+     * <i>"{@link #isPrimary(org.apache.ignite.cluster.ClusterNode, Object)} || {@link #isBackup(org.apache.ignite.cluster.ClusterNode, Object)})"</i>,
      * however it is more efficient as it makes both checks at once.
      *
      * @param n Node to check.
@@ -92,7 +93,7 @@ public interface GridCacheAffinity<K> {
      * Gets partition ids for which nodes of the given projection has primary
      * ownership.
      * <p>
-     * Note that since {@link org.gridgain.grid.ClusterNode} implements {@link GridProjection},
+     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link GridProjection},
      * to find out primary partitions for a single node just pass
      * a single node into this method.
      * <p>
@@ -114,7 +115,7 @@ public interface GridCacheAffinity<K> {
      * {@code 'levels} parameter. If no {@code 'level'} is specified then
      * all backup partitions are returned.
      * <p>
-     * Note that since {@link org.gridgain.grid.ClusterNode} implements {@link GridProjection},
+     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link GridProjection},
      * to find out backup partitions for a single node, just pass that single
      * node into this method.
      * <p>
@@ -133,7 +134,7 @@ public interface GridCacheAffinity<K> {
      * Gets partition ids for which nodes of the given projection has ownership
      * (either primary or backup).
      * <p>
-     * Note that since {@link org.gridgain.grid.ClusterNode} implements {@link GridProjection},
+     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link GridProjection},
      * to find out all partitions for a single node, just pass that single
      * node into this method.
      * <p>

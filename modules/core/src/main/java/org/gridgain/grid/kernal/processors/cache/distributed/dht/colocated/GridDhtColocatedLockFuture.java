@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;

@@ -10,6 +10,7 @@
 package org.gridgain.grid.compute.gridify.aop;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;

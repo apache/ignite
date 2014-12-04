@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.security;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.security.*;

@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid.kernal.visor.cache.VisorCacheCompactTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils._
 

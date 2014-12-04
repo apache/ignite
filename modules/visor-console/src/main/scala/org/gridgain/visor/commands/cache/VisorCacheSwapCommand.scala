@@ -10,6 +10,7 @@
  */
 package org.gridgain.visor.commands.cache
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid.kernal.visor.cache.VisorCacheSwapBackupsTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils._
 

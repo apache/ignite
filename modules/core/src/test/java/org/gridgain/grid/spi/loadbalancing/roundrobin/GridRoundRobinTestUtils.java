@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.loadbalancing.roundrobin;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 

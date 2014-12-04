@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;

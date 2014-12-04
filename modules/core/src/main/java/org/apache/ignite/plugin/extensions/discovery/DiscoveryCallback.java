@@ -9,8 +9,8 @@
 
 package org.apache.ignite.plugin.extensions.discovery;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 

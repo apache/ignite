@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.top
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.lang.GridPredicate

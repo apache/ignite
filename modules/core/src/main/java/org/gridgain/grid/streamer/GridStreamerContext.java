@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.streamer;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 

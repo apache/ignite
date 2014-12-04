@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;

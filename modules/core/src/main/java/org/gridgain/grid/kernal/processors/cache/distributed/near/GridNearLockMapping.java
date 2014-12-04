@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;

@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.disco
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.kernal.visor.event.VisorGridDiscoveryEvent

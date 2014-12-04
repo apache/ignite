@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.discovery;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;

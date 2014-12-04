@@ -9,8 +9,8 @@
 
 package org.gridgain.client.impl;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.client.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.affinity.*;

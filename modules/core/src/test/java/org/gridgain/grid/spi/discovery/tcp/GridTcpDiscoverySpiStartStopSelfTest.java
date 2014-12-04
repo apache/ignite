@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.discovery.tcp;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;

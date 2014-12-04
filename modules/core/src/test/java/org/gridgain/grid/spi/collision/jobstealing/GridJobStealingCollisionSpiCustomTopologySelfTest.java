@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.collision.jobstealing;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.discovery.*;

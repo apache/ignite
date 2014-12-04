@@ -9,6 +9,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.collision.jobstealing;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
@@ -341,7 +342,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
 
     /**
      * Configuration parameter to enable stealing to/from only nodes that
-     * have these attributes set (see {@link org.gridgain.grid.ClusterNode#attribute(String)} and
+     * have these attributes set (see {@link org.apache.ignite.cluster.ClusterNode#attribute(String)} and
      * {@link GridConfiguration#getUserAttributes()} methods).
      *
      * @param stealAttrs Node attributes to enable job stealing for.

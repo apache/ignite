@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 

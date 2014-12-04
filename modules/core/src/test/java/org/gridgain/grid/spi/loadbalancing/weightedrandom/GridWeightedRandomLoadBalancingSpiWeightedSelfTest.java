@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.loadbalancing.weightedrandom;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

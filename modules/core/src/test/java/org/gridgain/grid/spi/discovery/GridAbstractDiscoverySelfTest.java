@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.security.*;

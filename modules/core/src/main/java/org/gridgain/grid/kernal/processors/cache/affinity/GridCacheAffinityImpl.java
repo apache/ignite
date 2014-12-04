@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.affinity;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;

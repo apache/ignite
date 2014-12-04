@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.cache.affinity;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Node hash resolver which uses {@link org.gridgain.grid.ClusterNode#consistentId()} as alternate hash value.
+ * Node hash resolver which uses {@link org.apache.ignite.cluster.ClusterNode#consistentId()} as alternate hash value.
  */
 public class GridCacheAffinityNodeAddressHashResolver implements GridCacheAffinityNodeHashResolver {
     /** */

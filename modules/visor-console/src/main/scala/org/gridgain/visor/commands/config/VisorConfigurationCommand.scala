@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.config
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
 
 import java.lang.System._

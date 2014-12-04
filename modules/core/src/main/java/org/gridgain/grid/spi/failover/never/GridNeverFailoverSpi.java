@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.failover.never;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.discovery.tcp;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;

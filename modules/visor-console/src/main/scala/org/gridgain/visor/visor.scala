@@ -11,6 +11,7 @@
 
 package org.gridgain.visor
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 

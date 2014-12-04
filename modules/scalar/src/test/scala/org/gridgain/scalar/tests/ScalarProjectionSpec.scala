@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.tests
 
+import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.scalar._
 import scalar._
 import org.scalatest.matchers._
