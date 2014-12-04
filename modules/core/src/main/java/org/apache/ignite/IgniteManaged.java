@@ -7,12 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.service;
+package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.service.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -135,7 +136,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * when a singleton service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
      * This method is analogous to calling
-     * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
+     * {@link #deployMultiple(String, org.gridgain.grid.service.GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *

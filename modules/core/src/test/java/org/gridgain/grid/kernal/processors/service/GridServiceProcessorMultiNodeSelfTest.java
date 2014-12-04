@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.service;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.service.*;
 
 import java.util.concurrent.*;
 

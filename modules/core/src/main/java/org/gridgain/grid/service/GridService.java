@@ -13,7 +13,7 @@ import java.io.*;
 
 /**
  * An instance of grid-managed service. Grid-managed services may be deployed from
- * {@link IgniteManaged} facade or directly from grid configuration at startup.
+ * {@link org.apache.ignite.IgniteManaged} facade or directly from grid configuration at startup.
  * <h1 class="header">Deployment</h1>
  * Whenever service is deployed, GridGain will automatically calculate how many
  * instances of this service should be deployed on each node within the cluster.
@@ -69,7 +69,7 @@ import java.io.*;
  * GridGain.start(gridCfg);
  * </pre>
  * <h1 class="header">Cancellation</h1>
- * Services can be cancelled by calling any of the {@code cancel} methods on {@link IgniteManaged} API.
+ * Services can be cancelled by calling any of the {@code cancel} methods on {@link org.apache.ignite.IgniteManaged} API.
  * Whenever a deployed service is cancelled, GridGain will automatically call
  * {@link GridService#cancel(GridServiceContext)} method on that service.
  * <p>
@@ -80,7 +80,7 @@ import java.io.*;
 public interface GridService extends Serializable {
     /**
      * Cancels this service. GridGain will automatically call this method whenever any of the
-     * {@code cancel} methods on {@link IgniteManaged} API are called.
+     * {@code cancel} methods on {@link org.apache.ignite.IgniteManaged} API are called.
      * <p>
      * Note that GridGain cannot guarantee that the service exits from {@link #execute(GridServiceContext)}
      * method whenever {@code cancel(GridServiceContext)} method is called. It is up to the user to
@@ -104,12 +104,12 @@ public interface GridService extends Serializable {
      * Starts execution of this service. This method is automatically invoked whenever an instance of the service
      * is deployed on a grid node. Note that service is considered deployed even after it exits the {@code execute}
      * method and can be cancelled (or undeployed) only by calling any of the {@code cancel} methods on
-     * {@link IgniteManaged} API. Also note that service is not required to exit from {@code execute} method until
+     * {@link org.apache.ignite.IgniteManaged} API. Also note that service is not required to exit from {@code execute} method until
      * {@link #cancel(GridServiceContext)} method was called.
      *
      * @param ctx Service execution context.
      * @throws Exception If service execution failed. Not that service will still remain deployed, until
-     *      {@link IgniteManaged#cancel(String)} method will be called.
+     *      {@link org.apache.ignite.IgniteManaged#cancel(String)} method will be called.
      */
     public void execute(GridServiceContext ctx) throws Exception;
 }

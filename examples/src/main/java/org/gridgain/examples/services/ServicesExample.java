@@ -14,7 +14,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.grid.service.*;
 
 import java.util.*;
 
