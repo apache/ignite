@@ -9,11 +9,12 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.mbean.*;
+
 import java.util.concurrent.*;
 
 /**
- * Adapter for {@link org.gridgain.grid.IgniteThreadPoolMBean} which delegates all method calls to the underlying
+ * Adapter for {@link org.apache.ignite.mbean.IgniteThreadPoolMBean} which delegates all method calls to the underlying
  * {@link ExecutorService} instance.
  */
 public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {

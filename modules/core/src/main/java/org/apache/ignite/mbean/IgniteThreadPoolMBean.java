@@ -7,9 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
-
-import org.apache.ignite.mbean.*;
+package org.apache.ignite.mbean;
 
 /**
  * MBean that provides access to information about executor service.
