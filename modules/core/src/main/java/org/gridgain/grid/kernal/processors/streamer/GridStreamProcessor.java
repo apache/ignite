@@ -33,7 +33,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  */
 public class GridStreamProcessor extends GridProcessorAdapter {
     /** Streamers map. */
-    private Map<String, GridStreamerImpl> map;
+    private Map<String, IgniteStreamerImpl> map;
 
     /** Registered MBeans */
     private Collection<ObjectName> mBeans;
@@ -62,7 +62,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                 checkStreamer(n);
         }
 
-        for (GridStreamerImpl s : map.values()) {
+        for (IgniteStreamerImpl s : map.values()) {
             try {
                 mBeans.add(U.registerMBean(mBeanSrv, ctx.gridName(), U.maskName(s.name()), "Streamer",
                     new GridStreamerMBeanAdapter(s), GridStreamerMBean.class));
@@ -239,11 +239,11 @@ public class GridStreamProcessor extends GridProcessorAdapter {
             // Register streaming usage with license manager.
             GridLicenseUseRegistry.onUsage(STREAMING, getClass());
 
-            GridStreamerImpl s = new GridStreamerImpl(ctx, c);
+            IgniteStreamerImpl s = new IgniteStreamerImpl(ctx, c);
 
             s.start();
 
-            GridStreamerImpl old = map.put(c.getName(), s);
+            IgniteStreamerImpl old = map.put(c.getName(), s);
 
             if (old != null) {
                 old.stop(true);
@@ -272,7 +272,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (GridStreamerImpl streamer : map.values())
+        for (IgniteStreamerImpl streamer : map.values())
             streamer.onKernalStop(cancel);
     }
 
@@ -283,7 +283,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
         super.stop(cancel);
 
-        for (GridStreamerImpl s : map.values())
+        for (IgniteStreamerImpl s : map.values())
             s.stop(cancel);
     }
 
@@ -309,7 +309,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     /**
      * @return Default no-name streamer.
      */
-    public GridStreamer streamer() {
+    public IgniteStreamer streamer() {
         return streamer(null);
     }
 
@@ -317,8 +317,8 @@ public class GridStreamProcessor extends GridProcessorAdapter {
      * @param name Streamer name.
      * @return Streamer for given name.
      */
-    public GridStreamer streamer(@Nullable String name) {
-        GridStreamer streamer = map.get(name);
+    public IgniteStreamer streamer(@Nullable String name) {
+        IgniteStreamer streamer = map.get(name);
 
         if (streamer == null)
             throw new IllegalArgumentException("Streamer is not configured: " + name);
@@ -329,10 +329,10 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     /**
      * @return All configured streamers.
      */
-    public Collection<GridStreamer> streamers() {
-        Collection<GridStreamerImpl> streamers = map.values();
+    public Collection<IgniteStreamer> streamers() {
+        Collection<IgniteStreamerImpl> streamers = map.values();
 
-        Collection<GridStreamer> res = new ArrayList<>(streamers.size());
+        Collection<IgniteStreamer> res = new ArrayList<>(streamers.size());
 
         streamers.addAll(map.values());
 
@@ -346,7 +346,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
      * @param ldr Class loader.
      */
     public void onUndeployed(UUID leftNodeId, ClassLoader ldr) {
-        for (GridStreamerEx streamer : map.values())
+        for (IgniteStreamerEx streamer : map.values())
             streamer.onUndeploy(leftNodeId, ldr);
     }
 }

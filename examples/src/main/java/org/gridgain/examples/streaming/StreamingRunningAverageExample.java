@@ -48,7 +48,7 @@ public class StreamingRunningAverageExample {
         System.out.println();
         System.out.println(">>> Streaming running average example started.");
 
-        final GridStreamer streamer = ignite.streamer("running-average");
+        final IgniteStreamer streamer = ignite.streamer("running-average");
 
         final int rndRange = 100;
 

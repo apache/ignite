@@ -95,7 +95,7 @@ public class StreamingPriceBarsExample {
                         System.err.println("Default streamer not found (is example-streamer.xml " +
                             "configuration used on all nodes?)");
                     else {
-                        GridStreamer streamer = g.streamer("priceBars");
+                        IgniteStreamer streamer = g.streamer("priceBars");
 
                         System.out.println("Clearing bars from streamer.");
 
@@ -119,7 +119,7 @@ public class StreamingPriceBarsExample {
     private static TimerTask scheduleQuery(final Ignite g, Timer timer) {
         TimerTask task = new TimerTask() {
             @Override public void run() {
-                final GridStreamer streamer = g.streamer("priceBars");
+                final IgniteStreamer streamer = g.streamer("priceBars");
 
                 try {
                     Collection<Bar> bars = streamer.context().reduce(
@@ -176,7 +176,7 @@ public class StreamingPriceBarsExample {
      * @throws GridException If failed.
      */
     private static void streamData(final Ignite g) throws GridException {
-        GridStreamer streamer = g.streamer("priceBars");
+        IgniteStreamer streamer = g.streamer("priceBars");
 
         for (int i = 0; i < CNT; i++) {
             for (int j = 0; j < INSTRUMENTS.length; j++) {

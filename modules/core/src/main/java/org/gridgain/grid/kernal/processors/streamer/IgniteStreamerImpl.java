@@ -41,7 +41,7 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 /**
  *
  */
-public class GridStreamerImpl implements GridStreamerEx, Externalizable {
+public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -135,7 +135,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridStreamerImpl() {
+    public IgniteStreamerImpl() {
         // No-op.
     }
 
@@ -143,10 +143,10 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @param ctx Kernal context.
      * @param c Configuration.
      */
-    public GridStreamerImpl(GridKernalContext ctx, GridStreamerConfiguration c) {
+    public IgniteStreamerImpl(GridKernalContext ctx, GridStreamerConfiguration c) {
         this.ctx = ctx;
 
-        log = ctx.log(GridStreamerImpl.class);
+        log = ctx.log(IgniteStreamerImpl.class);
 
         atLeastOnce = c.isAtLeastOnce();
         name = c.getName();
@@ -1148,7 +1148,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerImpl.class, this);
+        return S.toString(IgniteStreamerImpl.class, this);
     }
 
     /**
@@ -1188,7 +1188,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
                         cls0 = U.detectClass(it.next());
 
                     if (cls0 == null || U.isJdk(cls0))
-                        cls0 = GridStreamerImpl.class;
+                        cls0 = IgniteStreamerImpl.class;
                 }
 
                 assert cls0 != null : "Failed to detect deploy class [objs=" + objs + ']';

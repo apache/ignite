@@ -107,7 +107,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
 
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
-            GridStreamer s = g.streamer(streamer);
+            IgniteStreamer s = g.streamer(streamer);
 
             assert s != null;
 

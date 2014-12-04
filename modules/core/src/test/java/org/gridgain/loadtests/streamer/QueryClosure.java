@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Closure for events generation.
  */
-class QueryClosure implements IgniteInClosure<GridStreamer> {
+class QueryClosure implements IgniteInClosure<IgniteStreamer> {
     /** Sleep period (seconds). */
     private static final int SLEEP_PERIOD_SEC = 3;
 
@@ -29,7 +29,7 @@ class QueryClosure implements IgniteInClosure<GridStreamer> {
     private long warmup = 60000;
 
     /** {@inheritDoc} */
-    @Override public void apply(GridStreamer streamer) {
+    @Override public void apply(IgniteStreamer streamer) {
         X.println("Pefromrming warmup: " + warmup + "ms...");
 
         try {

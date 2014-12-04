@@ -116,7 +116,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
 
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
-            GridStreamer s = g.streamer(streamer);
+            IgniteStreamer s = g.streamer(streamer);
 
             assert s != null;
 

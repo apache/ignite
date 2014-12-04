@@ -23,14 +23,14 @@ public class GridStreamerStageMBeanAdapter implements GridStreamerStageMBean {
     private String stageClsName;
 
     /** */
-    private GridStreamerImpl streamer;
+    private IgniteStreamerImpl streamer;
 
     /**
      * @param stageName Stage name.
      * @param stageClsName Stage class name.
      * @param streamer Streamer implementation.
      */
-    public GridStreamerStageMBeanAdapter(String stageName, String stageClsName, GridStreamerImpl streamer) {
+    public GridStreamerStageMBeanAdapter(String stageName, String stageClsName, IgniteStreamerImpl streamer) {
         this.stageName = stageName;
         this.stageClsName = stageClsName;
         this.streamer = streamer;

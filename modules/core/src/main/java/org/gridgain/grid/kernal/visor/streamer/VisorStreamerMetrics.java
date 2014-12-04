@@ -73,7 +73,7 @@ public class VisorStreamerMetrics implements Serializable {
      * @param streamer Source streamer.
      * @return Data transfer streamer for given streamer.
      */
-    public static VisorStreamerMetrics from(GridStreamer streamer) {
+    public static VisorStreamerMetrics from(IgniteStreamer streamer) {
         assert streamer != null;
 
         GridStreamerMetrics m = streamer.metrics();
@@ -88,7 +88,7 @@ public class VisorStreamerMetrics implements Serializable {
         metrics.active(m.stageActiveExecutionCount());
         metrics.waiting(m.stageWaitingExecutionCount());
         metrics.capacity(m.executorServiceCapacity());
-        
+
         metrics.pipelineMinExecutionTime(m.pipelineMinimumExecutionTime());
         metrics.pipelineAvgExecutionTime(m.pipelineAverageExecutionTime());
         metrics.pipelineMaxExecutionTime(m.pipelineMaximumExecutionTime());

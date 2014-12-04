@@ -64,7 +64,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
 
     /** Streamer context. */
     @GridToStringExclude
-    private final GridStreamerEx streamer;
+    private final IgniteStreamerEx streamer;
 
     /** Metrics holder. */
     @GridToStringExclude
@@ -97,7 +97,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
     * @param evts Events to process.
     */
     public GridStreamerStageExecutionFuture(
-        GridStreamerEx streamer,
+        IgniteStreamerEx streamer,
         @Nullable IgniteUuid execId,
         int failoverAttemptCnt,
         long execStartTs,

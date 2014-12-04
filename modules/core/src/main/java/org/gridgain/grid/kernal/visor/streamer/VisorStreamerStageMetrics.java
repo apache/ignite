@@ -82,7 +82,7 @@ public class VisorStreamerStageMetrics implements Serializable {
     }
 
     /** Create data transfer objects for all stages. */
-    public static Collection<VisorStreamerStageMetrics> stages(GridStreamer streamer) {
+    public static Collection<VisorStreamerStageMetrics> stages(IgniteStreamer streamer) {
         assert streamer != null;
 
         Collection<VisorStreamerStageMetrics> res = new ArrayList<>();

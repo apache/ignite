@@ -17,12 +17,12 @@ import org.jetbrains.annotations.*;
  */
 public class GridStreamerMBeanAdapter implements GridStreamerMBean {
     /** Streamer. */
-    private GridStreamerImpl streamer;
+    private IgniteStreamerImpl streamer;
 
     /**
      * @param streamer Streamer.
      */
-    public GridStreamerMBeanAdapter(GridStreamerImpl streamer) {
+    public GridStreamerMBeanAdapter(IgniteStreamerImpl streamer) {
         this.streamer = streamer;
     }
 

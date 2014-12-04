@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Extended streamer context with methods intended for internal use.
  */
-public interface GridStreamerEx extends GridStreamer {
+public interface IgniteStreamerEx extends IgniteStreamer {
     /**
      * @return Kernal context.
      */

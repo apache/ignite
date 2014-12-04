@@ -54,15 +54,15 @@ public class GridStreamerBenchmark {
 
         if (loads != null && !loads.isEmpty()) {
             for (GridStreamerLoad load : loads) {
-                final GridStreamer streamer = ignite.streamer(load.getName());
+                final IgniteStreamer streamer = ignite.streamer(load.getName());
 
                 if (streamer == null)
                     throw new Exception("Steamer is not found: " + load.getName());
 
-                List<IgniteInClosure<GridStreamer>> clos = load.getClosures();
+                List<IgniteInClosure<IgniteStreamer>> clos = load.getClosures();
 
                 if (clos != null && !clos.isEmpty()) {
-                    for (final IgniteInClosure<GridStreamer> clo : clos) {
+                    for (final IgniteInClosure<IgniteStreamer> clo : clos) {
                         Thread t = new Thread(new Runnable() {
                             @Override public void run() {
                                 try {

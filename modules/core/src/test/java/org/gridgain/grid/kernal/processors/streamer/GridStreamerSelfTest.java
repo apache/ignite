@@ -130,7 +130,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         try {
             final Ignite ignite0 = startGrid(0);
 
-            GridStreamer streamer = ignite0.streamer(null);
+            IgniteStreamer streamer = ignite0.streamer(null);
 
             for (int i = 0; i < evtCnt; i++)
                 streamer.addEvent("event1");
@@ -195,7 +195,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             router0.put("b", ignite2.cluster().localNode().id());
             router0.put("c", ignite3.cluster().localNode().id());
 
-            GridStreamer streamer = ignite0.streamer(null);
+            IgniteStreamer streamer = ignite0.streamer(null);
 
             for (int i = 0; i < evtCnt; i++)
                 streamer.addEvent("event1");
@@ -491,7 +491,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             router0.put("b", ignite2.cluster().localNode().id());
             router0.put("c", ignite3.cluster().localNode().id());
 
-            GridStreamer streamer = ignite0.streamer(null);
+            IgniteStreamer streamer = ignite0.streamer(null);
 
             for (int i = 0; i < evtCnt; i++)
                 streamer.addEvent(cls.newInstance());
@@ -725,7 +725,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
      * @param pipeline Pipeline.
      */
     private void checkMetrics(Ignite ignite, String stage, int evtCnt, boolean pipeline) {
-        GridStreamer streamer = ignite.streamer(null);
+        IgniteStreamer streamer = ignite.streamer(null);
 
         GridStreamerMetrics metrics = streamer.metrics();
 
@@ -772,7 +772,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
      */
     private void checkZeroMetrics(Ignite ignite, String... stages) {
         for (String stage : stages) {
-            GridStreamer streamer = ignite.streamer(null);
+            IgniteStreamer streamer = ignite.streamer(null);
 
             GridStreamerStageMetrics metrics = streamer.metrics().stageMetrics(stage);
 

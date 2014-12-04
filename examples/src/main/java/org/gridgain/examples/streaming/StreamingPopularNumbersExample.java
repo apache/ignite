@@ -114,7 +114,7 @@ public class StreamingPopularNumbersExample {
                         System.err.println("Default streamer not found (is example-streamer.xml " +
                             "configuration used on all nodes?)");
                     else {
-                        GridStreamer streamer = g.streamer("popular-numbers");
+                        IgniteStreamer streamer = g.streamer("popular-numbers");
 
                         System.out.println("Clearing number counters from streamer.");
 
@@ -135,7 +135,7 @@ public class StreamingPopularNumbersExample {
      * @throws GridException If failed.
      */
     private static void streamData(final Ignite g) throws GridException {
-        final GridStreamer streamer = g.streamer("popular-numbers");
+        final IgniteStreamer streamer = g.streamer("popular-numbers");
 
         // Use gaussian distribution to ensure that
         // numbers closer to 0 have higher probability.
@@ -153,7 +153,7 @@ public class StreamingPopularNumbersExample {
     private static TimerTask scheduleQuery(final Ignite g, Timer timer) {
         TimerTask task = new TimerTask() {
             @Override public void run() {
-                final GridStreamer streamer = g.streamer("popular-numbers");
+                final IgniteStreamer streamer = g.streamer("popular-numbers");
 
                 try {
                     // Send reduce query to all 'popular-numbers' streamers

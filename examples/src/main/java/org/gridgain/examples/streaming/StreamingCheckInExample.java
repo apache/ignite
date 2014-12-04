@@ -107,7 +107,7 @@ public class StreamingCheckInExample {
 
         try {
             // Get the streamer.
-            GridStreamer streamer = g.streamer(STREAMER_NAME);
+            IgniteStreamer streamer = g.streamer(STREAMER_NAME);
 
             assert streamer != null;
 
@@ -134,7 +134,7 @@ public class StreamingCheckInExample {
                         System.err.println("Default streamer not found (is example-streamer.xml " +
                             "configuration used on all nodes?)");
                     else {
-                        GridStreamer streamer = g.streamer(STREAMER_NAME);
+                        IgniteStreamer streamer = g.streamer(STREAMER_NAME);
 
                         System.out.println("Clearing streamer data.");
 
@@ -155,7 +155,7 @@ public class StreamingCheckInExample {
      * @param streamer Streamer.
      * @param timer Timer.
      */
-    private static void scheduleQuery(final GridStreamer streamer, Timer timer) {
+    private static void scheduleQuery(final IgniteStreamer streamer, Timer timer) {
         TimerTask task = new TimerTask() {
             @Override public void run() {
                 try {
@@ -231,7 +231,7 @@ public class StreamingCheckInExample {
      * @throws GridException If failed.
      */
     @SuppressWarnings("BusyWait")
-    private static void streamData(GridStreamer streamer) throws GridException {
+    private static void streamData(IgniteStreamer streamer) throws GridException {
         try {
             for (int i = 0; i < CNT; i++) {
                 CheckInEvent evt = new CheckInEvent(

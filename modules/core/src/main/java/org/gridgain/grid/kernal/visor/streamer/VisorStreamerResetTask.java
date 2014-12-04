@@ -47,7 +47,7 @@ public class VisorStreamerResetTask extends VisorOneNodeTask<String, Void> {
         /** {@inheritDoc} */
         @Override protected Void run(String streamerName) throws GridException {
             try {
-                GridStreamer streamer = g.streamer(streamerName);
+                IgniteStreamer streamer = g.streamer(streamerName);
 
                 streamer.reset();
 

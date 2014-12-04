@@ -157,7 +157,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
             final Collection<Object> failed = new ConcurrentLinkedQueue<>();
 
-            GridStreamer streamer = grid(0).streamer(null);
+            IgniteStreamer streamer = grid(0).streamer(null);
 
             streamer.addStreamerFailureListener(new GridStreamerFailureListener() {
                 @Override public void onFailure(String stageName, Collection<Object> evts, Throwable err) {

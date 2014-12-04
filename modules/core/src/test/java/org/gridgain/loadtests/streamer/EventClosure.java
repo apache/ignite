@@ -19,12 +19,12 @@ import java.util.*;
 /**
  * Closure for events generation.
  */
-class EventClosure implements IgniteInClosure<GridStreamer> {
+class EventClosure implements IgniteInClosure<IgniteStreamer> {
     /** Random range. */
     private int rndRange = 100;
 
     /** {@inheritDoc} */
-    @Override public void apply(GridStreamer streamer) {
+    @Override public void apply(IgniteStreamer streamer) {
         Random rnd = new Random();
 
         while (!Thread.interrupted()) {

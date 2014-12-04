@@ -112,7 +112,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
 
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
-            GridStreamer s = g.streamer(streamer);
+            IgniteStreamer s = g.streamer(streamer);
 
             assert s != null;
 

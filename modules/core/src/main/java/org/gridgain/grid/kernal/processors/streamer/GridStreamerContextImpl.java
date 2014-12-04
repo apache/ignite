@@ -37,7 +37,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     private AtomicReference<ClusterGroup> streamPrj = new AtomicReference<>();
 
     /** Streamer. */
-    private GridStreamerEx streamer;
+    private IgniteStreamerEx streamer;
 
     /** Next stage name. */
     private String nextStageName;
@@ -47,7 +47,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
      * @param cfg Streamer configuration.
      * @param streamer Streamer impl.
      */
-    public GridStreamerContextImpl(GridKernalContext ctx, GridStreamerConfiguration cfg, GridStreamerEx streamer) {
+    public GridStreamerContextImpl(GridKernalContext ctx, GridStreamerConfiguration cfg, IgniteStreamerEx streamer) {
         assert ctx != null;
         assert cfg != null;
         assert streamer != null;

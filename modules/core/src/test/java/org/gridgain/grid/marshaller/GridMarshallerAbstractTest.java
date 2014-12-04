@@ -857,7 +857,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testStreamer() throws Exception {
-        GridStreamer streamer = grid().streamer(null);
+        IgniteStreamer streamer = grid().streamer(null);
 
         streamer.addEvent("test");
 
@@ -870,8 +870,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridStreamerImpl.class);
-        assert outBean.getObjectField().getClass().equals(GridStreamerImpl.class);
+        assert inBean.getObjectField().getClass().equals(IgniteStreamerImpl.class);
+        assert outBean.getObjectField().getClass().equals(IgniteStreamerImpl.class);
 
         assert inBean != outBean;
         assert inBean.equals(outBean);

@@ -153,7 +153,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridStreamer> streamers() {
+    @Override public Collection<IgniteStreamer> streamers() {
         assert g != null;
 
         return g.streamers();
@@ -307,7 +307,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridStreamer streamer(@Nullable String name) {
+    @Nullable @Override public IgniteStreamer streamer(@Nullable String name) {
         assert g != null;
 
         return g.streamer(name);

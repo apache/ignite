@@ -16,7 +16,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link GridStreamer}.
+ * Data transfer object for {@link org.gridgain.grid.streamer.IgniteStreamer}.
  */
 public class VisorStreamer implements Serializable {
     /** */
@@ -35,7 +35,7 @@ public class VisorStreamer implements Serializable {
      * @param s Streamer.
      * @return Data transfer object for given streamer.
      */
-    public static VisorStreamer from(GridStreamer s) {
+    public static VisorStreamer from(IgniteStreamer s) {
         assert s != null;
 
         VisorStreamer streamer = new VisorStreamer();

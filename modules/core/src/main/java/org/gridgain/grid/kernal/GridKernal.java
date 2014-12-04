@@ -3133,7 +3133,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamer streamer(@Nullable String name) {
+    @Override public IgniteStreamer streamer(@Nullable String name) {
         guard();
 
         try {
@@ -3145,7 +3145,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridStreamer> streamers() {
+    @Override public Collection<IgniteStreamer> streamers() {
         guard();
 
         try {
