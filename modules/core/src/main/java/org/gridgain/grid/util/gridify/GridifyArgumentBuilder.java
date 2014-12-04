@@ -9,9 +9,10 @@
 
 package org.gridgain.grid.util.gridify;
 
+import org.apache.ignite.compute.gridify.aop.*;
 import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.gridify.aop.*;
+
 import java.lang.annotation.*;
 import java.util.*;
 

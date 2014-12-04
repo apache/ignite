@@ -9,14 +9,13 @@
 
 package org.gridgain.grid.compute.gridify;
 
-import org.gridgain.grid.compute.gridify.aop.*;
 import java.io.*;
 
 /**
  * Gridify task argument created by the system for task execution. It contains
  * all information needed to reflectively execute a method remotely.
  * <p>
- * Use {@link GridifyArgumentAdapter} convenience adapter for creating gridify
+ * Use {@link org.apache.ignite.compute.gridify.aop.GridifyArgumentAdapter} convenience adapter for creating gridify
  * arguments when implementing custom gridify jobs.
  * <p>
  * See {@link Gridify} documentation for more information about execution of

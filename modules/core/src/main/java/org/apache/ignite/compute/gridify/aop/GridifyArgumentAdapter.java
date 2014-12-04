@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.compute.gridify.aop;
+package org.apache.ignite.compute.gridify.aop;
 
 import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.util.typedef.internal.*;

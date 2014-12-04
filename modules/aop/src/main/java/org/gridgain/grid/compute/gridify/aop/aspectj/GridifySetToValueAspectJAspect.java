@@ -10,12 +10,12 @@
 package org.gridgain.grid.compute.gridify.aop.aspectj;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.gridify.aop.*;
 import org.aspectj.lang.*;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.*;
 import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.gridify.aop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.gridify.*;
 import java.lang.reflect.*;
