@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import org.apache.ignite.managed.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

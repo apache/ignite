@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.service;
+package org.apache.ignite.managed;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;

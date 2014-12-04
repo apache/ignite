@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import org.apache.ignite.managed.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -20,7 +20,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     /** */
     private static final long serialVersionUID = 0L;
-    
+
     /** */
     private final GridServiceConfiguration cfg;
 

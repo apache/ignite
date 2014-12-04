@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.service;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.service.*;
+import org.apache.ignite.managed.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;

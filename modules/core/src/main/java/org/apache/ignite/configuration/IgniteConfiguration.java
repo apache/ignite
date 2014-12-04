@@ -11,6 +11,7 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.managed.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
@@ -30,7 +31,6 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
-import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.checkpoint.*;

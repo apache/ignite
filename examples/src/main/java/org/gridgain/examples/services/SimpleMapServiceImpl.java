@@ -9,7 +9,7 @@
 
 package org.gridgain.examples.services;
 
-import org.gridgain.grid.service.*;
+import org.apache.ignite.managed.*;
 
 import java.util.*;
 import java.util.concurrent.*;

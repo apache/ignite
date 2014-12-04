@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
-import org.gridgain.grid.service.*;
+import org.apache.ignite.managed.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;

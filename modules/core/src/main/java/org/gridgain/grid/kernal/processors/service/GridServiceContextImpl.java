@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
-import org.gridgain.grid.service.*;
+import org.apache.ignite.managed.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
