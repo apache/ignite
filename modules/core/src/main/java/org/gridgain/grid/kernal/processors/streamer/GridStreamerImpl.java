@@ -387,7 +387,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
     }
 
     /**
-     * @return Streamer components which can implement {@link org.gridgain.grid.LifecycleAware} interface.
+     * @return Streamer components which can implement {@link org.apache.ignite.lifecycle.LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares() {
         Collection<Object> objs = new ArrayList<>();

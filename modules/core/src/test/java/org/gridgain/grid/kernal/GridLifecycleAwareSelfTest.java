@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lifecycle.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.java.*;
@@ -21,7 +22,7 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 
 /**
- * Test for {@link org.gridgain.grid.LifecycleAware} support in {@link org.apache.ignite.configuration.IgniteConfiguration}.
+ * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link org.apache.ignite.configuration.IgniteConfiguration}.
  */
 public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**

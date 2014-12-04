@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Test for {@link org.gridgain.grid.LifecycleAware} support in {@link GridStreamerConfiguration}.
+ * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link GridStreamerConfiguration}.
  */
 public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**

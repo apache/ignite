@@ -25,7 +25,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test for {@link org.gridgain.grid.LifecycleAware} support for {@link GridCacheTmLookup}.
+ * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link GridCacheTmLookup}.
  */
 public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */

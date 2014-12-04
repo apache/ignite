@@ -9,6 +9,7 @@
 
 package org.gridgain.client.router.impl;
 
+import org.apache.ignite.lifecycle.*;
 import org.gridgain.client.*;
 import org.gridgain.client.router.*;
 import org.gridgain.client.ssl.*;

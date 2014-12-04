@@ -2408,7 +2408,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
 
     /**
      * @param cfg Grid configuration.
-     * @return Components provided in configuration which can implement {@link org.gridgain.grid.LifecycleAware} interface.
+     * @return Components provided in configuration which can implement {@link org.apache.ignite.lifecycle.LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
         Collection<Object> objs = new ArrayList<>();

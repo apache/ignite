@@ -10,14 +10,14 @@
 package org.gridgain.testframework.junits.common;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.lifecycle.*;
 import org.gridgain.grid.resources.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Base class for tests against {@link org.gridgain.grid.LifecycleAware} support.
+ * Base class for tests against {@link org.apache.ignite.lifecycle.LifecycleAware} support.
  */
 public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstractTest {
     /** */
@@ -60,14 +60,14 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         }
 
         /**
-         * @return Number of times {@link org.gridgain.grid.LifecycleAware#start} was called.
+         * @return Number of times {@link org.apache.ignite.lifecycle.LifecycleAware#start} was called.
          */
         public int startCount() {
             return startCnt.get();
         }
 
         /**
-         * @return Number of times {@link org.gridgain.grid.LifecycleAware#stop} was called.
+         * @return Number of times {@link org.apache.ignite.lifecycle.LifecycleAware#stop} was called.
          */
         public int stopCount() {
             return stopCnt.get();

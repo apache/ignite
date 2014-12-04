@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -8125,10 +8126,10 @@ public abstract class GridUtils {
 
     /**
      * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.gridgain.grid.LifecycleAware} interface and executes {@link org.gridgain.grid.LifecycleAware#start} method.
+     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#start} method.
      *
      * @param objs Objects.
-     * @throws GridException If {@link org.gridgain.grid.LifecycleAware#start} fails.
+     * @throws GridException If {@link org.apache.ignite.lifecycle.LifecycleAware#start} fails.
      */
     public static void startLifecycleAware(Iterable<?> objs) throws GridException {
         for (Object obj : objs) {
@@ -8139,7 +8140,7 @@ public abstract class GridUtils {
 
     /**
      * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.gridgain.grid.LifecycleAware} interface and executes {@link org.gridgain.grid.LifecycleAware#stop} method.
+     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to GridGain configuration.

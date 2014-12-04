@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.dr.hub.sender.store.memory;
 
+import org.apache.ignite.lifecycle.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.dr.hub.sender.store.*;
 import org.gridgain.grid.util.*;

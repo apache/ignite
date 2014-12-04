@@ -7,7 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.lifecycle;
+
+import org.gridgain.grid.*;
 
 /**
  * All components provided in GridGain configuration can implement this interface.
@@ -18,7 +20,7 @@ public interface LifecycleAware {
     /**
      * Starts grid component, called on grid start.
      *
-     * @throws GridException If failed.
+     * @throws org.gridgain.grid.GridException If failed.
      */
     public void start() throws GridException;
 
