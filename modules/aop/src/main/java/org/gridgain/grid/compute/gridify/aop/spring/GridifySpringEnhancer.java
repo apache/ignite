@@ -9,24 +9,23 @@
 
 package org.gridgain.grid.compute.gridify.aop.spring;
 
-import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.compute.gridify.aop.spring.GridifySpringPointcut.*;
 import org.springframework.aop.framework.*;
 import org.springframework.aop.support.*;
 
 /**
  * Spring AOP enhancer. Use it to grid-enable methods annotated with
- * {@link Gridify}, {@link GridifySetToValue} and {@link GridifySetToSet} annotations.
+ * {@link org.apache.ignite.compute.gridify.Gridify}, {@link org.apache.ignite.compute.gridify.GridifySetToValue} and {@link org.apache.ignite.compute.gridify.GridifySetToSet} annotations.
  * <p>
  * Note, that Spring AOP requires that all grid-enabled methods must
  * be {@code enhanced} because it is proxy-based. Other AOP implementations,
  * such as JBoss or AspectJ don't require special handling.
  * <p>
- * See {@link Gridify} documentation for more information about execution of
+ * See {@link org.apache.ignite.compute.gridify.Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- * @see Gridify
- * @see GridifySetToValue
- * @see GridifySetToSet
+ * @see org.apache.ignite.compute.gridify.Gridify
+ * @see org.apache.ignite.compute.gridify.GridifySetToValue
+ * @see org.apache.ignite.compute.gridify.GridifySetToSet
  */
 public final class GridifySpringEnhancer {
     /** Spring aspect. */

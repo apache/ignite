@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.gridify;
 
+import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.compute.gridify.aop.*;
-import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
 
 import java.lang.annotation.*;
@@ -139,7 +139,7 @@ public final class GridifyArgumentBuilder {
     }
 
     /**
-     * Create {@link GridifyArgument} for job.
+     * Create {@link org.apache.ignite.compute.gridify.GridifyArgument} for job.
      *
      * @param arg Task argument contains all necessary data for method invoke.
      * @param input Input collection used in job.

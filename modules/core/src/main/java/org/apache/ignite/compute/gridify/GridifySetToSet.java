@@ -7,13 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.compute.gridify;
+package org.apache.ignite.compute.gridify;
 
 import java.io.*;
 import java.lang.annotation.*;
 
 /**
- * {@code GridifySetToValue} annotation is the way to grid-enable existing code with specific semantics.
+ * {@code GridifySetToSet} annotation allows to grid-enable existing code with specific semantics.
  * <p>
  * This annotation can be applied to any public method that needs to be grid-enabled,
  * static or non-static. When this annotation is applied to a method, the method
@@ -24,26 +24,26 @@ import java.lang.annotation.*;
  * This is achieved by utilizing AOP-based interception of the annotated code and
  * injecting all the necessary grid logic into the method execution.
  * <p>
- * {@code GridifySetToValue} used as extended version of {@code Gridify} annotation.
+ * {@code GridifySetToSet} used as extended version of {@code Gridify} annotation.
  * It provides automated gridification of two popular types of mathematical
  * functions that allow for "embarrassingly" simple parallelization (for example,
  * find prime numbers in collection or find maximum in collection). The goal of this
- * addition is to provide very simple and easy to use real ForkJoin gridification
+ * annotation is to provide very simple and easy to use ForkJoin gridification
  * for some often used use cases. Note that in a standard {@code Gridify} annotation
  * the user has to write {@link org.apache.ignite.compute.ComputeTask} to provide ForkJoin behavior.
- * In a proposed design - the ForkJoin will be achieved automatically.
+ * In a proposed design - the ForkJoin will be achieved <b>automatically</b>.
  * <p>
  * Let <b>F</b> be the function or a method in Java language and <b>St</b> be a set of values
  * of type {@code t} or a typed Collection&lt;T&gt; in Java. Let also {@code R} be
  * the result value. These are the types of functions that will be supported (defined in
  * terms of their properties):
  * <p>
- * F (S 1, S 2, ..., S k) => R, where F (S 1, S 2, ..., S k) == F (F (S 1), F (S 2), ..., F (S k))
- * which basically defines a function over a set that produces the same result when applied
- * recursively over its results for a subsets of the original set.
+ * {@code F (S 1, S 2, ..., S k) => {R 1, R 2, ..., R n,}, where F (S 1, S 2, ..., S k) == {F (S 1), F (S 2), ..., F (S k)}}
+ * which defines a function whose result can be constructed as concatenation of results
+ * of the same function applied to subsets of the original set.
  * <p>
  * In definition above we used Collection&lt;T&gt; for the purpose of example.
- * The following Java collections will have to be supported as return values or method parameters:
+ * The following Java types and their subtypes will have to be supported as return values or method parameters:
  * <ul>
  * <li>java.util.Collection</li>
  * <li>java.util.Iterator</li>
@@ -52,7 +52,7 @@ import java.lang.annotation.*;
  * <li>java array</li>
  * </ul>
  * <p>
- * Note that when using {@code @GridifySetToValue} annotation the state of the whole instance will be
+ * Note that when using {@code @GridifySetToSet} annotation the state of the whole instance will be
  * serialized and sent out to remote node. Therefore the class must implement
  * {@link Serializable} interface. If you cannot make the class {@code Serializable},
  * then you must implement custom grid task which will take care of proper state
@@ -62,25 +62,27 @@ import java.lang.annotation.*;
  * <p>
  * <h1 class="header">Java Example</h1>
  * <p>
- * Example for these types of functions would be any aggregate function returning single value from
- * the multiple inputs. For example:
+ * Example for these types of functions would be any function that is looking for a subset of data
+ * in a given input collection. For example:
  * <pre name="code" class="java">
  * ...
- * &#64;GridifySetToValue(threshold = 2)
- * public static Number findMaxValue(Collection&lt;Number&gt; input);
+ * &#64;GridifySetToSet(threshold = 2)
+ * public static Collection&lt;Number&gt; findAllPrimeNumbers(Collection&lt;Number&gt; input) {...}
  * ...
  * </pre>
- * Method {@code findMaxValue}findMaxValue simply traverses the input collection and finds
- * the maximum element in. If we split this collection into two sub-collections, for example,
- * and find maximums in each - we can then apply the same method to the collection of two just
- * found maximums to find the overall maximum elements of the original collection.
+ * This function searches all elements in the input collection and returns another collection
+ * containing only prime numbers found in the original collection. We can split this collection into
+ * two sub-collection, find primes in each - and then simply concatenate two collections to get
+ * the final set of all primes.
+ * <p>
  * The formal definition of (or requirement for) such method:
  * <ul>
- * <li>Have return value of type <b>T</b></li>
+ * <li>Have return value of type <b>Collection&lt;T&gt;</b></li>
  * <li>Have one and only one parameter of type <b>Collection&lt;T&gt;</b></li>
  * <li>Order of <b>Collection&lt;T&gt;</b> parameter is irrelevant</li>
  * <li>Method can have as many other parameters as needed of any type except for <b>Collection&lt;T&gt;</b></li>
- * <li>Logic of the method must allow for recursive apply on the subset of the original collection</li>
+ * <li>Logic of the method must allow for concatenation of results from the same method apply
+ * on a subset of the original collection</li>
  * </ul>
  * <p>
  * <h1 class="header">Jboss AOP</h1>
@@ -128,7 +130,7 @@ import java.lang.annotation.*;
  * any specific runtime parameters for online weaving. All weaving is on-demand and should
  * be performed by calling method
  * {@gglink org.gridgain.grid.compute.gridify.aop.spring.GridifySpringEnhancer#enhance(java.lang.Object)} for the object
- * that has method with {@link GridifySetToValue} annotation.
+ * that has method with {@link GridifySetToSet} annotation.
  * <p>
  * Note that this method of weaving is rather inconvenient and AspectJ or JBoss AOP is
  * recommended over it. Spring AOP can be used in situation when code augmentation is
@@ -139,7 +141,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface GridifySetToValue {
+public @interface GridifySetToSet {
     /**
      * Optional node filter to filter nodes participated in job split.
      */
@@ -155,7 +157,7 @@ public @interface GridifySetToValue {
      * Optional parameter that defines the minimal value below which the
      * execution will NOT be grid-enabled.
      */
-   int threshold() default 0;
+    int threshold() default 0;
 
     /**
      * Optional parameter that defines a split size. Split size in other words means how big will

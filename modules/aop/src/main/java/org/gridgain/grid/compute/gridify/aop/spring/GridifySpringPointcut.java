@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.compute.gridify.aop.spring;
 
-import org.gridgain.grid.compute.gridify.*;
+import org.apache.ignite.compute.gridify.*;
 import org.springframework.aop.*;
 import java.lang.reflect.*;
 
 /**
  * Pointcut used by gridified aspects to find methods
- * annotated with {@link Gridify}, {@link GridifySetToValue} and
+ * annotated with {@link org.apache.ignite.compute.gridify.Gridify}, {@link GridifySetToValue} and
  * {@link GridifySetToSet} annotations.
  */
 public class GridifySpringPointcut implements Pointcut {

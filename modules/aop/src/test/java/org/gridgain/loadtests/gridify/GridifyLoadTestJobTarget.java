@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.gridify;
 
-import org.gridgain.grid.compute.gridify.*;
+import org.apache.ignite.compute.gridify.*;
 
 /**
  * Gridify load test job target.

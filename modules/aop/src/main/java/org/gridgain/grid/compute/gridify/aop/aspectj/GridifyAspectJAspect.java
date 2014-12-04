@@ -11,11 +11,11 @@ package org.gridgain.grid.compute.gridify.aop.aspectj;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.compute.gridify.aop.*;
 import org.aspectj.lang.*;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.*;
-import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import java.lang.reflect.*;
@@ -24,12 +24,12 @@ import static org.apache.ignite.IgniteState.*;
 
 /**
  * AspectJ aspect that cross-cuts on all methods grid-enabled with
- * {@link Gridify} annotation and potentially executes them on
+ * {@link org.apache.ignite.compute.gridify.Gridify} annotation and potentially executes them on
  * remote node.
  * <p>
- * See {@link Gridify} documentation for more information about execution of
+ * See {@link org.apache.ignite.compute.gridify.Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- * @see Gridify
+ * @see org.apache.ignite.compute.gridify.Gridify
  */
 @Aspect
 public class GridifyAspectJAspect {

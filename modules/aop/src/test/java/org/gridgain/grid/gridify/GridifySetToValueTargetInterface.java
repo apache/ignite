@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.gridify;
 
-import org.gridgain.grid.compute.gridify.*;
+import org.apache.ignite.compute.gridify.*;
 
 import java.util.*;
 

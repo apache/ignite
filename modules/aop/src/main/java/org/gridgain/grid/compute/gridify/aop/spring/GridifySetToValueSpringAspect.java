@@ -11,8 +11,8 @@ package org.gridgain.grid.compute.gridify.aop.spring;
 
 import org.aopalliance.intercept.*;
 import org.apache.ignite.*;
+import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.compute.gridify.aop.*;
-import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.gridify.*;

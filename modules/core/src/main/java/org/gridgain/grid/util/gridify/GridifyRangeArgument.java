@@ -10,19 +10,18 @@
 package org.gridgain.grid.util.gridify;
 
 import org.apache.ignite.compute.gridify.aop.*;
-import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Convenience adapter for {@link GridifyArgument} interface.
- * This adapter used in grid task for {@link GridifySetToSet} and
- * {@link GridifySetToValue} annotations.
+ * Convenience adapter for {@link org.apache.ignite.compute.gridify.GridifyArgument} interface.
+ * This adapter used in grid task for {@link org.apache.ignite.compute.gridify.GridifySetToSet} and
+ * {@link org.apache.ignite.compute.gridify.GridifySetToValue} annotations.
  * <p>
- * See {@link Gridify} documentation for more information about execution of
+ * See {@link org.apache.ignite.compute.gridify.Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- * @see GridifySetToValue
- * @see GridifySetToSet
+ * @see org.apache.ignite.compute.gridify.GridifySetToValue
+ * @see org.apache.ignite.compute.gridify.GridifySetToSet
  */
 public class GridifyRangeArgument extends GridifyArgumentAdapter {
     /** */

@@ -10,8 +10,8 @@
 package org.gridgain.loadtests.gridify;
 
 import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.gridify.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.gridify.*;
 
 import java.io.*;
 import java.util.*;

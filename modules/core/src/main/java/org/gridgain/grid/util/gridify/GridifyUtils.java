@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.gridify;
 
-import org.gridgain.grid.compute.gridify.*;
+import org.apache.ignite.compute.gridify.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import java.io.*;
@@ -213,7 +213,7 @@ public final class GridifyUtils {
     }
 
     /**
-     * Check is method parameter annotated with {@link GridifyInput}.
+     * Check is method parameter annotated with {@link org.apache.ignite.compute.gridify.GridifyInput}.
      *
      * @param anns Annotations for method parameters.
      * @return {@code true} if annotation found.

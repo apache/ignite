@@ -9,16 +9,16 @@
 
 package org.apache.ignite.compute.gridify.aop;
 
-import org.gridgain.grid.compute.gridify.*;
+import org.apache.ignite.compute.gridify.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Convenience adapter for {@link GridifyArgument} interface. This adapter
+ * Convenience adapter for {@link org.apache.ignite.compute.gridify.GridifyArgument} interface. This adapter
  * should be used in custom grid job implementations.
  * <p>
- * See {@link Gridify} documentation for more information about execution of
+ * See {@link org.apache.ignite.compute.gridify.Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- * @see Gridify
+ * @see org.apache.ignite.compute.gridify.Gridify
  */
 public class GridifyArgumentAdapter implements GridifyArgument {
     /** */

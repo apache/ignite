@@ -10,8 +10,8 @@
 package org.gridgain.grid.util.gridify;
 
 import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.gridify.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.gridify.*;
 
 import java.lang.reflect.*;
 
@@ -20,16 +20,16 @@ import java.lang.reflect.*;
  * functionality provided in {@link org.apache.ignite.compute.ComputeJobAdapter} adapter, this adapter
  * provides default implementation of {@link #execute()} method,
  * which reflectively executes grid-enabled method based on information provided
- * in {@link GridifyArgument} parameter.
+ * in {@link org.apache.ignite.compute.gridify.GridifyArgument} parameter.
  * <p>
- * Note this adapter is only useful when passing {@link GridifyArgument} to
- * remote jobs. In many cases, remote jobs will not require {@link GridifyArgument}
+ * Note this adapter is only useful when passing {@link org.apache.ignite.compute.gridify.GridifyArgument} to
+ * remote jobs. In many cases, remote jobs will not require {@link org.apache.ignite.compute.gridify.GridifyArgument}
  * as they will execute their code without reflection, hence the regular
  * {@link org.apache.ignite.compute.ComputeJobAdapter} should be used.
  * <p>
- * See {@link Gridify} documentation for more information about execution of
+ * See {@link org.apache.ignite.compute.gridify.Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- * @see Gridify
+ * @see org.apache.ignite.compute.gridify.Gridify
  */
 public class GridifyJobAdapter extends ComputeJobAdapter {
     /** */

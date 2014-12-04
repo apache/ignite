@@ -12,7 +12,7 @@ package org.apache.ignite.compute.gridify.aop;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.compute.gridify.*;
+import org.apache.ignite.compute.gridify.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
@@ -23,9 +23,9 @@ import java.util.*;
 /**
  * Default gridify task which simply executes a method on remote node.
  * <p>
- * See {@link Gridify} documentation for more information about execution of
+ * See {@link org.apache.ignite.compute.gridify.Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- * @see Gridify
+ * @see org.apache.ignite.compute.gridify.Gridify
  */
 public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Object>
     implements GridPeerDeployAware {

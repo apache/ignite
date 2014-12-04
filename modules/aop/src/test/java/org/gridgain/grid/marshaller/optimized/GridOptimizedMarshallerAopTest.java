@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.marshaller.optimized;
 
+import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -84,7 +84,7 @@ public class GridOptimizedMarshallerAopTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Method grid-enabled with {@link Gridify} annotation.
+     * Method grid-enabled with {@link org.apache.ignite.compute.gridify.Gridify} annotation.
      * <p>
      * Note that default {@code Gridify} configuration is used, so this method
      * will be executed on remote node with the same argument.
