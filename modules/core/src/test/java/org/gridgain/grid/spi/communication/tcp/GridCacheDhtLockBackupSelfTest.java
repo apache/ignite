@@ -272,7 +272,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
-            GridRunnable msgC) {
+            IgniteRunnable msgC) {
             checkAwaitMessageType(msg, sndId);
 
             super.notifyListener(sndId, msg, msgC);

@@ -211,7 +211,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     public static final boolean DFLT_TCP_NODELAY = true;
 
     /** No-op runnable. */
-    private static final GridRunnable NOOP = new GridRunnable() {
+    private static final IgniteRunnable NOOP = new IgniteRunnable() {
         @Override public void run() {
             // No-op.
         }
@@ -305,7 +305,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                 else {
                     rcvdMsgsCnt.increment();
 
-                    GridRunnable c;
+                    IgniteRunnable c;
 
                     if (msgQueueLimit > 0) {
                         GridNioMessageTracker tracker = ses.meta(TRACKER_META);
@@ -1884,7 +1884,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @param msg Communication message.
      * @param msgC Closure to call when message processing finished.
      */
-    protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg, GridRunnable msgC) {
+    protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
         GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr = this.lsnr;
 
         if (lsnr != null)

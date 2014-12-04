@@ -89,7 +89,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Test runnable job.
      */
-    private static class TestRunnable implements GridRunnable {
+    private static class TestRunnable implements IgniteRunnable {
         /** */
         @GridInstanceResource
         private Ignite ignite;

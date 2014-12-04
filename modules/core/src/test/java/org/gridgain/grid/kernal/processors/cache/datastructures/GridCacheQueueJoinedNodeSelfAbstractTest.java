@@ -142,7 +142,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     /**
      * Test job putting data to queue.
      */
-    protected class PutJob implements GridRunnable {
+    protected class PutJob implements IgniteRunnable {
         /** */
         @GridToStringExclude
         @GridInstanceResource

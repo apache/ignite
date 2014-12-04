@@ -98,7 +98,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
      */
     public void testAffinityRun() throws Exception {
         for (int i : F.asList(1, 2, 3)) {
-            grid().compute().affinityRun(null, i, new GridRunnable() {
+            grid().compute().affinityRun(null, i, new IgniteRunnable() {
                 @Override public void run() {
                     ids.add(System.identityHashCode(this));
 

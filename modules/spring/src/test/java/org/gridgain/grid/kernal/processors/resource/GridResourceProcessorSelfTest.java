@@ -325,7 +325,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                 @GridInstanceResource private Ignite grid;
 
                 /** Runnable object nested inside callable. */
-                private Runnable run = new GridRunnable() {
+                private Runnable run = new IgniteRunnable() {
                     @GridHomeResource private String ggHomeDir;
 
                     @Override public void run() {

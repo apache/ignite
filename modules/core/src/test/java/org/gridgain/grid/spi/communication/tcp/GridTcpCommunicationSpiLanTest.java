@@ -91,7 +91,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpC
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, GridRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
             msgC.run();
 
             if (msg instanceof GridTestMessage) {

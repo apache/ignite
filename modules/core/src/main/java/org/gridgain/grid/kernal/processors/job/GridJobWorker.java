@@ -595,7 +595,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 if (log.isDebugEnabled())
                     log.debug("Cancelling job: " + ses);
 
-                U.wrapThreadLoader(dep.classLoader(), new GridRunnable() {
+                U.wrapThreadLoader(dep.classLoader(), new IgniteRunnable() {
                     @Override public void run() {
                         job0.cancel();
                     }

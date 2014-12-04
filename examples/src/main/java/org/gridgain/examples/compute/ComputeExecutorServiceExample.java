@@ -44,7 +44,7 @@ public final class ComputeExecutorServiceExample {
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                exec.submit(new GridRunnable() {
+                exec.submit(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");

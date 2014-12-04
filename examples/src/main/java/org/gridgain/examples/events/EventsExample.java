@@ -78,7 +78,7 @@ public class EventsExample {
         g.events().localListen(lsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
-        g.compute().withName("example-event-task").run(new GridRunnable() {
+        g.compute().withName("example-event-task").run(new IgniteRunnable() {
             @Override public void run() {
                 System.out.println("Executing sample job.");
             }
@@ -124,7 +124,7 @@ public class EventsExample {
 
         // Generate task events.
         for (int i = 0; i < 10; i++) {
-            g.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new GridRunnable() {
+            g.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new IgniteRunnable() {
                 // Auto-inject task session.
                 @GridTaskSessionResource
                 private GridComputeTaskSession ses;

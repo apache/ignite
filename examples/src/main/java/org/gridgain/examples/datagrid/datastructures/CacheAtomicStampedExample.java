@@ -93,7 +93,7 @@ public final class CacheAtomicStampedExample {
     /**
      * Performs update of on an atomic stamped variable in cache.
      */
-    private static class StampedUpdateClosure implements GridRunnable {
+    private static class StampedUpdateClosure implements IgniteRunnable {
         /** Cache name. */
         private final String cacheName;
 

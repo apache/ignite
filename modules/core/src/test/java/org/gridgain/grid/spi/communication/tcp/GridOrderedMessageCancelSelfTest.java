@@ -144,7 +144,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
-            GridRunnable msgC) {
+            IgniteRunnable msgC) {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
             boolean wait = ioMsg.message() instanceof GridCacheQueryResponse ||

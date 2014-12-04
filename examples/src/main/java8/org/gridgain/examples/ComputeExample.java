@@ -33,10 +33,10 @@ public class ComputeExample {
             System.out.println(">>> Compute broadcast example started.");
 
             // Broadcast closure to all grid nodes.
-            ignite.compute().broadcast((GridRunnable)() -> System.out.println("Hello World")).get();
+            ignite.compute().broadcast((IgniteRunnable)() -> System.out.println("Hello World")).get();
 
             // Unicast closure to some grid node picked by load balancer.
-            ignite.compute().run((GridRunnable)() -> System.out.println("Hello World")).get();
+            ignite.compute().run((IgniteRunnable)() -> System.out.println("Hello World")).get();
 
             // Unicast closure to some grid node picked by load balancer and return result.
             int length = ignite.compute().call((GridCallable<Integer>)"Hello World"::length).get();

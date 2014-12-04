@@ -41,7 +41,7 @@ public interface GridScheduler {
     /**
      * Executes given closure on internal system thread pool asynchronously.
      * <p>
-     * Note that class {@link GridRunnable} implements {@link Runnable} and class {@link GridOutClosure}
+     * Note that class {@link org.gridgain.grid.lang.IgniteRunnable} implements {@link Runnable} and class {@link GridOutClosure}
      * implements {@link Callable} interface.
      *
      * @param r Runnable to execute. If {@code null} - this method is no-op.
@@ -54,7 +54,7 @@ public interface GridScheduler {
     /**
      * Executes given callable on internal system thread pool asynchronously.
      * <p>
-     * Note that class {@link GridRunnable} implements {@link Runnable} and class {@link GridOutClosure}
+     * Note that class {@link org.gridgain.grid.lang.IgniteRunnable} implements {@link Runnable} and class {@link GridOutClosure}
      * implements {@link Callable} interface.
      *
      * @param c Callable to execute. If {@code null} - this method is no-op.

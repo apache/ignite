@@ -114,7 +114,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, GridRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
             msgC.run();
 
             if (msg instanceof GridTestMessage) {

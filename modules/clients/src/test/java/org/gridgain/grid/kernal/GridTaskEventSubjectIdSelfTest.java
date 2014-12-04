@@ -239,7 +239,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     public void testClosure() throws Exception {
         latch = new CountDownLatch(3);
 
-        grid().compute().run(new GridRunnable() {
+        grid().compute().run(new IgniteRunnable() {
             @Override public void run() {
                 // No-op.
             }

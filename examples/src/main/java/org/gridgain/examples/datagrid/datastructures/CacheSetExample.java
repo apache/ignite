@@ -147,7 +147,7 @@ public class CacheSetExample {
     /**
      * Closure to populate the set.
      */
-    private static class SetClosure implements GridRunnable {
+    private static class SetClosure implements IgniteRunnable {
         /** Cache name. */
         private final String cacheName;
 

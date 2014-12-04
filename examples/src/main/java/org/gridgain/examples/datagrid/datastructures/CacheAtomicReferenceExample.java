@@ -87,7 +87,7 @@ public final class CacheAtomicReferenceExample {
     /**
      * Obtains atomic reference.
      */
-    private static class ReferenceClosure implements GridRunnable {
+    private static class ReferenceClosure implements IgniteRunnable {
         /** Cache name. */
         private final String cacheName;
 

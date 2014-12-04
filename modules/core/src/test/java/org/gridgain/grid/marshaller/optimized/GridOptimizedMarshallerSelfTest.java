@@ -33,7 +33,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
 
         assert msg != null;
 
-        byte[] buf = marshal(new GridRunnable() {
+        byte[] buf = marshal(new IgniteRunnable() {
             @Override public void run() {
                 c1.apply(msg);
                 c2.apply(msg);

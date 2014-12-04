@@ -81,7 +81,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, GridRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
             info("Received message [locNodeId=" + locNodeId + ", nodeId=" + nodeId +
                 ", msg=" + msg + ']');
 

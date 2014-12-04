@@ -50,7 +50,7 @@ public class ComputeScheduleExample {
 
                         try {
                             g.compute().broadcast(
-                                new GridRunnable() {
+                                new IgniteRunnable() {
                                     @Override public void run() {
                                         System.out.println();
                                         System.out.println("Howdy! :) ");

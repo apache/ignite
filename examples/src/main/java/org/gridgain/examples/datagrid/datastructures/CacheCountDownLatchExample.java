@@ -71,7 +71,7 @@ public class CacheCountDownLatchExample {
     /**
      * Closure which simply waits on the latch on all nodes.
      */
-    private static class LatchClosure implements GridRunnable {
+    private static class LatchClosure implements IgniteRunnable {
         /** Cache name. */
         private final String cacheName;
 

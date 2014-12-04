@@ -18,6 +18,6 @@ import java.io.*;
  * to {@link Runnable} object. Use this class for executing distributed computations on the grid,
  * like in {@link GridCompute#run(Runnable)} method.
  */
-public interface GridRunnable extends Runnable, Serializable {
+public interface IgniteRunnable extends Runnable, Serializable {
     // No-op.
 }

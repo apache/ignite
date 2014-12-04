@@ -55,7 +55,7 @@ public class ComputeBroadcastExample {
     private static void hello(Ignite g) throws GridException {
         // Print out hello message on all nodes.
         g.compute().broadcast(
-            new GridRunnable() {
+            new IgniteRunnable() {
                 @Override public void run() {
                     System.out.println();
                     System.out.println(">>> Hello Node! :)");

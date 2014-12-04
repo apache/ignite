@@ -172,7 +172,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         affPool = Executors.newFixedThreadPool(1);
 
         getSpi().setListener(commLsnr = new GridCommunicationListener<Serializable>() {
-            @Override public void onMessage(UUID nodeId, Serializable msg, GridRunnable msgC) {
+            @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
                 try {
                     onMessage0(nodeId, (GridIoMessage)msg, msgC);
                 }
@@ -406,7 +406,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param msgC Closure to call when message processing finished.
      */
     @SuppressWarnings("fallthrough")
-    private void onMessage0(UUID nodeId, GridIoMessage msg, GridRunnable msgC) {
+    private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
         assert nodeId != null;
         assert msg != null;
 
@@ -552,7 +552,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param msgC Closure to call when message processing finished.
      */
     @SuppressWarnings("deprecation")
-    private void processP2PMessage(final ClusterNode node, final GridIoMessage msg, final GridRunnable msgC) {
+    private void processP2PMessage(final ClusterNode node, final GridIoMessage msg, final IgniteRunnable msgC) {
         workersCnt.increment();
 
         Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
@@ -600,7 +600,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param msgC Closure to call when message processing finished.
      */
     private void processRegularMessage(final ClusterNode node, final GridIoMessage msg, GridIoPolicy plc,
-        final GridRunnable msgC) {
+        final IgniteRunnable msgC) {
         workersCnt.increment();
 
         Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
@@ -658,7 +658,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     private void processOrderedMessage(final ClusterNode node, final GridIoMessage msg, final GridIoPolicy plc,
-        final GridRunnable msgC) {
+        final IgniteRunnable msgC) {
         assert msg != null;
 
         workersCnt.increment();
@@ -2146,7 +2146,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         private final GridIoMessage msg;
 
         /** */
-        private final GridRunnable msgC;
+        private final IgniteRunnable msgC;
 
         /** */
         private final long rcvTime = U.currentTimeMillis();
@@ -2156,7 +2156,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
          * @param msg Message.
          * @param msgC Callback.
          */
-        private DelayedMessage(UUID nodeId, GridIoMessage msg, GridRunnable msgC) {
+        private DelayedMessage(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
             this.nodeId = nodeId;
             this.msg = msg;
             this.msgC = msgC;
@@ -2172,7 +2172,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         /**
          * @return Message char.
          */
-        public GridRunnable callback() {
+        public IgniteRunnable callback() {
             return msgC;
         }
 

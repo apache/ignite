@@ -12,12 +12,12 @@
 package org.gridgain.scalar.lang
 
 import org.gridgain.grid.util.lang.GridPeerDeployAwareAdapter
-import org.gridgain.grid.lang.GridRunnable
+import org.gridgain.grid.lang.IgniteRunnable
 
 /**
  * Peer deploy aware adapter for Java's `GridRunnable`.
  */
-class ScalarAbsClosure(private val f: () => Unit) extends GridPeerDeployAwareAdapter with GridRunnable {
+class ScalarAbsClosure(private val f: () => Unit) extends GridPeerDeployAwareAdapter with IgniteRunnable {
     assert(f != null)
 
     peerDeployLike(f)

@@ -80,7 +80,7 @@ public final class CacheAffinityExample {
             // This runnable will execute on the remote node where
             // data with the given key is located. Since it will be co-located
             // we can use local 'peek' operation safely.
-            g.compute().affinityRun(CACHE_NAME, key, new GridRunnable() {
+            g.compute().affinityRun(CACHE_NAME, key, new IgniteRunnable() {
                 @Override public void run() {
                     // Peek is a local memory lookup, however, value should never be 'null'
                     // as we are co-located with node that has a given key.
@@ -115,7 +115,7 @@ public final class CacheAffinityExample {
 
             if (node != null) {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
-                g.compute(g.cluster().forNode(node)).run(new GridRunnable() {
+                g.compute(g.cluster().forNode(node)).run(new IgniteRunnable() {
                     @Override public void run() {
                         GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 

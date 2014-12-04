@@ -18,7 +18,7 @@ import org.gridgain.grid.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates a simple use of {@link org.gridgain.grid.lang.GridRunnable}.
+ * Demonstrates a simple use of {@link org.gridgain.grid.lang.IgniteRunnable}.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
@@ -46,7 +46,7 @@ public class ComputeRunnableExample {
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                compute.run(new GridRunnable() {
+                compute.run(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");

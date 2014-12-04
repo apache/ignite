@@ -76,7 +76,7 @@ public class ComputeProjectionExample {
     private static void sayHello(Ignite ignite, final ClusterGroup prj) throws GridException {
         // Print out hello message on all projection nodes.
         ignite.compute(prj).broadcast(
-            new GridRunnable() {
+            new IgniteRunnable() {
                 @Override public void run() {
                     // Print ID of remote node on remote node.
                     System.out.println(">>> Hello Node: " + prj.grid().cluster().localNode().id());
