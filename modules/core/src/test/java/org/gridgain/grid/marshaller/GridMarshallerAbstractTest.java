@@ -28,7 +28,6 @@ import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.p2p.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;

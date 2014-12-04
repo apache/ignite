@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
-import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -22,7 +22,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.gridgain.grid.messaging.IgniteMessaging} implementation.
+ * {@link org.apache.ignite.IgniteMessaging} implementation.
  */
 public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements IgniteMessaging, Externalizable {
     /** */

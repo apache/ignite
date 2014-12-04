@@ -23,7 +23,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
-import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
@@ -525,7 +524,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param prj Projection.
-     * @return {@link org.gridgain.grid.messaging.IgniteMessaging} for given projection.
+     * @return {@link org.apache.ignite.IgniteMessaging} for given projection.
      */
     protected IgniteMessaging message(ClusterGroup prj) {
         return prj.grid().message(prj);
@@ -533,7 +532,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param prj Projection.
-     * @return {@link org.gridgain.grid.messaging.IgniteMessaging} for given projection.
+     * @return {@link org.apache.ignite.IgniteMessaging} for given projection.
      */
     protected IgniteEvents events(ClusterGroup prj) {
         return prj.grid().events(prj);

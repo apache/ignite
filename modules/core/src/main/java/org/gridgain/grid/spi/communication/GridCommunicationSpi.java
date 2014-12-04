@@ -27,8 +27,8 @@ import java.util.*;
  * <p>
  * Functionality to this SPI is exposed directly in {@link org.apache.ignite.Ignite} interface:
  * <ul>
- *      <li>{@link org.gridgain.grid.messaging.IgniteMessaging#send(Object, Object)}
- *      <li>{@link org.gridgain.grid.messaging.IgniteMessaging#send(Object, Collection)}</li>
+ *      <li>{@link org.apache.ignite.IgniteMessaging#send(Object, Object)}
+ *      <li>{@link org.apache.ignite.IgniteMessaging#send(Object, Collection)}</li>
  * </ul>
  * <p>
  * GridGain comes with built-in communication SPI implementations:

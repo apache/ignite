@@ -18,7 +18,6 @@ import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
@@ -52,7 +51,7 @@ import java.util.concurrent.*;
  * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
- * <li>{@link org.gridgain.grid.messaging.IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * </ul>
  */
@@ -117,7 +116,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets {@code messaging} functionality over this grid projection. All operations
-     * on the returned {@link org.gridgain.grid.messaging.IgniteMessaging} instance will only include nodes from
+     * on the returned {@link IgniteMessaging} instance will only include nodes from
      * this projection.
      *
      * @return Messaging instance over this grid projection.
@@ -147,7 +146,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets {@code services} functionality over this grid projection. All operations
-     * on the returned {@link org.gridgain.grid.messaging.IgniteMessaging} instance will only include nodes from
+     * on the returned {@link IgniteMessaging} instance will only include nodes from
      * this projection.
      *
      * @return Services instance over this grid projection.
