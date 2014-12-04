@@ -129,7 +129,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * must be called too.
          */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridUserResourceOnDeployed private void resourceDeploy() {
+        @IgniteUserResourceOnDeployed
+        private void resourceDeploy() {
             addUsage(deployClss);
 
             assert springBean != null;
@@ -141,7 +142,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * must be called too.
          */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridUserResourceOnUndeployed private void resourceUndeploy() {
+        @IgniteUserResourceOnUndeployed
+        private void resourceUndeploy() {
             addUsage(undeployClss);
 
             assert springBean != null;

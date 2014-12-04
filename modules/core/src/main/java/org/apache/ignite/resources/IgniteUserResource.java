@@ -46,7 +46,7 @@ import java.lang.annotation.*;
  * Basically there will always be only one instance of resource on any
  * grid node for any task class. Every node will instantiate
  * it's own copy of user resources used for every deployed task (see
- * {@link GridUserResourceOnDeployed} and {@link GridUserResourceOnUndeployed}
+ * {@link IgniteUserResourceOnDeployed} and {@link IgniteUserResourceOnUndeployed}
  * annotation for resource deployment and undeployment callbacks). For this
  * reason <b>resources should not be sent to remote nodes and should
  * always be declared as transient</b> just in case.

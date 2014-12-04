@@ -70,7 +70,8 @@ public abstract class GridAbstractUserExternalResource {
 
     /** */
     @SuppressWarnings("unused")
-    @GridUserResourceOnDeployed private void deploy() {
+    @IgniteUserResourceOnDeployed
+    private void deploy() {
         addUsage(deployClss);
 
         assert log != null;
@@ -87,7 +88,8 @@ public abstract class GridAbstractUserExternalResource {
 
     /** */
     @SuppressWarnings("unused")
-    @GridUserResourceOnUndeployed private void undeploy() {
+    @IgniteUserResourceOnUndeployed
+    private void undeploy() {
         addUsage(undeployClss);
 
         assert log != null;

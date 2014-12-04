@@ -35,11 +35,11 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See also {@link GridUserResourceOnDeployed} for deployment callbacks.
+ * See also {@link IgniteUserResourceOnDeployed} for deployment callbacks.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface GridUserResourceOnUndeployed {
+public @interface IgniteUserResourceOnUndeployed {
     // No-op.
 }

@@ -126,7 +126,8 @@ abstract class GridP2PAbstractUserResource {
 
     /** */
     @SuppressWarnings("unused")
-    @GridUserResourceOnDeployed private void deploy() {
+    @IgniteUserResourceOnDeployed
+    private void deploy() {
         addUsage(deployClss);
 
         assert log != null;
@@ -142,7 +143,8 @@ abstract class GridP2PAbstractUserResource {
 
     /** */
     @SuppressWarnings("unused")
-    @GridUserResourceOnUndeployed private void undeploy() {
+    @IgniteUserResourceOnUndeployed
+    private void undeploy() {
         addUsage(undeployClss);
 
         assert log != null;

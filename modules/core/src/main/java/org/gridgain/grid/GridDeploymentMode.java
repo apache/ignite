@@ -63,8 +63,8 @@ import org.jetbrains.annotations.*;
  *  <li>
  *      Inject your cache instance into your jobs via
  *      {@link org.apache.ignite.resources.IgniteUserResource @GridUserResource} annotation. The cache can be initialized
- *      and destroyed with {@link org.apache.ignite.resources.GridUserResourceOnDeployed @GridUserResourceOnDeployed} and
- *      {@link org.apache.ignite.resources.GridUserResourceOnUndeployed @GridUserResourceOnUndeployed} annotations.
+ *      and destroyed with {@link org.apache.ignite.resources.IgniteUserResourceOnDeployed @GridUserResourceOnDeployed} and
+ *      {@link org.apache.ignite.resources.IgniteUserResourceOnUndeployed @GridUserResourceOnUndeployed} annotations.
  *  </li>
  *  <li>
  *      Now, all jobs executing locally or remotely can have a single instance of cache

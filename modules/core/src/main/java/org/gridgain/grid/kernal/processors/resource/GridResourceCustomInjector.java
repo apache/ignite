@@ -230,7 +230,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
     /**
      * Undeploy collection of resources.
-     * Every resource method marked with {@link GridUserResourceOnUndeployed}
+     * Every resource method marked with {@link org.apache.ignite.resources.IgniteUserResourceOnUndeployed}
      * annotation will be invoked before cleanup.
      *
      * @param rsrcs Resources to undeploy.
@@ -241,7 +241,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
         for (CachedResource rsrc : rsrcs) {
             try {
                 List<Method> finalizers = getMethodsWithAnnotation(rsrc.getResource().getClass(),
-                    GridUserResourceOnUndeployed.class);
+                    IgniteUserResourceOnUndeployed.class);
 
                 for (Method mtd : finalizers) {
                     try {
@@ -456,7 +456,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
             ioc.inject(rsrc, IgniteLoggerResource.class, logInjector, dep, depCls);
             ioc.inject(rsrc, IgniteServiceResource.class, srvcInjector, dep, depCls);
 
-            for (Method mtd : getMethodsWithAnnotation(rsrcCls, GridUserResourceOnDeployed.class)) {
+            for (Method mtd : getMethodsWithAnnotation(rsrcCls, IgniteUserResourceOnDeployed.class)) {
                 mtd.setAccessible(true);
 
                 mtd.invoke(rsrc);

@@ -38,7 +38,7 @@ public class GridP2PAwareTestUserResource {
      * in node-local store.
      */
     @SuppressWarnings("ConstantConditions")
-    @GridUserResourceOnDeployed
+    @IgniteUserResourceOnDeployed
     public void onDeployed() {
         concurrentIncrement(DEPLOY_CNT_KEY);
     }
@@ -48,7 +48,7 @@ public class GridP2PAwareTestUserResource {
      * in node-local store.
      */
     @SuppressWarnings("ConstantConditions")
-    @GridUserResourceOnUndeployed
+    @IgniteUserResourceOnUndeployed
     public void onUndeployed() {
         concurrentIncrement(UNDEPLOY_CNT_KEY);
     }
