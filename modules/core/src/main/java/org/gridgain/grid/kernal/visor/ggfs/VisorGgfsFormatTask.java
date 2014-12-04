@@ -44,7 +44,7 @@ public class VisorGgfsFormatTask extends VisorOneNodeTask<String, Void> {
         /** {@inheritDoc} */
         @Override protected Void run(String ggfsName) throws GridException {
             try {
-                g.ggfs(ggfsName).format();
+                g.fileSystem(ggfsName).format();
             }
             catch (IllegalArgumentException iae) {
                 throw new GridException("Failed to format GGFS: " + ggfsName, iae);

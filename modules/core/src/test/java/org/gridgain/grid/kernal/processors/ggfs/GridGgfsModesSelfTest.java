@@ -128,7 +128,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         grid = (GridEx)G.start(cfg);
 
-        ggfs = (GridGgfsImpl)grid.ggfs("ggfs");
+        ggfs = (GridGgfsImpl)grid.fileSystem("ggfs");
     }
 
     /**
@@ -180,7 +180,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
 
-        ggfsSecondary = (GridGgfsImpl)G.start(cfg).ggfs("ggfs-secondary");
+        ggfsSecondary = (GridGgfsImpl)G.start(cfg).fileSystem("ggfs-secondary");
     }
 
     /**

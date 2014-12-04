@@ -118,7 +118,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
      * @throws Exception If failed.
      */
     protected void awaitFileFragmenting(int gridIdx, GridGgfsPath path) throws Exception {
-        GridGgfsEx ggfs = (GridGgfsEx)grid(gridIdx).ggfs("ggfs");
+        GridGgfsEx ggfs = (GridGgfsEx)grid(gridIdx).fileSystem("ggfs");
 
         GridGgfsMetaManager meta = ggfs.context().meta();
 
@@ -155,6 +155,6 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).ggfs("ggfs").format();
+        grid(0).fileSystem("ggfs").format();
     }
 }

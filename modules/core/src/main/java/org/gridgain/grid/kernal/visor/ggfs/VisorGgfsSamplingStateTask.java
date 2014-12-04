@@ -43,7 +43,7 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
         /** {@inheritDoc} */
         @Override protected Void run(IgniteBiTuple<String, Boolean> arg) throws GridException {
             try {
-                ((GridGgfsEx) g.ggfs(arg.get1())).globalSampling(arg.get2());
+                ((GridGgfsEx) g.fileSystem(arg.get1())).globalSampling(arg.get2());
 
                 return null;
             }

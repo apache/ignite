@@ -665,7 +665,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private GridGgfsBlockKey blockKey(GridGgfsPath path, long blockId) throws Exception {
-        GridGgfsEx ggfs0 = (GridGgfsEx)grid(0).ggfs(GGFS_NAME);
+        GridGgfsEx ggfs0 = (GridGgfsEx)grid(0).fileSystem(GGFS_NAME);
 
         IgniteUuid fileId = ggfs0.context().meta().fileId(path);
 
@@ -716,7 +716,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private GridGgfsImpl ggfs(int idx) throws Exception {
-        return (GridGgfsImpl)grid(idx).ggfs(GGFS_NAME);
+        return (GridGgfsImpl)grid(idx).fileSystem(GGFS_NAME);
     }
 
     /**
@@ -727,7 +727,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private GridGgfsImpl ggfs(Ignite ignite) throws Exception {
-        return (GridGgfsImpl) ignite.ggfs(GGFS_NAME);
+        return (GridGgfsImpl) ignite.fileSystem(GGFS_NAME);
     }
 
     /**

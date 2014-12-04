@@ -320,7 +320,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         long used = 0, max = 0;
 
         for (int i = 0; i < 4; i++) {
-            IgniteFs ggfs = grid(i).ggfs("ggfs");
+            IgniteFs ggfs = grid(i).fileSystem("ggfs");
 
             GridGgfsMetrics metrics = ggfs.metrics();
 
@@ -1291,7 +1291,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
                 out.write(new byte[1024 * 1024]);
             }
 
-            IgniteFs igniteFs = grid(0).ggfs("ggfs");
+            IgniteFs igniteFs = grid(0).fileSystem("ggfs");
 
             GridGgfsPath filePath = new GridGgfsPath("/someFile");
 

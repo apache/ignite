@@ -68,7 +68,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridGgfsEx ggfs = (GridGgfsEx)grid(0).ggfs("ggfs");
+        GridGgfsEx ggfs = (GridGgfsEx)grid(0).fileSystem("ggfs");
 
         mgr = ggfs.context().data();
     }

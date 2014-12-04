@@ -69,7 +69,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             Ignite g = G.start(config(i));
 
             if (i + 1 == NODE_CNT)
-                ggfs = g.ggfs("ggfs");
+                ggfs = g.fileSystem("ggfs");
         }
     }
 

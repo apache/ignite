@@ -160,7 +160,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
 
             Ignite secG = G.start(cfg);
 
-            return secG.ggfs("ggfs-secondary");
+            return secG.fileSystem("ggfs-secondary");
         }
     }
 

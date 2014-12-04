@@ -1530,7 +1530,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
                 out.write(new byte[1024 * 1024]);
             }
 
-            IgniteFs igniteFs = grid(0).ggfs("ggfs");
+            IgniteFs igniteFs = grid(0).fileSystem("ggfs");
 
             GridGgfsPath filePath = new GridGgfsPath("/someFile");
 

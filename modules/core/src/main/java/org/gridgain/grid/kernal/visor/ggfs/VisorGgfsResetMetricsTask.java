@@ -47,7 +47,7 @@ public class VisorGgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
         @Override protected Void run(Set<String> ggfsNames) throws GridException {
             for (String ggfsName: ggfsNames)
                 try {
-                    g.ggfs(ggfsName).resetMetrics();
+                    g.fileSystem(ggfsName).resetMetrics();
                 }
                 catch (IllegalArgumentException iae) {
                     throw new GridException("Failed to reset metrics for GGFS: " + ggfsName, iae);

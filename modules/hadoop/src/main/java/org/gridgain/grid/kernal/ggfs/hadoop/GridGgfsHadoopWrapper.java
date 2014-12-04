@@ -332,7 +332,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
                 try {
                     Ignite ignite = G.grid();
 
-                    ggfs = (GridGgfsEx) ignite.ggfs(endpoint.ggfs());
+                    ggfs = (GridGgfsEx) ignite.fileSystem(endpoint.ggfs());
                 }
                 catch (Exception e) {
                     err = e;
@@ -341,7 +341,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
             else {
                 for (Ignite ignite : G.allGrids()) {
                     try {
-                        ggfs = (GridGgfsEx) ignite.ggfs(endpoint.ggfs());
+                        ggfs = (GridGgfsEx) ignite.fileSystem(endpoint.ggfs());
 
                         break;
                     }

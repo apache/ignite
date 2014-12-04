@@ -63,7 +63,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         GridEx grid = grid(0);
 
-        ggfs = grid.ggfs(ggfsName());
+        ggfs = grid.fileSystem(ggfsName());
 
         GridGgfsConfiguration[] cfgs = grid.configuration().getGgfsConfiguration();
 
@@ -149,7 +149,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testGgfsEnabled() throws Exception {
-        IgniteFs ggfs = grid(0).ggfs(ggfsName());
+        IgniteFs ggfs = grid(0).fileSystem(ggfsName());
 
         assertNotNull(ggfs);
     }

@@ -112,7 +112,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
 
         Ignite g = G.start(cfg);
 
-        ggfs = (GridGgfsEx)g.ggfs("ggfs");
+        ggfs = (GridGgfsEx)g.fileSystem("ggfs");
 
         ggfs.globalSampling(sampling);
 

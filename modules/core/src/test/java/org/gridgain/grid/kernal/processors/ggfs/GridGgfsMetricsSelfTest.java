@@ -79,7 +79,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++) {
             Ignite g = G.start(primaryConfiguration(i));
 
-            ggfsPrimary[i] = g.ggfs(GGFS_PRIMARY);
+            ggfsPrimary[i] = g.fileSystem(GGFS_PRIMARY);
         }
     }
 
@@ -194,7 +194,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         Ignite g = G.start(cfg);
 
-        ggfsSecondary = g.ggfs(GGFS_SECONDARY);
+        ggfsSecondary = g.fileSystem(GGFS_SECONDARY);
     }
 
     /** @throws Exception If failed. */

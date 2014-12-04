@@ -54,7 +54,7 @@ public class GgfsMapReduceExample {
                 String regexStr = args[1];
 
                 // Get an instance of GridGain File System.
-                IgniteFs fs = g.ggfs("ggfs");
+                IgniteFs fs = g.fileSystem("ggfs");
 
                 // Working directory path.
                 GridGgfsPath workDir = new GridGgfsPath("/examples/ggfs");

@@ -3016,7 +3016,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs ggfs(String name) {
+    @Override public IgniteFs fileSystem(String name) {
         guard();
 
         try{
@@ -3045,7 +3045,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFs> ggfss() {
+    @Override public Collection<IgniteFs> fileSystems() {
         guard();
 
         try {

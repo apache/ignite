@@ -283,17 +283,17 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs ggfs(String name) {
+    @Override public IgniteFs fileSystem(String name) {
         assert g != null;
 
-        return g.ggfs(name);
+        return g.fileSystem(name);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFs> ggfss() {
+    @Override public Collection<IgniteFs> fileSystems() {
         assert g != null;
 
-        return g.ggfss();
+        return g.fileSystems();
     }
 
     /** {@inheritDoc} */

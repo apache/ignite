@@ -28,7 +28,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
      * @throws Exception If failed.
      */
     public void testReadFragmentizing() throws Exception {
-        IgniteFs ggfs = grid(0).ggfs("ggfs");
+        IgniteFs ggfs = grid(0).fileSystem("ggfs");
 
         GridGgfsPath path = new GridGgfsPath("/someFile");
 
@@ -100,7 +100,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
         int fileSize = 30 * GGFS_GROUP_SIZE * GGFS_BLOCK_SIZE;
 
         while (written < fileSize) {
-            IgniteFs ggfs = grid(ggfsIdx).ggfs("ggfs");
+            IgniteFs ggfs = grid(ggfsIdx).fileSystem("ggfs");
 
             try (GridGgfsOutputStream out = ggfs.append(path, true)) {
                 byte[] data = new byte[chunkSize];
@@ -123,7 +123,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
             }
         }
 
-        IgniteFs ggfs = grid(0).ggfs("ggfs");
+        IgniteFs ggfs = grid(0).fileSystem("ggfs");
 
         try (GridGgfsInputStream in = ggfs.open(path)) {
             i = 0;
@@ -172,7 +172,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
 
         int fileSize = 50 * GGFS_GROUP_SIZE * GGFS_BLOCK_SIZE;
 
-        IgniteFs ggfs = grid(0).ggfs("ggfs");
+        IgniteFs ggfs = grid(0).fileSystem("ggfs");
 
         byte[] chunk = new byte[chunkSize];
 
@@ -215,7 +215,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
      * @throws Exception If failed.
      */
     public void testDeleteFragmentizing() throws Exception {
-        GridGgfsImpl ggfs = (GridGgfsImpl)grid(0).ggfs("ggfs");
+        GridGgfsImpl ggfs = (GridGgfsImpl)grid(0).fileSystem("ggfs");
 
         for (int i = 0; i < 30; i++) {
             GridGgfsPath path = new GridGgfsPath("/someFile" + i);

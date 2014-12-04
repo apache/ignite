@@ -85,7 +85,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             return;
 
         // Initialize FS.
-        fs = grid(0).ggfs("ggfs");
+        fs = grid(0).fileSystem("ggfs");
 
         // Cleanup FS.
         fs.format();
@@ -213,7 +213,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileFragmented() throws Exception {
-        GridGgfsEx impl = (GridGgfsEx)grid(0).ggfs("ggfs");
+        GridGgfsEx impl = (GridGgfsEx)grid(0).fileSystem("ggfs");
 
         GridGgfsFragmentizerManager fragmentizer = impl.context().fragmentizer();
 
@@ -222,9 +222,9 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
         GridGgfsPath path = new GridGgfsPath("/file");
 
         try {
-            IgniteFs fs0 = grid(0).ggfs("ggfs");
-            IgniteFs fs1 = grid(1).ggfs("ggfs");
-            IgniteFs fs2 = grid(2).ggfs("ggfs");
+            IgniteFs fs0 = grid(0).fileSystem("ggfs");
+            IgniteFs fs1 = grid(1).fileSystem("ggfs");
+            IgniteFs fs2 = grid(2).fileSystem("ggfs");
 
             try (GridGgfsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
                 F.asMap(IgniteFs.PROP_PREFER_LOCAL_WRITES, "true"))) {

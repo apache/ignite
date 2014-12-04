@@ -264,14 +264,14 @@ public interface Ignite extends AutoCloseable {
      * @param name GGFS name.
      * @return GGFS instance.
      */
-    public IgniteFs ggfs(String name);
+    public IgniteFs fileSystem(String name);
 
     /**
      * Gets all instances of the grid file systems.
      *
      * @return Collection of grid file systems instances.
      */
-    public Collection<IgniteFs> ggfss();
+    public Collection<IgniteFs> fileSystems();
 
     /**
      * Gets an instance of Hadoop.

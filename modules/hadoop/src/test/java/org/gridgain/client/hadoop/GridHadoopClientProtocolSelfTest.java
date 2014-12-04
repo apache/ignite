@@ -103,7 +103,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName).format();
+        grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName).format();
 
         setupLockFile.delete();
         mapLockFile.delete();
@@ -142,7 +142,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testJobCounters() throws Exception {
-        IgniteFs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
+        IgniteFs ggfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName);
 
         ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
 
@@ -260,7 +260,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     public void checkJobSubmit(boolean noCombiners, boolean noReducers) throws Exception {
-        IgniteFs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
+        IgniteFs ggfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName);
 
         ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
 

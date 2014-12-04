@@ -171,8 +171,8 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
 
         Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, hadoopFs, PRIMARY_REST_CFG);
 
-        ggfsSecondary = (GridGgfsImpl) igniteSecondary.ggfs("ggfs-secondary");
-        ggfs = (GridGgfsImpl) ignite.ggfs("ggfs");
+        ggfsSecondary = (GridGgfsImpl) igniteSecondary.fileSystem("ggfs-secondary");
+        ggfs = (GridGgfsImpl) ignite.fileSystem("ggfs");
     }
 
     /** {@inheritDoc} */

@@ -93,7 +93,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).ggfs(ggfsName).format();
+        grid(0).fileSystem(ggfsName).format();
     }
 
     /** {@inheritDoc} */
@@ -238,7 +238,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If failed.
      */
     private void prepareFile(String fileName, int lineCnt) throws Exception {
-        IgniteFs ggfs = grid(0).ggfs(ggfsName);
+        IgniteFs ggfs = grid(0).fileSystem(ggfsName);
 
         try (OutputStream os = ggfs.create(new GridGgfsPath(fileName), true)) {
             PrintWriter w = new PrintWriter(new OutputStreamWriter(os));

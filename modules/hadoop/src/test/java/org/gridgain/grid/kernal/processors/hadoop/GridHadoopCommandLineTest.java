@@ -187,7 +187,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs = (GridGgfsEx) Ignition.start("config/hadoop/default-config.xml").ggfs(ggfsName);
+        ggfs = (GridGgfsEx) Ignition.start("config/hadoop/default-config.xml").fileSystem(ggfsName);
     }
 
     /** {@inheritDoc} */

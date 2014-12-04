@@ -84,7 +84,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
 
         Ignite g = G.start(cfg);
 
-        ggfs = g.ggfs("ggfs");
+        ggfs = g.fileSystem("ggfs");
     }
 
     /** {@inheritDoc} */

@@ -149,7 +149,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** {@inheritDoc} */
         @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) throws GridException {
             try {
-                Path logsDir = resolveGgfsProfilerLogsDir(g.ggfs(arg));
+                Path logsDir = resolveGgfsProfilerLogsDir(g.fileSystem(arg));
 
                 if (logsDir != null)
                     return parse(logsDir, arg);

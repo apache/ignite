@@ -132,7 +132,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
 
         Ignite g = G.start(cfg);
 
-        ggfsPrimary = (GridGgfsImpl)g.ggfs(GGFS_PRIMARY);
+        ggfsPrimary = (GridGgfsImpl)g.fileSystem(GGFS_PRIMARY);
 
         dataCache = ggfsPrimary.context().kernalContext().cache().internalCache(
             ggfsPrimary.context().configuration().getDataCacheName());
@@ -190,7 +190,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
 
         Ignite g = G.start(cfg);
 
-        secondaryFs = g.ggfs(GGFS_SECONDARY);
+        secondaryFs = g.fileSystem(GGFS_SECONDARY);
     }
 
     /** {@inheritDoc} */

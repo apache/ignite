@@ -152,7 +152,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite ignite = startGrid(1);
 
-        ggfs = (GridGgfsImpl) ignite.ggfss().iterator().next();
+        ggfs = (GridGgfsImpl) ignite.fileSystems().iterator().next();
     }
 
     /** {@inheritDoc} */
