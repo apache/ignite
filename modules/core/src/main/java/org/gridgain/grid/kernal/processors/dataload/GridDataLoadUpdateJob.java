@@ -39,7 +39,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final boolean ignoreDepOwnership;
 
     /** */
-    private final GridDataLoadCacheUpdater<K, V> updater;
+    private final IgniteDataLoadCacheUpdater<K, V> updater;
 
     /**
      * @param ctx Context.
@@ -53,7 +53,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
         GridKernalContext ctx, GridLogger log, @Nullable String cacheName,
         Collection<Map.Entry<K, V>> col,
         boolean ignoreDepOwnership,
-        GridDataLoadCacheUpdater<K, V> updater) {
+        IgniteDataLoadCacheUpdater<K, V> updater) {
         this.ctx = ctx;
         this.log = log;
 

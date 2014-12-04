@@ -21,9 +21,9 @@ import java.util.*;
  * performance custom user-defined implementation may help.
  * <p>
  * Data loader can be configured to use custom implementation of updater instead of default one using
- * {@link IgniteDataLoader#updater(GridDataLoadCacheUpdater)} method.
+ * {@link IgniteDataLoader#updater(IgniteDataLoadCacheUpdater)} method.
  */
-public interface GridDataLoadCacheUpdater<K, V> extends Serializable {
+public interface IgniteDataLoadCacheUpdater<K, V> extends Serializable {
     /**
      * Updates cache with batch of entries.
      *

@@ -51,7 +51,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     public static final GridProductVersion COMPACT_MAP_ENTRIES_SINCE = GridProductVersion.fromString("6.5.6");
 
     /** Cache updater. */
-    private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
+    private IgniteDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
     /** */
     private byte[] updaterBytes;
@@ -258,7 +258,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void updater(GridDataLoadCacheUpdater<K, V> updater) {
+    @Override public void updater(IgniteDataLoadCacheUpdater<K, V> updater) {
         A.notNull(updater, "updater");
 
         this.updater = updater;

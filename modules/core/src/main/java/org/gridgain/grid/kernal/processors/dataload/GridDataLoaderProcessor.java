@@ -228,7 +228,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             }
 
             Collection<Map.Entry<K, V>> col;
-            GridDataLoadCacheUpdater<K, V> updater;
+            IgniteDataLoadCacheUpdater<K, V> updater;
 
             try {
                 col = marsh.unmarshal(req.collectionBytes(), clsLdr);

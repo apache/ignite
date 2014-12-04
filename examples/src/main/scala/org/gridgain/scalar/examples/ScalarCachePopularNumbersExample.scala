@@ -13,7 +13,7 @@ package org.gridgain.scalar.examples
 
 import org.gridgain.grid.GridException
 import org.gridgain.grid.cache.GridCache
-import org.gridgain.grid.dataload.GridDataLoadCacheUpdater
+import org.gridgain.grid.dataload.IgniteDataLoadCacheUpdater
 
 import java.util
 import java.util.Timer
@@ -91,7 +91,7 @@ object ScalarCachePopularNumbersExample extends App {
         val f = (i: Long) => i + 1
 
         // Set custom updater to increment value for each key.
-        ldr.updater(new GridDataLoadCacheUpdater[Int, Long] {
+        ldr.updater(new IgniteDataLoadCacheUpdater[Int, Long] {
             def update(cache: GridCache[Int, Long], entries: util.Collection[Entry[Int, Long]]) = {
                 import scala.collection.JavaConversions._
 

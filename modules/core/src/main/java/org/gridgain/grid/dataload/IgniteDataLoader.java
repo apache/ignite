@@ -67,7 +67,7 @@ import java.util.*;
  *      updates and allow data loader choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(GridDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
+ *      {@link #updater(IgniteDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
  *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
@@ -104,7 +104,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache updater set using {@link #updater(GridDataLoadCacheUpdater)} method.
+     * Should not be used when custom cache updater set using {@link #updater(IgniteDataLoadCacheUpdater)} method.
      * Default is {@code false}.
      *
      * @param isolated Flag value.
@@ -205,7 +205,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      *
      * @param updater Cache updater.
      */
-    public void updater(GridDataLoadCacheUpdater<K, V> updater);
+    public void updater(IgniteDataLoadCacheUpdater<K, V> updater);
 
     /**
      * Adds key for removal on remote node. Equivalent to {@link #addData(Object, Object) addData(key, null)}.
