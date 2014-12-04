@@ -65,7 +65,7 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
         private UUID attrVal;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
             assert subgrid.size() == 2;
             assert arg != null;
 

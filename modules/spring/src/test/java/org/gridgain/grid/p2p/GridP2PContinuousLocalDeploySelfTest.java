@@ -191,14 +191,14 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
             log.info("Injected resource1: " + rsrc1);
             log.info("Injected resource1: " + rsrc2);
 
             assert rsrc1 != null;
             assert rsrc2 != null;
 
-            return Collections.<GridComputeJob, ClusterNode>singletonMap(
+            return Collections.<ComputeJob, ClusterNode>singletonMap(
                 new GridSharedJob1(), ignite.cluster().node(node2Id));
         }
 
@@ -263,14 +263,14 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
             log.info("Injected resource1: " + rsrc1);
             log.info("Injected resource1: " + rsrc2);
 
             assert rsrc1 != null;
             assert rsrc2 != null;
 
-            return Collections.<GridComputeJob, ClusterNode>singletonMap(
+            return Collections.<ComputeJob, ClusterNode>singletonMap(
                 new GridSharedJob2(), ignite.cluster().node(node2Id));
         }
 

@@ -317,7 +317,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
          * @param gridSize Grid size.
          * @param arg Task argument.
          */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             assert taskLog != null;
 
             final IgniteOutClosure<Object> callable = new IgniteOutClosure<Object>() {

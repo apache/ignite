@@ -338,7 +338,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param jobCtx Job context.
      * @throws GridException Thrown in case of any errors.
      */
-    public void inject(GridDeployment dep, Class<?> taskCls, GridComputeJob job, GridComputeTaskSession ses,
+    public void inject(GridDeployment dep, Class<?> taskCls, ComputeJob job, GridComputeTaskSession ses,
         GridJobContextImpl jobCtx) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + job);
@@ -416,7 +416,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param job Job to unwrap.
      * @return Unwrapped job.
      */
-    private GridComputeJob unwrapJob(GridComputeJob job) {
+    private ComputeJob unwrapJob(ComputeJob job) {
         if (job instanceof GridComputeJobWrapper)
             return ((GridComputeJobWrapper)job).wrappedJob();
 

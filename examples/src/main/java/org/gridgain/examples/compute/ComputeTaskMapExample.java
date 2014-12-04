@@ -56,10 +56,10 @@ public class ComputeTaskMapExample {
          * @param arg String to split into words for processing.
          * @return Map of jobs to nodes.
          */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             String[] words = arg.split(" ");
 
-            Map<GridComputeJob, ClusterNode> map = new HashMap<>();
+            Map<ComputeJob, ClusterNode> map = new HashMap<>();
 
             Iterator<ClusterNode> it = subgrid.iterator();
 

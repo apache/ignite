@@ -75,7 +75,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
         @GridLocalNodeIdResource private UUID locId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable String arg) throws GridException {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(locId)) {

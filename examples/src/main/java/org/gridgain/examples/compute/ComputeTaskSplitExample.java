@@ -55,8 +55,8 @@ public class ComputeTaskSplitExample {
          * @param arg Task execution argument. Can be {@code null}.
          * @return The list of child jobs.
          */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) {
-            Collection<GridComputeJob> jobs = new LinkedList<>();
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
+            Collection<ComputeJob> jobs = new LinkedList<>();
 
             for (final String word : arg.split(" ")) {
                 jobs.add(new GridComputeJobAdapter() {

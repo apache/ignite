@@ -1113,7 +1113,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of fully configured thread pool to be used in grid.
-     * This executor service will be in charge of processing {@link org.apache.ignite.compute.GridComputeJob GridJobs}
+     * This executor service will be in charge of processing {@link org.apache.ignite.compute.ComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
@@ -1148,7 +1148,7 @@ public class IgniteConfiguration {
 
     /**
      * Executor service that is in charge of processing internal and Visor
-     * {@link org.apache.ignite.compute.GridComputeJob GridJobs}.
+     * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
      * <ul>

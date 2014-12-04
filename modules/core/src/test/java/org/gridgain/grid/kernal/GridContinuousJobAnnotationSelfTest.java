@@ -97,9 +97,9 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         private GridComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             try {
-                mapper.send(((Class<GridComputeJob>)arg).newInstance());
+                mapper.send(((Class<ComputeJob>)arg).newInstance());
             }
             catch (Exception e) {
                 throw new GridException("Job instantination failed.", e);

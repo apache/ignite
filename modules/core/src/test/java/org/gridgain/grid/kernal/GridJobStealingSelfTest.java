@@ -45,7 +45,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     private Ignite ignite2;
 
     /** Job distribution map. Records which job has run on which node. */
-    private static Map<UUID, Collection<GridComputeJob>> jobDistrMap = new HashMap<>();
+    private static Map<UUID, Collection<ComputeJob>> jobDistrMap = new HashMap<>();
 
     /** */
     public GridJobStealingSelfTest() {
@@ -315,7 +315,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws GridException {
             //assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
@@ -365,7 +365,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws GridException {
             assert subgrid.size() > 1 : "Invalid subgrid size: " + subgrid.size();
 
@@ -403,7 +403,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
             log.info("Started job on node: " + ignite.cluster().localNode().id());
 
             if (!jobDistrMap.containsKey(ignite.cluster().localNode().id())) {
-                Collection<GridComputeJob> jobs = new ArrayList<>();
+                Collection<ComputeJob> jobs = new ArrayList<>();
                 jobs.add(this);
 
                 jobDistrMap.put(ignite.cluster().localNode().id(), jobs);

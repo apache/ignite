@@ -64,7 +64,7 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
      * @throws GridException If mapping could not complete successfully. This exception will be thrown out of {@link
      *                       GridComputeTaskFuture#get()} method.
      */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable final Collection<Integer> data) throws GridException {
         assert !subgrid.isEmpty();
 

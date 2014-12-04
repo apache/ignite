@@ -13,11 +13,11 @@ import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Convenience adapter for {@link GridComputeJob} implementations. It provides the
+ * Convenience adapter for {@link ComputeJob} implementations. It provides the
  * following functionality:
  * <ul>
  * <li>
- *      Default implementation of {@link GridComputeJob#cancel()} method and ability
+ *      Default implementation of {@link ComputeJob#cancel()} method and ability
  *      to check whether cancellation occurred.
  * </li>
  * <li>

@@ -76,7 +76,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
         private boolean jobFailed;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             ses.setAttribute("fail", true);
 
             for (int i = 0; i < 10; i++) {

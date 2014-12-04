@@ -122,7 +122,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         private AtomicBoolean stop = new AtomicBoolean();
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             ignite.message().localListen(null, new P2<UUID, Object>() {
                 @Override public boolean apply(UUID uuid, Object o) {
                     return stop.get();

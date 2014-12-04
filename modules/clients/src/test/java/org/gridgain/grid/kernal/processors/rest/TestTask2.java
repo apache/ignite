@@ -23,8 +23,8 @@ class TestTask2 extends GridComputeTaskSplitAdapter<String, String> {
     static final String RES = "Task 2 result.";
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
-        Collection<GridComputeJob> jobs = new ArrayList<>(gridSize);
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+        Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++)
             jobs.add(new GridComputeJobAdapter() {

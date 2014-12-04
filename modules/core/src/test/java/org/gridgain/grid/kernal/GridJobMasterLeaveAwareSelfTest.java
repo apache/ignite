@@ -665,7 +665,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
             Collection<GridComputeJobAdapter> jobs = new ArrayList<>(jobCnt);
 
             for (int i = 0; i < jobCnt; i++)

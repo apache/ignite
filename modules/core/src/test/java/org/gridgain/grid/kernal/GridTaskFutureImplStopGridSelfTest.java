@@ -142,11 +142,11 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         @GridLoggerResource private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
-            Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
+            Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 0; i < SPLIT_COUNT; i++)
                 jobs.add(new GridStopTestJob());

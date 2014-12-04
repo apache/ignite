@@ -389,7 +389,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @GridComputeTaskSessionFullSupport
     private static class GridTestCheckpointTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new GridTestCheckpointJob());
         }
 
@@ -619,7 +619,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @GridComputeTaskSessionFullSupport
     private static class GridMultiNodeTestCheckPointTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             assert gridSize == 2;
 
             return Arrays.asList(
@@ -642,7 +642,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private GridComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new GridComputeJobAdapter() {
                 @Nullable @Override public Object execute() throws GridException {
                     assert taskSes != null;

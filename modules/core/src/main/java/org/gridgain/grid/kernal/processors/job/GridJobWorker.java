@@ -112,7 +112,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private volatile boolean isStarted;
 
     /** Deployed job. */
-    private GridComputeJob job;
+    private ComputeJob job;
 
     /** Halted flag (if greater than 0, job is halted). */
     private final AtomicInteger held = new AtomicInteger();
@@ -140,7 +140,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobSessionImpl ses,
         GridJobContextImpl jobCtx,
         byte[] jobBytes,
-        GridComputeJob job,
+        ComputeJob job,
         ClusterNode taskNode,
         boolean internal,
         GridJobEventListener evtLsnr,
@@ -184,7 +184,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      *
      * @return Deployed job.
      */
-    @Nullable public GridComputeJob getJob() {
+    @Nullable public ComputeJob getJob() {
         return job;
     }
 
@@ -556,7 +556,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         else if (sysStopping && X.hasCause(e, InterruptedException.class, GridInterruptedException.class)) {
             msg = "Job got interrupted due to system stop (will attempt failover).";
 
-            ex = new GridComputeExecutionRejectedException(e);
+            ex = new ComputeExecutionRejectedException(e);
         }
 
         if (msg == null) {
@@ -586,7 +586,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         try {
             super.cancel();
 
-            final GridComputeJob job0 = job;
+            final ComputeJob job0 = job;
 
             if (sys)
                 sysCancelled = true;

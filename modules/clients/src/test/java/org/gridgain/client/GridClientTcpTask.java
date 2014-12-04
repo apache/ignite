@@ -23,7 +23,7 @@ import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
  */
 public class GridClientTcpTask extends GridComputeTaskSplitAdapter<List<Object>, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, List<Object> list)
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
         throws GridException {
         Collection<GridComputeJobAdapter> jobs = new ArrayList<>();
 

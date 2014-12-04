@@ -31,7 +31,7 @@ import java.io.*;
  * on {@link GridGgfsRangeInputStream} bounded to range start and end, or manually wrap provided input stream with
  * {@link GridGgfsRangeInputStream}.
  * <p>
- * You can inject any resources in concrete implementation, just as with regular {@link org.apache.ignite.compute.GridComputeJob} implementations.
+ * You can inject any resources in concrete implementation, just as with regular {@link org.apache.ignite.compute.ComputeJob} implementations.
  */
 public interface GridGgfsJob {
     /**

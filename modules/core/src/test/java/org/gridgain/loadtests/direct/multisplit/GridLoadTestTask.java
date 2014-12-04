@@ -31,7 +31,7 @@ public class GridLoadTestTask extends GridComputeTaskAdapter<Integer, Integer> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {
         assert arg != null;
         assert arg > 1;
 

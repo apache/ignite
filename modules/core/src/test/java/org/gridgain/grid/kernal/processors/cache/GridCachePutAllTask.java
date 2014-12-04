@@ -38,7 +38,7 @@ class GridCachePutAllTask extends GridComputeTaskAdapter<Collection<Integer>, Vo
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable final Collection<Integer> data) throws GridException {
         assert !subgrid.isEmpty();
 

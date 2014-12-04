@@ -282,7 +282,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @return Task future.
      * @throws Exception If failed.
      */
-    private GridComputeTaskFuture<?> generateEvents(@Nullable Long timeout, GridComputeJob job) throws Exception {
+    private GridComputeTaskFuture<?> generateEvents(@Nullable Long timeout, ComputeJob job) throws Exception {
         IgniteCompute comp = ignite.compute().enableAsync();
 
         if (timeout == null)
@@ -412,8 +412,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     @GridComputeTaskSessionFullSupport
     private static class GridAllEventsTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            return Collections.singleton((GridComputeJob)arg);
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+            return Collections.singleton((ComputeJob)arg);
         }
 
         /** {@inheritDoc} */

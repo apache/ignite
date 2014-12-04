@@ -58,7 +58,7 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
 
         List<ClusterNode> nodes = Collections.singletonList(fakeNode);
 
-        GridComputeJob p2pJob = res.map(nodes, 1).entrySet().iterator().next().getKey();
+        ComputeJob p2pJob = res.map(nodes, 1).entrySet().iterator().next().getKey();
 
         assert p2pJob.getClass().getClassLoader() instanceof GridTestClassLoader : "Class loader = "
             + res.getClass().getClassLoader();

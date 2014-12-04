@@ -119,7 +119,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         @GridLocalNodeIdResource private UUID locNodeId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             assert locNodeId != null;
 
             if (log.isInfoEnabled())
@@ -150,13 +150,13 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                             Thread.sleep(Integer.MAX_VALUE);
                         }
                         catch (InterruptedException e) {
-                            throw new GridComputeExecutionRejectedException("Expected interruption during execution.", e);
+                            throw new ComputeExecutionRejectedException("Expected interruption during execution.", e);
                         }
                     }
                     else
                         return "success";
 
-                    throw new GridComputeExecutionRejectedException("Expected exception during execution.");
+                    throw new ComputeExecutionRejectedException("Expected exception during execution.");
                 }
             }, remoteNode);
         }

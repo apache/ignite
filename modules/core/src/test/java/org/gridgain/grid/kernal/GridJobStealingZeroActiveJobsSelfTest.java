@@ -96,7 +96,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());

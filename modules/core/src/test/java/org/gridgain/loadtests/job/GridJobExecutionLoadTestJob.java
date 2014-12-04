@@ -17,7 +17,7 @@ import java.io.*;
 /**
  *
  */
-public class GridJobExecutionLoadTestJob implements GridComputeJob, Externalizable {
+public class GridJobExecutionLoadTestJob implements ComputeJob, Externalizable {
     /** {@inheritDoc} */
     @Override public Object execute() throws GridException {
         return null;

@@ -17,7 +17,7 @@ import java.lang.annotation.*;
  * <p>
  * Job context can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.apache.ignite.compute.GridComputeJob}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:

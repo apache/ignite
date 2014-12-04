@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class GridifyLoadTestTask extends GridComputeTaskSplitAdapter<GridifyArgument, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, GridifyArgument arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws GridException {
         assert gridSize > 0 : "Subgrid cannot be empty.";
 
         int jobsNum = (Integer)arg.getMethodParameters()[0];

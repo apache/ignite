@@ -100,8 +100,8 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
         @GridLoggerResource private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) {
-            Collection<GridComputeJob> refs = new ArrayList<>(gridSize*5);
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
+            Collection<ComputeJob> refs = new ArrayList<>(gridSize*5);
 
             for (int i = 0; i < gridSize * 5; i++)
                 refs.add(new GridTestJob(arg.toString() + i + 1));

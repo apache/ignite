@@ -122,7 +122,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      */
     public static class FactorialTask extends GridComputeTaskAdapter<Long, Long> {
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) throws GridException {
             assert arg > 1;
 
             Map<FactorialJob, ClusterNode> map = new HashMap<>();

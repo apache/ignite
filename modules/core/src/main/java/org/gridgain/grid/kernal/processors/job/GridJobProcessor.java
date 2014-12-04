@@ -292,7 +292,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param sndReply {@code True} to send reply.
      */
     private void rejectJob(GridJobWorker job, boolean sndReply) {
-        GridException e = new GridComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
+        GridException e = new ComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
             job.getSession().getId() + ", jobId=" + job.getJobId() + ", job=" + job.getJob() + ']');
 
         job.finishJob(null, e, sndReply);
@@ -1174,7 +1174,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job has been removed from another thread, we need to reject it
             // here since job has never been executed.
-            GridException e2 = new GridComputeExecutionRejectedException(
+            GridException e2 = new ComputeExecutionRejectedException(
                 "Job was cancelled before execution [jobSes=" + jobWorker.
                     getSession() + ", job=" + jobWorker.getJob() + ']');
 
@@ -1222,7 +1222,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job was removed from another thread, we need to reject it
             // here since job has never been executed.
-            GridException e2 = new GridComputeExecutionRejectedException("Job has been rejected " +
+            GridException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
                 "[jobSes=" + jobWorker.getSession() + ", job=" + jobWorker.getJob() + ']', e);
 
             if (metricsUpdateFreq > -1L)

@@ -20,13 +20,13 @@ import java.util.concurrent.*;
  * Convenient wrapper for grid job. It allows to create a job clone in cases when the same
  * job needs to be cloned to multiple grid nodes during mapping phase of task execution.
  */
-public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements GridComputeJob, Callable<Object>,
+public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements ComputeJob, Callable<Object>,
     GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridComputeJob job;
+    private final ComputeJob job;
 
     /** Peer deploy aware class. */
     private transient volatile GridPeerDeployAware p;
@@ -40,7 +40,7 @@ public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements G
      * @param cpMeta Whether or not to copy metadata in case when {@code job}
      *      implements {@link GridMetadataAware} interface.
      */
-    public GridComputeJobWrapper(GridComputeJob job, boolean cpMeta) {
+    public GridComputeJobWrapper(ComputeJob job, boolean cpMeta) {
         A.notNull(job, "job");
 
         this.job = job;
@@ -54,7 +54,7 @@ public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements G
      *
      * @return Wrapped job.
      */
-    public GridComputeJob wrappedJob() {
+    public ComputeJob wrappedJob() {
         return job;
     }
 

@@ -112,7 +112,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
         IgniteCompute comp = grid(1).compute().enableAsync();
 
         comp.execute(new GridComputeTaskAdapter<Void, Void>() {
-            @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
                 @Nullable Void arg) {
                 return F.asMap(new SleepJob(), node, new SleepJob(), node);
             }

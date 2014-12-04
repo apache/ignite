@@ -88,7 +88,7 @@ import java.util.*;
  *              Job execution was rejected, i.e. remote node has cancelled job before it got
  *              a chance to execute, while it still was on the waiting list. In this case
  *              {@link GridComputeJobResult#getException()} method will return an instance of
- *              {@link GridComputeExecutionRejectedException} exception.
+ *              {@link ComputeExecutionRejectedException} exception.
  *          </li>
  *          </ul>
  *      </li>
@@ -147,7 +147,7 @@ import java.util.*;
  * {@link GridComputeTaskAdapter} provides default implementation for {@link GridComputeTask#result(GridComputeJobResult, List)}
  * method which provides automatic fail-over to another node if remote job has failed
  * due to node crash (detected by {@link GridTopologyException} exception) or due to job
- * execution rejection (detected by {@link GridComputeExecutionRejectedException} exception).
+ * execution rejection (detected by {@link ComputeExecutionRejectedException} exception).
  * Here is an example of how a you would implement your task using {@link GridComputeTaskAdapter}:
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
@@ -245,7 +245,7 @@ public interface GridComputeTask<T, R> extends Serializable {
      * @throws GridException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link GridComputeTaskFuture#get()} method.
      */
-    @Nullable public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws GridException;
+    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws GridException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is

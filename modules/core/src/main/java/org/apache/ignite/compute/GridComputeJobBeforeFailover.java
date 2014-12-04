@@ -18,7 +18,7 @@ import java.lang.annotation.*;
  * {@link GridFailoverSpi}. In this method job can re-create necessary state that was
  * cleared, for example, in method with {@link GridComputeJobAfterSend} annotation.
  * <p>
- * This annotation can be applied to methods of {@link GridComputeJob} instances only. It is
+ * This annotation can be applied to methods of {@link ComputeJob} instances only. It is
  * invoked on the caller node after remote execution has failed and before the
  * job gets failed over to another node.
  * <p>

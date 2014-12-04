@@ -71,7 +71,7 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
      * This is a simplified version of {@link GridComputeTask#map(List, Object)} method.
      * <p>
      * This method basically takes given argument and splits it into a collection
-     * of {@link GridComputeJob} using provided grid size as indication of how many node are
+     * of {@link ComputeJob} using provided grid size as indication of how many node are
      * available. These jobs will be randomly mapped to available grid nodes. Note that
      * if number of jobs is greater than number of grid nodes (i.e, grid size), the grid
      * nodes will be reused and some jobs will end up on the same grid nodes.
@@ -87,22 +87,22 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
      *
      * @see GridComputeTask#map(List, Object)
      */
-    protected abstract Collection<? extends GridComputeJob> split(int gridSize, T arg) throws GridException;
+    protected abstract Collection<? extends ComputeJob> split(int gridSize, T arg) throws GridException;
 
     /** {@inheritDoc} */
-    @Override public final Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg)
+    @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg)
         throws GridException {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
-        Collection<? extends GridComputeJob> jobs = split(subgrid.size(), arg);
+        Collection<? extends ComputeJob> jobs = split(subgrid.size(), arg);
 
         if (F.isEmpty(jobs))
             throw new GridException("Split returned no jobs.");
 
-        Map<GridComputeJob, ClusterNode> map = U.newHashMap(jobs.size());
+        Map<ComputeJob, ClusterNode> map = U.newHashMap(jobs.size());
 
-        for (GridComputeJob job : jobs) {
+        for (ComputeJob job : jobs) {
             ClusterNode old = map.put(job, balancer.getBalancedNode(job, null));
 
             if (old != null)

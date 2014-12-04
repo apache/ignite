@@ -42,8 +42,8 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
      * @param initArr Array to sort.
      * @return 2 jobs that will run the sort recursively for each part of the array.
      */
-    @Override protected Collection<GridComputeJob> split(int gridSize, int[] initArr) {
-        Collection<GridComputeJob> jobs = new LinkedList<>();
+    @Override protected Collection<ComputeJob> split(int gridSize, int[] initArr) {
+        Collection<ComputeJob> jobs = new LinkedList<>();
 
         for (final int[] arr : splitArray(initArr)) {
             jobs.add(new GridComputeJobAdapter() {

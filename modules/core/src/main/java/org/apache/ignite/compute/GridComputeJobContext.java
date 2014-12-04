@@ -45,7 +45,7 @@ import java.util.concurrent.*;
  * ability to check context attributes from within grid task implementation for every job
  * returned from remote nodes.
  * <p>
- * Job context can be injected into {@link GridComputeJob} via {@link GridJobContextResource}
+ * Job context can be injected into {@link ComputeJob} via {@link GridJobContextResource}
  * annotation. Refer to the {@link GridJobContextResource}
  * documentation for coding examples on how to inject job context.
  * <p>

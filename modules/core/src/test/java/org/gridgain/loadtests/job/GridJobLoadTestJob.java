@@ -21,7 +21,7 @@ import static java.lang.Thread.*;
 /**
  * Job for load test.
  */
-public class GridJobLoadTestJob implements GridComputeJob {
+public class GridJobLoadTestJob implements ComputeJob {
     /** Length of the sequence emitted into session attributes. */
     private static final int EMIT_SEQUENCE_LENGTH = 10;
 

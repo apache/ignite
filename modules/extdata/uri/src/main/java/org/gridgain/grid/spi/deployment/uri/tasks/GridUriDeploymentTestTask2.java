@@ -45,7 +45,7 @@ public class GridUriDeploymentTestTask2 extends GridComputeTaskSplitAdapter<Obje
     /**
      * {@inheritDoc}
      */
-    @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
         System.out.println("Split is called: " + this);
 
         return null;

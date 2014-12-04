@@ -163,7 +163,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private GridAbstractUserResource rsrc;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             // Never reached.
             assert false;
 

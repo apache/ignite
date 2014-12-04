@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
  * rejects execution.
  * @see org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()
  */
-public class GridComputeExecutionRejectedException extends GridException {
+public class ComputeExecutionRejectedException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -27,7 +27,7 @@ public class GridComputeExecutionRejectedException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridComputeExecutionRejectedException(String msg) {
+    public ComputeExecutionRejectedException(String msg) {
         super(msg);
     }
 
@@ -37,7 +37,7 @@ public class GridComputeExecutionRejectedException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridComputeExecutionRejectedException(Throwable cause) {
+    public ComputeExecutionRejectedException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -48,7 +48,7 @@ public class GridComputeExecutionRejectedException extends GridException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridComputeExecutionRejectedException(String msg, @Nullable Throwable cause) {
+    public ComputeExecutionRejectedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

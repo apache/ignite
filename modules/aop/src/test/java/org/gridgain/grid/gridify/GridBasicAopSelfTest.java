@@ -56,7 +56,7 @@ public class GridBasicAopSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends GridifyTaskSplitAdapter<Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize,
+        @Override protected Collection<? extends ComputeJob> split(int gridSize,
             GridifyArgument arg) throws GridException {
             return null;
         }

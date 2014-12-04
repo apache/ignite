@@ -27,7 +27,7 @@ public class GridClientHttpTask extends GridComputeTaskSplitAdapter<String, Inte
     private final GridClientTcpTask delegate = new GridClientTcpTask();
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
         JSON json = JSONSerializer.toJSON(arg);
 
         List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;

@@ -88,7 +88,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
             @Override public void applyx() throws GridException {
                 CNT.incrementAndGet();
 
-                throw new GridComputeExecutionRejectedException("Expected error.");
+                throw new ComputeExecutionRejectedException("Expected error.");
             }
         };
 
@@ -103,7 +103,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            GridComputeExecutionRejectedException.class,
+            ComputeExecutionRejectedException.class,
             "Expected error."
         );
 
@@ -125,7 +125,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            GridComputeExecutionRejectedException.class,
+            ComputeExecutionRejectedException.class,
             "Expected error."
         );
 
@@ -147,7 +147,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Void arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
             return F.asSet(new GridComputeJobAdapter() {
                 @GridTaskSessionResource
                 private GridComputeTaskSession ses;
@@ -156,7 +156,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
                     CNT.incrementAndGet();
 
                     if (fail)
-                        throw new GridComputeExecutionRejectedException("Expected error.");
+                        throw new ComputeExecutionRejectedException("Expected error.");
 
                     return ses.getTaskName();
                 }

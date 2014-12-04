@@ -192,7 +192,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      */
     private static class GridEventTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new GridEventTestJob());
         }
 

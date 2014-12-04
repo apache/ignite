@@ -100,7 +100,7 @@ public class GridDeploymentMultiThreadedSelfTest extends GridCommonAbstractTest 
      */
     private static class GridDeploymentTestTask extends GridComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             assert false;
 
             return Collections.emptyMap();

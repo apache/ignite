@@ -22,7 +22,7 @@ public class GridSingleSplitTestTask extends GridComputeTaskSplitAdapter<Integer
     /**
      * {@inheritDoc}
      */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, Integer arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws GridException {
         assert gridSize > 0 : "Subgrid cannot be empty.";
 
         Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);

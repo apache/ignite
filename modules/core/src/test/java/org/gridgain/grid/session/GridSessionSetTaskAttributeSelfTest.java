@@ -114,13 +114,13 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
         private GridComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
             assert taskSes != null;
 
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
-            Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
+            Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new GridComputeJobAdapter(i) {

@@ -28,14 +28,14 @@ public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Int
     private Ignite g;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable int[] jobIds)
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable int[] jobIds)
         throws GridException {
-        Map<GridComputeJob, ClusterNode> mappings = new HashMap<>(jobIds.length);
+        Map<ComputeJob, ClusterNode> mappings = new HashMap<>(jobIds.length);
 
         Iterator<ClusterNode> nodeIter = g.cluster().forRemotes().nodes().iterator();
 
         for (int jobId : jobIds) {
-            GridComputeJob job = new GridComputeJobAdapter(jobId) {
+            ComputeJob job = new GridComputeJobAdapter(jobId) {
                 @GridInstanceResource
                 private Ignite g;
 

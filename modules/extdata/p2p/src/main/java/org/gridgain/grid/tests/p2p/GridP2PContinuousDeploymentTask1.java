@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class GridP2PContinuousDeploymentTask1 extends GridComputeTaskSplitAdapter<Object, Object> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
         return Collections.singleton(new GridComputeJobAdapter() {
             @GridInstanceResource
             private Ignite ignite;

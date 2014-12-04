@@ -355,7 +355,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg)
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg)
             throws GridException {
             Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
@@ -389,7 +389,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -421,7 +421,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {

@@ -23,11 +23,11 @@ public class GridTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
     @GridLoggerResource private GridLogger log;
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         if (log.isDebugEnabled())
             log.debug("Splitting task [task=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
-        Collection<GridComputeJob> refs = new ArrayList<>(gridSize);
+        Collection<ComputeJob> refs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++)
             refs.add(new GridTestJob(arg.toString() + i + 1));

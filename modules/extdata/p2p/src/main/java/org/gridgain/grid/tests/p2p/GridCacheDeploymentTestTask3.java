@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class GridCacheDeploymentTestTask3 extends GridComputeTaskAdapter<T2<ClusterNode, String>, Object> {
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable T2<ClusterNode, String> tup) throws GridException {
         final String val = tup.getValue();
 

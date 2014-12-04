@@ -89,7 +89,7 @@ class GridMarshallerResourceBean implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode getBalancedNode(GridComputeJob job, Collection<ClusterNode> exclNodes) {
+        @Override public ClusterNode getBalancedNode(ComputeJob job, Collection<ClusterNode> exclNodes) {
             return null;
         }
     }

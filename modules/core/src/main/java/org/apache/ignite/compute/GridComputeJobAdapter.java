@@ -15,11 +15,11 @@ import org.jetbrains.annotations.*;
 import java.util.concurrent.*;
 
 /**
- * Convenience adapter for {@link GridComputeJob} implementations. It provides the
+ * Convenience adapter for {@link ComputeJob} implementations. It provides the
  * following functionality:
  * <ul>
  * <li>
- *      Default implementation of {@link GridComputeJob#cancel()} method and ability
+ *      Default implementation of {@link ComputeJob#cancel()} method and ability
  *      to check whether cancellation occurred with {@link #isCancelled()} method.
  * </li>
  * <li>
@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  * </li>
  * </ul>
  */
-public abstract class GridComputeJobAdapter implements GridComputeJob, Callable<Object> {
+public abstract class GridComputeJobAdapter implements ComputeJob, Callable<Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,7 +82,7 @@ public abstract class GridComputeJobAdapter implements GridComputeJob, Callable<
      * This method tests whether or not this job was cancelled. This method
      * is thread-safe and can be called without extra synchronization.
      * <p>
-     * This method can be periodically called in {@link GridComputeJob#execute()} method
+     * This method can be periodically called in {@link ComputeJob#execute()} method
      * implementation to check whether or not this job cancelled. Note that system
      * calls {@link #cancel()} method only as a hint and this is a responsibility of
      * the implementation of the job to properly cancel its execution.

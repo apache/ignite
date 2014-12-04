@@ -64,11 +64,11 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
         private UUID locId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable String arg)
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable String arg)
             throws GridException {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(locId)) {
-                    return Collections.singletonMap(new GridComputeJob() {
+                    return Collections.singletonMap(new ComputeJob() {
                         @Override public void cancel() {
                             cancelCall = true;
                         }

@@ -16,7 +16,7 @@ import java.lang.annotation.*;
  * successfully sent for execution. It is useful to clean up the internal
  * state of the job when it is not immediately needed.
  * <p>
- * This annotation can be applied to methods of {@link GridComputeJob} instance only.
+ * This annotation can be applied to methods of {@link ComputeJob} instance only.
  * It is invoked on the caller node after the job has been sent to remote node for execution.
  * <p>
  * Example:

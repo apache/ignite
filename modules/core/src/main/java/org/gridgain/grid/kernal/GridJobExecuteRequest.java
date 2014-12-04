@@ -41,7 +41,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /** */
     @GridToStringExclude
     @GridDirectTransient
-    private GridComputeJob job;
+    private ComputeJob job;
 
     /** */
     private long startTaskTime;
@@ -161,7 +161,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         String userVer,
         String taskClsName,
         byte[] jobBytes,
-        GridComputeJob job,
+        ComputeJob job,
         long startTaskTime,
         long timeout,
         @Nullable Collection<UUID> top,
@@ -261,7 +261,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /**
      * @return Grid job.
      */
-    public GridComputeJob getJob() {
+    public ComputeJob getJob() {
         return job;
     }
 

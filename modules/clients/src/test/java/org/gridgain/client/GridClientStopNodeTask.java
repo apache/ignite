@@ -37,8 +37,8 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
-        Collection<GridComputeJob> jobs = new ArrayList<>();
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+        Collection<ComputeJob> jobs = new ArrayList<>();
 
         for (int i = 0; i < gridSize; i++)
             jobs.add(new StopJob(arg));

@@ -20,7 +20,7 @@ import java.util.*;
  */
 public class GridDsiResponseTask extends GridComputeTaskSplitAdapter<GridDsiMessage, T3<Long, Integer, Integer>> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int arg0, GridDsiMessage msg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int arg0, GridDsiMessage msg) throws GridException {
         return Collections.singletonList(new GridDsiPerfJob(msg));
     }
 

@@ -132,7 +132,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** Continuous mapper. */
     private final GridComputeTaskContinuousMapper mapper = new GridComputeTaskContinuousMapper() {
         /** {@inheritDoc} */
-        @Override public void send(GridComputeJob job, ClusterNode node) throws GridException {
+        @Override public void send(ComputeJob job, ClusterNode node) throws GridException {
             A.notNull(job, "job");
             A.notNull(node, "node");
 
@@ -140,21 +140,21 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(Map<? extends GridComputeJob, ClusterNode> mappedJobs) throws GridException {
+        @Override public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws GridException {
             A.notNull(mappedJobs, "mappedJobs");
 
             processMappedJobs(mappedJobs);
         }
 
         /** {@inheritDoc} */
-        @Override public void send(GridComputeJob job) throws GridException {
+        @Override public void send(ComputeJob job) throws GridException {
             A.notNull(job, "job");
 
             send(Collections.singleton(job));
         }
 
         /** {@inheritDoc} */
-        @Override public void send(Collection<? extends GridComputeJob> jobs) throws GridException {
+        @Override public void send(Collection<? extends ComputeJob> jobs) throws GridException {
             A.notNull(jobs, "jobs");
 
             if (jobs.isEmpty())
@@ -162,7 +162,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             GridComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, getTaskTopology());
 
-            for (GridComputeJob job : jobs) {
+            for (ComputeJob job : jobs) {
                 if (job == null)
                     throw new GridException("Null job passed to send(...) method.");
 
@@ -386,9 +386,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // Inject resources.
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
-            Map<? extends GridComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                new Callable<Map<? extends GridComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends GridComputeJob, ClusterNode> call() throws GridException {
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
+                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
+                    @Override public Map<? extends ComputeJob, ClusterNode> call() throws GridException {
                         return task.map(shuffledNodes, arg);
                     }
                 });
@@ -442,7 +442,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param jobs Map of jobs.
      * @throws GridException Thrown in case of any error.
      */
-    private void processMappedJobs(Map<? extends GridComputeJob, ClusterNode> jobs) throws GridException {
+    private void processMappedJobs(Map<? extends ComputeJob, ClusterNode> jobs) throws GridException {
         if (F.isEmpty(jobs))
             return;
 
@@ -451,8 +451,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         Collection<GridComputeJobSibling> sibs = new ArrayList<>(jobs.size());
 
         // Map jobs to nodes for computation.
-        for (Map.Entry<? extends GridComputeJob, ClusterNode> mappedJob : jobs.entrySet()) {
-            GridComputeJob job = mappedJob.getKey();
+        for (Map.Entry<? extends ComputeJob, ClusterNode> mappedJob : jobs.entrySet()) {
+            ComputeJob job = mappedJob.getKey();
             ClusterNode node = mappedJob.getValue();
 
             if (job == null)

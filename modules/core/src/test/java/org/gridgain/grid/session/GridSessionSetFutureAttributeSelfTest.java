@@ -171,7 +171,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
         private volatile int taskNum = -1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Splitting job [task=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -181,7 +181,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
 
             assert taskNum != -1;
 
-            Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
+            Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new GridComputeJobAdapter(i) {

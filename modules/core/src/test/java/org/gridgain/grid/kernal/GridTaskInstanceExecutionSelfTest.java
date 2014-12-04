@@ -82,7 +82,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             log.info("Task split state: " + state);
 
             assert state != null;

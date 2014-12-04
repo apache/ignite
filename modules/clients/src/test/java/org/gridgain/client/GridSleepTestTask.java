@@ -13,7 +13,7 @@ import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
  */
 public class GridSleepTestTask extends GridComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridComputeJob> split(int gridSize, String arg)
+    @Override public Collection<? extends ComputeJob> split(int gridSize, String arg)
         throws GridException {
         return Collections.singleton(new GridComputeJobAdapter(arg) {
             @Override public Object execute() {

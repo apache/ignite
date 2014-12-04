@@ -406,7 +406,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top, GridComputeJob job)
+    @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top, ComputeJob job)
     throws GridException {
         A.notNull(ses, "ses");
         A.notNull(top, "top");

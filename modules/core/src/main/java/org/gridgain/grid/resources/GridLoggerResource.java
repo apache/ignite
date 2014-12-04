@@ -21,7 +21,7 @@ import java.lang.annotation.*;
  * Logger can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.GridComputeTask}</li>
- * <li>{@link org.apache.ignite.compute.GridComputeJob}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * <li>{@link GridSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>{@link GridUserResource @GridUserResource}</li>

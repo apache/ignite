@@ -107,7 +107,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         private boolean jobFailedOver;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             assert locNodeId != null;
 
             ClusterNode remoteNode = null;

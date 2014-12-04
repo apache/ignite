@@ -186,7 +186,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             ses.setAttribute("fail", true);
 
             return Collections.singletonMap(new GridComputeJobAdapter(arg) {

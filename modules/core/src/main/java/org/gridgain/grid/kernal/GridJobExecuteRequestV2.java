@@ -70,7 +70,7 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
         String userVer,
         String taskClsName,
         byte[] jobBytes,
-        GridComputeJob job,
+        ComputeJob job,
         long startTaskTime,
         long timeout,
         @Nullable Collection<UUID> top,

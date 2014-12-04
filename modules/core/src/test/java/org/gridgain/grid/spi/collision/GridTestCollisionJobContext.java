@@ -135,7 +135,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJob getJob() {
+    @Override public ComputeJob getJob() {
         return job;
     }
 

@@ -70,8 +70,8 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskMapAsync
     private static class AsyncMappedTask extends BaseTask {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            Collection<? extends GridComputeJob> res = super.split(gridSize, arg);
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+            Collection<? extends ComputeJob> res = super.split(gridSize, arg);
 
             assert mainThread != mapper;
 
@@ -84,8 +84,8 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
      */
     private static class SyncMappedTask extends BaseTask {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            Collection<? extends GridComputeJob> res = super.split(gridSize, arg);
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+            Collection<? extends ComputeJob> res = super.split(gridSize, arg);
 
             assert mainThread == mapper;
 
@@ -111,7 +111,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         protected GridLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             mapper = Thread.currentThread();
 
             return Collections.singleton(new GridComputeJobAdapter() {

@@ -587,7 +587,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                         release(dep);
 
-                        handleException(new GridComputeExecutionRejectedException("Failed to execute task " +
+                        handleException(new ComputeExecutionRejectedException("Failed to execute task " +
                             "due to thread pool execution rejection: " + taskName, e), fut);
                     }
                 }

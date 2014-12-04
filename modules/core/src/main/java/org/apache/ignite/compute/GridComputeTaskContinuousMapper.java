@@ -61,7 +61,7 @@ public interface GridComputeTaskContinuousMapper {
      * @param node Grid node. If {@code null} is passed, exception will be thrown.
      * @throws GridException If job can not be processed.
      */
-    public void send(GridComputeJob job, ClusterNode node) throws GridException;
+    public void send(ComputeJob job, ClusterNode node) throws GridException;
 
     /**
      * Sends collection of grid jobs to assigned nodes.
@@ -70,7 +70,7 @@ public interface GridComputeTaskContinuousMapper {
      *      or empty list is passed, exception will be thrown.
      * @throws GridException If job can not be processed.
      */
-    public void send(Map<? extends GridComputeJob, ClusterNode> mappedJobs) throws GridException;
+    public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws GridException;
 
     /**
      * Sends job to a node automatically picked by the underlying load balancer.
@@ -78,7 +78,7 @@ public interface GridComputeTaskContinuousMapper {
      * @param job Job instance to send. If {@code null} is passed, exception will be thrown.
      * @throws GridException If job can not be processed.
      */
-    public void send(GridComputeJob job) throws GridException;
+    public void send(ComputeJob job) throws GridException;
 
     /**
      * Sends collection of jobs to nodes automatically picked by the underlying load balancer.
@@ -87,5 +87,5 @@ public interface GridComputeTaskContinuousMapper {
      *      list is passed, exception will be thrown.
      * @throws GridException If job can not be processed.
      */
-    public void send(Collection<? extends GridComputeJob> jobs) throws GridException;
+    public void send(Collection<? extends ComputeJob> jobs) throws GridException;
 }

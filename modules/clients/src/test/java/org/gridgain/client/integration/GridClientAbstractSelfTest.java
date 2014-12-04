@@ -1434,7 +1434,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
      */
     private static class TestTask extends GridComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, List<Object> list)
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
             throws GridException {
             Collection<GridComputeJobAdapter> jobs = new ArrayList<>();
 
@@ -1472,7 +1472,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
      */
     private static class SleepTestTask extends GridComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, List<Object> list)
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
             throws GridException {
             Collection<GridComputeJobAdapter> jobs = new ArrayList<>();
 
@@ -1513,7 +1513,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
 
@@ -1538,7 +1538,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
             JSON json = JSONSerializer.toJSON(arg);
 
             List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;

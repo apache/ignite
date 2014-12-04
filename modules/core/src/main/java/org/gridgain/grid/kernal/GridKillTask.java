@@ -32,13 +32,13 @@ class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
     private boolean restart;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart)
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart)
         throws GridException {
         assert restart != null;
 
         this.restart = restart;
 
-        Map<GridComputeJob, ClusterNode> jobs = U.newHashMap(subgrid.size());
+        Map<ComputeJob, ClusterNode> jobs = U.newHashMap(subgrid.size());
 
         for (ClusterNode n : subgrid)
             if (!daemon(n))

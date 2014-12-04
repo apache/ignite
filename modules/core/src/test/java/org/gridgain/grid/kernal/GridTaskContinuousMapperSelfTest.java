@@ -80,12 +80,12 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             assert subgrid.size() == 2;
 
             mapper.send(new TestJob(cnt++), subgrid.get(0));
 
-            Map<GridComputeJob, ClusterNode> mappedJobs = new HashMap<>(2);
+            Map<ComputeJob, ClusterNode> mappedJobs = new HashMap<>(2);
 
             mappedJobs.put(new TestJob(cnt++), subgrid.get(0));
             mappedJobs.put(new TestJob(cnt++), subgrid.get(1));
@@ -96,7 +96,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
             int size = subgrid.size();
 
-            Collection<GridComputeJob> jobs = new ArrayList<>(size);
+            Collection<ComputeJob> jobs = new ArrayList<>(size);
 
             for (ClusterNode n : subgrid)
                 jobs.add(new TestJob(cnt++));
@@ -135,7 +135,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             mapper.send(new TestJob());
 
             return null;
@@ -212,7 +212,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         @GridLoggerResource private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             try {
                 mapper.send(new TestJob(), null);
 
@@ -235,7 +235,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                mapper.send((Map<? extends GridComputeJob, ClusterNode>)null);
+                mapper.send((Map<? extends ComputeJob, ClusterNode>)null);
 
                 assert false;
             }
@@ -255,7 +255,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                mapper.send((GridComputeJob)null);
+                mapper.send((ComputeJob)null);
 
                 assert false;
             }
@@ -265,7 +265,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                mapper.send((Collection<GridComputeJob>)null);
+                mapper.send((Collection<ComputeJob>)null);
 
                 assert false;
             }
@@ -275,7 +275,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                mapper.send(Collections.singleton((GridComputeJob)null));
+                mapper.send(Collections.singleton((ComputeJob)null));
 
                 assert false;
             }

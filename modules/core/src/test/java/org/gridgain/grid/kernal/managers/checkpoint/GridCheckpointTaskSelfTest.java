@@ -132,7 +132,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) throws GridException {
             assert ignite.cluster().nodes().size() == 2;
 
@@ -158,7 +158,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                         if (cpVal) {
                             ses.saveCheckpoint(CP_KEY, false);
 
-                            throw new GridComputeExecutionRejectedException("Failing over the job.");
+                            throw new ComputeExecutionRejectedException("Failing over the job.");
                         }
 
                         return null;
@@ -188,7 +188,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) throws GridException {
             assert ignite.cluster().nodes().size() == 2;
 

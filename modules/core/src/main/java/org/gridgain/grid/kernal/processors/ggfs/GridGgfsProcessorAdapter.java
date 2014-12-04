@@ -67,6 +67,6 @@ public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
      * @param recRslv Record resolver.
      * @return Compute job.
      */
-    @Nullable public abstract GridComputeJob createJob(GridGgfsJob job, @Nullable String ggfsName, GridGgfsPath path,
+    @Nullable public abstract ComputeJob createJob(GridGgfsJob job, @Nullable String ggfsName, GridGgfsPath path,
         long start, long length, GridGgfsRecordResolver recRslv);
 }

@@ -786,7 +786,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends GridComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Void arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
             return F.asSet(new TestJob());
         }
 

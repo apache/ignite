@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.compute.{GridComputeTaskSplitAdapter, GridComputeJob, GridComputeJobResult}
+import org.apache.ignite.compute.{GridComputeTaskSplitAdapter, ComputeJob, GridComputeJobResult}
 import org.gridgain.scalar.scalar
 import scalar._
 import collection.JavaConversions._
@@ -36,7 +36,7 @@ object ScalarTaskExample extends App {
      * This task encapsulates the logic of MapReduce.
      */
     class GridHelloWorld extends GridComputeTaskSplitAdapter[String, Void] {
-        def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
+        def split(gridSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
             (for (w <- arg.split(" ")) yield toJob(() => println(w))).toSeq
         }
 

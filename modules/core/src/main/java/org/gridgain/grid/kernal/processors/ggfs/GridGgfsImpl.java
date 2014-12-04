@@ -1996,9 +1996,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg)
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
             throws GridException {
-            Collection<GridComputeJob> res = new ArrayList<>(gridSize);
+            Collection<ComputeJob> res = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
                 res.add(new GridComputeJobAdapter() {

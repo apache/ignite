@@ -120,7 +120,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting task [task=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 

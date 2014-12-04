@@ -76,7 +76,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public final Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Nullable @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable GridGgfsTaskArgs<T> args) throws GridException {
         assert ignite != null;
         assert args != null;
@@ -84,7 +84,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
         IgniteFs ggfs = ignite.fileSystem(args.ggfsName());
         GridGgfsProcessorAdapter ggfsProc = ((GridKernal) ignite).context().ggfs();
 
-        Map<GridComputeJob, ClusterNode> splitMap = new HashMap<>();
+        Map<ComputeJob, ClusterNode> splitMap = new HashMap<>();
 
         Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
@@ -119,7 +119,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
                 GridGgfsJob job = createJob(path, new GridGgfsFileRange(file.path(), loc.start(), loc.length()), args);
 
                 if (job != null) {
-                    GridComputeJob jobImpl = ggfsProc.createJob(job, ggfs.name(), file.path(), loc.start(),
+                    ComputeJob jobImpl = ggfsProc.createJob(job, ggfs.name(), file.path(), loc.start(),
                         loc.length(), args.recordResolver());
 
                     splitMap.put(jobImpl, node);

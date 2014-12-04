@@ -143,11 +143,11 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) throws GridException {
             assert mapper != null;
             assert arg != null;
 
-            GridComputeJob job = new TestJob(++cnt);
+            ComputeJob job = new TestJob(++cnt);
 
             if (arg) {
                 mapper.send(job, subgrid.get(0));
@@ -237,7 +237,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             ses.addAttributeListener(new GridComputeTaskSessionAttributeListener() {
                 @Override public void onAttributeSet(Object key, Object val) {
                     if (key instanceof String) {
@@ -259,7 +259,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                 }
             }, true);
 
-            Collection<GridComputeJob> jobs = new ArrayList<>();
+            Collection<ComputeJob> jobs = new ArrayList<>();
 
             for (int i = 0; i < JOB_COUNT; i++)
                 jobs.add(new SessionChainTestJob(0));
@@ -319,7 +319,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             mapper.send(new TestJob(++cnt));
 
             try {

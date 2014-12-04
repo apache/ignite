@@ -45,7 +45,7 @@ import java.util.*;
  *      <li>
  *          Job will be rejected. In this case the {@link GridComputeJobResult} passed into
  *          {@link GridComputeTask#result(GridComputeJobResult, List)} method will contain
- *          {@link GridComputeExecutionRejectedException} exception. If you are using any
+ *          {@link ComputeExecutionRejectedException} exception. If you are using any
  *          of the task adapters shipped with GridGain, then job will be failed
  *          over automatically for execution on another node.
  *      </li>
@@ -56,10 +56,10 @@ import java.util.*;
  *      will be injected.
  * </li>
  * <li>
- *      System will execute the job by calling {@link GridComputeJob#execute()} method.
+ *      System will execute the job by calling {@link ComputeJob#execute()} method.
  * </li>
  * <li>
- *      If job gets cancelled while executing then {@link GridComputeJob#cancel()}
+ *      If job gets cancelled while executing then {@link ComputeJob#cancel()}
  *      method will be called. Note that just like with {@link Thread#interrupt()}
  *      method, grid job cancellation serves as a hint that a job should stop
  *      executing or exhibit some other user defined behavior. Generally it is
@@ -103,7 +103,7 @@ import java.util.*;
  * <p>
  * <h1 class="header">GridComputeJobAdapter</h1>
  * GridGain comes with convenience {@link GridComputeJobAdapter} adapter that provides
- * default empty implementation for {@link GridComputeJob#cancel()} method and also
+ * default empty implementation for {@link ComputeJob#cancel()} method and also
  * allows user to set and get job argument, if there is one.
  * <p>
  * <h1 class="header">Distributed Session Attributes</h1>
@@ -114,7 +114,7 @@ import java.util.*;
  * at any point and can be useful when other jobs within task need to be made aware
  * of certain event or state change that occurred during job execution.
  * <p>
- * Distributed task session can be injected into {@link GridComputeJob} implementation
+ * Distributed task session can be injected into {@link ComputeJob} implementation
  * using {@link GridTaskSessionResource @GridTaskSessionResource} annotation.
  * Both, field and method based injections are supported. Refer to
  * {@link GridComputeTaskSession} documentation for more information on session functionality.
@@ -133,7 +133,7 @@ import java.util.*;
  * from scratch. Throughout it's execution job should periodically save its
  * intermediate state to avoid starting from scratch in case of a failure.
  */
-public interface GridComputeJob extends Serializable {
+public interface ComputeJob extends Serializable {
     /**
      * This method is called when system detects that completion of this
      * job can no longer alter the overall outcome (for example, when parent task

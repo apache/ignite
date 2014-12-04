@@ -339,7 +339,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
      * @param r Runnable.
      * @return Job created for given runnable.
      */
-    private static GridComputeJob job(final Runnable r) {
+    private static ComputeJob job(final Runnable r) {
         return new GridComputeJobAdapter() {
             @Nullable @Override public Object execute() {
                 r.run();

@@ -565,7 +565,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg)
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
             throws GridException {
             Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 

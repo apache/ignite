@@ -126,7 +126,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskSessionFullSupport
     private static class GridWaitTask extends GridComputeTaskAdapter<UUID, Integer> {
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
             ClusterNode mappedNode = null;
 
             for (ClusterNode node : subgrid) {
@@ -168,7 +168,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         private UUID locId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             ses.setAttribute("fail", true);
 
             ClusterNode node = F.view(subgrid, F.<ClusterNode>remoteNodes(locId)).iterator().next();

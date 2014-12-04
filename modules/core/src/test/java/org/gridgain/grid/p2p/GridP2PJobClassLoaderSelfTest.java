@@ -113,7 +113,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
         private static ClassLoader ldr;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             assert rsrcTask != null;
 
             assert gridSize == 1;

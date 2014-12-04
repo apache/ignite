@@ -29,7 +29,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) throws GridException {
         assert !subgrid.isEmpty();
 

@@ -32,7 +32,7 @@ public interface GridComputeJobResult {
 
     /**
      * Gets data returned by remote job if it didn't fail. This data is the
-     * object returned from {@link GridComputeJob#execute()} method.
+     * object returned from {@link ComputeJob#execute()} method.
      * <p>
      * Note that if task is annotated with {@link GridComputeTaskNoResultCache} annotation,
      * then job results will not be cached and will be available only in
@@ -40,8 +40,8 @@ public interface GridComputeJobResult {
      * but not in {@link GridComputeTask#reduce(List)} method. This feature was added to
      * avoid excessive storing of overly large results.
      *
-     * @param <T> Type of the return value returning from {@link GridComputeJob#execute()} method.
-     * @return Data returned by remote job's {@link GridComputeJob#execute()} method if it didn't fail.
+     * @param <T> Type of the return value returning from {@link ComputeJob#execute()} method.
+     * @return Data returned by remote job's {@link ComputeJob#execute()} method if it didn't fail.
      */
     public <T> T getData();
 
@@ -57,7 +57,7 @@ public interface GridComputeJobResult {
      *      returned by this method.
      *      <p>
      *      If job on remote node was rejected (cancelled while it was on waiting queue), then
-     *      {@link GridComputeExecutionRejectedException} will be returned.
+     *      {@link ComputeExecutionRejectedException} will be returned.
      *      <p>
      *      If node on which job was computing failed, then {@link GridTopologyException} is
      *      returned.
@@ -67,10 +67,10 @@ public interface GridComputeJobResult {
     /**
      * Gets local instance of remote job returned by {@link GridComputeTask#map(List, Object)} method.
      *
-     * @param <T> Type of {@link GridComputeJob} that was sent to remote node.
+     * @param <T> Type of {@link ComputeJob} that was sent to remote node.
      * @return Local instance of remote job returned by {@link GridComputeTask#map(List, Object)} method.
      */
-    public <T extends GridComputeJob> T getJob();
+    public <T extends ComputeJob> T getJob();
 
     /**
      * Gets node this job executed on.

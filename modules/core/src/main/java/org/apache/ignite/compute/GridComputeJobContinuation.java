@@ -69,7 +69,7 @@ public interface GridComputeJobContinuation {
 
     /**
      * Resumes job if it was held by {@link #holdcc()} method. Resuming job means that
-     * {@link GridComputeJob#execute()} method will be called again. It is user's responsibility to check,
+     * {@link ComputeJob#execute()} method will be called again. It is user's responsibility to check,
      * as needed, whether job is executing from scratch and has been resumed.
      * <p>
      * Note that the job is resumed with exactly the same state as of when it was <i>'held'</i> via

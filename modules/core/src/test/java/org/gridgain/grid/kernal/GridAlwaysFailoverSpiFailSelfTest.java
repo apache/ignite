@@ -57,7 +57,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
         try {
             ignite.compute().execute(GridTestFailoverTask.class.getName(),
-                new GridComputeExecutionRejectedException("Task should be failed over"));
+                new ComputeExecutionRejectedException("Task should be failed over"));
 
             assert false;
         }
@@ -108,11 +108,11 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static final class GridTestFailoverTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert gridSize == 1;
             assert arg instanceof GridException;
 
-            Collection<GridComputeJob> res = new ArrayList<>(gridSize);
+            Collection<ComputeJob> res = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++)
                 res.add(new GridTestFailoverJob((GridException)arg));

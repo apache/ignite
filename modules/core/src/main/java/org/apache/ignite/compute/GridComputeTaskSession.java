@@ -72,7 +72,7 @@ import java.util.*;
  * Session can be injected into a task or a job using IoC (dependency
  * injection) by attaching {@link GridTaskSessionResource @GridTaskSessionResource}
  * annotation to a field or a setter method inside of {@link GridComputeTask} or
- * {@link GridComputeJob} implementations as follows:
+ * {@link ComputeJob} implementations as follows:
  * <pre name="code" class="java">
  * ...
  * // This field will be injected with distributed task session.

@@ -104,7 +104,7 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyRangeArgument arg)
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyRangeArgument arg)
         throws GridException {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
@@ -167,7 +167,7 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
             // Create job argument.
             GridifyArgument jobArg = argBuilder.createJobArgument(arg, nodeInput);
 
-            GridComputeJob job = new GridifyJobAdapter(jobArg);
+            ComputeJob job = new GridifyJobAdapter(jobArg);
 
             mapper.send(job, balancer.getBalancedNode(job, exclNodes));
         }

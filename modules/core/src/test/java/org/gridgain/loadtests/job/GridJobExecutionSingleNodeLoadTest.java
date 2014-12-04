@@ -197,7 +197,7 @@ public class GridJobExecutionSingleNodeLoadTest {
      */
     private static class GridJobExecutionLoadTestTask implements GridComputeTask<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
+        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
             throws GridException {
             return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
         }
@@ -216,7 +216,7 @@ public class GridJobExecutionSingleNodeLoadTest {
     /**
      * Empty job.
      */
-    private static class GridJobExecutionLoadTestJob implements GridComputeJob {
+    private static class GridJobExecutionLoadTestJob implements ComputeJob {
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
             return null;

@@ -103,6 +103,6 @@ public interface GridComputeLoadBalancer extends GridMetadataAware {
      * @return Next balanced node.
      * @throws GridException If any error occurred when finding next balanced node.
      */
-    @Nullable public ClusterNode getBalancedNode(GridComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
+    @Nullable public ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
         throws GridException;
 }

@@ -236,8 +236,8 @@ public final class GridSingleExecutionTest {
     /** */
     public static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            Collection<GridComputeJob> jobs = new ArrayList<>(JOB_COUNT);
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+            Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new GridComputeJobAdapter(i) {
@@ -270,8 +270,8 @@ public final class GridSingleExecutionTest {
         @GridTaskSessionResource private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            Collection<GridComputeJob> jobs = new ArrayList<>(JOB_COUNT);
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+            Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new GridComputeJobAdapter(i) {

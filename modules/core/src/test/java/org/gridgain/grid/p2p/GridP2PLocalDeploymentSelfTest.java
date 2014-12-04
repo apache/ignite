@@ -219,7 +219,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         @GridUserResource private transient UserResource rsrc;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
+        @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
             throws GridException {
 
             taskRsrc = rsrc;

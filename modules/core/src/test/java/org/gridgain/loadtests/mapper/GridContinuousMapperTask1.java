@@ -91,7 +91,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Integer arg)
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Integer arg)
         throws GridException {
         maxExecs = arg;
 

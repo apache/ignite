@@ -328,7 +328,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static class SimpleTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new GridComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -345,7 +345,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static class FailedTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new GridComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -362,7 +362,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TimedOutTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new GridComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     try {

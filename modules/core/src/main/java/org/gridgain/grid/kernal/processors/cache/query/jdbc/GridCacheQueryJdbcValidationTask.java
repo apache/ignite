@@ -31,7 +31,7 @@ public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapte
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize,
+    @Override protected Collection<? extends ComputeJob> split(int gridSize,
         @Nullable final String cacheName) throws GridException {
         // Register big data usage.
         GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());

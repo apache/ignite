@@ -106,7 +106,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
      */
     private static final class CancelledTask extends GridComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             return Arrays.asList(new GridCancelledJob());
         }
 

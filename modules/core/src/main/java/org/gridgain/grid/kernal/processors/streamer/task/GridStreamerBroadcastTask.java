@@ -48,9 +48,9 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
         throws GridException {
-        Map<GridComputeJob, ClusterNode> res = U.newHashMap(subgrid.size());
+        Map<ComputeJob, ClusterNode> res = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
             res.put(new StreamerBroadcastJob(clo, streamer), node);

@@ -5,7 +5,7 @@ import org.gridgain.grid.*;
 /**
  * Annotation for handling master node leave during job execution.
  * <p>
- * If {@link GridComputeJob} concrete class implements this interface then in case when master node leaves topology
+ * If {@link ComputeJob} concrete class implements this interface then in case when master node leaves topology
  * during job execution the callback method {@link #onMasterNodeLeft(GridComputeTaskSession)} will be executed.
  * <p>
  * Implementing this interface gives you ability to preserve job execution result or its intermediate state

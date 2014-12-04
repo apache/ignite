@@ -22,7 +22,7 @@ import java.util.*;
  */
 public class GridJobResultImpl implements GridComputeJobResult {
     /** */
-    private final GridComputeJob job;
+    private final ComputeJob job;
 
     /** */
     private final GridJobSiblingImpl sib;
@@ -54,7 +54,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
      * @param node Node from where this result was received.
      * @param sib Sibling associated with this result.
      */
-    public GridJobResultImpl(GridComputeJob job, IgniteUuid jobId, ClusterNode node, GridJobSiblingImpl sib) {
+    public GridJobResultImpl(ComputeJob job, IgniteUuid jobId, ClusterNode node, GridJobSiblingImpl sib) {
         assert jobId != null;
         assert node != null;
         assert sib != null;
@@ -68,7 +68,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridComputeJob getJob() {
+    @Override public ComputeJob getJob() {
         return job;
     }
 

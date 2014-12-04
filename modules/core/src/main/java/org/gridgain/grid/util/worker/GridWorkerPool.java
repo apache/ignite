@@ -70,7 +70,7 @@ public class GridWorkerPool {
         catch (RejectedExecutionException e) {
             workers.remove(w);
 
-            throw new GridComputeExecutionRejectedException("Failed to execute worker due to execution rejection.", e);
+            throw new ComputeExecutionRejectedException("Failed to execute worker due to execution rejection.", e);
         }
         catch (RuntimeException e) {
             workers.remove(w);

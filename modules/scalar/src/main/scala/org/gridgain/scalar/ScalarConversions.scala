@@ -13,7 +13,7 @@ package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
 import org.apache.ignite.cluster.ClusterGroup
-import org.apache.ignite.compute.GridComputeJob
+import org.apache.ignite.compute.ComputeJob
 import org.apache.ignite.lang._
 import org.gridgain.grid.lang._
 import org.gridgain.grid.cache._
@@ -409,7 +409,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    implicit def toJob(f: () => Any): GridComputeJob =
+    implicit def toJob(f: () => Any): ComputeJob =
         new ScalarJob(f)
 
     /**

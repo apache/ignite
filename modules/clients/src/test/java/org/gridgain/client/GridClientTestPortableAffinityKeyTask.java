@@ -28,7 +28,7 @@ public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapte
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> clusterNodes,
+    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> clusterNodes,
         @Nullable final Object arg) throws GridException {
         for (ClusterNode node : clusterNodes) {
             if (node.isLocal())

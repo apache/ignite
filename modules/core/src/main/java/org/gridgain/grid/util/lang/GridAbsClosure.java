@@ -19,7 +19,7 @@ import java.io.*;
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
  * <p>
- * Note that this class implements {@link org.apache.ignite.compute.GridComputeJob} interface for convenience and can be
+ * Note that this class implements {@link org.apache.ignite.compute.ComputeJob} interface for convenience and can be
  * used in {@link org.apache.ignite.compute.GridComputeTask} implementations directly, if needed, as an alternative to
  * {@link org.apache.ignite.compute.GridComputeJobAdapter}.
  * @see GridFunc

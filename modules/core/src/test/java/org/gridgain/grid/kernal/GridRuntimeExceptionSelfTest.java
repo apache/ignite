@@ -215,7 +215,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)
             throws GridException {
             if (log.isInfoEnabled())
                 log.info("Mapping job [job=" + this + ", grid=" + subgrid + ", arg=" + arg + ']');
@@ -225,7 +225,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
             if (failType == FailType.MAP)
                 throw new RuntimeException("Failed out of map method.");
 
-            Map<GridComputeJob, ClusterNode> map = new HashMap<>(2);
+            Map<ComputeJob, ClusterNode> map = new HashMap<>(2);
 
             assert subgrid.size() == 1;
             assert subgrid.get(0).id().equals(nodeId);

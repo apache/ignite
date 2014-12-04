@@ -589,7 +589,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends GridComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, List<Object> args)
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> args)
             throws GridException {
             Collection<GridComputeJobAdapter> jobs = new ArrayList<>(args.size());
 

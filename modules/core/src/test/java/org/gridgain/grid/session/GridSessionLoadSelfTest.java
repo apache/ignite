@@ -127,7 +127,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         private Map<String, Integer> params;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg)
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg)
             throws GridException {
             assert taskSes != null;
             assert arg != null;
