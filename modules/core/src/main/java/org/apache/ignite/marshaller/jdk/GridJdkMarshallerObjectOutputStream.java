@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.jdk;
+package org.apache.ignite.marshaller.jdk;
 
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;

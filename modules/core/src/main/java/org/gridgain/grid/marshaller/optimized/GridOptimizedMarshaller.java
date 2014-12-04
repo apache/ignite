@@ -11,7 +11,6 @@ package org.gridgain.grid.marshaller.optimized;
 
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -25,7 +24,7 @@ import java.util.*;
 import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtils.*;
 
 /**
- * Optimized implementation of {@link GridMarshaller}. Unlike {@link GridJdkMarshaller},
+ * Optimized implementation of {@link GridMarshaller}. Unlike {@link org.apache.ignite.marshaller.jdk.GridJdkMarshaller},
  * which is based on standard {@link ObjectOutputStream}, this marshaller does not
  * enforce that all serialized objects implement {@link Serializable} interface. It is also
  * about 20 times faster as it removes lots of serialization overhead that exists in

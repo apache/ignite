@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.marshaller.jdk.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.testframework.junits.*;

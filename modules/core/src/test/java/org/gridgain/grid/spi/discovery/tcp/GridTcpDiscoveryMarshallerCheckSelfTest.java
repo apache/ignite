@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi.discovery.tcp;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;

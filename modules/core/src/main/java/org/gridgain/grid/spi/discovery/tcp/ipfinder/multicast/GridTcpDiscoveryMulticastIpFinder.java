@@ -11,9 +11,9 @@ package org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast;
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
