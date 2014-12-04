@@ -11,6 +11,7 @@ package org.gridgain.grid.logger.log4j;
 
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.logger.log4j.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import java.io.*;

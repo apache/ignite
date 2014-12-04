@@ -92,7 +92,7 @@
     <!--
         Logger with the same configuration as in default grid instances.
     -->
-    <bean id="router.log" class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
+    <bean id="router.log" class="org.apache.ignite.logger.log4j.GridLog4jLogger">
         <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
     </bean>
 </beans>

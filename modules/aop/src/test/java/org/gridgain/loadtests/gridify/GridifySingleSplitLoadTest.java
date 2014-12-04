@@ -11,9 +11,9 @@ package org.gridgain.loadtests.gridify;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.logger.log4j.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.loadtest.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.*;

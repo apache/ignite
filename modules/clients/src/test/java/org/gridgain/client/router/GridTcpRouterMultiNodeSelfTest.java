@@ -1,10 +1,10 @@
 package org.gridgain.client.router;
 
+import org.apache.ignite.logger.log4j.*;
 import org.gridgain.client.*;
 import org.gridgain.client.integration.*;
 import org.gridgain.client.router.impl.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.log4j.*;
 
 import java.util.*;
 

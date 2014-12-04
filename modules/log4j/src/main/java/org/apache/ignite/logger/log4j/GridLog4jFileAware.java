@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.logger.log4j;
+package org.apache.ignite.logger.log4j;
 
 import org.apache.ignite.lang.*;
 

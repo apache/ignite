@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.logger.log4j;
+package org.apache.ignite.logger.log4j;
 
 import org.apache.ignite.lang.*;
 import org.apache.log4j.*;
@@ -16,16 +16,16 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Log4J {@link DailyRollingFileAppender} with added support for grid node IDs.
+ * Log4J {@link RollingFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jDailyRollingFileAppender extends DailyRollingFileAppender implements GridLog4jFileAware {
+public class GridLog4jRollingFileAppender extends RollingFileAppender implements GridLog4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
     /**
      * Default constructor (does not do anything).
      */
-    public GridLog4jDailyRollingFileAppender() {
+    public GridLog4jRollingFileAppender() {
         init();
     }
 
@@ -34,17 +34,30 @@ public class GridLog4jDailyRollingFileAppender extends DailyRollingFileAppender 
      *
      * @param layout Layout.
      * @param filename File name.
-     * @param datePtrn Date pattern.
      * @throws IOException If failed.
      */
-    public GridLog4jDailyRollingFileAppender(Layout layout, String filename, String datePtrn) throws IOException {
-        super(layout, filename, datePtrn);
+    public GridLog4jRollingFileAppender(Layout layout, String filename) throws IOException {
+        super(layout, filename);
 
         init();
     }
 
     /**
+     * Instantiate a FileAppender with given parameters.
      *
+     * @param layout Layout.
+     * @param filename File name.
+     * @param append Append flag.
+     * @throws IOException If failed.
+     */
+    public GridLog4jRollingFileAppender(Layout layout, String filename, boolean append) throws IOException {
+        super(layout, filename, append);
+
+        init();
+    }
+
+    /**
+     * Initializes appender.
      */
     private void init() {
         GridLog4jLogger.addAppender(this);

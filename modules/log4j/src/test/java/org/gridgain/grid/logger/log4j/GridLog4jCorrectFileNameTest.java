@@ -12,6 +12,7 @@ package org.gridgain.grid.logger.log4j;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.logger.log4j.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.gridgain.grid.util.typedef.*;
