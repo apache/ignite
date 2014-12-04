@@ -611,7 +611,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testScheduler() throws Exception {
-        GridScheduler scheduler = grid().scheduler();
+        IgniteScheduler scheduler = grid().scheduler();
 
         IgniteFuture<?> fut = scheduler.runLocal(new Runnable() {
             @Override public void run() {
@@ -630,8 +630,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridSchedulerImpl.class);
-        assert outBean.getObjectField().getClass().equals(GridSchedulerImpl.class);
+        assert inBean.getObjectField().getClass().equals(IgniteSchedulerImpl.class);
+        assert outBean.getObjectField().getClass().equals(IgniteSchedulerImpl.class);
 
         assert inBean != outBean;
         assert inBean.equals(outBean);

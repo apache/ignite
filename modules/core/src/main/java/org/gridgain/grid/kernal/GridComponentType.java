@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.scheduler.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -75,7 +74,7 @@ public enum GridComponentType {
         "gridgain-jta"
     ),
 
-    /** Cron-based scheduling, see {@link GridScheduler}. */
+    /** Cron-based scheduling, see {@link org.gridgain.grid.scheduler.IgniteScheduler}. */
     SCHEDULE(
         "org.gridgain.grid.kernal.processors.schedule.GridNoopScheduleProcessor",
         "org.gridgain.grid.kernal.processors.schedule.GridScheduleProcessor",

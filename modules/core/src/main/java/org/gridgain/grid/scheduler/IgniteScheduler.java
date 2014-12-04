@@ -36,7 +36,7 @@ import java.util.concurrent.*;
  * );
  * </pre>
  */
-public interface GridScheduler {
+public interface IgniteScheduler {
     /**
      * Executes given closure on internal system thread pool asynchronously.
      * <p>

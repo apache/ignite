@@ -17,9 +17,9 @@ import java.io.*;
 import java.util.concurrent.*;
 
 /**
- * {@link GridScheduler} implementation.
+ * {@link org.gridgain.grid.scheduler.IgniteScheduler} implementation.
  */
-public class GridSchedulerImpl implements GridScheduler, Externalizable {
+public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -29,14 +29,14 @@ public class GridSchedulerImpl implements GridScheduler, Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridSchedulerImpl() {
+    public IgniteSchedulerImpl() {
         // No-op.
     }
 
     /**
      * @param ctx Kernal context.
      */
-    public GridSchedulerImpl(GridKernalContext ctx) {
+    public IgniteSchedulerImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 

@@ -233,7 +233,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridScheduler scheduler() {
+    @Override public IgniteScheduler scheduler() {
         assert g != null;
 
         return g.scheduler();

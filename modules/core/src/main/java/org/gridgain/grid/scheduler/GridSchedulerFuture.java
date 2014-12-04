@@ -16,8 +16,8 @@ import java.util.concurrent.*;
 
 /**
  * Future for cron-based scheduled execution. This future is returned
- * when calling {@link GridScheduler#scheduleLocal(Callable, String)} or
- * {@link GridScheduler#scheduleLocal(Runnable, String)} methods.
+ * when calling {@link IgniteScheduler#scheduleLocal(Callable, String)} or
+ * {@link IgniteScheduler#scheduleLocal(Runnable, String)} methods.
  */
 public interface GridSchedulerFuture<R> extends IgniteFuture<R> {
     /**

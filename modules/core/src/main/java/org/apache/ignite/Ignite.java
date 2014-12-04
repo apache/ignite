@@ -45,7 +45,7 @@ import java.util.concurrent.*;
  * <li>{@link GridDr} - functionality for WAN-based Data Center Replication of in-memory cache.</li>
  * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
- * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
+ * <li>{@link org.gridgain.grid.scheduler.IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
@@ -185,7 +185,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Instance of scheduler.
      */
-    public GridScheduler scheduler();
+    public IgniteScheduler scheduler();
 
     /**
      * Gets an instance of {@code GridSecurity} interface. Available in enterprise edition only.

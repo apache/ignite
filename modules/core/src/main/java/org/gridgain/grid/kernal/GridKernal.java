@@ -201,7 +201,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** Scheduler. */
     @GridToStringExclude
-    private GridScheduler scheduler;
+    private IgniteScheduler scheduler;
 
     /** Grid security instance. */
     @GridToStringExclude
@@ -669,7 +669,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             ctx.product(new GridProductImpl(ctx, verChecker));
 
-            scheduler = new GridSchedulerImpl(ctx);
+            scheduler = new IgniteSchedulerImpl(ctx);
 
             startProcessor(ctx, rsrcProc, attrs);
 
@@ -3170,7 +3170,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public GridScheduler scheduler() {
+    @Override public IgniteScheduler scheduler() {
         return scheduler;
     }
 
