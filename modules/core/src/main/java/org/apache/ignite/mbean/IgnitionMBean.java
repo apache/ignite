@@ -37,7 +37,7 @@ public interface IgnitionMBean {
     @IgniteMBeanParametersNames(
         "name"
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         "Name of grid instance."
     )
     public String getState(String name);
@@ -58,7 +58,7 @@ public interface IgnitionMBean {
     @IgniteMBeanParametersNames(
         "cancel"
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         "If true then all jobs currently executing on default grid will be cancelled."
     )
     public boolean stop(boolean cancel);
@@ -89,7 +89,7 @@ public interface IgnitionMBean {
             "name",
             "cancel"
         })
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         {
             "Grid instance name to stop.",
             "Whether or not running jobs should be cancelled."
@@ -116,7 +116,7 @@ public interface IgnitionMBean {
     @IgniteMBeanParametersNames(
         "cancel"
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         "If true then all jobs currently executing on all grids will be cancelled."
     )
     public void stopAll(boolean cancel);
@@ -136,7 +136,7 @@ public interface IgnitionMBean {
             "cancel",
             "wait"
         })
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         {
             "If true then all jobs currently executing on default grid will be cancelled.",
             "If true then method will wait for all task being executed until they finish their execution."

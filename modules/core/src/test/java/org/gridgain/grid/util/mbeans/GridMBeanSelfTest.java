@@ -155,7 +155,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          */
         @IgniteMBeanDescription("MBeanSuperOperation.")
         @IgniteMBeanParametersNames({"someData"})
-        @GridMBeanParametersDescriptions({"MBeanOperationParameter1."})
+        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1."})
         public String doSomethingSuper(String someData);
     }
 
@@ -210,7 +210,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          */
         @IgniteMBeanDescription("MBeanOperation.")
         @IgniteMBeanParametersNames({"ignored", "someData"})
-        @GridMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
+        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
         public String doSomething(boolean ignored, String someData);
     }
 
@@ -227,7 +227,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          */
         @IgniteMBeanDescription("MBeanOperation.")
         @IgniteMBeanParametersNames({"ignored"})
-        @GridMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
+        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
         public String doSomethingBad(boolean ignored, String someData);
     }
 
@@ -274,7 +274,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          */
         @IgniteMBeanDescription("MBeanOperation.")
         @IgniteMBeanParametersNames({"ignored", "someData"})
-        @GridMBeanParametersDescriptions({"MBeanOperationParameter1."})
+        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1."})
         public String doSomethingBadAgain(boolean ignored, String someData);
     }
 

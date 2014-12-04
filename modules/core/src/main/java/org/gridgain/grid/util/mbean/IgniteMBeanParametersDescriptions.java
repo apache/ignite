@@ -17,7 +17,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface GridMBeanParametersDescriptions {
+public @interface IgniteMBeanParametersDescriptions {
     /**
      *
      * Array of descriptions for parameters.

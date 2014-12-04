@@ -166,7 +166,7 @@ public interface GridKernalMBean {
     @IgniteMBeanParametersNames(
         "key"
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         "Checkpoint key to remove."
     )
     public boolean removeCheckpoint(String key);
@@ -183,7 +183,7 @@ public interface GridKernalMBean {
     @IgniteMBeanParametersNames(
         "nodeId"
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         "String presentation of node ID. See java.util.UUID class for details."
     )
     public boolean pingNode(String nodeId);
@@ -206,7 +206,7 @@ public interface GridKernalMBean {
     @IgniteMBeanParametersNames(
         "taskName"
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         "Name of the task to undeploy."
     )
     public void undeployTaskFromGrid(String taskName) throws JMException;
@@ -228,7 +228,7 @@ public interface GridKernalMBean {
             "arg"
         }
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         {
             "Name of the task to execute.",
             "Single task execution argument (can be null)."
@@ -247,7 +247,7 @@ public interface GridKernalMBean {
     @IgniteMBeanParametersNames(
         "host"
     )
-    @GridMBeanParametersDescriptions(
+    @IgniteMBeanParametersDescriptions(
         "Host name or IP address of the node to ping."
     )
     public boolean pingNodeByAddress(String host);
