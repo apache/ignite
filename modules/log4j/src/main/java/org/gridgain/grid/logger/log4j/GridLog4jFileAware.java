@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.logger.log4j;
 
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Interface for those loggers and appenders that evaluate their file paths lazily.

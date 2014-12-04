@@ -9,11 +9,11 @@
 
 package org.gridgain.testframework.junits.logger;
 
+import org.apache.ignite.lang.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.apache.log4j.xml.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;

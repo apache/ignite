@@ -10,9 +10,9 @@
 package org.gridgain.examples.streaming;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.index.*;
 import org.jetbrains.annotations.*;
@@ -161,7 +161,7 @@ public class StreamingPopularNumbersExample {
                     Collection<GridStreamerIndexEntry<Integer, Integer, Long>> col = streamer.context().reduce(
                         // This closure will execute on remote nodes.
                         new IgniteClosure<GridStreamerContext,
-                                                    Collection<GridStreamerIndexEntry<Integer, Integer, Long>>>() {
+                                                                            Collection<GridStreamerIndexEntry<Integer, Integer, Long>>>() {
                             @Override public Collection<GridStreamerIndexEntry<Integer, Integer, Long>> apply(
                                 GridStreamerContext ctx) {
                                 GridStreamerIndex<Integer, Integer, Long> view = ctx.<Integer>window().index();

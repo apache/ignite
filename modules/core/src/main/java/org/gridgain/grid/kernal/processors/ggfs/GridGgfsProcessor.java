@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -20,7 +21,6 @@ import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.license.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.*;

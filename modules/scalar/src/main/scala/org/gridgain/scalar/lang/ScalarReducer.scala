@@ -11,7 +11,8 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.IgniteReducer
+import org.apache.ignite.lang.IgniteReducer
+
 import collection._
 
 /**

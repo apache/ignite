@@ -587,7 +587,7 @@ public class GridFunc {
      * Creates closure that will reflectively call a method with the given name on
      * closure's argument and return result of that call.
      * <p>
-     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteClosure} which is {@link C1}.
+     * Method reflects the typedef for {@link org.apache.ignite.lang.IgniteClosure} which is {@link C1}.
      *
      * @param mtdName Method name.
      * @param args Optional set of arguments for the method call.
@@ -625,7 +625,7 @@ public class GridFunc {
      * Creates in closure that will reflectively call a method with the given name on
      * closure's argument.
      * <p>
-     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteClosure} which is {@link C1}.
+     * Method reflects the typedef for {@link org.apache.ignite.lang.IgniteClosure} which is {@link C1}.
      *
      * @param mtdName Method name.
      * @param args Optional set of arguments for the method call.
@@ -1223,10 +1223,10 @@ public class GridFunc {
     }
 
     /**
-     * Gets reducer which always returns {@code true} from {@link org.gridgain.grid.lang.IgniteReducer#collect(Object)}
-     * method and passed in {@code element} from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
+     * Gets reducer which always returns {@code true} from {@link org.apache.ignite.lang.IgniteReducer#collect(Object)}
+     * method and passed in {@code element} from {@link org.apache.ignite.lang.IgniteReducer#reduce()} method.
      *
-     * @param elem Element to return from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
+     * @param elem Element to return from {@link org.apache.ignite.lang.IgniteReducer#reduce()} method.
      * @param <T> Reducer element type.
      * @param <R> Return element type.
      * @return Passed in element.
@@ -1244,10 +1244,10 @@ public class GridFunc {
     }
 
     /**
-     * Gets reducer which always returns {@code true} from {@link org.gridgain.grid.lang.IgniteReducer#collect(Object)}
-     * method and passed in {@code element} from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
+     * Gets reducer which always returns {@code true} from {@link org.apache.ignite.lang.IgniteReducer#collect(Object)}
+     * method and passed in {@code element} from {@link org.apache.ignite.lang.IgniteReducer#reduce()} method.
      *
-     * @param elem Element to return from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
+     * @param elem Element to return from {@link org.apache.ignite.lang.IgniteReducer#reduce()} method.
      * @param <T> Reducer element type.
      * @return Passed in element.
      */

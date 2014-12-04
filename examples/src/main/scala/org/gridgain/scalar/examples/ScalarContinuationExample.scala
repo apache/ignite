@@ -10,13 +10,13 @@
  */
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.lang.IgniteClosure
 import org.gridgain.scalar._
 import scalar._
 import java.math._
 import org.gridgain.grid._
 import resources._
 import org.jetbrains.annotations.Nullable
-import org.gridgain.grid.lang.IgniteClosure
 import java.util
 import org.gridgain.grid.compute._
 

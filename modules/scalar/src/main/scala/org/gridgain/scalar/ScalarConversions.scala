@@ -13,7 +13,7 @@ package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
 import org.apache.ignite.cluster.ClusterGroup
-import org.apache.ignite.lang.{IgniteBiTuple, IgniteBiPredicate, IgniteBiInClosure, IgniteBiClosure}
+import org.apache.ignite.lang._
 import org.gridgain.grid.lang._
 import org.gridgain.grid.cache._
 import org.gridgain.grid._

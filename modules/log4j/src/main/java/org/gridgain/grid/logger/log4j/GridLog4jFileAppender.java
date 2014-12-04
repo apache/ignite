@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.logger.log4j;
 
+import org.apache.ignite.lang.*;
 import org.apache.log4j.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

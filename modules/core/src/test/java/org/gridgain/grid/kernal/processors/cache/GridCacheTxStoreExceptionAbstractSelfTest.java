@@ -17,7 +17,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 

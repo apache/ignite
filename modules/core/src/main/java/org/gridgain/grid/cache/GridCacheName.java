@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 /**
  * Allows to specify cache name from grid computations. It is used to provide cache name
  * for affinity routing of grid computations, such as {@link GridComputeJob}, {@link Runnable},
- * {@link Callable}, or {@link org.gridgain.grid.lang.IgniteClosure}. It should be used only in conjunction with
+ * {@link Callable}, or {@link org.apache.ignite.lang.IgniteClosure}. It should be used only in conjunction with
  * {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped} annotation, and should be attached to a method or field
  * that provides cache name for the computation. Only one annotation per class
  * is allowed. In the absence of this annotation, the default no-name cache

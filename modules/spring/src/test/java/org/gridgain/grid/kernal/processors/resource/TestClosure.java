@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.junit.*;

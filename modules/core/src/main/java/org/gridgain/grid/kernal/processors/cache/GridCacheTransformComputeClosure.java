@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.GridCacheProjection;
-import org.gridgain.grid.lang.*;
 
 import java.io.*;
 
@@ -42,7 +41,7 @@ public final class GridCacheTransformComputeClosure<V, R> implements IgniteClosu
     }
 
     /**
-     * @return Return value for {@link GridCacheProjection#transformAndCompute(Object, org.gridgain.grid.lang.IgniteClosure)}
+     * @return Return value for {@link GridCacheProjection#transformAndCompute(Object, org.apache.ignite.lang.IgniteClosure)}
      */
     public R returnValue() {
         return retVal;
