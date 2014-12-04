@@ -417,7 +417,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
         @GridTaskSessionResource private GridComputeTaskSession taskSes;
 
         /** */
-        @GridJobContextResource private GridComputeJobContext jobCtx;
+        @GridJobContextResource private ComputeJobContext jobCtx;
 
         /** Logger. */
         @GridLoggerResource private GridLogger log;

@@ -16,13 +16,13 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 /**
  * Simple injector which wraps GridComputeJobContext resource object.
  */
-public class GridResourceJobContextInjector extends GridResourceBasicInjector<GridComputeJobContext> {
+public class GridResourceJobContextInjector extends GridResourceBasicInjector<ComputeJobContext> {
     /**
      * Creates GridComputeJobContext injector.
      *
      * @param rsrc GridComputeJobContext resource to inject.
      */
-    GridResourceJobContextInjector(GridComputeJobContext rsrc) {
+    GridResourceJobContextInjector(ComputeJobContext rsrc) {
         super(rsrc);
     }
 

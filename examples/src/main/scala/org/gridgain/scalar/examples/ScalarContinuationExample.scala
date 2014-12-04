@@ -10,7 +10,7 @@
  */
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.compute.GridComputeJobContext
+import org.apache.ignite.compute.ComputeJobContext
 import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
 import org.gridgain.scalar._
 import scalar._
@@ -79,7 +79,7 @@ class FibonacciClosure (
 
     // Auto-inject job context.
     @GridJobContextResource
-    private val jobCtx: GridComputeJobContext = null
+    private val jobCtx: ComputeJobContext = null
 
     @Nullable override def apply(num: Long): BigInteger = {
         if (fut1 == null || fut2 == null) {

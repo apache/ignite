@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * {@link org.apache.ignite.lang.IgniteClosure}, {@link Callable}, or {@link Runnable} instance passed into
  * any of the {@link org.apache.ignite.IgniteCompute} methods can also throw this exception to force failover.
  */
-public class GridComputeJobFailoverException extends GridRuntimeException {
+public class ComputeJobFailoverException extends GridRuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -29,7 +29,7 @@ public class GridComputeJobFailoverException extends GridRuntimeException {
      *
      * @param msg Error message.
      */
-    public GridComputeJobFailoverException(String msg) {
+    public ComputeJobFailoverException(String msg) {
         super(msg);
     }
 
@@ -39,7 +39,7 @@ public class GridComputeJobFailoverException extends GridRuntimeException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridComputeJobFailoverException(Throwable cause) {
+    public ComputeJobFailoverException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -50,7 +50,7 @@ public class GridComputeJobFailoverException extends GridRuntimeException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridComputeJobFailoverException(String msg, @Nullable Throwable cause) {
+    public ComputeJobFailoverException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

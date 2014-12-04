@@ -43,7 +43,7 @@ import java.util.*;
  * <li>
  *      Priority attribute job context key (see {@link #getJobPriorityAttributeKey()}).
  *      It is used for specifying job priority.
- *      See {@link org.apache.ignite.compute.GridComputeJobContext} for more information about job context.
+ *      See {@link org.apache.ignite.compute.ComputeJobContext} for more information about job context.
  * </li>
  * <li>Default priority value (see {@link #getDefaultPriority()}). It is used when no priority is set.</li>
  * <li>
@@ -285,7 +285,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
 
     /**
      * Sets job priority attribute key. This key will be used to look up job
-     * priorities from job context (see {@link org.apache.ignite.compute.GridComputeJobContext#getAttribute(Object)}).
+     * priorities from job context (see {@link org.apache.ignite.compute.ComputeJobContext#getAttribute(Object)}).
      * <p>
      * If not provided, default value is {@code {@link #DFLT_JOB_PRIORITY_ATTRIBUTE_KEY}}.
      *
@@ -500,7 +500,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
 
         Integer p = null;
 
-        GridComputeJobContext jctx = ctx.getJobContext();
+        ComputeJobContext jctx = ctx.getJobContext();
 
         try {
             p = (Integer)jctx.getAttribute(jobPriAttrKey);

@@ -31,7 +31,7 @@ public class GridStealingLoadTestJob extends ComputeJobAdapter {
 
     /** */
     @GridJobContextResource
-    private GridComputeJobContext ctx;
+    private ComputeJobContext ctx;
 
     /** {@inheritDoc} */
     @Override public Serializable execute() throws GridException {

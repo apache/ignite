@@ -34,7 +34,7 @@ public interface GridCollisionJobContext {
      *
      * @return Job context.
      */
-    public GridComputeJobContext getJobContext();
+    public ComputeJobContext getJobContext();
 
     /**
      * Job for this context.

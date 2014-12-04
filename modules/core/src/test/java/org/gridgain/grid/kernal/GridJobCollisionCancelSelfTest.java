@@ -161,7 +161,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /** */
         @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})

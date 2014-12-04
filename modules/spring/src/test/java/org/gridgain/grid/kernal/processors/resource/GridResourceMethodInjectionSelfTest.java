@@ -230,7 +230,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private GridComputeLoadBalancer balancer;
 
         /** */
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /** */
         private UserSpringBean springBean;
@@ -370,7 +370,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * @param jobCtx Job context.
          */
         @GridJobContextResource
-        public void setJobContext(GridComputeJobContext jobCtx) {
+        public void setJobContext(ComputeJobContext jobCtx) {
             this.jobCtx = jobCtx;
         }
 
@@ -508,7 +508,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
 
                     /** */
                     @GridJobContextResource
-                    private GridComputeJobContext jobCtx;
+                    private ComputeJobContext jobCtx;
 
                     /**
                      * @param springBean2 Bean provided from Spring context.

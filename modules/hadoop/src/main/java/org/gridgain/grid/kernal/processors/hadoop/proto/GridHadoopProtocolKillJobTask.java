@@ -23,7 +23,7 @@ public class GridHadoopProtocolKillJobTask extends GridHadoopProtocolTaskAdapter
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public Boolean run(GridComputeJobContext jobCtx, GridHadoop hadoop,
+    @Override public Boolean run(ComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);

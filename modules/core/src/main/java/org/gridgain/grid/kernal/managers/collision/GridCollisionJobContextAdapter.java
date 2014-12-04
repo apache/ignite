@@ -36,7 +36,7 @@ public abstract class GridCollisionJobContextAdapter implements GridCollisionJob
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobContext getJobContext() {
+    @Override public ComputeJobContext getJobContext() {
         return jobWorker.getJobContext();
     }
 

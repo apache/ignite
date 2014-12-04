@@ -59,7 +59,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
 
         @SuppressWarnings("UnusedDeclaration")
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /** Argument. */
         private final GridHadoopProtocolTaskArguments args;
@@ -93,6 +93,6 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
      * @return Job result.
      * @throws GridException If failed.
      */
-    public abstract R run(GridComputeJobContext jobCtx, GridHadoop hadoop, GridHadoopProtocolTaskArguments args)
+    public abstract R run(ComputeJobContext jobCtx, GridHadoop hadoop, GridHadoopProtocolTaskArguments args)
         throws GridException;
 }

@@ -114,7 +114,7 @@ public class ComputeFailoverExample {
                         System.out.println();
                         System.out.println(">>> Job will be failed over to another node.");
 
-                        throw new GridComputeJobFailoverException("Expected example job exception.");
+                        throw new ComputeJobFailoverException("Expected example job exception.");
                     }
                 }
 

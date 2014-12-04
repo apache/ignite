@@ -200,7 +200,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
 
                     /** */
                     @GridJobContextResource
-                    private GridComputeJobContext jobCtx;
+                    private ComputeJobContext jobCtx;
 
                     /** {@inheritDoc} */
                     @SuppressWarnings({"BusyWait"})

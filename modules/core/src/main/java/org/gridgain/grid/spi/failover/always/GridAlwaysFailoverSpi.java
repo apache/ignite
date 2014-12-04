@@ -81,7 +81,7 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
     /**
      * Name of job context attribute containing all nodes a job failed on.
      *
-     * @see org.apache.ignite.compute.GridComputeJobContext
+     * @see org.apache.ignite.compute.ComputeJobContext
      */
     public static final String FAILED_NODE_LIST_ATTR = "gg:failover:failednodelist";
 

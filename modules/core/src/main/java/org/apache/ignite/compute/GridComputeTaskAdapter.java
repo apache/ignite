@@ -87,7 +87,7 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
             if (e instanceof ComputeExecutionRejectedException ||
                 e instanceof GridTopologyException ||
                 // Failover exception is always wrapped.
-                e.hasCause(GridComputeJobFailoverException.class))
+                e.hasCause(ComputeJobFailoverException.class))
                 return GridComputeJobResultPolicy.FAILOVER;
 
             throw new GridException("Remote job threw user exception (override or implement GridComputeTask.result(..) " +

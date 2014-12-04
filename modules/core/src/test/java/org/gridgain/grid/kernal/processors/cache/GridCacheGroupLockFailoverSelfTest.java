@@ -463,7 +463,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         private final boolean master;
 
         /** */
-        private Set<GridComputeJobContext> failedOverJobs = new HashSet<>();
+        private Set<ComputeJobContext> failedOverJobs = new HashSet<>();
 
         /** Node filter. */
         private IgnitePredicate<? super ClusterNode>[] filter;
@@ -520,7 +520,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         /**
          * @return Job contexts for failed over jobs.
          */
-        public Set<GridComputeJobContext> getFailedOverJobs() {
+        public Set<ComputeJobContext> getFailedOverJobs() {
             return failedOverJobs;
         }
     }

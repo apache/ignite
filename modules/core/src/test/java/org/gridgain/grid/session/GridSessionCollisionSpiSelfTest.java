@@ -72,7 +72,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
 
                     /** */
                     @GridJobContextResource
-                    private GridComputeJobContext jobCtx;
+                    private ComputeJobContext jobCtx;
 
                     /** */
                     @GridLoggerResource

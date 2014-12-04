@@ -25,8 +25,8 @@ import java.util.*;
  * This example demonstrates how to use continuation feature of GridGain by
  * performing the distributed recursive calculation of {@code 'Fibonacci'}
  * numbers on the grid. Continuations
- * functionality is exposed via {@link org.apache.ignite.compute.GridComputeJobContext#holdcc()} and
- * {@link org.apache.ignite.compute.GridComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
+ * functionality is exposed via {@link org.apache.ignite.compute.ComputeJobContext#holdcc()} and
+ * {@link org.apache.ignite.compute.ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
@@ -86,7 +86,7 @@ public final class ComputeFibonacciContinuationExample {
 
         /** Auto-inject job context. */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /** Auto-inject grid instance. */
         @GridInstanceResource

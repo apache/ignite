@@ -108,7 +108,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
@@ -142,7 +142,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
                     /** */
                     @GridJobContextResource
-                    private GridComputeJobContext jobCtx;
+                    private ComputeJobContext jobCtx;
 
                     /** */
                     @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)

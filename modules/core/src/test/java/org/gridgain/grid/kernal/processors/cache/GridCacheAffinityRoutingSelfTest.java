@@ -280,7 +280,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /**
          * @param affKey Affinity key.
@@ -328,7 +328,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /**
          * @param affKey Affinity key.
@@ -388,7 +388,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /**
          * @param affKey Affinity key.
@@ -444,7 +444,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /**
          * @param affKey Affinity key.
@@ -623,7 +623,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /**
          * @param affKey Affinity key.
@@ -659,7 +659,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext jobCtx;
+        private ComputeJobContext jobCtx;
 
         /**
          * @param affKey Affinity key.

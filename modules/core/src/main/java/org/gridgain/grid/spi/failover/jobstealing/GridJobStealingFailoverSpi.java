@@ -33,7 +33,7 @@ import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisi
  * request to <b>steal</b> it.
  * <p>
  * {@code GridJobStealingFailoverSpi} knows where to route a job based on the
- * {@link GridJobStealingCollisionSpi#THIEF_NODE_ATTR} job context attribute (see {@link org.apache.ignite.compute.GridComputeJobContext}).
+ * {@link GridJobStealingCollisionSpi#THIEF_NODE_ATTR} job context attribute (see {@link org.apache.ignite.compute.ComputeJobContext}).
  * Prior to rejecting a job,  {@link GridJobStealingCollisionSpi} will populate this
  * attribute with the ID of the node that wants to <b>steal</b> this job.
  * Then {@code GridJobStealingFailoverSpi} will read the value of this attribute and
@@ -91,7 +91,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
      * Name of job context attribute containing all nodes a job failed on. Note
      * that this list does not include nodes that a job was stolen from.
      *
-     * @see org.apache.ignite.compute.GridComputeJobContext
+     * @see org.apache.ignite.compute.ComputeJobContext
      */
     static final String FAILED_NODE_LIST_ATTR = "gg:failover:failednodelist";
 
@@ -100,7 +100,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
      * This count is incremented every time the same job gets failed over to
      * another node for execution if it was not successfully stolen.
      *
-     * @see org.apache.ignite.compute.GridComputeJobContext
+     * @see org.apache.ignite.compute.ComputeJobContext
      */
     static final String FAILOVER_ATTEMPT_COUNT_ATTR = "gg:failover:attemptcount";
 

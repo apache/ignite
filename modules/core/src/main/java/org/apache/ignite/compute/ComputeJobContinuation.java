@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 /**
  * Defines continuation support for grid job context.
  */
-public interface GridComputeJobContinuation {
+public interface ComputeJobContinuation {
     /**
      * Checks if job execution has been temporarily held (suspended).
      * <p>

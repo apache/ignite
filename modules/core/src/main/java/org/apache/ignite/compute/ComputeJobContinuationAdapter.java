@@ -65,19 +65,19 @@ import org.jetbrains.annotations.*;
  * }
  * </pre>
  */
-public abstract class GridComputeJobContinuationAdapter extends ComputeJobAdapter implements
-    GridComputeJobContinuation {
+public abstract class ComputeJobContinuationAdapter extends ComputeJobAdapter implements
+    ComputeJobContinuation {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Job context. */
     @GridJobContextResource
-    private transient GridComputeJobContext jobCtx;
+    private transient ComputeJobContext jobCtx;
 
     /**
      * No-arg constructor.
      */
-    protected GridComputeJobContinuationAdapter() {
+    protected ComputeJobContinuationAdapter() {
         /* No-op. */
     }
 
@@ -87,7 +87,7 @@ public abstract class GridComputeJobContinuationAdapter extends ComputeJobAdapte
      *
      * @param arg Job argument.
      */
-    protected GridComputeJobContinuationAdapter(@Nullable Object arg) {
+    protected ComputeJobContinuationAdapter(@Nullable Object arg) {
         super(arg);
     }
 
@@ -96,7 +96,7 @@ public abstract class GridComputeJobContinuationAdapter extends ComputeJobAdapte
      *
      * @param args Optional job arguments.
      */
-    protected GridComputeJobContinuationAdapter(@Nullable Object... args) {
+    protected ComputeJobContinuationAdapter(@Nullable Object... args) {
         super(args);
     }
 

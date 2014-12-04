@@ -54,7 +54,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
                     @GridJobContextResource
-                    private GridComputeJobContext jobCtx;
+                    private ComputeJobContext jobCtx;
 
                     /** */
                     @GridLocalNodeIdResource
@@ -91,7 +91,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
             for (GridComputeJobResult res : results) {
-                GridComputeJobContext jobCtx = res.getJobContext();
+                ComputeJobContext jobCtx = res.getJobContext();
 
                 assert jobCtx.getAttribute("nodeId").equals(res.getNode().id());
                 assert jobCtx.getAttributes().get("nodeId").equals(res.getNode().id());

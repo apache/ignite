@@ -832,7 +832,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             U.error(log, "Failed to obtain remote job result policy for result from " +
                                 "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
                     }
-                    else if (X.hasCause(e, GridComputeJobFailoverException.class)) {
+                    else if (X.hasCause(e, ComputeJobFailoverException.class)) {
                         GridException e0 = new GridException(" Job was not failed over because " +
                             "GridComputeJobResultPolicy.FAILOVER was not returned from " +
                             "GridTask.result(...) method for job result with GridComputeJobFailoverException.", e);
@@ -857,7 +857,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             U.error(log, "Failed to obtain remote job result policy for result from " +
                                 "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
                     }
-                    else if (X.hasCause(e, GridComputeJobFailoverException.class)) {
+                    else if (X.hasCause(e, ComputeJobFailoverException.class)) {
                         GridException e0 = new GridException(" Job was not failed over because " +
                             "GridComputeJobResultPolicy.FAILOVER was not returned from " +
                             "GridTask.result(...) method for job result with GridComputeJobFailoverException.", e);

@@ -52,7 +52,7 @@ class GridMarshallerResourceBean implements Serializable {
     private ApplicationContext appCtx;
 
     /** Job context. */
-    private GridComputeJobContext jobCtx;
+    private ComputeJobContext jobCtx;
 
     /**
      * Initialization.

@@ -65,7 +65,7 @@ public interface GridCollisionSpi extends GridSpi {
      * GridGain uses this listener to enable job stealing from overloaded to underloaded nodes.
      * However, you can also utilize it, for instance, to provide time based collision
      * resolution. To achieve this, you most likely would mark some job by setting a certain
-     * attribute in job context (see {@link org.apache.ignite.compute.GridComputeJobContext}) for a job that requires
+     * attribute in job context (see {@link org.apache.ignite.compute.ComputeJobContext}) for a job that requires
      * time-based scheduling and set some timer in your SPI implementation that would wake up
      * after a certain period of time. Once this period is reached, you would notify this
      * listener that a collision resolution should take place. Then inside of your collision

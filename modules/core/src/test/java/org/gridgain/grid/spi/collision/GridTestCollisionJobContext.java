@@ -30,7 +30,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
     private int idx = -1;
 
     /** Job context. */
-    private GridComputeJobContext ctx;
+    private ComputeJobContext ctx;
 
     /** Kob. */
     private GridTestJob job;
@@ -99,14 +99,14 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobContext getJobContext() {
+    @Override public ComputeJobContext getJobContext() {
         return ctx;
     }
 
     /**
      * @param ctx Job context.
      */
-    public void setJobContext(GridComputeJobContext ctx) {
+    public void setJobContext(ComputeJobContext ctx) {
         this.ctx = ctx;
     }
 

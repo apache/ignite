@@ -28,7 +28,7 @@ public interface GridComputeJobResult {
      *
      * @return Job context.
      */
-    public GridComputeJobContext getJobContext();
+    public ComputeJobContext getJobContext();
 
     /**
      * Gets data returned by remote job if it didn't fail. This data is the

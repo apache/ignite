@@ -202,7 +202,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
      * This count is incremented every time the same job gets stolen for
      * execution.
      *
-     * @see org.apache.ignite.compute.GridComputeJobContext
+     * @see org.apache.ignite.compute.ComputeJobContext
      */
     public static final String STEALING_ATTEMPT_COUNT_ATTR = "gridgain.stealing.attempt.count";
 
@@ -822,7 +822,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
      * @param ctx Job context.
      * @return Job priority.
      */
-    private int getJobPriority(GridComputeJobContext ctx) {
+    private int getJobPriority(ComputeJobContext ctx) {
         assert ctx != null;
 
         Integer p;

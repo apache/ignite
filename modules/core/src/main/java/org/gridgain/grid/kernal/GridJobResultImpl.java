@@ -73,7 +73,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobContext getJobContext() {
+    @Override public ComputeJobContext getJobContext() {
         return jobCtx;
     }
 

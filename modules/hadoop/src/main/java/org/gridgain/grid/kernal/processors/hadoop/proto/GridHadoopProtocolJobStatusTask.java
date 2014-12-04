@@ -31,7 +31,7 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
     private static final String ATTR_HELD = "held";
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus run(final GridComputeJobContext jobCtx, GridHadoop hadoop,
+    @Override public GridHadoopJobStatus run(final ComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);

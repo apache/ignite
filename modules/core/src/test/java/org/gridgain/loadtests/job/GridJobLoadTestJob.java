@@ -47,7 +47,7 @@ public class GridJobLoadTestJob implements ComputeJob {
 
     /** Job context. */
     @GridJobContextResource
-    private GridComputeJobContext cntx;
+    private ComputeJobContext cntx;
 
     /** Task session. */
     @GridTaskSessionResource

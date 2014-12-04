@@ -21,7 +21,7 @@ public class GridHadoopProtocolNextTaskIdTask extends GridHadoopProtocolTaskAdap
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJobId run(GridComputeJobContext jobCtx, GridHadoop hadoop,
+    @Override public GridHadoopJobId run(ComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {
         return hadoop.nextJobId();
     }

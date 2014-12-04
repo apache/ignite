@@ -25,7 +25,7 @@ public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapt
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus run(GridComputeJobContext jobCtx, GridHadoop hadoop,
+    @Override public GridHadoopJobStatus run(ComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);

@@ -76,7 +76,7 @@ public final class GridMarshallerExclusions {
         excl.add(GridLogger.class);
         excl.add(GridComputeTaskSession.class);
         excl.add(GridComputeLoadBalancer.class);
-        excl.add(GridComputeJobContext.class);
+        excl.add(ComputeJobContext.class);
         excl.add(GridMarshaller.class);
         excl.add(GridComponent.class);
         excl.add(GridComputeTaskContinuousMapper.class);

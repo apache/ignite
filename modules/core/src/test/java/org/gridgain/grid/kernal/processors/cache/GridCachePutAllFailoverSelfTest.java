@@ -632,7 +632,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         private static final String FAILOVER_NUMBER_ATTR = "failover:number:attr";
 
         /** */
-        private Set<GridComputeJobContext> failedOverJobs = new HashSet<>();
+        private Set<ComputeJobContext> failedOverJobs = new HashSet<>();
 
         /** Node filter. */
         private IgnitePredicate<? super ClusterNode>[] filter;
@@ -687,7 +687,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         /**
          * @return Job contexts for failed over jobs.
          */
-        public Set<GridComputeJobContext> getFailedOverJobs() {
+        public Set<ComputeJobContext> getFailedOverJobs() {
             return failedOverJobs;
         }
     }

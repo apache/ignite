@@ -120,7 +120,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         protected GridComputeTaskSession ses;
 
         /** */
-        protected GridComputeJobContext jobCtx;
+        protected ComputeJobContext jobCtx;
 
         /** */
         protected transient GridComputeTaskContinuousMapper mapper;
@@ -231,7 +231,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          */
         @GridJobContextResource
         @SuppressWarnings("unused")
-        public void setJobContext(GridComputeJobContext jobCtx) {
+        public void setJobContext(ComputeJobContext jobCtx) {
             this.jobCtx = jobCtx;
         }
 
@@ -302,7 +302,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          * @param jobCtx Job context.
          */
         @GridJobContextResource
-        @Override public void setJobContext(GridComputeJobContext jobCtx) {
+        @Override public void setJobContext(ComputeJobContext jobCtx) {
             this.jobCtx = jobCtx;
 
             log.info("-->setJobContext identity: " + System.identityHashCode(this));
@@ -361,7 +361,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                     private transient UserResource2 rsrc8;
 
                     /** */
-                    private GridComputeJobContext jobCtx;
+                    private ComputeJobContext jobCtx;
 
                     /**
                      * @param rsrc5 User resource.
@@ -396,7 +396,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                      */
                     @SuppressWarnings("unused")
                     @GridJobContextResource
-                    public void setJobContext(GridComputeJobContext jobCtx) { this.jobCtx = jobCtx; }
+                    public void setJobContext(ComputeJobContext jobCtx) { this.jobCtx = jobCtx; }
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {

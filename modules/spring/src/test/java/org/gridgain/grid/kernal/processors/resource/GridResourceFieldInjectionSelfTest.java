@@ -454,7 +454,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** Job context is job resource, not task resource. */
         @GridJobContextResource
-        private GridComputeJobContext outerJobCtx;
+        private ComputeJobContext outerJobCtx;
 
         /** */
         @GridTaskContinuousMapperResource
@@ -535,7 +535,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
                     private transient UserSpringBean springBean2;
 
                     /** */
-                    @GridJobContextResource private GridComputeJobContext jobCtx;
+                    @GridJobContextResource private ComputeJobContext jobCtx;
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {

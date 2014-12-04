@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Remote job context implementation.
  */
-public class GridJobContextImpl extends GridMetadataAwareAdapter implements GridComputeJobContext, Externalizable {
+public class GridJobContextImpl extends GridMetadataAwareAdapter implements ComputeJobContext, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

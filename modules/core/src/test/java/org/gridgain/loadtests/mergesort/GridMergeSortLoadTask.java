@@ -33,7 +33,7 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
      *
      * Because this is a recursive algorithm and we cannot hold threads are every
      * recursion step, we use the <i>continuation</i> mechanism
-     * ({@link GridComputeJobContext} methods {@code holdcc()} and {@code callcc()})
+     * ({@link org.apache.ignite.compute.ComputeJobContext} methods {@code holdcc()} and {@code callcc()})
      * to pause the parent tasks while the child tasks are running. Otherwise we may
      * run out of threads.
      *
@@ -49,7 +49,7 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
             jobs.add(new ComputeJobAdapter() {
                 // Auto-inject job context.
                 @GridJobContextResource
-                private GridComputeJobContext jobCtx;
+                private ComputeJobContext jobCtx;
 
                 // Task execution result future.
                 private GridComputeTaskFuture<int[]> fut;

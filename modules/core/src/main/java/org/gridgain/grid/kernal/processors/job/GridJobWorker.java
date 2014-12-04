@@ -225,7 +225,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Job context.
      */
-    public GridComputeJobContext getJobContext() {
+    public ComputeJobContext getJobContext() {
         return jobCtx;
     }
 

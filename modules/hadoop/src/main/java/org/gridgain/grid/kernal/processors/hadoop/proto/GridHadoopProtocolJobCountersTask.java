@@ -23,7 +23,7 @@ public class GridHadoopProtocolJobCountersTask extends GridHadoopProtocolTaskAda
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public GridHadoopCounters run(GridComputeJobContext jobCtx, GridHadoop hadoop,
+    @Override public GridHadoopCounters run(ComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {
 
         UUID nodeId = UUID.fromString(args.<String>get(0));

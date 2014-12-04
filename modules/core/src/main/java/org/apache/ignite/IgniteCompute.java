@@ -116,8 +116,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
-     * @see org.apache.ignite.compute.GridComputeJobContext#cacheName()
-     * @see org.apache.ignite.compute.GridComputeJobContext#affinityKey()
+     * @see org.apache.ignite.compute.ComputeJobContext#cacheName()
+     * @see org.apache.ignite.compute.ComputeJobContext#affinityKey()
      * @throws GridException If job failed.
      */
     public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws GridException;
@@ -133,8 +133,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
      * @throws GridException If job failed.
-     * @see org.apache.ignite.compute.GridComputeJobContext#cacheName()
-     * @see org.apache.ignite.compute.GridComputeJobContext#affinityKey()
+     * @see org.apache.ignite.compute.ComputeJobContext#cacheName()
+     * @see org.apache.ignite.compute.ComputeJobContext#affinityKey()
      */
     public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) throws GridException;
 

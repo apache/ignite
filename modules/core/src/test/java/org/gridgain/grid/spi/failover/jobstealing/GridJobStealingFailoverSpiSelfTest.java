@@ -205,7 +205,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @param failCnt Failover count.
      */
     @SuppressWarnings("unchecked")
-    private void checkAttributes(GridComputeJobContext ctx, ClusterNode failed, int failCnt) {
+    private void checkAttributes(ComputeJobContext ctx, ClusterNode failed, int failCnt) {
         assert (Integer)ctx.getAttribute(FAILOVER_ATTEMPT_COUNT_ATTR) == failCnt;
 
         if (failed != null) {

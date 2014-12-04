@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Test job context.
  */
-public class GridTestJobContext extends GridMetadataAwareAdapter implements GridComputeJobContext {
+public class GridTestJobContext extends GridMetadataAwareAdapter implements ComputeJobContext {
     /** */
     private final IgniteUuid jobId;
 

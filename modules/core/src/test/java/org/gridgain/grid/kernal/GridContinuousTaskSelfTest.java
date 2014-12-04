@@ -284,7 +284,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridJobContextResource
-        private GridComputeJobContext ctx;
+        private ComputeJobContext ctx;
 
         /** */
         public SessionChainTestJob() { /* No-op. */}
