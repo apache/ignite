@@ -10,7 +10,6 @@
 package org.gridgain.grid.cache.eviction;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when

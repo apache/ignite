@@ -10,7 +10,6 @@
 package org.gridgain.grid.cache.datastructures;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 
 /**
  * This interface provides a rich API for working with distributed atomic reference.
