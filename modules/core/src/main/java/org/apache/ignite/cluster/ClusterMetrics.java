@@ -7,21 +7,21 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.cluster;
 
 import java.io.*;
 
 /**
  * This interface defines cumulative metrics for the projection. Projection metrics are
  * defined as combined total, min, max, and average measurements from participating nodes'
- * metrics. Projection metrics are obtained by calling {@link GridProjection#metrics()}
+ * metrics. Projection metrics are obtained by calling {@link org.gridgain.grid.GridProjection#metrics()}
  * method.
  * <p>
  * Note that these metrics already represent the current snapshot and can change from call
  * to call. If projection is dynamic the metrics snapshot will also change with changes
  * in participating nodes.
- * @see GridNodeMetrics
- * @see GridProjection#metrics()
+ * @see org.gridgain.grid.GridNodeMetrics
+ * @see org.gridgain.grid.GridProjection#metrics()
  */
 public interface ClusterMetrics extends Serializable {
     /**

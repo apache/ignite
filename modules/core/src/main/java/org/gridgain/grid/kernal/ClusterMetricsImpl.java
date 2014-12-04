@@ -20,7 +20,7 @@ import java.util.*;
 import static java.lang.Math.*;
 
 /**
- * Implementation for {@link org.gridgain.grid.ClusterMetrics} interface.
+ * Implementation for {@link org.apache.ignite.cluster.ClusterMetrics} interface.
  */
 class ClusterMetricsImpl implements ClusterMetrics {
     /** */

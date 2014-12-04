@@ -30,7 +30,7 @@ import java.io.*;
  * any JMX management console. The simplest way is to use standard {@code jconsole}
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
- * @see ClusterMetrics
+ * @see org.apache.ignite.cluster.ClusterMetrics
  */
 public interface GridNodeMetrics extends Serializable {
     /**
