@@ -428,6 +428,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         final AtomicBoolean locked = new AtomicBoolean(e.lock(0));
 
+        info("Entry after lock [e=" + e + ", primary=" + e.primary() + ", backup=" + e.backup() + ']');
+
         try {
             assert e.isLocked();
             assert e.isLockedByThread();
@@ -446,6 +448,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
                         try {
                             f.get(100);
+
+                            info(">>>> Entry locked async [e=" + e + ", primary=" + e.primary() +
+                                ", backup=" + e.backup() + ']');
 
                             fail();
                         } catch (GridFutureTimeoutException ex) {

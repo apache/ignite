@@ -55,6 +55,13 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         // Cache.
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
+        GridTransactionsConfiguration tCfg = new GridTransactionsConfiguration();
+
+        tCfg.setDefaultTxConcurrency(GridCacheTxConcurrency.PESSIMISTIC);
+        tCfg.setDefaultTxIsolation(GridCacheTxIsolation.REPEATABLE_READ);
+
+        cfg.setTransactionsConfiguration(tCfg);
+
         return cfg;
     }
 
@@ -72,8 +79,6 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setWriteSynchronizationMode(FULL_ASYNC);
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);
-        cfg.setDefaultTxConcurrency(GridCacheTxConcurrency.PESSIMISTIC);
-        cfg.setDefaultTxIsolation(GridCacheTxIsolation.REPEATABLE_READ);
         cfg.setDistributionMode(PARTITIONED_ONLY);
         cfg.setPreloadPartitionedDelay(-1);
         cfg.setBackups(1);

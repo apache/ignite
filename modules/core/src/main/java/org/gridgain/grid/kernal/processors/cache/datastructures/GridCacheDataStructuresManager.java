@@ -111,28 +111,28 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() {
         try {
-            dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
+            dsView = cctx.cache().projection
                 (GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
 
             if (transactionalWithNear()) {
-                cntDownLatchView = cctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>projection
+                cntDownLatchView = cctx.cache().projection
                     (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
 
-                atomicLongView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>projection
+                atomicLongView = cctx.cache().projection
                     (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
 
-                atomicRefView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicReferenceValue>projection
+                atomicRefView = cctx.cache().projection
                     (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
 
-                atomicStampedView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue>projection
+                atomicStampedView = cctx.cache().projection
                     (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
 
-                seqView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>projection
+                seqView = cctx.cache().projection
                     (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
             }
 
             if (supportsQueue())
-                queueHdrView = cctx.cache().<GridCacheQueueHeaderKey, GridCacheQueueHeader>projection
+                queueHdrView = cctx.cache().projection
                     (GridCacheQueueHeaderKey.class, GridCacheQueueHeader.class).flagsOn(CLONE);
 
             initFlag = true;

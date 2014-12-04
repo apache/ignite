@@ -39,16 +39,6 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
         assert cache().affinity().mapKeyToNode("1") == null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void testAffinityPerformance() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAffinityPerformanceMultithreaded() throws Exception {
-        // No-op.
-    }
-
     /**
      * @return Handler that discards grid exceptions.
      */

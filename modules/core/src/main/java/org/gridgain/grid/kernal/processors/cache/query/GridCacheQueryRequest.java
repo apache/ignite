@@ -123,7 +123,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param id Request to cancel.
      * @param fields Fields query flag.
      */
-    public GridCacheQueryRequest(long id, boolean fields) {
+    public GridCacheQueryRequest(int cacheId, long id, boolean fields) {
+        this.cacheId = cacheId;
         this.id = id;
         this.fields = fields;
 
@@ -133,6 +134,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * Request to load page.
      *
+     * @param cacheId Cache ID.
      * @param id Request ID.
      * @param cacheName Cache name.
      * @param pageSize Page size.
@@ -142,6 +144,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param keepPortable Whether to keep portables.
      */
     public GridCacheQueryRequest(
+        int cacheId,
         long id,
         String cacheName,
         int pageSize,
@@ -150,7 +153,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean all,
         boolean keepPortable,
         UUID subjId,
-        int taskHash) {
+        int taskHash
+    ) {
+        this.cacheId = cacheId;
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
@@ -163,6 +168,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param id Request id.
      * @param cacheName Cache name.
      * @param type Query type.
@@ -179,6 +185,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param incMeta Include meta data or not.
      */
     public GridCacheQueryRequest(
+        int cacheId,
         long id,
         String cacheName,
         GridCacheQueryType type,
@@ -195,11 +202,13 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean incMeta,
         boolean keepPortable,
         UUID subjId,
-        int taskHash) {
+        int taskHash
+    ) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET);
         assert clsName != null || fields || type == SCAN || type == SET;
 
+        this.cacheId = cacheId;
         this.id = id;
         this.cacheName = cacheName;
         this.type = type;
@@ -219,8 +228,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.taskHash = taskHash;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (keyValFilter != null) {
@@ -262,7 +272,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         GridMarshaller mrsh = ctx.marshaller();
@@ -483,115 +493,115 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putBoolean(all))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putByteArray(argsBytes))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (!commState.putString(cacheName))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putBoolean(cancel))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (!commState.putString(clause))
                     return false;
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (!commState.putString(clsName))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (!commState.putBoolean(fields))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (!commState.putLong(id))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (!commState.putBoolean(incBackups))
                     return false;
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (!commState.putBoolean(incMeta))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (!commState.putByteArray(keyValFilterBytes))
                     return false;
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (!commState.putInt(pageSize))
                     return false;
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (!commState.putByteArray(prjFilterBytes))
                     return false;
 
                 commState.idx++;
 
-            case 15:
+            case 16:
                 if (!commState.putByteArray(rdcBytes))
                     return false;
 
                 commState.idx++;
 
-            case 16:
+            case 17:
                 if (!commState.putByteArray(transBytes))
                     return false;
 
                 commState.idx++;
 
-            case 17:
+            case 18:
                 if (!commState.putEnum(type))
                     return false;
 
                 commState.idx++;
 
-            case 18:
+            case 19:
                 if (!commState.putBoolean(keepPortable))
                     return false;
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 if (!commState.putInt(taskHash))
                     return false;
 
@@ -611,7 +621,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -619,7 +629,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 byte[] argsBytes0 = commState.getByteArray();
 
                 if (argsBytes0 == BYTE_ARR_NOT_READ)
@@ -629,7 +639,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 String cacheName0 = commState.getString();
 
                 if (cacheName0 == STR_NOT_READ)
@@ -639,7 +649,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -647,7 +657,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 String clause0 = commState.getString();
 
                 if (clause0 == STR_NOT_READ)
@@ -657,7 +667,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 String clsName0 = commState.getString();
 
                 if (clsName0 == STR_NOT_READ)
@@ -667,7 +677,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -675,7 +685,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -683,7 +693,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -691,7 +701,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -699,7 +709,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 byte[] keyValFilterBytes0 = commState.getByteArray();
 
                 if (keyValFilterBytes0 == BYTE_ARR_NOT_READ)
@@ -709,7 +719,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (buf.remaining() < 4)
                     return false;
 
@@ -717,7 +727,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 byte[] prjFilterBytes0 = commState.getByteArray();
 
                 if (prjFilterBytes0 == BYTE_ARR_NOT_READ)
@@ -727,7 +737,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 15:
+            case 16:
                 byte[] rdcBytes0 = commState.getByteArray();
 
                 if (rdcBytes0 == BYTE_ARR_NOT_READ)
@@ -737,7 +747,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 16:
+            case 17:
                 byte[] transBytes0 = commState.getByteArray();
 
                 if (transBytes0 == BYTE_ARR_NOT_READ)
@@ -747,7 +757,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 17:
+            case 18:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -757,7 +767,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 18:
+            case 19:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -765,7 +775,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -775,7 +785,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 if (buf.remaining() < 4)
                     return false;
 

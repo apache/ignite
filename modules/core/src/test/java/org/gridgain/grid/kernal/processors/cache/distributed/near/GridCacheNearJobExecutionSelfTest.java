@@ -24,10 +24,11 @@ public class GridCacheNearJobExecutionSelfTest extends GridCacheAbstractJobExecu
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(GridCacheMode.PARTITIONED);
-        cc.setTxSerializableEnabled(true);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);

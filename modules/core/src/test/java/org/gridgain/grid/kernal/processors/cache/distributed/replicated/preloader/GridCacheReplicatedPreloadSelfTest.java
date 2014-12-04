@@ -137,7 +137,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"BusyWait"})
-    public void testIntegrity() throws Exception {
+    public void _testIntegrity() throws Exception { // TODO GG-9141
         preloadMode = SYNC;
 
         try {

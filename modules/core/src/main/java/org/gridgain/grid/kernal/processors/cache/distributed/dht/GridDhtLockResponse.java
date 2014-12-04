@@ -32,7 +32,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> nearEvicted;
+    private Collection<GridCacheTxKey<K>> nearEvicted;
 
     /** Evicted reader key bytes. */
     @GridDirectCollection(byte[].class)
@@ -68,8 +68,8 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      * @param miniId Mini future ID.
      * @param cnt Key count.
      */
-    public GridDhtLockResponse(GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, int cnt) {
-        super(lockVer, futId, cnt);
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, int cnt) {
+        super(cacheId, lockVer, futId, cnt);
 
         assert miniId != null;
 
@@ -82,8 +82,8 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      * @param miniId Mini future ID.
      * @param err Error.
      */
-    public GridDhtLockResponse(GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, Throwable err) {
-        super(lockVer, futId, err);
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, Throwable err) {
+        super(cacheId, lockVer, futId, err);
 
         assert miniId != null;
 
@@ -93,14 +93,14 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /**
      * @return Evicted readers.
      */
-    public Collection<K> nearEvicted() {
+    public Collection<GridCacheTxKey<K>> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<K> nearEvicted) {
+    public void nearEvicted(Collection<GridCacheTxKey<K>> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -153,8 +153,9 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         return preloadEntries == null ? Collections.<GridCacheEntryInfo<K, V>>emptyList() : preloadEntries;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (nearEvictedBytes == null && nearEvicted != null)
@@ -165,7 +166,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearEvicted == null && nearEvictedBytes != null)
@@ -215,7 +216,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         }
 
         switch (commState.idx) {
-            case 10:
+            case 11:
                 if (invalidParts != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(invalidParts.size()))
@@ -242,13 +243,13 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (nearEvictedBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearEvictedBytes.size()))
@@ -275,7 +276,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (preloadEntriesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(preloadEntriesBytes.size()))
@@ -316,7 +317,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
             return false;
 
         switch (commState.idx) {
-            case 10:
+            case 11:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -326,7 +327,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 if (commState.readSize >= 0) {
                     if (invalidParts == null)
-                        invalidParts = U.newHashSet(commState.readSize);
+                        invalidParts = new HashSet<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)
@@ -345,7 +346,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -355,7 +356,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -384,7 +385,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

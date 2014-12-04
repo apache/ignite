@@ -44,12 +44,14 @@ public class VisorDefaultConfig implements Serializable {
      * @return Data transfer object for default cache configuration properties.
      */
     public static VisorDefaultConfig from(GridCacheConfiguration ccfg) {
+        // TODO GG-9141 Update Visor.
+
         VisorDefaultConfig cfg = new VisorDefaultConfig();
 
-        cfg.txIsolation(ccfg.getDefaultTxIsolation());
-        cfg.txConcurrency(ccfg.getDefaultTxConcurrency());
+//        cfg.txIsolation(ccfg.getDefaultTxIsolation());
+//        cfg.txConcurrency(ccfg.getDefaultTxConcurrency());
         cfg.timeToLive(ccfg.getDefaultTimeToLive());
-        cfg.txTimeout(ccfg.getDefaultTxTimeout());
+//        cfg.txTimeout(ccfg.getDefaultTxTimeout());
         cfg.txLockTimeout(ccfg.getDefaultLockTimeout());
         cfg.queryTimeout(ccfg.getDefaultQueryTimeout());
 

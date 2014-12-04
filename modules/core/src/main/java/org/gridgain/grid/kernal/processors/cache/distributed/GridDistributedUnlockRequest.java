@@ -43,10 +43,13 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param keyCnt Key count.
      */
-    public GridDistributedUnlockRequest(int keyCnt) {
+    public GridDistributedUnlockRequest(int cacheId, int keyCnt) {
         super(keyCnt);
+
+        this.cacheId = cacheId;
     }
 
     /**
@@ -73,7 +76,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         boolean depEnabled = ctx.deploymentEnabled();
 
         if (depEnabled)
-            prepareObject(key, ctx);
+            prepareObject(key, ctx.shared());
 
         if (keys == null)
             keys = new ArrayList<>(keysCount());
@@ -86,8 +89,9 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         keyBytes.add(bytes);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (F.isEmpty(keyBytes) && !F.isEmpty(keys))
@@ -95,7 +99,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null && !F.isEmpty(keyBytes))
@@ -139,7 +143,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         }
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (keyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(keyBytes.size()))
@@ -180,7 +184,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
             return false;
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

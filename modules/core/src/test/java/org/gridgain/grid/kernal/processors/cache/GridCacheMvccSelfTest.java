@@ -1125,9 +1125,11 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(cache.context(), "1");
-        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(cache.context(), "2");
-        GridCacheTestEntryEx<String, String> entry3 = new GridCacheTestEntryEx<>(cache.context(), "3");
+        GridCacheContext<String, String> ctx = cache.context();
+
+        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(ctx, "1");
+        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(ctx, "2");
+        GridCacheTestEntryEx<String, String> entry3 = new GridCacheTestEntryEx<>(ctx, "3");
 
         GridCacheVersion ver1 = version(1);
         GridCacheVersion ver2 = version(2);
@@ -1145,7 +1147,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate<String> c33 = entry3.addLocal(1, ver3, 0, true, false);
 
-        linkCandidates(c11, c21, c31);
+        linkCandidates(ctx, c11, c21, c31);
 
         entry1.readyLocal(ver1);
         entry2.readyLocal(ver1);
@@ -1157,7 +1159,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         checkLocal(entry3.candidate(ver3), ver3, false, false, false);
 
-        linkCandidates(c13, c33);
+        linkCandidates(ctx, c13, c33);
 
         entry2.addRemote(nodeId, 3, ver2, 0, false, true);
 
@@ -1194,9 +1196,11 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     public void testMultipleLocalAndRemoteLocks2() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(cache.context(), "1");
-        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(cache.context(), "2");
-        GridCacheTestEntryEx<String, String> entry3 = new GridCacheTestEntryEx<>(cache.context(), "3");
+        GridCacheContext<String, String> ctx = cache.context();
+
+        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(ctx, "1");
+        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(ctx, "2");
+        GridCacheTestEntryEx<String, String> entry3 = new GridCacheTestEntryEx<>(ctx, "3");
 
         GridCacheVersion ver1 = version(1);
         GridCacheVersion ver2 = version(2);
@@ -1214,7 +1218,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate<String> c33 = entry3.addLocal(1, ver3, 0, true, true);
 
-        linkCandidates(c11, c21, c31);
+        linkCandidates(ctx, c11, c21, c31);
 
         entry1.readyLocal(ver2);
         entry2.readyLocal(ver2);
@@ -1226,7 +1230,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         checkLocal(entry3.candidate(ver3), ver3, false, false, false);
 
-        linkCandidates(c13, c33);
+        linkCandidates(ctx, c13, c33);
 
         entry2.addRemote(UUID.randomUUID(), 3, ver1, 0, false, true);
 
@@ -1279,8 +1283,10 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     public void testMultipleLocalLocks() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(cache.context(), "1");
-        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(cache.context(), "2");
+        GridCacheContext<String, String> ctx = cache.context();
+
+        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(ctx, "1");
+        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(ctx, "2");
         GridCacheVersion ver1 = version(1);
         GridCacheVersion ver3 = version(3);
 
@@ -1294,7 +1300,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate<String> c21 = entry2.addLocal(2, ver1, 0, true, false);
 
-        linkCandidates(c11, c21);
+        linkCandidates(ctx, c11, c21);
 
         entry1.readyLocal(ver1);
         entry2.readyLocal(ver1);
@@ -1304,7 +1310,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate<String> c23 = entry2.addLocal(1, ver3, 0, true, true);
 
-        linkCandidates(c13, c23);
+        linkCandidates(ctx, c13, c23);
 
         entry2.readyLocal(ver3);
 
@@ -1329,15 +1335,15 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate<String> c1 = entry.addLocal(1, ver1, 0, true, false);
 
-        ctx.mvcc().addNext(c1);
+        ctx.mvcc().addNext(ctx, c1);
 
         GridCacheMvccCandidate<String> c2 = entry.addLocal(2, ver2, 0, true, false);
 
-        ctx.mvcc().addNext(c2);
+        ctx.mvcc().addNext(ctx, c2);
 
         GridCacheMvccCandidate<String> c3 = entry.addLocal(3, ver3, 0, true, true);
 
-        ctx.mvcc().addNext(c3);
+        ctx.mvcc().addNext(ctx, c3);
 
         checkLocal(entry.candidate(ver1), ver1, false, false, false);
         checkLocal(entry.candidate(ver2), ver2, false, false, false);
@@ -1371,7 +1377,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate<String> c4 = entry.addLocal(4, ver4, 0, true, true);
 
-        ctx.mvcc().addNext(c4);
+        ctx.mvcc().addNext(ctx, c4);
 
         assert c3.previous() == null;
         assert c4 != null;
@@ -1397,7 +1403,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate<String> c1k1 = entry1.addLocal(2, ver2, 0, true, false);
 
         // Link up.
-        ctx.mvcc().addNext(c1k1);
+        ctx.mvcc().addNext(ctx, c1k1);
 
         entry1.readyLocal(ver2);
 
@@ -1415,7 +1421,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         assert c1k2 != null;
 
-        ctx.mvcc().addNext(c1k2);
+        ctx.mvcc().addNext(ctx, c1k2);
 
         assert c1k2.previous() == c1k1;
 
@@ -1439,8 +1445,10 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(cache.context(), "1");
-        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(cache.context(), "2");
+        GridCacheContext<String, String> ctx = cache.context();
+
+        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(ctx, "1");
+        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(ctx, "2");
 
         GridCacheVersion ver1 = version(1);
         GridCacheVersion ver2 = version(2);
@@ -1451,7 +1459,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate<String> v3k2 = entry2.addLocal(3, ver3, 0, true, true);
 
         // Link up.
-        linkCandidates(v3k1, v3k2);
+        linkCandidates(ctx, v3k1, v3k2);
 
         entry1.readyLocal(v3k1);
 
@@ -1470,7 +1478,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate<String> v1k2 = entry2.addLocal(4, ver1, 0, true, true);
 
         // Link up.
-        linkCandidates(v1k1, v1k2);
+        linkCandidates(ctx, v1k1, v1k2);
 
         entry1.readyLocal(v1k1);
         entry2.readyLocal(v1k2);
@@ -1497,8 +1505,10 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     public void testReverseOrder3() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(cache.context(), "1");
-        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(cache.context(), "2");
+        GridCacheContext<String, String> ctx = cache.context();
+
+        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(ctx, "1");
+        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(ctx, "2");
 
         GridCacheVersion ver1 = version(1);
         GridCacheVersion ver3 = version(3);
@@ -1507,7 +1517,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate<String> v3k1 = entry1.addLocal(3, ver3, 0, true, false);
         GridCacheMvccCandidate<String> v3k2 = entry2.addLocal(3, ver3, 0, true, false);
 
-        linkCandidates(v3k1, v3k2);
+        linkCandidates(ctx, v3k1, v3k2);
 
         entry1.readyLocal(ver3);
 
@@ -1518,7 +1528,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate<String> v1k2 = entry2.addLocal(4, ver1, 0, true, true);
 
         // Link up.
-        linkCandidates(v1k1, v1k2);
+        linkCandidates(ctx, v1k1, v1k2);
 
         entry1.readyLocal(ver1);
         entry2.readyLocal(ver1);
@@ -1545,8 +1555,10 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(cache.context(), "1");
-        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(cache.context(), "2");
+        GridCacheContext<String, String> ctx = cache.context();
+
+        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<>(ctx, "1");
+        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<>(ctx, "2");
 
         GridCacheVersion ver1 = version(1);
         GridCacheVersion ver2 = version(2);
@@ -1556,7 +1568,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate<String> v3k1 = entry1.addLocal(3, ver3, 0, true, false);
         GridCacheMvccCandidate<String> v3k2 = entry2.addLocal(3, ver3, 0, true, false);
 
-        linkCandidates(v3k1, v3k2);
+        linkCandidates(ctx, v3k1, v3k2);
 
         entry1.readyLocal(ver3);
 
@@ -1567,7 +1579,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate<String> v1k2 = entry2.addLocal(4, ver1, 0, true, true);
 
         // Link up.
-        linkCandidates(v1k1, v1k2);
+        linkCandidates(ctx, v1k1, v1k2);
 
         entry1.readyLocal(ver1);
         entry2.readyLocal(ver1);
@@ -1604,11 +1616,12 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @param cands Candidates.
      * @throws Exception If failed.
      */
-    private void linkCandidates(final GridCacheMvccCandidate<String>... cands) throws Exception {
+    private void linkCandidates(final GridCacheContext<String, String> ctx,
+        final GridCacheMvccCandidate<String>... cands) throws Exception {
         multithreaded(new Runnable() {
             @Override public void run() {
                 for (GridCacheMvccCandidate<String> cand : cands) {
-                    boolean b = grid.<String, String>internalCache().context().mvcc().addNext(cand);
+                    boolean b = grid.<String, String>internalCache().context().mvcc().addNext(ctx, cand);
 
                     assert b;
                 }

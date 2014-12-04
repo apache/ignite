@@ -48,16 +48,24 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     private long topVer;
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param miniId Mini-future ID.
      * @param keys Keys.
      * @param topVer Topology version.
      */
-    GridDhtForceKeysRequest(GridUuid futId, GridUuid miniId, Collection<K> keys, long topVer) {
+    GridDhtForceKeysRequest(
+        int cacheId,
+        GridUuid futId,
+        GridUuid miniId,
+        Collection<K> keys,
+        long topVer
+    ) {
         assert futId != null;
         assert miniId != null;
         assert !F.isEmpty(keys);
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.keys = keys;
@@ -120,8 +128,9 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         return topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (keyBytes == null)
@@ -129,7 +138,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)
@@ -182,13 +191,13 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (keyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(keyBytes.size()))
@@ -215,13 +224,13 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -241,7 +250,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -251,7 +260,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -280,7 +289,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -290,7 +299,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (buf.remaining() < 8)
                     return false;
 

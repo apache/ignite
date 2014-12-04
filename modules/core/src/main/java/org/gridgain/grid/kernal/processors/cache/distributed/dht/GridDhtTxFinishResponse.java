@@ -95,7 +95,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
         }
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
@@ -115,7 +115,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
             return false;
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)

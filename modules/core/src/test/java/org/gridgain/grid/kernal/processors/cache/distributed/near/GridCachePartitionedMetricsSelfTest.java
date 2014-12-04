@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
@@ -24,13 +25,21 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
     private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(gridCount() - 1);
         cfg.setPreloadMode(SYNC);
-        cfg.setTxSerializableEnabled(true);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;

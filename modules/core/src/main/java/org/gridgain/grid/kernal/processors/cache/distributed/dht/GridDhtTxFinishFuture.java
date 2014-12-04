@@ -39,7 +39,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -79,7 +79,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    public GridDhtTxFinishFuture(GridCacheContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
+    public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
         super(cctx.kernalContext(), F.<GridCacheTx>identityReducer(tx));
 
         assert cctx != null;
@@ -186,7 +186,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
         if (!isDone()) {
             for (GridFuture<GridCacheTx> fut : futures()) {
                 if (isMini(fut)) {
@@ -273,9 +273,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     private boolean finish(Map<UUID, GridDistributedTxMapping<K, V>> dhtMap,
         Map<UUID, GridDistributedTxMapping<K, V>> nearMap) {
-        boolean sync = commit ? tx.syncCommit() : tx.syncRollback(); // Cached sync flag.
-
         boolean res = false;
+
+        boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
 
         // Create mini futures.
         for (GridDistributedTxMapping<K, V> dhtMapping : dhtMap.values()) {
@@ -305,6 +305,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 commit,
                 tx.isInvalidate(),
                 tx.isSystemInvalidate(),
+                tx.syncCommit(),
+                tx.syncRollback(),
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
@@ -313,7 +315,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.pessimistic() ? dhtMapping.writes() : null,
                 tx.pessimistic() && nearMapping != null ? nearMapping.writes() : null,
                 tx.recoveryWrites(),
-                sync, // Ignore syncPrimary() check here because this is not local node (see assert above).
                 tx.onePhaseCommit(),
                 tx.groupLockKey(),
                 tx.subjectId(),
@@ -349,9 +350,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
                 add(fut); // Append new future.
 
-                // Take in count syncPrimary() here.
-                boolean syncReq = sync || nearMapping.node().isLocal() && cctx.syncPrimary();
-
                 GridDhtTxFinishRequest<K, V> req = new GridDhtTxFinishRequest<>(
                     tx.nearNodeId(),
                     futId,
@@ -364,6 +362,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     commit,
                     tx.isInvalidate(),
                     tx.isSystemInvalidate(),
+                    tx.syncCommit(),
+                    tx.syncRollback(),
                     tx.completedBase(),
                     tx.committedVersions(),
                     tx.rolledbackVersions(),
@@ -372,7 +372,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     null,
                     tx.pessimistic() ? nearMapping.writes() : null,
                     tx.recoveryWrites(),
-                    syncReq,
                     tx.onePhaseCommit(),
                     tx.groupLockKey(),
                     tx.subjectId(),
@@ -384,7 +383,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 try {
                     cctx.io().send(nearMapping.node(), req);
 
-                    if (syncReq)
+                    if (sync)
                         res = true;
                     else
                         fut.onDone();

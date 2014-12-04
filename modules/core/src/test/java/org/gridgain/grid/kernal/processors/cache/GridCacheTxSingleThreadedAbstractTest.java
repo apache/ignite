@@ -49,7 +49,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     /**
      * @throws GridException If test failed.
      */
-    public void testOptimisticReadCommittedCommit() throws Exception {
+    public void _testOptimisticReadCommittedCommit() throws Exception { // TODO GG-9141
         checkCommit(OPTIMISTIC, READ_COMMITTED);
 
         finalChecks();

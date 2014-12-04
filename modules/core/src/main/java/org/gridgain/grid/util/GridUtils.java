@@ -7097,6 +7097,20 @@ public abstract class GridUtils {
     }
 
     /**
+     * Checks if given node has at least one cache.
+     *
+     * @param n Node to check.
+     * @return {@code True} if given node has specified cache started.
+     */
+    public static boolean hasCaches(GridNode n) {
+        assert n != null;
+
+        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
+
+        return !F.isEmpty(caches);
+    }
+
+    /**
      * Checks if given node has specified streamer started.
      *
      * @param n Node to check.

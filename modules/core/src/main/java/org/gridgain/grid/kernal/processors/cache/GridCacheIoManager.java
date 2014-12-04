@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
@@ -32,7 +31,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheMessage.*;
 /**
  * Cache communication manager.
  */
-public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
@@ -42,17 +41,11 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Number of retries using to send messages. */
     private int retryCnt;
 
-    /** Grid topic. */
-    private GridTopic gridTopic;
-
-    /** Topic. */
-    private Object topic;
-
     /** Indexed class handlers. */
-    private GridBiInClosure[] idxClsHandlers = new GridBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
+    private Map<Integer, GridBiInClosure[]> idxClsHandlers = new HashMap<>();
 
     /** Handler registry. */
-    private ConcurrentMap<Class<? extends GridCacheMessage>, GridBiInClosure<UUID, GridCacheMessage<K, V>>>
+    private ConcurrentMap<ListenerKey, GridBiInClosure<UUID, GridCacheMessage<K, V>>>
         clsHandlers = new ConcurrentHashMap8<>();
 
     /** Ordered handler registry. */
@@ -80,7 +73,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         @Override public void onMessage(final UUID nodeId, Object msg) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
-                    ", locId=" + cctx.nodeId() + ", msg=" + msg + ']');
+                    ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
 
             final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
 
@@ -88,11 +81,15 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             GridBiInClosure<UUID, GridCacheMessage<K, V>> c = null;
 
-            if (msgIdx >= 0)
-                c = idxClsHandlers[msgIdx];
+            if (msgIdx >= 0) {
+                GridBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
+
+                if (cacheClsHandlers != null)
+                    c = cacheClsHandlers[msgIdx];
+            }
 
             if (c == null)
-                c = clsHandlers.get(cacheMsg.getClass());
+                c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
 
             if (c == null) {
                 if (log.isDebugEnabled())
@@ -134,24 +131,19 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
         retryCnt = cctx.gridConfig().getNetworkSendRetryCount();
 
-        String cacheName = cctx.name();
+        //String cacheName = cctx.name(); TODO GG-9141 how to determine policy?
 
-        plc = CU.isUtilityCache(cacheName) ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+        plc = SYSTEM_POOL; // TODO GG-9141 CU.isDrSystemCache(cacheName) ? DR_POOL : SYSTEM_POOL;
 
         depEnabled = cctx.gridDeploy().enabled();
 
-        if (F.isEmpty(cacheName))
-            gridTopic = TOPIC_CACHE;
-        else
-            topic = TOPIC_CACHE.topic(cacheName);
-
-        cctx.gridIO().addMessageListener(gridTopic != null ? gridTopic : topic, lsnr);
+        cctx.gridIO().addMessageListener(TOPIC_CACHE, lsnr);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override protected void onKernalStop0(boolean cancel) {
-        cctx.gridIO().removeMessageListener(gridTopic != null ? gridTopic : topic);
+        cctx.gridIO().removeMessageListener(TOPIC_CACHE);
 
         for (Object ordTopic : orderedHandlers.keySet())
             cctx.gridIO().removeMessageListener(ordTopic);
@@ -210,14 +202,14 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (cacheMsg.allowForStartup())
                 processMessage(nodeId, cacheMsg, c);
             else {
-                GridFuture<?> startFut = cctx.preloader().startFuture();
+                GridFuture<?> startFut = startFuture(cacheMsg);
 
                 if (startFut.isDone())
                     processMessage(nodeId, cacheMsg, c);
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
-                            ", locId=" + cctx.nodeId() + ", msg=" + cacheMsg + ']');
+                            ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                     // Don't hold this thread waiting for preloading to complete.
                     startFut.listenAsync(new CI1<GridFuture<?>>() {
@@ -237,7 +229,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                                 if (log.isDebugEnabled())
                                     log.debug("Start future completed for message [nodeId=" + nodeId +
-                                        ", locId=" + cctx.nodeId() + ", msg=" + cacheMsg + ']');
+                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                                 processMessage(nodeId, cacheMsg, c);
                             }
@@ -256,7 +248,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
         }
         catch (Throwable e) {
-            if (CU.isUtilityCache(cctx.name()) && X.hasCause(e, ClassNotFoundException.class))
+            if (X.hasCause(e, ClassNotFoundException.class))
                 U.error(log, "Failed to process message (note that distributed services " +
                     "do not support peer class loading, if you deploy distributed service " +
                     "you should have all required classes in CLASSPATH on all nodes in topology) " +
@@ -273,6 +265,16 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @param cacheMsg Cache message to get start future.
+     * @return Preloader start future.
+     */
+    private GridFuture<Object> startFuture(GridCacheMessage<K, V> cacheMsg) {
+        int cacheId = cacheMsg.cacheId();
+
+        return cacheId != 0 ? cctx.cacheContext(cacheId).preloader().startFuture() : cctx.preloadersStartFuture();
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param msg Message.
      * @param c Closure.
@@ -281,7 +283,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         GridBiInClosure<UUID, GridCacheMessage<K, V>> c) {
         try {
             // Start clean.
-            if (cctx.transactional())
+            if (msg.transactional())
                 CU.resetTxContext(cctx);
 
             // We will not end up with storing a bunch of new UUIDs
@@ -345,6 +347,8 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws GridTopologyException If receiver left.
      */
     public void send(GridNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
+        assert !node.isLocal();
+
         onSend(msg, node.id());
 
         if (log.isDebugEnabled())
@@ -367,13 +371,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 else
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
-                if (gridTopic != null)
-                    cctx.gridIO().send(node, gridTopic, msg0, plc);
-                else {
-                    assert topic != null;
-
-                    cctx.gridIO().send(node, topic, msg0, plc);
-                }
+                cctx.gridIO().send(node, TOPIC_CACHE, msg0, plc);
 
                 return;
             }
@@ -445,13 +443,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 else
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
-                if (gridTopic != null)
-                    cctx.gridIO().send(nodesView, gridTopic, msg0, plc);
-                else {
-                    assert topic != null;
-
-                    cctx.gridIO().send(nodesView, topic, msg0, plc);
-                }
+                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg0, plc);
 
                 boolean added = false;
 
@@ -608,26 +600,39 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public void addHandler(
+        int cacheId,
         Class<? extends GridCacheMessage> type,
         GridBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
-            if (idxClsHandlers[msgIdx] != null)
-                throw new GridRuntimeException("Duplicate cache message ID found: " + type);
+            GridBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheId);
 
-            idxClsHandlers[msgIdx] = c;
+            if (cacheClsHandlers == null) {
+                cacheClsHandlers = new GridBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
+
+                idxClsHandlers.put(cacheId, cacheClsHandlers);
+            }
+
+            if (cacheClsHandlers[msgIdx] != null)
+                throw new GridRuntimeException("Duplicate cache message ID found [cacheId=" + cacheId +
+                    ", type=" + type + ']');
+
+            cacheClsHandlers[msgIdx] = c;
 
             return;
         }
         else {
-            if (clsHandlers.putIfAbsent(type, (GridBiInClosure<UUID, GridCacheMessage<K, V>>)c) != null)
-                assert false : "Handler for class already registered [cls=" + type + ", old=" + clsHandlers.get(type) +
-                    ", new=" + c + ']';
+            ListenerKey key = new ListenerKey(cacheId, type);
+
+            if (clsHandlers.putIfAbsent(key,
+                (GridBiInClosure<UUID, GridCacheMessage<K, V>>)c) != null)
+                assert false : "Handler for class already registered [cacheId=" + cacheId + ", cls=" + type +
+                    ", old=" + clsHandlers.get(key) + ", new=" + c + ']';
         }
 
         if (log != null && log.isDebugEnabled())
-            log.debug("Registered cache communication handler [cacheName=" + cctx.name() + ", type=" + type +
+            log.debug("Registered cache communication handler [cacheId=" + cacheId + ", type=" + type +
                 ", msgIdx=" + msgIdx + ", handler=" + c + ']');
     }
 
@@ -671,11 +676,11 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (log != null && log.isDebugEnabled()) {
             if (res) {
                 log.debug("Removed cache communication handler " +
-                    "[cacheName=" + cctx.name() + ", type=" + type + ", handler=" + c + ']');
+                    "[type=" + type + ", handler=" + c + ']');
             }
             else {
                 log.debug("Cache communication handler is not registered " +
-                    "[cacheName=" + cctx.name() + ", type=" + type + ", handler=" + c + ']');
+                    "[type=" + type + ", handler=" + c + ']');
             }
         }
     }
@@ -770,7 +775,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache IO manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> Cache IO manager memory stats [grid=" + cctx.gridName() + ']');
         X.println(">>>   clsHandlersSize: " + clsHandlers.size());
         X.println(">>>   orderedHandlersSize: " + orderedHandlers.size());
     }
@@ -798,6 +803,45 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
 
             onMessage0(nodeId, cacheMsg, c);
+        }
+    }
+
+    private static class ListenerKey {
+        /** Cache ID. */
+        private int cacheId;
+
+        /** Message class. */
+        private Class<? extends GridCacheMessage> msgCls;
+
+        /**
+         * @param cacheId Cache ID.
+         * @param msgCls Message class.
+         */
+        private ListenerKey(int cacheId, Class<? extends GridCacheMessage> msgCls) {
+            this.cacheId = cacheId;
+            this.msgCls = msgCls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof ListenerKey))
+                return false;
+
+            ListenerKey that = (ListenerKey)o;
+
+            return cacheId == that.cacheId && msgCls.equals(that.msgCls);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = cacheId;
+
+            result = 31 * result + msgCls.hashCode();
+
+            return result;
         }
     }
 }

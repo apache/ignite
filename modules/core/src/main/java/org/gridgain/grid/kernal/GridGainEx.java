@@ -1380,6 +1380,7 @@ public class GridGainEx {
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
             myCfg.setDotNetConfiguration(cfg.getDotNetConfiguration());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
+            myCfg.setTransactionsConfiguration(new GridTransactionsConfiguration(cfg.getTransactionsConfiguration()));
 
             GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 

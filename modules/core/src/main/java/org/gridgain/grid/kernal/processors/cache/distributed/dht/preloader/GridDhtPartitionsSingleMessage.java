@@ -19,6 +19,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * Information about partitions of a single node.
@@ -30,7 +31,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
     /** Local partitions. */
     @GridToStringInclude
     @GridDirectTransient
-    private GridDhtPartitionMap parts;
+    private Map<Integer, GridDhtPartitionMap> parts = new HashMap<>();
 
     /** Serialized partitions. */
     private byte[] partsBytes;
@@ -44,25 +45,32 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
     /**
      * @param exchId Exchange ID.
-     * @param parts Local partitions.
      * @param lastVer Last version.
      */
-    public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId, GridDhtPartitionMap parts,
-        @Nullable GridCacheVersion lastVer) {
+    public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
         super(exchId, lastVer);
+    }
 
-        this.parts = parts;
+    /**
+     * Adds partition map to this message.
+     *
+     * @param cacheId Cache ID to add local partition for.
+     * @param locMap Local partition map.
+     */
+    public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap locMap) {
+        parts.put(cacheId, locMap);
     }
 
     /**
      * @return Local partitions.
      */
-    public GridDhtPartitionMap partitions() {
+    public Map<Integer, GridDhtPartitionMap> partitions() {
         return parts;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (parts != null)
@@ -70,7 +78,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null)
@@ -113,7 +121,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
         }
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 if (!commState.putByteArray(partsBytes))
                     return false;
 
@@ -133,7 +141,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
             return false;
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 byte[] partsBytes0 = commState.getByteArray();
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)

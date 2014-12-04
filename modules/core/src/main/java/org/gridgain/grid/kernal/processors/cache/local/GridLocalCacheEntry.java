@@ -102,7 +102,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
         if (cand != null) {
             if (!cand.reentry())
-                cctx.mvcc().addNext(cand);
+                cctx.mvcc().addNext(cctx, cand);
 
             // Event notification.
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED))

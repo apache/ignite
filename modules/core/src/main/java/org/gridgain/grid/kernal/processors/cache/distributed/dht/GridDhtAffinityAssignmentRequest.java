@@ -33,9 +33,11 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      */
-    public GridDhtAffinityAssignmentRequest(long topVer) {
+    public GridDhtAffinityAssignmentRequest(int cacheId, long topVer) {
+        this.cacheId = cacheId;
         this.topVer = topVer;
     }
 
@@ -90,7 +92,7 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -109,7 +111,7 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (buf.remaining() < 8)
                     return false;
 

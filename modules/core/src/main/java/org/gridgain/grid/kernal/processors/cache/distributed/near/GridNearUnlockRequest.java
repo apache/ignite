@@ -31,10 +31,11 @@ public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K,
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param keyCnt Key count.
      */
-    public GridNearUnlockRequest(int keyCnt) {
-        super(keyCnt);
+    public GridNearUnlockRequest(int cacheId, int keyCnt) {
+        super(cacheId, keyCnt);
     }
 
     /** {@inheritDoc} */

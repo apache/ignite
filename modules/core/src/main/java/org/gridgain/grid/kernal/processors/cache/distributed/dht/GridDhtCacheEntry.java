@@ -214,7 +214,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         // Don't link reentries.
         if (cand != null && !cand.reentry())
             // Link with other candidates in the same thread.
-            cctx.mvcc().addNext(cand);
+            cctx.mvcc().addNext(cctx, cand);
 
         checkOwnerChanged(prev, owner, val);
 

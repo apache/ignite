@@ -72,7 +72,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         assert cctx.config().getCacheMode() != LOCAL;
 
-        cctx.io().addHandler(GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest<K, V>>() {
+        cctx.io().addHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridCacheQueryRequest<K, V> req) {
                 processQueryRequest(nodeId, req);
             }
@@ -144,7 +144,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         else {
             if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
                 if (!F.eq(req.cacheName(), cctx.name())) {
-                    GridCacheQueryResponse res = new GridCacheQueryResponse(req.id(),
+                    GridCacheQueryResponse res = new GridCacheQueryResponse(
+                        cctx.cacheId(),
+                        req.id(),
                         new GridException("Received request for incorrect cache [expected=" + cctx.name() +
                             ", actual=" + req.cacheName()));
 
@@ -167,7 +169,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     catch (Throwable e) {
                         U.error(log(), "Failed to run query.", e);
 
-                        sendQueryResponse(sndId, new GridCacheQueryResponse(req.id(), e.getCause()), 0);
+                        sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), req.id(), e.getCause()), 0);
                     }
                     finally {
                         threads.remove(req.id());
@@ -405,7 +407,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 fut.onPage(null, null, e, true);
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse<K, V>(qryInfo.requestId(), e),
+                    new GridCacheQueryResponse<K, V>(cctx.cacheId(), qryInfo.requestId(), e),
                     qryInfo.query().timeout());
 
             return true;
@@ -414,7 +416,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (loc)
             fut.onPage(null, data, null, finished);
         else {
-            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(), false, false);
+            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(cctx.cacheId(), qryInfo.requestId(),
+                /*finished*/false, /*fields*/false);
 
             res.data(data);
             res.finished(finished);
@@ -442,7 +445,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse<K, V>(qryInfo.requestId(), e),
+                    new GridCacheQueryResponse<K, V>(cctx.cacheId(), qryInfo.requestId(), e),
                     qryInfo.query().timeout());
 
             return true;
@@ -454,8 +457,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onPage(null, metadata, data, null, finished);
         }
         else {
-            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(), finished,
-                qryInfo.reducer() == null);
+            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(cctx.cacheId(), qryInfo.requestId(),
+                finished, qryInfo.reducer() == null);
 
             res.metadata(metadata);
             res.data(entities != null ? entities : data);
@@ -507,6 +510,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             String clsName = qry.query().queryClassName();
 
             GridCacheQueryRequest req = new GridCacheQueryRequest(
+                cctx.cacheId(),
                 reqId,
                 cctx.name(),
                 qry.query().type(),
@@ -557,8 +561,17 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert fut != null;
 
         try {
-            GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(id, cctx.name(), qry.pageSize(),
-                qry.includeBackups(), fut.fields(), all, qry.keepPortable(), qry.subjectId(), qry.taskHash());
+            GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(
+                cctx.cacheId(),
+                id,
+                cctx.name(),
+                qry.pageSize(),
+                qry.includeBackups(),
+                fut.fields(),
+                all,
+                qry.keepPortable(),
+                qry.subjectId(),
+                qry.taskHash());
 
             sendRequest(fut, req, nodes);
         }
@@ -606,6 +619,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             qry.query().validate();
 
             GridCacheQueryRequest req = new GridCacheQueryRequest(
+                cctx.cacheId(),
                 reqId,
                 cctx.name(),
                 qry.query().type(),
@@ -722,7 +736,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /**
      * Cancel message ID.
      */
-    private class CancelMessageId implements Comparable<CancelMessageId> {
+    private static class CancelMessageId implements Comparable<CancelMessageId> {
         /** Message ID. */
         private long reqId;
 

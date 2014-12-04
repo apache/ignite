@@ -49,9 +49,10 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
      *
      * @param futVers Future versions.
      */
-    public GridDhtAtomicDeferredUpdateResponse(Collection<GridCacheVersion> futVers) {
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers) {
         assert !F.isEmpty(futVers);
 
+        this.cacheId = cacheId;
         this.futVers = futVers;
     }
 
@@ -97,7 +98,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (futVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(futVers.size()))
@@ -138,7 +139,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

@@ -114,7 +114,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         try {
             if (ctx.deploy().enabled())
-                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
+                ctx.cache().context().deploy().ignoreOwnership(true);
 
             cfgQry = (GridCacheContinuousQueryAdapter<Object, Object>)cache.queries().createContinuousQuery();
 
@@ -130,7 +130,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
         finally {
             if (ctx.deploy().enabled())
-                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
+                ctx.cache().context().deploy().ignoreOwnership(false);
         }
 
         GridServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
@@ -335,7 +335,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
 
                 if (ctx.deploy().enabled())
-                    ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
+                    ctx.cache().context().deploy().ignoreOwnership(true);
 
                 try {
                     GridServiceDeployment dep = (GridServiceDeployment)cache.putIfAbsent(key,
@@ -373,7 +373,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 }
                 finally {
                     if (ctx.deploy().enabled())
-                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
+                        ctx.cache().context().deploy().ignoreOwnership(false);
                 }
 
                 return fut;
@@ -1059,7 +1059,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
                             if (ctx.deploy().enabled())
-                                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
+                                ctx.cache().context().deploy().ignoreOwnership(true);
 
                             try {
                                 for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
@@ -1087,8 +1087,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             }
                             finally {
                                 if (ctx.deploy().enabled())
-                                    ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy()
-                                        .ignoreOwnership(false);
+                                    ctx.cache().context().deploy().ignoreOwnership(false);
                             }
 
                             if (!retries.isEmpty())

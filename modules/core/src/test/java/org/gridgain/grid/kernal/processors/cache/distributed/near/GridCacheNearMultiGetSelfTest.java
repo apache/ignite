@@ -13,7 +13,6 @@ import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -49,11 +48,12 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setTxSerializableEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 

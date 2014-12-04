@@ -54,6 +54,8 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
 
         cfg.setIndexingSpi(idxSpi);
 
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         return cfg;
     }
 
@@ -61,7 +63,6 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setTxSerializableEnabled(true);
         ccfg.setQueryIndexEnabled(true);
         ccfg.setStore(null);
 

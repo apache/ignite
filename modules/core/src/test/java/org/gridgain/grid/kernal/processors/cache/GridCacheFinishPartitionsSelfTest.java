@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
@@ -123,8 +123,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 cache.get(key);
 
-                GridFuture<?> fut = grid.<String, String>internalCache().context().near().dht().context().
-                    partitionReleaseFuture(waitParts, GRID_CNT + 1);
+                GridFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
 
                 fut.listenAsync(new CI1<GridFuture<?>>() {
                     @Override public void apply(GridFuture<?> e) {
@@ -147,7 +146,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     }
 
     /**
-     * Tests method {@link GridCacheMvccManager#finishLocks(Collection, long)}.
+     * Tests method {@link GridCacheMvccManager#finishLocks(GridPredicate, long)}.
      *
      * @throws Exception If failed.
      */
@@ -207,9 +206,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     public void testMvccFinishPartitionsContinuousLockAcquireRelease() throws Exception {
         int key = 1;
 
-        List<Integer> waitParts = F.asList(1);
-
-        GridCacheContext<Object, Object> ctx = grid.internalCache().context().near().dht().context();
+        GridCacheSharedContext<Object, Object> ctx = grid.context().cache().context();
 
         final AtomicLong end = new AtomicLong(0);
 
@@ -223,7 +220,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         info("Start time: " + start);
 
-        GridFuture<?> fut = ctx.partitionReleaseFuture(waitParts, GRID_CNT + 1);
+        GridFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
 
         assert fut != null;
 
@@ -261,7 +258,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      */
     private long runLock(String key, int keyPart, Collection<Integer> waitParts) throws Exception {
 
-        GridCacheContext<Object, Object> ctx = grid.internalCache().context().near().dht().context();
+        GridCacheSharedContext<Object, Object> ctx = grid.context().cache().context();
 
         final AtomicLong end = new AtomicLong(0);
 
@@ -277,7 +274,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             info("Start time: " + start);
 
-            GridFuture<?> fut = ctx.partitionReleaseFuture(waitParts, GRID_CNT + 1);
+            GridFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
 
             assert fut != null;
 

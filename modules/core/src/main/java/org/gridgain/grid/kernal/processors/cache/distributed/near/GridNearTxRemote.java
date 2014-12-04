@@ -23,7 +23,6 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.
@@ -33,7 +32,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     private static final long serialVersionUID = 0L;
 
     /** Evicted keys. */
-    private Collection<K> evicted = new LinkedList<>();
+    private Collection<GridCacheTxKey<K>> evicted = new LinkedList<>();
 
     /** Near node ID. */
     private UUID nearNodeId;
@@ -41,11 +40,8 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
 
-    /** Evicted keys. */
-    private Collection<byte[]> evictedBytes = new LinkedList<>();
-
     /** Owned versions. */
-    private Map<K, GridCacheVersion> owned;
+    private Map<GridCacheTxKey<K>, GridCacheVersion> owned;
 
     /** Group lock flag. */
     private boolean grpLock;
@@ -88,9 +84,9 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         boolean invalidate,
         long timeout,
         Collection<GridCacheTxEntry<K, V>> writeEntries,
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) throws GridException {
@@ -108,7 +104,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
 
         if (writeEntries != null)
             for (GridCacheTxEntry<K, V> entry : writeEntries) {
-                entry.unmarshal(ctx, ldr);
+                entry.unmarshal(ctx, true, ldr);
 
                 addEntry(entry);
             }
@@ -127,15 +123,9 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
-     * @param key Key.
-     * @param keyBytes Key bytes.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param drVer DR version.
      * @param ctx Cache registry.
-     * @param txSize Ecpected transaction size.
+     * @param txSize Expected transaction size.
      * @param grpLockKey Collection of group lock keys if this is a group-lock transaction.
-     * @throws GridException If failed.
      */
     public GridNearTxRemote(
         UUID nodeId,
@@ -148,17 +138,12 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        K key,
-        byte[] keyBytes,
-        V val,
-        byte[] valBytes,
-        @Nullable GridCacheVersion drVer,
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
-    ) throws GridException {
+    ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
@@ -169,8 +154,6 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
 
         readMap = new LinkedHashMap<>(1, 1.0f);
         writeMap = new LinkedHashMap<>(txSize, 1.0f);
-
-        addEntry(key, keyBytes, val, valBytes, drVer);
     }
 
     /** {@inheritDoc} */
@@ -189,7 +172,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(K key) {
+    @Override public GridCacheVersion ownedVersion(GridCacheTxKey<K> key) {
         return owned == null ? null : owned.get(key);
     }
 
@@ -218,7 +201,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      *
      * @param vers Map of owned versions.
      */
-    public void ownedVersions(Map<K, GridCacheVersion> vers) {
+    public void ownedVersions(Map<GridCacheTxKey<K>, GridCacheVersion> vers) {
         if (F.isEmpty(vers))
             return;
 
@@ -243,38 +226,17 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     /**
      * @return Evicted keys.
      */
-    public Collection<K> evicted() {
+    public Collection<GridCacheTxKey<K>> evicted() {
         return evicted;
-    }
-
-    /**
-     * @return Evicted bytes.
-     */
-    public Collection<byte[]> evictedBytes() {
-        return evictedBytes;
     }
 
     /**
      * Adds evicted key bytes to evicted collection.
      *
      * @param key Evicted key.
-     * @param bytes Bytes of evicted key.
      */
-    public void addEvicted(K key, byte[] bytes) {
+    public void addEvicted(GridCacheTxKey<K> key) {
         evicted.add(key);
-
-        if (bytes != null)
-            evictedBytes.add(bytes);
-    }
-
-    /**
-     * @return {@code True} if transaction contains a valid list of evicted bytes.
-     */
-    public boolean hasEvictedBytes() {
-        // Sizes of byte list and key list can differ if node crashed and transaction moved
-        // from local to remote. This check is for safety, as nothing bad will happen if
-        // some near keys will remain in remote node readers list.
-        return !evictedBytes.isEmpty() && evictedBytes.size() == evicted.size();
     }
 
     /**
@@ -286,7 +248,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      */
     public void addEntries(ClassLoader ldr, Iterable<GridCacheTxEntry<K, V>> entries) throws GridException {
         for (GridCacheTxEntry<K, V> entry : entries) {
-            entry.unmarshal(cctx, ldr);
+            entry.unmarshal(cctx, true, ldr);
 
             addEntry(entry);
         }
@@ -298,15 +260,17 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @return {@code True} if entry was enlisted.
      */
     private boolean addEntry(GridCacheTxEntry<K, V> entry) throws GridException {
-        checkInternal(entry.key());
+        checkInternal(entry.txKey());
 
-        GridNearCacheEntry<K, V> cached = cctx.near().peekExx(entry.key());
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
+        if (!cacheCtx.isNear())
+            cacheCtx = cacheCtx.dht().near().context();
+
+        GridNearCacheEntry<K, V> cached = cacheCtx.near().peekExx(entry.key());
 
         if (cached == null) {
-            evicted.add(entry.key());
-
-            if (entry.keyBytes() != null)
-                evictedBytes.add(entry.keyBytes());
+            evicted.add(entry.txKey());
 
             return false;
         }
@@ -315,10 +279,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
 
             try {
                 if (cached.peek(GLOBAL, CU.<K, V>empty()) == null && cached.evictInternal(false, xidVer, null)) {
-                    evicted.add(entry.key());
-
-                    if (entry.keyBytes() != null)
-                        evictedBytes.add(entry.keyBytes());
+                    evicted.add(entry.txKey());
 
                     return false;
                 }
@@ -326,7 +287,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                     // Initialize cache entry.
                     entry.cached(cached, entry.keyBytes());
 
-                    writeMap.put(entry.key(), entry);
+                    writeMap.put(entry.txKey(), entry);
 
                     addExplicit(entry);
 
@@ -334,10 +295,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                 }
             }
             catch (GridCacheEntryRemovedException ignore) {
-                evicted.add(entry.key());
-
-                if (entry.keyBytes() != null)
-                    evictedBytes.add(entry.keyBytes());
+                evicted.add(entry.txKey());
 
                 if (log.isDebugEnabled())
                     log.debug("Got removed entry when adding to remote transaction (will ignore): " + cached);
@@ -345,27 +303,6 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                 return false;
             }
         }
-    }
-
-    /**
-     * @param key Key to add to write set.
-     * @param keyBytes Key bytes.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param drVer Data center replication version.
-     */
-    void addWrite(K key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        @Nullable GridCacheVersion drVer) {
-        checkInternal(key);
-
-        GridNearCacheEntry<K, V> cached = cctx.near().entryExx(key, topologyVersion());
-
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, NOOP, val, 0L, -1L, cached, drVer);
-
-        txEntry.keyBytes(keyBytes);
-        txEntry.valueBytes(valBytes);
-
-        writeMap.put(key, txEntry);
     }
 
     /**
@@ -377,18 +314,22 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @throws GridException If failed.
      * @return {@code True} if entry has been enlisted.
      */
-    private boolean addEntry(K key, byte[] keyBytes, V val, byte[] valBytes, @Nullable GridCacheVersion drVer)
-        throws GridException {
+    public boolean addEntry(
+        GridCacheContext<K, V> cacheCtx,
+        GridCacheTxKey<K> key,
+        byte[] keyBytes,
+        GridCacheOperation op,
+        V val,
+        byte[] valBytes,
+        @Nullable GridCacheVersion drVer
+    ) throws GridException {
         checkInternal(key);
 
-        GridNearCacheEntry<K, V> cached = cctx.near().peekExx(key);
+        GridNearCacheEntry<K, V> cached = cacheCtx.near().peekExx(key.key());
 
         try {
             if (cached == null) {
                 evicted.add(key);
-
-                if (keyBytes != null)
-                    evictedBytes.add(keyBytes);
 
                 return false;
             }
@@ -396,17 +337,14 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                 cached.unswap();
 
                 if (cached.peek(GLOBAL, CU.<K, V>empty()) == null && cached.evictInternal(false, xidVer, null)) {
-                    cached.context().cache().removeIfObsolete(key);
+                    cached.context().cache().removeIfObsolete(key.key());
 
                     evicted.add(key);
-
-                    if (keyBytes != null)
-                        evictedBytes.add(keyBytes);
 
                     return false;
                 }
                 else {
-                    GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, NOOP, val, 0L, -1L, cached,
+                    GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached,
                         drVer);
 
                     txEntry.keyBytes(keyBytes);
@@ -420,9 +358,6 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         }
         catch (GridCacheEntryRemovedException ignore) {
             evicted.add(key);
-
-            if (keyBytes != null)
-                evictedBytes.add(keyBytes);
 
             if (log.isDebugEnabled())
                 log.debug("Got removed entry when adding reads to remote transaction (will ignore): " + cached);

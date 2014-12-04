@@ -78,16 +78,13 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param syncCommit Synchronous commit flag.
-     * @param syncRollback Synchronous rollback flag.
      * @param explicitLock Explicit lock flag.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and whole partition should be locked.
      * @param txNodes Transaction nodes mapping.
      */
-    GridDhtTxLocal(
+    public GridDhtTxLocal(
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
         GridUuid nearFutId,
@@ -95,24 +92,32 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         long nearThreadId,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
         boolean explicitLock,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
         int taskNameHash
     ) {
-        super(cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer), implicit, implicitSingle, cctx,
-            concurrency, isolation, timeout, invalidate, syncCommit, syncRollback, explicitLock, txSize, grpLockKey,
-            partLock, subjId, taskNameHash);
+        super(
+            cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer),
+            implicit,
+            implicitSingle,
+            cctx,
+            concurrency,
+            isolation,
+            timeout,
+            explicitLock,
+            txSize,
+            grpLockKey,
+            partLock,
+            subjId,
+            taskNameHash);
 
         assert cctx != null;
         assert nearNodeId != null;
@@ -193,18 +198,12 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** {@inheritDoc} */
     @Override protected boolean isBatchUpdate() {
         // Cache store updates may happen from DHT local transactions if write behind is enabled.
-        return (cctx.writeToStoreFromDht() || onePhaseCommit()) && super.isBatchUpdate();
+        return super.isBatchUpdate() && (store().writeToStoreFromDht() || onePhaseCommit());
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isSingleUpdate() {
-        // Cache store updates may happen from DHT local transactions if write behind is enabled.
-        return (cctx.writeToStoreFromDht() || onePhaseCommit()) && super.isSingleUpdate();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean updateNearCache(K key, long topVer) {
-        return cctx.isDht() && isNearEnabled(cctx) && !cctx.localNodeId().equals(nearNodeId());
+    @Override protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
+        return cacheCtx.isDht() && isNearEnabled(cacheCtx) && !cctx.localNodeId().equals(nearNodeId());
     }
 
     /**
@@ -244,7 +243,9 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     @Override @Nullable protected GridFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
         GridCacheTxEntry<K, V> entry, long topVer) {
         // Don't add local node as reader.
-        if (!cctx.nodeId().equals(nearNodeId)) {
+        if (!cctx.localNodeId().equals(nearNodeId)) {
+            GridCacheContext<K, V> cacheCtx = cached.context();
+
             while (true) {
                 try {
                     return cached.addReader(nearNodeId, msgId, topVer);
@@ -253,7 +254,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry when adding to DHT local transaction: " + cached);
 
-                    cached = cctx.dht().entryExx(entry.key(), topVer);
+                    cached = cacheCtx.dht().entryExx(entry.key(), topVer);
                 }
             }
         }
@@ -273,7 +274,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         if (optimistic()) {
             assert isSystemInvalidate();
 
-            return prepareAsync(null, null, Collections.<K, GridCacheVersion>emptyMap(), 0, nearMiniId, null, true,
+            return prepareAsync(null, null, Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap(), 0, nearMiniId, null, true,
                 null);
         }
 
@@ -283,7 +284,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         if (fut == null) {
             // Future must be created before any exception can be thrown.
             if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture<>(cctx, this, nearMiniId,
-                Collections.<K, GridCacheVersion>emptyMap(), true, null)))
+                Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap(), true, null)))
                 return prepFut.get();
         }
         else
@@ -342,7 +343,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @return Future that will be completed when locks are acquired.
      */
     public GridFuture<GridCacheTxEx<K, V>> prepareAsync(@Nullable Iterable<GridCacheTxEntry<K, V>> reads,
-        @Nullable Iterable<GridCacheTxEntry<K, V>> writes, Map<K, GridCacheVersion> verMap, long msgId,
+        @Nullable Iterable<GridCacheTxEntry<K, V>> writes, Map<GridCacheTxKey<K>, GridCacheVersion> verMap, long msgId,
         GridUuid nearMiniId, Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
         assert optimistic();
 
@@ -596,7 +597,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
     @Override public boolean finish(boolean commit) throws GridException {
-        assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate() || !isNearEnabled(cctx)
+        assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate() //|| !isNearEnabled(cctx) TODO GG-9141
             || onePhaseCommit() || state() == PREPARED :
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
             ", sysInvalidate=" + isSystemInvalidate() + ", state=" + state() + ']';

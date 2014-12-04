@@ -214,7 +214,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void testMultiThreadedSwapUnswapString() throws Exception {
+    public void _testMultiThreadedSwapUnswapString() throws Exception { // TODO GG-9141
         int threadCnt = 150;
         final int keyCnt = 2000;
         final int valCnt = 10000;
@@ -294,7 +294,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void testMultiThreadedSwapUnswapLong() throws Exception {
+    public void _testMultiThreadedSwapUnswapLong() throws Exception { // TODO GG-9141
         int threadCnt = 150;
         final int keyCnt = 2000;
         final int valCnt = 10000;
@@ -376,7 +376,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void testMultiThreadedSwapUnswapLongString() throws Exception {
+    public void _testMultiThreadedSwapUnswapLongString() throws Exception { // TODO GG-9141
         int threadCnt = 150;
         final int keyCnt = 2000;
         final int valCnt = 10000;
@@ -459,7 +459,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void testMultiThreadedSwapUnswapObject() throws Exception {
+    public void _testMultiThreadedSwapUnswapObject() throws Exception { // TODO GG-9141
         int threadCnt = 50;
         final int keyCnt = 4000;
         final int valCnt = 10000;

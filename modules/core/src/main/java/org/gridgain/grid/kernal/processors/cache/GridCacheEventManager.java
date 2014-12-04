@@ -30,7 +30,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void start0() {
-        locNodeId = cctx.nodeId();
+        locNodeId = cctx.localNodeId();
     }
 
     /**

@@ -222,8 +222,16 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
-                    updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                        forceTransformBackups, this.updateReq.subjectId(),
+                    updateReq = new GridDhtAtomicUpdateRequest<>(
+                        cctx.cacheId(),
+                        nodeId,
+                        futVer,
+                        writeVer,
+                        syncMode,
+                        topVer,
+                        ttl,
+                        forceTransformBackups,
+                        this.updateReq.subjectId(),
                         this.updateReq.taskNameHash());
 
                     mappings.put(nodeId, updateReq);
@@ -260,8 +268,16 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 if (node == null)
                     continue;
 
-                updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                    forceTransformBackups, this.updateReq.subjectId(),
+                updateReq = new GridDhtAtomicUpdateRequest<>(
+                    cctx.cacheId(),
+                    nodeId,
+                    futVer,
+                    writeVer,
+                    syncMode,
+                    topVer,
+                    ttl,
+                    forceTransformBackups,
+                    this.updateReq.subjectId(),
                     this.updateReq.taskNameHash());
 
                 mappings.put(nodeId, updateReq);

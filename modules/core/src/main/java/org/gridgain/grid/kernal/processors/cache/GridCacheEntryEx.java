@@ -90,6 +90,11 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public K key();
 
     /**
+     * @return Transaction key.
+     */
+    public GridCacheTxKey<K> txKey();
+
+    /**
      * @return Value.
      */
     public V rawGet();

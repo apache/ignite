@@ -242,31 +242,6 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
     @Nullable public GridCacheEntry<K, V> randomEntry();
 
     /**
-     * Runs DGC procedure on demand using
-     * {@link GridCacheConfiguration#getDgcSuspectLockTimeout()} to identify suspect locks.
-     * <p>
-     * Method blocks current thread until locks are examined and all DGC requests are sent
-     * to remote nodes.
-     * <p>
-     * DGC does not remove locks if {@link GridCacheConfiguration#isDgcRemoveLocks()}
-     * is set to {@code false}.
-     */
-    public void dgc();
-
-    /**
-     * Runs DGC procedure on demand using provided parameter to identify suspect locks.
-     * <p>
-     * Method blocks current thread until locks are examined and all DGC requests are sent
-     * to remote nodes and (if {@code global} is {@code true}) all nodes running this cache
-     * will get signal to start GC procedure.
-     *
-     * @param suspectLockTimeout Custom suspect lock timeout (should be greater than or equal to 0).
-     * @param global If {@code true} then GC procedure will start on all nodes having this cache.
-     * @param rmvLocks If {@code false} then DGC does not remove locks, just report them to log.
-     */
-    public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks);
-
-    /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
      * {@link GridCacheConfiguration#getPreloadPartitionedDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay

@@ -27,7 +27,7 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     private GridLogger log;
 
     /** Cache context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Store map. */
     private Map<StoreKey, GridCacheCommittedTxInfo<K, V>> infoMap;
@@ -35,12 +35,12 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     /**
      * @param cctx Cache context.
      */
-    public GridCachePerThreadTxCommitBuffer(GridCacheContext<K, V> cctx) {
+    public GridCachePerThreadTxCommitBuffer(GridCacheSharedContext<K, V> cctx) {
         this.cctx = cctx;
 
         log = cctx.logger(GridCachePerThreadTxCommitBuffer.class);
 
-        int logSize = cctx.config().getPessimisticTxLogSize();
+        int logSize = cctx.txConfig().getPessimisticTxLogSize();
 
         infoMap = logSize > 0 ?
             new GridBoundedConcurrentLinkedHashMap<StoreKey, GridCacheCommittedTxInfo<K, V>>(logSize) :
@@ -85,7 +85,7 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     @Override public void onNodeLeft(UUID nodeId) {
         // Clear all node's records after clear interval.
         cctx.kernalContext().timeout().addTimeoutObject(
-            new NodeLeftTimeoutObject(cctx.config().getPessimisticTxLogLinger(), nodeId));
+            new NodeLeftTimeoutObject(cctx.txConfig().getPessimisticTxLogLinger(), nodeId));
     }
 
     /** {@inheritDoc} */

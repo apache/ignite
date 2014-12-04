@@ -38,10 +38,15 @@ public class GridCacheReplicatedTxMultiThreadedSelfTest extends GridCacheTxMulti
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        GridTransactionsConfiguration tCfg = new GridTransactionsConfiguration();
+
+        tCfg.setTxSerializableEnabled(true);
+
+        c.setTransactionsConfiguration(tCfg);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(REPLICATED);
-        cc.setTxSerializableEnabled(true);
 
         cc.setEvictionPolicy(null);
 

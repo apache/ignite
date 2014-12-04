@@ -201,12 +201,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /**
      * @param invalidPart Partition to retry.
      */
-    void addInvalidPartition(int invalidPart) {
+    void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int invalidPart) {
         invalidParts.add(invalidPart);
 
         // Register invalid partitions with transaction.
         if (tx != null)
-            tx.addInvalidPartition(invalidPart);
+            tx.addInvalidPartition(cacheCtx, invalidPart);
 
         if (log.isDebugEnabled())
             log.debug("Added invalid partition to future [invalidPart=" + invalidPart + ", fut=" + this + ']');
@@ -805,6 +805,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     MiniFuture fut = new MiniFuture(n, dhtMapping, nearMapping);
 
                     GridDhtLockRequest<K, V> req = new GridDhtLockRequest<>(
+                        cctx.cacheId(),
                         nearNodeId,
                         inTx() ? tx.nearXidVersion() : null,
                         threadId,
@@ -834,8 +835,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             req.addDhtKey(
                                 e.key(),
                                 e.getOrMarshalKeyBytes(),
-                                tx != null ? tx.writeMap().get(e.key()) : null,
-                                tx != null ? tx.entry(e.key()).drVersion() : null,
+                                tx != null ? tx.writeMap().get(e.txKey()) : null,
+                                tx != null ? tx.entry(e.txKey()).drVersion() : null,
                                 invalidateRdr,
                                 cctx);
 
@@ -880,6 +881,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     MiniFuture fut = new MiniFuture(n, null, nearMapping);
 
                     GridDhtLockRequest<K, V> req = new GridDhtLockRequest<>(
+                        cctx.cacheId(),
                         nearNodeId,
                         inTx() ? tx.nearXidVersion() : null,
                         threadId,
@@ -904,7 +906,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         for (ListIterator<GridDhtCacheEntry<K, V>> it = nearMapping.listIterator(); it.hasNext();) {
                             GridDhtCacheEntry<K, V> e = it.next();
 
-                            req.addNearKey(e.key(), e.getOrMarshalKeyBytes(), cctx);
+                            req.addNearKey(e.key(), e.getOrMarshalKeyBytes(), cctx.shared());
 
                             it.set(addOwned(req, e));
                         }
@@ -1170,7 +1172,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
          * @param entries Entries to check.
          */
         @SuppressWarnings({"ForLoopReplaceableByForEach"})
-        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<K> keys, UUID nodeId, long msgId,
+        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<GridCacheTxKey<K>> keys, UUID nodeId, long msgId,
             @Nullable List<GridDhtCacheEntry<K, V>> entries) {
             if (entries == null || keys == null || entries.isEmpty() || keys.isEmpty())
                 return;
@@ -1178,7 +1180,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             for (ListIterator<GridDhtCacheEntry<K, V>> it = entries.listIterator(); it.hasNext(); ) {
                 GridDhtCacheEntry<K, V> cached = it.next();
 
-                if (keys.contains(cached.key())) {
+                if (keys.contains(cached.txKey())) {
                     while (true) {
                         try {
                             cached.removeReader(nodeId, msgId);
