@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
@@ -18,7 +19,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Test for {@link org.gridgain.grid.Ignite}.
+ * Test for {@link org.apache.ignite.Ignite}.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridSelfTest extends GridProjectionAbstractTest {

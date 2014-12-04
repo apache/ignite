@@ -10,6 +10,7 @@
 package org.gridgain.grid.ggfs;
 
 import junit.framework.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;

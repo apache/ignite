@@ -15,7 +15,7 @@ import org.gridgain.grid.compute.*;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of current {@link org.gridgain.grid.Ignite} instance.
+ * Annotates a field or a setter method for injection of current {@link org.apache.ignite.Ignite} instance.
  * It can be injected into grid tasks and grid jobs. Note that grid instance will
  * not be injected into SPI's, as there is no grid during SPI start.
  * <p>

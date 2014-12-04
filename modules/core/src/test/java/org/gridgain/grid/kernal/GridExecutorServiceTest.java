@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;

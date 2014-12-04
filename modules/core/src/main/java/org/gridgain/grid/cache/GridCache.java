@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link org.gridgain.grid.Ignite#cache(String)}
+ * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link org.apache.ignite.Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
  * This API extends {@link GridCacheProjection} API which contains vast majority of cache functionality

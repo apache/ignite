@@ -9,6 +9,7 @@
 
 package org.gridgain.testframework.junits.common;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 

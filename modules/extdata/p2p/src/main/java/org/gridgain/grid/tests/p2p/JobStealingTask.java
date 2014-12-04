@@ -1,5 +1,6 @@
 package org.gridgain.grid.tests.p2p;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;

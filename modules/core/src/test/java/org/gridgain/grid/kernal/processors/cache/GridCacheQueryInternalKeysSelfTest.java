@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -86,7 +87,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     }
 
     /**
-     * Finds the {@link org.gridgain.grid.Ignite}, which has a local node
+     * Finds the {@link org.apache.ignite.Ignite}, which has a local node
      * with given ID.
      *
      * @param nodeId ID for grid's local node.

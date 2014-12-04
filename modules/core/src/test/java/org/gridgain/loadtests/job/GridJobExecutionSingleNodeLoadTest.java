@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.job;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.typedef.*;

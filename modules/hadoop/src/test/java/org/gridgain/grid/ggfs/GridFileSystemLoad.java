@@ -12,7 +12,7 @@ package org.gridgain.grid.ggfs;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.*;
-import org.gridgain.grid.Ignite;
+import org.apache.ignite.Ignite;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

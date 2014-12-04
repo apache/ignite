@@ -9,6 +9,7 @@
 
 package org.gridgain.examples;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.lang.GridCallable;

@@ -11,9 +11,9 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.Ignite
 import org.gridgain.scalar.scalar
 import scalar._
-import org.gridgain.grid.Ignite
 
 /**
  * Demonstrates various starting and stopping ways of grid using Scalar.

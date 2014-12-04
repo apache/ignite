@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.affinity.consistenthash;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;

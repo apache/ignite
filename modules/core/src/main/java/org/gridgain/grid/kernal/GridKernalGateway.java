@@ -22,7 +22,7 @@ import org.gridgain.grid.util.tostring.*;
  * the following non-rich interfaces since their implementations are already managed
  * by their respective implementing classes:
  * <ul>
- * <li>{@link org.gridgain.grid.Ignite}</li>
+ * <li>{@link org.apache.ignite.Ignite}</li>
  * <li>{@link GridNode}</li>
  * </ul>
  * Kernal gateway is also responsible for notifying various futures about the change in

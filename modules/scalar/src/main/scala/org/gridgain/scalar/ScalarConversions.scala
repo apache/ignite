@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar
 
+import org.apache.ignite.Ignite
 import org.gridgain.grid.lang._
 import org.gridgain.grid.cache._
 import org.gridgain.grid._

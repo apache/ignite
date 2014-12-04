@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.mergesort;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;

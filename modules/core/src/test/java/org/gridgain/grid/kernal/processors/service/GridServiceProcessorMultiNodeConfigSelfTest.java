@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;

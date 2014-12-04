@@ -25,7 +25,7 @@ import java.util.*;
  * to {@link GridComputeTask#map(List, Object)} method. You can also get a handle on
  * discovered nodes by calling any of the following methods:
  * <ul>
- * <li>{@link Ignite#localNode()}</li>
+ * <li>{@link org.apache.ignite.Ignite#localNode()}</li>
  * </ul>
  * <p>
  * <h1 class="header">Grid Node Attributes</h1>
@@ -54,7 +54,7 @@ import java.util.*;
  * <li>{@code org.gridgain.jit.name} - Name of JIT compiler used.</li>
  * <li>{@code org.gridgain.net.itf.name} - Name of network interface.</li>
  * <li>{@code org.gridgain.user.name} - Operating system user name.</li>
- * <li>{@code org.gridgain.grid.name} - Grid name (see {@link Ignite#name()}).</li>
+ * <li>{@code org.gridgain.grid.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
  * <li>
  *      {@code spiName.org.gridgain.spi.class} - SPI implementation class for every SPI,
  *      where {@code spiName} is the name of the SPI (see {@link GridSpi#getName()}.
@@ -229,7 +229,7 @@ public interface GridNode extends GridMetadataAware {
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
      * visible on the main APIs, i.e. they are not part of any projections. The only
-     * way to see daemon nodes is to use {@link Ignite#forDaemons()} method.
+     * way to see daemon nodes is to use {@link org.apache.ignite.Ignite#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
      * is build on GridGain and needs to participate in the topology but should be

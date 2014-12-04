@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.communication.tcp;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.communication.*;

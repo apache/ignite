@@ -7,9 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import org.apache.ignite.plugin.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
@@ -34,15 +35,15 @@ import java.util.concurrent.*;
 
 /**
  * Main entry-point for all GridGain APIs.
- * You can obtain an instance of {@code Grid} through {@link GridGain#grid()},
- * or for named grids you can use {@link GridGain#grid(String)}. Note that you
+ * You can obtain an instance of {@code Grid} through {@link org.gridgain.grid.GridGain#grid()},
+ * or for named grids you can use {@link org.gridgain.grid.GridGain#grid(String)}. Note that you
  * can have multiple instances of {@code Grid} running in the same VM by giving
  * each instance a different name.
  * <p>
- * Note that {@code Grid} extends {@link GridProjection} which means that it provides grid projection
+ * Note that {@code Grid} extends {@link org.gridgain.grid.GridProjection} which means that it provides grid projection
  * functionality over the whole grid (instead os a subgroup of nodes).
  * <p>
- * In addition to {@link GridProjection} functionality, from here you can get the following:
+ * In addition to {@link org.gridgain.grid.GridProjection} functionality, from here you can get the following:
  * <ul>
  * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link GridDataLoader} - functionality for loading data large amounts of data into cache.</li>
@@ -51,9 +52,9 @@ import java.util.concurrent.*;
  * <li>{@link GridStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
- * <li>{@link GridCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link GridProjection}).</li>
- * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link GridProjection}).</li>
- * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link GridProjection}).</li>
+ * <li>{@link GridCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.gridgain.grid.GridProjection}).</li>
+ * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.gridgain.grid.GridProjection}).</li>
+ * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.gridgain.grid.GridProjection}).</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
@@ -64,7 +65,7 @@ public interface Ignite extends AutoCloseable {
      * local node) belongs to.
      * <p>
      * If default grid instance is used, then
-     * {@code null} is returned. Refer to {@link GridGain} documentation
+     * {@code null} is returned. Refer to {@link org.gridgain.grid.GridGain} documentation
      * for information on how to start named grids.
      *
      * @return Name of the grid, or {@code null} for default grid.

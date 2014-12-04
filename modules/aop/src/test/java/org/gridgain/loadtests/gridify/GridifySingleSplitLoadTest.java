@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.gridify;
 
+import org.apache.ignite.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.loadtest.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
@@ -19,8 +20,8 @@ import java.util.*;
 
 /**
  * Defines grid projection which represents a common functionality over a group of nodes.
- * The {@link Ignite} interface itself also extends {@code GridProjection} which makes
- * an instance of {@link Ignite} a projection over all grid nodes.
+ * The {@link org.apache.ignite.Ignite} interface itself also extends {@code GridProjection} which makes
+ * an instance of {@link org.apache.ignite.Ignite} a projection over all grid nodes.
  * <h1 class="header">Clustering</h1>
  * Grid projection allows to group grid nodes into various subgroups to perform distributed
  * operations on them. All {@code 'forXXX(...)'} methods will create a child grid projection

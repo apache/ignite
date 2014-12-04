@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.p2p;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.springframework.context.*;

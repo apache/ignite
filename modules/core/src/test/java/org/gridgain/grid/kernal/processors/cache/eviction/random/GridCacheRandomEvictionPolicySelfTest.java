@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.eviction.random;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.random.*;

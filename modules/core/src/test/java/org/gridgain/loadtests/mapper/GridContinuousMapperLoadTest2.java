@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.mapper;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.util.typedef.*;
 

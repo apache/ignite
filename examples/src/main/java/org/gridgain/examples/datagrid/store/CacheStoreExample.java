@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.datagrid.store;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 

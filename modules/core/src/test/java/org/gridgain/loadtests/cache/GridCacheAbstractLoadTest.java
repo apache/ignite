@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.cache;
 
+import org.apache.ignite.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.gridgain.grid.*;

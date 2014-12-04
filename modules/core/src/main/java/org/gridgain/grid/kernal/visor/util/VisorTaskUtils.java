@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.util;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;

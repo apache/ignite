@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.streamer.router;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.streamer.*;

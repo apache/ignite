@@ -12,6 +12,7 @@
 package org.gridgain.scalar
 
 import java.net.URL
+import org.apache.ignite.Ignite
 import org.jetbrains.annotations.Nullable
 import java.util.UUID
 import org.gridgain.grid._

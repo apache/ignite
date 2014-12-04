@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 /**

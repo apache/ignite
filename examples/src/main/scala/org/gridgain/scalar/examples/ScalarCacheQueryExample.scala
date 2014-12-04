@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.Ignite
 import org.gridgain.scalar._
 import scalar._
 import org.gridgain.grid._

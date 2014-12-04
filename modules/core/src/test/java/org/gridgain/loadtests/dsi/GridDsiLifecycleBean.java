@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.dsi;
 
-import org.gridgain.grid.Ignite;
+import org.apache.ignite.Ignite;
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridLifecycleBean;
 import org.gridgain.grid.GridLifecycleEventType;

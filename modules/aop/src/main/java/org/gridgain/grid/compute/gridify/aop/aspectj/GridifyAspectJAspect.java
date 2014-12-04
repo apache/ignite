@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.compute.gridify.aop.aspectj;
 
+import org.apache.ignite.*;
 import org.aspectj.lang.*;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.*;

@@ -23,7 +23,7 @@ import java.io.*;
  * Node metrics for any node can be accessed via {@link GridNode#metrics()}
  * method. Keep in mind that there will be a certain network delay (usually
  * equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
- * metrics on local node {@link Ignite#localNode() Grid.localNode().getMetrics()}
+ * metrics on local node {@link org.apache.ignite.Ignite#localNode() Grid.localNode().getMetrics()}
  * the metrics are always accurate and up to date.
  * <p>
  * Local node metrics are registered as {@code MBean} and can be accessed from

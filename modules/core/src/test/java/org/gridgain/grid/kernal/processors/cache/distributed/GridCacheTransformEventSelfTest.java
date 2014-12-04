@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.eclipse.jetty.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;

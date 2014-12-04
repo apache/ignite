@@ -1,6 +1,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import com.google.common.collect.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;

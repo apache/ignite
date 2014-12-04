@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.Ignite;
+import org.apache.ignite.Ignite;
 
 /**
  * Test kernal utils.

@@ -1,5 +1,6 @@
 package org.gridgain.grid.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.marshaller.*;

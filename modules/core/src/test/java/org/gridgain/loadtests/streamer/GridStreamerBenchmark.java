@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.streamer;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.misc.deployment;
 
+import org.apache.ignite.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;

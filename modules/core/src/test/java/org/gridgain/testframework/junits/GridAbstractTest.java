@@ -10,6 +10,7 @@
 package org.gridgain.testframework.junits;
 
 import junit.framework.*;
+import org.apache.ignite.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
