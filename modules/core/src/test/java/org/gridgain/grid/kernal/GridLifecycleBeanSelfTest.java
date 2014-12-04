@@ -19,7 +19,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.GridLifecycleEventType.*;
+import static org.gridgain.grid.LifecycleEventType.*;
 
 /**
  * Lifecycle bean test.
@@ -202,7 +202,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
      * @param gridErr Grid error flag.
      * @throws Exception If failed.
      */
-    private void checkOnStop(GridLifecycleEventType evt, boolean gridErr) throws Exception {
+    private void checkOnStop(LifecycleEventType evt, boolean gridErr) throws Exception {
         bean = new LifeCycleExceptionBean(evt, gridErr);
 
         try {
@@ -230,19 +230,19 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
      */
     private static class LifeCycleBaseBean implements LifecycleBean {
         /** */
-        private Map<GridLifecycleEventType, AtomicInteger> callsCntr =
-            new EnumMap<>(GridLifecycleEventType.class);
+        private Map<LifecycleEventType, AtomicInteger> callsCntr =
+            new EnumMap<>(LifecycleEventType.class);
 
         /**
          *
          */
         private LifeCycleBaseBean() {
-            for (GridLifecycleEventType t : GridLifecycleEventType.values())
+            for (LifecycleEventType t : LifecycleEventType.values())
                 callsCntr.put(t, new AtomicInteger());
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
             callsCntr.get(evt).incrementAndGet();
         }
 
@@ -250,7 +250,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
          * @param t Event type.
          * @return Number of calls.
          */
-        public int count(GridLifecycleEventType t) {
+        public int count(LifecycleEventType t) {
             return callsCntr.get(t).get();
         }
     }
@@ -260,7 +260,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
      */
     private static class LifeCycleExceptionBean extends LifeCycleBaseBean {
         /** */
-        private GridLifecycleEventType errType;
+        private LifecycleEventType errType;
 
         private boolean gridErr;
 
@@ -268,13 +268,13 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
          * @param errType type of event to throw error.
          * @param gridErr {@code True} if {@link GridException}.
          */
-        private LifeCycleExceptionBean(GridLifecycleEventType errType, boolean gridErr) {
+        private LifeCycleExceptionBean(LifecycleEventType errType, boolean gridErr) {
             this.errType = errType;
             this.gridErr = gridErr;
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
             if (evt == errType) {
                 if (gridErr)
                     throw new GridException("Expected exception for event: " + evt) {

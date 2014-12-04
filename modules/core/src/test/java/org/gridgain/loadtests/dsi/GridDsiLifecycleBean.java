@@ -34,7 +34,7 @@ public class GridDsiLifecycleBean implements LifecycleBean {
     private ApplicationContext springCtx;
 
     /** {@inheritDoc} */
-    @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
+    @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
         switch (evt) {
             case BEFORE_GRID_START:
                 break;

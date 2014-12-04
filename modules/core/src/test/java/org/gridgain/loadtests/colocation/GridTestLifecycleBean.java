@@ -22,8 +22,8 @@ public class GridTestLifecycleBean implements LifecycleBean {
     @GridInstanceResource
     private Ignite g;
 
-    @Override public void onLifecycleEvent(GridLifecycleEventType type) throws GridException {
-        if (type == GridLifecycleEventType.AFTER_GRID_START) {
+    @Override public void onLifecycleEvent(LifecycleEventType type) throws GridException {
+        if (type == LifecycleEventType.AFTER_GRID_START) {
             GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 
             assert cache != null;

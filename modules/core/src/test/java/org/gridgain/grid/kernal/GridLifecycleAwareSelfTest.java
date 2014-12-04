@@ -86,7 +86,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
             // No-op.
         }
     }

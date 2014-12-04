@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
  * For more information and detailed examples refer to {@link org.apache.ignite.lifecycle.LifecycleBean}
  * documentation.
  */
-public enum GridLifecycleEventType {
+public enum LifecycleEventType {
     /**
      * Invoked before grid startup routine. Grid is not
      * initialized and cannot be used.
@@ -44,7 +44,7 @@ public enum GridLifecycleEventType {
     AFTER_GRID_STOP;
 
     /** Enumerated values. */
-    private static final GridLifecycleEventType[] VALS = values();
+    private static final LifecycleEventType[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -52,7 +52,7 @@ public enum GridLifecycleEventType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridLifecycleEventType fromOrdinal(byte ord) {
+    @Nullable public static LifecycleEventType fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

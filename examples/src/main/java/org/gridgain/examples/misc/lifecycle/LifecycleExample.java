@@ -15,7 +15,7 @@ import org.apache.ignite.lifecycle.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 
-import static org.gridgain.grid.GridLifecycleEventType.*;
+import static org.gridgain.grid.LifecycleEventType.*;
 
 /**
  * This example shows how to provide your own {@link org.apache.ignite.lifecycle.LifecycleBean} implementation
@@ -64,7 +64,7 @@ public final class LifecycleExample {
         private boolean isStarted;
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(GridLifecycleEventType evt) {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) {
             System.out.println();
             System.out.println(">>> Grid lifecycle event occurred: " + evt);
             System.out.println(">>> Grid name: " + ignite.name());

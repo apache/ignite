@@ -169,14 +169,14 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     private void checkLifecycleBean(TestLifecycleBean bean, String gridName) {
         bean.checkErrors();
 
-        List<GridLifecycleEventType> evts = bean.getLifecycleEvents();
+        List<LifecycleEventType> evts = bean.getLifecycleEvents();
 
         List<String> gridNames = bean.getGridNames();
 
-        assert evts.get(0) == GridLifecycleEventType.BEFORE_GRID_START : "Invalid lifecycle event: " + evts.get(0);
-        assert evts.get(1) == GridLifecycleEventType.AFTER_GRID_START : "Invalid lifecycle event: " + evts.get(1);
-        assert evts.get(2) == GridLifecycleEventType.BEFORE_GRID_STOP : "Invalid lifecycle event: " + evts.get(2);
-        assert evts.get(3) == GridLifecycleEventType.AFTER_GRID_STOP : "Invalid lifecycle event: " + evts.get(3);
+        assert evts.get(0) == LifecycleEventType.BEFORE_GRID_START : "Invalid lifecycle event: " + evts.get(0);
+        assert evts.get(1) == LifecycleEventType.AFTER_GRID_START : "Invalid lifecycle event: " + evts.get(1);
+        assert evts.get(2) == LifecycleEventType.BEFORE_GRID_STOP : "Invalid lifecycle event: " + evts.get(2);
+        assert evts.get(3) == LifecycleEventType.AFTER_GRID_STOP : "Invalid lifecycle event: " + evts.get(3);
 
         checkGridNameEquals(gridNames.get(0), gridName);
         checkGridNameEquals(gridNames.get(1), gridName);
@@ -647,7 +647,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Lifecycle events. */
-        private final List<GridLifecycleEventType> evts = new ArrayList<>();
+        private final List<LifecycleEventType> evts = new ArrayList<>();
 
         /** Grid names. */
         private final List<String> gridNames = new ArrayList<>();
@@ -656,14 +656,14 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private final AtomicReference<Throwable> err = new AtomicReference<>();
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(GridLifecycleEventType evt) {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) {
             evts.add(evt);
 
             gridNames.add(ignite.name());
 
             try {
                 checkState(ignite.name(),
-                    evt == GridLifecycleEventType.AFTER_GRID_START || evt == GridLifecycleEventType.BEFORE_GRID_STOP);
+                    evt == LifecycleEventType.AFTER_GRID_START || evt == LifecycleEventType.BEFORE_GRID_STOP);
             }
             catch (Throwable e) {
                 log.error("Lifecycle bean failed state check: " + this, e);
@@ -699,7 +699,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
          *
          * @return Ordered list of lifecycle events.
          */
-        List<GridLifecycleEventType> getLifecycleEvents() {
+        List<LifecycleEventType> getLifecycleEvents() {
             return evts;
         }
 

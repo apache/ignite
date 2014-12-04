@@ -73,7 +73,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             @GridInstanceResource
             private Ignite ignite;
 
-            @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
+            @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
                 switch (evt) {
                     case AFTER_GRID_START: {
                         GridCache<Object, MyValue> c1 = ignite.cache("one");

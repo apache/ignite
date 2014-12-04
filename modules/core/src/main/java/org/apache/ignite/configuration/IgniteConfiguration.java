@@ -1759,7 +1759,7 @@ public class IgniteConfiguration {
      *
      * @return Collection of life-cycle beans.
      * @see org.apache.ignite.lifecycle.LifecycleBean
-     * @see GridLifecycleEventType
+     * @see org.gridgain.grid.LifecycleEventType
      */
     public LifecycleBean[] getLifecycleBeans() {
         return lifecycleBeans;
@@ -1772,7 +1772,7 @@ public class IgniteConfiguration {
      * routines.
      *
      * @param lifecycleBeans Collection of lifecycle beans.
-     * @see GridLifecycleEventType
+     * @see org.gridgain.grid.LifecycleEventType
      */
     public void setLifecycleBeans(LifecycleBean... lifecycleBeans) {
         this.lifecycleBeans = lifecycleBeans;

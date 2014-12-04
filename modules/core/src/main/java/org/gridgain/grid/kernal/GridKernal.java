@@ -93,7 +93,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.GridLifecycleEventType.*;
+import static org.gridgain.grid.LifecycleEventType.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
@@ -519,7 +519,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      * @throws GridException If user threw exception during start.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    private void notifyLifecycleBeans(GridLifecycleEventType evt) throws GridException {
+    private void notifyLifecycleBeans(LifecycleEventType evt) throws GridException {
         if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null)
             for (LifecycleBean bean : cfg.getLifecycleBeans())
                 if (bean != null)
@@ -532,7 +532,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      * @param evt Grid event.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    private void notifyLifecycleBeansEx(GridLifecycleEventType evt) {
+    private void notifyLifecycleBeansEx(LifecycleEventType evt) {
         try {
             notifyLifecycleBeans(evt);
         }
@@ -1896,7 +1896,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
                 if (log.isDebugEnabled())
                     log.debug("Notifying lifecycle beans.");
 
-                notifyLifecycleBeansEx(GridLifecycleEventType.BEFORE_GRID_STOP);
+                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_GRID_STOP);
             }
 
             GridEmailProcessorAdapter email = ctx.email();
@@ -1984,7 +1984,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
             U.stopLifecycleAware(log, lifecycleAwares(cfg));
 
             // Lifecycle notification.
-            notifyLifecycleBeansEx(GridLifecycleEventType.AFTER_GRID_STOP);
+            notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             GridOptimizedMarshaller.clearCache();
