@@ -27,7 +27,7 @@ public interface IgniteFuture<R> {
      *
      * @return Computation result.
      * @throws org.gridgain.grid.GridInterruptedException Subclass of {@link org.gridgain.grid.GridException} thrown if the wait was interrupted.
-     * @throws org.gridgain.grid.IgniteFutureCancelledException Subclass of {@link org.gridgain.grid.GridException} throws if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of {@link org.gridgain.grid.GridException} throws if computation was cancelled.
      * @throws org.gridgain.grid.GridException If computation failed.
      */
     public R get() throws GridException;
@@ -41,7 +41,7 @@ public interface IgniteFuture<R> {
      * @return Computation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
      * @throws GridFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws org.gridgain.grid.IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
      * @throws GridException If computation failed.
      */
     public R get(long timeout) throws GridException;
@@ -55,7 +55,7 @@ public interface IgniteFuture<R> {
      * @return Computation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
      * @throws GridFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws org.gridgain.grid.IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
      * @throws GridException If computation failed.
      */
     public R get(long timeout, TimeUnit unit) throws GridException;

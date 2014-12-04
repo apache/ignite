@@ -685,7 +685,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      * Checks that the future is in valid state for get operation.
      *
      * @return Latch or {@code null} if future has been finished.
-     * @throws org.gridgain.grid.IgniteFutureCancelledException If was cancelled.
+     * @throws org.apache.ignite.lang.IgniteFutureCancelledException If was cancelled.
      */
     @Nullable private CountDownLatch ensureGet() throws IgniteFutureCancelledException {
         synchronized (mux) {

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.future.nio;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.nio.*;
