@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.portable.os;
 
+import org.apache.ignite.portables.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
-import org.gridgain.grid.portables.*;
+import org.apache.ignite.portables.*;
 
 import java.io.Serializable;
 import java.util.*;

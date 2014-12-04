@@ -8,12 +8,11 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.portables.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * This class provides implementation for commit message fields and cannot be used directly.

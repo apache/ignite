@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.portables;
+package org.apache.ignite.portables;
 
 import org.gridgain.grid.util.typedef.internal.*;
 

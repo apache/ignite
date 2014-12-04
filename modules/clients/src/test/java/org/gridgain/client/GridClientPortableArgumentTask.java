@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.portables.*;
 
 import java.util.*;
 

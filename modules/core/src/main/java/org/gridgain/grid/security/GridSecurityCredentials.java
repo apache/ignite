@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.security;
 
-import org.gridgain.grid.portables.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

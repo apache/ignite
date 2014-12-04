@@ -14,6 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.cloner.*;
@@ -36,7 +37,6 @@ import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -1570,7 +1570,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param obj Object.
      * @return Portable object.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.GridPortableException In case of error.
      */
     @Nullable public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         assert portableEnabled();

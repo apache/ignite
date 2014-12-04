@@ -10,13 +10,13 @@
 package org.gridgain.grid.kernal.processors.rest.handlers.metadata;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

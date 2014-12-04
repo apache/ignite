@@ -8,7 +8,7 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.portables.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

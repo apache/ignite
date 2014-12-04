@@ -236,10 +236,10 @@
         </property>
 
         <property name="portableConfiguration">
-            <bean class="org.gridgain.grid.portables.GridPortableConfiguration">
+            <bean class="org.apache.ignite.portables.GridPortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portables.GridPortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
                         </bean>
                     </list>

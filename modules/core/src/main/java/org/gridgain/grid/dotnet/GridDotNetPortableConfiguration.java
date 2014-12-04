@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.dotnet;
 
-import org.gridgain.grid.portables.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;

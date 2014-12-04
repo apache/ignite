@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portables.*;
+import org.apache.ignite.portables.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
 public interface GridPortableRawReaderEx extends GridPortableRawReader {
     /**
      * @return Object.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.GridPortableException In case of error.
      */
     @Nullable public Object readObjectDetached() throws GridPortableException;
 }

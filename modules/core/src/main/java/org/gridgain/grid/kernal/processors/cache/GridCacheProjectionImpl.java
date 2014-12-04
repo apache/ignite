@@ -11,12 +11,12 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;

@@ -18,7 +18,6 @@ import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -1789,7 +1788,7 @@ public class GridCacheConfiguration {
 
     /**
      * Flag indicating whether GridGain should store portable keys and values
-     * as instances of {@link GridPortableObject}.
+     * as instances of {@link org.apache.ignite.portables.GridPortableObject}.
      *
      * @return Portable enabled flag.
      */

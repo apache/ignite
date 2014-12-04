@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.portable;
 
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -19,7 +19,7 @@ import org.jetbrains.annotations.*;
 public interface GridPortableRawWriterEx extends GridPortableRawWriter, AutoCloseable {
     /**
      * @param obj Object to write.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.GridPortableException In case of error.
      */
     public void writeObjectDetached(@Nullable Object obj) throws GridPortableException;
 

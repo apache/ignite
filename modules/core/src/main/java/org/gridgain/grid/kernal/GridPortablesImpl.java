@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;

@@ -13,7 +13,6 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
-import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
@@ -58,7 +57,7 @@ import java.util.Date;
  * </pre>
  * <h1 class="header">Working With Portable Objects</h1>
  * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
- * {@code true}), all portable keys and values are converted to instances of {@link GridPortableObject}.
+ * {@code true}), all portable keys and values are converted to instances of {@link org.apache.ignite.portables.GridPortableObject}.
  * Therefore, all cache store methods will take parameters in portable format. To avoid class
  * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
  * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
@@ -72,7 +71,7 @@ import java.util.Date;
  *     ...
  * }
  * </pre>
- * Note that only portable classes are converted to {@link GridPortableObject} format. Following
+ * Note that only portable classes are converted to {@link org.apache.ignite.portables.GridPortableObject} format. Following
  * types are stored in cache without changes and therefore should not affect cache store signature:
  * <ul>
  *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>

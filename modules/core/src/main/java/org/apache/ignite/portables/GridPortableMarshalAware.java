@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.portables;
+package org.apache.ignite.portables;
 
 /**
  * Interface that allows to implement custom serialization

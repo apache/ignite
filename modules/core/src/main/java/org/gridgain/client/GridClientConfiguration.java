@@ -9,12 +9,12 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.portables.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
