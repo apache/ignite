@@ -23,7 +23,7 @@ import java.io.*;
  * @see GridNodeMetrics
  * @see GridProjection#metrics()
  */
-public interface GridProjectionMetrics extends Serializable {
+public interface ClusterMetrics extends Serializable {
     /**
      * Gets minimum number of active jobs that concurrently run on nodes in the projection.
      *

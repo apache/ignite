@@ -20,9 +20,9 @@ import java.util.*;
 import static java.lang.Math.*;
 
 /**
- * Implementation for {@link GridProjectionMetrics} interface.
+ * Implementation for {@link org.gridgain.grid.ClusterMetrics} interface.
  */
-class GridProjectionMetricsImpl implements GridProjectionMetrics {
+class ClusterMetricsImpl implements ClusterMetrics {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -245,7 +245,7 @@ class GridProjectionMetricsImpl implements GridProjectionMetrics {
     /**
      * @param p Projection to get metrics for.
      */
-    GridProjectionMetricsImpl(GridProjection p) {
+    ClusterMetricsImpl(GridProjection p) {
         assert p != null;
 
         Collection<ClusterNode> nodes = p.nodes();
@@ -801,6 +801,6 @@ class GridProjectionMetricsImpl implements GridProjectionMetrics {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridProjectionMetricsImpl.class, this);
+        return S.toString(ClusterMetricsImpl.class, this);
     }
 }

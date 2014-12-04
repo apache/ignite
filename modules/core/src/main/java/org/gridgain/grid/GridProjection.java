@@ -248,5 +248,5 @@ public interface GridProjection {
      * @return Grid projection metrics snapshot.
      * @throws GridException If projection is empty.
      */
-    public GridProjectionMetrics metrics() throws GridException;
+    public ClusterMetrics metrics() throws GridException;
 }

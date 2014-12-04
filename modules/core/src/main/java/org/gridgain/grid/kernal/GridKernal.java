@@ -976,7 +976,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         int cpus = 0;
 
                         try {
-                            GridProjectionMetrics metrics = metrics();
+                            ClusterMetrics metrics = metrics();
 
                             hosts = metrics.getTotalHosts();
                             nodes = metrics.getTotalNodes();

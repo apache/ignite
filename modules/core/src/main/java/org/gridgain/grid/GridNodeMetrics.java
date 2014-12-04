@@ -23,14 +23,14 @@ import java.io.*;
  * Node metrics for any node can be accessed via {@link org.apache.ignite.cluster.ClusterNode#metrics()}
  * method. Keep in mind that there will be a certain network delay (usually
  * equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
- * metrics on local node {@link org.apache.ignite.Ignite#localNode() Grid.localNode().getMetrics()}
+ * metrics on local node {@link org.apache.ignite.IgniteCluster#localNode() Grid.localNode().getMetrics()}
  * the metrics are always accurate and up to date.
  * <p>
  * Local node metrics are registered as {@code MBean} and can be accessed from
  * any JMX management console. The simplest way is to use standard {@code jconsole}
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
- * @see GridProjectionMetrics
+ * @see ClusterMetrics
  */
 public interface GridNodeMetrics extends Serializable {
     /**

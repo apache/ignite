@@ -26,7 +26,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Tests for projection metrics.
  */
 @GridCommonTest(group = "Kernal Self")
-public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
+public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 4;
 
@@ -111,7 +111,7 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
             // Wait until local node will have updated metrics.
             metricsUpdLock.await();
 
-            GridProjectionMetrics m = g.cluster().metrics();
+            ClusterMetrics m = g.cluster().metrics();
 
             checkMetrics(m);
         }
@@ -127,7 +127,7 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
      * @param m Metrics.
      */
     @SuppressWarnings({"FloatingPointEquality"})
-    private void checkMetrics(GridProjectionMetrics m) {
+    private void checkMetrics(ClusterMetrics m) {
         assert m.getTotalNodes() == NODES_CNT;
         assert m.getTotalHosts() == 1;
 

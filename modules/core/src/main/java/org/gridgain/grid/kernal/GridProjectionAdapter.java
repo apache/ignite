@@ -251,14 +251,14 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjectionMetrics metrics() throws GridException {
+    @Override public final ClusterMetrics metrics() throws GridException {
         guard();
 
         try {
             if (nodes().isEmpty())
                 throw U.emptyTopologyException();
 
-            return new GridProjectionMetricsImpl(this);
+            return new ClusterMetricsImpl(this);
         }
         finally {
             unguard();

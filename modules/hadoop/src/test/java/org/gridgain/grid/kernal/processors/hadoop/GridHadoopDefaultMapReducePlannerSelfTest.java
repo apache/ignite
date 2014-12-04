@@ -1190,7 +1190,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjectionMetrics metrics() throws GridException {
+        @Override public ClusterMetrics metrics() throws GridException {
             return null;
         }
 

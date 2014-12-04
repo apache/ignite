@@ -2493,7 +2493,7 @@ object visor extends VisorTag {
      *
      * @param m Projection metrics.
      */
-    private def drawBar(m: GridProjectionMetrics) {
+    private def drawBar(m: ClusterMetrics) {
         assert(m != null)
 
         val pipe = "|"
