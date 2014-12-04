@@ -16,7 +16,6 @@ import org.gridgain.scalar.scalar
 import scalar._
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
-import org.gridgain.grid.messaging._
 
 /**
  * Demonstrates simple protocol-based exchange in playing a ping-pong between

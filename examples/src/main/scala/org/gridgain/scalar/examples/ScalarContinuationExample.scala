@@ -16,11 +16,8 @@ import org.apache.ignite.resources.IgniteJobContextResource
 import org.gridgain.scalar._
 import scalar._
 import java.math._
-import org.gridgain.grid._
-import resources._
 import org.jetbrains.annotations.Nullable
 import java.util
-import org.gridgain.grid.compute._
 
 /**
  * This example recursively calculates `Fibonacci` numbers on the grid. This is

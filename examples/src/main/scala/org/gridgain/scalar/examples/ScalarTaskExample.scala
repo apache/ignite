@@ -15,7 +15,6 @@ import org.apache.ignite.compute.{ComputeTaskSplitAdapter, ComputeJob, ComputeJo
 import org.gridgain.scalar.scalar
 import scalar._
 import collection.JavaConversions._
-import org.gridgain.grid.compute._
 import java.util
 
 /**
