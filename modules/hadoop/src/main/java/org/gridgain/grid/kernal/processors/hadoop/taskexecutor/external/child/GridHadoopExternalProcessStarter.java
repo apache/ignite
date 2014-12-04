@@ -142,17 +142,17 @@ public class GridHadoopExternalProcessStarter {
     private IgniteLogger logger(final File outputDir) {
         final URL url = U.resolveGridGainUrl(DFLT_LOG4J_CONFIG);
 
-        GridLog4jLogger logger;
+        IgniteLog4jLogger logger;
 
         try {
-            logger = url != null ? new GridLog4jLogger(url) : new GridLog4jLogger(true);
+            logger = url != null ? new IgniteLog4jLogger(url) : new IgniteLog4jLogger(true);
         }
         catch (GridException e) {
             System.err.println("Failed to create URL-based logger. Will use default one.");
 
             e.printStackTrace();
 
-            logger = new GridLog4jLogger(true);
+            logger = new IgniteLog4jLogger(true);
         }
 
         logger.updateFilePath(new IgniteClosure<String, String>() {

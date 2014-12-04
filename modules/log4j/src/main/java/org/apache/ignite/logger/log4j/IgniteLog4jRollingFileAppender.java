@@ -16,16 +16,16 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Log4J {@link FileAppender} with added support for grid node IDs.
+ * Log4J {@link RollingFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jFileAppender extends FileAppender implements GridLog4jFileAware {
+public class IgniteLog4jRollingFileAppender extends RollingFileAppender implements IgniteLog4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
     /**
      * Default constructor (does not do anything).
      */
-    public GridLog4jFileAppender() {
+    public IgniteLog4jRollingFileAppender() {
         init();
     }
 
@@ -36,7 +36,7 @@ public class GridLog4jFileAppender extends FileAppender implements GridLog4jFile
      * @param filename File name.
      * @throws IOException If failed.
      */
-    public GridLog4jFileAppender(Layout layout, String filename) throws IOException {
+    public IgniteLog4jRollingFileAppender(Layout layout, String filename) throws IOException {
         super(layout, filename);
 
         init();
@@ -50,41 +50,17 @@ public class GridLog4jFileAppender extends FileAppender implements GridLog4jFile
      * @param append Append flag.
      * @throws IOException If failed.
      */
-    public GridLog4jFileAppender(Layout layout, String filename, boolean append) throws IOException {
+    public IgniteLog4jRollingFileAppender(Layout layout, String filename, boolean append) throws IOException {
         super(layout, filename, append);
 
         init();
     }
 
     /**
-     * Instantiate a FileAppender with given parameters.
-     *
-     * @param layout Layout.
-     * @param filename File name.
-     * @param append Append flag.
-     * @param bufIO Buffered IO flag.
-     * @param bufSize Buffer size.
-     * @throws IOException If failed.
-     */
-    public GridLog4jFileAppender(Layout layout, String filename, boolean append, boolean bufIO, int bufSize)
-        throws IOException {
-        super(layout, filename, append, bufIO, bufSize);
-
-        init();
-    }
-
-    /**
-     *
+     * Initializes appender.
      */
     private void init() {
-        GridLog4jLogger.addAppender(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
-        throws IOException {
-        if (baseFileName != null)
-            super.setFile(fileName, fileAppend, bufIO, bufSize);
+        IgniteLog4jLogger.addAppender(this);
     }
 
     /** {@inheritDoc} */
@@ -95,5 +71,12 @@ public class GridLog4jFileAppender extends FileAppender implements GridLog4jFile
             baseFileName = fileName;
 
         fileName = filePathClos.apply(baseFileName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
+        throws IOException {
+        if (baseFileName != null)
+            super.setFile(fileName, fileAppend, bufIO, bufSize);
     }
 }

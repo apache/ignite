@@ -31,7 +31,7 @@ public class GridLog4jLoggingFileTest extends TestCase {
         assert xml != null;
         assert xml.exists() == true;
 
-        log = new GridLog4jLogger(xml).getLogger(getClass());
+        log = new IgniteLog4jLogger(xml).getLogger(getClass());
     }
 
     /**

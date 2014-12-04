@@ -99,7 +99,7 @@ public abstract class GridTcpRouterAbstractSelfTest extends GridClientAbstractSe
         cfg.setPort(ROUTER_PORT);
         cfg.setPortRange(0);
         cfg.setServers(Collections.singleton(HOST+":"+BINARY_PORT));
-        cfg.setLogger(new GridLog4jLogger(ROUTER_LOG_CFG));
+        cfg.setLogger(new IgniteLog4jLogger(ROUTER_LOG_CFG));
 
         return cfg;
     }

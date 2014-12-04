@@ -14,7 +14,7 @@ import org.apache.ignite.lang.*;
 /**
  * Interface for those loggers and appenders that evaluate their file paths lazily.
  */
-interface GridLog4jFileAware {
+interface IgniteLog4jFileAware {
     /**
      * Sets closure that later evaluate file path.
      *

@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 public class GridLog4jNotInitializedTest extends TestCase {
     /** */
     public void testLogInitialize() {
-        IgniteLogger log = new GridLog4jLogger().getLogger(GridLog4jNotInitializedTest.class);
+        IgniteLogger log = new IgniteLog4jLogger().getLogger(GridLog4jNotInitializedTest.class);
 
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");

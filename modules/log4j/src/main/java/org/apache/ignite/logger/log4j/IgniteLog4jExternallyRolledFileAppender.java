@@ -10,36 +10,22 @@
 package org.apache.ignite.logger.log4j;
 
 import org.apache.ignite.lang.*;
-import org.apache.log4j.*;
+import org.apache.log4j.varia.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * Log4J {@link DailyRollingFileAppender} with added support for grid node IDs.
+ * Log4J {@link ExternallyRolledFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jDailyRollingFileAppender extends DailyRollingFileAppender implements GridLog4jFileAware {
+public class IgniteLog4jExternallyRolledFileAppender extends ExternallyRolledFileAppender implements IgniteLog4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
     /**
      * Default constructor (does not do anything).
      */
-    public GridLog4jDailyRollingFileAppender() {
-        init();
-    }
-
-    /**
-     * Instantiate a FileAppender with given parameters.
-     *
-     * @param layout Layout.
-     * @param filename File name.
-     * @param datePtrn Date pattern.
-     * @throws IOException If failed.
-     */
-    public GridLog4jDailyRollingFileAppender(Layout layout, String filename, String datePtrn) throws IOException {
-        super(layout, filename, datePtrn);
-
+    public IgniteLog4jExternallyRolledFileAppender() {
         init();
     }
 
@@ -47,7 +33,7 @@ public class GridLog4jDailyRollingFileAppender extends DailyRollingFileAppender 
      *
      */
     private void init() {
-        GridLog4jLogger.addAppender(this);
+        IgniteLog4jLogger.addAppender(this);
     }
 
     /** {@inheritDoc} */

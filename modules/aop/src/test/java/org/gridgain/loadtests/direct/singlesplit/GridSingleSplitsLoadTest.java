@@ -43,7 +43,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(new GridTcpCommunicationSpi());
         cfg.setDiscoverySpi(new GridTcpDiscoverySpi());
 
-        GridLog4jLogger log = (GridLog4jLogger)cfg.getGridLogger().getLogger(null);
+        IgniteLog4jLogger log = (IgniteLog4jLogger)cfg.getGridLogger().getLogger(null);
 
         log.setLevel(Level.INFO);
 

@@ -58,8 +58,8 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteLogger, IgniteLoggerNodeIdAware,
-    GridLog4jFileAware {
+public class IgniteLog4jLogger extends GridMetadataAwareAdapter implements IgniteLogger, IgniteLoggerNodeIdAware,
+    IgniteLog4jFileAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -93,12 +93,12 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
      * Creates new logger and automatically detects if root logger already
      * has appenders configured. If it does not, the root logger will be
      * configured with default appender (analogous to calling
-     * {@link #GridLog4jLogger(boolean) GridLog4jLogger(boolean)}
+     * {@link #IgniteLog4jLogger(boolean) GridLog4jLogger(boolean)}
      * with parameter {@code true}, otherwise, existing appenders will be used (analogous
-     * to calling {@link #GridLog4jLogger(boolean) GridLog4jLogger(boolean)}
+     * to calling {@link #IgniteLog4jLogger(boolean) GridLog4jLogger(boolean)}
      * with parameter {@code false}).
      */
-    public GridLog4jLogger() {
+    public IgniteLog4jLogger() {
         this(!isConfigured());
     }
 
@@ -113,7 +113,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
      *      and {@code Log4j} should be configured prior to calling this
      *      constructor.
      */
-    public GridLog4jLogger(boolean init) {
+    public IgniteLog4jLogger(boolean init) {
         impl = Logger.getRootLogger();
 
         if (init) {
@@ -133,7 +133,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
      *
      * @param impl Log4j implementation to use.
      */
-    public GridLog4jLogger(final Logger impl) {
+    public IgniteLog4jLogger(final Logger impl) {
         assert impl != null;
 
         path = null;
@@ -153,7 +153,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
      * @param path Path to log4j configuration XML file.
      * @throws GridException Thrown in case logger can't be created.
      */
-    public GridLog4jLogger(String path) throws GridException {
+    public IgniteLog4jLogger(String path) throws GridException {
         if (path == null)
             throw new GridException("Configuration XML file for Log4j must be specified.");
 
@@ -182,7 +182,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
      * @param cfgFile Log4j configuration XML file.
      * @throws GridException Thrown in case logger can't be created.
      */
-    public GridLog4jLogger(File cfgFile) throws GridException {
+    public IgniteLog4jLogger(File cfgFile) throws GridException {
         if (cfgFile == null)
             throw new GridException("Configuration XML file for Log4j must be specified.");
 
@@ -209,7 +209,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
      * @param cfgUrl URL for Log4j configuration XML file.
      * @throws GridException Thrown in case logger can't be created.
      */
-    public GridLog4jLogger(final URL cfgUrl) throws GridException {
+    public IgniteLog4jLogger(final URL cfgUrl) throws GridException {
         if (cfgUrl == null)
             throw new GridException("Configuration XML file for Log4j must be specified.");
 
@@ -395,7 +395,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
 
         this.nodeId = nodeId;
 
-        updateFilePath(new GridLog4jNodeIdFilePath(nodeId));
+        updateFilePath(new IgniteLog4jNodeIdFilePath(nodeId));
     }
 
     /** {@inheritDoc} */
@@ -426,8 +426,8 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
      * @param ctgr {@inheritDoc}
      * @return {@link org.apache.ignite.IgniteLogger} wrapper around log4j logger.
      */
-    @Override public GridLog4jLogger getLogger(Object ctgr) {
-        return new GridLog4jLogger(ctgr == null ? Logger.getRootLogger() :
+    @Override public IgniteLog4jLogger getLogger(Object ctgr) {
+        return new IgniteLog4jLogger(ctgr == null ? Logger.getRootLogger() :
             ctgr instanceof Class ? Logger.getLogger(((Class<?>)ctgr).getName()) :
                 Logger.getLogger(ctgr.toString()));
     }
@@ -498,7 +498,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridLog4jLogger.class, this);
+        return S.toString(IgniteLog4jLogger.class, this);
     }
 
     /** {@inheritDoc} */
@@ -506,8 +506,8 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
         A.notNull(filePathClos, "filePathClos");
 
         for (FileAppender a : fileAppenders) {
-            if (a instanceof GridLog4jFileAware) {
-                ((GridLog4jFileAware)a).updateFilePath(filePathClos);
+            if (a instanceof IgniteLog4jFileAware) {
+                ((IgniteLog4jFileAware)a).updateFilePath(filePathClos);
 
                 a.activateOptions();
             }
