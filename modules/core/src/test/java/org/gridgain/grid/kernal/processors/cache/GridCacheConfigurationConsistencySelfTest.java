@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -991,14 +992,14 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void loadCache(GridBiInClosure<Object, Object> clo,
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
             @Nullable Object... args) throws GridException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void loadAll(@Nullable GridCacheTx tx,
-            @Nullable Collection<?> keys, GridBiInClosure<Object, Object> c) throws GridException {
+            @Nullable Collection<?> keys, IgniteBiInClosure<Object, Object> c) throws GridException {
             // No-op.
         }
 

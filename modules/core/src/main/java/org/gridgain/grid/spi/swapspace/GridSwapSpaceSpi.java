@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.swapspace;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.file.*;
@@ -127,7 +128,7 @@ public interface GridSwapSpaceSpi extends GridSpi {
      * @throws GridSpiException In case of any errors.
      */
     public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable GridBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException;
+        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException;
 
     /**
      * Stores value as array of bytes with given key into data space with given name.

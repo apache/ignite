@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
@@ -721,7 +722,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         swapMgr.removeAll(spaceName,
             converted,
-            new GridBiInClosure<GridSwapKey, byte[]>() {
+            new IgniteBiInClosure<GridSwapKey, byte[]>() {
                 @Override public void apply(GridSwapKey swapKey, byte[] rmv) {
                     if (rmv != null) {
                         try {

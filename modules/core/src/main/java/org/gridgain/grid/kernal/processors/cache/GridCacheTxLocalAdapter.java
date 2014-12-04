@@ -293,7 +293,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean async,
         final Collection<? extends K> keys,
         boolean deserializePortable,
-        final GridBiInClosure<K, V> c
+        final IgniteBiInClosure<K, V> c
     ) {
         if (!async) {
             try {

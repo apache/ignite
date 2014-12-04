@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -164,7 +164,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
         GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
-        GridBiInClosure<K, V> vis) {
+        IgniteBiInClosure<K, V> vis) {
         return (GridFuture)loadAsync(tx, keys, reload, false, filter, subjId, taskName, true);
     }
 

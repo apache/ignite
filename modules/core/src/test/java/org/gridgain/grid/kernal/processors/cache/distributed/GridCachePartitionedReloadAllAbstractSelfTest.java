@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -135,7 +135,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
             @GridInstanceResource
             private Ignite g;
 
-            @Override public void loadCache(GridBiInClosure<Integer, String> c,
+            @Override public void loadCache(IgniteBiInClosure<Integer, String> c,
                 Object... args) {
                 X.println("Loading all on: " + caches.indexOf(g.<Integer, String>cache(null)));
 

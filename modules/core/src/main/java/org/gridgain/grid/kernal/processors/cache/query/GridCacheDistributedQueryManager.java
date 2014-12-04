@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -61,7 +62,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private Collection<Long> cancelled = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
 
     /** Query response handler. */
-    private GridBiInClosure<UUID,GridCacheQueryResponse<K,V>> resHnd = new CI2<UUID, GridCacheQueryResponse<K, V>>() {
+    private IgniteBiInClosure<UUID,GridCacheQueryResponse<K,V>> resHnd = new CI2<UUID, GridCacheQueryResponse<K, V>>() {
         @Override public void apply(UUID nodeId, GridCacheQueryResponse<K, V> res) {
             processQueryResponse(nodeId, res);
         }

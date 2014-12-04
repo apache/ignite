@@ -10,13 +10,13 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -383,7 +383,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      */
     private static class TestStore extends GridCacheStoreAdapter<Integer, ValueObject> {
         /** {@inheritDoc} */
-        @Override public void loadCache(GridBiInClosure<Integer, ValueObject> clo,
+        @Override public void loadCache(IgniteBiInClosure<Integer, ValueObject> clo,
             @Nullable Object... args) throws GridException {
             assert clo != null;
 

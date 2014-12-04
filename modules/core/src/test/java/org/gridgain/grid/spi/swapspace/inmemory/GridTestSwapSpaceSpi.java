@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.swapspace.inmemory;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -91,7 +92,7 @@ public class GridTestSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable GridBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
+        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
         Space space = space(spaceName);
 
         if (space != null)
@@ -256,7 +257,7 @@ public class GridTestSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
          * @param keys Keys to remove.
          * @param c Closure to apply for removed values.
          */
-        public void removeAll(Iterable<GridSwapKey> keys, GridBiInClosure<GridSwapKey, byte[]> c) {
+        public void removeAll(Iterable<GridSwapKey> keys, IgniteBiInClosure<GridSwapKey, byte[]> c) {
             for (GridSwapKey key : keys) {
                 byte[] val = data.remove(key);
 

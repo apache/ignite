@@ -9,13 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -190,7 +189,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiInClosure<Integer, String> clo, Object[] args)
+    @Override public void loadCache(IgniteBiInClosure<Integer, String> clo, Object[] args)
         throws GridException {
         lastMtd = "loadAllFull";
 
@@ -209,7 +208,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** {@inheritDoc} */
     @Override public void loadAll(GridCacheTx tx, Collection<? extends Integer> keys,
-        GridBiInClosure<Integer, String> c) throws GridException {
+        IgniteBiInClosure<Integer, String> c) throws GridException {
         checkTx(tx);
 
         lastMtd = "loadAll";

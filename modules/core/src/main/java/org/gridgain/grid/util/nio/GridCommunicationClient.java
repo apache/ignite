@@ -30,7 +30,7 @@ public interface GridCommunicationClient {
      * @param handshakeC Handshake.
      * @throws GridException If handshake failed.
      */
-    void doHandshake(GridInClosure2X<InputStream, OutputStream> handshakeC) throws GridException;
+    void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws GridException;
 
     /**
      * @return {@code True} if client has been closed by this call,

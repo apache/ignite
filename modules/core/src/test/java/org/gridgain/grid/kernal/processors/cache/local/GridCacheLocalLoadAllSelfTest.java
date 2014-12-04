@@ -11,10 +11,10 @@ package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
@@ -74,7 +74,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings({"TypeParameterExtendsFinalClass"})
         @Override public void loadAll(GridCacheTx tx, Collection<? extends Integer> keys,
-            GridBiInClosure<Integer, Integer> c) throws GridException {
+            IgniteBiInClosure<Integer, Integer> c) throws GridException {
             assert keys != null;
 
             c.apply(1, 1);

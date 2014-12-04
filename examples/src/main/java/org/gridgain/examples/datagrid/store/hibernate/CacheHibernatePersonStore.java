@@ -9,11 +9,11 @@
 
 package org.gridgain.examples.datagrid.store.hibernate;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
@@ -108,7 +108,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiInClosure<Long, Person> clo, Object... args) throws GridException {
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws GridException {
         if (args == null || args.length == 0 || args[0] == null)
             throw new GridException("Expected entry count parameter is not provided.");
 

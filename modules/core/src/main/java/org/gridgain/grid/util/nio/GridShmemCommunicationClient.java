@@ -62,7 +62,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public  synchronized void doHandshake(GridInClosure2X<InputStream, OutputStream> handshakeC)
+    @Override public  synchronized void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC)
         throws GridException {
         handshakeC.applyx(shmem.inputStream(), shmem.outputStream());
     }

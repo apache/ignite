@@ -10,10 +10,10 @@
 package org.gridgain.loadtests.colocation;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.jdk8.backport.*;
@@ -37,7 +37,7 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
      * @param args Optional arguments.
      * @throws GridException If failed.
      */
-    @Override public void loadCache(final GridBiInClosure<GridTestKey, Long> clo,
+    @Override public void loadCache(final IgniteBiInClosure<GridTestKey, Long> clo,
         Object... args) throws GridException {
         // Number of threads is passed in as argument by caller.
         final int numThreads = (Integer)args[0];

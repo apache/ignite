@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
@@ -27,7 +28,7 @@ import java.util.Date;
  * or swap storage without ever being persisted to a persistent storage.
  * <p>
  * {@link GridCacheStoreAdapter} provides default implementation for bulk operations,
- * such as {@link #loadAll(GridCacheTx, Collection, GridBiInClosure)},
+ * such as {@link #loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
  * {@link #putAll(GridCacheTx, Map)}, and {@link #removeAll(GridCacheTx, Collection)}
  * by sequentially calling corresponding {@link #load(GridCacheTx, Object)},
  * {@link #put(GridCacheTx, Object, Object)}, and {@link #remove(GridCacheTx, Object)}
@@ -111,7 +112,7 @@ public interface GridCacheStore<K, V> {
      * method to do anything. Default implementation of this method in
      * {@link GridCacheStoreAdapter} does nothing.
      * <p>
-     * For every loaded value method {@link GridBiInClosure#apply(Object, Object)}
+     * For every loaded value method {@link org.apache.ignite.lang.IgniteBiInClosure#apply(Object, Object)}
      * should be called on the passed in closure. The closure will then make sure
      * that the loaded value is stored in cache.
      *
@@ -120,7 +121,7 @@ public interface GridCacheStore<K, V> {
      *      {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method.
      * @throws GridException If loading failed.
      */
-    public void loadCache(GridBiInClosure<K, V> clo, @Nullable Object... args) throws GridException;
+    public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws GridException;
 
     /**
      * Loads all values for given keys and passes every value to the provided closure.
@@ -134,7 +135,7 @@ public interface GridCacheStore<K, V> {
      * @param c Closure to call for every loaded element.
      * @throws GridException If load failed.
      */
-    public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, GridBiInClosure<K, V> c)
+    public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, IgniteBiInClosure<K, V> c)
         throws GridException;
 
     /**

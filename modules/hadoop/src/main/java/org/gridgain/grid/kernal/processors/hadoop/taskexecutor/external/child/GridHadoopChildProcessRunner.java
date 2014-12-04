@@ -23,11 +23,9 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 
 /**
@@ -222,7 +220,7 @@ public class GridHadoopChildProcessRunner {
                 if (req.reducersAddresses() != null) {
                     if (shuffleJob.initializeReduceAddresses(req.reducersAddresses())) {
                         shuffleJob.startSending("external",
-                            new GridInClosure2X<GridHadoopProcessDescriptor, GridHadoopShuffleMessage>() {
+                            new IgniteInClosure2X<GridHadoopProcessDescriptor, GridHadoopShuffleMessage>() {
                                 @Override public void applyx(GridHadoopProcessDescriptor dest,
                                     GridHadoopShuffleMessage msg) throws GridException {
                                     comm.sendMessage(dest, msg);

@@ -13,12 +13,12 @@ package org.gridgain.scalar.lang
 
 import org.gridgain.grid.lang._
 import org.gridgain.grid._
-import org.gridgain.grid.util.lang.GridInClosure2X
+import org.gridgain.grid.util.lang.IgniteInClosure2X
 
 /**
  * Peer deploy aware adapter for Java's `GridInClosure2X`.
  */
-class ScalarInClosure2X[T1, T2](private val f: (T1, T2) => Unit) extends GridInClosure2X[T1, T2] {
+class ScalarInClosure2X[T1, T2](private val f: (T1, T2) => Unit) extends IgniteInClosure2X[T1, T2] {
     assert(f != null)
 
     /**

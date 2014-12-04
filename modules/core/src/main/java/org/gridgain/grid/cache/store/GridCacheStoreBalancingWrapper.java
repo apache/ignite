@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
@@ -81,12 +81,12 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiInClosure<K, V> clo, @Nullable Object... args) throws GridException {
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws GridException {
         delegate.loadCache(clo, args);
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, final GridBiInClosure<K, V> c)
+    @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, final IgniteBiInClosure<K, V> c)
         throws GridException {
         if (keys.size() > loadAllThreshold) {
             delegate.loadAll(tx, keys, c);

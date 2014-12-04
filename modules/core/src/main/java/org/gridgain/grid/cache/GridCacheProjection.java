@@ -534,7 +534,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * If some value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link GridCacheStore} persistent storage via
-     * {@link GridCacheStore#loadAll(GridCacheTx, Collection, GridBiInClosure)} method.
+     * {@link GridCacheStore#loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -558,7 +558,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * If some value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link GridCacheStore} persistent storage via
-     * {@link GridCacheStore#loadAll(GridCacheTx, Collection, GridBiInClosure)} method.
+     * {@link GridCacheStore#loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.

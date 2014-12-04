@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.GridBiInClosure
+import org.apache.ignite.lang.IgniteBiInClosure
 
 /**
  * Wrapping Scala function for `GridInClosure2`.
  */
-class ScalarInClosure2Function[T1, T2](val inner: GridBiInClosure[T1, T2]) extends ((T1, T2) => Unit) {
+class ScalarInClosure2Function[T1, T2](val inner: IgniteBiInClosure[T1, T2]) extends ((T1, T2) => Unit) {
     assert(inner != null)
 
     /**

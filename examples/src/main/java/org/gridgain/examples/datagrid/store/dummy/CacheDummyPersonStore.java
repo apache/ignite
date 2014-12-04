@@ -10,11 +10,11 @@
 package org.gridgain.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -58,7 +58,7 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiInClosure<Long, Person> clo, Object... args) throws GridException {
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws GridException {
         int cnt = (Integer)args[0];
 
         System.out.println(">>> Store loadCache for entry count: " + cnt);

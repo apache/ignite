@@ -12,6 +12,7 @@ package org.gridgain.client.integration;
 import junit.framework.*;
 import net.sf.json.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.client.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
@@ -19,7 +20,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -1560,7 +1560,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         private final Map<Object, Object> map = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void loadCache(GridBiInClosure<Object, Object> clo, Object... args)
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args)
             throws GridException {
             for (Map.Entry e : map.entrySet()) {
                 clo.apply(e.getKey(), e.getValue());

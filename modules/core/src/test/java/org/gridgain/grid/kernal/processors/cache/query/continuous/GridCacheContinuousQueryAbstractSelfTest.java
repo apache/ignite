@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -1500,7 +1501,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      */
     private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public void loadCache(GridBiInClosure<Object, Object> clo,
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
             Object... args) throws GridException {
             for (int i = 0; i < 10; i++)
                 clo.apply(i, i);

@@ -13,7 +13,7 @@ package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
 import org.apache.ignite.cluster.ClusterGroup
-import org.apache.ignite.lang.IgniteBiClosure
+import org.apache.ignite.lang.{IgniteBiInClosure, IgniteBiClosure}
 import org.gridgain.grid.lang._
 import org.gridgain.grid.cache._
 import org.gridgain.grid._
@@ -579,7 +579,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    implicit def toInClosure2[T1, T2](f: (T1, T2) => Unit): GridBiInClosure[T1, T2] =
+    implicit def toInClosure2[T1, T2](f: (T1, T2) => Unit): IgniteBiInClosure[T1, T2] =
         f match {
             case (p: ScalarInClosure2Function[T1, T2]) => p.inner
             case _ => new ScalarInClosure2[T1, T2](f)
@@ -590,7 +590,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    implicit def toInClosure2X[T1, T2](f: (T1, T2) => Unit): GridInClosure2X[T1, T2] =
+    implicit def toInClosure2X[T1, T2](f: (T1, T2) => Unit): IgniteInClosure2X[T1, T2] =
         f match {
             case (p: ScalarInClosure2XFunction[T1, T2]) => p.inner
             case _ => new ScalarInClosure2X[T1, T2](f)
@@ -601,7 +601,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromInClosure2[T1, T2](f: GridBiInClosure[T1, T2]): (T1, T2) => Unit =
+    implicit def fromInClosure2[T1, T2](f: IgniteBiInClosure[T1, T2]): (T1, T2) => Unit =
         new ScalarInClosure2Function(f)
 
     /**
@@ -609,7 +609,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromInClosure2X[T1, T2](f: GridInClosure2X[T1, T2]): (T1, T2) => Unit =
+    implicit def fromInClosure2X[T1, T2](f: IgniteInClosure2X[T1, T2]): (T1, T2) => Unit =
         new ScalarInClosure2XFunction(f)
 
     /**
@@ -617,7 +617,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def inClosure2DotScala[T1, T2](f: GridBiInClosure[T1, T2]) = new {
+    implicit def inClosure2DotScala[T1, T2](f: IgniteBiInClosure[T1, T2]) = new {
         def scala: (T1, T2) => Unit =
             fromInClosure2(f)
     }
@@ -627,7 +627,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def inClosure2XDotScala[T1, T2](f: GridInClosure2X[T1, T2]) = new {
+    implicit def inClosure2XDotScala[T1, T2](f: IgniteInClosure2X[T1, T2]) = new {
         def scala: (T1, T2) => Unit =
             fromInClosure2X(f)
     }

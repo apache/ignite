@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
@@ -111,7 +112,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
     @Nullable protected abstract GridBiTuple<K, V> parse(I rec, @Nullable Object... args);
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiInClosure<K, V> c, @Nullable Object... args)
+    @Override public void loadCache(IgniteBiInClosure<K, V> c, @Nullable Object... args)
         throws GridException {
         ExecutorService exec = new ThreadPoolExecutor(
             threadsCnt,
@@ -225,7 +226,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
 
     /** {@inheritDoc} */
     @Override public void loadAll(@Nullable GridCacheTx tx,
-        @Nullable Collection<? extends K> keys, GridBiInClosure<K, V> c) throws GridException {
+        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws GridException {
         // No-op.
     }
 
@@ -261,7 +262,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
      */
     private class Worker implements Runnable {
         /** */
-        private final GridBiInClosure<K, V> c;
+        private final IgniteBiInClosure<K, V> c;
 
         /** */
         private final Collection<I> buf;
@@ -274,7 +275,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
          * @param buf Set of input records to process.
          * @param args Arguments passed into {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method.
          */
-        Worker(GridBiInClosure<K, V> c, Collection<I> buf, Object[] args) {
+        Worker(IgniteBiInClosure<K, V> c, Collection<I> buf, Object[] args) {
             this.c = c;
             this.buf = buf;
             this.args = args;

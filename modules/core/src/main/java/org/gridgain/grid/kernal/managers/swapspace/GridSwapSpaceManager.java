@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.swapspace;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
@@ -251,7 +252,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @throws GridException If failed.
      */
     public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        GridBiInClosure<GridSwapKey, byte[]> c, @Nullable ClassLoader ldr) throws GridException {
+        IgniteBiInClosure<GridSwapKey, byte[]> c, @Nullable ClassLoader ldr) throws GridException {
         assert keys != null;
 
         try {

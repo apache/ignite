@@ -124,7 +124,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     }
 
     /** {@inheritDoc} */
-    @Override public void doHandshake(GridInClosure2X<InputStream, OutputStream> handshakeC) throws GridException {
+    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws GridException {
         try {
             handshakeC.applyx(sock.getInputStream(), sock.getOutputStream());
         }

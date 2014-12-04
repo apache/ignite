@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -55,13 +56,13 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void loadCache(GridBiInClosure clo, @Nullable Object... args) {
+        @Override public void loadCache(IgniteBiInClosure clo, @Nullable Object... args) {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void loadAll(@Nullable GridCacheTx tx, @Nullable Collection keys,
-            GridBiInClosure c) {
+            IgniteBiInClosure c) {
             // No-op.
         }
 

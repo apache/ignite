@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
@@ -108,14 +109,14 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void loadCache(GridBiInClosure<Integer, Integer> clo, @Nullable Object... args)
+        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args)
             throws GridException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends Integer> keys,
-            GridBiInClosure<Integer, Integer> c) throws GridException {
+            IgniteBiInClosure<Integer, Integer> c) throws GridException {
             // No-op.
         }
 

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
@@ -592,13 +593,13 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
             return null;
         }
 
-        @Override public void loadCache(GridBiInClosure<Object, Object> clo, @Nullable Object... args)
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args)
             throws GridException {
             if (fail)
                 throw new GridException("Store exception");
         }
 
-        @Override public void loadAll(@Nullable GridCacheTx tx, Collection<?> keys, GridBiInClosure<Object, Object> c)
+        @Override public void loadAll(@Nullable GridCacheTx tx, Collection<?> keys, IgniteBiInClosure<Object, Object> c)
             throws GridException {
         }
 

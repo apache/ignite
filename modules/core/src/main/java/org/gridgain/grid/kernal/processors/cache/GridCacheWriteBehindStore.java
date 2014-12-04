@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
@@ -364,7 +365,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
      * @param args {@inheritDoc}
      * @throws GridException {@inheritDoc}
      */
-    @Override public void loadCache(GridBiInClosure<K, V> clo, @Nullable Object... args)
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args)
         throws GridException {
         store.loadCache(clo, args);
     }
@@ -372,7 +373,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
     /** {@inheritDoc} */
     @SuppressWarnings({"NullableProblems"})
     @Override public void loadAll(@Nullable GridCacheTx tx,
-        @Nullable Collection<? extends K> keys, GridBiInClosure<K, V> c) throws GridException {
+        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Store load all [keys=" + keys + ", tx=" + tx + ']');
 

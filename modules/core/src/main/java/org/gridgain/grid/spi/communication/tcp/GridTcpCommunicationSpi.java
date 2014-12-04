@@ -2288,7 +2288,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /**
      *
      */
-    private class HandshakeClosure extends GridInClosure2X<InputStream, OutputStream> {
+    private class HandshakeClosure extends IgniteInClosure2X<InputStream, OutputStream> {
         /** */
         private static final long serialVersionUID = 0L;
 

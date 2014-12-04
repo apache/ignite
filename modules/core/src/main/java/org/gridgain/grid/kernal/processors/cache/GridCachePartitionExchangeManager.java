@@ -10,13 +10,13 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -979,7 +979,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      *
      */
-    private abstract class MessageHandler<M> implements GridBiInClosure<UUID, M> {
+    private abstract class MessageHandler<M> implements IgniteBiInClosure<UUID, M> {
         /** */
         private static final long serialVersionUID = 0L;
 

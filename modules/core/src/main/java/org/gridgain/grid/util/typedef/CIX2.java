@@ -12,13 +12,13 @@ package org.gridgain.grid.util.typedef;
 import org.gridgain.grid.util.lang.*;
 
 /**
- * Defines {@code alias} for {@link GridInClosure2X} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link org.gridgain.grid.util.lang.IgniteInClosure2X} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link GridInClosure2X}.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link org.gridgain.grid.util.lang.IgniteInClosure2X}.
  * @see GridFunc
- * @see GridInClosure2X
+ * @see org.gridgain.grid.util.lang.IgniteInClosure2X
  */
-public abstract class CIX2<E1, E2> extends GridInClosure2X<E1, E2> {
+public abstract class CIX2<E1, E2> extends IgniteInClosure2X<E1, E2> {
     /** */
     private static final long serialVersionUID = 0L;
  /* No-op. */ }

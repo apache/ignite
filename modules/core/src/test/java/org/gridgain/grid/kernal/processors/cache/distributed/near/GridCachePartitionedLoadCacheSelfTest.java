@@ -10,10 +10,10 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -102,7 +102,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
      */
     private static class TestStore extends GridCacheStoreAdapter<Integer, String> {
         /** {@inheritDoc} */
-        @Override public void loadCache(GridBiInClosure<Integer, String> clo,
+        @Override public void loadCache(IgniteBiInClosure<Integer, String> clo,
             @Nullable Object... args) throws GridException {
             assert clo != null;
             assert args != null;

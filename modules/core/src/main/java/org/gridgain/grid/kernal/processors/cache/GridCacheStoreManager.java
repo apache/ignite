@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
@@ -161,7 +162,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public boolean loadAllFromStore(@Nullable GridCacheTx tx, Collection<? extends K> keys,
-        final GridBiInClosure<K, V> vis) throws GridException {
+        final IgniteBiInClosure<K, V> vis) throws GridException {
         if (store != null) {
             if (log.isDebugEnabled())
                 log.debug("Loading values from store for keys: " + keys);
@@ -214,7 +215,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 log.debug("Loading all values from store.");
 
             try {
-                store.loadCache(new GridBiInClosure<K, Object>() {
+                store.loadCache(new IgniteBiInClosure<K, Object>() {
                     @Override public void apply(K k, Object o) {
                         V v;
                         GridCacheVersion ver = null;

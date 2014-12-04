@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -1401,7 +1402,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     public GridFuture<Object> readThroughAllAsync(final Collection<? extends K> keys, boolean reload,
         @Nullable final GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId,
-        String taskName, final GridBiInClosure<K, V> vis) {
+        String taskName, final IgniteBiInClosure<K, V> vis) {
         return ctx.closures().callLocalSafe(new GPC<Object>() {
             @Nullable @Override public Object call() {
                 try {

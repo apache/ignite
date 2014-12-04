@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.tests
 
-import org.apache.ignite.lang.IgniteBiClosure
+import org.apache.ignite.lang.{IgniteBiInClosure, IgniteBiClosure}
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.gridgain.scalar._
@@ -134,7 +134,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     it should "convert in closure 2" in {
         val i = new AtomicInteger()
 
-        val f = new GridBiInClosure[Int, Int] {
+        val f = new IgniteBiInClosure[Int, Int] {
             override def apply(e1: Int, e2: Int) {
                 i.set(e1 + e2)
             }

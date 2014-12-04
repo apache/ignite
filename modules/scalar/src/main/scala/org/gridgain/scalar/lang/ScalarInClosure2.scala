@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.GridBiInClosure
+import org.apache.ignite.lang.IgniteBiInClosure
 
 /**
  * Peer deploy aware adapter for Java's `GridInClosure2`.
  */
-class ScalarInClosure2[T1, T2](private val f: (T1, T2) => Unit) extends GridBiInClosure[T1, T2] {
+class ScalarInClosure2[T1, T2](private val f: (T1, T2) => Unit) extends IgniteBiInClosure[T1, T2] {
     assert(f != null)
 
     /**

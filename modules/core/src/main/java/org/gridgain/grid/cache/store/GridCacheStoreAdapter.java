@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
@@ -18,7 +19,7 @@ import java.util.*;
 
 /**
  * Cache storage convenience adapter. It provides default implementation for bulk operations, such
- * as {@link #loadAll(GridCacheTx, Collection, GridBiInClosure)},
+ * as {@link #loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
  * {@link #putAll(GridCacheTx, Map)}, and {@link #removeAll(GridCacheTx, Collection)}
  * by sequentially calling corresponding {@link #load(GridCacheTx, Object)},
  * {@link #put(GridCacheTx, Object, Object)}, and {@link #remove(GridCacheTx, Object)}
@@ -26,7 +27,7 @@ import java.util.*;
  * it maybe more preferable to take advantage of database batch update functionality, and therefore
  * default adapter implementation may not be the best option.
  * <p>
- * Note that method {@link #loadCache(GridBiInClosure, Object...)} has empty
+ * Note that method {@link #loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} has empty
  * implementation because it is essentially up to the user to invoke it with
  * specific arguments.
  */
@@ -40,14 +41,14 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
      * @param args {@inheritDoc}
      * @throws GridException {@inheritDoc}
      */
-    @Override public void loadCache(GridBiInClosure<K, V> clo, Object... args)
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object... args)
         throws GridException {
         /* No-op. */
     }
 
     /** {@inheritDoc} */
     @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys,
-        GridBiInClosure<K, V> c) throws GridException {
+        IgniteBiInClosure<K, V> c) throws GridException {
         assert keys != null;
 
         for (K key : keys) {

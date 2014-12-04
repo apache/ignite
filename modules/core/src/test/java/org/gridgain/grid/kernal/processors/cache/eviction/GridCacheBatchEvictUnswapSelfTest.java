@@ -1,12 +1,12 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -52,7 +52,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                 return null;
             }
 
-            @Override public void loadCache(final GridBiInClosure<Long, String> c,
+            @Override public void loadCache(final IgniteBiInClosure<Long, String> c,
                 @Nullable Object... args) {
                 for (int i = 0; i < KEYS_CNT; i++)
                     c.apply((long)i, String.valueOf(i));

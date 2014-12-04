@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -43,14 +44,14 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private int retryCnt;
 
     /** Indexed class handlers. */
-    private Map<Integer, GridBiInClosure[]> idxClsHandlers = new HashMap<>();
+    private Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
 
     /** Handler registry. */
-    private ConcurrentMap<ListenerKey, GridBiInClosure<UUID, GridCacheMessage<K, V>>>
+    private ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage<K, V>>>
         clsHandlers = new ConcurrentHashMap8<>();
 
     /** Ordered handler registry. */
-    private ConcurrentMap<Object, GridBiInClosure<UUID, ? extends GridCacheMessage<K, V>>> orderedHandlers =
+    private ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage<K, V>>> orderedHandlers =
         new ConcurrentHashMap8<>();
 
     /** Stopping flag. */
@@ -80,10 +81,10 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             int msgIdx = cacheMsg.lookupIndex();
 
-            GridBiInClosure<UUID, GridCacheMessage<K, V>> c = null;
+            IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c = null;
 
             if (msgIdx >= 0) {
-                GridBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
+                IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
 
                 if (cacheClsHandlers != null)
                     c = cacheClsHandlers[msgIdx];
@@ -111,7 +112,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 GridFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
                 if (!topFut.isDone()) {
-                    final GridBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
+                    final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
 
                     topFut.listenAsync(new CI1<GridFuture<Long>>() {
                         @Override public void apply(GridFuture<Long> t) {
@@ -183,7 +184,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param c Handler closure.
      */
     private void onMessage0(final UUID nodeId, final GridCacheMessage<K, V> cacheMsg,
-        final GridBiInClosure<UUID, GridCacheMessage<K, V>> c) {
+        final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
         rw.readLock();
 
         try {
@@ -281,7 +282,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param c Closure.
      */
     private void processMessage(UUID nodeId, GridCacheMessage<K, V> msg,
-        GridBiInClosure<UUID, GridCacheMessage<K, V>> c) {
+        IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
         try {
             // Start clean.
             if (msg.transactional())
@@ -603,14 +604,14 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public void addHandler(
         int cacheId,
         Class<? extends GridCacheMessage> type,
-        GridBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
-            GridBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheId);
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheId);
 
             if (cacheClsHandlers == null) {
-                cacheClsHandlers = new GridBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
+                cacheClsHandlers = new IgniteBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
 
                 idxClsHandlers.put(cacheId, cacheClsHandlers);
             }
@@ -627,7 +628,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             ListenerKey key = new ListenerKey(cacheId, type);
 
             if (clsHandlers.putIfAbsent(key,
-                (GridBiInClosure<UUID, GridCacheMessage<K, V>>)c) != null)
+                (IgniteBiInClosure<UUID, GridCacheMessage<K, V>>)c) != null)
                 assert false : "Handler for class already registered [cacheId=" + cacheId + ", cls=" + type +
                     ", old=" + clsHandlers.get(key) + ", new=" + c + ']';
         }
@@ -668,7 +669,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param type Type of message.
      * @param c Handler.
      */
-    public void removeHandler(Class<?> type, GridBiInClosure<UUID, ?> c) {
+    public void removeHandler(Class<?> type, IgniteBiInClosure<UUID, ?> c) {
         assert type != null;
         assert c != null;
 
@@ -693,10 +694,10 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param c Handler.
      */
     @SuppressWarnings({"unchecked"})
-    public void addOrderedHandler(Object topic, GridBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
+    public void addOrderedHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
         if (orderedHandlers.putIfAbsent(topic, c) == null) {
             cctx.gridIO().addMessageListener(topic, new OrderedMessageListener(
-                (GridBiInClosure<UUID, GridCacheMessage<K, V>>)c));
+                (IgniteBiInClosure<UUID, GridCacheMessage<K, V>>)c));
 
             if (log != null && log.isDebugEnabled())
                 log.debug("Registered ordered cache communication handler [topic=" + topic + ", handler=" + c + ']');
@@ -786,12 +787,12 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     private class OrderedMessageListener implements GridMessageListener {
         /** */
-        private final GridBiInClosure<UUID, GridCacheMessage<K, V>> c;
+        private final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c;
 
         /**
          * @param c Handler closure.
          */
-        OrderedMessageListener(GridBiInClosure<UUID, GridCacheMessage<K, V>> c) {
+        OrderedMessageListener(IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
             this.c = c;
         }
 

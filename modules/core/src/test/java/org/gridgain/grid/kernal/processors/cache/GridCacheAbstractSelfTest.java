@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
@@ -266,7 +267,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected GridCacheStore<?, ?> cacheStore() {
         return new GridCacheStoreAdapter<Object, Object>() {
-            @Override public void loadCache(GridBiInClosure<Object, Object> clo,
+            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
                 Object... args) {
                 for (Map.Entry<Object, Object> e : map.entrySet())
                     clo.apply(e.getKey(), e.getValue());

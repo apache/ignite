@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.*;
  * Concurrent ordered map that automatically manages its maximum size.
  * Once it exceeds its maximum, it will start removing smallest elements
  * until the maximum is reached again. If optional listener is set
- * via {@link #evictionListener(GridBiInClosure)} method, then listener
+ * via {@link #evictionListener(org.apache.ignite.lang.IgniteBiInClosure)} method, then listener
  * will be notified for every eviction.
  * <p>
  * Note that due to concurrent nature of this map, it may grow slightly
@@ -42,7 +42,7 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
     private int max;
 
     /** Listener. */
-    private volatile GridBiInClosure<K, V> lsnr;
+    private volatile IgniteBiInClosure<K, V> lsnr;
 
     /**
      * Constructs a new, empty map that orders its elements according to
@@ -115,7 +115,7 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
      *
      * @param lsnr Closure to be called for every eviction event.
      */
-    public void evictionListener(GridBiInClosure<K, V> lsnr) {
+    public void evictionListener(IgniteBiInClosure<K, V> lsnr) {
         this.lsnr = lsnr;
     }
 
@@ -124,7 +124,7 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
      *
      * @return Closure to be called for every eviction event.
      */
-    public GridBiInClosure<K, V> evictionListener() {
+    public IgniteBiInClosure<K, V> evictionListener() {
         return lsnr;
     }
 
@@ -175,7 +175,7 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
 
                     assert val != null;
 
-                    GridBiInClosure<K, V> lsnr = this.lsnr;
+                    IgniteBiInClosure<K, V> lsnr = this.lsnr;
 
                     // Listener notification.
                     if (lsnr != null)

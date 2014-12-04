@@ -63,7 +63,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final AtomicReferenceArray<GridHadoopMultimap> maps;
 
     /** */
-    private volatile GridInClosure2X<T, GridHadoopShuffleMessage> io;
+    private volatile IgniteInClosure2X<T, GridHadoopShuffleMessage> io;
 
     /** */
     protected ConcurrentMap<Long, GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>> sentMsgs =
@@ -137,7 +137,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param io IO Closure for sending messages.
      */
     @SuppressWarnings("BusyWait")
-    public void startSending(String gridName, GridInClosure2X<T, GridHadoopShuffleMessage> io) {
+    public void startSending(String gridName, IgniteInClosure2X<T, GridHadoopShuffleMessage> io) {
         assert snd == null;
         assert io != null;
 

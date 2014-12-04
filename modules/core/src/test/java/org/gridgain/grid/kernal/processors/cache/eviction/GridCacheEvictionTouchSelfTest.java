@@ -11,12 +11,12 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -65,7 +65,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
             }
 
             @Override public void loadAll(GridCacheTx tx, Collection<?> keys,
-                GridBiInClosure<Object, Object> c) {
+                IgniteBiInClosure<Object, Object> c) {
                 for (Object key : keys)
                     c.apply(key, key);
             }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -159,8 +160,8 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      */
     public GridFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
-        boolean async, 
-        Collection<? extends K> keys, 
+        boolean async,
+        Collection<? extends K> keys,
         boolean deserializePortable,
-        GridBiInClosure<K, V> c);
+        IgniteBiInClosure<K, V> c);
 }

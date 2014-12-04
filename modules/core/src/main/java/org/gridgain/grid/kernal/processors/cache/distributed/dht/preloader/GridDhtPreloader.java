@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -526,7 +527,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /**
      *
      */
-    private abstract class MessageHandler<M> implements GridBiInClosure<UUID, M> {
+    private abstract class MessageHandler<M> implements IgniteBiInClosure<UUID, M> {
         /** */
         private static final long serialVersionUID = 0L;
 

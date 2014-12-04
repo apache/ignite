@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
  * method and properly wraps {@link GridException} into {@link GridClosureException} instance.
  * @see CIX2
  */
-public abstract class GridInClosure2X<E1, E2> implements GridBiInClosure<E1, E2> {
+public abstract class IgniteInClosure2X<E1, E2> implements IgniteBiInClosure<E1, E2> {
     /** */
     private static final long serialVersionUID = 0L;
 

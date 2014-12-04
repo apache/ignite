@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.swapspace.file;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.typedef.*;
@@ -297,7 +297,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                             if (s.isEmpty())
                                 break;
 
-                            spi.removeAll(space, s, new GridBiInClosure<GridSwapKey, byte[]>() {
+                            spi.removeAll(space, s, new IgniteBiInClosure<GridSwapKey, byte[]>() {
                                 @Override public void apply(GridSwapKey k, byte[] bytes) {
                                     if (bytes != null)
                                         assertNull(map.putIfAbsent(k, bytes));

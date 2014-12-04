@@ -137,7 +137,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      */
     private void startSending(GridHadoopShuffleJob<UUID> shuffleJob) {
         shuffleJob.startSending(ctx.kernalContext().gridName(),
-            new GridInClosure2X<UUID, GridHadoopShuffleMessage>() {
+            new IgniteInClosure2X<UUID, GridHadoopShuffleMessage>() {
                 @Override public void applyx(UUID dest, GridHadoopShuffleMessage msg) throws GridException {
                     send0(dest, msg);
                 }

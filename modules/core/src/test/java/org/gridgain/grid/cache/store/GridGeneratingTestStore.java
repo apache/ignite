@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
@@ -36,7 +36,7 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiInClosure<String, String> clo,
+    @Override public void loadCache(IgniteBiInClosure<String, String> clo,
         @Nullable Object... args) throws GridException {
         if (args.length > 0) {
             try {
@@ -60,7 +60,7 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
 
     /** {@inheritDoc} */
     @Override public void loadAll(@Nullable GridCacheTx tx,
-        @Nullable Collection<? extends String> keys, GridBiInClosure<String, String> c) throws GridException {
+        @Nullable Collection<? extends String> keys, IgniteBiInClosure<String, String> c) throws GridException {
         for (String key : keys)
             c.apply(key, "val" + key);
     }

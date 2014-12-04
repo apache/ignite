@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.swapspace.file;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -395,7 +396,7 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable GridBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
+        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
         assert keys != null;
         assert ctx != null;
 

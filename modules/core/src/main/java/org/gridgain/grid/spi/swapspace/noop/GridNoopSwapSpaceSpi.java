@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.swapspace.noop;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -75,7 +76,7 @@ public class GridNoopSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable GridBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
+        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
         // No-op.
     }
 
