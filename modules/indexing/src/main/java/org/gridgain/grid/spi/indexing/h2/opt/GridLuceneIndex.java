@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.indexing.h2.opt;
 
 import org.apache.commons.codec.binary.*;
+import org.apache.ignite.lang.*;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -17,7 +18,6 @@ import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;

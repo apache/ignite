@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.typedef;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
 
@@ -17,7 +18,7 @@ import org.gridgain.grid.util.lang.*;
  * {@link GridPredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
  * readability. For more information see {@link GridPredicate}.
- * @see org.gridgain.grid.lang.IgniteBiPredicate
+ * @see org.apache.ignite.lang.IgniteBiPredicate
  * @see GridFunc
  */
 public interface PKV<K, V> extends IgniteBiPredicate<K, V> { /* No-op. */ }

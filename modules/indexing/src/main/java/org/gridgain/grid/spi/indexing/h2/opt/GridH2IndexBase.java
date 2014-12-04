@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.indexing;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**

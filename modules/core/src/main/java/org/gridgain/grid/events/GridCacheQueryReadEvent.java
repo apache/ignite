@@ -10,6 +10,7 @@
 package org.gridgain.grid.events;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.tostring.*;

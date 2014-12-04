@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
@@ -241,7 +242,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Gets cache projection based on given entry filter. This filter will be simply passed through
-     * to all cache operations on this projection. Unlike {@link #projection(org.gridgain.grid.lang.IgniteBiPredicate)}
+     * to all cache operations on this projection. Unlike {@link #projection(org.apache.ignite.lang.IgniteBiPredicate)}
      * method, this filter will <b>not</b> be used for pre-filtering.
      *
      * @param filter Filter to be passed through to all cache operations. If {@code null}, then the

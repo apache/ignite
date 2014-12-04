@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.tests
 
-import org.apache.ignite.lang.{IgniteBiInClosure, IgniteBiClosure}
+import org.apache.ignite.lang.{IgniteBiPredicate, IgniteBiInClosure, IgniteBiClosure}
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.gridgain.scalar._

@@ -12,7 +12,6 @@ package org.gridgain.grid.messaging;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,12 +27,12 @@ import java.util.*;
  * <p>
  * There are {@code 2} ways to subscribe to message listening, {@code local} and {@code remote}.
  * <p>
- * Local subscription, defined by {@link #localListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)} method, will add
+ * Local subscription, defined by {@link #localListen(Object, org.apache.ignite.lang.IgniteBiPredicate)} method, will add
  * a listener for a given topic on local node only. This listener will be notified whenever any
  * node within grid projection will send a message for a given topic to this node. Local listen
  * subscription will happen regardless of whether local node belongs to this grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)}, will add a
+ * Remote subscription, defined by {@link #remoteListen(Object, org.apache.ignite.lang.IgniteBiPredicate)}, will add a
  * message listener for a given topic to all nodes in the projection (possibly including this node if
  * it belongs to the projection as well). This means that any node within this grid projection can send
  * a message for a given topic and all nodes within projection will receive listener notification.
@@ -133,7 +132,7 @@ public interface GridMessaging extends IgniteAsyncSupport {
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @param opId Listen ID that was returned from {@link #remoteListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)} method.
+     * @param opId Listen ID that was returned from {@link #remoteListen(Object, org.apache.ignite.lang.IgniteBiPredicate)} method.
      * @throws GridException If failed to unregister listeners.
      */
     public void stopRemoteListen(UUID opId) throws GridException;

@@ -11,9 +11,9 @@ package org.gridgain.examples.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.resources.*;
 

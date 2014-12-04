@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;

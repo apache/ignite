@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
 import org.gridgain.grid.lang.*;

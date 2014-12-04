@@ -17,7 +17,7 @@ import org.gridgain.grid.lang.*;
 
 /**
  * Loads data from persistent store at cache startup by calling
- * {@link GridCache#loadCache(org.gridgain.grid.lang.IgniteBiPredicate, long, Object...)} method on
+ * {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method on
  * all nodes.
  * <p>
  * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.

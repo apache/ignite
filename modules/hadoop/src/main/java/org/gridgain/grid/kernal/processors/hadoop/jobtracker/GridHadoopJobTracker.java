@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -128,7 +129,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
 
         qry.callback(new IgniteBiPredicate<UUID,
-                    Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
+                            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
             @Override public boolean apply(UUID nodeId,
                 final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
                 if (!busyLock.tryReadLock())

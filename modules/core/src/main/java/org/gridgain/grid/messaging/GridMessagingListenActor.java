@@ -11,8 +11,8 @@ package org.gridgain.grid.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)}
+ * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, org.apache.ignite.lang.IgniteBiPredicate)}
  * method.
  */
 public abstract class GridMessagingListenActor<T> implements IgniteBiPredicate<UUID, T> {

@@ -55,7 +55,7 @@ import org.jetbrains.annotations.*;
  * Sometimes when it is known in advance that SQL query will cause a full data scan, or whenever data set
  * is relatively small, the full scan query may be used. This query will iterate over all cache
  * entries, skipping over entries that don't pass the optionally provided key-value filter
- * (see {@link GridCacheQueries#createScanQuery(org.gridgain.grid.lang.IgniteBiPredicate)} method).
+ * (see {@link GridCacheQueries#createScanQuery(org.apache.ignite.lang.IgniteBiPredicate)} method).
  * <h2 class="header">Limitations</h2>
  * Data in GridGain cache is usually distributed across several nodes,
  * so some queries may not work as expected. Keep in mind following limitations

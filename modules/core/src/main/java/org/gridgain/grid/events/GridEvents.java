@@ -29,7 +29,7 @@ import java.util.*;
  * of subscribed events happen on local node regardless of whether local node belongs to underlying
  * grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(org.gridgain.grid.lang.IgniteBiPredicate, GridPredicate, int...)}, will add an
+ * Remote subscription, defined by {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, GridPredicate, int...)}, will add an
  * event listener for specified events on all nodes in the projection (possibly including local node if
  * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events.
  * If the events pass the remote event filter, the events will be sent to local node for local listener notification.
@@ -140,8 +140,8 @@ public interface GridEvents extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Operation ID that was returned from
-     *      {@link #remoteListen(org.gridgain.grid.lang.IgniteBiPredicate, GridPredicate, int...)} method.
-     * @see #remoteListen(org.gridgain.grid.lang.IgniteBiPredicate, GridPredicate, int...)
+     *      {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, GridPredicate, int...)} method.
+     * @see #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, GridPredicate, int...)
      * @throws GridException If failed to stop listeners.
      */
     public void stopRemoteListen(UUID opId) throws GridException;

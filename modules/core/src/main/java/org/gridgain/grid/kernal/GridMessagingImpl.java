@@ -13,7 +13,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
