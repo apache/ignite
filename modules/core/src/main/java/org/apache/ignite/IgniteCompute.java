@@ -105,7 +105,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridCompute} instance belongs.
      */
-    public ClusterGroup projection();
+    public ClusterGroup clusterGroup();
 
     /**
      * Executes given job on the node where data for provided affinity key is located

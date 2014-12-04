@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Provides functionality for topic-based message exchange among nodes defined by {@link #projection()}.
+ * Provides functionality for topic-based message exchange among nodes defined by {@link #clusterGroup()}.
  * Users can send ordered and unordered messages to various topics. Note that same topic name
  * cannot be reused between ordered and unordered messages. Instance of {@code GridMessaging}
  * is obtained from grid projection as follows:
@@ -50,7 +50,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridMessaging} instance belongs.
      */
-    public ClusterGroup projection();
+    public ClusterGroup clusterGroup();
 
     /**
      * Sends given message with specified topic to the nodes in this projection.

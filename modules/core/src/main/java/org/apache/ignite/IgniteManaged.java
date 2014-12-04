@@ -123,7 +123,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridServices} instance belongs.
      */
-    public ClusterGroup projection();
+    public ClusterGroup clusterGroup();
 
     /**
      * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always

@@ -84,7 +84,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
                         DummyService.cancelled(CLUSTER_SINGLE) == 0 &&
                         DummyService.started(NODE_SINGLE) == nodeCount() &&
                         DummyService.cancelled(NODE_SINGLE) == 0 &&
-                        actualCount(AFFINITY, randomGrid().services().deployedServices()) == 1;
+                        actualCount(AFFINITY, randomGrid().managed().deployedServices()) == 1;
                 }
             },
             2000
@@ -124,14 +124,14 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     public void testAffinityUpdateTopology() throws Exception {
         Ignite g = randomGrid();
 
-        checkCount(AFFINITY, g.services().deployedServices(), 1);
+        checkCount(AFFINITY, g.managed().deployedServices(), 1);
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            checkCount(AFFINITY, g.services().deployedServices(), 1);
+            checkCount(AFFINITY, g.managed().deployedServices(), 1);
         }
         finally {
             stopExtraNodes(nodeCnt);
@@ -155,7 +155,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
             info(">>> Passed checks.");
 
-            checkCount(name, g.services().deployedServices(), 1);
+            checkCount(name, g.managed().deployedServices(), 1);
         }
         finally {
             stopExtraNodes(nodeCnt);
@@ -183,7 +183,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             assertEquals(name, newNodes, DummyService.started(name));
             assertEquals(name, 0, DummyService.cancelled(name));
 
-            checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
+            checkCount(name, g.managed().deployedServices(), nodeCount() + newNodes);
         }
         finally {
             stopExtraNodes(newNodes);

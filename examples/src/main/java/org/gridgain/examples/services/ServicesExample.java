@@ -43,7 +43,7 @@ public class ServicesExample {
                 return;
             }
 
-            IgniteManaged svcs = ignite.services(rmts);
+            IgniteManaged svcs = ignite.managed(rmts);
 
             try {
                 // Deploy cluster singleton.
@@ -65,7 +65,7 @@ public class ServicesExample {
             }
             finally {
                 // Undeploy all services.
-                ignite.services().cancelAll();
+                ignite.managed().cancelAll();
             }
         }
     }
@@ -82,7 +82,7 @@ public class ServicesExample {
         System.out.println(">>>");
 
         // Get a sticky proxy for node-singleton map service.
-        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myNodeSingletonService", SimpleMapService.class, true);
+        SimpleMapService<Integer, String> mapSvc = ignite.managed().serviceProxy("myNodeSingletonService", SimpleMapService.class, true);
 
         int cnt = 10;
 
@@ -112,7 +112,7 @@ public class ServicesExample {
         System.out.println(">>>");
 
         // Get a sticky proxy for cluster-singleton map service.
-        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myClusterSingletonService", SimpleMapService.class, true);
+        SimpleMapService<Integer, String> mapSvc = ignite.managed().serviceProxy("myClusterSingletonService", SimpleMapService.class, true);
 
         int cnt = 10;
 

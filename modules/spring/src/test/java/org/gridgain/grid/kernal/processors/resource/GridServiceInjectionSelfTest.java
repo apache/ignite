@@ -37,8 +37,8 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         startGrid(0);
         startGrid(1);
 
-        grid(0).services().deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
-        grid(0).services(grid(0).cluster().forLocal()).deployClusterSingleton(SERVICE_NAME2, new DummyServiceImpl());
+        grid(0).managed().deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+        grid(0).managed(grid(0).cluster().forLocal()).deployClusterSingleton(SERVICE_NAME2, new DummyServiceImpl());
 
         assertEquals(2, grid(0).nodes().size());
         assertEquals(2, grid(1).nodes().size());

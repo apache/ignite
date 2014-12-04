@@ -670,8 +670,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            ClusterGroup inPrj = compute.projection();
-            ClusterGroup outPrj = ((IgniteCompute)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = compute.clusterGroup();
+            ClusterGroup outPrj = ((IgniteCompute)outBean.getObjectField()).clusterGroup();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -712,8 +712,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            ClusterGroup inPrj = evts.projection();
-            ClusterGroup outPrj = ((IgniteEvents)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = evts.clusterGroup();
+            ClusterGroup outPrj = ((IgniteEvents)outBean.getObjectField()).clusterGroup();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -748,8 +748,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            ClusterGroup inPrj = messaging.projection();
-            ClusterGroup outPrj = ((IgniteMessaging)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = messaging.clusterGroup();
+            ClusterGroup outPrj = ((IgniteMessaging)outBean.getObjectField()).clusterGroup();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -765,7 +765,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteManaged services = grid().services(grid().forNode(g1.cluster().localNode()));
+            IgniteManaged services = grid().managed(grid().forNode(g1.cluster().localNode()));
 
             services.deployNodeSingleton("test", new DummyService());
 
@@ -784,8 +784,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            ClusterGroup inPrj = services.projection();
-            ClusterGroup outPrj = ((IgniteManaged)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = services.clusterGroup();
+            ClusterGroup outPrj = ((IgniteManaged)outBean.getObjectField()).clusterGroup();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());

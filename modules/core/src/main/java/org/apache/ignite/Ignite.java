@@ -148,13 +148,13 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Services instance over this grid projection.
      */
-    public IgniteManaged services();
+    public IgniteManaged managed();
 
     /**
      * @param prj Projection.
      * @return {@code Services} functionality over given projection.
      */
-    public IgniteManaged services(ClusterGroup prj);
+    public IgniteManaged managed(ClusterGroup prj);
 
     /**
      * Creates new {@link ExecutorService} which will execute all submitted

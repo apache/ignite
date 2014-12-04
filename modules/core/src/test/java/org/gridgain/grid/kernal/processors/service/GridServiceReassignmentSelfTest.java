@@ -60,7 +60,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
      * @throws Exception If failed.
      */
     private CounterService proxy(Ignite g) throws Exception {
-        return g.services().serviceProxy("testService", CounterService.class, false);
+        return g.managed().serviceProxy("testService", CounterService.class, false);
     }
 
     /**
@@ -73,7 +73,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         DummyService.exeLatch("testService", latch);
 
-        grid(0).services().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode);
+        grid(0).managed().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode);
 
         for (int i = 0; i < 10; i++)
             proxy(randomGrid()).increment();
@@ -121,7 +121,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
             }
         }
         finally {
-            grid(F.first(startedGrids)).services().cancel("testService");
+            grid(F.first(startedGrids)).managed().cancel("testService");
 
             stopAllGrids();
 

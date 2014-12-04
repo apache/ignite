@@ -43,9 +43,9 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         Object svc;
 
         if (svcItf == Void.class)
-            svc = ignite.services().service(ann.serviceName());
+            svc = ignite.managed().service(ann.serviceName());
         else
-            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
+            svc = ignite.managed().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
 
         if (svc != null)
             GridResourceUtils.inject(field.getField(), target, svc);
@@ -61,9 +61,9 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         Object svc;
 
         if (svcItf == Void.class)
-            svc = ignite.services().service(ann.serviceName());
+            svc = ignite.managed().service(ann.serviceName());
         else
-            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
+            svc = ignite.managed().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
 
         Class<?>[] types = mtd.getMethod().getParameterTypes();
 

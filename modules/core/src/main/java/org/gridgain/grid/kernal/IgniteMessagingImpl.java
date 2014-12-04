@@ -54,7 +54,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup projection() {
+    @Override public ClusterGroup clusterGroup() {
         return prj;
     }
 

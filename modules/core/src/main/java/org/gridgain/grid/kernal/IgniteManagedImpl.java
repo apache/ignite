@@ -53,7 +53,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup projection() {
+    @Override public ClusterGroup clusterGroup() {
         return prj;
     }
 
@@ -252,6 +252,6 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        return prj.services();
+        return prj.managed();
     }
 }

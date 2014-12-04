@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Provides functionality for local and remote event notifications on nodes defined by {@link #projection()}.
+ * Provides functionality for local and remote event notifications on nodes defined by {@link #clusterGroup()}.
  * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}. Instance
  * of {@code GridMessaging} is obtained from grid projection as follows:
  * <pre name="code" class="java">
@@ -50,7 +50,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridMessaging} instance belongs.
      */
-    public ClusterGroup projection();
+    public ClusterGroup clusterGroup();
 
     /**
      * Queries nodes in this projection for events using passed in predicate filter for event
@@ -135,7 +135,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
 
     /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
-     * operation ID on all nodes defined by {@link #projection()}.
+     * operation ID on all nodes defined by {@link #clusterGroup()}.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *

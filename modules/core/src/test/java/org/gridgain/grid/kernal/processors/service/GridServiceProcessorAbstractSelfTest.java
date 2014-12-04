@@ -134,8 +134,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testSameConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteManaged svcs1 = randomGrid().services().enableAsync();
-        IgniteManaged svcs2 = randomGrid().services().enableAsync();
+        IgniteManaged svcs1 = randomGrid().managed().enableAsync();
+        IgniteManaged svcs2 = randomGrid().managed().enableAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
@@ -163,8 +163,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDifferentConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteManaged svcs1 = randomGrid().services().enableAsync();
-        IgniteManaged svcs2 = randomGrid().services().enableAsync();
+        IgniteManaged svcs1 = randomGrid().managed().enableAsync();
+        IgniteManaged svcs2 = randomGrid().managed().enableAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
@@ -198,13 +198,13 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         Ignite g = randomGrid();
 
-        g.services().deployNodeSingleton(name, new DummyService());
+        g.managed().deployNodeSingleton(name, new DummyService());
 
-        DummyService svc = g.services().service(name);
+        DummyService svc = g.managed().service(name);
 
         assertNotNull(svc);
 
-        Collection<DummyService> svcs = g.services().services(name);
+        Collection<DummyService> svcs = g.managed().services(name);
 
         assertEquals(1, svcs.size());
     }
@@ -217,7 +217,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         Ignite g = randomGrid();
 
-        g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
+        g.managed().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
         GridTestUtils.retryAssert(log, 50, 200, new CA() {
             @Override
@@ -225,7 +225,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {
-                    Collection<DummyService> svcs = grid(i).services().services(name);
+                    Collection<DummyService> svcs = grid(i).managed().services(name);
 
                     if (svcs != null)
                         cnt += svcs.size();
@@ -248,7 +248,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.managed().enableAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 
@@ -265,7 +265,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.services().deployedServices(), nodeCount());
+        checkCount(name, g.managed().deployedServices(), nodeCount());
     }
 
     /**
@@ -280,7 +280,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.managed().enableAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
@@ -297,7 +297,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.services().deployedServices(), 1);
+        checkCount(name, g.managed().deployedServices(), 1);
     }
 
     /**
@@ -313,7 +313,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         String name = "serviceAffinity";
 
-        IgniteManaged svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.managed().enableAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
@@ -326,7 +326,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        checkCount(name, g.services().deployedServices(), 1);
+        checkCount(name, g.managed().deployedServices(), 1);
     }
 
     /**
@@ -341,7 +341,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.managed().enableAsync();
 
         svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
@@ -358,7 +358,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, nodeCount() * 2, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.services().deployedServices(), nodeCount() * 2);
+        checkCount(name, g.managed().deployedServices(), nodeCount() * 2);
     }
 
     /**
@@ -375,7 +375,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.managed().enableAsync();
 
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 
@@ -392,7 +392,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, cnt, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.services().deployedServices(), cnt);
+        checkCount(name, g.managed().deployedServices(), cnt);
     }
 
     /**
@@ -407,7 +407,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        g.services().deployClusterSingleton(name, new DummyService());
+        g.managed().deployClusterSingleton(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -420,7 +420,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.cancelLatch(name, latch);
 
-        g.services().cancel(name);
+        g.managed().cancel(name);
 
         info("Cancelled service: " + name);
 
@@ -442,7 +442,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        g.services().deployNodeSingleton(name, new DummyService());
+        g.managed().deployNodeSingleton(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -455,7 +455,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.cancelLatch(name, latch);
 
-        g.services().cancel(name);
+        g.managed().cancel(name);
 
         info("Cancelled service: " + name);
 

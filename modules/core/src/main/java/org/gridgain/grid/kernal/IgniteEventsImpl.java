@@ -54,7 +54,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup projection() {
+    @Override public ClusterGroup clusterGroup() {
         return prj;
     }
 

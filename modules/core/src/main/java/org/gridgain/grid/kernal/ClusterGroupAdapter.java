@@ -227,7 +227,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /**
      * @return {@link org.apache.ignite.IgniteManaged} for this projection.
      */
-    public IgniteManaged services() {
+    public IgniteManaged managed() {
         if (svcs == null) {
             assert ctx != null;
 

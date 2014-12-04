@@ -271,8 +271,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged services(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).services();
+    @Override public IgniteManaged managed(ClusterGroup prj) {
+        return ((ClusterGroupAdapter)prj).managed();
     }
 
     /** {@inheritDoc} */

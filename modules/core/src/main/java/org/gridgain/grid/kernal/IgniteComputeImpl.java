@@ -84,7 +84,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup projection() {
+    @Override public ClusterGroup clusterGroup() {
         return prj;
     }
 
