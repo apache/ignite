@@ -11,7 +11,6 @@ package org.gridgain.grid;
 
 import org.apache.ignite.mbean.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.mbean.*;
 
 import javax.management.*;
 import java.util.*;

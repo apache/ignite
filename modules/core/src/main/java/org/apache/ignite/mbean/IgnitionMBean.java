@@ -10,7 +10,6 @@
 package org.apache.ignite.mbean;
 
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * This interface defines JMX view on {@link org.gridgain.grid.GridGain}.

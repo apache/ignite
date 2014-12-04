@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util.mbean;
+package org.apache.ignite.mbean;
 
 import java.lang.annotation.*;
 
