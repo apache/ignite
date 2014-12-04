@@ -784,13 +784,13 @@ object VisorCacheCommand {
      * @param cfg Config to show information.
      */
     private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
-        val affinityCfg = cfg.affinityConfig()
-        val nearCfg = cfg.nearConfig()
-        val preloadCfg = cfg.preloadConfig()
-        val evictCfg = cfg.evictConfig()
-        val defaultCfg = cfg.defaultConfig()
-        val dgcCfg = cfg.dgcConfig()
-        val storeCfg = cfg.storeConfig()
+        val affinityCfg = cfg.affinityConfiguration()
+        val nearCfg = cfg.nearConfiguration()
+        val preloadCfg = cfg.preloadConfiguration()
+        val evictCfg = cfg.evictConfiguration()
+        val defaultCfg = cfg.defaultConfiguration()
+        val dgcCfg = cfg.dgcConfiguration()
+        val storeCfg = cfg.storeConfiguration()
         val writeBehind = cfg.writeBehind()
 
         val cacheT = VisorTextTable()
