@@ -54,7 +54,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>

@@ -283,7 +283,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         cfg.setCollisionSpi(colSpi);
         cfg.setFailoverSpi(failSpi);
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }

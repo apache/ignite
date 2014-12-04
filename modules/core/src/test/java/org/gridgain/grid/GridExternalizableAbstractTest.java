@@ -26,7 +26,7 @@ public class GridExternalizableAbstractTest extends GridCommonAbstractTest {
         List<GridMarshaller> marshallers = new ArrayList<>();
 
         marshallers.add(new IgniteJdkMarshaller());
-        marshallers.add(new GridOptimizedMarshaller());
+        marshallers.add(new IgniteOptimizedMarshaller());
 
         return marshallers;
     }

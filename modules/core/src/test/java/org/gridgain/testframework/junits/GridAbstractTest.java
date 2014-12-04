@@ -1166,7 +1166,7 @@ public abstract class GridAbstractTest extends TestCase {
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
-                GridOptimizedMarshaller.clearCache();
+                IgniteOptimizedMarshaller.clearCache();
                 GridMarshallerExclusions.clearCache();
                 GridEnumCache.clear();
             }

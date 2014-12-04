@@ -55,7 +55,7 @@ public class MemcacheRestExampleNodeStartup {
         cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingEnabled(true);
 
-        GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
+        IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
 

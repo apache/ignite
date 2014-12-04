@@ -2,7 +2,6 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.*;
@@ -19,7 +18,7 @@ import java.util.concurrent.*;
 public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridMarshaller createMarshaller() {
-        GridOptimizedMarshaller m = new GridOptimizedMarshaller();
+        IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();
 
         m.setRequireSerializable(false);
         m.setClassNames(F.asList(GoodMarshallable.class.getName(), NoMarshallable.class.getName()));
@@ -339,8 +338,8 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
     /**
      *
      */
-    public static class GoodMarshallable implements GridOptimizedMarshallable, Serializable {
-        /** Class ID required by {@link GridOptimizedMarshallable}. */
+    public static class GoodMarshallable implements IgniteOptimizedMarshallable, Serializable {
+        /** Class ID required by {@link IgniteOptimizedMarshallable}. */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
 
@@ -416,8 +415,8 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
     /**
      *
      */
-    private static class BadMarshallable extends TestObject implements GridOptimizedMarshallable {
-        /** Class ID required by {@link GridOptimizedMarshallable}. */
+    private static class BadMarshallable extends TestObject implements IgniteOptimizedMarshallable {
+        /** Class ID required by {@link IgniteOptimizedMarshallable}. */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
 

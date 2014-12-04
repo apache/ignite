@@ -234,7 +234,7 @@ public class GridTestResources {
             String marshallerName = GridTestProperties.getProperty("marshaller.class");
 
             if (marshallerName == null)
-                marshaller = new GridOptimizedMarshaller();
+                marshaller = new IgniteOptimizedMarshaller();
             else {
                 try {
                     Class<? extends GridMarshaller> cls = (Class<? extends GridMarshaller>)Class.forName(marshallerName);

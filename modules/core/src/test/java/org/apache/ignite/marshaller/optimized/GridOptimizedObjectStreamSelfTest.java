@@ -10,7 +10,6 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -209,7 +208,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     public void testRequireSerializable() throws Exception {
         try {
-            new GridOptimizedMarshaller(true, null, null, 0).marshal(new Object());
+            new IgniteOptimizedMarshaller(true, null, null, 0).marshal(new Object());
 
             assert false : "Exception not thrown.";
         }
@@ -235,7 +234,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Arrays.fill(obj.longArr, 100L);
         Arrays.fill(obj.doubleArr, 100.0d);
 
-        final GridOptimizedMarshaller marsh = new GridOptimizedMarshaller(false, null, null, 5);
+        final IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller(false, null, null, 5);
 
         try {
             multithreaded(new Callable<Object>() {

@@ -27,7 +27,7 @@ public class GridLuceneIndexLoadTest {
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     public static void main(String ... args) throws GridSpiException, FileNotFoundException {
-        final GridOptimizedMarshaller m = new GridOptimizedMarshaller();
+        final IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();
 
         GridIndexingTypeDescriptor desc = new GridIndexingTypeDescriptor() {
             @Override public String name() {

@@ -74,7 +74,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         if (useCache) {
             GridCacheConfiguration cc = defaultCacheConfiguration();

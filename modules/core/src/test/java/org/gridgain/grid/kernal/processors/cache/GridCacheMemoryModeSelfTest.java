@@ -83,7 +83,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setPortableEnabled(portableEnabled());
 
         cfg.setCacheConfiguration(cacheCfg);
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }

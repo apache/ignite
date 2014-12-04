@@ -60,7 +60,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements GridOptimizedMarshallable {
+    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 

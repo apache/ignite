@@ -54,7 +54,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }

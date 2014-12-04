@@ -85,7 +85,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
         cfg.setRestEnabled(false);
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }

@@ -45,13 +45,13 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
     private Object curObj;
 
     /** */
-    private List<T2<GridOptimizedFieldType, Long>> curFields;
+    private List<T2<IgniteOptimizedFieldType, Long>> curFields;
 
     /** */
-    private List<IgniteBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoList;
+    private List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> curFieldInfoList;
 
     /** */
-    private Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
+    private Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> curFieldInfoMap;
 
     /** */
     private Class<?> curCls;
@@ -133,7 +133,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
                 return handles.lookup(readInt());
 
             case OBJECT:
-                GridOptimizedClassDescriptor desc = GridOptimizedClassResolver.readClass(this, clsLdr);
+                IgniteOptimizedClassDescriptor desc = IgniteOptimizedClassResolver.readClass(this, clsLdr);
 
                 curCls = desc.describedClass();
 
@@ -220,10 +220,10 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void readFields(Object obj, List<T2<GridOptimizedFieldType, Long>> fieldOffs) throws ClassNotFoundException,
+    void readFields(Object obj, List<T2<IgniteOptimizedFieldType, Long>> fieldOffs) throws ClassNotFoundException,
         IOException {
         for (int i = 0; i < fieldOffs.size(); i++) {
-            T2<GridOptimizedFieldType, Long> t = fieldOffs.get(i);
+            T2<IgniteOptimizedFieldType, Long> t = fieldOffs.get(i);
 
             switch ((t.get1())) {
                 case BYTE:
@@ -325,7 +325,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     Object readSerializable(Class<?> cls, List<Method> mtds, Method readResolveMtd,
-        GridOptimizedClassDescriptor.Fields fields) throws ClassNotFoundException, IOException {
+        IgniteOptimizedClassDescriptor.Fields fields) throws ClassNotFoundException, IOException {
         Object obj;
 
         try {
@@ -869,7 +869,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
      */
     private static class GetFieldImpl extends GetField {
         /** Field info map. */
-        private final Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
+        private final Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
         private final Object[] objs;
@@ -883,12 +883,12 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
         private GetFieldImpl(GridOptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
             fieldInfoMap = in.curFieldInfoMap;
 
-            List<IgniteBiTuple<Integer, GridOptimizedFieldType>> infos = in.curFieldInfoList;
+            List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> infos = in.curFieldInfoList;
 
             objs = new Object[infos.size()];
 
             for (int i = 0; i < infos.size(); i++) {
-                IgniteBiTuple<Integer, GridOptimizedFieldType> t = infos.get(i);
+                IgniteBiTuple<Integer, IgniteOptimizedFieldType> t = infos.get(i);
 
                 Object obj = null;
 

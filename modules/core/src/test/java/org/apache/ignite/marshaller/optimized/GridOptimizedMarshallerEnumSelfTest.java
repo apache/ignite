@@ -10,7 +10,6 @@
 package org.apache.ignite.marshaller.optimized;
 
 import junit.framework.*;
-import org.apache.ignite.marshaller.optimized.*;
 
 /**
  *
@@ -20,7 +19,7 @@ public class GridOptimizedMarshallerEnumSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testEnumSerialisation() throws Exception {
-        GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
+        IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         byte[] bytes = marsh.marshal(TestEnum.Bond);
 

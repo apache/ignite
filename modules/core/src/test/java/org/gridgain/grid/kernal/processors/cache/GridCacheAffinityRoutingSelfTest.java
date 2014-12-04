@@ -88,7 +88,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration();
         }
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }

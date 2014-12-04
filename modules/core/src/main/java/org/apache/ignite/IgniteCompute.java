@@ -46,7 +46,7 @@ import java.util.concurrent.*;
  * not have any alive nodes), then {@link GridEmptyProjectionException} will be thrown out of result future.
  * <h1 class="header">Serializable</h1>
  * Also note that {@link Runnable} and {@link Callable} implementations must support serialization as required
- * by the configured marshaller. For example, {@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller} requires {@link Serializable}
+ * by the configured marshaller. For example, {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} requires {@link Serializable}
  * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
  * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
  * GridGain provides analogous {@link org.apache.ignite.lang.IgniteRunnable} and {@link org.apache.ignite.lang.IgniteCallable} classes which are

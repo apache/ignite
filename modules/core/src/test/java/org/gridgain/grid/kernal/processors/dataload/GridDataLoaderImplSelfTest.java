@@ -136,8 +136,8 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             GridMarshaller marsh = g0.configuration().getMarshaller();
 
-            if (marsh instanceof GridOptimizedMarshaller)
-                assertTrue(((GridOptimizedMarshaller)marsh).isRequireSerializable());
+            if (marsh instanceof IgniteOptimizedMarshaller)
+                assertTrue(((IgniteOptimizedMarshaller)marsh).isRequireSerializable());
             else
                 fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
 
@@ -186,8 +186,8 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             GridMarshaller marsh = g0.configuration().getMarshaller();
 
-            if (marsh instanceof GridOptimizedMarshaller)
-                assertTrue(((GridOptimizedMarshaller)marsh).isRequireSerializable());
+            if (marsh instanceof IgniteOptimizedMarshaller)
+                assertTrue(((IgniteOptimizedMarshaller)marsh).isRequireSerializable());
             else
                 fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
 

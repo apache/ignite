@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Object wrapper containing serialized byte array of original object and deployment information.
  */
-class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
+class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

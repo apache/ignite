@@ -85,7 +85,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCommunicationSpi(new CommunicationSpi());
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         GridCacheConfiguration ccfg = defaultCacheConfiguration();
 

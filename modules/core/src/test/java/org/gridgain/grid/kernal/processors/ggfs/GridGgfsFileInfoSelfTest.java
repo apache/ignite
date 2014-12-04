@@ -24,7 +24,7 @@ import java.util.concurrent.*;
  */
 public class GridGgfsFileInfoSelfTest extends GridGgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final GridMarshaller marshaller = new GridOptimizedMarshaller();
+    private final GridMarshaller marshaller = new IgniteOptimizedMarshaller();
 
     /**
      * Test node info serialization.

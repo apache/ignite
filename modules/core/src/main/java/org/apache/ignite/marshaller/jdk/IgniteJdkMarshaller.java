@@ -23,7 +23,7 @@ import java.io.*;
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
- * {@code GridJdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller}.
+ * {@code GridJdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller}.
  * <pre name="code" class="java">
  * GridJdkMarshaller marshaller = new GridJdkMarshaller();
  *

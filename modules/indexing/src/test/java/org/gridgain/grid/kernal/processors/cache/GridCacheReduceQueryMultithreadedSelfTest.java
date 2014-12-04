@@ -54,7 +54,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
 
         c.setIndexingSpi(indexing);
 
-        c.setMarshaller(new GridOptimizedMarshaller(false));
+        c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return c;
     }

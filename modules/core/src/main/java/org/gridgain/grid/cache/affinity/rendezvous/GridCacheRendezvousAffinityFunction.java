@@ -85,7 +85,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     private GridCacheAffinityNodeHashResolver hashIdRslvr = new GridCacheAffinityNodeAddressHashResolver();
 
     /** Marshaller. */
-    private GridMarshaller marshaller = new GridOptimizedMarshaller(false);
+    private GridMarshaller marshaller = new IgniteOptimizedMarshaller(false);
 
     /**
      * Empty constructor with all defaults.

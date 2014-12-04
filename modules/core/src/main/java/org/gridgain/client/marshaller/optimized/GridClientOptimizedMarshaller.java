@@ -19,7 +19,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * Wrapper, that adapts {@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller} to
+ * Wrapper, that adapts {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} to
  * {@link GridClientMarshaller} interface.
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {
@@ -27,13 +27,13 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public static final byte ID = 1;
 
     /** Optimized marshaller. */
-    private final GridOptimizedMarshaller opMarsh;
+    private final IgniteOptimizedMarshaller opMarsh;
 
     /**
      * Default constructor.
      */
     public GridClientOptimizedMarshaller() {
-        opMarsh = new GridOptimizedMarshaller();
+        opMarsh = new IgniteOptimizedMarshaller();
     }
 
     /**
@@ -47,12 +47,12 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      * @param poolSize Object streams pool size.
      * @throws IOException If an I/O error occurs while writing stream header.
      * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
-     * @see GridOptimizedMarshaller
+     * @see org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller
      */
     public GridClientOptimizedMarshaller(boolean requireSer, List<String> clsNames, String clsNamesPath, int poolSize)
         throws IOException {
         try {
-            opMarsh = new GridOptimizedMarshaller(requireSer, clsNames, clsNamesPath, poolSize);
+            opMarsh = new IgniteOptimizedMarshaller(requireSer, clsNames, clsNamesPath, poolSize);
         }
         catch (GridException e) {
             throw new IOException(e);

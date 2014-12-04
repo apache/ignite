@@ -47,7 +47,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setMarshaller(new GridOptimizedMarshaller(false));
+        c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         GridH2IndexingSpi indexing = new GridH2IndexingSpi();
 

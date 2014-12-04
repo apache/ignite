@@ -1598,7 +1598,7 @@ public class GridGainEx {
 
                     marsh = new IgniteJdkMarshaller();
                 }
-                else if (!GridOptimizedMarshaller.available()) {
+                else if (!IgniteOptimizedMarshaller.available()) {
                     U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
                         "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
@@ -1609,9 +1609,9 @@ public class GridGainEx {
                     marsh = new IgniteJdkMarshaller();
                 }
                 else
-                    marsh = new GridOptimizedMarshaller();
+                    marsh = new IgniteOptimizedMarshaller();
             }
-            else if (marsh instanceof GridOptimizedMarshaller && !U.isHotSpot()) {
+            else if (marsh instanceof IgniteOptimizedMarshaller && !U.isHotSpot()) {
                 U.warn(log, "Using GridOptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
                     "object serialization behavior could yield unexpected results.",
                     "Using GridOptimizedMarshaller on untested JVM.");

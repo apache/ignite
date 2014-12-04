@@ -52,7 +52,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }

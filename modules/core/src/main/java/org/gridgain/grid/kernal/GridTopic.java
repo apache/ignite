@@ -175,7 +175,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T1 implements Externalizable, GridOptimizedMarshallable {
+    private static class T1 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -247,7 +247,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T2 implements Externalizable, GridOptimizedMarshallable {
+    private static class T2 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -326,7 +326,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T3 implements Externalizable, GridOptimizedMarshallable {
+    private static class T3 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -398,7 +398,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T4 implements Externalizable, GridOptimizedMarshallable {
+    private static class T4 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -484,7 +484,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T5 implements Externalizable, GridOptimizedMarshallable {
+    private static class T5 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -570,7 +570,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T6 implements Externalizable, GridOptimizedMarshallable {
+    private static class T6 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -649,7 +649,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T7 implements Externalizable, GridOptimizedMarshallable {
+    private static class T7 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -743,7 +743,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T8 implements Externalizable, GridOptimizedMarshallable {
+    private static class T8 implements Externalizable, IgniteOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 

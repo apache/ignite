@@ -83,7 +83,7 @@ public class GridHadoopExternalProcessStarter {
         GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(
             args.nodeId,
             args.childProcId,
-            new GridOptimizedMarshaller(),
+            new IgniteOptimizedMarshaller(),
             log,
             msgExecSvc,
             "external"

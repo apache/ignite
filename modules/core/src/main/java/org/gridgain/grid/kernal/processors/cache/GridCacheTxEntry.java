@@ -30,7 +30,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizable, GridOptimizedMarshallable {
+public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizable, IgniteOptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

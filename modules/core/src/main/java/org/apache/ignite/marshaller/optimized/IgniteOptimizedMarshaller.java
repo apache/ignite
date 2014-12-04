@@ -91,7 +91,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public class GridOptimizedMarshaller extends GridAbstractMarshaller {
+public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
     /** Whether or not to require an object to be serializable in order to be marshalled. */
     private boolean requireSer = true;
 
@@ -103,7 +103,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
      *
      * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
      */
-    public GridOptimizedMarshaller() {
+    public IgniteOptimizedMarshaller() {
         if (!available())
             throw new GridRuntimeException("Using GridOptimizedMarshaller on unsupported JVM version (some of " +
                 "JVM-private APIs required for the marshaller to work are missing).");
@@ -119,7 +119,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
      *      marshalled, if {@code false}, then such requirement will be relaxed.
      * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
      */
-    public GridOptimizedMarshaller(boolean requireSer) {
+    public IgniteOptimizedMarshaller(boolean requireSer) {
         this();
 
         this.requireSer = requireSer;
@@ -139,8 +139,8 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
      * @throws GridException If an I/O error occurs while writing stream header.
      * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
      */
-    public GridOptimizedMarshaller(boolean requireSer, @Nullable List<String> clsNames,
-        @Nullable String clsNamesPath, int poolSize) throws GridException {
+    public IgniteOptimizedMarshaller(boolean requireSer, @Nullable List<String> clsNames,
+                                     @Nullable String clsNamesPath, int poolSize) throws GridException {
         this(requireSer);
 
         setClassNames(clsNames);
@@ -163,7 +163,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
             Arrays.sort(clsNamesArr);
 
             Map<String, Integer> name2id = U.newHashMap(clsNamesArr.length);
-            T3<String, Class<?>, GridOptimizedClassDescriptor>[] id2name = new T3[clsNamesArr.length];
+            T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] id2name = new T3[clsNamesArr.length];
 
             int i = 0;
 
@@ -172,7 +172,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
                 id2name[i++] = new T3<>(name, null, null);
             }
 
-            GridOptimizedClassResolver.userClasses(name2id, id2name);
+            IgniteOptimizedClassResolver.userClasses(name2id, id2name);
         }
     }
 

@@ -102,7 +102,7 @@ public class GridH2IndexingSpiLoadTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        GridOptimizedMarshaller m = new GridOptimizedMarshaller();
+        IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();
 
         m.setClassNames(F.asList(GridTestEntity.class.getName()));
 

@@ -44,10 +44,10 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     private Object curObj;
 
     /** */
-    private List<T2<GridOptimizedFieldType, Long>> curFields;
+    private List<T2<IgniteOptimizedFieldType, Long>> curFields;
 
     /** */
-    private Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
+    private Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> curFieldInfoMap;
 
     /** */
     private PutFieldImpl curPut;
@@ -148,7 +148,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         else {
             Class<?> cls = obj.getClass();
 
-            GridOptimizedClassDescriptor desc = classDescriptor(cls, obj);
+            IgniteOptimizedClassDescriptor desc = classDescriptor(cls, obj);
 
             if (desc.excluded()) {
                 writeByte(NULL);
@@ -182,7 +182,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
             else {
                 writeByte(OBJECT);
 
-                GridOptimizedClassResolver.writeClass(this, desc);
+                IgniteOptimizedClassResolver.writeClass(this, desc);
 
                 desc.write(this, obj);
             }
@@ -268,7 +268,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void writeSerializable(Object obj, List<Method> mtds, GridOptimizedClassDescriptor.Fields fields)
+    void writeSerializable(Object obj, List<Method> mtds, IgniteOptimizedClassDescriptor.Fields fields)
         throws IOException {
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -422,9 +422,9 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void writeFields(Object obj, List<T2<GridOptimizedFieldType, Long>> fieldOffs) throws IOException {
+    private void writeFields(Object obj, List<T2<IgniteOptimizedFieldType, Long>> fieldOffs) throws IOException {
         for (int i = 0; i < fieldOffs.size(); i++) {
-            T2<GridOptimizedFieldType, Long> t = fieldOffs.get(i);
+            T2<IgniteOptimizedFieldType, Long> t = fieldOffs.get(i);
 
             switch (t.get1()) {
                 case BYTE:
@@ -660,7 +660,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         if (curPut == null)
             throw new NotActiveException("putFields() was not called.");
 
-        for (IgniteBiTuple<GridOptimizedFieldType, Object> t : curPut.objs) {
+        for (IgniteBiTuple<IgniteOptimizedFieldType, Object> t : curPut.objs) {
             switch (t.get1()) {
                 case BYTE:
                     writeByte((Byte)t.get2());
@@ -747,10 +747,10 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         private final GridOptimizedObjectOutputStream out;
 
         /** Field info map. */
-        private final Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
+        private final Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
-        private final IgniteBiTuple<GridOptimizedFieldType, Object>[] objs;
+        private final IgniteBiTuple<IgniteOptimizedFieldType, Object>[] objs;
 
         /**
          * @param out Output stream.
@@ -823,7 +823,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
          * @param val Value.
          */
         private void value(String name, Object val) {
-            IgniteBiTuple<Integer, GridOptimizedFieldType> info = fieldInfoMap.get(name);
+            IgniteBiTuple<Integer, IgniteOptimizedFieldType> info = fieldInfoMap.get(name);
 
             objs[info.get1()] = F.t(info.get2(), val);
         }

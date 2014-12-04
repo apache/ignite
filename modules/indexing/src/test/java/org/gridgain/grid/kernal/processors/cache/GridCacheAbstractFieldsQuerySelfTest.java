@@ -68,7 +68,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         cfg.setIndexingSpi(indexing(null, true), indexing(SPI_NO_PRIMITIVES, false), indexing(SPI_COMPLEX_KEYS, false));
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         if (hasCache)
             cfg.setCacheConfiguration(cache(null, null), cache(CACHE, null), cache(EMPTY_CACHE, null),

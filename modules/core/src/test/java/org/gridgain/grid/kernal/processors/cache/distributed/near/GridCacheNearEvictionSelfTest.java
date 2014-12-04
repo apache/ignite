@@ -63,7 +63,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setMarshaller(new GridOptimizedMarshaller(false));
+        c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return c;
     }

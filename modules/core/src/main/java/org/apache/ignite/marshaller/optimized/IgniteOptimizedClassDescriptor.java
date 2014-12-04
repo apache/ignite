@@ -24,7 +24,7 @@ import static java.lang.reflect.Modifier.*;
 /**
  * Class descriptor.
  */
-class GridOptimizedClassDescriptor {
+class IgniteOptimizedClassDescriptor {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -197,12 +197,12 @@ class GridOptimizedClassDescriptor {
      * @throws IOException In case of error.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "MapReplaceableByEnumMap"})
-    GridOptimizedClassDescriptor(Class<?> cls) throws IOException {
+    IgniteOptimizedClassDescriptor(Class<?> cls) throws IOException {
         this.cls = cls;
 
         excluded = GridMarshallerExclusions.isExcluded(cls);
 
-        T2<Integer, Integer> t = GridOptimizedClassResolver.writeClassData(cls);
+        T2<Integer, Integer> t = IgniteOptimizedClassResolver.writeClassData(cls);
 
         hdr = t.get1();
         id = t.get2();
@@ -414,9 +414,9 @@ class GridOptimizedClassDescriptor {
                     writeObjMtds = new ArrayList<>();
                     readObjMtds = new ArrayList<>();
                     List<List<Field>> fields = new ArrayList<>();
-                    List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs = new ArrayList<>();
-                    List<Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
-                    List<List<IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
+                    List<List<T2<IgniteOptimizedFieldType, Long>>> fieldOffs = new ArrayList<>();
+                    List<Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
+                    List<List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
 
                     for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                         Method mtd;
@@ -464,7 +464,7 @@ class GridOptimizedClassDescriptor {
                         });
 
                         List<Field> clsFields = new ArrayList<>(clsFields0.length);
-                        List<T2<GridOptimizedFieldType, Long>> clsFieldOffs =
+                        List<T2<IgniteOptimizedFieldType, Long>> clsFieldOffs =
                             new ArrayList<>(clsFields0.length);
 
                         for (int i = 0; i < clsFields0.length; i++) {
@@ -473,7 +473,7 @@ class GridOptimizedClassDescriptor {
                             int mod = f.getModifiers();
 
                             if (!isStatic(mod) && !isTransient(mod)) {
-                                GridOptimizedFieldType type = fieldType(f.getType());
+                                IgniteOptimizedFieldType type = fieldType(f.getType());
 
                                 clsFields.add(f);
                                 clsFieldOffs.add(new T2<>(type, UNSAFE.objectFieldOffset(f)));
@@ -483,7 +483,7 @@ class GridOptimizedClassDescriptor {
                         fields.add(clsFields);
                         fieldOffs.add(clsFieldOffs);
 
-                        Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap = null;
+                        Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap = null;
 
                         try {
                             Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
@@ -525,12 +525,12 @@ class GridOptimizedClassDescriptor {
 
                         fieldInfoMaps.add(fieldInfoMap);
 
-                        List<IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoList =
+                        List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoList =
                             new ArrayList<>(fieldInfoMap.values());
 
-                        Collections.sort(fieldInfoList, new Comparator<IgniteBiTuple<Integer, GridOptimizedFieldType>>() {
-                            @Override public int compare(IgniteBiTuple<Integer, GridOptimizedFieldType> t1,
-                                IgniteBiTuple<Integer, GridOptimizedFieldType> t2) {
+                        Collections.sort(fieldInfoList, new Comparator<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>() {
+                            @Override public int compare(IgniteBiTuple<Integer, IgniteOptimizedFieldType> t1,
+                                IgniteBiTuple<Integer, IgniteOptimizedFieldType> t2) {
                                 return t1.get1().compareTo(t2.get1());
                             }
                         });
@@ -794,7 +794,7 @@ class GridOptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                GridOptimizedClassResolver.writeClass(out, GridOptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
+                IgniteOptimizedClassResolver.writeClass(out, GridOptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
 
                 break;
 
@@ -913,7 +913,7 @@ class GridOptimizedClassDescriptor {
                 return in.readDate();
 
             case TYPE_CLS:
-                return GridOptimizedClassResolver.readClass(in, in.classLoader()).describedClass();
+                return IgniteOptimizedClassResolver.readClass(in, in.classLoader()).describedClass();
 
             case TYPE_EXTERNALIZABLE:
                 return in.readExternalizable(constructor, readResolveMtd);
@@ -931,27 +931,27 @@ class GridOptimizedClassDescriptor {
      * @return Type.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private GridOptimizedFieldType fieldType(Class<?> cls) {
-        GridOptimizedFieldType type;
+    private IgniteOptimizedFieldType fieldType(Class<?> cls) {
+        IgniteOptimizedFieldType type;
 
         if (cls == byte.class)
-            type = GridOptimizedFieldType.BYTE;
+            type = IgniteOptimizedFieldType.BYTE;
         else if (cls == short.class)
-            type = GridOptimizedFieldType.SHORT;
+            type = IgniteOptimizedFieldType.SHORT;
         else if (cls == int.class)
-            type = GridOptimizedFieldType.INT;
+            type = IgniteOptimizedFieldType.INT;
         else if (cls == long.class)
-            type = GridOptimizedFieldType.LONG;
+            type = IgniteOptimizedFieldType.LONG;
         else if (cls == float.class)
-            type = GridOptimizedFieldType.FLOAT;
+            type = IgniteOptimizedFieldType.FLOAT;
         else if (cls == double.class)
-            type = GridOptimizedFieldType.DOUBLE;
+            type = IgniteOptimizedFieldType.DOUBLE;
         else if (cls == char.class)
-            type = GridOptimizedFieldType.CHAR;
+            type = IgniteOptimizedFieldType.CHAR;
         else if (cls == boolean.class)
-            type = GridOptimizedFieldType.BOOLEAN;
+            type = IgniteOptimizedFieldType.BOOLEAN;
         else
-            type = GridOptimizedFieldType.OTHER;
+            type = IgniteOptimizedFieldType.OTHER;
 
         return type;
     }
@@ -965,13 +965,13 @@ class GridOptimizedClassDescriptor {
         private final List<List<Field>> fields;
 
         /** Fields offsets. */
-        private final List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs;
+        private final List<List<T2<IgniteOptimizedFieldType, Long>>> fieldOffs;
 
         /** Fields details lists. */
-        private final List<List<IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists;
+        private final List<List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoLists;
 
         /** Fields details maps. */
-        private final List<Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps;
+        private final List<Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoMaps;
 
         /**
          * Creates new instance.
@@ -981,9 +981,9 @@ class GridOptimizedClassDescriptor {
          * @param fieldInfoLists List of field details sequences for each type in the object's class hierarchy.
          * @param fieldInfoMaps List of field details maps for each type in the object's class hierarchy.
          */
-        Fields(List<List<Field>> fields, List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs,
-            List<List<IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists,
-            List<Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps) {
+        Fields(List<List<Field>> fields, List<List<T2<IgniteOptimizedFieldType, Long>>> fieldOffs,
+            List<List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoLists,
+            List<Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoMaps) {
             this.fields = fields;
             this.fieldOffs = fieldOffs;
             this.fieldInfoLists = fieldInfoLists;
@@ -1005,7 +1005,7 @@ class GridOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return list of pairs where first value is field type and second value is its offset.
          */
-        List<T2<GridOptimizedFieldType, Long>> fieldOffs(int i) {
+        List<T2<IgniteOptimizedFieldType, Long>> fieldOffs(int i) {
             return fieldOffs.get(i);
         }
 
@@ -1015,7 +1015,7 @@ class GridOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return list of pairs (field number, field type) for the given hierarchy level.
          */
-        List<IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoList(int i) {
+        List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoList(int i) {
             return fieldInfoLists.get(i);
         }
 
@@ -1025,7 +1025,7 @@ class GridOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return map of field names and their details.
          */
-        Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap(int i) {
+        Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap(int i) {
             return fieldInfoMaps.get(i);
         }
     }

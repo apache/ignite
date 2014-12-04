@@ -29,7 +29,7 @@ import java.util.concurrent.locks.*;
  * Resolves class names by serialVersionUID.
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "unchecked"})
-class GridOptimizedClassResolver {
+class IgniteOptimizedClassResolver {
     /** File name to generate. */
     private static final String FILE_NAME = "optimized-classnames.properties";
 
@@ -37,19 +37,19 @@ class GridOptimizedClassResolver {
     private static final Map<String, Integer> ggxName2id = new HashMap<>();
 
     /** */
-    private static final T2<Class<?>, GridOptimizedClassDescriptor>[] ggxId2name;
+    private static final T2<Class<?>, IgniteOptimizedClassDescriptor>[] ggxId2name;
 
     /** */
     private static final Map<String, Integer> ggName2id = new HashMap<>();
 
     /** */
-    private static final T3<String, Class<?>, GridOptimizedClassDescriptor>[] ggId2name;
+    private static final T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] ggId2name;
 
     /** */
     private static Map<String, Integer> usrName2Id;
 
     /** */
-    private static T3<String, Class<?>, GridOptimizedClassDescriptor>[] usrId2Name;
+    private static T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] usrId2Name;
 
     /** */
     private static final int HEADER_NAME = 255;
@@ -170,14 +170,14 @@ class GridOptimizedClassResolver {
             Class cls = superOptCls[i];
 
             ggxName2id.put(cls.getName(), i);
-            ggxId2name[i] = new T2<Class<?>, GridOptimizedClassDescriptor>(cls, null);
+            ggxId2name[i] = new T2<Class<?>, IgniteOptimizedClassDescriptor>(cls, null);
         }
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(
-            GridOptimizedClassResolver.class.getResourceAsStream(FILE_NAME),
+            IgniteOptimizedClassResolver.class.getResourceAsStream(FILE_NAME),
             GridOptimizedMarshallerUtils.UTF_8));
 
-        List<T3<String, Class<?>, GridOptimizedClassDescriptor>> ggId2name0 =
+        List<T3<String, Class<?>, IgniteOptimizedClassDescriptor>> ggId2name0 =
             new LinkedList<>();
 
         try {
@@ -188,7 +188,7 @@ class GridOptimizedClassResolver {
                     break;
 
                 ggName2id.put(clsName, i);
-                ggId2name0.add(new T3<String, Class<?>, GridOptimizedClassDescriptor>(clsName, null, null));
+                ggId2name0.add(new T3<String, Class<?>, IgniteOptimizedClassDescriptor>(clsName, null, null));
             }
 
             ggId2name = ggId2name0.toArray(new T3[ggId2name0.size()]);
@@ -204,7 +204,7 @@ class GridOptimizedClassResolver {
     /**
      * Ensure singleton.
      */
-    private GridOptimizedClassResolver() {
+    private IgniteOptimizedClassResolver() {
         // No-op.
     }
 
@@ -213,7 +213,7 @@ class GridOptimizedClassResolver {
      * @param usrId2Name0 From ID to name.
      */
     static void userClasses(@Nullable Map<String, Integer> usrName2id0,
-        @Nullable T3<String, Class<?>, GridOptimizedClassDescriptor>[] usrId2Name0) {
+        @Nullable T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] usrId2Name0) {
         usrName2Id = usrName2id0;
         usrId2Name = usrId2Name0;
     }
@@ -225,7 +225,7 @@ class GridOptimizedClassResolver {
      * @throws IOException If serial version UID failed.
      * @throws ClassNotFoundException If the class cannot be located by the specified class loader.
      */
-    static GridOptimizedClassDescriptor readClass(DataInput in, ClassLoader clsLdr)
+    static IgniteOptimizedClassDescriptor readClass(DataInput in, ClassLoader clsLdr)
         throws IOException, ClassNotFoundException {
         assert in != null;
         assert clsLdr != null;
@@ -233,9 +233,9 @@ class GridOptimizedClassResolver {
         int hdr = in.readByte() & 0xff;
 
         if (hdr < ggxId2name.length) {
-            T2<Class<?>, GridOptimizedClassDescriptor> ggxT = ggxId2name[hdr];
+            T2<Class<?>, IgniteOptimizedClassDescriptor> ggxT = ggxId2name[hdr];
 
-            GridOptimizedClassDescriptor desc = ggxT.get2();
+            IgniteOptimizedClassDescriptor desc = ggxT.get2();
 
             if (desc == null) {
                 desc = GridOptimizedMarshallerUtils.classDescriptor(ggxT.get1(), null);
@@ -248,13 +248,13 @@ class GridOptimizedClassResolver {
 
         String name;
         Class<?> cls;
-        GridOptimizedClassDescriptor desc;
+        IgniteOptimizedClassDescriptor desc;
 
         switch (hdr) {
             case HEADER_GG_NAME:
                 int ggId = in.readInt();
 
-                T3<String, Class<?>, GridOptimizedClassDescriptor> ggT;
+                T3<String, Class<?>, IgniteOptimizedClassDescriptor> ggT;
 
                 try {
                     ggT = ggId2name[ggId];
@@ -292,7 +292,7 @@ class GridOptimizedClassResolver {
             case HEADER_USER_NAME:
                 int usrId = in.readInt();
 
-                T3<String, Class<?>, GridOptimizedClassDescriptor> usrT;
+                T3<String, Class<?>, IgniteOptimizedClassDescriptor> usrT;
 
                 try {
                     if (usrId2Name != null)
@@ -363,7 +363,7 @@ class GridOptimizedClassResolver {
      * @param desc Class descriptor.
      * @throws IOException In case of error.
      */
-    static void writeClass(DataOutput out, GridOptimizedClassDescriptor desc) throws IOException {
+    static void writeClass(DataOutput out, IgniteOptimizedClassDescriptor desc) throws IOException {
         assert out != null;
         assert desc != null;
 

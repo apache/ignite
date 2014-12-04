@@ -75,7 +75,7 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
         c.setDeploymentMode(GridDeploymentMode.SHARED);
         c.setNetworkTimeout(10000);
         c.setRestEnabled(false);
-        c.setMarshaller(new GridOptimizedMarshaller(false));
+        c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
 //        c.setPeerClassLoadingLocalClassPathExclude(GridCachePreloadLifecycleAbstractTest.class.getName(),
 //            MyValue.class.getName());

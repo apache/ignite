@@ -1180,9 +1180,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
 
-        if (GridOptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof GridOptimizedMarshaller))
+        if (IgniteOptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof IgniteOptimizedMarshaller))
             perf.add("Enable optimized marshaller (set 'marshaller' to " +
-                GridOptimizedMarshaller.class.getSimpleName() + ')');
+                IgniteOptimizedMarshaller.class.getSimpleName() + ')');
     }
 
     /**
@@ -1979,7 +1979,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            GridOptimizedMarshaller.clearCache();
+            IgniteOptimizedMarshaller.clearCache();
             GridMarshallerExclusions.clearCache();
             GridEnumCache.clear();
 

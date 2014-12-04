@@ -1254,7 +1254,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ctx.stream().onUndeployed(leftNodeId, ldr);
 
                 // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
-                GridOptimizedMarshaller.onUndeploy(ldr);
+                IgniteOptimizedMarshaller.onUndeploy(ldr);
 
                 clearSerializationCaches();
 

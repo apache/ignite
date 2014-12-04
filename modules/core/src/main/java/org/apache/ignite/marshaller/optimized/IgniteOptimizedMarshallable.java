@@ -42,9 +42,9 @@ import java.util.*;
  * </pre>
  * <p>
  * Note that for better performance you should also specify list of classes you
- * plan to serialize via {@link GridOptimizedMarshaller#setClassNames(List)} method.
+ * plan to serialize via {@link IgniteOptimizedMarshaller#setClassNames(List)} method.
  */
-public interface GridOptimizedMarshallable {
+public interface IgniteOptimizedMarshallable {
     /** */
     public static final String CLS_ID_FIELD_NAME = "GG_CLASS_ID";
 

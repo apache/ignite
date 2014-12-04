@@ -46,7 +46,7 @@ public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractT
         if (flag)
             cfg.setMarshaller(new IgniteJdkMarshaller());
         else
-            cfg.setMarshaller(sameMarsh ? new IgniteJdkMarshaller() : new GridOptimizedMarshaller());
+            cfg.setMarshaller(sameMarsh ? new IgniteJdkMarshaller() : new IgniteOptimizedMarshaller());
 
         // Flip flag.
         flag = !flag;
