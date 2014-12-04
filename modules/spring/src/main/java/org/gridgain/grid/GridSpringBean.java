@@ -183,7 +183,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridEvents events() {
+    @Override public IgniteEvents events() {
         assert g != null;
 
         return g.events();
@@ -218,7 +218,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridEvents events(ClusterGroup prj) {
+    @Override public IgniteEvents events(ClusterGroup prj) {
         assert g != null;
 
         return g.events(prj);

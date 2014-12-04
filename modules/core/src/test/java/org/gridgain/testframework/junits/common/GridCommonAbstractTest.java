@@ -492,7 +492,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Future.
      * @throws GridException If failed.
      */
-    protected <T extends GridEvent> IgniteFuture<T> waitForLocalEvent(GridEvents evts,
+    protected <T extends GridEvent> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
         @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws GridException {
         evts = evts.enableAsync();
 
@@ -535,7 +535,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param prj Projection.
      * @return {@link GridMessaging} for given projection.
      */
-    protected GridEvents events(ClusterGroup prj) {
+    protected IgniteEvents events(ClusterGroup prj) {
         return prj.grid().events(prj);
     }
 

@@ -21,19 +21,19 @@ import org.gridgain.grid.util.typedef.internal.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} -
+ *          {@link IgniteEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} -
+ *          {@link IgniteEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} -
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} -
+ *          {@link IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link GridEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method {@link IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain

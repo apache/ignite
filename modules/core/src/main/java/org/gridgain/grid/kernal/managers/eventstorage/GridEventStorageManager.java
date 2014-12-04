@@ -1096,7 +1096,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
-     * Wraps user listener predicate provided via {@link GridEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)}.
+     * Wraps user listener predicate provided via {@link org.gridgain.grid.events.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)}.
      */
     private class UserListenerWrapper implements GridLocalEventListener {
         /** */

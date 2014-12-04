@@ -54,7 +54,7 @@ import java.util.concurrent.*;
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
- * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link org.gridgain.grid.events.IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
@@ -133,18 +133,18 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets {@code events} functionality over this grid projection. All operations
-     * on the returned {@link GridEvents} instance will only include nodes from
+     * on the returned {@link org.gridgain.grid.events.IgniteEvents} instance will only include nodes from
      * this projection.
      *
      * @return Events instance over this grid projection.
      */
-    public GridEvents events();
+    public IgniteEvents events();
 
     /**
      * @param prj Projection.
      * @return Events instance over given projection.
      */
-    public GridEvents events(ClusterGroup prj);
+    public IgniteEvents events(ClusterGroup prj);
 
     /**
      * Gets {@code services} functionality over this grid projection. All operations

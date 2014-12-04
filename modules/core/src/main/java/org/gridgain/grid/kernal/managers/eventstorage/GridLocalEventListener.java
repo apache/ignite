@@ -19,7 +19,7 @@ import java.util.*;
  * <p>
  * Use {@link GridEventStorageManager#addLocalEventListener(org.apache.ignite.lang.IgnitePredicate, int...)} to register
  * this listener with grid.
- * @see GridEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)
+ * @see org.gridgain.grid.events.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)
  */
 public interface GridLocalEventListener extends EventListener {
     /**

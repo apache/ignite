@@ -21,15 +21,15 @@ import java.io.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} - querying
+ *          {@link IgniteEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} - querying
  *          events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} - querying only local
+ *          {@link IgniteEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} - querying only local
  *          events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} - listening
+ *          {@link IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} - listening
  *          to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
@@ -73,7 +73,7 @@ import java.io.*;
  * @see GridDeploymentEvent
  * @see GridDiscoveryEvent
  * @see GridTaskEvent
- * @see GridEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)
+ * @see IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)
  */
 public interface GridEvent extends Comparable<GridEvent>, Serializable {
     /**

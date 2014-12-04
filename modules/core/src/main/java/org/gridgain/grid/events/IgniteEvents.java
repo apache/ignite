@@ -43,7 +43,7 @@ import java.util.*;
  * &lt;/property&gt;
  * </pre>
  */
-public interface GridEvents extends IgniteAsyncSupport {
+public interface IgniteEvents extends IgniteAsyncSupport {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *
@@ -238,5 +238,6 @@ public interface GridEvents extends IgniteAsyncSupport {
     public boolean isEnabled(int type);
 
     /** {@inheritDoc} */
-    @Override GridEvents enableAsync();
+    @Override
+    IgniteEvents enableAsync();
 }

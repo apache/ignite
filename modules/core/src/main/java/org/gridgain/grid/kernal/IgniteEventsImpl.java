@@ -21,9 +21,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link GridEvents} implementation.
+ * {@link org.gridgain.grid.events.IgniteEvents} implementation.
  */
-public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEvents, Externalizable {
+public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements IgniteEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     /**
      * Required by {@link Externalizable}.
      */
-    public GridEventsImpl() {
+    public IgniteEventsImpl() {
         // No-op.
     }
 
@@ -45,7 +45,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
      * @param prj Projection.
      * @param async Async support flag.
      */
-    public GridEventsImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
+    public IgniteEventsImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
         super(async);
 
         this.ctx = ctx;
@@ -262,11 +262,11 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public GridEvents enableAsync() {
+    @Override public IgniteEvents enableAsync() {
         if (isAsync())
             return this;
 
-        return new GridEventsImpl(ctx, prj, true);
+        return new IgniteEventsImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

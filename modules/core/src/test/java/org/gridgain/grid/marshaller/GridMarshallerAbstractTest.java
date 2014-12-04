@@ -689,7 +689,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            GridEvents evts = events(grid().forNode(g1.cluster().localNode()));
+            IgniteEvents evts = events(grid().forNode(g1.cluster().localNode()));
 
             evts.localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent gridEvt) {
@@ -708,14 +708,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean.getObjectField() != null;
             assert outBean.getObjectField() != null;
 
-            assert inBean.getObjectField().getClass().equals(GridEventsImpl.class);
-            assert outBean.getObjectField().getClass().equals(GridEventsImpl.class);
+            assert inBean.getObjectField().getClass().equals(IgniteEventsImpl.class);
+            assert outBean.getObjectField().getClass().equals(IgniteEventsImpl.class);
 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
             ClusterGroup inPrj = evts.projection();
-            ClusterGroup outPrj = ((GridEvents)outBean.getObjectField()).projection();
+            ClusterGroup outPrj = ((IgniteEvents)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());

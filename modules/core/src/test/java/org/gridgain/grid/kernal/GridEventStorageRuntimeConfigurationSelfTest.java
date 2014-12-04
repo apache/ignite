@@ -154,7 +154,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
         try {
             Ignite g = startGrid();
 
-            GridEvents evts = g.events();
+            IgniteEvents evts = g.events();
 
             evts.enableLocal(EVT_CACHE_OBJECT_PUT);
 
@@ -322,7 +322,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     private int[] getEnabledEvents(int limit, Ignite g, int... customTypes) {
         Collection<Integer> res = new HashSet<>();
 
-        GridEvents evts = g.events();
+        IgniteEvents evts = g.events();
 
         for (int i = 1; i <= limit; i++) {
             if (evts.isEnabled(i))

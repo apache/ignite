@@ -957,7 +957,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        GridEvents evts = grid(idx).events().enableAsync();
+                        IgniteEvents evts = grid(idx).events().enableAsync();
 
                         evts.remoteListen(new P2<UUID, GridEvent>() {
                             @Override public boolean apply(UUID uuid, GridEvent evt) {
@@ -996,7 +996,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     UUID consumeId = t.get2();
 
                     try {
-                        GridEvents evts = grid(idx).events().enableAsync();
+                        IgniteEvents evts = grid(idx).events().enableAsync();
 
                         evts.stopRemoteListen(consumeId);
 
@@ -1056,7 +1056,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             int idx = t.get1();
             UUID consumeId = t.get2();
 
-            GridEvents evts = grid(idx).events().enableAsync();
+            IgniteEvents evts = grid(idx).events().enableAsync();
 
             evts.stopRemoteListen(consumeId);
 
