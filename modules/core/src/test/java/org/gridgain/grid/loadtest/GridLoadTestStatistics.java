@@ -65,7 +65,7 @@ public class GridLoadTestStatistics {
      * @return Task count.
      */
     @SuppressWarnings("unchecked")
-    public synchronized long onTaskCompleted(@Nullable GridComputeTaskFuture<?> fut, int jobNum, long taskTime) {
+    public synchronized long onTaskCompleted(@Nullable ComputeTaskFuture<?> fut, int jobNum, long taskTime) {
         taskCnt++;
 
         jobCnt += jobNum;

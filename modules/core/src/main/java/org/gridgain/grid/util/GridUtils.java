@@ -5043,11 +5043,11 @@ public abstract class GridUtils {
      * Gets task name for the given task class.
      *
      * @param taskCls Task class.
-     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.GridComputeTaskName}})
+     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.ComputeTaskName}})
      *      or task class name if there is no annotation.
      */
     public static String getTaskName(Class<? extends ComputeTask<?, ?>> taskCls) {
-        GridComputeTaskName nameAnn = getAnnotation(taskCls, GridComputeTaskName.class);
+        ComputeTaskName nameAnn = getAnnotation(taskCls, ComputeTaskName.class);
 
         return nameAnn == null ? taskCls.getName() : nameAnn.value();
     }

@@ -19,7 +19,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridComputeTaskName {
+public @interface ComputeTaskName {
     /**
      * Optional task name.
      */

@@ -58,7 +58,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     public void testWait() throws Exception {
         jobStarted = new CountDownLatch(1);
 
-        GridComputeTaskFuture<Object> fut = null;
+        ComputeTaskFuture<Object> fut = null;
 
         try {
             Ignite ignite1 = startGrid(1);
@@ -92,7 +92,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     public void testWaitFailover() throws Exception {
         jobStarted = new CountDownLatch(1);
 
-        GridComputeTaskFuture<Object> fut = null;
+        ComputeTaskFuture<Object> fut = null;
 
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);

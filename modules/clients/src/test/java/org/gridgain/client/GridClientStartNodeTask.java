@@ -143,7 +143,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
      * @throws GridException On any exception.
      */
     private static void changeTopology(Ignite parent, int add, int rmv, String type) throws GridException {
-        Collection<GridComputeTaskFuture<?>> tasks = new ArrayList<>();
+        Collection<ComputeTaskFuture<?>> tasks = new ArrayList<>();
 
         IgniteCompute comp = parent.compute().enableAsync();
 
@@ -154,7 +154,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
             tasks.add(comp.future());
         }
 
-        for (GridComputeTaskFuture<?> task : tasks)
+        for (ComputeTaskFuture<?> task : tasks)
             task.get();
 
         // Stop nodes in sequence.

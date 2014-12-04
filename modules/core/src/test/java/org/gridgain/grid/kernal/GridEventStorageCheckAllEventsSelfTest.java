@@ -148,7 +148,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     public void testFailTask() throws Exception {
         long tstamp = startTimestamp();
 
-        GridComputeTaskFuture<?> fut = generateEvents(null, new GridAllEventsFailTestJob());
+        ComputeTaskFuture<?> fut = generateEvents(null, new GridAllEventsFailTestJob());
 
         try {
             fut.get();
@@ -176,7 +176,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     public void testTimeoutTask() throws Exception {
         long tstamp = startTimestamp();
 
-        GridComputeTaskFuture<?> fut = generateEvents(1000L, new GridAllEventsTimeoutTestJob());
+        ComputeTaskFuture<?> fut = generateEvents(1000L, new GridAllEventsTimeoutTestJob());
 
         try {
             fut.get();
@@ -282,7 +282,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @return Task future.
      * @throws Exception If failed.
      */
-    private GridComputeTaskFuture<?> generateEvents(@Nullable Long timeout, ComputeJob job) throws Exception {
+    private ComputeTaskFuture<?> generateEvents(@Nullable Long timeout, ComputeJob job) throws Exception {
         IgniteCompute comp = ignite.compute().enableAsync();
 
         if (timeout == null)

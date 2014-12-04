@@ -21,7 +21,7 @@ public final class GridP2PTestTaskExecutionTest extends GridCommonAbstractTest {
             assert !g.cluster().forRemotes().nodes().isEmpty() : "Test requires at least 1 remote node.";
 
             /* Execute GridP2PTestTask. */
-            GridComputeTaskFuture<Integer> fut = executeAsync(g.compute(), GridP2PTestTask.class, 1);
+            ComputeTaskFuture<Integer> fut = executeAsync(g.compute(), GridP2PTestTask.class, 1);
 
             /* Wait for task completion. */
             Integer res = fut.get();

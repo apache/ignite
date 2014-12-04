@@ -70,7 +70,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
         ignite.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute().withTimeout(TIMEOUT),
+        ComputeTaskFuture<?> fut = executeAsync(ignite.compute().withTimeout(TIMEOUT),
             GridTaskTimeoutTestTask.class.getName(), null);
 
         try {
@@ -95,7 +95,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
         ignite.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute().withTimeout(TIMEOUT),
+        ComputeTaskFuture<?> fut = executeAsync(ignite.compute().withTimeout(TIMEOUT),
             GridTaskTimeoutTestTask.class.getName(), null);
 
         // Allow timed out events to be executed.
@@ -136,7 +136,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 while (!finish.get()) {
                     try {
-                        GridComputeTaskFuture<?> fut = executeAsync(
+                        ComputeTaskFuture<?> fut = executeAsync(
                             ignite.compute().withTimeout(TIMEOUT), GridTaskTimeoutTestTask.class.getName(), null);
 
                         fut.get();

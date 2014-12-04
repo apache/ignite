@@ -421,13 +421,13 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @GridComputeTaskName("SharedResourceTask1")
+    @ComputeTaskName("SharedResourceTask1")
     public static class SharedResourceTask1Version1 extends SharedResourceTask1 {
         // No-op.
     }
 
     /** */
-    @GridComputeTaskName("SharedResourceTask1")
+    @ComputeTaskName("SharedResourceTask1")
     public static class SharedResourceTask1Version2 extends SharedResourceTask1 {
         // No-op.
     }

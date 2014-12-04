@@ -15,7 +15,7 @@ package org.gridgain.grid.spi.deployment;
 public interface GridDeploymentResource {
     /**
      * Gets resource name, either class name or alias name, such as alias
-     * specified by {@link org.apache.ignite.compute.GridComputeTaskName} annotation.
+     * specified by {@link org.apache.ignite.compute.ComputeTaskName} annotation.
      *
      * @return Resource name.
      */

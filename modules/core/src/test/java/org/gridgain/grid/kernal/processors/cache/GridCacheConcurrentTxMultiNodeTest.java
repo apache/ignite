@@ -305,7 +305,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     comp.execute(RequestTask.class, new Message(terminalId, nodeId));
 
-                    GridComputeTaskFuture<Void> f1 = comp.future();
+                    ComputeTaskFuture<Void> f1 = comp.future();
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -315,7 +315,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     comp.execute(ResponseTask.class, new Message(terminalId, nodeId));
 
-                    GridComputeTaskFuture<Void> f2 = comp.future();
+                    ComputeTaskFuture<Void> f2 = comp.future();
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 

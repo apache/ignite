@@ -520,7 +520,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
     }
 
     /** */
-    @GridComputeTaskName("name")
+    @ComputeTaskName("name")
     public static class SharedResourceTask3 extends GridComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
         @GridUserResource(resourceClass = UserResource1.class)
@@ -631,7 +631,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
     }
 
     /** */
-    @GridComputeTaskName("name")
+    @ComputeTaskName("name")
     public static class SharedResourceTask4 extends GridComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
         @GridUserResource(resourceClass = UserResource1.class)

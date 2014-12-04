@@ -105,7 +105,7 @@ public class GridDsiClient implements Callable {
 
                 comp.execute(GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
 
-                GridComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.future();
+                ComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.future();
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -115,7 +115,7 @@ public class GridDsiClient implements Callable {
 
                 comp.execute(GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
 
-                GridComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.future();
+                ComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.future();
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 

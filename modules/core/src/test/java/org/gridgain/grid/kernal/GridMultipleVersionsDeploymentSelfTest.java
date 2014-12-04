@@ -105,7 +105,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             ignite.compute().localDeployTask(taskCls1, ldr1);
 
             // Task will wait for the signal.
-            GridComputeTaskFuture fut = executeAsync(ignite.compute(), "GridDeploymentTestTask", null);
+            ComputeTaskFuture fut = executeAsync(ignite.compute(), "GridDeploymentTestTask", null);
 
             // We should wait here when to be sure that job has been started.
             // Since we loader task/job classes with different class loaders we cannot
@@ -178,7 +178,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             g1.compute().localDeployTask(taskCls1, ldr1);
 
             // Task will wait for the signal.
-            GridComputeTaskFuture fut1 = executeAsync(g1.compute(), "GridDeploymentTestTask", null);
+            ComputeTaskFuture fut1 = executeAsync(g1.compute(), "GridDeploymentTestTask", null);
 
             assert checkDeployed(g1, "GridDeploymentTestTask");
 
@@ -192,7 +192,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             g1.compute().localDeployTask(taskCls2, ldr2);
 
             // Task will wait for the signal.
-            GridComputeTaskFuture fut2 = executeAsync(g1.compute(), "GridDeploymentTestTask", null);
+            ComputeTaskFuture fut2 = executeAsync(g1.compute(), "GridDeploymentTestTask", null);
 
             boolean deployed = checkDeployed(g1, "GridDeploymentTestTask");
 
@@ -225,7 +225,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      * or on remote nodes if there are any. Never on both.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    @GridComputeTaskName(value="GridDeploymentTestTask")
+    @ComputeTaskName(value="GridDeploymentTestTask")
     public static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLocalNodeIdResource private UUID locNodeId;

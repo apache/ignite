@@ -125,7 +125,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
     private void checkTask(int num) throws InterruptedException, GridException {
         Ignite ignite = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
+        ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
 
         boolean await = startSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS);
 

@@ -94,7 +94,7 @@ public final class DeploymentExample {
      * and is added here for demonstration purpose. If not provided, it will
      * default to the task class name.
      */
-    @GridComputeTaskName(TASK_NAME)
+    @ComputeTaskName(TASK_NAME)
     public static class ExampleTask extends GridComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {

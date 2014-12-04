@@ -102,7 +102,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
 
                         comp.execute(new GridSingleSplitTestTask(), levels);
 
-                        GridComputeTaskFuture<Integer> fut = comp.future();
+                        ComputeTaskFuture<Integer> fut = comp.future();
 
                         int res = fut.get();
 

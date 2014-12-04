@@ -204,7 +204,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         comp.execute(TestSessionTask.class.getName(), type);
 
-        GridComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = comp.future();
 
         fut.getTaskSession().mapFuture().get();
 

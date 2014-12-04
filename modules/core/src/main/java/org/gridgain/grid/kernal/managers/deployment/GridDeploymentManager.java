@@ -286,7 +286,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         }
         else if (locDep != null) {
             if (ComputeTask.class.isAssignableFrom(cls)) {
-                GridComputeTaskName taskNameAnn = locDep.annotation(cls, GridComputeTaskName.class);
+                ComputeTaskName taskNameAnn = locDep.annotation(cls, ComputeTaskName.class);
 
                 if (taskNameAnn != null)
                     locDep.addDeployedClass(cls, taskNameAnn.value());

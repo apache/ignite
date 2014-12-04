@@ -389,7 +389,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
      * We use custom name to avoid auto-deployment in the same VM.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    @GridComputeTaskName("GridDeploymentResourceTestTask")
+    @ComputeTaskName("GridDeploymentResourceTestTask")
     public static class GridDeploymentResourceTestTask extends ComputeTaskAdapter<String, Integer> {
         /** */
         @GridLocalNodeIdResource

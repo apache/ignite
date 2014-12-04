@@ -828,7 +828,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
             String alias = null;
 
             if (ComputeTask.class.isAssignableFrom(cls)) {
-                GridComputeTaskName nameAnn = U.getAnnotation(cls, GridComputeTaskName.class);
+                ComputeTaskName nameAnn = U.getAnnotation(cls, ComputeTaskName.class);
 
                 if (nameAnn != null)
                     alias = nameAnn.value();

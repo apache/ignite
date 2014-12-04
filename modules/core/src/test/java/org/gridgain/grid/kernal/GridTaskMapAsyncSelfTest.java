@@ -67,7 +67,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridComputeTaskMapAsync
+    @ComputeTaskMapAsync
     private static class AsyncMappedTask extends BaseTask {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

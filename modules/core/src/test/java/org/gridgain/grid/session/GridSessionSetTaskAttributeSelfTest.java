@@ -93,7 +93,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
 
         comp.execute(GridTaskSessionTestTask.class.getName(), num);
 
-        GridComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = comp.future();
 
         Object res = fut.get();
 

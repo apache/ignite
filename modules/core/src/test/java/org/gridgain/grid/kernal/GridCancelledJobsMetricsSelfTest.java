@@ -62,7 +62,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     public void testCancelledJobs() throws Exception {
         final Ignite ignite = G.grid(getTestGridName());
 
-        Collection<GridComputeTaskFuture<?>> futs = new ArrayList<>();
+        Collection<ComputeTaskFuture<?>> futs = new ArrayList<>();
 
         IgniteCompute comp = ignite.compute().enableAsync();
 
@@ -81,7 +81,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         colSpi.externalCollision();
 
-        for (GridComputeTaskFuture<?> fut : futs) {
+        for (ComputeTaskFuture<?> fut : futs) {
             try {
                 fut.get();
 

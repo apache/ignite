@@ -150,7 +150,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
 
                             comp.execute(new GridSingleSplitNewNodesTestTask(), levels);
 
-                            GridComputeTaskFuture<Integer> fut = comp.future();
+                            ComputeTaskFuture<Integer> fut = comp.future();
 
                             int res = fut.get();
 

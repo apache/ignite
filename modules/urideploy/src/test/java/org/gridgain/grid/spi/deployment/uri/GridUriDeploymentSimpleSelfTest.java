@@ -150,7 +150,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
     /**
      * Named test task.
      */
-    @GridComputeTaskName("TestTaskWithName")
+    @ComputeTaskName("TestTaskWithName")
     private static class TestTaskWithName extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {

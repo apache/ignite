@@ -69,7 +69,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut =
+        ComputeTaskFuture<?> fut =
             executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
 
         try {
@@ -99,7 +99,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut =
+        ComputeTaskFuture<?> fut =
             executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.MAP);
 
         try {
@@ -129,7 +129,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut =
+        ComputeTaskFuture<?> fut =
             executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {
@@ -159,7 +159,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut =
+        ComputeTaskFuture<?> fut =
             executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {

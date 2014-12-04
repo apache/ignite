@@ -80,7 +80,7 @@ public final class GridSingleExecutionTest {
             // Execute Hello World task.
             comp.execute(!useSes ? TestTask.class : TestSessionTask.class, null);
 
-            GridComputeTaskFuture<Object> fut = comp.future();
+            ComputeTaskFuture<Object> fut = comp.future();
 
             if (useSes) {
                 fut.getTaskSession().setAttribute("attr1", 1);

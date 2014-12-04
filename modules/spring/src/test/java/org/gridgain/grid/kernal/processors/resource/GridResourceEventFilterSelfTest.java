@@ -153,7 +153,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      * Simple task.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    @GridComputeTaskName("name")
+    @ComputeTaskName("name")
     public static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

@@ -23,7 +23,7 @@ import java.util.*;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
- * Tests for {@link GridComputeTaskName} annotation.
+ * Tests for {@link org.apache.ignite.compute.ComputeTaskName} annotation.
  */
 public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /** Task name. */
@@ -71,7 +71,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    @GridComputeTaskName(TASK_NAME)
+    @ComputeTaskName(TASK_NAME)
     private static class TestTask implements ComputeTask<Void, String> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -101,7 +101,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /**
      * Test task that implements {@link org.gridgain.grid.util.lang.GridPeerDeployAware}.
      */
-    @GridComputeTaskName(PEER_DEPLOY_AWARE_TASK_NAME)
+    @ComputeTaskName(PEER_DEPLOY_AWARE_TASK_NAME)
     private static class PeerDeployAwareTestTask extends TestTask implements GridPeerDeployAware {
         /** {@inheritDoc} */
         @Override public Class<?> deployClass() {

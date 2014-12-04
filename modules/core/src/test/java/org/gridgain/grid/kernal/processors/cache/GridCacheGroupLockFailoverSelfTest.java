@@ -76,7 +76,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * Result future queue (restrict the queue size
      * to 50 in order to prevent in-memory data grid from over loading).
      */
-    private final BlockingQueue<GridComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(10);
+    private final BlockingQueue<ComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(10);
 
     /**
      * @return {@code True} if test should use optimistic transactions.
@@ -317,11 +317,11 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
 
         comp.execute(new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()), dataChunk);
 
-        GridComputeTaskFuture<Void> fut = comp.future();
+        ComputeTaskFuture<Void> fut = comp.future();
 
         fut.listenAsync(new CI1<IgniteFuture<Void>>() {
             @Override public void apply(IgniteFuture<Void> f) {
-                GridComputeTaskFuture taskFut = (GridComputeTaskFuture)f;
+                ComputeTaskFuture taskFut = (ComputeTaskFuture)f;
 
                 boolean fail = false;
 

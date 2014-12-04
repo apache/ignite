@@ -24,6 +24,6 @@ import java.util.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridComputeTaskMapAsync {
+public @interface ComputeTaskMapAsync {
     // No-op.
 }

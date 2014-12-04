@@ -123,7 +123,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
             }
         }, null);
 
-        GridComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = comp.future();
 
         assert startedLatch.await(2, SECONDS);
 

@@ -96,7 +96,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
                     long start = System.currentTimeMillis();
 
                     try {
-                        GridComputeTaskFuture<Integer> fut = ignite.compute().withTimeout(10000).
+                        ComputeTaskFuture<Integer> fut = ignite.compute().withTimeout(10000).
                             execute(TASK_TYPE_ID, levels);
 
                         int res = fut.get();

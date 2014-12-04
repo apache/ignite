@@ -108,7 +108,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
         comp.execute(GridTaskSessionTestTask.class.getName(), num);
 
-        GridComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = comp.future();
 
         assert fut != null;
 

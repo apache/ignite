@@ -73,7 +73,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      * Result future queue (restrict the queue size
      * to 50 in order to prevent in-memory data grid from over loading).
      */
-    private final BlockingQueue<GridComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(50);
+    private final BlockingQueue<ComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(50);
 
     /** Test failover SPI. */
     private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
@@ -239,13 +239,13 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                             CACHE_NAME),
                             dataChunk);
 
-                    GridComputeTaskFuture<Void> fut = comp.future();
+                    ComputeTaskFuture<Void> fut = comp.future();
 
                     resQueue.put(fut); // Blocks if queue is full.
 
                     fut.listenAsync(new CI1<IgniteFuture<Void>>() {
                         @Override public void apply(IgniteFuture<Void> f) {
-                            GridComputeTaskFuture<?> taskFut = (GridComputeTaskFuture<?>)f;
+                            ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
@@ -411,13 +411,13 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     comp.execute(new GridCachePutAllTask(nodeId, CACHE_NAME), data);
 
-                    GridComputeTaskFuture<Void> fut = comp.future();
+                    ComputeTaskFuture<Void> fut = comp.future();
 
                     resQueue.put(fut); // Blocks if queue is full.
 
                     fut.listenAsync(new CI1<IgniteFuture<Void>>() {
                         @Override public void apply(IgniteFuture<Void> f) {
-                            GridComputeTaskFuture<?> taskFut = (GridComputeTaskFuture<?>)f;
+                            ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
@@ -462,13 +462,13 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             for (Map.Entry<UUID, Collection<Integer>> entry : dataChunks.entrySet()) {
                 comp.execute(new GridCachePutAllTask(entry.getKey(), CACHE_NAME), entry.getValue());
 
-                GridComputeTaskFuture<Void> fut = comp.future();
+                ComputeTaskFuture<Void> fut = comp.future();
 
                 resQueue.put(fut); // Blocks if queue is full.
 
                 fut.listenAsync(new CI1<IgniteFuture<Void>>() {
                     @Override public void apply(IgniteFuture<Void> f) {
-                        GridComputeTaskFuture<?> taskFut = (GridComputeTaskFuture<?>)f;
+                        ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                         try {
                             taskFut.get(); //if something went wrong - we'll get exception here

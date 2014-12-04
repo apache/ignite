@@ -62,7 +62,7 @@ public interface VisorPluginModel {
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
      * refer to {@link org.apache.ignite.compute.ComputeTask} documentation.
      *
-     * @param taskCls Class of the task to execute. If class has {@link org.apache.ignite.compute.GridComputeTaskName} annotation,
+     * @param taskCls Class of the task to execute. If class has {@link org.apache.ignite.compute.ComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param nodeIds Node IDs on with execute task.

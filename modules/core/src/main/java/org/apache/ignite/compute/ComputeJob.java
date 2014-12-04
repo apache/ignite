@@ -68,7 +68,7 @@ import java.util.*;
  *      <ul>
  *      <li>Collision SPI cancelled an active job.</li>
  *      <li>Parent task has completed without waiting for this job's result.</li>
- *      <li>User cancelled task by calling {@link GridComputeTaskFuture#cancel()} method.</li>
+ *      <li>User cancelled task by calling {@link ComputeTaskFuture#cancel()} method.</li>
  *      </ul>
  * </li>
  * <li>
@@ -138,7 +138,7 @@ public interface ComputeJob extends Serializable {
      * This method is called when system detects that completion of this
      * job can no longer alter the overall outcome (for example, when parent task
      * has already reduced the results). Job is also cancelled when
-     * {@link GridComputeTaskFuture#cancel()} is called.
+     * {@link ComputeTaskFuture#cancel()} is called.
      * <p>
      * Note that job cancellation is only a hint, and just like with
      * {@link Thread#interrupt()}  method, it is really up to the actual job

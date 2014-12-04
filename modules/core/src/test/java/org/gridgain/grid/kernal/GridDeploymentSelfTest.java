@@ -153,7 +153,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
             // Check auto-deploy.
-            GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridDeploymentTestTask.class.getName(), null);
+            ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridDeploymentTestTask.class.getName(), null);
 
             fut.get();
 
@@ -382,7 +382,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Test deployable named task.
      */
-    @GridComputeTaskName(value = "GridDeploymentTestTask")
+    @ComputeTaskName(value = "GridDeploymentTestTask")
     private static class GridDeploymentTestTask1 extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLoggerResource
@@ -414,7 +414,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Test deployable named task.
      */
-    @GridComputeTaskName(value = "GridDeploymentTestTask")
+    @ComputeTaskName(value = "GridDeploymentTestTask")
     private static class GridDeploymentTestTask2 extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLoggerResource

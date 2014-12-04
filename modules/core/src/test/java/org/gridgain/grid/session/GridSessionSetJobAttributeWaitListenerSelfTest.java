@@ -80,7 +80,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
             comp.execute(GridTaskSessionTestTask.class.getName(), null);
 
-            GridComputeTaskFuture<?> fut = comp.future();
+            ComputeTaskFuture<?> fut = comp.future();
 
             assert fut != null;
 

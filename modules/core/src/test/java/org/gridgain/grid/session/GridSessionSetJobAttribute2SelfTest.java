@@ -42,7 +42,7 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
 
             ignite1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
 
-            GridComputeTaskFuture<?> fut =
+            ComputeTaskFuture<?> fut =
                 executeAsync(ignite1.compute(), SessionTestTask.class.getName(), ignite2.cluster().localNode().id());
 
             fut.get();

@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * URI deployment test task with name.
  */
-@GridComputeTaskName("GridUriDeploymentTestWithNameTask6")
+@ComputeTaskName("GridUriDeploymentTestWithNameTask6")
 public class GridUriDeploymentTestWithNameTask6 extends GridComputeTaskSplitAdapter<Object, Object> {
     /**
      * {@inheritDoc}

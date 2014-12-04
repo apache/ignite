@@ -86,7 +86,7 @@ public interface ComputeJobResult {
      * execution result even if the job was canceled.
      * <p>
      * Job can receive cancellation request if the task was explicitly cancelled
-     * from future (see {@link GridComputeTaskFuture#cancel()}) or if task completed prior
+     * from future (see {@link ComputeTaskFuture#cancel()}) or if task completed prior
      * to getting results from all remote jobs.
      *
      * @return {@code true} if job received cancellation request and {@code false} otherwise.

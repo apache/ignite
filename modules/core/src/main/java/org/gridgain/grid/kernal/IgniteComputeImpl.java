@@ -66,8 +66,8 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridComputeTaskFuture<R> future() {
-        return (GridComputeTaskFuture<R>)asyncSup.future();
+    @Override public <R> ComputeTaskFuture<R> future() {
+        return (ComputeTaskFuture<R>)asyncSup.future();
     }
 
     /** {@inheritDoc} */
@@ -333,7 +333,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Map<IgniteUuid, GridComputeTaskFuture<R>> activeTaskFutures() {
+    @Override public <R> Map<IgniteUuid, ComputeTaskFuture<R>> activeTaskFutures() {
         guard();
 
         try {

@@ -115,7 +115,7 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
                         long start = System.currentTimeMillis();
 
                         // Pass stealing node id.
-                        GridComputeTaskFuture<?> fut = ignite.compute().withTimeout(20000).
+                        ComputeTaskFuture<?> fut = ignite.compute().withTimeout(20000).
                             execute(GridStealingLoadTestTask.class.getName(), stealingNodeId);
 
                         stolen.addAndGet((Integer)fut.get());

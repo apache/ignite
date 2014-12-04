@@ -83,7 +83,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(2);
 
-            GridComputeTaskFuture<Object> taskFut = executeAsync(grid(0).compute(), taskCls, 2);
+            ComputeTaskFuture<Object> taskFut = executeAsync(grid(0).compute(), taskCls, 2);
 
             Integer res = (Integer)taskFut.get();
 

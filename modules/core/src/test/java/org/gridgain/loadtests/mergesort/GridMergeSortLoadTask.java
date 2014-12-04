@@ -52,7 +52,7 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
                 private ComputeJobContext jobCtx;
 
                 // Task execution result future.
-                private GridComputeTaskFuture<int[]> fut;
+                private ComputeTaskFuture<int[]> fut;
 
                 @Override public Object execute() throws GridException {
                     if (arr.length == 1)

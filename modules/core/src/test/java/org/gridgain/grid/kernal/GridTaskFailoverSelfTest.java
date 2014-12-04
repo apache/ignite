@@ -41,7 +41,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         try {
             ignite.compute().localDeployTask(GridFailoverTestTask.class, GridFailoverTestTask.class.getClassLoader());
 
-            GridComputeTaskFuture<?> fut = ignite.compute().execute(GridFailoverTestTask.class.getName(), null);
+            ComputeTaskFuture<?> fut = ignite.compute().execute(GridFailoverTestTask.class.getName(), null);
 
             assert fut != null;
 

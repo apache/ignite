@@ -178,7 +178,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 final UUID clientId = req.clientId();
 
-                final GridComputeTaskFuture<Object> taskFut;
+                final ComputeTaskFuture<Object> taskFut;
 
                 if (locExec) {
                     ClusterGroup prj = ctx.grid().forSubjectId(clientId);
@@ -240,9 +240,9 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             }
 
                             if (async && locExec) {
-                                assert taskFut instanceof GridComputeTaskFuture;
+                                assert taskFut instanceof ComputeTaskFuture;
 
-                                IgniteUuid tid = ((GridComputeTaskFuture)taskFut).getTaskSession().getId();
+                                IgniteUuid tid = ((ComputeTaskFuture)taskFut).getTaskSession().getId();
 
                                 taskDescs.put(tid, desc);
                             }

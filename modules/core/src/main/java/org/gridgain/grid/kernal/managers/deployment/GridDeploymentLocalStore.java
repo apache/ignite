@@ -470,7 +470,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         String alias = cls.getName();
 
         if (isTask(cls)) {
-            GridComputeTaskName ann = dep.annotation(cls, GridComputeTaskName.class);
+            ComputeTaskName ann = dep.annotation(cls, ComputeTaskName.class);
 
             if (ann != null)
                 alias = ann.value();

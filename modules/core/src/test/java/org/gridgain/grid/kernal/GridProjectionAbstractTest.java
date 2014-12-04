@@ -642,16 +642,16 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        Collection<GridComputeTaskFuture<Object>> futsList = new ArrayList<>();
+        Collection<ComputeTaskFuture<Object>> futsList = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             comp.call(new TestWaitCallable<Object>());
 
-            GridComputeTaskFuture<Object> fut = comp.future();
+            ComputeTaskFuture<Object> fut = comp.future();
 
             assertFalse(fut.isDone());
 
-            Map<IgniteUuid, GridComputeTaskFuture<Object>> futs = comp.activeTaskFutures();
+            Map<IgniteUuid, ComputeTaskFuture<Object>> futs = comp.activeTaskFutures();
 
             assertEquals(i + 1, futs.size());
 
@@ -666,7 +666,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             mux.notifyAll();
         }
 
-        for (GridComputeTaskFuture<Object> fut : futsList)
+        for (ComputeTaskFuture<Object> fut : futsList)
             fut.get();
 
         assertEquals(0, comp.activeTaskFutures().size());

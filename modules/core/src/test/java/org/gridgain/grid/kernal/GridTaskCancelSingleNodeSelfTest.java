@@ -98,7 +98,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
         comp.execute(TestTask.class, null);
 
-        GridComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = comp.future();
 
         if (timeoutBeforeCancel > 0L)
             Thread.sleep(timeoutBeforeCancel);
@@ -140,7 +140,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridComputeTaskMapAsync
+    @ComputeTaskMapAsync
     private static class TestTask extends GridComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {

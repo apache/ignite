@@ -130,7 +130,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
 
         if (!ses.isFullSupport()) {
             // Need to fetch task session from task worker.
-            GridComputeTaskFuture<Object> fut = ctx.task().taskFuture(ses.getId());
+            ComputeTaskFuture<Object> fut = ctx.task().taskFuture(ses.getId());
 
             return fut.getTaskSession().getJobSiblings();
         }
@@ -147,7 +147,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
                 assert !ses.isFullSupport();
 
                 // Need to fetch task session from task worker.
-                GridComputeTaskFuture<Object> fut = ctx.task().taskFuture(ses.getId());
+                ComputeTaskFuture<Object> fut = ctx.task().taskFuture(ses.getId());
 
                 return fut.getTaskSession().getJobSiblings();
             }

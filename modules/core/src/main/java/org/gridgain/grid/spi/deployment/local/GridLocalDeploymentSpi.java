@@ -217,7 +217,7 @@ public class GridLocalDeploymentSpi extends GridSpiAdapter implements GridDeploy
         String alias = null;
 
         if (ComputeTask.class.isAssignableFrom(cls)) {
-            GridComputeTaskName nameAnn = GridAnnotationsCache.getAnnotation(cls, GridComputeTaskName.class);
+            ComputeTaskName nameAnn = GridAnnotationsCache.getAnnotation(cls, ComputeTaskName.class);
 
             if (nameAnn != null)
                 alias = nameAnn.value();

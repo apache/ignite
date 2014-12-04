@@ -62,7 +62,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
      * @return Map of grid jobs assigned to subgrid node. Unless {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} is injected into task, if
      *         {@code null} or empty map is returned, exception will be thrown.
      * @throws GridException If mapping could not complete successfully. This exception will be thrown out of {@link
-     *                       GridComputeTaskFuture#get()} method.
+     *                       org.apache.ignite.compute.ComputeTaskFuture#get()} method.
      */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable final Collection<Integer> data) throws GridException {

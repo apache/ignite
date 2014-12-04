@@ -145,7 +145,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
      *
      */
     @SuppressWarnings({"PublicInnerClass", "InnerClassMayBeStatic"})
-    @GridComputeTaskName(value="GridDeploymentTestTask")
+    @ComputeTaskName(value="GridDeploymentTestTask")
     public class GridDeploymentTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
@@ -162,7 +162,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
      *
      */
     @SuppressWarnings({"PublicInnerClass", "InnerClassMayBeStatic"})
-    @GridComputeTaskName(value="GridDeploymentTestTask")
+    @ComputeTaskName(value="GridDeploymentTestTask")
     public class GridDeploymentTestTask1 extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

@@ -31,7 +31,7 @@ import java.util.*;
  *      Upon request to execute a grid task with given task name system will find
  *      deployed task with given name. Task needs to be deployed prior to execution
  *      (see {@link org.apache.ignite.IgniteCompute#localDeployTask(Class, ClassLoader)} method), however if task does not specify
- *      its name explicitly via {@link GridComputeTaskName @GridComputeTaskName} annotation, it
+ *      its name explicitly via {@link ComputeTaskName @GridComputeTaskName} annotation, it
  *      will be auto-deployed first time it gets executed.
  * </li>
  * <li>
@@ -99,7 +99,7 @@ import java.util.*;
  *      method returned {@link ComputeJobResultPolicy#REDUCE} policy, method {@link #reduce(List) reduce(List)}
  *      is called to aggregate received results into one final result. Once this method is finished the
  *      execution of the grid task is complete. This result will be returned to the user through
- *      {@link GridComputeTaskFuture#get()} method.
+ *      {@link ComputeTaskFuture#get()} method.
  * </li>
  * </ol>
  * <p>
@@ -243,7 +243,7 @@ public interface ComputeTask<T, R> extends Serializable {
      * @return Map of grid jobs assigned to subgrid node. Unless {@link ComputeTaskContinuousMapper} is
      *      injected into task, if {@code null} or empty map is returned, exception will be thrown.
      * @throws GridException If mapping could not complete successfully. This exception will be
-     *      thrown out of {@link GridComputeTaskFuture#get()} method.
+     *      thrown out of {@link ComputeTaskFuture#get()} method.
      */
     @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws GridException;
 
@@ -260,13 +260,13 @@ public interface ComputeTask<T, R> extends Serializable {
      * @return Result policy that dictates how to process further upcoming
      *       job results.
      * @throws GridException If handling a job result caused an error. This exception will
-     *      be thrown out of {@link GridComputeTaskFuture#get()} method.
+     *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
     public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException;
 
     /**
      * Reduces (or aggregates) results received so far into one compound result to be returned to
-     * caller via {@link GridComputeTaskFuture#get()} method.
+     * caller via {@link ComputeTaskFuture#get()} method.
      * <p>
      * Note, that if some jobs did not succeed and could not be failed over then the list of
      * results passed into this method will include the failed results. Otherwise, failed
@@ -276,7 +276,7 @@ public interface ComputeTask<T, R> extends Serializable {
      *      {@link GridComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Grid job result constructed from results of remote executions.
      * @throws GridException If reduction or results caused an error. This exception will
-     *      be thrown out of {@link GridComputeTaskFuture#get()} method.
+     *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
     @Nullable public R reduce(List<ComputeJobResult> results) throws GridException;
 }

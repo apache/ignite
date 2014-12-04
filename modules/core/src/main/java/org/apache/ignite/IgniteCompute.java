@@ -144,7 +144,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @param taskCls Class of the task to execute. If class has {@link org.apache.ignite.compute.GridComputeTaskName} annotation,
+     * @param taskCls Class of the task to execute. If class has {@link org.apache.ignite.compute.ComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -159,7 +159,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @param task Instance of task to execute. If task class has {@link org.apache.ignite.compute.GridComputeTaskName} annotation,
+     * @param task Instance of task to execute. If task class has {@link org.apache.ignite.compute.ComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -328,7 +328,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @return Map of active tasks keyed by their task task session ID.
      */
-    public <R> Map<IgniteUuid, GridComputeTaskFuture<R>> activeTaskFutures();
+    public <R> Map<IgniteUuid, ComputeTaskFuture<R>> activeTaskFutures();
 
     /**
      * Sets task name for the next executed task on this projection in the <b>current thread</b>.
@@ -395,7 +395,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * This method has no effect if the class passed in was already deployed.
      *
-     * @param taskCls Task class to deploy. If task class has {@link org.apache.ignite.compute.GridComputeTaskName} annotation,
+     * @param taskCls Task class to deploy. If task class has {@link org.apache.ignite.compute.ComputeTaskName} annotation,
      *      then task will be deployed under the name specified within annotation. Otherwise, full
      *      class name will be used as task's name.
      * @param clsLdr Task class loader. This class loader is in charge
@@ -422,7 +422,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public void undeployTask(String taskName) throws GridException;
 
     /** {@inheritDoc} */
-    @Override public <R> GridComputeTaskFuture<R> future();
+    @Override public <R> ComputeTaskFuture<R> future();
 
     /** {@inheritDoc} */
     @Override public IgniteCompute enableAsync();

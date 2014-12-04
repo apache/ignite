@@ -243,7 +243,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * Simple task.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    @GridComputeTaskName("TestTask")
+    @ComputeTaskName("TestTask")
     public static class TestTask extends GridComputeTaskSplitAdapter<Object, Void> {
         /** User resource. */
         @GridUserResource

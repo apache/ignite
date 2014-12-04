@@ -270,7 +270,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
+    public <T, R> ComputeTaskFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         assert taskCls != null;
 
         lock.readLock();
@@ -293,7 +293,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
+    public <T, R> ComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
         return execute(task, arg, false);
     }
 
@@ -305,7 +305,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
+    public <T, R> ComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
 
         try {
@@ -341,7 +341,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg) {
+    public <T, R> ComputeTaskFuture<R> execute(String taskName, @Nullable T arg) {
         assert taskName != null;
 
         lock.readLock();
@@ -367,7 +367,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @return Task future.
      */
     @SuppressWarnings("unchecked")
-    private <T, R> GridComputeTaskFuture<R> startTask(
+    private <T, R> ComputeTaskFuture<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<T, R> task,
@@ -574,7 +574,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
-                if (dep.annotation(taskCls, GridComputeTaskMapAsync.class) != null) {
+                if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {
                     try {
                         // Start task execution in another thread.
                         if (sys)
@@ -607,23 +607,23 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /**
      * @param sesId Task's session id.
-     * @return A {@link GridComputeTaskFuture} instance or {@code null} if no such task found.
+     * @return A {@link org.apache.ignite.compute.ComputeTaskFuture} instance or {@code null} if no such task found.
      */
-    @Nullable public <R> GridComputeTaskFuture<R> taskFuture(IgniteUuid sesId) {
+    @Nullable public <R> ComputeTaskFuture<R> taskFuture(IgniteUuid sesId) {
         GridTaskWorker<?, ?> taskWorker = tasks.get(sesId);
 
-        return taskWorker != null ? (GridComputeTaskFuture<R>)taskWorker.getTaskFuture() : null;
+        return taskWorker != null ? (ComputeTaskFuture<R>)taskWorker.getTaskFuture() : null;
     }
 
     /**
      * @return Active task futures.
      */
     @SuppressWarnings("unchecked")
-    public <R> Map<IgniteUuid, GridComputeTaskFuture<R>> taskFutures() {
-        Map<IgniteUuid, GridComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
+    public <R> Map<IgniteUuid, ComputeTaskFuture<R>> taskFutures() {
+        Map<IgniteUuid, ComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
 
         for (GridTaskWorker taskWorker : tasks.values()) {
-            GridComputeTaskFuture<R> fut = taskWorker.getTaskFuture();
+            ComputeTaskFuture<R> fut = taskWorker.getTaskFuture();
 
             res.put(fut.getTaskSession().getId(), fut);
         }
@@ -650,7 +650,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         String taskName;
 
-        GridComputeTaskName ann = dep.annotation(cls, GridComputeTaskName.class);
+        ComputeTaskName ann = dep.annotation(cls, ComputeTaskName.class);
 
         if (ann != null) {
             taskName = ann.value();

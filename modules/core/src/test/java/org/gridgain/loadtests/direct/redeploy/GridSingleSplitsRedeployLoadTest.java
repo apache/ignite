@@ -132,7 +132,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
                         // info("Executing task: " + TASK_NAME);
 
-                        GridComputeTaskFuture<Integer> fut = ignite.compute().execute(TASK_NAME, levels);
+                        ComputeTaskFuture<Integer> fut = ignite.compute().execute(TASK_NAME, levels);
 
                         int res = fut.get();
 

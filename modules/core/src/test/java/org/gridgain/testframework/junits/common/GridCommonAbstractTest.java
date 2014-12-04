@@ -430,13 +430,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Task future.
      * @throws GridException If failed.
      */
-    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, ComputeTask task, @Nullable Object arg)
+    protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, ComputeTask task, @Nullable Object arg)
         throws GridException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(task, arg));
 
-        GridComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.future();
 
         assertNotNull(fut);
 
@@ -450,13 +450,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Task future.
      * @throws GridException If failed.
      */
-    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, String taskName, @Nullable Object arg)
+    protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, String taskName, @Nullable Object arg)
         throws GridException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(taskName, arg));
 
-        GridComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.future();
 
         assertNotNull(fut);
 
@@ -471,13 +471,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, Class taskCls, @Nullable Object arg)
+    protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, Class taskCls, @Nullable Object arg)
         throws GridException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(taskCls, arg));
 
-        GridComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.future();
 
         assertNotNull(fut);
 

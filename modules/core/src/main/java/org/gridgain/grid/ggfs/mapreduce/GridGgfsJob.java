@@ -52,7 +52,7 @@ public interface GridGgfsJob {
      * This method is called when system detects that completion of this
      * job can no longer alter the overall outcome (for example, when parent task
      * has already reduced the results). Job is also cancelled when
-     * {@link org.apache.ignite.compute.GridComputeTaskFuture#cancel()} is called.
+     * {@link org.apache.ignite.compute.ComputeTaskFuture#cancel()} is called.
      * <p>
      * Note that job cancellation is only a hint, and just like with
      * {@link Thread#interrupt()}  method, it is really up to the actual job

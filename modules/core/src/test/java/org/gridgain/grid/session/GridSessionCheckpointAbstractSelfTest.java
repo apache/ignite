@@ -106,7 +106,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         try {
             ignite.compute().localDeployTask(GridCheckpointTestTask.class, GridCheckpointTestTask.class.getClassLoader());
 
-            GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), "GridCheckpointTestTask", null);
+            ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), "GridCheckpointTestTask", null);
 
             fut.getTaskSession().saveCheckpoint("future:session:key", "future:session:testval");
             fut.getTaskSession().saveCheckpoint("future:global:key", "future:global:testval",
@@ -135,7 +135,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
     }
 
     /** */
-    @GridComputeTaskName("GridCheckpointTestTask")
+    @ComputeTaskName("GridCheckpointTestTask")
     @GridComputeTaskSessionFullSupport
     private static class GridCheckpointTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** */

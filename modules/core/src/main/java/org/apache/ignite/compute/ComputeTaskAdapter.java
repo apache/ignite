@@ -76,7 +76,7 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
      * @return Result policy that dictates how to process further upcoming
      *       job results.
      * @throws GridException If handling a job result caused an error effectively rejecting
-     *      a failover. This exception will be thrown out of {@link GridComputeTaskFuture#get()} method.
+     *      a failover. This exception will be thrown out of {@link ComputeTaskFuture#get()} method.
      */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         GridException e = res.getException();

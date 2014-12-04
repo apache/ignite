@@ -119,7 +119,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     private void checkTask(int num) throws InterruptedException, GridException {
         Ignite ignite = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
+        ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
 
         assert fut != null;
 

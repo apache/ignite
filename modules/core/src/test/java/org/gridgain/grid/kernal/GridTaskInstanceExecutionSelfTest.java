@@ -50,7 +50,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
 
         assertNull(comp.execute(task,  "testArg"));
 
-        GridComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = comp.future();
 
         assert fut != null;
 

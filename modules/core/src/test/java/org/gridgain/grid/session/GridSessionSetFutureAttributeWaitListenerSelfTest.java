@@ -82,7 +82,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         for (int i = 0; i < 1; i++) {
             refreshInitialData();
 
-            GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class.getName(), null);
+            ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class.getName(), null);
 
             assert fut != null;
 

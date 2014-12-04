@@ -112,7 +112,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
                     try {
                         comp.execute(GridLoadTestTask.class, levels);
 
-                        GridComputeTaskFuture<Integer> fut = comp.future();
+                        ComputeTaskFuture<Integer> fut = comp.future();
 
                         int res = fut.get();
 

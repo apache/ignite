@@ -23,7 +23,7 @@ import java.util.*;
  * This class provide implementation for task future.
  * @param <R> Type of the task result returning from {@link org.apache.ignite.compute.ComputeTask#reduce(List)} method.
  */
-public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridComputeTaskFuture<R> {
+public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements ComputeTaskFuture<R> {
     /** */
     private static final long serialVersionUID = 0L;
 

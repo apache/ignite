@@ -36,7 +36,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
     private final int cancelRate;
 
     /** List of futures for submitted tasks. */
-    private final List<GridComputeTaskFuture<Integer>> futures = new LinkedList<>();
+    private final List<ComputeTaskFuture<Integer>> futures = new LinkedList<>();
 
     /** Counter to implement fixed submit/cancel ratio. */
     private int iteration;
@@ -87,8 +87,8 @@ public class GridJobLoadTestSubmitter implements Runnable {
      * Finds completed tasks in the queue and removes them.
      */
     private void checkCompletion() {
-        for (Iterator<GridComputeTaskFuture<Integer>> iter = futures.iterator(); iter.hasNext();) {
-            GridComputeTaskFuture<Integer> fut = iter.next();
+        for (Iterator<ComputeTaskFuture<Integer>> iter = futures.iterator(); iter.hasNext();) {
+            ComputeTaskFuture<Integer> fut = iter.next();
 
             if (fut.isDone()) {
                 try {
@@ -121,7 +121,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
         if (iteration % cancelRate == 0) {
             // Here we should have mostly running futures so just pick one.
-            GridComputeTaskFuture<Integer> futToCancel = futures.get( new Random().nextInt(futures.size()) );
+            ComputeTaskFuture<Integer> futToCancel = futures.get( new Random().nextInt(futures.size()) );
 
             try {
                 futToCancel.cancel();

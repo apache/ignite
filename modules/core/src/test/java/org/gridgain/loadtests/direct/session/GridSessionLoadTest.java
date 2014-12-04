@@ -75,7 +75,7 @@ public class GridSessionLoadTest extends GridCommonAbstractTest {
                     while (end - System.currentTimeMillis() > 0) {
                         long start = System.currentTimeMillis();
 
-                        GridComputeTaskFuture<?> fut = ignite.compute().withTimeout(10000).
+                        ComputeTaskFuture<?> fut = ignite.compute().withTimeout(10000).
                             execute(GridSessionLoadTestTask.class.getName(), ignite.cluster().nodes().size());
 
                         Object res = fut.get();
