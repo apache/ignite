@@ -390,7 +390,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings({"PublicInnerClass"})
     @GridComputeTaskName("GridDeploymentResourceTestTask")
-    public static class GridDeploymentResourceTestTask extends GridComputeTaskAdapter<String, Integer> {
+    public static class GridDeploymentResourceTestTask extends ComputeTaskAdapter<String, Integer> {
         /** */
         @GridLocalNodeIdResource
         private UUID locId;

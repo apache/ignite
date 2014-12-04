@@ -123,7 +123,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         protected ComputeJobContext jobCtx;
 
         /** */
-        protected transient GridComputeTaskContinuousMapper mapper;
+        protected transient ComputeTaskContinuousMapper mapper;
 
         /**
          * @param rsrc1 User defined resource.
@@ -240,7 +240,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          */
         @GridTaskContinuousMapperResource
         @SuppressWarnings("unused")
-        public void setMapper(GridComputeTaskContinuousMapper mapper) {
+        public void setMapper(ComputeTaskContinuousMapper mapper) {
             this.mapper = mapper;
         }
     }

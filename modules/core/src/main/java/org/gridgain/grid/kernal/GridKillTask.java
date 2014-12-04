@@ -24,7 +24,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  * Special kill task that never fails over jobs.
  */
 @GridInternal
-class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
+class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 

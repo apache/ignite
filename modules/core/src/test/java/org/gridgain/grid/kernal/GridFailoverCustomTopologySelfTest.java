@@ -111,7 +111,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings("PublicInnerClass")
-    public static class JobTask extends GridComputeTaskAdapter<String, String> {
+    public static class JobTask extends ComputeTaskAdapter<String, String> {
         /** */
         @GridLoggerResource private GridLogger log;
 

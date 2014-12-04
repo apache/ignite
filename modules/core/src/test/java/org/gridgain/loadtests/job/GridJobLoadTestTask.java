@@ -21,7 +21,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 /**
  * Test task for {@link GridJobLoadTest}
  */
-public class GridJobLoadTestTask extends GridComputeTaskAdapter<GridJobLoadTestParams, Integer> {
+public class GridJobLoadTestTask extends ComputeTaskAdapter<GridJobLoadTestParams, Integer> {
     /**{@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable GridJobLoadTestParams arg)
         throws GridException {

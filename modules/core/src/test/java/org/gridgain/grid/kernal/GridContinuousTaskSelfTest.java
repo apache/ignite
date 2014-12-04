@@ -133,7 +133,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     public static class TestJobsChainTask implements ComputeTask<Boolean, Integer> {
         /** */
         @GridTaskContinuousMapperResource
-        private GridComputeTaskContinuousMapper mapper;
+        private ComputeTaskContinuousMapper mapper;
 
         /** */
         @GridLoggerResource
@@ -230,7 +230,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridTaskContinuousMapperResource
-        private GridComputeTaskContinuousMapper mapper;
+        private ComputeTaskContinuousMapper mapper;
 
         /** */
         @GridLoggerResource
@@ -310,10 +310,10 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class SlowMapTestTask extends GridComputeTaskAdapter<Object, Integer> {
+    public static class SlowMapTestTask extends ComputeTaskAdapter<Object, Integer> {
         /** */
         @GridTaskContinuousMapperResource
-        private GridComputeTaskContinuousMapper mapper;
+        private ComputeTaskContinuousMapper mapper;
 
         /** */
         private int cnt;

@@ -31,7 +31,7 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * @see GridifySetToSet
  * @see GridifySetToValue
  */
-public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRangeArgument, Collection<?>>
+public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgument, Collection<?>>
     implements GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;
@@ -59,7 +59,7 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
     /** */
     @SuppressWarnings({"UnusedDeclaration"})
     @GridTaskContinuousMapperResource
-    private GridComputeTaskContinuousMapper mapper;
+    private ComputeTaskContinuousMapper mapper;
 
     /** */
     private GridifyNodeFilter nodeFilter;

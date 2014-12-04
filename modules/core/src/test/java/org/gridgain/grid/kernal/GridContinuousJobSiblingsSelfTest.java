@@ -60,7 +60,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     private static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridTaskContinuousMapperResource
-        private GridComputeTaskContinuousMapper mapper;
+        private ComputeTaskContinuousMapper mapper;
 
         /** */
         @GridTaskSessionResource

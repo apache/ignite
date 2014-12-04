@@ -214,7 +214,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to non-transient resource injection.
      */
-    public static class TestTask extends GridComputeTaskAdapter<UUID, Serializable> {
+    public static class TestTask extends ComputeTaskAdapter<UUID, Serializable> {
         /** User resource. */
         @GridUserResource private transient UserResource rsrc;
 

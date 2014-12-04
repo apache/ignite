@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Session load test task.
  */
-public class GridSessionLoadTestTask extends GridComputeTaskAdapter<Integer, Boolean> {
+public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean> {
     /** */
     @GridTaskSessionResource
     private GridComputeTaskSession taskSes;

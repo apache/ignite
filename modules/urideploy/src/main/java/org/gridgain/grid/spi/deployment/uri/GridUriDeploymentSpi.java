@@ -88,7 +88,7 @@ import java.util.Map.*;
  * GAR file may be deployed without descriptor file. If there is no descriptor file, SPI
  * will scan all classes in archive and instantiate those that implement
  * {@link org.apache.ignite.compute.ComputeTask} interface. In that case, all grid task classes must have a
- * public no-argument constructor. Use {@link GridComputeTaskAdapter} adapter for
+ * public no-argument constructor. Use {@link org.apache.ignite.compute.ComputeTaskAdapter} adapter for
  * convenience when creating grid tasks.
  * <p>
  * By default, all downloaded GAR files that have digital signature in {@code META-INF}

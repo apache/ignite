@@ -53,7 +53,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public interface GridComputeTaskContinuousMapper {
+public interface ComputeTaskContinuousMapper {
     /**
      * Sends given job to a specific grid node.
      *

@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Puts all the passed data into partitioned cache in small chunks.
  */
-class GridCachePutAllTask extends GridComputeTaskAdapter<Collection<Integer>, Void> {
+class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> {
     /** Number of entries per put. */
     private static final int TX_BOUND = 30;
 

@@ -10,7 +10,7 @@ import org.jetbrains.annotations.*;
 /**
  * Peer deployment aware task adapter.
  */
-public abstract class GridPeerDeployAwareTaskAdapter<T, R> extends GridComputeTaskAdapter<T, R>
+public abstract class GridPeerDeployAwareTaskAdapter<T, R> extends ComputeTaskAdapter<T, R>
     implements GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;

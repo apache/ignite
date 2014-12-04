@@ -70,7 +70,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
      * Test task that will be canceled.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class CancelledTask extends GridComputeTaskAdapter<String, Object> {
+    public static final class CancelledTask extends ComputeTaskAdapter<String, Object> {
         /** */
         @GridLocalNodeIdResource private UUID locId;
 

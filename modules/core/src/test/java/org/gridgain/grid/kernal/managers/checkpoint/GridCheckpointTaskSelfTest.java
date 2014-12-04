@@ -122,7 +122,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
      * Failover test task.
      */
     @GridComputeTaskSessionFullSupport
-    private static class FailoverTestTask extends GridComputeTaskAdapter<Void, Void> {
+    private static class FailoverTestTask extends ComputeTaskAdapter<Void, Void> {
         /** Grid. */
         @GridInstanceResource
         private Ignite ignite;
@@ -178,7 +178,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
      * Failover test task.
      */
     @GridComputeTaskSessionFullSupport
-    private static class ReduceTestTask extends GridComputeTaskAdapter<Void, Void> {
+    private static class ReduceTestTask extends ComputeTaskAdapter<Void, Void> {
         /** Grid. */
         @GridInstanceResource
         private Ignite ignite;

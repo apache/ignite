@@ -94,7 +94,7 @@ public class GridJobExecutionSingleNodeLoadTest {
 
                                     tasksCnt.incrementAndGet();
                                 }
-                                catch (GridComputeTaskCancelledException ignored) {
+                                catch (ComputeTaskCancelledException ignored) {
                                     // No-op.
                                 }
                                 catch (GridException e) {

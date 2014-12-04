@@ -220,7 +220,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     @GridComputeTaskSpis(loadBalancingSpi = "load2", failoverSpi = "fail2", checkpointSpi = "cp2")
     @GridComputeTaskSessionFullSupport
-    public static final class GridTestMultipleSpisTask extends GridComputeTaskAdapter<UUID, Integer> {
+    public static final class GridTestMultipleSpisTask extends ComputeTaskAdapter<UUID, Integer> {
         /** */
         @GridTaskSessionResource private GridComputeTaskSession taskSes;
 

@@ -79,7 +79,7 @@ public final class GridMarshallerExclusions {
         excl.add(ComputeJobContext.class);
         excl.add(GridMarshaller.class);
         excl.add(GridComponent.class);
-        excl.add(GridComputeTaskContinuousMapper.class);
+        excl.add(ComputeTaskContinuousMapper.class);
 
         EXCL_CLASSES = U.toArray(excl, new Class[excl.size()]);
     }

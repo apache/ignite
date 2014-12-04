@@ -292,7 +292,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /**
      * Job stealing task, that spreads jobs equally over the grid.
      */
-    private static class JobStealingSpreadTask extends GridComputeTaskAdapter<Object, Object> {
+    private static class JobStealingSpreadTask extends ComputeTaskAdapter<Object, Object> {
         /** Grid. */
         @GridInstanceResource
         private Ignite ignite;

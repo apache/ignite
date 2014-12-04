@@ -98,7 +98,7 @@ public class GridDeploymentMultiThreadedSelfTest extends GridCommonAbstractTest 
     /**
      * Test task.
      */
-    private static class GridDeploymentTestTask extends GridComputeTaskAdapter<Object, Object> {
+    private static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             assert false;

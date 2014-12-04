@@ -27,7 +27,7 @@ import java.util.*;
  * {@code gridified} methods.
  * @see Gridify
  */
-public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, Object>
+public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Object>
     implements GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;

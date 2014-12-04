@@ -57,7 +57,7 @@ import static org.apache.ignite.events.GridEventType.*;
  * </pre>
  * If you need more fine-grained control over how some jobs within task get mapped to a node
  * and use affinity load balancing for some other jobs within task, then you should use
- * {@link GridComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
+ * {@link org.apache.ignite.compute.ComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">

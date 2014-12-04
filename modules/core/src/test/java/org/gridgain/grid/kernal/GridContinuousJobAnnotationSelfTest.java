@@ -94,7 +94,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     public static class TestTask implements ComputeTask<Object, Object> {
         /** */
         @GridTaskContinuousMapperResource
-        private GridComputeTaskContinuousMapper mapper;
+        private ComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {

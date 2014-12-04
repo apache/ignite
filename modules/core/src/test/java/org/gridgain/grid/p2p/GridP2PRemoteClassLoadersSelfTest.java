@@ -229,7 +229,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
     /**
      * P2P test task.
      */
-    public static class GridP2PTestTask extends GridComputeTaskAdapter<Serializable, Object> {
+    public static class GridP2PTestTask extends ComputeTaskAdapter<Serializable, Object> {
         /** */
         @GridLoggerResource private GridLogger log;
 

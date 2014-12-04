@@ -40,7 +40,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 /**
  * Task for JDBC adapter.
  */
-public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[]> {
+public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     /** */
     private static final long serialVersionUID = 0L;
 

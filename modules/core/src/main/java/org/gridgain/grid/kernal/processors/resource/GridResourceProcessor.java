@@ -434,7 +434,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws GridException Thrown in case of any errors.
      */
     public void inject(GridDeployment dep, ComputeTask<?, ?> task, GridTaskSessionImpl ses,
-        ComputeLoadBalancer balancer, GridComputeTaskContinuousMapper mapper) throws GridException {
+        ComputeLoadBalancer balancer, ComputeTaskContinuousMapper mapper) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + task);
 

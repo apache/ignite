@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Simple test task.
  */
-public class GridP2PTestTaskExternalPath2 extends GridComputeTaskAdapter<Object, int[]> {
+public class GridP2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, int[]> {
     /** */
     @GridLoggerResource
     private GridLogger log;

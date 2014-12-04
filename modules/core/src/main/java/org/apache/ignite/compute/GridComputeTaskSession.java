@@ -159,7 +159,7 @@ public interface GridComputeTaskSession {
     /**
      * Refreshes collection of job siblings. This method has no effect when invoked
      * on originating node, as the list of siblings is always most recent. However,
-     * when using <tt>continuous mapping</tt> (see {@link GridComputeTaskContinuousMapper}),
+     * when using <tt>continuous mapping</tt> (see {@link ComputeTaskContinuousMapper}),
      * list of siblings on remote node may not be fresh. In that case, this method
      * will re-request list of siblings from originating node.
      *

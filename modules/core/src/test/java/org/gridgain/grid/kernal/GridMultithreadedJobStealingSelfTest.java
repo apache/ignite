@@ -141,7 +141,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
     /**
      * Job stealing task.
      */
-    private static class JobStealingTask extends GridComputeTaskAdapter<Object, JobStealingResult> {
+    private static class JobStealingTask extends ComputeTaskAdapter<Object, JobStealingResult> {
         /** Grid. */
         @GridInstanceResource private Ignite ignite;
 

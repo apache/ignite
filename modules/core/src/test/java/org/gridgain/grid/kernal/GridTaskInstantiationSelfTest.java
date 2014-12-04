@@ -53,7 +53,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
     /**
      * Test task defined as private inner class.
      */
-    private static class PrivateClassTask extends GridComputeTaskAdapter<String, Object> {
+    private static class PrivateClassTask extends ComputeTaskAdapter<String, Object> {
         /** */
         @GridLocalNodeIdResource
         private UUID locId;

@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Stealing load test task.
  */
-public class GridStealingLoadTestTask extends GridComputeTaskAdapter<UUID, Integer> {
+public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> {
     /** */
     @GridTaskSessionResource
     private GridComputeTaskSession taskSes;

@@ -28,7 +28,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 /**
  * Puts all the passed data into partitioned cache in small chunks.
  */
-class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Integer>, Void> {
+class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, Void> {
     /** Preferred node. */
     private final UUID preferredNode;
 
@@ -59,7 +59,7 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
      * @param subgrid Nodes available for this task execution. Note that order of nodes is guaranteed to be randomized by
      *                container. This ensures that every time you simply iterate through grid nodes, the order of nodes
      *                will be random which over time should result into all nodes being used equally.
-     * @return Map of grid jobs assigned to subgrid node. Unless {@link GridComputeTaskContinuousMapper} is injected into task, if
+     * @return Map of grid jobs assigned to subgrid node. Unless {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} is injected into task, if
      *         {@code null} or empty map is returned, exception will be thrown.
      * @throws GridException If mapping could not complete successfully. This exception will be thrown out of {@link
      *                       GridComputeTaskFuture#get()} method.

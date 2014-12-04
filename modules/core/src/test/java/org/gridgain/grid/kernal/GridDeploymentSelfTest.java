@@ -349,7 +349,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Test deployable task.
      */
-    private static class GridDeploymentTestTask extends GridComputeTaskAdapter<Object, Object> {
+    private static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLoggerResource
         private GridLogger log;
@@ -383,7 +383,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      * Test deployable named task.
      */
     @GridComputeTaskName(value = "GridDeploymentTestTask")
-    private static class GridDeploymentTestTask1 extends GridComputeTaskAdapter<Object, Object> {
+    private static class GridDeploymentTestTask1 extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLoggerResource
         private GridLogger log;
@@ -415,7 +415,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      * Test deployable named task.
      */
     @GridComputeTaskName(value = "GridDeploymentTestTask")
-    private static class GridDeploymentTestTask2 extends GridComputeTaskAdapter<Object, Object> {
+    private static class GridDeploymentTestTask2 extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLoggerResource
         private GridLogger log;

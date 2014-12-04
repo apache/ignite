@@ -203,7 +203,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class GridTaskFailedTestTask extends GridComputeTaskAdapter<Serializable, Serializable> {
+    private static class GridTaskFailedTestTask extends ComputeTaskAdapter<Serializable, Serializable> {
         /** */
         @GridLoggerResource private GridLogger log;
 

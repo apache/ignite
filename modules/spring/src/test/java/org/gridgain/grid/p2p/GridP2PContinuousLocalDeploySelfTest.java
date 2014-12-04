@@ -173,7 +173,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
     /**
      * First task.
      */
-    public static class SharedResourceTask1 extends GridComputeTaskAdapter<Object, Object> {
+    public static class SharedResourceTask1 extends ComputeTaskAdapter<Object, Object> {
         /** Logger. */
         @GridLoggerResource
         private GridLogger log;
@@ -245,7 +245,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
     /**
      * Second task.
      */
-    public static class SharedResourceTask2 extends GridComputeTaskAdapter<Object, Object> {
+    public static class SharedResourceTask2 extends ComputeTaskAdapter<Object, Object> {
         /** Logger. */
         @GridLoggerResource
         private GridLogger log;

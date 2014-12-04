@@ -68,10 +68,10 @@ public class ComputeContinuousMapperExample {
      * and therefore don't need to accumulate them be be processed at reduction step.
      */
     @GridComputeTaskNoResultCache
-    private static class GridContinuousMapperTask extends GridComputeTaskAdapter<String, Integer> {
+    private static class GridContinuousMapperTask extends ComputeTaskAdapter<String, Integer> {
         /** This field will be injected with task continuous mapper. */
         @GridTaskContinuousMapperResource
-        private GridComputeTaskContinuousMapper mapper;
+        private ComputeTaskContinuousMapper mapper;
 
         /** Word queue. */
         private final Queue<String> words = new ConcurrentLinkedQueue<>();

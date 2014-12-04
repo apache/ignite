@@ -21,7 +21,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link GridComputeTaskContinuousMapper} test.
+ * {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} test.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
@@ -71,10 +71,10 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestAllMethodsTask extends GridComputeTaskAdapter<Object, Object> {
+    public static class TestAllMethodsTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration"})
-        @GridTaskContinuousMapperResource private GridComputeTaskContinuousMapper mapper;
+        @GridTaskContinuousMapperResource private ComputeTaskContinuousMapper mapper;
 
         /** */
         private int cnt;
@@ -116,19 +116,19 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestLifeCycleTask extends GridComputeTaskAdapter<Object, Object> {
+    public static class TestLifeCycleTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLoggerResource private GridLogger log;
 
         /** */
-        private GridComputeTaskContinuousMapper mapper;
+        private ComputeTaskContinuousMapper mapper;
 
         /**
          * @param mapper Continuous mapper.
          * @throws GridException Thrown if any exception occurs.
          */
         @SuppressWarnings("unused")
-        @GridTaskContinuousMapperResource private void setMapper(GridComputeTaskContinuousMapper mapper) throws GridException {
+        @GridTaskContinuousMapperResource private void setMapper(ComputeTaskContinuousMapper mapper) throws GridException {
             this.mapper = mapper;
 
             mapper.send(new TestJob());
@@ -203,10 +203,10 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestNegativeTask extends GridComputeTaskAdapter<Object, Object> {
+    public static class TestNegativeTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration"})
-        @GridTaskContinuousMapperResource private GridComputeTaskContinuousMapper mapper;
+        @GridTaskContinuousMapperResource private ComputeTaskContinuousMapper mapper;
 
         /** */
         @GridLoggerResource private GridLogger log;

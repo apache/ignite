@@ -58,7 +58,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
     /**
      * Cancelled task.
      */
-    private static final class CancelledTask extends GridComputeTaskAdapter<String, Void> {
+    private static final class CancelledTask extends ComputeTaskAdapter<String, Void> {
         /** */
         @GridLocalNodeIdResource
         private UUID locId;

@@ -24,7 +24,7 @@ import java.util.*;
  * <p>
  * Load balancer can be used <i>explicitly</i> from inside {@link ComputeTask#map(List, Object)}
  * method when you implement {@link ComputeTask} interface directly or use
- * {@link GridComputeTaskAdapter}. If you use {@link GridComputeTaskSplitAdapter} then
+ * {@link ComputeTaskAdapter}. If you use {@link GridComputeTaskSplitAdapter} then
  * load balancer is accessed <i>implicitly</i> by the adapter so you don't have
  * to use it directly in your logic.
  * <h1 class="header">Coding Examples</h1>
@@ -50,7 +50,7 @@ import java.util.*;
  * </pre>
  * If you need more fine-grained control over how some jobs within task get mapped to a node
  * and use affinity load balancing for some other jobs within task, then you should use
- * {@link GridComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
+ * {@link ComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">

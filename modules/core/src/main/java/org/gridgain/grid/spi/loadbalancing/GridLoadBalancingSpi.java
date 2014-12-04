@@ -47,7 +47,7 @@ import java.util.*;
  * </pre>
  * If you need more fine-grained control over how some jobs within task get mapped to a node
  * <i>and</i> use, for example, affinity load balancing for some other jobs within task, then you should use
- * {@link GridComputeTaskAdapter}. Here is an example of how your task could look. Note that in this
+ * {@link org.apache.ignite.compute.ComputeTaskAdapter}. Here is an example of how your task could look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">

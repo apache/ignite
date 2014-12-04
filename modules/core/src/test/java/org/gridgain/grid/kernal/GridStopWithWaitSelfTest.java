@@ -124,7 +124,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
      *
      */
     @GridComputeTaskSessionFullSupport
-    private static class GridWaitTask extends GridComputeTaskAdapter<UUID, Integer> {
+    private static class GridWaitTask extends ComputeTaskAdapter<UUID, Integer> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
             ClusterNode mappedNode = null;

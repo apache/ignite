@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Single split test task.
  */
-public class GridSingleSplitTestTask extends GridComputeTaskAdapter<Integer, Integer> {
+public class GridSingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
     /** */
     @GridTaskSessionResource
     private GridComputeTaskSession taskSes;

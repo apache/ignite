@@ -236,7 +236,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private UserSpringBean springBean;
 
         /** */
-        private transient GridComputeTaskContinuousMapper mapper;
+        private transient ComputeTaskContinuousMapper mapper;
 
         /**
          * @param rsrc1 Resource 1.
@@ -386,7 +386,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * @param mapper Task Continuous Mapper.
          */
         @GridTaskContinuousMapperResource
-        public void setMapper(GridComputeTaskContinuousMapper mapper) {
+        public void setMapper(ComputeTaskContinuousMapper mapper) {
             this.mapper = mapper;
         }
 

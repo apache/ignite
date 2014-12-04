@@ -86,7 +86,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class JobStealingTask extends GridComputeTaskAdapter<Object, Object> {
+    public static class JobStealingTask extends ComputeTaskAdapter<Object, Object> {
         /** Grid. */
         @GridInstanceResource
         private Ignite ignite;

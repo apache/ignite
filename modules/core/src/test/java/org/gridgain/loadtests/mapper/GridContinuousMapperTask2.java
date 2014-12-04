@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Test task.
  */
-public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Integer> {
+public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer> {
     /** Grid. */
     @GridInstanceResource
     private Ignite g;

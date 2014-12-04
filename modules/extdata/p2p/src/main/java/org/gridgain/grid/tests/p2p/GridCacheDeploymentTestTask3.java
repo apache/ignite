@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Test task for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestTask3 extends GridComputeTaskAdapter<T2<ClusterNode, String>, Object> {
+public class GridCacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode, String>, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable T2<ClusterNode, String> tup) throws GridException {

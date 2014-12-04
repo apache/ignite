@@ -11,7 +11,7 @@ import java.util.*;
 
 /**
  * Demonstrates a simple use of GridGain grid with
- * {@link GridComputeTaskAdapter}.
+ * {@link org.apache.ignite.compute.ComputeTaskAdapter}.
  * <p>
  * Phrase passed as task argument is split into words on map stage and distributed among grid nodes.
  * Each node computes word length and returns result to master node where total phrase length is
@@ -47,7 +47,7 @@ public class ComputeTaskMapExample {
     /**
      * Task to count non-white-space characters in a phrase.
      */
-    private static class CharacterCountTask extends GridComputeTaskAdapter<String, Integer> {
+    private static class CharacterCountTask extends ComputeTaskAdapter<String, Integer> {
         /**
          * Splits the received string to words, creates a child job for each word, and sends
          * these jobs to other nodes for processing. Each such job simply prints out the received word.

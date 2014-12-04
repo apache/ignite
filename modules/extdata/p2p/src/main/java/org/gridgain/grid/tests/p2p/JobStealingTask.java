@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Task for testing job stealing.
  */
-public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, Integer>> {
+public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Integer>> {
     /** Number of jobs to spawn from task. */
     private static final int N_JOBS = 4;
 

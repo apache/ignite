@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * P2P test task.
  */
-public class GridP2PTestTask extends GridComputeTaskAdapter<Object, Integer> {
+public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     /** */
     public static final String TASK_NAME = GridP2PTestTask.class.getName();
 

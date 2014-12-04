@@ -394,7 +394,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
     }
 
     /** */
-    public static class UserResourceTask1 extends GridComputeTaskAdapter<Boolean, Object> {
+    public static class UserResourceTask1 extends ComputeTaskAdapter<Boolean, Object> {
         /** */
         @GridUserResource private transient UserResource rsrcTask;
 

@@ -83,7 +83,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      * Task class.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Task extends GridComputeTaskAdapter<Object, Object> {
+    public static class Task extends ComputeTaskAdapter<Object, Object> {
         /** Target node ID. */
         private UUID targetNodeId;
 

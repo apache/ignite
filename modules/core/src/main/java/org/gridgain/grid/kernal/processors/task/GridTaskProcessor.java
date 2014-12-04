@@ -128,7 +128,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         task.getTaskFuture().get();
                     }
-                    catch (GridComputeTaskCancelledException e) {
+                    catch (ComputeTaskCancelledException e) {
                         U.warn(log, e.getMessage());
                     }
                     catch (GridException e) {
@@ -143,7 +143,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                     task.cancel();
 
-                    Throwable ex = new GridComputeTaskCancelledException("Task cancelled due to stopping of the grid: " +
+                    Throwable ex = new ComputeTaskCancelledException("Task cancelled due to stopping of the grid: " +
                         task);
 
                     task.finishTask(null, ex, false);
@@ -984,7 +984,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 return;
             }
 
-            task.finishTask(null, new GridComputeTaskCancelledException("Task was cancelled."), true);
+            task.finishTask(null, new ComputeTaskCancelledException("Task was cancelled."), true);
         }
         finally {
             lock.readUnlock();

@@ -458,7 +458,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridTaskContinuousMapperResource
-        private transient GridComputeTaskContinuousMapper mapper;
+        private transient ComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

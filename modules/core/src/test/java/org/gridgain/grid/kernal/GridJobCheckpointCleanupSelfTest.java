@@ -116,7 +116,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
      *
      */
     @GridComputeTaskSessionFullSupport
-    private static class CheckpointCountingTestTask extends GridComputeTaskAdapter<ClusterNode, Object> {
+    private static class CheckpointCountingTestTask extends ComputeTaskAdapter<ClusterNode, Object> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable ClusterNode arg)
             throws GridException {

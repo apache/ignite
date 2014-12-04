@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Task that gets metadata for JDBC adapter.
  */
-public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<String, byte[]> {
+public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, byte[]> {
     /** */
     private static final long serialVersionUID = 0L;
 

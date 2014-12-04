@@ -130,7 +130,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final UUID subjId;
 
     /** Continuous mapper. */
-    private final GridComputeTaskContinuousMapper mapper = new GridComputeTaskContinuousMapper() {
+    private final ComputeTaskContinuousMapper mapper = new ComputeTaskContinuousMapper() {
         /** {@inheritDoc} */
         @Override public void send(ComputeJob job, ClusterNode node) throws GridException {
             A.notNull(job, "job");

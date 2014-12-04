@@ -226,7 +226,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings({"PublicInnerClass"})
     @GridComputeTaskName(value="GridDeploymentTestTask")
-    public static class GridDeploymentTestTask extends GridComputeTaskAdapter<Object, Object> {
+    public static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @GridLocalNodeIdResource private UUID locNodeId;
 

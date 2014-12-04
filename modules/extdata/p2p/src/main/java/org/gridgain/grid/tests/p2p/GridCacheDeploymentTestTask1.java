@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * Test task for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestTask1 extends GridComputeTaskAdapter<ClusterNode, Object> {
+public class GridCacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Object> {
     /** Number of puts. */
     private static final int PUT_CNT = 100;
 

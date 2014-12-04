@@ -120,7 +120,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to non-transient resource injection.
      */
-    public static class FactorialTask extends GridComputeTaskAdapter<Long, Long> {
+    public static class FactorialTask extends ComputeTaskAdapter<Long, Long> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) throws GridException {
             assert arg > 1;

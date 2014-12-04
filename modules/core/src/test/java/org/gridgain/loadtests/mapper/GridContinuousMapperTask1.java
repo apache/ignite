@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.*;
  */
 @SuppressWarnings("TransientFieldNotInitialized")
 @GridComputeTaskNoResultCache
-public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, Integer> {
+public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integer> {
     /** Job ID generator. */
     private final transient AtomicInteger jobIdGen = new AtomicInteger();
 
     /** Mapper. */
     @GridTaskContinuousMapperResource
-    private GridComputeTaskContinuousMapper mapper;
+    private ComputeTaskContinuousMapper mapper;
 
     /** Grid. */
     @GridInstanceResource

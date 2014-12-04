@@ -76,7 +76,7 @@ import java.util.*;
  *          If {@link ComputeJobResultPolicy#FAILOVER} policy is returned, then job will
  *          be failed over to another node for execution. The node to which job will get
  *          failed over is decided by {@link GridFailoverSpi} SPI implementation.
- *          Note that if you use {@link GridComputeTaskAdapter} adapter for {@code GridComputeTask}
+ *          Note that if you use {@link ComputeTaskAdapter} adapter for {@code GridComputeTask}
  *          implementation, then it will automatically fail jobs to another node for 2
  *          known failure cases:
  *          <ul>
@@ -106,7 +106,7 @@ import java.util.*;
  * <h1 class="header">Continuous Job Mapper</h1>
  * For cases when jobs within split are too large to fit in memory at once or when
  * simply not all jobs in task are known during {@link #map(List, Object)} step,
- * use {@link GridComputeTaskContinuousMapper} to continuously stream jobs from task even after {@code map(...)}
+ * use {@link ComputeTaskContinuousMapper} to continuously stream jobs from task even after {@code map(...)}
  * step is complete. Usually with continuous mapper the number of jobs within task
  * may grow too large - in this case it may make sense to use it in combination with
  * {@link GridComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation.
@@ -144,11 +144,11 @@ import java.util.*;
  * {@code GridComputeTask} comes with several convenience adapters to make the usage easier:
  * <ul>
  * <li>
- * {@link GridComputeTaskAdapter} provides default implementation for {@link ComputeTask#result(ComputeJobResult, List)}
+ * {@link ComputeTaskAdapter} provides default implementation for {@link ComputeTask#result(ComputeJobResult, List)}
  * method which provides automatic fail-over to another node if remote job has failed
  * due to node crash (detected by {@link GridTopologyException} exception) or due to job
  * execution rejection (detected by {@link ComputeExecutionRejectedException} exception).
- * Here is an example of how a you would implement your task using {@link GridComputeTaskAdapter}:
+ * Here is an example of how a you would implement your task using {@link ComputeTaskAdapter}:
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
@@ -240,7 +240,7 @@ public interface ComputeTask<T, R> extends Serializable {
      *      guaranteed to be randomized by container. This ensures that every time
      *      you simply iterate through grid nodes, the order of nodes will be random which
      *      over time should result into all nodes being used equally.
-     * @return Map of grid jobs assigned to subgrid node. Unless {@link GridComputeTaskContinuousMapper} is
+     * @return Map of grid jobs assigned to subgrid node. Unless {@link ComputeTaskContinuousMapper} is
      *      injected into task, if {@code null} or empty map is returned, exception will be thrown.
      * @throws GridException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link GridComputeTaskFuture#get()} method.
