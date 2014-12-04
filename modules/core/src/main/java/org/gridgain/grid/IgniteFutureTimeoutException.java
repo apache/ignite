@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 /**
  * Future computation completion is timed out.
  */
-public class GridFutureTimeoutException extends GridException {
+public class IgniteFutureTimeoutException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -23,7 +23,7 @@ public class GridFutureTimeoutException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridFutureTimeoutException(String msg) {
+    public IgniteFutureTimeoutException(String msg) {
         super(msg);
     }
 
@@ -33,7 +33,7 @@ public class GridFutureTimeoutException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridFutureTimeoutException(Throwable cause) {
+    public IgniteFutureTimeoutException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -43,7 +43,7 @@ public class GridFutureTimeoutException extends GridException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridFutureTimeoutException(String msg, @Nullable Throwable cause) {
+    public IgniteFutureTimeoutException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

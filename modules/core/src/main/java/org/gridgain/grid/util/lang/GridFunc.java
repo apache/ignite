@@ -2813,7 +2813,7 @@ public class GridFunc {
                 catch (GridInterruptedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
-                catch (GridFutureTimeoutException e) {
+                catch (IgniteFutureTimeoutException e) {
                     throw new TimeoutException("The computation timed out: " + e.getMessage());
                 }
                 catch (GridException e) {
@@ -8636,7 +8636,7 @@ public class GridFunc {
                 long left = end - U.currentTimeMillis();
 
                 if (left <= 0 && !fut.isDone())
-                    throw new GridFutureTimeoutException("Timed out waiting for all futures: " + futs);
+                    throw new IgniteFutureTimeoutException("Timed out waiting for all futures: " + futs);
 
                 if (fut.isDone() && left < 0)
                     left = 0;

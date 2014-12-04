@@ -113,7 +113,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
         try {
             fut.get(5000);
         }
-        catch (GridFutureTimeoutException ignore) {
+        catch (IgniteFutureTimeoutException ignore) {
             fail("Put failed to finish in 5s.");
         }
     }

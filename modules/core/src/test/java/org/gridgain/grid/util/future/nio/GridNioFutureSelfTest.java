@@ -168,7 +168,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutException e) {
             info("Caught expected exception: " + e);
         }
 

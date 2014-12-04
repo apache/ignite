@@ -139,7 +139,7 @@ public interface GridSchedulerFuture<R> extends IgniteFuture<R> {
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
      * @throws GridInterruptedException {@inheritDoc}
-     * @throws GridFutureTimeoutException {@inheritDoc}
+     * @throws org.gridgain.grid.IgniteFutureTimeoutException {@inheritDoc}
      * @throws GridException {@inheritDoc}
      */
     @Override public R get(long timeout) throws GridException;
@@ -153,7 +153,7 @@ public interface GridSchedulerFuture<R> extends IgniteFuture<R> {
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
      * @throws GridInterruptedException {@inheritDoc}
-     * @throws GridFutureTimeoutException {@inheritDoc}
+     * @throws org.gridgain.grid.IgniteFutureTimeoutException {@inheritDoc}
      * @throws GridException {@inheritDoc}
      */
     @Override public R get(long timeout, TimeUnit unit) throws GridException;

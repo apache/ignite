@@ -81,7 +81,7 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
 
         try {
             if (doneLatch.getCount() > 0 && !doneLatch.await(timeout, unit))
-                throw new GridFutureTimeoutException("Failed to get future result due to waiting timed out.");
+                throw new IgniteFutureTimeoutException("Failed to get future result due to waiting timed out.");
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

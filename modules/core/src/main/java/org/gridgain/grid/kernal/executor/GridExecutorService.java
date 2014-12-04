@@ -523,7 +523,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
                     // Cancel next tasks (avoid current task cancellation below in loop).
                     continue;
                 }
-                catch (GridFutureTimeoutException ignored) {
+                catch (IgniteFutureTimeoutException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Timeout occurred during getting task result: " + fut);
 
@@ -703,7 +703,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                 return res;
             }
-            catch (GridFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutException e) {
                 TimeoutException e2 = new TimeoutException();
 
                 e2.initCause(e);

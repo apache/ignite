@@ -737,7 +737,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
                 if (latch.await(timeout, unit))
                     return last();
                 else
-                    throw new GridFutureTimeoutException("Timed out waiting for completion of next " +
+                    throw new IgniteFutureTimeoutException("Timed out waiting for completion of next " +
                         "scheduled computation: " + this);
             }
             catch (InterruptedException e) {

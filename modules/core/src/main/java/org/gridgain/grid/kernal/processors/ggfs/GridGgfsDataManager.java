@@ -1075,7 +1075,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             try {
                 ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
             }
-            catch (GridFutureTimeoutException ignore) {
+            catch (IgniteFutureTimeoutException ignore) {
                 // Ignore.
             }
 
@@ -1247,7 +1247,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 try {
                     ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
                 }
-                catch (GridFutureTimeoutException ignore) {
+                catch (IgniteFutureTimeoutException ignore) {
                     // Ignore.
                 }
 

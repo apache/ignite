@@ -61,7 +61,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
 
                             fail();
                         }
-                        catch (GridFutureTimeoutException ex) {
+                        catch (IgniteFutureTimeoutException ex) {
                             info("Caught expected exception: " + ex);
                         }
 

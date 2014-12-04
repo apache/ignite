@@ -219,7 +219,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     break;
                 }
-                catch (GridFutureTimeoutException ignored) {
+                catch (IgniteFutureTimeoutException ignored) {
                     if (first) {
                         U.warn(log, "Failed to wait for initial partition map exchange. " +
                             "Possible reasons are: " + U.nl() +
@@ -237,7 +237,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
                 cacheCtx.preloader().onInitialExchangeComplete(null);
         }
-        catch (GridFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutException e) {
             GridException err = new GridException("Timed out waiting for exchange future: " + fut, e);
 
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())

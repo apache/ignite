@@ -368,7 +368,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                         assert false;
                     }
-                    catch (GridFutureTimeoutException e) {
+                    catch (IgniteFutureTimeoutException e) {
                         info("Correctly received timeout exception: " + e);
                     }
 
@@ -381,7 +381,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                         // TODO uncomment after GG-3756 fix
                         //assert false;
                     }
-                    catch (GridFutureTimeoutException e) {
+                    catch (IgniteFutureTimeoutException e) {
                         info("Correctly received timeout exception: " + e);
                     }
 

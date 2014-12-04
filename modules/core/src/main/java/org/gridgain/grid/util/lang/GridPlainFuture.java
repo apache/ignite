@@ -32,7 +32,7 @@ public interface GridPlainFuture<R> {
      * @param unit Timeout interval unit to wait future completes.
      * @return Completed future result.
      * @throws GridException In case of error.
-     * @throws GridFutureTimeoutException If timed out before future finishes.
+     * @throws org.gridgain.grid.IgniteFutureTimeoutException If timed out before future finishes.
      */
     public R get(long timeout, TimeUnit unit) throws GridException;
 

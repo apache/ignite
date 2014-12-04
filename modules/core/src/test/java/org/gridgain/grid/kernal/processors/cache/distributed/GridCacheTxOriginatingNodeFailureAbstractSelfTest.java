@@ -157,7 +157,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
                 try {
                     txEx.prepareAsync().get(3, TimeUnit.SECONDS);
                 }
-                catch (GridFutureTimeoutException ignored) {
+                catch (IgniteFutureTimeoutException ignored) {
                     info("Failed to wait for prepare future completion: " + partial);
                 }
 

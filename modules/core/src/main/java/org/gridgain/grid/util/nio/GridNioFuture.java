@@ -42,7 +42,7 @@ public interface GridNioFuture<R> {
      * @param timeout The maximum time to wait in milliseconds.
      * @return Operation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws GridFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
+     * @throws org.gridgain.grid.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
      * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws GridException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
@@ -57,7 +57,7 @@ public interface GridNioFuture<R> {
      * @param unit The time unit of the {@code timeout} argument.
      * @return Operation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws GridFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
+     * @throws org.gridgain.grid.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
      * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws GridException If operation failed.
      * @throws IOException If IOException occurred while performing operation.

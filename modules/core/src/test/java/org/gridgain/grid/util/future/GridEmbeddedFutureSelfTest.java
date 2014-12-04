@@ -111,7 +111,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             try {
                 embFut.get(1, SECONDS);
             }
-            catch (GridFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutException e) {
                 fail("Failed with timeout exception: " + e);
             }
             catch (GridException e) {

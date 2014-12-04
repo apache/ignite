@@ -255,7 +255,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
                 fail("Expects timeout exception.");
             }
-            catch (GridFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutException e) {
                 info("Expected timeout exception: " + e.getMessage());
             }
 
@@ -324,7 +324,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutException e) {
             info("Caught expected exception: " + e);
         }
 

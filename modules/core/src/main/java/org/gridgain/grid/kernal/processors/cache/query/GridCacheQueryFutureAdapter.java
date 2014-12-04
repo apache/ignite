@@ -528,7 +528,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         try {
             cancelQuery();
 
-            onDone(new GridFutureTimeoutException("Query timed out."));
+            onDone(new IgniteFutureTimeoutException("Query timed out."));
         }
         catch (GridException e) {
             onDone(e);

@@ -871,7 +871,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             try {
                 cf.get(WAIT_TIMEOUT);
             }
-            catch (GridFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutException e) {
                 throw new RuntimeException("Timed out waiting for events: " + cf, e);
             }
         }

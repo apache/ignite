@@ -118,12 +118,12 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws InterruptedException If interrupted.
-     * @throws GridFutureTimeoutException If timeout reached before computation completed.
+     * @throws org.gridgain.grid.IgniteFutureTimeoutException If timeout reached before computation completed.
      * @throws GridException If error occurred.
      */
     @Nullable protected R get0(long nanosTimeout) throws InterruptedException, GridException {
         if (endTime == 0 && !tryAcquireSharedNanos(0, nanosTimeout))
-            throw new GridFutureTimeoutException("Timeout was reached before computation completed.");
+            throw new IgniteFutureTimeoutException("Timeout was reached before computation completed.");
 
         if (getState() == CANCELLED)
             throw new IgniteFutureCancelledException("Future was cancelled: " + this);
