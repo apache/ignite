@@ -39,9 +39,9 @@ public class GridCacheUpdateAtomicResult<K, V> {
     @GridToStringInclude
     private final GridCacheVersion rmvVer;
 
-    /** DR conflict resolution context. */
+    /** DR resolution result. */
     @GridToStringInclude
-    private final GridDrReceiverConflictContextImpl<K, V> drConflictCtx;
+    private final GridDrResolveResult<V> drRes;
 
     /** Whether update should be propagated to DHT node. */
     private final boolean sndToDht;
@@ -55,19 +55,24 @@ public class GridCacheUpdateAtomicResult<K, V> {
      * @param newTtl New TTL.
      * @param drExpireTime Explict DR expire time (if any).
      * @param rmvVer Version for deferred delete.
-     * @param drConflictCtx DR conflict resolution context.
+     * @param drRes DR resolution result.
      * @param sndToDht Whether update should be propagated to DHT node.
      */
-    public GridCacheUpdateAtomicResult(boolean success, @Nullable V oldVal, @Nullable V newVal, long newTtl,
-        long drExpireTime, @Nullable GridCacheVersion rmvVer,
-        @Nullable GridDrReceiverConflictContextImpl<K, V> drConflictCtx, boolean sndToDht) {
+    public GridCacheUpdateAtomicResult(boolean success,
+        @Nullable V oldVal,
+        @Nullable V newVal,
+        long newTtl,
+        long drExpireTime,
+        @Nullable GridCacheVersion rmvVer,
+        @Nullable GridDrResolveResult<V> drRes,
+        boolean sndToDht) {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
         this.newTtl = newTtl;
         this.drExpireTime = drExpireTime;
         this.rmvVer = rmvVer;
-        this.drConflictCtx = drConflictCtx;
+        this.drRes = drRes;
         this.sndToDht = sndToDht;
     }
 
@@ -116,8 +121,8 @@ public class GridCacheUpdateAtomicResult<K, V> {
     /**
      * @return DR conflict resolution context.
      */
-    @Nullable public GridDrReceiverConflictContextImpl<K, V> drConflictContext() {
-        return drConflictCtx;
+    @Nullable public GridDrResolveResult<V> drResolveResult() {
+        return drRes;
     }
 
     /**

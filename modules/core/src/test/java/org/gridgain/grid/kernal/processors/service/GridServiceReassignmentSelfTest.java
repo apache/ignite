@@ -77,7 +77,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         DummyService.exeLatch("testService", latch);
 
-        grid(0).services().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode).get();
+        grid(0).services().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode);
 
         for (int i = 0; i < 10; i++)
             proxy(randomGrid()).increment();

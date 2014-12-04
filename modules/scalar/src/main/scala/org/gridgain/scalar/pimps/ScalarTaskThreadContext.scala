@@ -29,11 +29,11 @@ trait ScalarTaskThreadContext[T <: GridProjection] extends ScalarConversions { t
      * @param taskName Name of the task.
      */
     def withName$(@Nullable taskName: String): T =
-        value.compute().withName(taskName).asInstanceOf[T]
+        value.grid().compute(value).withName(taskName).asInstanceOf[T]
 
     /**
      * Properly typed version of `GridCompute#withNoFailover()` method.
      */
     def withNoFailover$(): T =
-        value.compute().withNoFailover().asInstanceOf[T]
+        value.grid().compute(value).withNoFailover().asInstanceOf[T]
 }

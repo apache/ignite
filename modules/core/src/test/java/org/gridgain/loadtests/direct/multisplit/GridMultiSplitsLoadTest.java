@@ -88,7 +88,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
         // Warm up.
-        grid.compute().withTimeout(5000).execute(GridLoadTestTask.class.getName(), 3).get();
+        grid.compute().withTimeout(5000).execute(GridLoadTestTask.class.getName(), 3);
 
         info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
         info("Thread count: " + getThreadCount());
@@ -98,6 +98,8 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
+                GridCompute comp = grid.compute().enableAsync();
+
                 while (end - System.currentTimeMillis() > 0) {
                     int levels = 3;
 
@@ -106,7 +108,9 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
                     long start = System.currentTimeMillis();
 
                     try {
-                        GridComputeTaskFuture<Integer> fut = grid.compute().execute(GridLoadTestTask.class, levels);
+                        comp.execute(GridLoadTestTask.class, levels);
+
+                        GridComputeTaskFuture<Integer> fut = comp.future();
 
                         int res = fut.get();
 

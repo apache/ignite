@@ -60,7 +60,7 @@ public class ComputeBroadcastExample {
                     System.out.println(">>> Hello Node! :)");
                 }
             }
-        ).get();
+        );
 
         System.out.println();
         System.out.println(">>> Check all nodes for hello message output.");
@@ -82,16 +82,16 @@ public class ComputeBroadcastExample {
 
                 @Override public String call() {
                     System.out.println();
-                    System.out.println("Executing task on node: " + grid.localNode().id());
+                    System.out.println("Executing task on node: " + grid.cluster().localNode().id());
 
-                    return "Node ID: " + grid.localNode().id() + "\n" +
+                    return "Node ID: " + grid.cluster().localNode().id() + "\n" +
                         "OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " +
                         System.getProperty("os.arch") + "\n" +
                         "User: " + System.getProperty("user.name") + "\n" +
                         "JRE: " + System.getProperty("java.runtime.name") + " " +
                         System.getProperty("java.runtime.version");
                 }
-        }).get();
+        });
 
         // Print result.
         System.out.println();

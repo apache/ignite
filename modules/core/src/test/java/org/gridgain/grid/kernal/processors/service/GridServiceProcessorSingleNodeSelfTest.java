@@ -30,7 +30,7 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
         Grid grid = randomGrid();
 
         // Deploy only on remote nodes.
-        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+        grid.services(grid.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
 
         info("Deployed service: " + name);
 

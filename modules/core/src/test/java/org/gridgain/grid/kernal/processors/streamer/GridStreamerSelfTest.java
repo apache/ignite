@@ -181,16 +181,16 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             final Grid grid2 = grid(2);
             final Grid grid3 = grid(3);
 
-            System.out.println("Grid 0: " + grid0.localNode().id());
-            System.out.println("Grid 1: " + grid1.localNode().id());
-            System.out.println("Grid 2: " + grid2.localNode().id());
-            System.out.println("Grid 3: " + grid3.localNode().id());
+            System.out.println("Grid 0: " + grid0.cluster().localNode().id());
+            System.out.println("Grid 1: " + grid1.cluster().localNode().id());
+            System.out.println("Grid 2: " + grid2.cluster().localNode().id());
+            System.out.println("Grid 3: " + grid3.cluster().localNode().id());
 
             GridTestStreamerEventRouter router0 = (GridTestStreamerEventRouter)router;
 
-            router0.put("a", grid1.localNode().id());
-            router0.put("b", grid2.localNode().id());
-            router0.put("c", grid3.localNode().id());
+            router0.put("a", grid1.cluster().localNode().id());
+            router0.put("b", grid2.cluster().localNode().id());
+            router0.put("c", grid3.cluster().localNode().id());
 
             GridStreamer streamer = grid0.streamer(null);
 
@@ -477,16 +477,16 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             final Grid grid2 = grid(2);
             final Grid grid3 = grid(3);
 
-            System.out.println("Grid 0: " + grid0.localNode().id());
-            System.out.println("Grid 1: " + grid1.localNode().id());
-            System.out.println("Grid 2: " + grid2.localNode().id());
-            System.out.println("Grid 3: " + grid3.localNode().id());
+            System.out.println("Grid 0: " + grid0.cluster().localNode().id());
+            System.out.println("Grid 1: " + grid1.cluster().localNode().id());
+            System.out.println("Grid 2: " + grid2.cluster().localNode().id());
+            System.out.println("Grid 3: " + grid3.cluster().localNode().id());
 
             GridTestStreamerEventRouter router0 = (GridTestStreamerEventRouter)router;
 
-            router0.put("a", grid1.localNode().id());
-            router0.put("b", grid2.localNode().id());
-            router0.put("c", grid3.localNode().id());
+            router0.put("a", grid1.cluster().localNode().id());
+            router0.put("b", grid2.cluster().localNode().id());
+            router0.put("c", grid3.cluster().localNode().id());
 
             GridStreamer streamer = grid0.streamer(null);
 
@@ -589,7 +589,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(val);
 
-                    info(">>>>> grid=" + grid.localNode().id() + ", s=" + stageName + ", val=" + val.get());
+                    info(">>>>> grid=" + grid.cluster().localNode().id() + ", s=" + stageName + ", val=" + val.get());
 
                     Integer old = stagesSum.get(stageName);
 

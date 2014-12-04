@@ -178,7 +178,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
             assert gridSize == sum;
 
-            return grid.localNode().id().toString();
+            return grid.cluster().localNode().id().toString();
         }
     }
 }

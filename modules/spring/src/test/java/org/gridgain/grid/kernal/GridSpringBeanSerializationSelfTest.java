@@ -76,9 +76,8 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
         GridSpringBean bean0 = MARSHALLER.unmarshal(MARSHALLER.marshal(bean), null);
 
         assert bean0 != null;
-        assert bean0.grid() != null;
         assert bean0.log() != null;
-        assert bean0.localNode() != null;
-        assert bean0.localNode().<Boolean>attribute(ATTR_KEY);
+        assert bean0.cluster().localNode() != null;
+        assert bean0.cluster().localNode().<Boolean>attribute(ATTR_KEY);
     }
 }

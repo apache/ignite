@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -22,7 +23,7 @@ import java.util.*;
 /**
  * {@link GridEvents} implementation.
  */
-public class GridEventsImpl implements GridEvents, Externalizable {
+public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -30,7 +31,7 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     private GridKernalContext ctx;
 
     /** */
-    private GridProjection prj;
+    private GridProjectionAdapter prj;
 
     /**
      * Required by {@link Externalizable}.
@@ -42,8 +43,11 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
+     * @param async Async support flag.
      */
-    public GridEventsImpl(GridKernalContext ctx, GridProjection prj) {
+    public GridEventsImpl(GridKernalContext ctx, GridProjectionAdapter prj, boolean async) {
+        super(async);
+
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -54,14 +58,14 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> p, long timeout,
-        @Nullable int... types) {
+    @Override public <T extends GridEvent> List<T> remoteQuery(GridPredicate<T> p, long timeout,
+        @Nullable int... types) throws GridException {
         A.notNull(p, "p");
 
         guard();
 
         try {
-            return ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout);
+            return saveOrGet(ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout));
         }
         finally {
             unguard();
@@ -69,23 +73,24 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
-        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) {
+    @Override public <T extends GridEvent> UUID remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
+        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) throws GridException {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(int bufSize, long interval,
+    @Override public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
-        @Nullable int... types) {
+        @Nullable int... types) throws GridException {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
 
         guard();
 
         try {
-            return ctx.continuous().startRoutine(new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>) locLsnr,
-                (GridPredicate<GridEvent>) rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate());
+            return saveOrGet(ctx.continuous().startRoutine(
+                new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>)locLsnr,
+                    (GridPredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
         finally {
             unguard();
@@ -93,13 +98,13 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stopRemoteListen(UUID opId) {
+    @Override public void stopRemoteListen(UUID opId) throws GridException {
         A.notNull(opId, "consumeId");
 
         guard();
 
         try {
-            return ctx.continuous().stopRoutine(opId);
+            saveOrGet(ctx.continuous().stopRoutine(opId));
         }
         finally {
             unguard();
@@ -107,12 +112,12 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> filter,
-        @Nullable int... types) {
+    @Override public <T extends GridEvent> T waitForLocal(@Nullable GridPredicate<T> filter,
+        @Nullable int... types) throws GridException {
         guard();
 
         try {
-            return ctx.event().waitForEvent(filter, types);
+            return saveOrGet(ctx.event().waitForEvent(filter, types));
         }
         finally {
             unguard();
@@ -257,13 +262,21 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public GridEvents enableAsync() {
+        if (isAsync())
+            return this;
+
+        return new GridEventsImpl(ctx, prj, true);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection)in.readObject();
+        prj = (GridProjectionAdapter)in.readObject();
     }
 
     /**
@@ -272,7 +285,7 @@ public class GridEventsImpl implements GridEvents, Externalizable {
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private Object readResolve() throws ObjectStreamException {
+    protected Object readResolve() throws ObjectStreamException {
         return prj.events();
     }
 }

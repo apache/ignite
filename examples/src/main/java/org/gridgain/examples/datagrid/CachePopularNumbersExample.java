@@ -58,7 +58,7 @@ public class CachePopularNumbersExample {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
 
-            GridProjection prj = g.forCache(CACHE_NAME);
+            GridProjection prj = g.cluster().forCache(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
                 System.out.println("Grid does not have cache configured: " + CACHE_NAME);

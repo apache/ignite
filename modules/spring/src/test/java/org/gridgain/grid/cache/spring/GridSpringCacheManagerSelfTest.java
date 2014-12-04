@@ -14,9 +14,12 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.beans.factory.*;
 import org.springframework.context.support.*;
+
+import java.io.*;
 
 /**
  * Spring cache test.

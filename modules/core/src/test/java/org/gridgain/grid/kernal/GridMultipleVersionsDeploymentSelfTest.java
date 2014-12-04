@@ -102,7 +102,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             grid.compute().localDeployTask(taskCls1, ldr1);
 
             // Task will wait for the signal.
-            GridComputeTaskFuture fut = grid.compute().execute("GridDeploymentTestTask", null);
+            GridComputeTaskFuture fut = executeAsync(grid.compute(), "GridDeploymentTestTask", null);
 
             // We should wait here when to be sure that job has been started.
             // Since we loader task/job classes with different class loaders we cannot
@@ -175,7 +175,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             g1.compute().localDeployTask(taskCls1, ldr1);
 
             // Task will wait for the signal.
-            GridComputeTaskFuture fut1 = g1.compute().execute("GridDeploymentTestTask", null);
+            GridComputeTaskFuture fut1 = executeAsync(g1.compute(), "GridDeploymentTestTask", null);
 
             assert checkDeployed(g1, "GridDeploymentTestTask");
 
@@ -189,7 +189,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             g1.compute().localDeployTask(taskCls2, ldr2);
 
             // Task will wait for the signal.
-            GridComputeTaskFuture fut2 = g1.compute().execute("GridDeploymentTestTask", null);
+            GridComputeTaskFuture fut2 = executeAsync(g1.compute(), "GridDeploymentTestTask", null);
 
             boolean deployed = checkDeployed(g1, "GridDeploymentTestTask");
 

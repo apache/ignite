@@ -95,7 +95,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
 
         Class cls = getExternalClassLoader().loadClass(TEST_TASK_1);
 
-        grid.forRemotes().compute().execute(cls, null).get();
+        compute(grid.cluster().forRemotes()).execute(cls, null);
 
         stopGrid(GRID_NAME);
 
@@ -103,7 +103,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
 
         cls = getExternalClassLoader().loadClass(TEST_TASK_2);
 
-        grid.forRemotes().compute().execute(cls, null).get();
+        compute(grid.cluster().forRemotes()).execute(cls, null);
 
         stopGrid(GRID_NAME);
     }

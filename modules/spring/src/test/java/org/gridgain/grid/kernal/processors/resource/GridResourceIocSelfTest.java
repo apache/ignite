@@ -96,7 +96,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
             GridResourceIoc ioc = ((GridKernal)grid).context().resource().getResourceIoc();
 
-            grid.compute().execute(TestTask.class, null).get();
+            grid.compute().execute(TestTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 1);
             checkUsageCount(deployClss, UserResource1.class, 1);
@@ -141,7 +141,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
             GridResourceIoc ioc = ((GridKernal)grid2).context().resource().getResourceIoc();
 
-            grid1.compute().execute(TestTask.class, null).get();
+            grid1.compute().execute(TestTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 1);
             checkUsageCount(deployClss, UserResource1.class, 1);
@@ -193,8 +193,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
                 try {
                     Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-                    int[] res = (int[])grid.compute().execute(TEST_EXT_TASK,
-                        grid.localNode().id()).get();
+                    int[] res = grid.compute().execute(TEST_EXT_TASK, grid.cluster().localNode().id());
 
                     assert res.length == 2;
 
@@ -215,7 +214,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
                     try {
                         grid.compute().execute(TEST_EXT_TASK,
-                            grid.localNode().id()).get();
+                            grid.cluster().localNode().id());
 
                         assert false : "Task must be undeployed";
                     }

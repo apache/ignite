@@ -89,7 +89,7 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
 
         /** {@inheritDoc} */
         @Override public Object execute() {
-            log.info(">>> Stop node [nodeId=" + grid.localNode().id() + ", name='" + grid.name() + "']");
+            log.info(">>> Stop node [nodeId=" + grid.cluster().localNode().id() + ", name='" + grid.name() + "']");
 
             String prefix = GridClientStartNodeTask.getConfig(gridType).getGridName() + " (";
 
@@ -99,7 +99,8 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
                 for (Grid g : G.allGrids())
                     if (g.name().startsWith(prefix)) {
                         try {
-                            log.info(">>> Grid stopping [nodeId=" + g.localNode().id() + ", name='" + g.name() + "']");
+                            log.info(">>> Grid stopping [nodeId=" + g.cluster().localNode().id() +
+                                ", name='" + g.name() + "']");
 
                             G.stop(g.name(), true);
 

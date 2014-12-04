@@ -262,11 +262,11 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 checkActiveState(grids);
 
-                final UUID nodeId = g.localNode().id();
+                final UUID nodeId = g.cluster().localNode().id();
 
                 it.remove();
 
-                futs.add(last.events().waitForLocal(new P1<GridEvent>() {
+                futs.add(waitForLocalEvent(last.events(), new P1<GridEvent>() {
                     @Override public boolean apply(GridEvent e) {
                         GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 
@@ -304,7 +304,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             info("Finished waiting for all exchange futures...");
 
             for (int i = 0; i < keyCnt; i++) {
-                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.localNode())) {
+                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
                     GridDhtPartitionTopology<Integer, String> top = dht.topology();
 
                     for (GridDhtLocalPartition<Integer, String> p : top.localPartitions()) {
@@ -343,7 +343,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             GridDhtPartitionFullMap allParts = dht.topology().partitionMap(false);
 
             for (GridDhtPartitionMap parts : allParts.values()) {
-                if (!parts.nodeId().equals(g.localNode().id())) {
+                if (!parts.nodeId().equals(g.cluster().localNode().id())) {
                     for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
                         int p = e.getKey();
 
@@ -522,14 +522,14 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                     break;
                 }
 
-                final UUID nodeId = g.localNode().id();
+                final UUID nodeId = g.cluster().localNode().id();
 
                 it.remove();
 
                 Collection<GridFuture<?>> futs = new LinkedList<>();
 
                 for (Grid gg : grids)
-                    futs.add(gg.events().waitForLocal(new P1<GridEvent>() {
+                    futs.add(waitForLocalEvent(gg.events(), new P1<GridEvent>() {
                             @Override public boolean apply(GridEvent e) {
                                 GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 
@@ -568,7 +568,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             GridCacheAffinity<Integer> aff = affinity(lastCache);
 
             for (int i = 0; i < keyCnt; i++) {
-                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.localNode())) {
+                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
                     GridDhtPartitionTopology<Integer, String> top = dht.topology();
 
                     for (GridDhtLocalPartition<Integer, String> p : top.localPartitions()) {
@@ -613,12 +613,12 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
         Grid grid = cache.gridProjection().grid();
 
-        GridNode loc = grid.localNode();
+        GridNode loc = grid.cluster().localNode();
 
         boolean sync = cache.configuration().getPreloadMode() == SYNC;
 
         for (int i = 0; i < cnt; i++) {
-            Collection<GridNode> nodes = grid.nodes();
+            Collection<GridNode> nodes = grid.cluster().nodes();
 
             Collection<GridNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(i));
 

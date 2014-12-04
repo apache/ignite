@@ -33,7 +33,7 @@ public class ComputeTaskSplitExample {
             System.out.println("Compute task split example started.");
 
             // Execute task on the grid and wait for its completion.
-            int cnt = g.compute().execute(CharacterCountTask.class, "Hello Grid Enabled World!").get();
+            int cnt = g.compute().execute(CharacterCountTask.class, "Hello Grid Enabled World!");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + cnt + "'.");

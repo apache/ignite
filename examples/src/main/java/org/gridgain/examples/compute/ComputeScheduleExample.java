@@ -55,7 +55,7 @@ public class ComputeScheduleExample {
                                         System.out.println("Howdy! :) ");
                                     }
                                 }
-                            ).get();
+                            );
                         }
                         catch (GridException e) {
                             throw new GridRuntimeException(e);

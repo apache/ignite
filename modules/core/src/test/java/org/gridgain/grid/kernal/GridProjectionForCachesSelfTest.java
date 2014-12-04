@@ -99,7 +99,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        GridProjection prj = grid.forCache(null);
+        GridProjection prj = grid.cluster().forCache(null);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -114,7 +114,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForNamedCache() throws Exception {
-        GridProjection prj = grid.forCache(CACHE_NAME);
+        GridProjection prj = grid.cluster().forCache(CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -129,7 +129,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForBothCaches() throws Exception {
-        GridProjection prj = grid.forCache(null, CACHE_NAME);
+        GridProjection prj = grid.cluster().forCache(null, CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 2;
@@ -144,7 +144,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForWrongCacheName() throws Exception {
-        GridProjection prj = grid.forCache("wrong");
+        GridProjection prj = grid.cluster().forCache("wrong");
 
         assert prj != null;
         assert prj.nodes().isEmpty();
@@ -154,90 +154,90 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjections() throws Exception {
-        GridNode locNode = grid.localNode();
+        GridNode locNode = grid.cluster().localNode();
         UUID locId = locNode.id();
 
         assertNotNull(locId);
 
-        assertEquals(5, grid.nodes().size());
+        assertEquals(5, grid.cluster().nodes().size());
 
-        GridProjection prj = grid.forLocal();
+        GridProjection prj = grid.cluster().forLocal();
 
         assertEquals(1, prj.nodes().size());
         assertEquals(locNode, F.first(prj.nodes()));
 
-        prj = grid.forHost(locNode);
-        assertEquals(grid.nodes().size(), prj.nodes().size());
-        assertTrue(grid.nodes().containsAll(prj.nodes()));
+        prj = grid.cluster().forHost(locNode);
+        assertEquals(grid.cluster().nodes().size(), prj.nodes().size());
+        assertTrue(grid.cluster().nodes().containsAll(prj.nodes()));
         try {
-            grid.forHost(null);
+            grid.cluster().forHost(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.forNode(locNode);
+        prj = grid.cluster().forNode(locNode);
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.forNode(locNode, locNode);
+        prj = grid.cluster().forNode(locNode, locNode);
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.forNode(null);
+            grid.cluster().forNode(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.forNodes(F.asList(locNode));
+        prj = grid.cluster().forNodes(F.asList(locNode));
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.forNodes(F.asList(locNode, locNode));
+        prj = grid.cluster().forNodes(F.asList(locNode, locNode));
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.forNodes(null);
+            grid.cluster().forNodes(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.forNodeId(locId);
+        prj = grid.cluster().forNodeId(locId);
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.forNodeId(locId, locId);
+        prj = grid.cluster().forNodeId(locId, locId);
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.forNodeId(null);
+            grid.cluster().forNodeId(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.forNodeIds(F.asList(locId));
+        prj = grid.cluster().forNodeIds(F.asList(locId));
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.forNodeIds(F.asList(locId, locId));
+        prj = grid.cluster().forNodeIds(F.asList(locId, locId));
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.forNodeIds(null);
+            grid.cluster().forNodeIds(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.forOthers(locNode);
+        prj = grid.cluster().forOthers(locNode);
 
         assertEquals(4, prj.nodes().size());
         assertFalse(prj.nodes().contains(locNode));
 
-        assertEquals(4, grid.forRemotes().nodes().size());
-        assertTrue(prj.nodes().containsAll(grid.forRemotes().nodes()));
+        assertEquals(4, grid.cluster().forRemotes().nodes().size());
+        assertTrue(prj.nodes().containsAll(grid.cluster().forRemotes().nodes()));
 
         try {
-            grid.forOthers((GridNode)null);
+            grid.cluster().forOthers((GridNode)null);
         }
         catch (NullPointerException ignored) {
             // No-op.

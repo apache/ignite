@@ -38,7 +38,7 @@ public final class ComputeExecutorServiceExample {
             System.out.println(">>> Compute executor service example started.");
 
             // Get grid-enabled executor service.
-            ExecutorService exec = g.compute().executorService();
+            ExecutorService exec = g.executorService();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {

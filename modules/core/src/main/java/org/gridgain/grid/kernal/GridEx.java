@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface GridEx extends Grid, GridProjectionEx {
+public interface GridEx extends Grid, GridProjectionEx, GridCluster {
     /**
      * Gets utility cache.
      *
@@ -119,13 +119,6 @@ public interface GridEx extends Grid, GridProjectionEx {
      * Schedule sending of given email to all configured admin emails.
      */
     GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
-
-    /**
-     * Get DR pool.
-     *
-     * @return DR pool.
-     */
-    @Nullable public ExecutorService drPool();
 
     /**
      * Get GGFS instance returning null if it doesn't exist.

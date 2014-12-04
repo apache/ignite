@@ -38,7 +38,7 @@ object ScalarStartStopExample {
     def way1() {
         scalar {
             println("Hurrah - I'm in the grid!")
-            println("Local node ID is: " + grid$.localNode.id)
+            println("Local node ID is: " + grid$.cluster().localNode.id)
         }
     }
 
@@ -61,7 +61,7 @@ object ScalarStartStopExample {
      */
     def way3() {
         scalar { g: Grid =>
-            println("Hurrah - local node ID is: " + g.localNode.id)
+            println("Hurrah - local node ID is: " + g.cluster().localNode.id)
         }
     }
 }

@@ -42,9 +42,9 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
             startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Executes task and creates events
-            grid1.compute().execute(TestTask.class, null).get();
+            grid1.compute().execute(TestTask.class, null);
 
-            List<GridEvent> evts = grid1.events().remoteQuery(new CustomEventFilter1(), 0).get();
+            List<GridEvent> evts = grid1.events().remoteQuery(new CustomEventFilter1(), 0);
 
             assert !F.isEmpty(evts);
 
@@ -70,9 +70,9 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
             startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Executes task and creates events.
-            grid1.compute().execute(TestTask.class, null).get();
+            grid1.compute().execute(TestTask.class, null);
 
-            List<GridEvent> evts = grid1.events().remoteQuery(new CustomEventFilter2(), 0).get();
+            List<GridEvent> evts = grid1.events().remoteQuery(new CustomEventFilter2(), 0);
 
             assert evts != null;
             assert evts.size() == 3;

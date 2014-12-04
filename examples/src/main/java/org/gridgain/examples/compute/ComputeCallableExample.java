@@ -55,7 +55,7 @@ public class ComputeCallableExample {
             }
 
             // Execute collection of callables on the grid.
-            Collection<Integer> res = g.compute().call(calls).get();
+            Collection<Integer> res = g.compute().call(calls);
 
             int sum = 0;
 

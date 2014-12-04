@@ -60,7 +60,7 @@ class ScalarCacheSpec extends FlatSpec with ShouldMatchers {
                 }
             }
 
-            if (g.nodeLocalMap[String, AnyRef].putIfAbsent("lsnr", lsnr) == null) {
+            if (g.cluster().nodeLocalMap[String, AnyRef].putIfAbsent("lsnr", lsnr) == null) {
                 g.events.localListen(lsnr,
                     EVT_CACHE_OBJECT_PUT,
                     EVT_CACHE_OBJECT_READ,

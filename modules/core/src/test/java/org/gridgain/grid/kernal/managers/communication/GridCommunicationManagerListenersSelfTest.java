@@ -96,10 +96,8 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         for (int i = 1; i <= cnt; i++) {
             MessageListeningTask t = new MessageListeningTask();
 
-            GridComputeTaskFuture<?> f = G.grid(getTestGridName()).compute().execute(t.getClass(), null);
-
             try {
-                f.get();
+                G.grid(getTestGridName()).compute().execute(t.getClass(), null);
             }
             catch (GridException e) {
                 assert false : "Failed to execute task [iteration=" + i + ", err=" + e.getMessage() + ']';

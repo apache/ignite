@@ -33,7 +33,7 @@ public class GridCacheDeploymentTestTask3 extends GridComputeTaskAdapter<T2<Grid
 
                     @Override public Object execute() throws GridException {
                         X.println("Executing GridCacheDeploymentTestTask3 job on node " +
-                                grid.localNode().id());
+                                grid.cluster().localNode().id());
 
                         grid.<String, GridCacheDeploymentTestValue>cache(null).putx(val,
                                 new GridCacheDeploymentTestValue());

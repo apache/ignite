@@ -83,7 +83,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
     public static final int REST_TCP_PORT_BASE = 12345;
 
     static {
-        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("os/modules/clients").getAbsolutePath());
+        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
     }
 
     /** Client instance for each test. */
@@ -395,7 +395,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
         for (int i = 0; i < NODES_CNT; i++) {
             Grid g = grid(i);
 
-            gridMap.put(g.localNode().id(), g);
+            gridMap.put(g.cluster().localNode().id(), g);
         }
 
         final Grid grid = F.first(gridMap.values());
@@ -416,7 +416,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
                         String key = String.valueOf(rawKey);
 
                         UUID nodeId = cache.affinity(key);
-                        UUID srvNodeId = grid.mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
+                        UUID srvNodeId = grid.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
 
                         if (!nodeId.equals(srvNodeId)) {
                             //GridClientDataAffinity clAff =
@@ -456,7 +456,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
         for (long i = 0; i < cachePutCount(); i++) {
             String key = String.valueOf(i);
 
-            GridNode node = grid.mapKeyToNode(PARTITIONED_CACHE_NAME, key);
+            GridNode node = grid.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
 
             if (!puts.get(key).get2().equals(gridMap.get(node.id()).cache(PARTITIONED_CACHE_NAME).peek(key))) {
                 // printAffinityState(gridMap.values());
@@ -501,7 +501,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
             GridCacheAffinityFunction aff = getFieldValue(affCache, "aff");
 
-            info("Affinity [nodeId=" + g.localNode().id() + ", affinity=" + aff + "]");
+            info("Affinity [nodeId=" + g.cluster().localNode().id() + ", affinity=" + aff + "]");
         }
     }
 
@@ -568,7 +568,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
             this.gridSize = gridSize;
 
-            final String locNodeId = grid.localNode().id().toString();
+            final String locNodeId = grid.cluster().localNode().id().toString();
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new GridComputeJobAdapter() {

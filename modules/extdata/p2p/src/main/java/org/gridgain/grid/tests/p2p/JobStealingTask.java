@@ -78,7 +78,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
 
         /** {@inheritDoc} */
         @Override public Serializable execute() throws GridException {
-            log.info("Started job on node: " + grid.localNode().id());
+            log.info("Started job on node: " + grid.cluster().localNode().id());
 
             try {
                 Long sleep = argument(0);
@@ -88,15 +88,15 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                log.info("Job got interrupted on node: " + grid.localNode().id());
+                log.info("Job got interrupted on node: " + grid.cluster().localNode().id());
 
                 throw new GridException("Job got interrupted.", e);
             }
             finally {
-                log.info("Job finished on node: " + grid.localNode().id());
+                log.info("Job finished on node: " + grid.cluster().localNode().id());
             }
 
-            return grid.localNode().id();
+            return grid.cluster().localNode().id();
         }
     }
 }

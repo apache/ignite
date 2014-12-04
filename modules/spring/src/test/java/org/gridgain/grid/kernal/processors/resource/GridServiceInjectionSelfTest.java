@@ -37,8 +37,8 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         startGrid(0);
         startGrid(1);
 
-        grid(0).services().deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl()).get();
-        grid(0).forLocal().services().deployClusterSingleton(SERVICE_NAME2, new DummyServiceImpl()).get();
+        grid(0).services().deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+        grid(0).services(grid(0).cluster().forLocal()).deployClusterSingleton(SERVICE_NAME2, new DummyServiceImpl());
 
         assertEquals(2, grid(0).nodes().size());
         assertEquals(2, grid(1).nodes().size());
@@ -67,14 +67,14 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClosureFieldProxy() throws Exception {
-        grid(0).forRemotes().compute().call(new GridCallable<Object>() {
+        grid(0).compute(grid(0).cluster().forRemotes()).call(new GridCallable<Object>() {
             @GridServiceResource(serviceName = SERVICE_NAME2, proxyInterface = DummyService.class)
             private DummyService svc;
 
@@ -88,14 +88,14 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClosureFieldLocalProxy() throws Exception {
-        grid(0).forRemotes().compute().call(new GridCallable<Object>() {
+        grid(0).compute(grid(0).cluster().forRemotes()).call(new GridCallable<Object>() {
             @GridServiceResource(serviceName = SERVICE_NAME1, proxyInterface = DummyService.class)
             private DummyService svc;
 
@@ -109,7 +109,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -126,7 +126,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                     return null;
                 }
-            }).get();
+            });
 
             fail();
         }
@@ -156,14 +156,14 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClosureMethodProxy() throws Exception {
-        grid(0).forRemotes().compute().call(new GridCallable<Object>() {
+        grid(0).compute(grid(0).cluster().forRemotes()).call(new GridCallable<Object>() {
             private DummyService svc;
 
             @GridServiceResource(serviceName = SERVICE_NAME2, proxyInterface = DummyService.class)
@@ -181,14 +181,14 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClosureMethodLocalProxy() throws Exception {
-        grid(0).forRemotes().compute().call(new GridCallable<Object>() {
+        grid(0).compute(grid(0).cluster().forRemotes()).call(new GridCallable<Object>() {
             private DummyService svc;
 
             @GridServiceResource(serviceName = SERVICE_NAME1, proxyInterface = DummyService.class)
@@ -206,7 +206,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -223,7 +223,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 @Override public Object call() throws Exception {
                     return null;
                 }
-            }).get();
+            });
 
             fail();
         }
@@ -245,7 +245,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -261,7 +261,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             @Override public Object call() throws Exception {
                 return null;
             }
-        }).get();
+        });
     }
 
     /**

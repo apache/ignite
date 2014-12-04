@@ -93,14 +93,17 @@ public class GridDsiClient implements Callable {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
+        GridCompute comp = g.compute(g.cluster().forPredicate(serverNode())).enableAsync();
+
         while (!finish.get()) {
             try {
                 long t0 = System.currentTimeMillis();
 
                 long submitTime1 = t0;
 
-                GridComputeTaskFuture<T3<Long, Integer, Integer>> f1 =
-                    g.forPredicate(serverNode()).compute().execute(GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
+                comp.execute(GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
+
+                GridComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.future();
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -108,8 +111,9 @@ public class GridDsiClient implements Callable {
 
                 submitTime1 = System.currentTimeMillis();
 
-                GridComputeTaskFuture<T3<Long, Integer, Integer>> f2 =
-                    g.forPredicate(serverNode()).compute().execute(GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
+                comp.execute(GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
+
+                GridComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.future();
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -199,7 +203,7 @@ public class GridDsiClient implements Callable {
 
                 X.println("Thread count: " + noThreads);
 
-                Collection<GridNode> srvNodes = g.forPredicate(serverNode()).nodes();
+                Collection<GridNode> srvNodes = g.cluster().forPredicate(serverNode()).nodes();
 
                 if (srvNodes.isEmpty()) {
                     X.println("No server nodes available");
@@ -247,7 +251,7 @@ public class GridDsiClient implements Callable {
                             String terminalId = String.valueOf(++tid);
 
                             // Server partition cache.
-                            if (!srvrId.equals(g.mapKeyToNode("PARTITIONED_CACHE", terminalId).id()))
+                            if (!srvrId.equals(g.cluster().mapKeyToNode("PARTITIONED_CACHE", terminalId).id()))
                                 continue;
 
                             if (terminalsPerSrv < srvMaxNoTerminals) {

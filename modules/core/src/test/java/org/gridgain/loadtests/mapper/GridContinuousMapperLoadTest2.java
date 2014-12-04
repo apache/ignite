@@ -70,7 +70,7 @@ public class GridContinuousMapperLoadTest2 {
 
                 sentJobs.addAndGet(10);
 
-                g.compute().execute(new GridContinuousMapperTask2(), jobIds).get();
+                g.compute().execute(new GridContinuousMapperTask2(), jobIds);
             }
         }
         finally {

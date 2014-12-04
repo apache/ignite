@@ -197,9 +197,13 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         grid1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid1.compute().execute(TestSessionTask.class.getName(), type);
+        GridCompute comp = grid1.compute().enableAsync();
 
-        fut.waitForMap();
+        comp.execute(TestSessionTask.class.getName(), type);
+
+        GridComputeTaskFuture<?> fut = comp.future();
+
+        fut.getTaskSession().mapFuture().get();
 
         GridComputeTaskSession ses = fut.getTaskSession();
 
@@ -246,7 +250,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                         String key = createKey(prefix, type, i);
                         String val = createValue(prefix, type, i);
 
-                        Serializable obj = ses.waitForAttribute(key);
+                        Serializable obj = ses.waitForAttribute(key, 0);
 
                         assert obj != null :
                             "Failed to wait for attribute [key=" + key + ", val=" + val + ", receivedVal=" + obj + ']';
@@ -280,7 +284,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                         String key = createKey(prefix, type, i);
                         String val = createValue(prefix, type, i);
 
-                        boolean attr = ses.waitForAttribute(key, val);
+                        boolean attr = ses.waitForAttribute(key, val, 0);
 
                         assert attr :
                             "Failed to wait for attribute [key=" + key + ", val=" + val + ']';
@@ -309,7 +313,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                     for (int i = 0; i < ATTR_NUM; i++)
                         map.put(createKey(prefix, type, i), createValue(prefix, type, i));
 
-                    boolean attrs = ses.waitForAttributes(map);
+                    boolean attrs = ses.waitForAttributes(map, 0);
 
                     assert attrs :
                         "Failed to wait for attribute [attrs=" + map + ']';
@@ -337,7 +341,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                     for (int i = 0; i < ATTR_NUM; i++)
                         map.put(createKey(prefix, type, i), createValue(prefix, type, i));
 
-                    Map<?, ?> res = ses.waitForAttributes(map.keySet());
+                    Map<?, ?> res = ses.waitForAttributes(map.keySet(), 0);
 
                     assert res != null : "Failed to wait for attribute [keys=" + map.keySet() + ']';
 
@@ -452,7 +456,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                taskSes.waitForAttribute("done", true);
+                taskSes.waitForAttribute("done", true, 0);
             }
             catch (InterruptedException e) {
                 throw new GridException("Got interrupted while waiting for 'done' attribute.", e);

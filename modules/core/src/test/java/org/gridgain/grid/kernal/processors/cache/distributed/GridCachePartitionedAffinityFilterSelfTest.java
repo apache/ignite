@@ -115,7 +115,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
     private void checkPartitions() throws Exception {
         int partCnt = GridCacheConsistentHashAffinityFunction.DFLT_PARTITION_COUNT;
 
-        GridCacheAffinityFunction aff = grid(0).configuration().getCacheConfiguration()[0].getAffinity();
+        GridCacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
 
         GridCache<Object, Object> cache = grid(0).cache(null);
 

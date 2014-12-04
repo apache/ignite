@@ -142,7 +142,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     @SuppressWarnings("BusyWait")
     private void awaitDiscovery(long nodesCnt) throws InterruptedException {
         for (Grid g : alive) {
-            while (g.nodes().size() != nodesCnt)
+            while (g.cluster().nodes().size() != nodesCnt)
                 Thread.sleep(10);
         }
     }
@@ -153,14 +153,14 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     @SuppressWarnings("SuspiciousMethodCalls")
     private void validateAlives() {
         for (Grid g : alive)
-            assertEquals(PERM_NODES_CNT, g.nodes().size());
+            assertEquals(PERM_NODES_CNT, g.cluster().nodes().size());
 
         for (final Grid g : alive) {
             GridKernal k = (GridKernal)g;
 
             GridDiscoveryManager discoMgr = k.context().discovery();
 
-            final Collection<GridNode> currTop = g.nodes();
+            final Collection<GridNode> currTop = g.cluster().nodes();
 
             long currVer = discoMgr.topologyVersion();
 
@@ -175,7 +175,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
                 F.forAll(discoMgr.aliveRemoteCacheNodes(null, v),
                     new GridPredicate<GridNode>() {
                         @Override public boolean apply(GridNode e) {
-                            return currTop.contains(e) || g.localNode().equals(e);
+                            return currTop.contains(e) || g.cluster().localNode().equals(e);
                         }
                     });
 

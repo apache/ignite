@@ -32,7 +32,7 @@ import java.util.*;
 public class ServicesExample {
     public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
-            GridProjection rmts = grid.forRemotes();
+            GridProjection rmts = grid.cluster().forRemotes();
 
             if (rmts.nodes().isEmpty()) {
                 System.err.println(">>>");
@@ -43,17 +43,17 @@ public class ServicesExample {
                 return;
             }
 
-            GridServices svcs = rmts.services();
+            GridServices svcs = grid.services(rmts);
 
             try {
                 // Deploy cluster singleton.
-                svcs.deployClusterSingleton("myClusterSingletonService", new SimpleMapServiceImpl()).get();
+                svcs.deployClusterSingleton("myClusterSingletonService", new SimpleMapServiceImpl());
 
                 // Deploy node singleton.
-                svcs.deployNodeSingleton("myNodeSingletonService", new SimpleMapServiceImpl()).get();
+                svcs.deployNodeSingleton("myNodeSingletonService", new SimpleMapServiceImpl());
 
                 // Deploy 2 instances, regardless of number nodes.
-                svcs.deployMultiple("myMultiService", new SimpleMapServiceImpl(), 2 /*total number*/, 0 /*0 for unlimited*/).get();
+                svcs.deployMultiple("myMultiService", new SimpleMapServiceImpl(), 2 /*total number*/, 0 /*0 for unlimited*/);
 
                 // Example for using a service proxy
                 // to access a remotely deployed service.
@@ -121,7 +121,7 @@ public class ServicesExample {
             mapSvc.put(i, Integer.toString(i));
 
         // Broadcast closure to every node.
-        final Collection<Integer> mapSizes = grid.compute().broadcast(new SimpleClosure()).get();
+        final Collection<Integer> mapSizes = grid.compute().broadcast(new SimpleClosure());
 
         System.out.println("Closure execution result: " + mapSizes);
 

@@ -103,7 +103,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
     private void checkTask(int num) throws InterruptedException, GridException {
         Grid grid = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class.getName(), num);
+        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridTaskSessionTestTask.class.getName(), num);
 
         assert fut != null;
 
@@ -113,7 +113,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
 
             assert await : "Jobs did not executed.";
 
-            String val = (String) fut.getTaskSession().waitForAttribute("testName", WAIT_TIME);
+            String val = fut.getTaskSession().waitForAttribute("testName", WAIT_TIME);
 
             info("Received attribute 'testName': " + val);
 
@@ -192,10 +192,10 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null)
-                throw result.getException();
+            if (res.getException() != null)
+                throw res.getException();
 
             if (log.isInfoEnabled())
                 log.info("Set attribute 'testName'.");

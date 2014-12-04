@@ -123,7 +123,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
             if (byCls) {
                 grid.compute().localDeployTask(taskCls, ldr1);
 
-                Integer res = grid.compute().execute(taskCls, null).get();
+                Integer res = grid.compute().execute(taskCls, null);
 
                 assert res != null;
                 assert res == 2 : "Invalid response: " + res;
@@ -132,7 +132,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
             if (byTask) {
                 grid.compute().localDeployTask(taskCls, ldr1);
 
-                Integer res = grid.compute().execute(taskCls.newInstance(), null).get();
+                Integer res = grid.compute().execute(taskCls.newInstance(), null);
 
                 assert res != null;
                 assert res == 2 : "Invalid response: " + res;
@@ -141,7 +141,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
             if (byName) {
                 grid.compute().localDeployTask(taskCls, ldr1);
 
-                Integer res = (Integer)grid.compute().execute(taskCls.getName(), null).get();
+                Integer res = (Integer)grid.compute().execute(taskCls.getName(), null);
 
                 assert res != null;
                 assert res == 1 : "Invalid response: " + res;
@@ -189,8 +189,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
            if (byCls) {
-               Integer res1 = grid.compute().execute(taskCls1, null).get();
-               Integer res2 = grid.compute().execute(taskCls2, null).get();
+               Integer res1 = grid.compute().execute(taskCls1, null);
+               Integer res2 = grid.compute().execute(taskCls2, null);
 
                assert res1 != null;
                assert res2 != null;
@@ -200,8 +200,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
            }
 
            if (byTask) {
-               Integer res1 = grid.compute().execute(taskCls1.newInstance(), null).get();
-               Integer res2 = grid.compute().execute(taskCls2.newInstance(), null).get();
+               Integer res1 = grid.compute().execute(taskCls1.newInstance(), null);
+               Integer res2 = grid.compute().execute(taskCls2.newInstance(), null);
 
                assert res1 != null;
                assert res2 != null;
@@ -213,11 +213,11 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
            if (byName) {
                grid.compute().localDeployTask(taskCls1, ldr1);
 
-               Integer res1 = (Integer)grid.compute().execute(taskCls1.getName(), null).get();
+               Integer res1 = (Integer)grid.compute().execute(taskCls1.getName(), null);
 
                grid.compute().localDeployTask(taskCls2, ldr2);
 
-               Integer res2 = (Integer)grid.compute().execute(taskCls2.getName(), null).get();
+               Integer res2 = (Integer)grid.compute().execute(taskCls2.getName(), null);
 
                assert res1 != null;
                assert res2 != null;
@@ -268,7 +268,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
                // Even though the task is deployed with resource class loader,
                // when we execute it, it will be redeployed with task class-loader.
-               Integer res = grid1.compute().execute(taskCls, null).get();
+               Integer res = grid1.compute().execute(taskCls, null);
 
                assert res != null;
                assert res == 2 : "Invalid response: " + res;
@@ -280,7 +280,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
                // Even though the task is deployed with resource class loader,
                // when we execute it, it will be redeployed with task class-loader.
-               Integer res = grid1.compute().execute(taskCls.newInstance(), null).get();
+               Integer res = grid1.compute().execute(taskCls.newInstance(), null);
 
                assert res != null;
                assert res == 2 : "Invalid response: " + res;
@@ -291,7 +291,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
                // Even though the task is deployed with resource class loader,
                // when we execute it, it will be redeployed with task class-loader.
-               Integer res = (Integer)grid1.compute().execute(taskCls.getName(), null).get();
+               Integer res = (Integer)grid1.compute().execute(taskCls.getName(), null);
 
                assert res != null;
                assert res == 1 : "Invalid response: " + res;
@@ -339,8 +339,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
               ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
           if (byCls) {
-              Integer res1 = grid1.compute().execute(taskCls1, null).get();
-              Integer res2 = grid1.compute().execute(taskCls2, null).get();
+              Integer res1 = grid1.compute().execute(taskCls1, null);
+              Integer res2 = grid1.compute().execute(taskCls2, null);
 
               assert res1 != null;
               assert res2 != null;
@@ -350,8 +350,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
           }
 
           if (byTask) {
-              Integer res1 = grid1.compute().execute(taskCls1.newInstance(), null).get();
-              Integer res2 = grid1.compute().execute(taskCls2.newInstance(), null).get();
+              Integer res1 = grid1.compute().execute(taskCls1.newInstance(), null);
+              Integer res2 = grid1.compute().execute(taskCls2.newInstance(), null);
 
               assert res1 != null;
               assert res2 != null;
@@ -363,11 +363,11 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
           if (byName) {
               grid1.compute().localDeployTask(taskCls1, ldr1);
 
-              Integer res1 = (Integer)grid1.compute().execute(taskCls1.getName(), null).get();
+              Integer res1 = (Integer)grid1.compute().execute(taskCls1.getName(), null);
 
               grid1.compute().localDeployTask(taskCls2, ldr2);
 
-              Integer res2 = (Integer)grid1.compute().execute(taskCls2.getName(), null).get();
+              Integer res2 = (Integer)grid1.compute().execute(taskCls2.getName(), null);
 
               assert res1 != null;
               assert res2 != null;

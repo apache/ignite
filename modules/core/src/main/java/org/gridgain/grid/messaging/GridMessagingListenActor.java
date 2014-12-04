@@ -203,10 +203,10 @@ public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUI
         assert nodeId != null;
 
         if (respMsg != null) {
-            GridNode node = grid.node(nodeId);
+            GridNode node = grid.cluster().node(nodeId);
 
             if (node != null)
-                grid.forNode(node).message().send(null, respMsg); // Can still fail.
+                grid.message(grid.cluster().forNode(node)).send(null, respMsg); // Can still fail.
             else
                 throw new GridException("Failed to send message since destination node has " +
                     "left topology (ignoring) [nodeId=" +nodeId + ", respMsg=" + respMsg + ']');

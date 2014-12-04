@@ -1163,8 +1163,8 @@ public class GridGainEx {
         /** REST executor service shutdown flag. */
         private boolean restSvcShutdown;
 
-        /** DR executor service. */
-        private ExecutorService drExecSvc;
+        /** Utility cache executor service. */
+        private ExecutorService utilityCacheExecSvc;
 
         /** Grid state. */
         private volatile GridGainState state = STOPPED;
@@ -1374,11 +1374,11 @@ public class GridGainEx {
             myCfg.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
-            myCfg.setDataCenterId(cfg.getDataCenterId());
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
             myCfg.setDotNetConfiguration(cfg.getDotNetConfiguration());
+            myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new GridTransactionsConfiguration(cfg.getTransactionsConfiguration()));
 
             GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
@@ -1574,6 +1574,13 @@ public class GridGainEx {
                 clientCfg.setRestExecutorService(restExecSvc);
             }
 
+            utilityCacheExecSvc = new GridThreadPoolExecutor(
+                "utility-" + cfg.getGridName(),
+                DFLT_SYSTEM_CORE_THREAD_CNT,
+                DFLT_SYSTEM_MAX_THREAD_CNT,
+                DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+
             execSvcShutdown = cfg.getExecutorServiceShutdown();
             sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
@@ -1745,22 +1752,11 @@ public class GridGainEx {
             // Portable configuration.
             myCfg.setPortableConfiguration(cfg.getPortableConfiguration());
 
-            // Replication configuration.
-            myCfg.setDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration());
-            myCfg.setDrReceiverHubConfiguration(cfg.getDrReceiverHubConfiguration());
-
             // Hadoop configuration.
             myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());
 
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
-
-            if (segPlc == RECONNECT) {
-                U.warn(log, "RECONNECT segmentation policy is not supported anymore and " +
-                    "will be removed in the next major release (will automatically switch to NOOP)");
-
-                segPlc = NOOP;
-            }
 
             // 1. Warn on potential configuration problem: grid is not configured to wait
             // for correct segment after segmentation happens.
@@ -1809,15 +1805,6 @@ public class GridGainEx {
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
 
-            Collection<String> drSysCaches = new HashSet<>();
-
-            GridDrSenderHubConfiguration sndHubCfg = cfg.getDrSenderHubConfiguration();
-
-            if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
-                for (String cacheName : sndHubCfg.getCacheNames())
-                    drSysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
-            }
-
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
             boolean hasHadoop = GridComponentType.HADOOP.inClassPath();
@@ -1831,52 +1818,36 @@ public class GridGainEx {
                         "like GridTcpDiscoverySpi)");
 
                 for (GridCacheConfiguration ccfg : cacheCfgs) {
-                    if (CU.isDrSystemCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot start with \"" + CU.SYS_CACHE_DR_PREFIX +
-                            "\" because this prefix is reserved for internal purposes.");
-
                     if (CU.isHadoopSystemCache(ccfg.getName()))
                         throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
-
-                    if (ccfg.getDrSenderConfiguration() != null)
-                        drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
 
                     if (CU.isUtilityCache(ccfg.getName()))
                         throw new GridException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                copies = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
+                copies = new GridCacheConfiguration[cacheCfgs.length + (hasHadoop ? 2 : 1)];
 
-                int cloneIdx = 0;
+                int cloneIdx = 1;
 
                 if (hasHadoop)
                     copies[cloneIdx++] = CU.hadoopSystemCache();
 
-                for (String drSysCache : drSysCaches)
-                    copies[cloneIdx++] = CU.drSystemCache(drSysCache);
-
                 for (GridCacheConfiguration ccfg : cacheCfgs)
                     copies[cloneIdx++] = new GridCacheConfiguration(ccfg);
             }
-            else if (!drSysCaches.isEmpty() || hasHadoop) {
+            else if (hasHadoop) {
                 // Populate system caches
-                copies = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
+                copies = new GridCacheConfiguration[hasHadoop ? 2 : 1];
 
-                int idx = 0;
-
-                if (hasHadoop)
-                    copies[idx++] = CU.hadoopSystemCache();
-
-                for (String drSysCache : drSysCaches)
-                    copies[idx++] = CU.drSystemCache(drSysCache);
+                copies[1] = CU.hadoopSystemCache();
             }
             else
                 copies = new GridCacheConfiguration[1];
 
             // Always add utility cache.
-            copies[copies.length - 1] = utilitySystemCache();
+            copies[0] = utilitySystemCache();
 
             myCfg.setCacheConfiguration(copies);
 
@@ -1891,20 +1862,6 @@ public class GridGainEx {
             }
             catch (Exception ignored) {
                 // No-op.
-            }
-
-            if (!drSysCaches.isEmpty()) {
-                // Note that since we use 'LinkedBlockingQueue', number of
-                // maximum threads has no effect.
-                drExecSvc = new GridThreadPoolExecutor(
-                    "dr-" + cfg.getGridName(),
-                    Math.min(16, drSysCaches.size() * 2),
-                    Math.min(16, drSysCaches.size() * 2),
-                    DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
-
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor)drExecSvc).prestartAllCoreThreads();
             }
 
             // Ensure that SPIs support multiple grid instances, if required.
@@ -1933,7 +1890,7 @@ public class GridGainEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, drExecSvc, new CA() {
+                grid0.start(myCfg, utilityCacheExecSvc, new CA() {
                     @Override public void apply() {
                         startLatch.countDown();
                     }
@@ -2211,11 +2168,9 @@ public class GridGainEx {
                 restExecSvc = null;
             }
 
-            if (drExecSvc != null) {
-                U.shutdownNow(getClass(), drExecSvc, log);
+            U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 
-                drExecSvc = null;
-            }
+            utilityCacheExecSvc = null;
         }
 
         /**

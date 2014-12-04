@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -140,7 +140,11 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         throw new GridException("Could not instantiate a job.", e);
                     }
 
-                    GridFuture<Boolean> fut = grid1.compute().call(job);
+                    GridCompute comp = grid1.compute().enableAsync();
+
+                    comp.call(job);
+
+                    GridFuture<Boolean> fut = comp.future();
 
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);

@@ -201,7 +201,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
         assertTrue(queue0.isEmpty());
 
-        grid(0).compute().broadcast(new AddAllJob(queueName, RETRIES)).get();
+        grid(0).compute().broadcast(new AddAllJob(queueName, RETRIES));
 
         assertEquals(GRID_CNT * RETRIES, queue0.size());
 
@@ -218,7 +218,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
         // GridCacheQueue<Integer> newQueue = newGrid.cache().queue(queueName);
         // assertTrue(CollectionUtils.isEqualCollection(queue0, newQueue));
 
-        Collection<Integer> locQueueContent = newGrid.forLocal().compute().call(new GridCallable<Collection<Integer>>() {
+        Collection<Integer> locQueueContent = compute(newGrid.cluster().forLocal()).call(new GridCallable<Collection<Integer>>() {
             @GridInstanceResource
             private Grid grid;
 
@@ -226,7 +226,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
             @Override public Collection<Integer> call() throws Exception {
                 Collection<Integer> values = new ArrayList<>();
 
-                grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+                grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
                 GridCacheQueue<Integer> locQueue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
                     false, true);
@@ -238,7 +238,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
                 return values;
             }
-        }).get();
+        });
 
         assertTrue(CollectionUtils.isEqualCollection(queue0, locQueueContent));
 

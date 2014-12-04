@@ -59,8 +59,12 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
                     // Future is null before holdcc() is called and
                     // not null after callcc() is called.
                     if (fut == null) {
+                        GridCompute comp = grid.compute().enableAsync();
+
                         // Launch the recursive child task asynchronously.
-                        fut = grid.compute().execute(new GridMergeSortLoadTask(), arr);
+                        comp.execute(new GridMergeSortLoadTask(), arr);
+
+                        fut = comp.future();
 
                         // Add a listener to the future, that will resume the
                         // parent task once the child one is completed.

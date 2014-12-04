@@ -17,9 +17,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
@@ -35,7 +33,6 @@ import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -48,16 +45,12 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
-import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*;
 
 /**
  * Non-transactional partitioned cache.
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
-    /** Version where FORCE_TRANSFORM_BACKUP flag was introduced. */
-    public static final GridProductVersion FORCE_TRANSFORM_BACKUP_SINCE = GridProductVersion.fromString("6.1.2");
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -208,15 +201,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        boolean isDrSndCache = cacheCfg.getDrSenderConfiguration() != null;
-        boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
-
-        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
+        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter();
 
         if (ctx.dht().near() != null)
             m.delegate(ctx.dht().near().metrics0());
 
         metrics = m;
+
+        ctx.dr().resetMetrics();
     }
 
     /**
@@ -401,7 +393,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) {
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         return updateAllAsync0(null, null, drMap, null, false, false, null, 0, null);
     }
@@ -504,7 +496,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) {
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         return removeAllAsync0(null, drMap, null, false, false, null);
     }
@@ -902,7 +894,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean replicate = ctx.isDrEnabled();
 
-                        if (storeEnabled() && keys.size() > 1 && cacheCfg.getDrReceiverConfiguration() == null) {
+                        if (storeEnabled() && keys.size() > 1 && ctx.dr().receiveEnabled()) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult<K, V> updRes = updateWithBatch(node, hasNear, req, res, locked, ver,
                                 dhtFut, completionCb, replicate, taskName);
@@ -1359,7 +1351,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (dhtFut != null) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
-                        GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
+                        GridDrResolveResult<V> ctx = updRes.drResolveResult();
 
                         long ttl = updRes.newTtl();
                         long drExpireTime = updRes.drExpireTime();
@@ -1394,7 +1386,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
-                            GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
+                            GridDrResolveResult<V> ctx = updRes.drResolveResult();
 
                             res.nearTtl(updRes.newTtl());
 
@@ -2496,375 +2488,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
 
             pendingResponses.remove(nodeId, this);
-        }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class DhtAtomicUpdateRequestConverter603 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-
-                case 1:
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    assert commState.readSize == -1 : commState.readSize;
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-
-                case 1:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    assert commState.readSize == -1 : commState.readSize;
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class DhtAtomicUpdateResponseConverter603 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    assert commState.readSize == -1 : commState.readSize;
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class NearAtomicUpdateResponseConverter603 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-
-                case 1:
-                    if (!commState.putLong(0))
-                        return false;
-
-                    commState.idx++;
-
-                case 2:
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-
-                case 3:
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-
-                case 4:
-                    if (!commState.putCacheVersion(null))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    assert commState.readSize == -1 : commState.readSize;
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-
-                case 1:
-                    if (buf.remaining() < 8)
-                        return false;
-
-                    long nearTtl = commState.getLong();
-
-                    assert nearTtl == 0 : nearTtl;
-
-                    commState.idx++;
-
-                case 2:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    assert commState.readSize == -1 : commState.readSize;
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-
-                case 3:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    assert commState.readSize == -1 : commState.readSize;
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-
-                case 4:
-                    GridCacheVersion nearVer0 = commState.getCacheVersion();
-
-                    if (nearVer0 == CACHE_VER_NOT_READ)
-                        return false;
-
-                    assert nearVer0 == null : nearVer0;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     * GridNearAtomicUpdateRequest converter for version 6.1.2
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class GridNearAtomicUpdateRequestConverter612 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putBoolean(false))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    if (buf.remaining() < 1)
-                        return false;
-
-                    commState.getBoolean();
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     * GridDhtAtomicUpdateRequest converter for version 6.1.2
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class GridDhtAtomicUpdateRequestConverter612 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-                }
-
-                case 1: {
-                    if (!commState.putBoolean(false))
-                        return false;
-
-                    commState.idx++;
-                }
-
-                case 2: {
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    if (commState.readSize >= 0) {
-                        for (int i = commState.readItems; i < commState.readSize; i++) {
-                            byte[] _val = commState.getByteArray();
-
-                            if (_val == BYTE_ARR_NOT_READ)
-                                return false;
-
-                            commState.readItems++;
-                        }
-                    }
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-
-                case 1:
-                    if (buf.remaining() < 1)
-                        return false;
-
-                    commState.getBoolean();
-
-                    commState.idx++;
-
-                case 2:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    if (commState.readSize >= 0) {
-                        for (int i = commState.readItems; i < commState.readSize; i++) {
-                            byte[] _val = commState.getByteArray();
-
-                            if (_val == BYTE_ARR_NOT_READ)
-                                return false;
-
-                            commState.readItems++;
-                        }
-                    }
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-            }
-
-            return true;
         }
     }
 }

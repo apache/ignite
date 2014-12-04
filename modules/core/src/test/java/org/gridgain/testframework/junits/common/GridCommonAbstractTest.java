@@ -12,14 +12,19 @@ package org.gridgain.testframework.junits.common;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.compute.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
+import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.util.*;
@@ -220,7 +225,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (GridCache<?, ?> c : ((GridEx)g).cachesx()) {
                 GridCacheConfiguration cfg = c.configuration();
 
-                if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.nodes().size() > 1) {
+                if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.cluster().nodes().size() > 1) {
                     GridCacheAffinityFunction aff = cfg.getAffinity();
 
                     GridDhtCacheAdapter<?, ?> dht = dht(c);
@@ -244,7 +249,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 LT.warn(log(), null, "Waiting for topology map update [grid=" + g.name() +
                                     ", p=" + p + ", nodes=" + exp + ", owners=" + actual +
                                     ", affNodes=" + affNodes + ", owners=" + owners +
-                                    ", locNode=" + g.localNode().id() + ']');
+                                    ", locNode=" + g.cluster().localNode().id() + ']');
 
                                 if (i == 0)
                                     start = System.currentTimeMillis();
@@ -298,7 +303,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().localNode();
+        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -348,7 +353,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().localNode();
+        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -398,7 +403,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().localNode();
+        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -414,5 +419,136 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         throw new GridException("Unable to find " + cnt + " keys as backup for cache.");
+    }
+
+    /**
+     * @param comp Compute.
+     * @param task Task.
+     * @param arg Task argument.
+     * @return Task future.
+     * @throws GridException If failed.
+     */
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, GridComputeTask task, @Nullable Object arg)
+        throws GridException {
+        comp = comp.enableAsync();
+
+        assertNull(comp.execute(task, arg));
+
+        GridComputeTaskFuture<R> fut = comp.future();
+
+        assertNotNull(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param comp Compute.
+     * @param taskName Task name.
+     * @param arg Task argument.
+     * @return Task future.
+     * @throws GridException If failed.
+     */
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, String taskName, @Nullable Object arg)
+        throws GridException {
+        comp = comp.enableAsync();
+
+        assertNull(comp.execute(taskName, arg));
+
+        GridComputeTaskFuture<R> fut = comp.future();
+
+        assertNotNull(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param comp Compute.
+     * @param taskCls Task class.
+     * @param arg Task argument.
+     * @return Task future.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, Class taskCls, @Nullable Object arg)
+        throws GridException {
+        comp = comp.enableAsync();
+
+        assertNull(comp.execute(taskCls, arg));
+
+        GridComputeTaskFuture<R> fut = comp.future();
+
+        assertNotNull(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param evts Events.
+     * @param filter Filter.
+     * @param types Events types.
+     * @return Future.
+     * @throws GridException If failed.
+     */
+    protected <T extends GridEvent> GridFuture<T> waitForLocalEvent(GridEvents evts,
+        @Nullable GridPredicate<T> filter, @Nullable int... types) throws GridException {
+        evts = evts.enableAsync();
+
+        assertTrue(evts.isAsync());
+
+        assertNull(evts.waitForLocal(filter, types));
+
+        GridFuture<T> fut = evts.future();
+
+        assertNotNull(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param grid Grid.
+     * @return {@link GridCompute} for given grid's local node.
+     */
+    protected GridCompute forLocal(Grid grid) {
+        return grid.compute(grid.cluster().forLocal());
+    }
+
+    /**
+     * @param prj Projection.
+     * @return {@link GridCompute} for given projection.
+     */
+    protected GridCompute compute(GridProjection prj) {
+        return prj.grid().compute(prj);
+    }
+
+    /**
+     * @param prj Projection.
+     * @return {@link GridMessaging} for given projection.
+     */
+    protected GridMessaging message(GridProjection prj) {
+        return prj.grid().message(prj);
+    }
+
+    /**
+     * @param prj Projection.
+     * @return {@link GridMessaging} for given projection.
+     */
+    protected GridEvents events(GridProjection prj) {
+        return prj.grid().events(prj);
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
+    protected GridCacheConfiguration cacheConfiguration(GridConfiguration cfg, String cacheName) {
+        for (GridCacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+            if (F.eq(cacheName, ccfg.getName()))
+                return ccfg;
+        }
+
+        fail("Failed to find cache configuration for cache: " + cacheName);
+
+        return null;
     }
 }

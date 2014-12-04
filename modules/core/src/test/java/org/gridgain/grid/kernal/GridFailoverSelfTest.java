@@ -52,7 +52,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
             assert grid1 != null;
             assert grid2 != null;
 
-            Integer res = (Integer)grid1.compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1").get();
+            Integer res = grid1.compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1");
 
             assert res != null;
             assert res == 1;
@@ -88,7 +88,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
                     boolean fail;
 
                     try {
-                        fail = ses.<String, Boolean>waitForAttribute("fail");
+                        fail = ses.<String, Boolean>waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
                         throw new GridException("Got interrupted while waiting for attribute to be set.", e);

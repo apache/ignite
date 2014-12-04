@@ -35,7 +35,7 @@ public class GridP2PEventFilterExternalPath2 implements GridPredicate<GridEvent>
                 System.identityHashCode(getClass().getClassLoader())
             };
 
-            grid.forRemotes().message().send(null, res);
+            grid.message(grid.cluster().forRemotes()).send(null, res);
         }
         catch (GridException e) {
             throw new RuntimeException(e);

@@ -45,6 +45,6 @@ public class GridLoadTestJob extends GridComputeJobAdapter {
 
         grid.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
 
-        return (Integer)grid.compute().execute(GridLoadTestTask.class.getName(), i).get();
+        return (Integer)grid.compute().execute(GridLoadTestTask.class.getName(), i);
     }
 }

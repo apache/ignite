@@ -70,7 +70,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
 
             fail.set(true);
 
-            grid.compute().execute(TestTask.class, jobCls).get();
+            grid.compute().execute(TestTask.class, jobCls);
 
             Exception e = err.get();
 

@@ -248,7 +248,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         List<Grid> nears = grids(gridCnt, pri);
 
-        final UUID priId = pri.localNode().id();
+        final UUID priId = pri.cluster().localNode().id();
 
         // Initialize.
         pri.cache(null).put(CNTR_KEY, 0);
@@ -373,7 +373,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                         @Override public void run() {
                             info("*** Started near thread ***");
 
-                            UUID nearId = near.localNode().id();
+                            UUID nearId = near.cluster().localNode().id();
 
                             GridCacheEntryEx<String, Integer> nearEntry = near(near).peekEx(CNTR_KEY);
 
@@ -559,7 +559,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         lockedMultiNode.set(false);
 
         // Execute task on all grid nodes.
-        pri.compute().broadcast(new IncrementItemJob(pri.name())).get();
+        pri.compute().broadcast(new IncrementItemJob(pri.name()));
 
         info("*** ");
 
@@ -615,7 +615,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         private void onNear() {
             Grid near = grid;
 
-            UUID nearId = grid.localNode().id();
+            UUID nearId = grid.cluster().localNode().id();
 
             GridCacheEntryEx<String, Integer> nearEntry = near(near).peekEx(CNTR_KEY);
 

@@ -86,10 +86,10 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         try {
             Integer mainKey = 0;
 
-            GridNode priNode = grid.mapKeyToNode(null, mainKey);
+            GridNode priNode = grid.cluster().mapKeyToNode(null, mainKey);
             GridNode backupNode = F.first(F.view(grid.cache(null).affinity().mapKeyToPrimaryAndBackups(mainKey),
                 F.notIn(F.asList(priNode))));
-            GridNode otherNode = F.first(grid.forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
+            GridNode otherNode = F.first(grid.cluster().forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
 
             assert priNode != backupNode;
             assert backupNode != otherNode;
@@ -225,7 +225,8 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     private void checkTm(Grid g, GridCacheTxManager tm) {
         Collection<GridCacheTxEx> txs = tm.txs();
 
-        info(">>> Number of transactions in the set [size=" + txs.size() + ", nodeId=" + g.localNode().id() + ']');
+        info(">>> Number of transactions in the set [size=" + txs.size() +
+            ", nodeId=" + g.cluster().localNode().id() + ']');
 
         for (GridCacheTxEx tx : txs)
             assert tx.done() : "Transaction is not finished: " + tx;

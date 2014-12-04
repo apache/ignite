@@ -35,7 +35,7 @@ public class GridCacheDeploymentTestTask1 extends GridComputeTaskAdapter<GridNod
 
                 @Override public Object execute() throws GridException {
                     X.println("Executing GridCacheDeploymentTestTask1 job on node " +
-                        grid.localNode().id());
+                        grid.cluster().localNode().id());
 
                     GridCache<String, GridCacheDeploymentTestValue> cache = grid.cache(null);
 

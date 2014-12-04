@@ -229,7 +229,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     public void testUserDefinedFunction() throws GridException {
         // Without alias.
         GridCacheQuery<List<?>> qry = grid.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
-            projection(grid);
+            projection(grid.cluster());
 
         GridCacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -243,7 +243,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(4, row.get(1));
 
         // With alias.
-        qry = grid.cache(null).queries().createSqlFieldsQuery("select _cube_(1), _cube_(2)").projection(grid);
+        qry = grid.cache(null).queries().createSqlFieldsQuery("select _cube_(1), _cube_(2)").projection(grid.cluster());
 
         fut = qry.execute();
 
@@ -921,7 +921,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             assertTrue(cache.putx(i, i));
 
         GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
-            "_key >= 0").projection(grid);
+            "_key >= 0").projection(grid.cluster());
 
         q.pageSize(10);
         q.enableDedup(true);

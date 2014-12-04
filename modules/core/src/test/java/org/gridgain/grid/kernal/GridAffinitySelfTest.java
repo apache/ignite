@@ -77,21 +77,21 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         assert caches(g1).size() == 0;
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
 
-        Map<GridNode, Collection<String>> map = g1.mapKeysToNodes(null, F.asList("1"));
+        Map<GridNode, Collection<String>> map = g1.cluster().mapKeysToNodes(null, F.asList("1"));
 
         assertNotNull(map);
         assertEquals("Invalid map size: " + map.size(), 1, map.size());
-        assertEquals(F.first(map.keySet()), g2.localNode());
+        assertEquals(F.first(map.keySet()), g2.cluster().localNode());
 
-        UUID id1 = g1.mapKeyToNode(null, "2").id();
+        UUID id1 = g1.cluster().mapKeyToNode(null, "2").id();
 
         assertNotNull(id1);
-        assertEquals(g2.localNode().id(), id1);
+        assertEquals(g2.cluster().localNode().id(), id1);
 
-        UUID id2 = g1.mapKeyToNode(null, "3").id();
+        UUID id2 = g1.cluster().mapKeyToNode(null, "3").id();
 
         assertNotNull(id2);
-        assertEquals(g2.localNode().id(), id2);
+        assertEquals(g2.cluster().localNode().id(), id2);
     }
 
     /**

@@ -48,20 +48,6 @@ public class GridTestCollisionTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> V waitForAttribute(K key) {
-        assert false : "Not implemented";
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForAttribute(Object key, Object val) throws InterruptedException {
-        assert false : "Not implemented";
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> V waitForAttribute(K key, long timeout) {
         assert false : "Not implemented";
 
@@ -70,20 +56,6 @@ public class GridTestCollisionTaskSession implements GridComputeTaskSession {
 
     /** {@inheritDoc} */
     @Override public boolean waitForAttribute(Object key, Object val, long timeout) throws InterruptedException {
-        assert false : "Not implemented";
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<?, ?> waitForAttributes(Collection<?> keys) {
-        assert false : "Not implemented";
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForAttributes(Map<?, ?> attrs) throws InterruptedException {
         assert false : "Not implemented";
 
         return false;
@@ -213,6 +185,13 @@ public class GridTestCollisionTaskSession implements GridComputeTaskSession {
         assert false : "Not implemented";
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> mapFuture() {
+        assert false : "Not implemented";
+
+        return null;
     }
 
     /**

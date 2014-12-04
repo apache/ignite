@@ -30,7 +30,7 @@ public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Int
         throws GridException {
         Map<GridComputeJob, GridNode> mappings = new HashMap<>(jobIds.length);
 
-        Iterator<GridNode> nodeIter = g.forRemotes().nodes().iterator();
+        Iterator<GridNode> nodeIter = g.cluster().forRemotes().nodes().iterator();
 
         for (int jobId : jobIds) {
             GridComputeJob job = new GridComputeJobAdapter(jobId) {
@@ -47,10 +47,11 @@ public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Int
             };
 
             // If only local node in the grid.
-            if (g.nodes().size() == 1)
-                mappings.put(job, g.localNode());
+            if (g.cluster().nodes().size() == 1)
+                mappings.put(job, g.cluster().localNode());
             else {
-                GridNode n = nodeIter.hasNext() ? nodeIter.next() : (nodeIter = g.forRemotes().nodes().iterator()).next();
+                GridNode n = nodeIter.hasNext() ? nodeIter.next() :
+                    (nodeIter = g.cluster().forRemotes().nodes().iterator()).next();
 
                 mappings.put(job, n);
             }

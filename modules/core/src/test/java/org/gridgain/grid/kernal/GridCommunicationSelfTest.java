@@ -54,8 +54,8 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
      */
     private void sendMessage(Collection<GridNode> nodes, int cntr) {
         try {
-            grid.forNodes(nodes).message().send(null,
-                new GridTestCommunicationMessage(cntr, grid.localNode().id()));
+            message(grid.cluster().forNodes(nodes)).send(null,
+                new GridTestCommunicationMessage(cntr, grid.cluster().localNode().id()));
         }
         catch (GridException e) {
             error("Failed to send message.", e);

@@ -92,9 +92,9 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         Grid node2 = G.start(dataNode(ipFinder, "node2"));
         Grid node3 = G.start(dataNode(ipFinder, "node3"));
 
-        info("Node 1: " + node1.localNode().id());
-        info("Node 2: " + node2.localNode().id());
-        info("Node 3: " + node3.localNode().id());
+        info("Node 1: " + node1.cluster().localNode().id());
+        info("Node 2: " + node2.cluster().localNode().id());
+        info("Node 3: " + node3.cluster().localNode().id());
 
         cache1 = node1.cache(CACHE_NAME);
         cache2 = node2.cache(CACHE_NAME);
@@ -150,8 +150,8 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
 
             GridNode primaryNode = F.first(affNodes);
 
-            if (F.eq(primaryNode, cache1.gridProjection().grid().localNode()) &&
-                affNodes.contains(cache3.gridProjection().grid().localNode()))
+            if (F.eq(primaryNode, cache1.gridProjection().grid().cluster().localNode()) &&
+                affNodes.contains(cache3.gridProjection().grid().cluster().localNode()))
                 break;
 
             key++;

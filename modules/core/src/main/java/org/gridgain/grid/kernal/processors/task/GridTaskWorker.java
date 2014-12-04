@@ -500,7 +500,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         }
 
         // Set mapped flag.
-        fut.onMapped();
+        ses.onMapped();
 
         // Send out all remote mappedJobs.
         for (GridJobResultImpl res : jobResList) {
@@ -1347,6 +1347,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         // Once we marked task as 'Finishing' we must complete it.
         finally {
             fut.onDone(res, e);
+
+            ses.onDone();
         }
     }
 

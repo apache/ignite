@@ -26,12 +26,12 @@ public class GridStreamerLocalEventRouter implements GridStreamerEventRouter {
 
     /** {@inheritDoc} */
     @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
-        return grid.localNode();
+        return grid.cluster().localNode();
     }
 
     /** {@inheritDoc} */
     @Override public <T> Map<GridNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
         Collection<T> evts) {
-        return F.asMap(grid.localNode(), evts);
+        return F.asMap(grid.cluster().localNode(), evts);
     }
 }

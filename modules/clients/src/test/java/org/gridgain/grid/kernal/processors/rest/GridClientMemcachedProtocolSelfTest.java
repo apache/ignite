@@ -362,7 +362,7 @@ public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcess
         Grid g = startGrid();
 
         assert g != null;
-        assert g.nodes().size() == gridCount() + 1;
+        assert g.cluster().nodes().size() == gridCount() + 1;
 
         MemcachedClientIF c = startClient();
 

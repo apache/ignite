@@ -24,7 +24,6 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
@@ -44,6 +43,9 @@ public class GridTcpCommunicationMessageFactory {
      * Custom messages registry. Used for test purposes.
      */
     private static final Map<Byte, GridTcpCommunicationMessageProducer> CUSTOM = new ConcurrentHashMap8<>();
+
+    /** */
+    public static final int MAX_COMMON_TYPE = 81;
 
     static {
         registerCommon(new GridTcpCommunicationMessageProducer() {
@@ -232,13 +234,6 @@ public class GridTcpCommunicationMessageFactory {
                     case 62:
                         return new GridDataLoadResponse();
 
-                    // TODO: Register from enterprise DR processor.
-                    case 63:
-                        return new GridDrInternalRequest();
-
-                    case 64:
-                        return new GridDrInternalResponse();
-
                     // 65-72 are GGFS messages (see GridGgfsOpProcessor).
 
                     case 73:
@@ -339,5 +334,12 @@ public class GridTcpCommunicationMessageFactory {
         assert producer != null;
 
         CUSTOM.put(type, producer);
+    }
+
+    /**
+     * @return Common message producers.
+     */
+    public static GridTcpCommunicationMessageProducer[] commonProducers() {
+        return COMMON;
     }
 }

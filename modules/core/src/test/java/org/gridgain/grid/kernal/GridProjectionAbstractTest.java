@@ -188,7 +188,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         try {
             Grid g = startGrid(name);
 
-            UUID excludedId = g.localNode().id();
+            UUID excludedId = g.cluster().localNode().id();
 
             assertEquals(size, prj.forRemotes().nodes().size());
 
@@ -224,7 +224,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         try {
             Grid g = startGrid(name);
 
-            UUID excludedId = g.localNode().id();
+            UUID excludedId = g.cluster().localNode().id();
 
             assert !F.nodeIds(remotePrj.nodes()).contains(excludedId);
         }
@@ -298,6 +298,8 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             exec2(cnt);
 
             executorService(cnt);
+
+            checkActiveFutures();
         }
         finally {
             for (GridBiTuple<Grid, GridPredicate<GridEvent>> t : lsnrs)
@@ -312,13 +314,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void run1(AtomicInteger cnt) throws Exception {
-        GridFuture fut = prj.compute().broadcast(runJob);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.broadcast(runJob);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().broadcast(runJob).get();
+        compute(prj).broadcast(runJob);
 
         waitForValue(cnt, projectionSize());
     }
@@ -330,13 +336,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void run2(AtomicInteger cnt) throws Exception {
         Collection<Runnable> jobs = F.asList(runJob);
 
-        GridFuture fut = prj.compute().run(jobs);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.run(jobs);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().run(jobs).get();
+        compute(prj).run(jobs);
 
         waitForValue(cnt, jobs.size());
     }
@@ -346,13 +356,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call1(AtomicInteger cnt) throws Exception {
-        GridFuture fut = prj.compute().broadcast(calJob);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.broadcast(calJob);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().broadcast(calJob).get();
+        compute(prj).broadcast(calJob);
 
         waitForValue(cnt, projectionSize());
     }
@@ -362,15 +376,19 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call2(AtomicInteger cnt) throws Exception {
+        GridCompute comp = compute(prj).enableAsync();
+
         Collection<Callable<String>> jobs = F.asList(calJob);
 
-        GridFuture fut = prj.compute().call(jobs);
+        comp.call(jobs);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().call(jobs).get();
+        compute(prj).call(jobs);
 
         waitForValue(cnt, jobs.size());
     }
@@ -380,13 +398,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call3(AtomicInteger cnt) throws Exception {
-        GridFuture fut = prj.compute().apply(clrJob, (String) null);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.apply(clrJob, (String) null);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().apply(clrJob, (String) null).get();
+        compute(prj).apply(clrJob, (String) null);
 
         waitForValue(cnt, 1);
     }
@@ -398,13 +420,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void call4(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        GridFuture fut = prj.compute().apply(clrJob, args);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.apply(clrJob, args);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().apply(clrJob, args).get();
+        compute(prj).apply(clrJob, args);
 
         waitForValue(cnt, args.size());
     }
@@ -414,13 +440,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call5(AtomicInteger cnt) throws Exception {
-        GridFuture<Collection<String>> fut = prj.compute().broadcast(new TestClosure(), "arg");
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.broadcast(new TestClosure(), "arg");
+
+        GridFuture<Collection<String>> fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        Collection<String> res = prj.compute().broadcast(new TestClosure(), "arg").get();
+        Collection<String> res = compute(prj).broadcast(new TestClosure(), "arg");
 
         assertEquals(projectionSize(), res.size());
 
@@ -437,13 +467,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void forkjoin1(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        GridFuture fut = prj.compute().apply(clrJob, args, rdc);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.apply(clrJob, args, rdc);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().apply(clrJob, args, rdc).get();
+        compute(prj).apply(clrJob, args, rdc);
 
         waitForValue(cnt, args.size());
     }
@@ -455,13 +489,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void forkjoin2(AtomicInteger cnt) throws Exception {
         Collection<Callable<String>> jobs = F.asList(calJob);
 
-        GridFuture fut = prj.compute().call(jobs, rdc);
+        GridCompute comp = compute(prj).enableAsync();
+
+        comp.call(jobs, rdc);
+
+        GridFuture fut = comp.future();
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        prj.compute().call(jobs, rdc).get();
+        compute(prj).call(jobs, rdc);
 
         waitForValue(cnt, jobs.size());
     }
@@ -473,19 +511,19 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void exec1(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        prj.compute().execute(TestTask.class.getName(), null);
+        compute(prj).execute(TestTask.class.getName(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().execute(new TestTask(), null);
+        compute(prj).execute(new TestTask(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().execute(TestTask.class, null);
+        compute(prj).execute(TestTask.class, null);
 
         waitForValue(cnt, projectionSize());
     }
@@ -497,19 +535,19 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void exec2(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        prj.compute().withTimeout(WAIT_TIMEOUT).execute(TestTask.class.getName(), null);
+        compute(prj).withTimeout(WAIT_TIMEOUT).execute(TestTask.class.getName(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().withTimeout(WAIT_TIMEOUT).execute(new TestTask(), null);
+        compute(prj).withTimeout(WAIT_TIMEOUT).execute(new TestTask(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().withTimeout(WAIT_TIMEOUT).execute(TestTask.class, null);
+        compute(prj).withTimeout(WAIT_TIMEOUT).execute(TestTask.class, null);
 
         waitForValue(cnt, projectionSize());
     }
@@ -521,9 +559,9 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void executorService(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        ExecutorService execService = prj.compute().executorService();
+        ExecutorService execSrvc = prj.grid().executorService(prj);
 
-        Future<String> fut = execService.submit(new TestCallable<String>() {
+        Future<String> fut = execSrvc.submit(new TestCallable<String>() {
             @Override public String call() throws Exception {
                 return "submit1";
             }
@@ -535,7 +573,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        fut = execService.submit(new TestRunnable(), "submit2");
+        fut = execSrvc.submit(new TestRunnable(), "submit2");
 
         waitForValue(cnt, 1);
 
@@ -543,7 +581,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        Future<?> runFut = execService.submit(new TestRunnable());
+        Future<?> runFut = execSrvc.submit(new TestRunnable());
 
         waitForValue(cnt, 1);
 
@@ -593,6 +631,46 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If test failed.
+     */
+    private void checkActiveFutures() throws Exception {
+        GridCompute comp = compute(prj).enableAsync();
+
+        assertEquals(0, comp.activeTaskFutures().size());
+
+        cnt.set(0);
+
+        Collection<GridComputeTaskFuture<Object>> futsList = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+            comp.call(new TestWaitCallable<Object>());
+
+            GridComputeTaskFuture<Object> fut = comp.future();
+
+            assertFalse(fut.isDone());
+
+            Map<GridUuid, GridComputeTaskFuture<Object>> futs = comp.activeTaskFutures();
+
+            assertEquals(i + 1, futs.size());
+
+            assertTrue(futs.containsKey(fut.getTaskSession().getId()));
+
+            futsList.add(fut);
+        }
+
+        synchronized (mux) {
+            cnt.incrementAndGet();
+
+            mux.notifyAll();
+        }
+
+        for (GridComputeTaskFuture<Object> fut : futsList)
+            fut.get();
+
+        assertEquals(0, comp.activeTaskFutures().size());
+    }
+
+    /**
      *  Test closure.
      */
     private static class TestClosure implements GridClosure<String, String> {
@@ -618,6 +696,21 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private static class TestCallable<T> implements Callable<T>, Serializable {
         /** {@inheritDoc} */
         @Nullable @Override public T call() throws Exception {
+            return null;
+        }
+    }
+
+    /**
+     * Test callable.
+     */
+    private static class TestWaitCallable<T> implements Callable<T>, Serializable {
+        /** {@inheritDoc} */
+        @Nullable @Override public T call() throws Exception {
+            synchronized (mux) {
+                while (cnt.get() == 0)
+                    mux.wait();
+            }
+
             return null;
         }
     }

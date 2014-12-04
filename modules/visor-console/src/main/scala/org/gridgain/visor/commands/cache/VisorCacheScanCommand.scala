@@ -150,13 +150,12 @@ class VisorCacheScanCommand {
 
         val fullRes =
             try
-                qryPrj
-                    .compute()
+                grid.compute(qryPrj)
                     .withName("visor-cscan-task")
                     .withNoFailover()
                     .execute(classOf[VisorQueryTask],
                         toTaskArgument(nid, new VisorQueryArg(proj, cacheName, "SCAN", pageSize)))
-                    .get match {
+                    match {
                     case x if x.get1() != null =>
                         error(x.get1())
 
@@ -198,12 +197,11 @@ class VisorCacheScanCommand {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = qryPrj.compute()
+                        res = grid.compute(qryPrj)
                             .withName("visor-cscan-fetch-task")
                             .withNoFailover()
                             .execute(classOf[VisorQueryNextPageTask],
                                 toTaskArgument(nid, new GridBiTuple[String, Integer](fullRes.queryId(), pageSize)))
-                            .get
 
                         render()
                     }

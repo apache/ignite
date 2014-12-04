@@ -17,6 +17,7 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.swapspace.*;
+import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -343,11 +344,11 @@ public interface GridSpiContext {
      * Writes delta for provided node and message type.
      *
      * @param nodeId Node ID.
-     * @param msgCls Message type.
+     * @param msg Message.
      * @param buf Buffer to write to.
      * @return Whether delta was fully written.
      */
-    public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
+    public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf);
 
     /**
      * Reads delta for provided node and message type.
@@ -387,4 +388,9 @@ public interface GridSpiContext {
      */
     @Nullable public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
         @Nullable ClassLoader ldr) throws GridException;
+
+    /**
+     * @return Message factory.
+     */
+    public GridTcpMessageFactory messageFactory();
 }

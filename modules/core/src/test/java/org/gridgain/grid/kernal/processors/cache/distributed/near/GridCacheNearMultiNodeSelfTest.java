@@ -435,7 +435,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         assert primaryGrid != null;
 
-        info("Primary grid for key 3: " + U.toShortString(primaryGrid.localNode()));
+        info("Primary grid for key 3: " + U.toShortString(primaryGrid.cluster().localNode()));
 
         assertEquals("3", dht(primaryGrid).peek(3));
 
@@ -450,7 +450,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assert backups != null;
 
         for (Grid b : backups) {
-            info("Backup grid for key 3: " + U.toShortString(b.localNode()));
+            info("Backup grid for key 3: " + U.toShortString(b.cluster().localNode()));
 
             assertEquals("3", dht(b).peek(3));
 

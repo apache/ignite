@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.service;
 
 import junit.framework.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.service.*;
 
 import java.util.concurrent.*;
 
@@ -35,7 +36,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deployClusterSingleton(name, new DummyService());
+        GridServices svcs = g.services().enableAsync();
+
+        svcs.deployClusterSingleton(name, new DummyService());
+
+        GridFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -78,8 +83,12 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         String name = "serviceAffinityUpdateTopology";
 
-        GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(affKey),
+        GridServices svcs = g.services().enableAsync();
+
+        svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
+
+        GridFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -113,7 +122,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deployNodeSingleton(name, new DummyService());
+        GridServices svcs = g.services().enableAsync();
+
+        svcs.deployNodeSingleton(name, new DummyService());
+
+        GridFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 

@@ -104,7 +104,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        mgr.ggfsCtx.ggfs().format().get();
+        mgr.ggfsCtx.ggfs().format();
     }
 
     /** {@inheritDoc} */

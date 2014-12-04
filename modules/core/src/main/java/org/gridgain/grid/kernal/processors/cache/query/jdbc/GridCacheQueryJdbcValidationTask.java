@@ -39,7 +39,7 @@ public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapte
             private Grid grid;
 
             @Override public Object execute() {
-                for (GridNode n : grid.nodes())
+                for (GridNode n : grid.cluster().nodes())
                     if (U.hasCache(n, cacheName))
                         return true;
 

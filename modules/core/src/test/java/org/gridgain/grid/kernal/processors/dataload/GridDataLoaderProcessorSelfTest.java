@@ -421,7 +421,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                             for (int i = 0; i < 5; i++) {
                                 Grid g = startGrid(restartNodeIdx);
 
-                                UUID id = g.localNode().id();
+                                UUID id = g.cluster().localNode().id();
 
                                 info(">>>>>>> Started node: " + id);
 

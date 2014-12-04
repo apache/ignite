@@ -81,7 +81,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetRemoteNodes() throws Exception {
-        Collection<GridNode> nodes = grid.forRemotes().nodes();
+        Collection<GridNode> nodes = grid.cluster().forRemotes().nodes();
 
         printNodes(nodes);
     }
@@ -90,7 +90,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetAllNodes() throws Exception {
-        Collection<GridNode> nodes = grid.nodes();
+        Collection<GridNode> nodes = grid.cluster().nodes();
 
         printNodes(nodes);
 
@@ -133,11 +133,11 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public void testGetLocalNode() throws Exception {
-        GridNode node = grid.localNode();
+        GridNode node = grid.cluster().localNode();
 
         assert node != null;
 
-        Collection<GridNode> nodes = grid.nodes();
+        Collection<GridNode> nodes = grid.cluster().nodes();
 
         assert nodes != null;
         assert nodes.contains(node);
@@ -147,11 +147,11 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPingNode() throws Exception {
-        GridNode node = grid.localNode();
+        GridNode node = grid.cluster().localNode();
 
         assert node != null;
 
-        boolean pingRes = grid.pingNode(node.id());
+        boolean pingRes = grid.cluster().pingNode(node.id());
 
         assert pingRes : "Failed to ping local node.";
     }
@@ -160,7 +160,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDiscoveryListener() throws Exception {
-        GridNode node = grid.localNode();
+        GridNode node = grid.cluster().localNode();
 
         assert node != null;
 
@@ -239,12 +239,12 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         List<UUID> uuids = new ArrayList<>(NODES_CNT);
 
-        UUID locId = grid.localNode().id();
+        UUID locId = grid.cluster().localNode().id();
 
         try {
             // Start nodes.
             for (int i = 0; i < NODES_CNT; i++)
-                uuids.add(startGrid(i).localNode().id());
+                uuids.add(startGrid(i).cluster().localNode().id());
 
             // Stop nodes.
             for (int i = 0; i < NODES_CNT; i++)

@@ -58,6 +58,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             return msg.readFrom(buf);
         }
+
+        @Nullable @Override public GridTcpMessageFactory messageFactory() {
+            return null;
+        }
     };
 
     /** Message writer. */

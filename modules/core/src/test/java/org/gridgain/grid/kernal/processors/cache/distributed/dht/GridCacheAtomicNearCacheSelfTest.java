@@ -155,7 +155,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheAffinity<Integer> aff = cache0.affinity();
 
-        UUID id0 = grid0.localNode().id();
+        UUID id0 = grid0.cluster().localNode().id();
 
         Map<Integer, Integer> primaryKeys = new HashMap<>();
 
@@ -257,7 +257,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheAffinity<Integer> aff = cache0.affinity();
 
-        UUID id0 = grid0.localNode().id();
+        UUID id0 = grid0.cluster().localNode().id();
 
         Integer primaryKey = key(grid0, PRIMARY);
 
@@ -334,7 +334,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheAffinity<Integer> aff = cache0.affinity();
 
-        UUID id0 = grid0.localNode().id();
+        UUID id0 = grid0.cluster().localNode().id();
 
         Map<Integer, TransformClosure> primaryKeys = new HashMap<>();
 
@@ -471,7 +471,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheAffinity<Integer> aff = cache0.affinity();
 
-        UUID id0 = grid0.localNode().id();
+        UUID id0 = grid0.cluster().localNode().id();
 
         Integer primaryKey = key(grid0, PRIMARY);
 
@@ -594,7 +594,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheAffinity<Integer> aff = cache0.affinity();
 
-        UUID id0 = grid0.localNode().id();
+        UUID id0 = grid0.cluster().localNode().id();
 
         Integer nearKey = key(grid0, NOT_PRIMARY_AND_BACKUP);
 
@@ -644,7 +644,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheAffinity<Integer> aff = cache0.affinity();
 
-        UUID id0 = grid0.localNode().id();
+        UUID id0 = grid0.cluster().localNode().id();
 
         Integer nearKey = key(grid0, NOT_PRIMARY_AND_BACKUP);
 
@@ -701,7 +701,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridDhtCacheEntry<Integer, Integer> dhtEntry = (GridDhtCacheEntry<Integer, Integer>)dht.peekEx(key);
 
-        boolean expectDht = near.affinity().isPrimaryOrBackup(grid.localNode(), key);
+        boolean expectDht = near.affinity().isPrimaryOrBackup(grid.cluster().localNode(), key);
 
         if (expectDht) {
             assertNotNull("No dht entry for: " + key + ", grid: " + grid.name(), dhtEntry);
@@ -735,11 +735,11 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             boolean pass = false;
 
             switch(mode) {
-                case PRIMARY: pass = aff.isPrimary(grid.localNode(), i); break;
+                case PRIMARY: pass = aff.isPrimary(grid.cluster().localNode(), i); break;
 
-                case BACKUP: pass = aff.isBackup(grid.localNode(), i); break;
+                case BACKUP: pass = aff.isBackup(grid.cluster().localNode(), i); break;
 
-                case NOT_PRIMARY_AND_BACKUP: pass = !aff.isPrimaryOrBackup(grid.localNode(), i); break;
+                case NOT_PRIMARY_AND_BACKUP: pass = !aff.isPrimaryOrBackup(grid.cluster().localNode(), i); break;
 
                 default: fail();
             }

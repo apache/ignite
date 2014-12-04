@@ -16,9 +16,6 @@ import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.dr.cache.receiver.*;
-import org.gridgain.grid.dr.cache.sender.*;
-import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -45,7 +42,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
-import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
@@ -57,7 +53,6 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
@@ -400,60 +395,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
                 "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
 
-        boolean mongoCache = false; // CU.isMongoCache(c, cc.getName());
-
-        // Validate DR send configuration.
-        GridDrSenderCacheConfiguration drSndCfg = cc.getDrSenderConfiguration();
-
-        if (drSndCfg != null) {
-            if (ggfsCache)
-                throw new GridException("GGFS cache cannot be data center replication sender cache: " + cc.getName());
-
-            if (mongoCache)
-                throw new GridException("Mongo cache cannot be data center replication sender cache: " + cc.getName());
-
-            assertParameter(drSndCfg.getMode() != null, "cfg.getDrSenderConfiguration().getMode() != null");
-
-            if (cc.getCacheMode() == LOCAL)
-                throw new GridException("Data center replication is not supported for LOCAL cache");
-
-            assertParameter(drSndCfg.getBatchSendSize() > 0, "cfg.getDrSenderConfiguration().getBatchSendSize() > 0");
-
-            if (drSndCfg.getBatchSendFrequency() < 0)
-                drSndCfg.setBatchSendFrequency(0);
-
-            assertParameter(drSndCfg.getMaxBatches() > 0, "cfg.getDrSenderConfiguration().getMaxBatches() > 0");
-
-            assertParameter(drSndCfg.getSenderHubLoadBalancingMode() != null,
-                "cfg.getDrSendConfiguration().getSenderHubLoadBalancingMode() != null");
-
-            assertParameter(drSndCfg.getStateTransferThreadsCount() > 0,
-                "cfg.getDrSenderConfiguration().getStateTransferThreadsCount() > 0");
-
-            assertParameter(drSndCfg.getStateTransferThrottle() >= 0,
-                "cfg.getDrSenderConfiguration().getStateTransferThrottle >= 0");
-        }
-
-        // Validate DR receive configuration.
-        GridDrReceiverCacheConfiguration drRcvCfg = cc.getDrReceiverConfiguration();
-
-        if (drRcvCfg != null) {
-            if (ggfsCache)
-                throw new GridException("GGFS cache cannot be data center replication receiver cache: " +
-                    cc.getName());
-
-            if (mongoCache)
-                throw new GridException("Mongo cache cannot be data center replication receiver cache: " +
-                    cc.getName());
-
-            GridDrReceiverCacheConflictResolverMode rslvrMode = drRcvCfg.getConflictResolverMode();
-
-            assertParameter(rslvrMode != null, "cfg.getDrReceiverConfiguration().getConflictResolverPolicy() != null");
-
-            if (rslvrMode != DR_AUTO && drRcvCfg.getConflictResolver() == null)
-                throw new GridException("Conflict resolver must be not null with " + rslvrMode + " resolving policy");
-        }
-
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
@@ -494,16 +435,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getStore(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
-
-        GridDrSenderCacheConfiguration drSndCfg = cfg.getDrSenderConfiguration();
-
-        if (drSndCfg != null)
-            prepare(cfg, drSndCfg.getEntryFilter(), false);
-
-        GridDrReceiverCacheConfiguration drRcvCfg = cfg.getDrReceiverConfiguration();
-
-        if (drRcvCfg != null)
-            prepare(cfg, drRcvCfg.getConflictResolver(), false);
 
         for (Object obj : objs)
             prepare(cfg, obj, false);
@@ -566,123 +497,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtAtomicCache.DhtAtomicUpdateRequestConverter603.class, GridNearAtomicCache.SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateResponse.class,
-            GridDhtAtomicCache.DhtAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearAtomicUpdateResponse.class,
-            GridDhtAtomicCache.NearAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
-            GridDhtAtomicCache.GridNearAtomicUpdateRequestConverter612.class,
-            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
-
-        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter612.class,
-            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
-
-        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearTxPrepareRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearTxFinishRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtTxFinishRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
-            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearTxPrepareRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearTxFinishRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtTxFinishRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearGetRequest.class,
-            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
-            GridCacheQueryManager.GridCacheQueryRequestPortablesConverter620.class,
-            GridCacheQueryManager.QUERY_PORTABLES_SINCE);
-
-        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
-            GridCacheQueryManager.GridCacheQueryRequestEventsConverter621.class,
-            GridCacheQueryManager.QUERY_EVENTS_SINCE);
-
-        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
-            GridDhtCacheAdapter.PreloadKeysAddedMessageConverter650.class,
-            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
-            GridDhtCacheAdapter.PreloadKeysAddedMessageConverter650.class,
-            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtLockResponse.class,
-            GridDhtCacheAdapter.PreloadEntriesAddedMessageConverter650.class,
-            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridDhtTxPrepareResponse.class,
-            GridDhtCacheAdapter.PreloadEntriesAddedMessageConverter650.class,
-            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridCachePessimisticCheckCommittedTxRequest.class,
-            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
-            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
-
-        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
-            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
-            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
-
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
@@ -706,18 +520,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (GridComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
-
-        for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
-            if (ccfg.getDrSenderConfiguration() != null)
-                sysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
-        }
-
-        GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
-
-        if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
-            for (String cacheName : sndHubCfg.getCacheNames())
-                sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
-        }
 
         sysCaches.add(CU.UTILITY_CACHE_NAME);
 
@@ -760,7 +562,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
             GridCacheDataStructuresManager dataStructuresMgr = new GridCacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-            GridCacheDrManager drMgr = createComponent(GridCacheDrManager.class);
+            GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
             GridCacheStore nearStore = cacheStore(ctx.gridName(), cfg, isNearEnabled(cfg));
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(nearStore);
@@ -900,7 +702,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 swapMgr = new GridCacheSwapManager(true);
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
-                drMgr = createComponent(GridCacheDrManager.class);
+                drMgr = ctx.createComponent(GridCacheDrManager.class);
 
                 GridCacheStore dhtStore = cacheStore(ctx.gridName(), cfg, false);
 
@@ -1079,8 +881,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Map<String, Boolean> attrPortable = new HashMap<>();
 
-        Collection<String> replicationCaches = new ArrayList<>();
-
         Map<String, String> interceptors = new HashMap<>();
 
         int i = 0;
@@ -1090,9 +890,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
 
-            if (cfg.getDrSenderConfiguration() != null)
-                replicationCaches.add(cfg.getName());
-
             if (cfg.getInterceptor() != null)
                 interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
         }
@@ -1100,8 +897,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         attrs.put(ATTR_CACHE, attrVals);
 
         attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
-
-        attrs.put(ATTR_REPLICATION_CACHES, replicationCaches);
 
         if (!interceptors.isEmpty())
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
@@ -1142,12 +937,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
-        GridNodeValidationResult ret = validateHashIdResolvers(node);
-
-        if (ret != null)
-            return ret;
-
-        return validateAtomicNearCacheSupport(node);
+        return validateHashIdResolvers(node);
     }
 
     /**
@@ -1182,45 +972,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             topNode.id() + ']';
 
                         return new GridNodeValidationResult(topNode.id(), errMsg, sndMsg);
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param node Joining node.
-     * @return Validation result or {@code null} in case of success.
-     */
-    @Nullable private GridNodeValidationResult validateAtomicNearCacheSupport(GridNode node) {
-        if (node.version().compareTo(GridNearAtomicCache.SINCE_VER) >= 0)
-            return null;
-
-        GridCacheAttributes[] joinAttrs = U.cacheAttributes(node);
-
-        if (F.isEmpty(joinAttrs))
-            return null;
-
-        for (GridNode topNode : ctx.discovery().allNodes()) {
-            GridCacheAttributes[] attrs = U.cacheAttributes(topNode);
-
-            if (F.isEmpty(attrs))
-                continue;
-
-            for (GridCacheAttributes joinAttr : joinAttrs) {
-                for (GridCacheAttributes attr : attrs) {
-                    if (F.eq(joinAttr.cacheName(), attr.cacheName())) {
-                        if (attr.atomicityMode() == ATOMIC && attr.nearCacheEnabled()) {
-                            String errMsg = "Failed to add node to topology because topology has nodes with " +
-                                "ATOMIC cache with near cache enabled and joining node does not support " +
-                                "such configuration [cacheName=" + attr.cacheName() +
-                                ", existingNodeId=" + topNode.id() +
-                                ", existingNodeVer=" + topNode.version() + ']';
-
-                            return new GridNodeValidationResult(topNode.id(), errMsg, errMsg);
-                        }
                     }
                 }
             }
@@ -1422,63 +1173,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 locAttr.affinityHashIdResolverClassName(), rmtAttr.affinityHashIdResolverClassName(),
                                 true);
                         }
-
-                        // Validate DR send configuration.
-                        GridCacheDrSendAttributes locSndAttrs = locAttr.drSendAttributes();
-
-                        GridCacheDrSendAttributes rmtSndAttrs = rmtAttr.drSendAttributes();
-
-                        if (locSndAttrs != null && rmtSndAttrs != null) {
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "replicationMode",
-                                "Replication mode", locSndAttrs.mode(), rmtSndAttrs.mode(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "entryFilterClassName",
-                                "Class name for replication cache entry filter", locSndAttrs.entryFilterClassName(),
-                                rmtSndAttrs.entryFilterClassName(), true);
-                        }
-                        else if (!(locSndAttrs == null && rmtSndAttrs == null)) {
-                            UUID nullAttrNode = locSndAttrs == null ? ctx.discovery().localNode().id() : rmt.id();
-
-                            throw new GridException("Replication sender cache should be enabled for all nodes or " +
-                                "disabled for all of them (configuration is not set for nodeId=" + nullAttrNode + ").");
-                        }
-
-                        // Validate DR receive configuration.
-                        GridCacheDrReceiveAttributes locRcvAttrs = locAttr.drReceiveAttributes();
-
-                        GridCacheDrReceiveAttributes rmtRcvAttrs = rmtAttr.drReceiveAttributes();
-
-                        if (locRcvAttrs != null && rmtRcvAttrs != null) {
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "conflictResolverPolicy",
-                                "Policy for conflict resolver", locRcvAttrs.conflictResolverMode(),
-                                rmtRcvAttrs.conflictResolverMode(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "conflictResolverClassName",
-                                "Class name for conflict resolver", locRcvAttrs.conflictResolverClassName(),
-                                rmtRcvAttrs.conflictResolverClassName(), true);
-                        }
-                        else if (!(locRcvAttrs == null && rmtRcvAttrs == null)) {
-                            UUID nullAttrNode = locRcvAttrs == null ? ctx.discovery().localNode().id() : rmt.id();
-
-                            throw new GridException("DR receiver cache should be enabled for all nodes or " +
-                                "disabled for all of them (configuration is not set for nodeId=" + nullAttrNode + ").");
-                        }
-
-                        if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&
-                            rmt.version().compareTo(GridNearAtomicCache.SINCE_VER) < 0)
-                            throw new GridException("Cannot use ATOMIC cache with near cache enabled because " +
-                                "grid contains nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
-                                ", rmtVer=" + rmt.version() +
-                                ", supportedSince=" + GridNearAtomicCache.SINCE_VER +
-                                ", locVer=" + ctx.product().version() + ']');
-
-                        if (locPortableEnabled != null && locPortableEnabled &&
-                            rmt.version().compareTo(GridPortableProcessor.SINCE_VER) < 0)
-                            throw new GridException("Cannot use cache with portables enabled because grid contains " +
-                                "nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
-                                ", rmtVer=" + rmt.version() +
-                                ", supportedSince=" + GridPortableProcessor.SINCE_VER +
-                                ", locVer=" + ctx.product().version() + ']');
                     }
                 }
 
@@ -2083,92 +1777,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Creates cache component which has different implementations for enterprise and open source versions.
-     * For such components following convention is used:
-     * <ul>
-     *     <li>component has an interface (org.gridgain.xxx.GridXXXComponent)</li>
-     *     <li>there are two component implementations in the subpackages 'ent' and 'os' where
-     *     component implementations are named correspondingly GridEntXXXComponent and GridOSXXXComponent</li>
-     *     <li>component implementation has public no-arg constructor </li>
-     * </ul>
-     * This method first tries to find component implementation from 'ent' package, if it is not found it
-     * uses implementation from 'os' subpackage.
-     *
-     * @param cls Component interface.
-     * @return Created component.
-     * @throws GridException If failed to create component.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> T createComponent(Class<T> cls) throws GridException {
-        assert cls.isInterface() : cls;
-        assert cls.getSimpleName().startsWith("Grid") : cls;
-
-        Class<T> implCls = null;
-
-        try {
-            implCls = (Class<T>)Class.forName(enterpriseClassName(cls));
-        }
-        catch (ClassNotFoundException ignore) {
-            // No-op.
-        }
-
-        if (implCls == null) {
-            try {
-                implCls = (Class<T>)Class.forName(openSourceClassName(cls));
-            }
-            catch (ClassNotFoundException ignore) {
-                // No-op.
-            }
-        }
-
-        if (implCls == null)
-            throw new GridException("Failed to find component implementation: " + cls.getName());
-
-        if (!cls.isAssignableFrom(implCls))
-            throw new GridException("Component implementation does not implement component interface " +
-                "[component=" + cls.getName() + ", implementation=" + implCls.getName() + ']');
-
-        Constructor<T> constructor;
-
-        try {
-            constructor = implCls.getConstructor();
-        }
-        catch (NoSuchMethodException e) {
-            throw new GridException("Component does not have expected constructor: " + implCls.getName(), e);
-        }
-
-        try {
-            return constructor.newInstance();
-        }
-        catch (ReflectiveOperationException e) {
-            throw new GridException("Failed to create component [component=" + cls.getName() +
-                ", implementation=" + implCls.getName() + ']', e);
-        }
-    }
-
-    /**
-     * @param cls Component interface.
-     * @return Name of component implementation class for enterprise edition.
-     */
-    private static String enterpriseClassName(Class<?> cls) {
-        return cls.getPackage().getName() + ".ent." + cls.getSimpleName().replace("Grid", "GridEnt");
-    }
-
-    /**
-     * @param cls Component interface.
-     * @return Name of component implementation class for open source edition.
-     */
-    private static String openSourceClassName(Class<?> cls) {
-        return cls.getPackage().getName() + ".os." + cls.getSimpleName().replace("Grid", "GridOs");
-    }
-
-    /**
      *
      */
     private static class LocalAffinityFunction implements GridCacheAffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** {@inheritDoc} */
         @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
             GridNode locNode = null;
 

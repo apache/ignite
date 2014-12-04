@@ -98,7 +98,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
             // Warm up.
-            grid.compute().execute(GridSingleSplitNewNodesTestTask.class.getName(), 3).get();
+            grid.compute().execute(GridSingleSplitNewNodesTestTask.class.getName(), 3);
 
             info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
             info("Thread count: " + getThreadCount());
@@ -138,6 +138,8 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
+                    GridCompute comp = grid.compute().enableAsync();
+
                     while (end - System.currentTimeMillis() > 0
                         && !Thread.currentThread().isInterrupted()) {
                         long start = System.currentTimeMillis();
@@ -145,8 +147,9 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
                         try {
                             int levels = 3;
 
-                            GridComputeTaskFuture<Integer> fut =
-                                grid.compute().execute(new GridSingleSplitNewNodesTestTask(), levels);
+                            comp.execute(new GridSingleSplitNewNodesTestTask(), levels);
+
+                            GridComputeTaskFuture<Integer> fut = comp.future();
 
                             int res = fut.get();
 

@@ -129,7 +129,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         // Check for events from empty remote nodes collection.
         try {
-            grid1.forPredicate(F.<GridNode>alwaysFalse()).events().remoteQuery(filter, 0).get();
+            events(grid1.cluster().forPredicate(F.<GridNode>alwaysFalse())).remoteQuery(filter, 0);
         }
         catch (GridEmptyProjectionException ignored) {
             // No-op
@@ -144,8 +144,9 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(grid2);
 
-        Collection<GridEvent> evts = grid1.forPredicate(F.remoteNodes(grid1.localNode().id())).
-            events().remoteQuery(filter, 0).get();
+        GridProjection prj = grid1.cluster().forPredicate(F.remoteNodes(grid1.cluster().localNode().id()));
+
+        Collection<GridEvent> evts = events(prj).remoteQuery(filter, 0);
 
         assert evts != null;
         assert evts.size() == 1;
@@ -159,10 +160,10 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(grid1);
 
-        Collection<GridEvent> evts = grid1.events().remoteQuery(filter, 0).get();
+        Collection<GridEvent> evts = grid1.events().remoteQuery(filter, 0);
         Collection<GridEvent> locEvts = grid1.events().localQuery(filter);
-        Collection<GridEvent> remEvts = grid1.forPredicate(F.remoteNodes(grid1.localNode().id())).
-            events().remoteQuery(filter, 0).get();
+        Collection<GridEvent> remEvts =
+            events(grid1.cluster().forPredicate(F.remoteNodes(grid1.cluster().localNode().id()))).remoteQuery(filter, 0);
 
         assert evts != null;
         assert locEvts != null;
@@ -181,7 +182,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     private void generateEvents(Grid grid) throws GridException {
         grid.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
 
-        grid.compute().execute(GridEventTestTask.class.getName(), null).get();
+        grid.compute().execute(GridEventTestTask.class.getName(), null);
     }
 
     /**
@@ -249,6 +250,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * Test event filter.
      */
     private static class TestEventFilter implements GridPredicate<GridEvent> {
+        /** {@inheritDoc} */
         @Override public boolean apply(GridEvent evt) {
             // Accept only predefined TASK_STARTED events.
             return evt.type() == EVT_TASK_STARTED;

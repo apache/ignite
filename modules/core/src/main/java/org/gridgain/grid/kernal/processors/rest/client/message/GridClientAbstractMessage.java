@@ -22,16 +22,6 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static AtomicInteger typeIdGen = new AtomicInteger();
-
-    /**
-     * @return Portable type identifier for internal client messages classes.
-     */
-    static int nextSystemTypeId() {
-        return typeIdGen.decrementAndGet();
-    }
-
     /** Request ID (transient). */
     private transient long reqId;
 

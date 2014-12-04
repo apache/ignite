@@ -11,6 +11,7 @@ package org.gridgain.loadtests.colocation;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
@@ -69,11 +70,13 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
+        GridCompute comp = g.compute().enableAsync();
+
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
             final long key = i;
 
-            final GridFuture<?> f = g.compute().affinityRun("partitioned", GridTestKey.affinityKey(key), new Runnable() {
+            comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new Runnable() {
                 // This code will execute on remote nodes by collocating keys with cached data.
                 @Override public void run() {
                     Long val = cache.peek(new GridTestKey(key));
@@ -82,6 +85,8 @@ public class GridTestMain {
                         throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
                 }
             });
+
+            final GridFuture<?> f = comp.future();
 
             q.put(f);
 
@@ -147,7 +152,7 @@ public class GridTestMain {
 
     /**
      * Load cache from data store. Also take a look at
-     * {@link GridTestCacheStore#loadAll(String, GridBiInClosure, Object...)} method.
+     * {@link GridTestCacheStore#loadAll} method.
      *
      * @param cache Cache to load.
      * @throws GridException If failed.

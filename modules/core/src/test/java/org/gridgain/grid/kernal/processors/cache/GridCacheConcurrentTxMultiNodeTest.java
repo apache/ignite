@@ -147,8 +147,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             for (int i = 1; i <= clientCnt; i++)
                 startGrid("client" + i);
 
-            Collection<GridNode> srvrNodes = srvr1.forPredicate(serverNode).nodes();
-            Collection<GridNode> clientNodes = srvr1.forPredicate(clientNode).nodes();
+            Collection<GridNode> srvrNodes = srvr1.cluster().forPredicate(serverNode).nodes();
+            Collection<GridNode> clientNodes = srvr1.cluster().forPredicate(clientNode).nodes();
 
             assert srvrNodes.size() == 2;
 
@@ -184,7 +184,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     String terminalId = String.valueOf(++tid);
 
                     // Server partition cache
-                    UUID mappedId = srvr1.mapKeyToNode(null, terminalId).id();
+                    UUID mappedId = srvr1.cluster().mapKeyToNode(null, terminalId).id();
 
                     if (!srvrId.equals(mappedId))
                         continue;
@@ -298,8 +298,11 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     long submitTime1 = t0;
 
-                    GridComputeTaskFuture<Void> f1 = g.forPredicate(serverNode).compute()
-                        .execute(RequestTask.class, new Message(terminalId, nodeId));
+                    GridCompute comp = g.compute(g.cluster().forPredicate(serverNode)).enableAsync();
+
+                    comp.execute(RequestTask.class, new Message(terminalId, nodeId));
+
+                    GridComputeTaskFuture<Void> f1 = comp.future();
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -307,8 +310,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     submitTime1 = System.currentTimeMillis();
 
-                    GridComputeTaskFuture<Void> f2 = g.forPredicate(serverNode).compute()
-                        .execute(ResponseTask.class, new Message(terminalId, nodeId));
+                    comp.execute(ResponseTask.class, new Message(terminalId, nodeId));
+
+                    GridComputeTaskFuture<Void> f2 = comp.future();
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -411,7 +415,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object execute() {
-            GridNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = grid.nodeLocalMap();
+            GridNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = grid.cluster().nodeLocalMap();
 
             T2<AtomicLong, AtomicLong> cntrs = nodeLoc.get("cntrs");
 
@@ -666,7 +670,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             try {
                 // taking out localNode() doesn't change the eviction timeout future
                 // problem
-                Map.Entry<Object, Request> entry = F.first(qry.projection(grid.forLocal()).execute(msgId).get());
+                Map.Entry<Object, Request> entry =
+                    F.first(qry.projection(grid.cluster().forLocal()).execute(msgId).get());
 
                 if (entry == null)
                     return null;

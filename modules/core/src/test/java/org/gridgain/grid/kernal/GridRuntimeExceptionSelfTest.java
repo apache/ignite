@@ -67,7 +67,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
 
         try {
             fut.get();
@@ -81,7 +82,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0).get();
+        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         info("Job failed event: " + evts.get(0));
 
@@ -96,7 +97,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.MAP);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.MAP);
 
         try {
             fut.get();
@@ -110,7 +112,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0).get();
+        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -125,7 +127,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {
             fut.get();
@@ -139,7 +142,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0).get();
+        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -154,7 +157,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {
             fut.get();
@@ -168,7 +172,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0).get();
+        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 

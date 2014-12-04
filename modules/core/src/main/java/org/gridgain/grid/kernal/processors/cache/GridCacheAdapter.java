@@ -16,8 +16,6 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
-import org.gridgain.grid.dr.cache.sender.*;
-import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.affinity.*;
@@ -161,9 +159,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @SuppressWarnings("UnusedDeclaration")
     private boolean mongoMetaCache;
 
-    /** Whether this cache is DR system cache. */
-    private boolean drSysCache;
-
     /** Current GGFS data cache size. */
     private LongAdder ggfsDataCacheSize;
 
@@ -218,10 +213,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         log = ctx.gridConfig().getGridLogger().getLogger(getClass());
 
-        boolean isDrSndCache = cacheCfg.getDrSenderConfiguration() != null;
-        boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
-
-        metrics = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
+        metrics = new GridCacheMetricsAdapter();
 
         GridGgfsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
 
@@ -250,29 +242,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     }
 
                     break;
-                }
-            }
-        }
-
-        for (GridCacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
-            if (ccfg.getDrSenderConfiguration() != null &&
-                    F.eq(ctx.name(), CU.cacheNameForDrSystemCache(ccfg.getName()))) {
-                drSysCache = true;
-
-                break;
-            }
-        }
-
-        if (!drSysCache) {
-            GridDrSenderHubConfiguration sndHubCfg = gridCfg.getDrSenderHubConfiguration();
-
-            if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
-                for (String cacheName : sndHubCfg.getCacheNames()) {
-                    if (F.eq(ctx.name(), CU.cacheNameForDrSystemCache(cacheName))) {
-                        drSysCache = true;
-
-                        break;
-                    }
                 }
             }
         }
@@ -2151,7 +2120,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return;
 
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         ctx.denyOnLocalRead();
 
@@ -2172,7 +2141,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
 
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         ctx.denyOnLocalRead();
 
@@ -2853,7 +2822,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return;
 
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         syncOp(new SyncInOp(false) {
             @Override public void inOp(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
@@ -2874,7 +2843,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
 
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         return asyncOp(new AsyncInOp(drMap.keySet()) {
             @Override public GridFuture<?> inOp(GridCacheTxLocalAdapter<K, V> tx) {
@@ -3086,23 +3055,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheMetrics metrics() {
-        GridCacheMetricsAdapter cp = GridCacheMetricsAdapter.copyOf(metrics);
-
-        if (cp != null) {
-            GridDrSenderCacheMetricsAdapter drSndMetrics = cp.drSendMetrics0();
-
-            if (drSndMetrics != null)
-                drSndMetrics.backupQueueSize(drBackupQueueSize());
-        }
-
-        return cp;
-    }
-
-    /**
-     * @return DR backup queue size.
-     */
-    protected int drBackupQueueSize() {
-        return ctx.dr().backupQueueSize();
+        return GridCacheMetricsAdapter.copyOf(metrics);
     }
 
     /**
@@ -3374,7 +3327,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             val = (V)ctx.marshalToPortable(val);
                         }
 
-                        GridDrRawEntry<K, V> e = new GridDrRawEntry<>(key, null, val, null, ttl, 0, ver);
+                        GridRawVersionedEntry<K, V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
 
                         e.marshal(ctx.marshaller());
 
@@ -3999,10 +3952,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        boolean isDrSndCache = cacheCfg.getDrSenderConfiguration() != null;
-        boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
-
-        metrics = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
+        metrics = new GridCacheMetricsAdapter();
     }
 
     /** {@inheritDoc} */
@@ -4037,69 +3987,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public boolean isMongoMetaCache() {
         return mongoMetaCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDrSystemCache() {
-        return drSysCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
-        checkDrEnabled();
-
-        return ctx.dr().stateTransfer(dataCenterIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransferDescriptor> drListStateTransfers() {
-        checkDrEnabled();
-
-        try {
-            return ctx.dr().listStateTransfers();
-        }
-        catch (GridException ignored) {
-            throw new IllegalStateException("Failed to list state transfers because grid is stopping.");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drPause() {
-        checkDrEnabled();
-
-        try {
-            ctx.dr().pause();
-        }
-        catch (GridException e) {
-            throw new IllegalStateException(e.getMessage());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drResume() {
-        checkDrEnabled();
-
-        try {
-            ctx.dr().resume();
-        }
-        catch (GridException e) {
-            throw new IllegalStateException(e.getMessage());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridDrStatus drPauseState() {
-        checkDrEnabled();
-
-        return ctx.dr().drPauseState();
-    }
-
-    /**
-     * Check whether DR is enabled.
-     */
-    private void checkDrEnabled() {
-        if (!ctx.isDrEnabled())
-            throw new IllegalStateException("Data center replication is not configured for cache: " + ctx.namexx());
     }
 
     /**

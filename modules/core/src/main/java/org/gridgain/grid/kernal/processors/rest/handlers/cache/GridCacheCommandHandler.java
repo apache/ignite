@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -321,6 +322,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param flags Cache flags.
      * @param key Key to set affinity mapping in the response.
      * @param op Operation to perform.
+     * @param keepPortable Keep portable flag.
      * @return Operation result in future.
      * @throws GridException If failed
      */
@@ -331,7 +333,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final GridCacheFlag[] flags,
         final Object key,
         final CacheProjectionCommand op,
-        final boolean portable) throws GridException {
+        final boolean keepPortable) throws GridException {
 
         final boolean locExec =
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
@@ -339,15 +341,20 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (locExec) {
             GridCacheProjection<?,?> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
 
-            if (portable)
+            if (keepPortable)
                 prj = prj.keepPortable();
 
             return op.apply((GridCacheProjection<Object, Object>)prj, ctx).
                 chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key));
         }
         else {
-            return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().
-                call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, portable));
+            GridProjection prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+
+            GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
+
+            comp.call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, keepPortable));
+
+            return comp.future();
         }
     }
 
@@ -379,8 +386,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().
-                call(new CacheOperationCallable(clientId, cacheName, op, key));
+            GridProjection prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+
+            GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
+
+            comp.call(new CacheOperationCallable(clientId, cacheName, op, key));
+
+            return comp.future();
         }
     }
 
@@ -662,33 +674,35 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
-        private final boolean portable;
+        private final boolean keepPortable;
 
         /** */
         @GridInstanceResource
         private Grid g;
 
         /**
+         * @param clientId Client ID.
          * @param cacheName Cache name.
          * @param flags Flags.
          * @param op Operation.
          * @param key Key.
+         * @param keepPortable Keep portable flag.
          */
         private FlaggedCacheOperationCallable(UUID clientId, String cacheName, GridCacheFlag[] flags,
-            CacheProjectionCommand op, Object key, boolean portable) {
+            CacheProjectionCommand op, Object key, boolean keepPortable) {
             this.clientId = clientId;
             this.cacheName = cacheName;
             this.flags = flags;
             this.op = op;
             this.key = key;
-            this.portable = portable;
+            this.keepPortable = keepPortable;
         }
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
             GridCacheProjection<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
 
-            if (portable)
+            if (keepPortable)
                 prj = prj.keepPortable();
 
             // Need to apply both operation and response transformation remotely
@@ -724,6 +738,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private Grid g;
 
         /**
+         * @param clientId Client ID.
          * @param cacheName Cache name.
          * @param op Operation.
          * @param key Key.

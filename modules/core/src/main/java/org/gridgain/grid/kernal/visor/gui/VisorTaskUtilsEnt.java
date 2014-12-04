@@ -129,6 +129,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
         return true;
     }
 
+    /** */
     private static final Comparator<GridEvent> EVENTS_ORDER_COMPARATOR = new Comparator<GridEvent>() {
         @Override public int compare(GridEvent o1, GridEvent o2) {
             return Long.compare(o1.localOrder(), o2.localOrder());
@@ -148,7 +149,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
         final boolean all) {
         assert g != null;
 
-        GridNodeLocalMap<String, Long> nl = g.nodeLocalMap();
+        GridNodeLocalMap<String, Long> nl = g.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);
@@ -191,7 +192,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
         Collection<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
 
         if (lost)
-            res.add(new VisorGridEventsLost(g.localNode().id()));
+            res.add(new VisorGridEventsLost(g.cluster().localNode().id()));
 
         for (GridEvent e : evts) {
             int tid = e.type();

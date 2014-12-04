@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.dr;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -22,12 +23,80 @@ import java.util.*;
  */
 public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     /**
-     * Perform replication.
-     *
-     * @param entry Replication entry.
-     * @param drType Replication type.
+     * @return Data center ID.
      */
-    public void replicate(GridDrRawEntry<K, V> entry, GridDrType drType);
+    public byte dataCenterId();
+
+    /**
+     * Handles DR for atomic cache.
+     *
+     * @param e Cache entry.
+     * @param op Operation.
+     * @param writeObj New value.
+     * @param valBytes New value byte.
+     * @param ttl TTL.
+     * @param drTtl DR TTL.
+     * @param drExpireTime DR expire time
+     * @param drVer DR version.
+     * @return DR result.
+     * @throws GridException If update failed.
+     * @throws GridCacheEntryRemovedException If entry is obsolete.
+     */
+    public GridDrResolveResult<V> resolveAtomic(GridCacheEntryEx<K, V> e,
+         GridCacheOperation op,
+         @Nullable Object writeObj,
+         @Nullable byte[] valBytes,
+         long ttl,
+         long drTtl,
+         long drExpireTime,
+         @Nullable GridCacheVersion drVer) throws GridException, GridCacheEntryRemovedException;
+
+    /**
+     * Handles DR for transactional cache.
+     *
+     * @param e Cache entry.
+     * @param txEntry Transaction entry.
+     * @param newVer Version.
+     * @param op Operation.
+     * @param newVal New value.
+     * @param newValBytes New value bytes.
+     * @param newTtl TTL.
+     * @param newDrExpireTime DR expire time
+     * @return DR result.
+     * @throws GridException If update failed.
+     * @throws GridCacheEntryRemovedException If entry is obsolete.
+     */
+    public GridDrResolveResult<V> resolveTx(
+        GridCacheEntryEx<K, V> e,
+        GridCacheTxEntry<K, V> txEntry,
+        GridCacheVersion newVer,
+        GridCacheOperation op,
+        V newVal,
+        byte[] newValBytes,
+        long newTtl,
+        long newDrExpireTime) throws GridException, GridCacheEntryRemovedException;
+
+    /**
+     * Performs replication.
+     *
+     * @param key Key.
+     * @param keyBytes Key bytes.
+     * @param val Value.
+     * @param valBytes Value bytes.
+     * @param ttl TTL.
+     * @param expireTime Expire time.
+     * @param ver Version.
+     * @param drType Replication type.
+     * @throws GridException If failed.
+     */
+    public void replicate(K key,
+        @Nullable byte[] keyBytes,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        long ttl,
+        long expireTime,
+        GridCacheVersion ver,
+        GridDrType drType)throws GridException;
 
     /**
      * Process partitions "before exchange" event.
@@ -39,6 +108,16 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public void beforeExchange(long topVer, boolean left) throws GridException;
 
     /**
+     * @return {@code True} is DR is enabled.
+     */
+    public boolean enabled();
+
+    /**
+     * @return {@code True} if receives DR data.
+     */
+    public boolean receiveEnabled();
+
+    /**
      * In case some partition is evicted, we remove entries of this partition from backup queue.
      *
      * @param part Partition.
@@ -46,64 +125,14 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public void partitionEvicted(int part);
 
     /**
-     * Initiate state transfer.
+     * Callback for received entries from receiver hub.
      *
-     * @param dataCenterIds Target data center IDs.
-     * @return Future that will be completed when all state transfer batches are sent.
+     * @param entriesCnt Number of received entries.
      */
-    public GridFuture<?> stateTransfer(Collection<Byte> dataCenterIds);
+    public void onReceiveCacheEntriesReceived(int entriesCnt);
 
     /**
-     * List currently active state transfers.
-     *
-     * @return List of currently active state transfers.
-     * @throws GridException If failed.
+     * Resets metrics for current cache.
      */
-    public Collection<GridDrStateTransferDescriptor> listStateTransfers() throws GridException;
-
-    /**
-     * Pauses data center replication.
-     *
-     * @throws GridException If failed.
-     */
-    public void pause() throws GridException;
-
-    /**
-     * Resumes data center replication.
-     *
-     * @throws GridException If failed.
-     */
-    public void resume() throws GridException;
-
-    /**
-     * Get DR pause state.
-     *
-     * @return DR pause state.
-     */
-    public GridDrStatus drPauseState();
-
-    /**
-     * @return Count of keys enqueued for data center replication.
-     */
-    public int queuedKeysCount();
-
-    /**
-     * @return Size of backup data center replication queue.
-     */
-    public int backupQueueSize();
-
-    /**
-     * @return Count of data center replication batches awaiting to be send.
-     */
-    public int batchWaitingSendCount();
-
-    /**
-     * @return Count of data center replication batches awaiting acknowledge from sender hub.
-     */
-    public int batchWaitingAcknowledgeCount();
-
-    /**
-     * @return Count of available sender hubs.
-     */
-    public int senderHubsCount();
+    public void resetMetrics();
 }

@@ -56,7 +56,7 @@ object ScalarCacheQueryExample {
         // Using distributed queries for partitioned cache and local queries for replicated cache.
         // Since in replicated caches data is available on all nodes, including local one,
         // it is enough to just query the local node.
-        val prj = if (cache$(CACHE_NAME).get.configuration.getCacheMode == PARTITIONED) g else g.forLocal()
+        val prj = if (cache$(CACHE_NAME).get.configuration.getCacheMode == PARTITIONED) g.cluster() else g.cluster().forLocal()
 
         // Example for SQL-based querying employees based on salary ranges.
         // Gets all persons with 'salary > 1000'.

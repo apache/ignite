@@ -52,7 +52,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
             try (Grid g = G.start(cfg)) {
                 assert g != null;
 
-                info("Stopping grid " + g.localNode().id());
+                info("Stopping grid " + g.cluster().localNode().id());
             }
         }
     }
@@ -135,14 +135,14 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         G.stop(grid.name(), true);
 
         try {
-            grid.localNode();
+            grid.cluster().localNode();
         }
         catch (Exception e) {
             assert e instanceof IllegalStateException : "Wrong exception type.";
         }
 
         try {
-            grid.nodes();
+            grid.cluster().nodes();
 
             assert false;
         }
@@ -151,7 +151,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         }
 
         try {
-            grid.forRemotes();
+            grid.cluster().forRemotes();
 
             assert false;
         }

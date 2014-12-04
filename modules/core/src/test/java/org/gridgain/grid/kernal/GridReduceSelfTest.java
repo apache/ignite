@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -34,11 +35,11 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = grid(0);
 
-            assert grid.nodes().size() == GRID_CNT;
+            assert grid.cluster().nodes().size() == GRID_CNT;
 
-            List<ReducerTestClosure> closures = closures(grid.nodes().size());
+            List<ReducerTestClosure> closures = closures(grid.cluster().nodes().size());
 
-            Long res = grid.forLocal().compute().call(closures, new R1<Long, Long>() {
+            Long res = compute(grid.cluster().forLocal()).call(closures, new R1<Long, Long>() {
                 private long sum;
 
                 @Override public boolean collect(Long e) {
@@ -53,7 +54,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
                 @Override public Long reduce() {
                     return sum;
                 }
-            }).get();
+            });
 
             assertEquals((Long)1L, res);
 
@@ -76,11 +77,13 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = grid(0);
 
-            assert grid.nodes().size() == GRID_CNT;
+            assert grid.cluster().nodes().size() == GRID_CNT;
 
-            List<ReducerTestClosure> closures = closures(grid.nodes().size());
+            List<ReducerTestClosure> closures = closures(grid.cluster().nodes().size());
 
-            GridFuture<Long> fut = grid.forLocal().compute().call(closures, new R1<Long, Long>() {
+            GridCompute comp = compute(grid.cluster().forLocal()).enableAsync();
+
+            comp.call(closures, new R1<Long, Long>() {
                 private long sum;
 
                 @Override
@@ -98,6 +101,8 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
                     return sum;
                 }
             });
+
+            GridFuture<Long> fut = comp.future();
 
             assertEquals((Long)1L, fut.get());
 

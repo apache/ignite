@@ -84,13 +84,13 @@ public class CacheSetExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void writeToSet(GridProjection g) throws GridException {
+    private static void writeToSet(Grid g) throws GridException {
         final String setName = set.name();
 
         // Write set items on each node.
-        g.compute().broadcast(new SetClosure(CACHE_NAME, setName)).get();
+        g.compute().broadcast(new SetClosure(CACHE_NAME, setName));
 
-        System.out.println("Set size after writing [expected=" + (10 + g.nodes().size() * 5) +
+        System.out.println("Set size after writing [expected=" + (10 + g.cluster().nodes().size() * 5) +
             ", actual=" + set.size() + ']');
 
         System.out.println("Iterate over set.");
@@ -168,7 +168,7 @@ public class CacheSetExample {
             try {
                 GridCacheSet<String> set = GridGain.grid().cache(cacheName).dataStructures().set(setName, false, true);
 
-                UUID locId = GridGain.grid().localNode().id();
+                UUID locId = GridGain.grid().cluster().localNode().id();
 
                 for (int i = 0; i < 5; i++) {
                     String item = locId + "_" + Integer.toString(i);

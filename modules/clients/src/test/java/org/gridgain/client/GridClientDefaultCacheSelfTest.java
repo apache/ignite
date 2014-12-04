@@ -48,7 +48,7 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         System.setProperty(GG_JETTY_PORT, String.valueOf(HTTP_PORT));
 
-        startGrid().localNode().id();
+        startGrid();
     }
 
     /** {@inheritDoc} */
@@ -58,8 +58,8 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         System.clearProperty (GG_JETTY_PORT);
     }
 
-    @Override
-    protected void beforeTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         locNodeId = grid().localNode().id();
     }
 

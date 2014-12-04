@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -203,17 +204,6 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <K, V> V waitForAttribute(K key) throws InterruptedException {
-        return ses.waitForAttribute(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> boolean waitForAttribute(K key, @Nullable V val) throws InterruptedException {
-        return ses.waitForAttribute(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public <K, V> V waitForAttribute(K key, long timeout) throws InterruptedException {
         return ses.waitForAttribute(key, timeout);
     }
@@ -222,16 +212,6 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     @Override public <K, V> boolean waitForAttribute(K key, @Nullable V val, long timeout)
         throws InterruptedException {
         return ses.waitForAttribute(key, val, timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<?, ?> waitForAttributes(Collection<?> keys) throws InterruptedException {
-        return ses.waitForAttributes(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForAttributes(Map<?, ?> attrs) throws InterruptedException {
-        return ses.waitForAttributes(attrs);
     }
 
     /** {@inheritDoc} */
@@ -285,6 +265,11 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public UUID subjectId() {
         return ses.subjectId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> mapFuture() {
+        return new GridFinishedFuture<>(ctx);
     }
 
     /** {@inheritDoc} */

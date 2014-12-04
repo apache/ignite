@@ -32,7 +32,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
             startGrid(2);
 
             try {
-                grid.compute().execute(JobContextTask.class, null).get();
+                grid.compute().execute(JobContextTask.class, null);
             }
             finally {
                 stopGrid(2);

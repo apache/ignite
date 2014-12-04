@@ -11,8 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.extras.*;
@@ -380,7 +378,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /**
      * @return {@code True} if start version.
      */
-    protected boolean isStartVersion() {
+    public boolean isStartVersion() {
         return ver.nodeOrder() == cctx.localNode().order() && ver.order() == startVer;
     }
 
@@ -1634,7 +1632,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheVersion enqueueVer = null;
 
-        GridDrReceiverConflictContextImpl<K, V> drRes = null;
+        GridDrResolveResult<V> drRes = null;
 
         long newTtl = 0L;
         long newExpireTime = 0L;
@@ -1649,87 +1647,38 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (isNew())
                 unswap(true, retval);
 
-            boolean newTtlResolved = false;
-
-            boolean drNeedResolve = false;
-
             Object transformClo = null;
 
             if (drResolve) {
-                GridCacheVersion oldDrVer = version().drVersion();
+                drRes = cctx.dr().resolveAtomic(this, op, writeObj, valBytes, ttl, drTtl, drExpireTime, drVer);
 
-                drNeedResolve = cctx.drNeedResolve(oldDrVer, drVer);
-
-                if (drNeedResolve) {
-                    // Get old value.
-                    V oldVal = rawGetOrUnmarshalUnlocked(true);
-
-                    if (writeObj == null && valBytes != null)
-                        writeObj = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
-
-                    if (op == TRANSFORM) {
-                        transformClo = writeObj;
-
-                        writeObj = ((GridClosure<V, V>)writeObj).apply(oldVal);
-                    }
-
-                    K k = key();
-
-                    if (drTtl >= 0L) {
-                        // DR TTL is set explicitly
-                        assert drExpireTime >= 0L;
-
-                        newTtl = drTtl;
-                        newExpireTime = drExpireTime;
-                    }
-                    else {
-                        newTtl = ttl < 0 ? ttlExtras() : ttl;
-                        newExpireTime = CU.toExpireTime(newTtl);
-                    }
-
-                    newTtlResolved = true;
-
-                    GridDrEntry<K, V> oldEntry = drEntry();
-                    GridDrEntry<K, V> newEntry = new GridDrPlainEntry<>(k, (V)writeObj, newTtl, newExpireTime, drVer);
-
-                    drRes = cctx.drResolveConflict(k, oldEntry, newEntry);
-
-                    assert drRes != null;
-
+                if (drRes != null) {
                     if (drRes.isUseOld()) {
                         old = retval ? rawGetOrUnmarshalUnlocked(false) : val;
 
                         return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
                     }
-                    else if (drRes.isUseNew())
-                        op = writeObj != null ? UPDATE : DELETE;
-                    else {
-                        assert drRes.isMerge();
 
-                        writeObj = drRes.mergeValue();
-                        valBytes = null;
+                    newTtl = drRes.newTtl();
 
+                    newExpireTime = drRes.newExpireTime();
+
+                    newDrExpireTime = drRes.newDrExpireTime();
+
+                    op = drRes.operation();
+
+                    writeObj = drRes.value();
+
+                    valBytes = drRes.valueBytes();
+
+                    if (drRes.isMerge())
                         drVer = null; // Update will be considered as local.
-
-                        op = writeObj != null ? UPDATE : DELETE;
-                    }
-
-                    newTtl = drRes.ttl();
-                    newExpireTime = drRes.expireTime();
-
-                    // Explicit DR expire time will be passed to remote node only in that case.
-                    if (!drRes.explicitTtl() && !drRes.isMerge()) {
-                        if (drRes.isUseNew() && newEntry.dataCenterId() != cctx.gridConfig().getDataCenterId() ||
-                            drRes.isUseOld() && oldEntry.dataCenterId() != cctx.gridConfig().getDataCenterId())
-                            newDrExpireTime = drRes.expireTime();
-                    }
                 }
                 else
-                    // Nullify DR version on this update, so that we will use regular version during next updates.
                     drVer = null;
             }
 
-            if (!drNeedResolve) { // Perform version check only in case there will be no explicit conflict resolution.
+            if (drRes == null) { // Perform version check only in case there will be no explicit conflict resolution.
                 if (verCheck) {
                     if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) >= 0) {
                         if (ATOMIC_VER_COMPARATOR.compare(ver, newVer) == 0 && cctx.isStoreEnabled() && primary) {
@@ -1763,7 +1712,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         "Invalid version for inner update [entry=" + this + ", newVer=" + newVer + ']';
             }
 
-            if (!newTtlResolved) {
+            if (drRes == null) {
                 // Calculate TTL and expire time for local update.
                 if (drTtl >= 0L) {
                     assert drExpireTime >= 0L;
@@ -2052,30 +2001,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridException In case of exception.
      */
     private void drReplicate(GridDrType drType, @Nullable V val, @Nullable byte[] valBytes, GridCacheVersion ver)
-        throws GridException{
-        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal()) {
-            GridDrSenderCacheConfiguration drSndCfg = cctx.config().getDrSenderConfiguration();
-
-            GridDrSenderCacheEntryFilter<K, V> drFilter = drSndCfg != null ?
-                (GridDrSenderCacheEntryFilter<K, V>)drSndCfg.getEntryFilter() : null;
-
-            GridDrRawEntry<K, V> entry = new GridDrRawEntry<>(key, keyBytes, val, valBytes, rawTtl(), rawExpireTime(),
-                ver.drVersion());
-
-            boolean apply = drFilter == null;
-
-            if (!apply) {
-                // Unmarshall entry and pass it to filter.
-                entry.unmarshal(cctx.marshaller());
-
-                apply = drFilter.accept(entry);
-            }
-
-            if (apply)
-                cctx.dr().replicate(entry, drType);
-            else
-                cctx.cache().metrics0().onSenderCacheEntryFiltered();
-        }
+        throws GridException {
+        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
+            cctx.dr().replicate(key, keyBytes, val, valBytes, rawTtl(), rawExpireTime(), ver.drVersion(), drType);
     }
 
     /**
@@ -2882,7 +2810,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @return Value (unmarshalled if needed).
      * @throws GridException If failed.
      */
-    @Nullable protected V rawGetOrUnmarshalUnlocked(boolean tmp) throws GridException {
+    @Nullable public V rawGetOrUnmarshalUnlocked(boolean tmp) throws GridException {
         assert Thread.holdsLock(this);
 
         V val = this.val;
@@ -2917,10 +2845,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    /*
     @Override public synchronized GridDrEntry<K, V> drEntry() throws GridException {
         return new GridDrPlainEntry<>(key, isStartVersion() ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false),
             ttlExtras(), expireTimeExtras(), ver.drVersion());
     }
+    */
 
     /** {@inheritDoc} */
     @Override public synchronized V rawPut(V val, long ttl) {
@@ -4086,14 +4016,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /**
      * @return TTL.
      */
-    protected long ttlExtras() {
+    public long ttlExtras() {
         return extras != null ? extras.ttl() : 0;
     }
 
     /**
      * @return Expire time.
      */
-    protected long expireTimeExtras() {
+    public long expireTimeExtras() {
         return extras != null ? extras.expireTime() : 0L;
     }
 

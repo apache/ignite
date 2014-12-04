@@ -327,9 +327,9 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             assert g != null;
 
-            GridClientNode clientNode = dflt.node(g.localNode().id());
+            GridClientNode clientNode = dflt.node(g.cluster().localNode().id());
 
-            assertNotNull("Client node for " + g.localNode().id() + " was not found", clientNode);
+            assertNotNull("Client node for " + g.cluster().localNode().id() + " was not found", clientNode);
 
             GridClientCompute prj = dflt.projection(clientNode);
 
@@ -337,7 +337,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             assertNotNull(res);
 
-            assertEquals(g.localNode().id().toString(), res);
+            assertEquals(g.cluster().localNode().id().toString(), res);
         }
     }
 
@@ -361,7 +361,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             int affinityKey = -1;
 
             for (int key = 0; key < 10000; key++) {
-                if (g.localNode().id().equals(data.affinity(key))) {
+                if (g.cluster().localNode().id().equals(data.affinity(key))) {
                     affinityKey = key;
 
                     break;
@@ -369,17 +369,17 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             }
 
             if (affinityKey == -1)
-                throw new Exception("Unable to found key for which node is primary: " + g.localNode().id());
+                throw new Exception("Unable to found key for which node is primary: " + g.cluster().localNode().id());
 
-            GridClientNode clientNode = dflt.node(g.localNode().id());
+            GridClientNode clientNode = dflt.node(g.cluster().localNode().id());
 
-            assertNotNull("Client node for " + g.localNode().id() + " was not found", clientNode);
+            assertNotNull("Client node for " + g.cluster().localNode().id() + " was not found", clientNode);
 
             String res = dflt.affinityExecute(TestTask.class.getName(), PARTITIONED_CACHE_NAME, affinityKey, null);
 
             assertNotNull(res);
 
-            assertEquals(g.localNode().id().toString(), res);
+            assertEquals(g.cluster().localNode().id().toString(), res);
         }
     }
 
@@ -414,7 +414,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         for (Grid g : G.allGrids()) {
             cache = g.cache(PARTITIONED_CACHE_NAME);
 
-            if (cache.affinity().isPrimaryOrBackup(g.localNode(), key))
+            if (cache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals("zzz", cache.peek(key));
             else
                 assertNull(cache.peek(key));
@@ -494,7 +494,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         try {
             Grid g = startGrid(NODES_CNT + 1);
 
-            UUID id = g.localNode().id();
+            UUID id = g.cluster().localNode().id();
 
             assertTrue(addedLatch.await(2 * TOP_REFRESH_FREQ, MILLISECONDS));
 
@@ -538,7 +538,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
                 do {
                     affKey = UUID.randomUUID().toString();
-                } while (!data.affinity(affKey).equals(g.localNode().id()));
+                } while (!data.affinity(affKey).equals(g.cluster().localNode().id()));
 
                 data.put(affKey, "asdf");
 
@@ -563,7 +563,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             do {
                 affKey = UUID.randomUUID().toString();
-            } while (data.affinity(affKey).equals(g.localNode().id()));
+            } while (data.affinity(affKey).equals(g.cluster().localNode().id()));
 
             data.put(affKey, "fdsa");
 
@@ -699,7 +699,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             this.gridSize = gridSize;
 
-            final String locNodeId = grid.localNode().id().toString();
+            final String locNodeId = grid.cluster().localNode().id().toString();
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new GridComputeJobAdapter() {

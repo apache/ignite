@@ -71,7 +71,7 @@ public class ComputeReducerExample {
                         return sum.get();
                     }
                 }
-            ).get();
+            );
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");

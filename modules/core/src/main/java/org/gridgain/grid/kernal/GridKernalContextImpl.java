@@ -10,7 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.design.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -21,41 +22,45 @@ import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.kernal.processors.cache.dr.os.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.kernal.processors.interop.*;
-import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.kernal.processors.service.*;
-import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.plugin.*;
 import org.gridgain.grid.kernal.processors.port.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.session.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -228,15 +233,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridDrProcessor drProc;
-
-    /** */
-    @GridToStringExclude
     private GridHadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
-    private GridVersionProcessor verProc;
+    private IgnitePluginProcessor pluginProc;
 
     /** */
     @GridToStringExclude
@@ -256,6 +257,9 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     private GridEx grid;
+
+    /** */
+    private ExecutorService utilityCachePool;
 
     /** */
     private GridProduct product;
@@ -278,6 +282,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** Enterprise release flag. */
     private boolean ent;
 
+    /** */
+    private GridTcpMessageFactory msgFactory;
+
+    /** */
+    private int pluginMsg = GridTcpCommunicationMessageFactory.MAX_COMMON_TYPE;
+
+    /** */
+    private Map<Byte, GridTcpCommunicationMessageProducer> pluginMsgs;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -292,10 +305,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * @param grid Grid instance managed by kernal.
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
+     * @param utilityCachePool Utility cache pool.
      * @param ent Release enterprise flag.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
+    protected GridKernalContextImpl(GridLoggerProxy log,
+        GridEx grid,
+        GridConfiguration cfg,
+        GridKernalGateway gw,
+        ExecutorService utilityCachePool,
         boolean ent) {
         assert grid != null;
         assert cfg != null;
@@ -305,6 +323,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.cfg = cfg;
         this.gw = gw;
         this.ent = ent;
+        this.utilityCachePool = utilityCachePool;
 
         try {
             spring = SPRING.create(false);
@@ -411,18 +430,16 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof GridDrProcessor)
-            drProc = (GridDrProcessor)comp;
-        else if (comp instanceof GridVersionProcessor)
-            verProc = (GridVersionProcessor)comp;
         else if (comp instanceof GridHadoopProcessorAdapter)
             hadoopProc = (GridHadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof GridInteropProcessor)
             interopProc = (GridInteropProcessor)comp;
+        else if (comp instanceof IgnitePluginProcessor)
+            pluginProc = (IgnitePluginProcessor)comp;
         else
-            assert false : "Unknown manager class: " + comp.getClass();
+            assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         comps.add(comp);
     }
@@ -653,23 +670,13 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridDrProcessor dr() {
-        return drProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridHadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService drPool() {
-        return grid.drPool();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridVersionProcessor versionConverter() {
-        return verProc;
+    @Override public ExecutorService utilityCachePool() {
+        return utilityCachePool;
     }
 
     /** {@inheritDoc} */
@@ -755,6 +762,95 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public String userVersion(ClassLoader ldr) {
         return spring != null ? spring.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PluginProvider pluginProvider(String name) throws PluginNotFoundException {
+        PluginProvider plugin = pluginProc.pluginProvider(name);
+
+        if (plugin == null)
+            throw new PluginNotFoundException(name);
+
+        return plugin;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T createComponent(Class<T> cls) {
+        T res = pluginProc.createComponent(cls);
+
+        if (res != null)
+            return res;
+
+        if (cls.equals(GridCacheDrManager.class))
+            return (T)new GridOsCacheDrManager();
+
+        throw new IgniteException("Unsupported component type: " + cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridTcpMessageFactory messageFactory() {
+        assert msgFactory != null;
+
+        return msgFactory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer) {
+        int nextMsg = ++pluginMsg;
+
+        if (nextMsg > Byte.MAX_VALUE)
+            throw new IgniteException();
+
+        if (pluginMsgs == null)
+            pluginMsgs = new HashMap<>();
+
+        pluginMsgs.put((byte)nextMsg, producer);
+
+        return (byte)nextMsg;
+    }
+
+    /**
+     * Creates message factory.
+     */
+    void createMessageFactory() {
+        final GridTcpCommunicationMessageProducer[] common = GridTcpCommunicationMessageFactory.commonProducers();
+
+        final GridTcpCommunicationMessageProducer[] producers;
+
+        if (pluginMsgs != null) {
+            producers = Arrays.copyOf(common, pluginMsg + 1);
+
+            for (Map.Entry<Byte, GridTcpCommunicationMessageProducer> e : pluginMsgs.entrySet()) {
+                assert producers[e.getKey()] == null : e.getKey();
+
+                producers[e.getKey()] = e.getValue();
+            }
+
+            pluginMsgs = null;
+        }
+        else
+            producers = common;
+
+        msgFactory = new GridTcpMessageFactory() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+                if (type < 0 || type >= producers.length)
+                    return GridTcpCommunicationMessageFactory.create(type);
+
+                GridTcpCommunicationMessageProducer producer = producers[type];
+
+                if (producer != null)
+                    return producer.create(type);
+                else
+                    throw new IllegalStateException("Common message type producer is not registered: " + type);
+            }
+        };
+    }
+
+    /**
+     * @return Plugin manager.
+     */
+    @Override public IgnitePluginProcessor plugins() {
+        return pluginProc;
     }
 
     /** {@inheritDoc} */

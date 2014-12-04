@@ -9,9 +9,6 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.dr.cache.receiver.*;
-import org.gridgain.grid.dr.cache.sender.*;
-
 import java.io.*;
 
 /**
@@ -95,20 +92,4 @@ public interface GridCacheMetrics extends Serializable {
      * @return Number of transaction rollbacks.
      */
     public int txRollbacks();
-
-    /**
-     * Gets metrics for data sent during data center replication, if data center replication
-     * is not configured then {@link IllegalStateException} will be thrown.
-     *
-     * @return Metrics for data sent during data center replication.
-     */
-    public GridDrSenderCacheMetrics drSendMetrics();
-
-    /**
-     * Gets metrics for data received during data center replication, if data center replication
-     * is not configured then {@link IllegalStateException} will be thrown.
-     *
-     * @return Metrics for data received during data center replication.
-     */
-    public GridDrReceiverCacheMetrics drReceiveMetrics();
 }

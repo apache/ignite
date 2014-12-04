@@ -200,7 +200,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 }
             }, EVT_CHECKPOINT_SAVED, EVT_CHECKPOINT_LOADED, EVT_CHECKPOINT_REMOVED);
 
-            grid.compute().execute(GridTestCheckpointTask.class, null).get(2 * 60 * 1000);
+            executeAsync(grid.compute(), GridTestCheckpointTask.class, null).get(2 * 60 * 1000);
 
             assert checkCheckpointManager(grid) : "Session IDs got stuck after task completion: " +
                 checkpoints(grid).sessionIds();
@@ -241,9 +241,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             Grid grid = startGrid(gridName);
 
-            GridFuture fut = grid.compute().execute(new GridMultiNodeGlobalConsumerTask(), null);
+            GridFuture fut = executeAsync(grid.compute(), new GridMultiNodeGlobalConsumerTask(), null);
 
-            grid.compute().execute(GridMultiNodeTestCheckPointTask.class, null).get(2 * 60 * 1000);
+            executeAsync(grid.compute(), GridMultiNodeTestCheckPointTask.class, null).get(2 * 60 * 1000);
 
             fut.get();
 

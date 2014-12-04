@@ -55,7 +55,7 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
-                    if (!nodeId.equals(grid1.localNode().id())) {
+                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -69,9 +69,9 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
-        grid1.forRemotes().message().send(null, Collections.singleton(rcCls.newInstance()));
+        message(grid1.cluster().forRemotes()).send(null, Collections.singleton(rcCls.newInstance()));
 
         /*
             We shouldn't get a message, because remote node won't be able to

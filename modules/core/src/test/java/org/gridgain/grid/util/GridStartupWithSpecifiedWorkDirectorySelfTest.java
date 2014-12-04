@@ -108,7 +108,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
 
                     System.out.println(testWorkDir);
 
-                    X.println("Stopping grid " + g.localNode().id());
+                    X.println("Stopping grid " + g.cluster().localNode().id());
                 }
             }
         }
@@ -145,7 +145,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
                     assertTrue("Work directory must be located in configured directory",
                         testWorkDir.getAbsolutePath().startsWith(tmpWorkDir));
 
-                    X.println("Stopping grid " + g.localNode().id());
+                    X.println("Stopping grid " + g.cluster().localNode().id());
                 }
             }
         } finally {

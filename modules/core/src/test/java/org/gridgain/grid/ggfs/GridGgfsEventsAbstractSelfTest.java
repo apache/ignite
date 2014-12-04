@@ -162,7 +162,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         }
 
         // Clean up file system.
-        ggfs.format().get();
+        ggfs.format();
     }
 
     /** {@inheritDoc} */

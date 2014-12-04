@@ -101,7 +101,7 @@ public class StreamingPriceBarsExample {
                         streamer.reset();
                     }
                 }
-            }).get();
+            });
         }
         finally {
             GridGain.stop(true);

@@ -70,7 +70,7 @@ public final class CreditRiskExample {
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
 
-            double crdRisk = g.compute().call(jobs(g.nodes().size(), portfolio, horizon, iter, percentile),
+            double crdRisk = g.compute().call(jobs(g.cluster().nodes().size(), portfolio, horizon, iter, percentile),
                 new GridReducer<Double, Double>() {
                     /** Collected values sum. */
                     private double sum;
@@ -90,7 +90,7 @@ public final class CreditRiskExample {
                     @Override public synchronized Double reduce() {
                         return sum / cnt;
                     }
-                }).get();
+                });
 
             System.out.println();
             System.out.println("Credit risk [crdRisk=" + crdRisk + ", duration=" +

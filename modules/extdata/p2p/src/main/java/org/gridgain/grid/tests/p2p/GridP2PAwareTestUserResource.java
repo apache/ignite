@@ -58,7 +58,7 @@ public class GridP2PAwareTestUserResource {
      * @param key Key for the value to be incremented.
      */
     private <T> void concurrentIncrement(T key) {
-        GridNodeLocalMap<T, Integer> nodeLoc = grid.nodeLocalMap();
+        GridNodeLocalMap<T, Integer> nodeLoc = grid.cluster().nodeLocalMap();
 
         Integer cntr = nodeLoc.get(key);
 

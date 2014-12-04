@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -28,7 +29,6 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -37,6 +37,7 @@ import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.plugin.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
@@ -48,9 +49,9 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 
 import java.util.*;
@@ -299,13 +300,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridContinuousProcessor continuous();
 
     /**
-     * Gets replication processor.
-     *
-     * @return Replication processor.
-     */
-    public GridDrProcessor dr();
-
-    /**
      * Gets Hadoop processor.
      *
      * @return Hadoop processor.
@@ -313,18 +307,11 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridHadoopProcessorAdapter hadoop();
 
     /**
-     * Gets DR pool.
+     * Gets utility cache pool.
      *
      * @return DR pool.
      */
-    public ExecutorService drPool();
-
-    /**
-     * Gets version converter processor.
-     *
-     * @return Version converter processor.
-     */
-    public GridVersionProcessor versionConverter();
+    public ExecutorService utilityCachePool();
 
     /**
      * Gets portable processor.
@@ -339,6 +326,11 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Interop processor.
      */
     public GridInteropProcessor interop();
+
+    /**
+     * @return Plugin processor.
+     */
+    public IgnitePluginProcessor plugins();
 
     /**
      * Gets deployment manager.
@@ -478,4 +470,30 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *      was explicitly specified.
      */
     public String userVersion(ClassLoader ldr);
+
+    /**
+     * @param name Plugin name.
+     * @return Plugin provider instance.
+     * @throws PluginNotFoundException If plugin provider for the given name was not found.
+     */
+    public PluginProvider pluginProvider(String name) throws PluginNotFoundException;
+
+    /**
+     * Creates optional component.
+     *
+     * @param cls Component class.
+     * @return Created component.
+     */
+    public <T> T createComponent(Class<T> cls);
+
+    /**
+     * @return Message factory.
+     */
+    public GridTcpMessageFactory messageFactory();
+
+    /**
+     * @param producer Message producer.
+     * @return Message type code.
+     */
+    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
 }

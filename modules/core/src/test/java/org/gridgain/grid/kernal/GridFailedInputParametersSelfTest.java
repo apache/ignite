@@ -95,7 +95,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testGetNode() throws Exception {
         try {
-            grid.node(null);
+            grid.cluster().node(null);
 
             assert false : "Null nodeId can't be entered.";
         }
@@ -109,7 +109,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testPingNode() throws Exception {
         try {
-            grid.pingNode(null);
+            grid.cluster().pingNode(null);
 
             assert false : "Null nodeId can't be entered.";
         }

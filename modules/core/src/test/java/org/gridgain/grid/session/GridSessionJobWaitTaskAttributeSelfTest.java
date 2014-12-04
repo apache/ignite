@@ -104,7 +104,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
     private void checkTask(int num) throws GridException {
         Grid grid = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class.getName(), null);
+        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridTaskSessionTestTask.class.getName(), null);
 
         int exp = SPLIT_COUNT - 1;
 

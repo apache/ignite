@@ -72,9 +72,9 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> task2 =
                 (Class<? extends GridComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PTestTask1.class.getName());
 
-            Object res1 = grid1.compute().execute(task1.newInstance(), null).get();
+            Object res1 = grid1.compute().execute(task1.newInstance(), null);
 
-            Object res2 = grid1.compute().execute(task2.newInstance(), null).get();
+            Object res2 = grid1.compute().execute(task2.newInstance(), null);
 
             info("Check results.");
 
@@ -129,9 +129,9 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> task2 =
                 (Class<? extends GridComputeTask<?, ?>>) tstClsLdr2.loadClass(GridP2PTestTask1.class.getName());
 
-            Object res1 = grid1.compute().execute(task1.newInstance(), null).get();
+            Object res1 = grid1.compute().execute(task1.newInstance(), null);
 
-            Object res2 = grid1.compute().execute(task2.newInstance(), null).get();
+            Object res2 = grid1.compute().execute(task2.newInstance(), null);
 
             info("Check results.");
 

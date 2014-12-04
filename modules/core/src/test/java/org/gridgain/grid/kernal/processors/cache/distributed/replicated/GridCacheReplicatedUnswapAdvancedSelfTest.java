@@ -67,7 +67,7 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
         Grid g1 = startGrid(1);
         Grid g2 = startGrid(2);
 
-        assert g1.nodes().size() > 1 : "This test needs at least two grid nodes started.";
+        assert g1.cluster().nodes().size() > 1 : "This test needs at least two grid nodes started.";
 
         GridCache<Object, Object> cache1 = g1.cache(null);
         GridCache<Object, Object> cache2 = g2.cache(null);
@@ -98,7 +98,7 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
             for (int i = 0; i < 1000; i++) {
                 String k = "key-" + i;
 
-                if (cache1.affinity().isPrimary(g1.localNode(), k)) {
+                if (cache1.affinity().isPrimary(g1.cluster().localNode(), k)) {
                     key = k;
 
                     break;

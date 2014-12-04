@@ -17,6 +17,7 @@ import org.gridgain.grid.service.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Defines grid projection which represents a common functionality over a group of nodes.
@@ -58,42 +59,6 @@ public interface GridProjection {
      * @return Grid instance.
      */
     public Grid grid();
-
-    /**
-     * Gets {@code compute} functionality over this grid projection. All operations
-     * on the returned {@link GridCompute} instance will only include nodes from
-     * this projection.
-     *
-     * @return Compute instance over this grid projection.
-     */
-    public GridCompute compute();
-
-    /**
-     * Gets {@code messaging} functionality over this grid projection. All operations
-     * on the returned {@link GridMessaging} instance will only include nodes from
-     * this projection.
-     *
-     * @return Messaging instance over this grid projection.
-     */
-    public GridMessaging message();
-
-    /**
-     * Gets {@code events} functionality over this grid projection. All operations
-     * on the returned {@link GridEvents} instance will only include nodes from
-     * this projection.
-     *
-     * @return Events instance over this grid projection.
-     */
-    public GridEvents events();
-
-    /**
-     * Gets {@code services} functionality over this grid projection. All operations
-     * on the returned {@link GridMessaging} instance will only include nodes from
-     * this projection.
-     *
-     * @return Services instance over this grid projection.
-     */
-    public GridServices services();
 
     /**
      * Creates a grid projection over a given set of nodes.

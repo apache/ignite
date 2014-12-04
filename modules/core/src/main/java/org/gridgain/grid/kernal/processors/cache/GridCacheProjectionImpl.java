@@ -668,11 +668,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDrSystemCache() {
-        return cache.isDrSystemCache();
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException {
         return cache.getAll(keys, deserializePortables(), entryFilter(false));
     }
@@ -1242,31 +1237,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public Iterator<GridCacheEntry<K, V>> iterator() {
         return cache.entrySet(entryFilter(true)).iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
-        return cache.drStateTransfer(dataCenterIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransferDescriptor> drListStateTransfers() {
-        return cache.drListStateTransfers();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drPause() {
-        cache.drPause();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drResume() {
-        cache.drResume();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridDrStatus drPauseState() {
-        return cache.drPauseState();
     }
 
     /** {@inheritDoc} */

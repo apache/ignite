@@ -19,6 +19,7 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.springframework.util.*;
 
 import java.lang.annotation.*;
 import java.util.*;
@@ -363,10 +364,8 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         Grid g = startGrid();
 
         try {
-            GridComputeTaskFuture<Object> fut = g.compute().execute(TestTask.class, null);
-
             // Should not be null if task has been completed successfully (meaning all resources have been injected).
-            assert fut.get() != null;
+            Assert.notNull(g.compute().execute(TestTask.class, null));
         }
         finally {
             stopGrid();

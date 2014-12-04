@@ -45,7 +45,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
         try (Grid g = startGrid(1)) {
             cnt = new CountDownLatch(1);
 
-            g.compute().execute(CancelledTask.class, null);
+            g.compute().enableAsync().execute(CancelledTask.class, null);
 
             cnt.await();
         }

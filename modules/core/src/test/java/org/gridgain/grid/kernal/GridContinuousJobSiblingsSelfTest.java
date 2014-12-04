@@ -34,7 +34,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
             Grid grid = startGrid(0);
             startGrid(1);
 
-            grid.compute().execute(TestTask.class, null).get();
+            grid.compute().execute(TestTask.class, null);
         }
         finally {
             stopAllGrids();
@@ -48,7 +48,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = startGrid(0);
 
-            grid.forLocal().compute().execute(TestTask.class, null).get();
+            compute(grid.cluster().forLocal()).execute(TestTask.class, null);
         }
         finally {
             stopAllGrids();

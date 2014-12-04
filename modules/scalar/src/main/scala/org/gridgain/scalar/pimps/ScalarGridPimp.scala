@@ -30,7 +30,7 @@ object ScalarGridPimp {
 
         val pimp = new ScalarGridPimp
 
-        pimp.impl = impl
+        pimp.impl = impl.cluster()
 
         pimp
     }
@@ -55,7 +55,7 @@ object ScalarGridPimp {
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
  */
-class ScalarGridPimp extends ScalarProjectionPimp[Grid] with ScalarTaskThreadContext[Grid] {
+class ScalarGridPimp extends ScalarProjectionPimp[GridCluster] with ScalarTaskThreadContext[GridCluster] {
     /**
      * Schedules closure for execution using local cron-based scheduling.
      *

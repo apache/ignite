@@ -59,7 +59,7 @@ public final class CacheAtomicStampedExample {
             Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
 
             // Check atomic stamped on all grid nodes.
-            g.compute().run(c).get();
+            g.compute().run(c);
 
             // Make new value of atomic stamped.
             String newVal = UUID.randomUUID().toString();
@@ -73,7 +73,7 @@ public final class CacheAtomicStampedExample {
 
             // Check atomic stamped on all grid nodes.
             // Atomic stamped value and stamp shouldn't be changed.
-            g.compute().run(c).get();
+            g.compute().run(c);
 
             System.out.println("Try to change value and stamp of atomic stamped with correct value and stamp.");
 
@@ -81,7 +81,7 @@ public final class CacheAtomicStampedExample {
 
             // Check atomic stamped on all grid nodes.
             // Atomic stamped value and stamp should be changed.
-            g.compute().run(c).get();
+            g.compute().run(c);
         }
 
         System.out.println();

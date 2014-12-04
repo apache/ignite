@@ -284,44 +284,4 @@ public interface GridCacheMBean {
      */
     @GridMBeanDescription("Count of cache entries that are waiting to be flushed.")
     public int getWriteBehindBufferSize();
-
-    /**
-     * Gets count of keys enqueued for data center replication.
-     *
-     * @return Count of keys enqueued for data center replication.
-     */
-    @GridMBeanDescription("Count of keys enqueued for data center replication.")
-    public int getDrQueuedKeysCount();
-
-    /**
-     * Gets size of data center replication backup queue.
-     *
-     * @return Size of data center replication backup queue.
-     */
-    @GridMBeanDescription("Size of data center replication backup queue.")
-    public int getDrBackupQueueSize();
-
-    /**
-     * Gets count of data center replication batches awaiting to be send.
-     *
-     * @return Count of data center replication batches awaiting to be send.
-     */
-    @GridMBeanDescription("Count of data center replication batches awaiting to be send.")
-    public int getDrBatchWaitingSendCount();
-
-    /**
-     * Gets count of data center replication batches awaiting acknowledge from sender hub.
-     *
-     * @return Count of data center replication batches awaiting acknowledge from sender hub.
-     */
-    @GridMBeanDescription("Count of data center replication batches awaiting acknowledge from sender hub.")
-    public int getDrBatchWaitingAcknowledgeCount();
-
-    /**
-     * Gets count of available data center replication sender hubs.
-     *
-     * @return Count of available data center replication sender hubs.
-     */
-    @GridMBeanDescription("Count of available data center replication sender hubs.")
-    public int getDrSenderHubsCount();
 }

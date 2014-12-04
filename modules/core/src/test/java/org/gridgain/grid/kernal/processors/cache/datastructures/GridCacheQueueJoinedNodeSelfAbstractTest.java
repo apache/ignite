@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -76,7 +77,11 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         PutJob putJob = new PutJob(queueName);
 
-        GridFuture<?> fut = grid(0).forLocal().compute().run(putJob);
+        GridCompute comp = compute(grid(0).forLocal()).enableAsync();
+
+        comp.run(putJob);
+
+        GridFuture<?> fut = comp.future();
 
         Collection<GridFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
 
@@ -91,7 +96,11 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
             jobs.add(job);
 
-            futs.add(grid(i).forLocal().compute().call(job));
+            comp = compute(grid(i).forLocal()).enableAsync();
+
+            comp.call(job);
+
+            futs.add(comp.future());
 
             itemsLeft -= cnt;
         }
@@ -111,7 +120,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         jobs.add(joinedJob);
 
-        Integer polled = joined.forLocal().compute().call(joinedJob).get();
+        Integer polled = forLocal(joined).call(joinedJob);
 
         assertNotNull("Joined node should poll item", polled);
 
@@ -154,7 +163,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         @Override public void run() {
             assertNotNull(grid);
 
-            log.info("Running job [node=" + grid.localNode().id() + ", job=" + getClass().getSimpleName() + "]");
+            log.info("Running job [node=" + grid.cluster().localNode().id() +
+                ", job=" + getClass().getSimpleName() + "]");
 
             try {
                 GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, false);
@@ -245,7 +255,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         @Nullable @Override public Integer call() {
             assertNotNull(grid);
 
-            log.info("Running job [node=" + grid.localNode().id() + ", job=" + getClass().getSimpleName() + "]");
+            log.info("Running job [node=" + grid.cluster().localNode().id() +
+                ", job=" + getClass().getSimpleName() + "]");
 
             Integer lastPolled = null;
 

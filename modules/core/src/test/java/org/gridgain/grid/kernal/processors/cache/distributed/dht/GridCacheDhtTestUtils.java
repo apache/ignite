@@ -102,7 +102,7 @@ public class GridCacheDhtTestUtils {
         final GridCacheAffinity<Integer> aff = dht.affinity();
 
         Grid grid = dht.context().grid();
-        GridNode locNode = grid.localNode();
+        GridNode locNode = grid.cluster().localNode();
 
         GridDhtPartitionTopology<Integer, String> top = dht.topology();
 
@@ -172,7 +172,7 @@ public class GridCacheDhtTestUtils {
         GridCacheAffinity<Integer> aff = dht.affinity();
 
         Grid grid = dht.context().grid();
-        GridNode locNode = grid.localNode();
+        GridNode locNode = grid.cluster().localNode();
 
         GridDhtPartitionTopology<Integer,String> top = dht.topology();
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.ggfs;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.jetbrains.annotations.*;
 
@@ -46,7 +47,7 @@ import java.util.*;
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
-public interface GridGgfs extends GridGgfsFileSystem {
+public interface GridGgfs extends GridGgfsFileSystem, IgniteAsyncSupport {
     /** GGFS scheme name. */
     public static final String GGFS_SCHEME = "ggfs";
 
@@ -248,28 +249,33 @@ public interface GridGgfs extends GridGgfsFileSystem {
 
     /**
      * Formats the file system removing all existing entries from it.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @return Future completing when format is finished.
      * @throws GridException In case format has failed.
      */
-    public GridFuture<?> format() throws GridException;
+    public void format() throws GridException;
 
     /**
-     * Executes GGFS task asynchronously.
+     * Executes GGFS task.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
      * @param paths Collection of paths to be processed within this task.
      * @param arg Optional task argument.
-     * @return Execution future.
+     * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException;
 
     /**
-     * Executes GGFS task asynchronously with overridden maximum range length (see
+     * Executes GGFS task with overridden maximum range length (see
      * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -279,29 +285,33 @@ public interface GridGgfs extends GridGgfsFileSystem {
      * @param maxRangeLen Optional maximum range length. If {@code 0}, then by default all consecutive
      *      GGFS blocks will be included.
      * @param arg Optional task argument.
-     * @return Execution future.
+     * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws GridException;
 
     /**
-     * Executes GGFS task asynchronously.
+     * Executes GGFS task.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.
      * @param paths Collection of paths to be processed within this task.
      * @param arg Optional task argument.
-     * @return Execution future.
+     * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+    public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException;
 
     /**
-     * Executes GGFS task asynchronously with overridden maximum range length (see
+     * Executes GGFS task with overridden maximum range length (see
      * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -310,10 +320,13 @@ public interface GridGgfs extends GridGgfsFileSystem {
      *     be ignored. Otherwise an exception will be thrown.
      * @param maxRangeLen Maximum range length.
      * @param arg Optional task argument.
-     * @return Execution future.
+     * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+    public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
+
+    /** {@inheritDoc} */
+    @Override public GridGgfs enableAsync();
 }

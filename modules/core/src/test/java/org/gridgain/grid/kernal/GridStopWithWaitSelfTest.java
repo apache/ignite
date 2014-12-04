@@ -64,7 +64,9 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
             assert grid1 != null;
             assert grid2 != null;
 
-            fut = grid1.compute().withTimeout(10000).execute(GridWaitTask.class.getName(), grid1.localNode().id());
+            fut = executeAsync(grid1.compute().withTimeout(10000),
+                GridWaitTask.class.getName(),
+                grid1.cluster().localNode().id());
 
             jobStarted.await();
         }
@@ -98,7 +100,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
             long timeout = 3000;
 
-            fut = grid1.compute().withTimeout(timeout).execute(JobFailTask.class.getName(), "1");
+            fut = executeAsync(grid1.compute().withTimeout(timeout), JobFailTask.class.getName(), "1");
 
             jobStarted.await(timeout, TimeUnit.MILLISECONDS);
         }
@@ -187,7 +189,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
                     boolean fail;
 
                     try {
-                        fail = (Boolean)ses.waitForAttribute("fail");
+                        fail = ses.waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
                         throw new GridException("Got interrupted while waiting for attribute to be set.", e);

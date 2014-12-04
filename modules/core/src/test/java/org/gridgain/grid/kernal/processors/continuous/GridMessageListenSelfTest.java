@@ -225,7 +225,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             List<UUID> allNodes0 = new ArrayList<>(allNodes);
 
-            allNodes0.add(g.localNode().id());
+            allNodes0.add(g.cluster().localNode().id());
 
             Collections.sort(allNodes0);
 
@@ -263,7 +263,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             List<UUID> incNodes0 = new ArrayList<>(incNodes);
 
-            incNodes0.add(g.localNode().id());
+            incNodes0.add(g.cluster().localNode().id());
 
             Collections.sort(incNodes0);
 
@@ -281,7 +281,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNullTopicWithDeployment() throws Exception {
         Class<?> cls = getExternalClassLoader().loadClass(LSNR_CLS_NAME);
 
-        grid(0).message().remoteListen(null, (GridBiPredicate<UUID, Object>)cls.newInstance()).get();
+        grid(0).message().remoteListen(null, (GridBiPredicate<UUID, Object>)cls.newInstance());
 
         send();
 
@@ -305,7 +305,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         Object topic = topicCls.newInstance();
 
-        grid(0).message().remoteListen(topic, (GridBiPredicate<UUID, Object>)lsnrCls.newInstance()).get();
+        grid(0).message().remoteListen(topic, (GridBiPredicate<UUID, Object>)lsnrCls.newInstance());
 
         send(topic);
 
@@ -324,7 +324,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testListenActor() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
-        grid(0).message().remoteListen(null, new Actor(grid(0))).get();
+        grid(0).message().remoteListen(null, new Actor(grid(0)));
 
         try {
             Grid g = startGrid("anotherGrid");
@@ -339,7 +339,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             List<UUID> allNodes0 = new ArrayList<>(allNodes);
 
-            allNodes0.add(g.localNode().id());
+            allNodes0.add(g.cluster().localNode().id());
 
             Collections.sort(allNodes0);
 
@@ -359,7 +359,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private void listen(final GridProjection prj, @Nullable Object topic, final boolean ret) throws Exception {
         assert prj != null;
 
-        prj.message().remoteListen(topic, new Listener(prj, ret)).get();
+        message(prj).remoteListen(topic, new Listener(prj, ret));
     }
 
     /**
@@ -389,7 +389,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      */
     private boolean checkDeployedListeners(int expCnt) {
         for (Grid g : G.allGrids()) {
-            AtomicInteger cnt = g.<String, AtomicInteger>nodeLocalMap().get("msgCnt");
+            AtomicInteger cnt = g.cluster().<String, AtomicInteger>nodeLocalMap().get("msgCnt");
 
             if (cnt == null || cnt.get() != expCnt)
                 return false;
@@ -444,9 +444,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
             assertNotNull(locNodeId);
             assertNotNull(exec);
 
-            X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.localNode().id() + ']');
+            X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.cluster().localNode().id() + ']');
 
-            assertEquals(prj.grid().localNode().id(), nodeId);
+            assertEquals(prj.grid().cluster().localNode().id(), nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(locNodeId);
@@ -473,11 +473,11 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         @Override protected void receive(UUID nodeId, Object msg) throws Throwable {
             assertNotNull(grid());
 
-            UUID locNodeId = grid().localNode().id();
+            UUID locNodeId = grid().cluster().localNode().id();
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + locNodeId + ']');
 
-            assertEquals(prj.grid().localNode().id(), nodeId);
+            assertEquals(prj.grid().cluster().localNode().id(), nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(locNodeId);

@@ -46,19 +46,19 @@ public final class ComputeFibonacciContinuationExample {
 
             long N = 100;
 
-            final UUID exampleNodeId = g.localNode().id();
+            final UUID exampleNodeId = g.cluster().localNode().id();
 
             // Filter to exclude this node from execution.
             final GridPredicate<GridNode> nodeFilter = new GridPredicate<GridNode>() {
                 @Override public boolean apply(GridNode n) {
                     // Give preference to remote nodes.
-                    return g.forRemotes().nodes().isEmpty() || !n.id().equals(exampleNodeId);
+                    return g.cluster().forRemotes().nodes().isEmpty() || !n.id().equals(exampleNodeId);
                 }
             };
 
             long start = System.currentTimeMillis();
 
-            BigInteger fib = g.forPredicate(nodeFilter).compute().apply(new FibonacciClosure(nodeFilter), N).get();
+            BigInteger fib = g.compute(g.cluster().forPredicate(nodeFilter)).apply(new FibonacciClosure(nodeFilter), N);
 
             long duration = System.currentTimeMillis() - start;
 
@@ -102,65 +102,73 @@ public final class ComputeFibonacciContinuationExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public BigInteger apply(Long n) {
-            if (fut1 == null || fut2 == null) {
-                System.out.println();
-                System.out.println(">>> Starting fibonacci execution for number: " + n);
-
-                // Make sure n is not negative.
-                n = Math.abs(n);
-
-                if (n <= 2)
-                    return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
-
-                // Node-local storage.
-                GridNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.nodeLocalMap();
-
-                // Check if value is cached in node-local-map first.
-                fut1 = locMap.get(n - 1);
-                fut2 = locMap.get(n - 2);
-
-                GridProjection p = g.forPredicate(nodeFilter);
-
-                // If future is not cached in node-local-map, cache it.
-                if (fut1 == null)
-                    fut1 = locMap.addIfAbsent(n - 1, p.compute().apply(new FibonacciClosure(nodeFilter), n - 1));
-
-                // If future is not cached in node-local-map, cache it.
-                if (fut2 == null)
-                    fut2 = locMap.addIfAbsent(n - 2, p.compute().apply(new FibonacciClosure(nodeFilter), n - 2));
-
-                // If futures are not done, then wait asynchronously for the result
-                if (!fut1.isDone() || !fut2.isDone()) {
-                    GridInClosure<GridFuture<BigInteger>> lsnr = new GridInClosure<GridFuture<BigInteger>>() {
-                        @Override public void apply(GridFuture<BigInteger> f) {
-                            // If both futures are done, resume the continuation.
-                            if (fut1.isDone() && fut2.isDone())
-                                // CONTINUATION:
-                                // =============
-                                // Resume suspended job execution.
-                                jobCtx.callcc();
-                        }
-                    };
-
-                    // CONTINUATION:
-                    // =============
-                    // Hold (suspend) job execution.
-                    // It will be resumed in listener above via 'callcc()' call
-                    // once both futures are done.
-                    jobCtx.holdcc();
-
-                    // Attach the same listener to both futures.
-                    fut1.listenAsync(lsnr);
-                    fut2.listenAsync(lsnr);
-
-                    return null;
-                }
-            }
-
-            assert fut1.isDone() && fut2.isDone();
-
-            // Return cached results.
             try {
+                if (fut1 == null || fut2 == null) {
+                    System.out.println();
+                    System.out.println(">>> Starting fibonacci execution for number: " + n);
+
+                    // Make sure n is not negative.
+                    n = Math.abs(n);
+
+                    if (n <= 2)
+                        return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
+
+                    // Node-local storage.
+                    GridNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
+
+                    // Check if value is cached in node-local-map first.
+                    fut1 = locMap.get(n - 1);
+                    fut2 = locMap.get(n - 2);
+
+                    GridProjection p = g.cluster().forPredicate(nodeFilter);
+
+                    GridCompute compute = g.compute(p).enableAsync();
+
+                    // If future is not cached in node-local-map, cache it.
+                    if (fut1 == null) {
+                        compute.apply(new FibonacciClosure(nodeFilter), n - 1);
+
+                        fut1 = locMap.addIfAbsent(n - 1, compute.<BigInteger>future());
+                    }
+
+                    // If future is not cached in node-local-map, cache it.
+                    if (fut2 == null) {
+                        compute.apply(new FibonacciClosure(nodeFilter), n - 2);
+
+                        fut2 = locMap.addIfAbsent(n - 2, compute.<BigInteger>future());
+                    }
+
+                    // If futures are not done, then wait asynchronously for the result
+                    if (!fut1.isDone() || !fut2.isDone()) {
+                        GridInClosure<GridFuture<BigInteger>> lsnr = new GridInClosure<GridFuture<BigInteger>>() {
+                            @Override public void apply(GridFuture<BigInteger> f) {
+                                // If both futures are done, resume the continuation.
+                                if (fut1.isDone() && fut2.isDone())
+                                    // CONTINUATION:
+                                    // =============
+                                    // Resume suspended job execution.
+                                    jobCtx.callcc();
+                            }
+                        };
+
+                        // CONTINUATION:
+                        // =============
+                        // Hold (suspend) job execution.
+                        // It will be resumed in listener above via 'callcc()' call
+                        // once both futures are done.
+                        jobCtx.holdcc();
+
+                        // Attach the same listener to both futures.
+                        fut1.listenAsync(lsnr);
+                        fut2.listenAsync(lsnr);
+
+                        return null;
+                    }
+                }
+
+                assert fut1.isDone() && fut2.isDone();
+
+                // Return cached results.
                 return fut1.get().add(fut2.get());
             }
             catch (GridException e) {

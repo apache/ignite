@@ -40,7 +40,7 @@ public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<Str
         if ("null".equals(cacheName))
             cacheName = null;
 
-        GridNode node = grid.mapKeyToNode(cacheName, affKey);
+        GridNode node = grid.cluster().mapKeyToNode(cacheName, affKey);
 
         return node.id().toString();
     }

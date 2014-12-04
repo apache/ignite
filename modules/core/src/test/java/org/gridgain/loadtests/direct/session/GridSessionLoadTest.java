@@ -76,7 +76,7 @@ public class GridSessionLoadTest extends GridCommonAbstractTest {
                         long start = System.currentTimeMillis();
 
                         GridComputeTaskFuture<?> fut = grid.compute().withTimeout(10000).
-                            execute(GridSessionLoadTestTask.class.getName(), grid.nodes().size());
+                            execute(GridSessionLoadTestTask.class.getName(), grid.cluster().nodes().size());
 
                         Object res = fut.get();
 

@@ -153,12 +153,12 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i <= workerCnt; i++)
             workers.add(startGrid("worker" + i));
 
-        info("Master: " + master.localNode().id());
+        info("Master: " + master.cluster().localNode().id());
 
         List<Grid> runningWorkers = new ArrayList<>(workerCnt);
 
         for (int i = 1; i <= workerCnt; i++) {
-            UUID id = workers.get(i - 1).localNode().id();
+            UUID id = workers.get(i - 1).cluster().localNode().id();
 
             info(String.format("Worker%d: %s", i, id));
 
@@ -167,7 +167,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
 
         try {
             // Dummy call to fetch affinity function from remote node
-            master.mapKeyToNode(CACHE_NAME, "Dummy");
+            master.cluster().mapKeyToNode(CACHE_NAME, "Dummy");
 
             Map<UUID, Collection<Integer>> dataChunks = new HashMap<>();
 
@@ -176,7 +176,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
             int failoverPushGap = 0;
 
             for (Integer key : testKeys) {
-                GridNode mappedNode = master.mapKeyToNode(CACHE_NAME, key);
+                GridNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
 
                 UUID nodeId = mappedNode.id();
 
@@ -208,7 +208,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
                             else {
                                 Grid victim = runningWorkers.remove(0);
 
-                                info("Shutting down node: " + victim.localNode().id());
+                                info("Shutting down node: " + victim.cluster().localNode().id());
 
                                 stopGrid(victim.name());
 
@@ -279,7 +279,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         Map<UUID, Collection<Integer>> dataChunks = new HashMap<>();
 
         for (Integer key : keys) {
-            GridNode mappedNode = master.mapKeyToNode(CACHE_NAME, key);
+            GridNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
 
             UUID nodeId = mappedNode.id();
 
@@ -304,11 +304,17 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * @param master Master node to submit from.
      * @param preferredNodeId Node id to execute job on.
      * @param dataChunk Data chunk to put in cache.
+     * @throws GridException If failed.
      */
-    private void submitDataChunk(final Grid master, UUID preferredNodeId, final Collection<Integer> dataChunk) {
-        GridComputeTaskFuture<Void> fut = master.forPredicate(workerNodesFilter).compute().execute(
-            new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()),
-            dataChunk);
+    private void submitDataChunk(final Grid master, UUID preferredNodeId, final Collection<Integer> dataChunk)
+        throws GridException {
+        GridProjection prj = master.cluster().forPredicate(workerNodesFilter);
+
+        GridCompute comp = master.compute(prj).enableAsync();
+
+        comp.execute(new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()), dataChunk);
+
+        GridComputeTaskFuture<Void> fut = comp.future();
 
         fut.listenAsync(new CI1<GridFuture<Void>>() {
             @Override public void apply(GridFuture<Void> f) {

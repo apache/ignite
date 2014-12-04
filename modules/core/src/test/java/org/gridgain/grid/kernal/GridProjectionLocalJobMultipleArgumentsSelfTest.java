@@ -87,7 +87,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
 
                     return 10;
                 }
-            }).get());
+            }));
         }
 
         assertEquals(30, F.sumInt(res));
@@ -105,7 +105,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
 
                     res.addAndGet(10);
                 }
-            }).get();
+            });
         }
 
         assertEquals(30, res.get());
@@ -123,7 +123,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
 
                 return 10 + arg;
             }
-        }, F.asList(1, 2, 3)).get();
+        }, F.asList(1, 2, 3));
 
         assertEquals(36, F.sumInt(res));
         assertEquals(3, ids.size());
@@ -141,43 +141,9 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
 
                 return 10 + arg;
             }
-        }, args).get();
+        }, args);
 
         assertEquals(36, F.sumInt(res));
-        assertEquals(3, ids.size());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReduce() throws Exception {
-        int res = grid().compute().apply(new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer arg) {
-                ids.add(System.identityHashCode(this));
-
-                return 10 + arg;
-            }
-        }, F.asList(1, 2, 3), F.sumIntReducer()).get();
-
-        assertEquals(36, res);
-        assertEquals(3, ids.size());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReduceWithProducer() throws Exception {
-        Collection<Integer> args = Arrays.asList(1, 2, 3);
-
-        int res = grid().compute().apply(new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer arg) {
-                ids.add(System.identityHashCode(this));
-
-                return 10 + arg;
-            }
-        }, args, F.sumIntReducer()).get();
-
-        assertEquals(36, res);
         assertEquals(3, ids.size());
     }
 }
