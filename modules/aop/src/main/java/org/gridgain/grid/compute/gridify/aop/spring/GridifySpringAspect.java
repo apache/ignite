@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
 
 import java.lang.reflect.*;
 
-import static org.gridgain.grid.IgniteState.*;
+import static org.apache.ignite.IgniteState.*;
 
 /**
  * Spring aspect that cross-cuts on all methods grid-enabled with

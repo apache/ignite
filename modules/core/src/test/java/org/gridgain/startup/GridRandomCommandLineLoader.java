@@ -10,6 +10,7 @@
 package org.gridgain.startup;
 
 import org.apache.commons.cli.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
@@ -28,7 +29,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.IgniteState.*;
+import static org.apache.ignite.IgniteState.*;
 
 /**
  * This class defines random command-line GridGain loader. This loader can be used

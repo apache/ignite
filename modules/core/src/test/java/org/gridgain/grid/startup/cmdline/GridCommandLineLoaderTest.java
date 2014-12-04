@@ -9,13 +9,14 @@
 
 package org.gridgain.grid.startup.cmdline;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.IgniteState.*;
+import static org.apache.ignite.IgniteState.*;
 
 /**
  * Command line loader test.

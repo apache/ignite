@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.IgniteState.*;
+import static org.apache.ignite.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**

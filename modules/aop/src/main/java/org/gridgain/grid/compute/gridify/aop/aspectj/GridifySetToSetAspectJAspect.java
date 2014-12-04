@@ -20,7 +20,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.gridify.*;
 import java.lang.reflect.*;
 
-import static org.gridgain.grid.IgniteState.*;
+import static org.apache.ignite.IgniteState.*;
 import static org.gridgain.grid.util.gridify.GridifyUtils.*;
 
 /**

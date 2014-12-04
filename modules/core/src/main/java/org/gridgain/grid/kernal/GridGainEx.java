@@ -74,7 +74,7 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
-import static org.gridgain.grid.IgniteState.*;
+import static org.apache.ignite.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;

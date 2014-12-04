@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import org.gridgain.grid.segmentation.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Possible states of {@link org.apache.ignite.Ignition}. You can register a listener for
- * state change notifications via {@link org.apache.ignite.Ignition#addListener(GridGainListener)}
+ * state change notifications via {@link org.apache.ignite.Ignition#addListener(org.gridgain.grid.GridGainListener)}
  * method.
  */
 public enum IgniteState {

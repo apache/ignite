@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.startup.cmdline;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -27,7 +28,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.IgniteState.*;
+import static org.apache.ignite.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 
