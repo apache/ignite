@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.service.*;
@@ -215,7 +214,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.gridgain.grid.events.IgniteEvents} for this projection.
+     * @return {@link org.apache.ignite.IgniteEvents} for this projection.
      */
     public final IgniteEvents events() {
         if (evts == null) {

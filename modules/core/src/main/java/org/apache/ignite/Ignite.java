@@ -15,7 +15,6 @@ import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
@@ -54,7 +53,7 @@ import java.util.concurrent.*;
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
- * <li>{@link org.gridgain.grid.events.IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
@@ -133,7 +132,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets {@code events} functionality over this grid projection. All operations
-     * on the returned {@link org.gridgain.grid.events.IgniteEvents} instance will only include nodes from
+     * on the returned {@link IgniteEvents} instance will only include nodes from
      * this projection.
      *
      * @return Events instance over this grid projection.

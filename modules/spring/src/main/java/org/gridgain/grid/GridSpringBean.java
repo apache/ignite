@@ -15,7 +15,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
