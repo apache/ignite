@@ -219,7 +219,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                 fut.get();
                 return null;
             }
-        }, GridFutureCancelledException.class, null);
+        }, IgniteFutureCancelledException.class, null);
 
         assertTrue(spi.interrupted);
 

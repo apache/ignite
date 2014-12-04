@@ -2791,7 +2791,7 @@ public class GridFunc {
                 try {
                     return fut.get();
                 }
-                catch (GridFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
                 catch (GridInterruptedException ignore) {
@@ -2807,7 +2807,7 @@ public class GridFunc {
                 try {
                     return fut.get(timeout, unit);
                 }
-                catch (GridFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
                 catch (GridInterruptedException ignore) {

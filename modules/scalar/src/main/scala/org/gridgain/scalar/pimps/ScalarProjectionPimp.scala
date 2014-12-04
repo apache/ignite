@@ -595,7 +595,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @throws GridInterruptedException Subclass of `GridException` thrown if the wait was interrupted.
-     * @throws GridFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
      */
     def affinityRun$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run, @Nullable p: NF) {
         affinityRunAsync$(cacheName, affKey, r, p).get
@@ -640,7 +640,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @return Non-cancellable future of this execution.
      * @throws GridInterruptedException Subclass of `GridException` thrown if the wait was interrupted.
-     * @throws GridFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): IgniteFuture[_] = {

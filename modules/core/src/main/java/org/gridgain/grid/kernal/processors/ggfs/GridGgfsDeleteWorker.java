@@ -296,7 +296,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                 try {
                     fut.get();
                 }
-                catch (GridFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledException ignore) {
                     // This future can be cancelled only due to GGFS shutdown.
                     cancelled = true;
 

@@ -142,7 +142,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
                 acquireSharedInterruptibly(0);
 
             if (getState() == CANCELLED)
-                throw new GridFutureCancelledException("Future was cancelled: " + this);
+                throw new IgniteFutureCancelledException("Future was cancelled: " + this);
 
             if (err != null)
                 throw U.cast(err);
@@ -191,7 +191,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
             throw new GridFutureTimeoutException("Timeout was reached before computation completed.");
 
         if (getState() == CANCELLED)
-            throw new GridFutureCancelledException("Future was cancelled: " + this);
+            throw new IgniteFutureCancelledException("Future was cancelled: " + this);
 
         if (err != null)
             throw U.cast(err);

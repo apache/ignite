@@ -335,7 +335,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
                 err.compareAndSet(null, e);
             }
-            catch (GridFutureCancelledException e) {
+            catch (IgniteFutureCancelledException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to execute compound future reducer [lsnr=" + this + ", e=" + e + ']');
 

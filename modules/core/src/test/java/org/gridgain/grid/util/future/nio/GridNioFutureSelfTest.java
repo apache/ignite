@@ -84,7 +84,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
                 return fut.get();
             }
-        }, GridFutureCancelledException.class, null);
+        }, IgniteFutureCancelledException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -96,7 +96,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
                 return fut.get();
             }
-        }, GridFutureCancelledException.class, null);
+        }, IgniteFutureCancelledException.class, null);
     }
 
     /**
@@ -184,7 +184,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridFutureCancelledException e) {
+        catch (IgniteFutureCancelledException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -193,7 +193,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridFutureCancelledException e) {
+        catch (IgniteFutureCancelledException e) {
             info("Caught expected exception: " + e);
         }
 

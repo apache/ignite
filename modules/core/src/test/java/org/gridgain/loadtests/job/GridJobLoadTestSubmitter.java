@@ -98,7 +98,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
                     ignite.log().info(">>> Task completed successfully. Task id: " + fut.getTaskSession().getId());
                 }
-                catch (GridFutureCancelledException ignored) {
+                catch (IgniteFutureCancelledException ignored) {
                     ignite.log().info(">>> Task cancelled: " + fut.getTaskSession().getId());
                 }
                 catch (GridException e) {

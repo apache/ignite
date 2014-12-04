@@ -79,7 +79,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
                 acquireSharedInterruptibly(0);
 
             if (getState() == CANCELLED)
-                throw new GridFutureCancelledException("Future was cancelled: " + this);
+                throw new IgniteFutureCancelledException("Future was cancelled: " + this);
 
             if (err != null)
                 throw U.cast(err);
@@ -126,7 +126,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
             throw new GridFutureTimeoutException("Timeout was reached before computation completed.");
 
         if (getState() == CANCELLED)
-            throw new GridFutureCancelledException("Future was cancelled: " + this);
+            throw new IgniteFutureCancelledException("Future was cancelled: " + this);
 
         if (err != null)
             throw U.cast(err);

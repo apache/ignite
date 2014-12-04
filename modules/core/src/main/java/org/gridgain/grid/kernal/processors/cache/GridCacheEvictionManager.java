@@ -1102,7 +1102,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             try {
                 t = fut.get();
             }
-            catch (GridFutureCancelledException ignored) {
+            catch (IgniteFutureCancelledException ignored) {
                 assert false : "Future has been cancelled, but manager is not stopping: " + fut;
 
                 return;

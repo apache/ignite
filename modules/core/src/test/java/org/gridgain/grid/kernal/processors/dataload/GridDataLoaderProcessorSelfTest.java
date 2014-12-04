@@ -523,7 +523,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridFutureCancelledException e) {
+            catch (IgniteFutureCancelledException e) {
                 info("Caught expected exception: " + e);
             }
 
