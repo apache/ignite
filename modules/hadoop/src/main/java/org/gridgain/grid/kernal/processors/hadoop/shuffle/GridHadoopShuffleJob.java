@@ -376,7 +376,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             fut.onDone(U.unwrap(e));
         }
 
-        fut.listenAsync(new GridInClosure<GridFuture<?>>() {
+        fut.listenAsync(new IgniteInClosure<GridFuture<?>>() {
             @Override public void apply(GridFuture<?> f) {
                 try {
                     f.get();

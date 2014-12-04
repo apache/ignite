@@ -85,7 +85,7 @@ public class GridNioFinishedFuture<R> implements GridNioFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable GridInClosure<? super GridNioFuture<R>> lsnr) {
+    @Override public void listenAsync(@Nullable IgniteInClosure<? super GridNioFuture<R>> lsnr) {
         if (lsnr != null)
             lsnr.apply(this);
     }

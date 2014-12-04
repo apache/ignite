@@ -95,7 +95,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     try {
                         GridFuture<GridRestResponse> res = handleRequest(req);
 
-                        res.listenAsync(new GridInClosure<GridFuture<GridRestResponse>>() {
+                        res.listenAsync(new IgniteInClosure<GridFuture<GridRestResponse>>() {
                             @Override public void apply(GridFuture<GridRestResponse> f) {
                                 try {
                                     fut.onDone(f.get());

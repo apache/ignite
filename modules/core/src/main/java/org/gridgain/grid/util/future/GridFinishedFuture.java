@@ -159,7 +159,7 @@ public class GridFinishedFuture<T> implements GridFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(final GridInClosure<? super GridFuture<T>> lsnr) {
+    @Override public void listenAsync(final IgniteInClosure<? super GridFuture<T>> lsnr) {
         if (ctx == null)
             throw new IllegalStateException("Cannot attach listener to deserialized future (context is null): " + this);
 
@@ -176,7 +176,7 @@ public class GridFinishedFuture<T> implements GridFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable GridInClosure<? super GridFuture<T>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<T>>... lsnr) {
         // No-op.
     }
 

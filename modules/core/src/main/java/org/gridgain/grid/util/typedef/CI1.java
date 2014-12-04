@@ -13,11 +13,11 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
- * Defines {@code alias} for {@link GridInClosure} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link org.gridgain.grid.lang.IgniteInClosure} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link GridInClosure}.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link org.gridgain.grid.lang.IgniteInClosure}.
  * @param <T> Type of the factory closure.
  * @see GridFunc
- * @see GridInClosure
+ * @see org.gridgain.grid.lang.IgniteInClosure
  */
-public interface CI1<T> extends GridInClosure<T> { /* No-op. */ }
+public interface CI1<T> extends IgniteInClosure<T> { /* No-op. */ }

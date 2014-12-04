@@ -485,7 +485,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
                 if (!evictFut.isDone()) {
                     pendingFuts.add(evictFut);
 
-                    evictFut.listenAsync(new GridInClosure<GridFuture<byte[]>>() {
+                    evictFut.listenAsync(new IgniteInClosure<GridFuture<byte[]>>() {
                         @Override public void apply(GridFuture<byte[]> t) {
                             pendingFuts.remove(evictFut);
 

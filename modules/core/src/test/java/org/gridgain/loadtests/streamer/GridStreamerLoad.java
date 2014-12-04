@@ -22,7 +22,7 @@ public class GridStreamerLoad {
     private String name;
 
     /** Load closures. */
-    private List<GridInClosure<GridStreamer>> clos;
+    private List<IgniteInClosure<GridStreamer>> clos;
 
     /**
      * @return Steamer name.
@@ -41,14 +41,14 @@ public class GridStreamerLoad {
     /**
      * @return Query closure.
      */
-    public List<GridInClosure<GridStreamer>> getClosures() {
+    public List<IgniteInClosure<GridStreamer>> getClosures() {
         return clos;
     }
 
     /**
      * @param clos Query closure.
      */
-    public void setClosures(List<GridInClosure<GridStreamer>> clos) {
+    public void setClosures(List<IgniteInClosure<GridStreamer>> clos) {
         this.clos = clos;
     }
 }

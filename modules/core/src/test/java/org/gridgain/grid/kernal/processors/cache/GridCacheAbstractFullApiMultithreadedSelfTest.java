@@ -63,7 +63,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @param c Test closure.
      * @throws Exception In case of error.
      */
-    private void runTest(final GridInClosure<GridCache<String, Integer>> c) throws Exception {
+    private void runTest(final IgniteInClosure<GridCache<String, Integer>> c) throws Exception {
         final GridFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 while (true) {

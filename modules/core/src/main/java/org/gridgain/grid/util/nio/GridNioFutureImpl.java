@@ -53,7 +53,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
     protected boolean msgThread;
 
     /** Asynchronous listeners. */
-    private Collection<GridInClosure<? super GridNioFuture<R>>> lsnrs;
+    private Collection<IgniteInClosure<? super GridNioFuture<R>>> lsnrs;
 
     /** */
     private final Object mux = new Object();
@@ -155,7 +155,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable final GridInClosure<? super GridNioFuture<R>> lsnr) {
+    @Override public void listenAsync(@Nullable final IgniteInClosure<? super GridNioFuture<R>> lsnr) {
         if (lsnr != null) {
             boolean done = isDone();
 
@@ -191,7 +191,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
      * Notifies all registered listeners.
      */
     private void notifyListeners() {
-        final Collection<GridInClosure<? super GridNioFuture<R>>> lsnrs0;
+        final Collection<IgniteInClosure<? super GridNioFuture<R>>> lsnrs0;
 
         synchronized (mux) {
             lsnrs0 = lsnrs;
@@ -204,7 +204,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
 
         assert !lsnrs0.isEmpty();
 
-        for (GridInClosure<? super GridNioFuture<R>> lsnr : lsnrs0)
+        for (IgniteInClosure<? super GridNioFuture<R>> lsnr : lsnrs0)
             lsnr.apply(this);
     }
 

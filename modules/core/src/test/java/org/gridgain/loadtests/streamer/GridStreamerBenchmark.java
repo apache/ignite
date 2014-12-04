@@ -59,10 +59,10 @@ public class GridStreamerBenchmark {
                 if (streamer == null)
                     throw new Exception("Steamer is not found: " + load.getName());
 
-                List<GridInClosure<GridStreamer>> clos = load.getClosures();
+                List<IgniteInClosure<GridStreamer>> clos = load.getClosures();
 
                 if (clos != null && !clos.isEmpty()) {
-                    for (final GridInClosure<GridStreamer> clo : clos) {
+                    for (final IgniteInClosure<GridStreamer> clo : clos) {
                         Thread t = new Thread(new Runnable() {
                             @Override public void run() {
                                 try {

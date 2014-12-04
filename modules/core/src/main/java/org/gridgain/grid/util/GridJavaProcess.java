@@ -73,7 +73,7 @@ public final class GridJavaProcess {
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
-        @Nullable GridInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
+        @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
         return exec(cls, params, log, printC, procKilledC, null, null);
     }
 
@@ -91,7 +91,7 @@ public final class GridJavaProcess {
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
-        @Nullable GridInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
+        @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
         @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
         if (!(U.isLinux() || U.isMacOs() || U.isWindows()))
             throw new Exception("Your OS is not supported.");
@@ -189,7 +189,7 @@ public final class GridJavaProcess {
         private final InputStream streamToGrab;
 
         /** Closure to be called when process termination is detected. */
-        private final GridInClosure<String> printC;
+        private final IgniteInClosure<String> printC;
 
         /**
          * Creates the ProcessStreamGrabber bounded to the given Process.
@@ -197,7 +197,7 @@ public final class GridJavaProcess {
          * @param streamToGrab Stream to grab.
          * @param printC Optional closure to be called each time wrapped process prints line to system.out or system.err.
          */
-        ProcessStreamGrabber(InputStream streamToGrab, @Nullable GridInClosure<String> printC) {
+        ProcessStreamGrabber(InputStream streamToGrab, @Nullable IgniteInClosure<String> printC) {
             this.streamToGrab = streamToGrab;
             this.printC = printC;
         }

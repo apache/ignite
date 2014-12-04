@@ -506,7 +506,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         };
 
     /**
-     * {@link GridInClosure} for calculating sum.
+     * {@link org.gridgain.grid.lang.IgniteInClosure} for calculating sum.
      */
     @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static final class SumVisitor implements CI1<GridCacheEntry<String, Integer>> {

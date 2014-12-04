@@ -887,7 +887,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void forEach(GridInClosure<GridCacheEntry<K, V>> vis) {
+    @Override public void forEach(IgniteInClosure<GridCacheEntry<K, V>> vis) {
         A.notNull(vis, "vis");
 
         for (GridCacheEntry<K, V> e : entrySet())

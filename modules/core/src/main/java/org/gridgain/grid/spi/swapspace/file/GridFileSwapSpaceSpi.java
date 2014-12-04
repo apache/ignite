@@ -376,7 +376,7 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable GridInClosure<byte[]> c,
+    @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
         GridSwapContext ctx) throws GridSpiException {
         assert key != null;
         assert ctx != null;

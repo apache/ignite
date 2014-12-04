@@ -328,7 +328,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param vis Visitor.
      * @return Projection-filter-aware visitor.
      */
-    private GridInClosure<GridCacheEntry<K, V>> visitor(final GridInClosure<GridCacheEntry<K, V>> vis) {
+    private IgniteInClosure<GridCacheEntry<K, V>> visitor(final IgniteInClosure<GridCacheEntry<K, V>> vis) {
         return new CI1<GridCacheEntry<K, V>>() {
             @Override public void apply(GridCacheEntry<K, V> e) {
                 if (isAll(e, true))
@@ -570,7 +570,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void forEach(GridInClosure<GridCacheEntry<K, V>> vis) {
+    @Override public void forEach(IgniteInClosure<GridCacheEntry<K, V>> vis) {
         cache.forEach(visitor(vis));
     }
 

@@ -521,7 +521,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    implicit def toInClosure[T](f: T => Unit): GridInClosure[T] =
+    implicit def toInClosure[T](f: T => Unit): IgniteInClosure[T] =
         f match {
             case (p: ScalarInClosureFunction[T]) => p.inner
             case _ => new ScalarInClosure[T](f)
@@ -532,7 +532,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    def toInClosureX[T](f: T => Unit): GridInClosureX[T] =
+    def toInClosureX[T](f: T => Unit): IgniteInClosureX[T] =
         f match {
             case (p: ScalarInClosureXFunction[T]) => p.inner
             case _ => new ScalarInClosureX[T](f)
@@ -543,7 +543,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromInClosure[T](f: GridInClosure[T]): T => Unit =
+    implicit def fromInClosure[T](f: IgniteInClosure[T]): T => Unit =
         new ScalarInClosureFunction[T](f)
 
     /**
@@ -551,7 +551,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromInClosureX[T](f: GridInClosureX[T]): T => Unit =
+    implicit def fromInClosureX[T](f: IgniteInClosureX[T]): T => Unit =
         new ScalarInClosureXFunction[T](f)
 
     /**
@@ -559,7 +559,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def inClosureDotScala[T](f: GridInClosure[T]) = new {
+    implicit def inClosureDotScala[T](f: IgniteInClosure[T]) = new {
         def scala: T => Unit =
             fromInClosure(f)
     }
@@ -569,7 +569,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def inClosureXDotScala[T](f: GridInClosureX[T]) = new {
+    implicit def inClosureXDotScala[T](f: IgniteInClosureX[T]) = new {
         def scala: T => Unit =
             fromInClosureX(f)
     }

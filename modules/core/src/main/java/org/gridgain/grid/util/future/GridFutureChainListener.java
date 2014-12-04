@@ -19,7 +19,7 @@ import org.gridgain.grid.util.lang.*;
 /**
  * Future listener to fill chained future with converted result of the source future.
  */
-public class GridFutureChainListener<T, R> implements GridInClosure<GridFuture<T>> {
+public class GridFutureChainListener<T, R> implements IgniteInClosure<GridFuture<T>> {
     /** */
     private static final long serialVersionUID = 0L;
 

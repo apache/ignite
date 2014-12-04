@@ -152,13 +152,13 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public void listenAsync(GridInClosure<? super GridFuture<T>> lsnr) {
+    @Override public void listenAsync(IgniteInClosure<? super GridFuture<T>> lsnr) {
         if (lsnr != null)
             lsnr.apply(this);
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable GridInClosure<? super GridFuture<T>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<T>>... lsnr) {
         // No-op.
     }
 

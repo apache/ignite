@@ -71,7 +71,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private boolean valid = true;
 
     /** Asynchronous listeners. */
-    private Collection<GridInClosure<? super GridFuture<R>>> lsnrs;
+    private Collection<IgniteInClosure<? super GridFuture<R>>> lsnrs;
 
     /** Context. */
     protected GridKernalContext ctx;
@@ -253,7 +253,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable final GridInClosure<? super GridFuture<R>> lsnr) {
+    @Override public void listenAsync(@Nullable final IgniteInClosure<? super GridFuture<R>> lsnr) {
         if (lsnr != null) {
             checkValid();
 
@@ -292,7 +292,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable GridInClosure<? super GridFuture<R>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr) {
         synchronized (mux) {
             if (lsnrs == null)
                 return;
@@ -301,10 +301,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                 lsnrs.clear();
             else {
                 // Iterate through the whole list, removing all occurrences, if any.
-                for (Iterator<GridInClosure<? super GridFuture<R>>> it = lsnrs.iterator(); it.hasNext();) {
-                    GridInClosure<? super GridFuture<R>> l1 = it.next();
+                for (Iterator<IgniteInClosure<? super GridFuture<R>>> it = lsnrs.iterator(); it.hasNext();) {
+                    IgniteInClosure<? super GridFuture<R>> l1 = it.next();
 
-                    for (GridInClosure<? super GridFuture<R>> l2 : lsnr)
+                    for (IgniteInClosure<? super GridFuture<R>> l2 : lsnr)
                         // Must be l1.equals(l2), not l2.equals(l1), because of the way listeners are added.
                         if (l1.equals(l2))
                             it.remove();
@@ -322,7 +322,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * Notifies all registered listeners.
      */
     private void notifyListeners() {
-        final Collection<GridInClosure<? super GridFuture<R>>> lsnrs0;
+        final Collection<IgniteInClosure<? super GridFuture<R>>> lsnrs0;
 
         synchronized (mux) {
             lsnrs0 = lsnrs;
@@ -336,7 +336,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         assert !lsnrs0.isEmpty();
 
         if (concurNotify) {
-            for (final GridInClosure<? super GridFuture<R>> lsnr : lsnrs0)
+            for (final IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs0)
                 ctx.closure().runLocalSafe(new GPR() {
                     @Override public void run() {
                         notifyListener(lsnr);
@@ -350,13 +350,13 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                     @Override public void run() {
                         // Since concurrent notifications are off, we notify
                         // all listeners in one thread.
-                        for (GridInClosure<? super GridFuture<R>> lsnr : lsnrs0)
+                        for (IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs0)
                             notifyListener(lsnr);
                     }
                 }, true);
             }
             else
-                for (GridInClosure<? super GridFuture<R>> lsnr : lsnrs0)
+                for (IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs0)
                     notifyListener(lsnr);
         }
     }
@@ -366,7 +366,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      *
      * @param lsnr Listener.
      */
-    private void notifyListener(GridInClosure<? super GridFuture<R>> lsnr) {
+    private void notifyListener(IgniteInClosure<? super GridFuture<R>> lsnr) {
         assert lsnr != null;
 
         try {

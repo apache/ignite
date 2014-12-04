@@ -112,7 +112,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
     /** Closure to remove from active futures. */
     @GridToStringExclude
-    private final GridInClosure<GridFuture<?>> rmvActiveFut = new GridInClosure<GridFuture<?>>() {
+    private final IgniteInClosure<GridFuture<?>> rmvActiveFut = new IgniteInClosure<GridFuture<?>>() {
         @Override public void apply(GridFuture<?> t) {
             boolean rmv = activeFuts.remove(t);
 
@@ -468,7 +468,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             final Collection<Map.Entry<K, V>> entriesForNode = e.getValue();
 
-            GridInClosure<GridFuture<?>> lsnr = new GridInClosure<GridFuture<?>>() {
+            IgniteInClosure<GridFuture<?>> lsnr = new IgniteInClosure<GridFuture<?>>() {
                 @Override public void apply(GridFuture<?> t) {
                     try {
                         t.get();
@@ -743,7 +743,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
         /** Closure to signal on task finish. */
         @GridToStringExclude
-        private final GridInClosure<GridFuture<Object>> signalC = new GridInClosure<GridFuture<Object>>() {
+        private final IgniteInClosure<GridFuture<Object>> signalC = new IgniteInClosure<GridFuture<Object>>() {
             @Override public void apply(GridFuture<Object> t) {
                 signalTaskFinished(t);
             }
@@ -777,7 +777,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * @return Future for operation.
          */
         @Nullable GridFutureAdapter<?> update(Iterable<Map.Entry<K, V>> newEntries,
-            GridInClosure<GridFuture<?>> lsnr) throws GridInterruptedException {
+            IgniteInClosure<GridFuture<?>> lsnr) throws GridInterruptedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
@@ -900,7 +900,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 locFuts.add(fut);
 
-                fut.listenAsync(new GridInClosure<GridFuture<Object>>() {
+                fut.listenAsync(new IgniteInClosure<GridFuture<Object>>() {
                     @Override public void apply(GridFuture<Object> t) {
                         try {
                             boolean rmv = locFuts.remove(t);

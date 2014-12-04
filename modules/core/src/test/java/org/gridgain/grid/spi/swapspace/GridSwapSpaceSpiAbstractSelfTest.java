@@ -116,7 +116,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
         assertArrayEquals(spi.read(DFLT_SPACE_NAME, new GridSwapKey(key1), context()), val2);
 
-        spi.remove(DFLT_SPACE_NAME, new GridSwapKey(key1), new GridInClosure<byte[]>() {
+        spi.remove(DFLT_SPACE_NAME, new GridSwapKey(key1), new IgniteInClosure<byte[]>() {
             @Override public void apply(byte[] old) {
                 assertArrayEquals(val2, old);
             }
@@ -190,7 +190,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
         assertArrayEquals(spi.read(space2, new GridSwapKey(key1), context()), val1);
 
-        spi.remove(space1, new GridSwapKey(key1), new GridInClosure<byte[]>() {
+        spi.remove(space1, new GridSwapKey(key1), new IgniteInClosure<byte[]>() {
             @Override public void apply(byte[] old) {
                 assertArrayEquals(val12, old);
             }
@@ -200,7 +200,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
         assertEquals(1, spi.count(space2));
 
-        spi.remove(space2, new GridSwapKey(key1), new GridInClosure<byte[]>() {
+        spi.remove(space2, new GridSwapKey(key1), new IgniteInClosure<byte[]>() {
             @Override public void apply(byte[] old) {
                 assertArrayEquals(val1, old);
             }

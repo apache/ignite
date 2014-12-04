@@ -16,7 +16,7 @@ import java.io.*;
  *
  * @param <E> Type of closure argument.
  */
-public interface GridInClosure<E> extends Serializable {
+public interface IgniteInClosure<E> extends Serializable {
     /**
      * Closure body.
      *

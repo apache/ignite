@@ -1053,7 +1053,7 @@ public class GridCacheUtils {
      * @param excl Excludes.
      * @return Future listener that logs errors.
      */
-    public static GridInClosure<GridFuture<?>> errorLogger(final GridLogger log,
+    public static IgniteInClosure<GridFuture<?>> errorLogger(final GridLogger log,
         final Class<? extends Exception>... excl) {
         return new CI1<GridFuture<?>>() {
             @Override public void apply(GridFuture<?> f) {
@@ -1608,7 +1608,7 @@ public class GridCacheUtils {
      * @throws GridException If failed.
      */
     public static <K, V> void inTx(GridCacheProjection<K, V> cache, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, GridInClosureX<GridCacheProjection<K ,V>> clo) throws GridException {
+        GridCacheTxIsolation isolation, IgniteInClosureX<GridCacheProjection<K ,V>> clo) throws GridException {
 
         try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
             clo.applyx(cache);

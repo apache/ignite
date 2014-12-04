@@ -92,7 +92,7 @@ public class GridDrSenderHubInMemoryStore implements GridDrSenderHubStore, GridL
     private GridCircularBuffer<DrEntry> buf;
 
     /** */
-    private GridInClosureX<DrEntry> evictC;
+    private IgniteInClosureX<DrEntry> evictC;
 
     /**
      * Gets maximum number of entries can be stored. This value should power of two.

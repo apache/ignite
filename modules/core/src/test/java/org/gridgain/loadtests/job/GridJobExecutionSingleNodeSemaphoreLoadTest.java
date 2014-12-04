@@ -156,7 +156,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
         final LongAdder iterCntr) {
         final Semaphore sem = new Semaphore(taskCnt);
 
-        final GridInClosure<GridFuture> lsnr = new CI1<GridFuture>() {
+        final IgniteInClosure<GridFuture> lsnr = new CI1<GridFuture>() {
             @Override public void apply(GridFuture t) {
                 sem.release();
             }

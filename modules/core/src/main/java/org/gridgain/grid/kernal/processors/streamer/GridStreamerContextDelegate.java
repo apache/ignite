@@ -75,12 +75,12 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(GridInClosure<GridStreamerContext> clo) throws GridException {
+    @Override public void broadcast(IgniteInClosure<GridStreamerContext> clo) throws GridException {
         delegate.broadcast(clo);
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes)
+    @Override public void broadcast(IgniteInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes)
         throws GridException {
         delegate.broadcast(clo, nodes);
     }

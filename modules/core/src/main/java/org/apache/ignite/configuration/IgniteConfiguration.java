@@ -540,7 +540,7 @@ public class IgniteConfiguration {
     private GridPortableConfiguration portableCfg;
 
     /** Warmup closure. Will be invoked before actual grid start. */
-    private GridInClosure<IgniteConfiguration> warmupClos;
+    private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -3185,7 +3185,7 @@ public class IgniteConfiguration {
      *
      * @return Warmup closure to execute.
      */
-    public GridInClosure<IgniteConfiguration> getWarmupClosure() {
+    public IgniteInClosure<IgniteConfiguration> getWarmupClosure() {
         return warmupClos;
     }
 
@@ -3195,7 +3195,7 @@ public class IgniteConfiguration {
      * @param warmupClos Warmup closure to execute.
      * @see #getWarmupClosure()
      */
-    public void setWarmupClosure(GridInClosure<IgniteConfiguration> warmupClos) {
+    public void setWarmupClosure(IgniteInClosure<IgniteConfiguration> warmupClos) {
         this.warmupClos = warmupClos;
     }
 

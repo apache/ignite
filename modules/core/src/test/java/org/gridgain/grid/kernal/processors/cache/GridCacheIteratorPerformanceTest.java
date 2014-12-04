@@ -76,14 +76,14 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @param prj Projection.
      * @param c Visitor closure.
      */
-    private void iterate(GridCacheProjection<Integer, Integer> prj, GridInClosure<GridCacheEntry<Integer, Integer>> c) {
+    private void iterate(GridCacheProjection<Integer, Integer> prj, IgniteInClosure<GridCacheEntry<Integer, Integer>> c) {
         prj.forEach(c);
     }
 
     /**
      * @return Empty filter.
      */
-    private GridInClosure<GridCacheEntry<Integer, Integer>> emptyFilter() {
+    private IgniteInClosure<GridCacheEntry<Integer, Integer>> emptyFilter() {
         return new CI1<GridCacheEntry<Integer, Integer>>() {
             @Override public void apply(GridCacheEntry<Integer, Integer> e) {
                 // No-op
@@ -102,7 +102,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         assert cache.size() == SMALL_ENTRY_CNT;
 
-        GridInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
 
         // Warmup.
         for (int i = 0; i < 10; i ++)
@@ -131,7 +131,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
-        GridInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
 
         // Warmup.
         for (int i = 0; i < 3; i++)
@@ -160,7 +160,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
-        GridInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
 
         GridCacheProjection<Integer, Integer> prj = cache.projection(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer key, Integer val) {
@@ -200,7 +200,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         final BoxedInt cnt = new BoxedInt();
 
-        GridInClosure<GridCacheEntry<Integer, Integer>> c = new CI1<GridCacheEntry<Integer, Integer>>() {
+        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = new CI1<GridCacheEntry<Integer, Integer>>() {
             @Override public void apply(GridCacheEntry<Integer, Integer> t) {
                 if (t.peek() < SMALL_ENTRY_CNT)
                     cnt.increment();

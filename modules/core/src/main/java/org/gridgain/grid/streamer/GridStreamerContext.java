@@ -93,7 +93,7 @@ public interface GridStreamerContext {
      * @param clo Function to be executed on individual nodes.
      * @throws GridException If closure execution failed.
      */
-    public void broadcast(GridInClosure<GridStreamerContext> clo) throws GridException;
+    public void broadcast(IgniteInClosure<GridStreamerContext> clo) throws GridException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes on
@@ -104,7 +104,7 @@ public interface GridStreamerContext {
      *      which this streamer is running will be queried.
      * @throws GridException If closure execution failed.
      */
-    public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes) throws GridException;
+    public void broadcast(IgniteInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes) throws GridException;
 
     /**
      * Queries all streamer nodes deployed within grid. Given closure will be executed on each streamer node in

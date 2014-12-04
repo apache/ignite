@@ -195,7 +195,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> flat = F.flatCollections(m.values());
 
-        F.forEach(flat, new GridInClosure<Integer>() {
+        F.forEach(flat, new IgniteInClosure<Integer>() {
             @Override public void apply(Integer i) {
                 r.add(i);
             }

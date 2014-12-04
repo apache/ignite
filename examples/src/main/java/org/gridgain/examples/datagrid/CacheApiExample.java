@@ -76,7 +76,7 @@ public class CacheApiExample {
         GridFuture<String> fut = cache.putAsync(3, "3");
 
         // Asynchronously wait for result.
-        fut.listenAsync(new GridInClosure<GridFuture<String>>() {
+        fut.listenAsync(new IgniteInClosure<GridFuture<String>>() {
             @Override public void apply(GridFuture<String> fut) {
                 try {
                     System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
@@ -142,7 +142,7 @@ public class CacheApiExample {
             System.out.println("Cache projection iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
         // Iterate over each element using 'forEach' construct.
-        cache.forEach(new GridInClosure<GridCacheEntry<Integer, String>>() {
+        cache.forEach(new IgniteInClosure<GridCacheEntry<Integer, String>>() {
             @Override public void apply(GridCacheEntry<Integer, String> e) {
                 System.out.println("forEach iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
             }

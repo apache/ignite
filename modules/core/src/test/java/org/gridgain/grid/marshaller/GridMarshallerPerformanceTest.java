@@ -44,7 +44,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     public void testSerialization() throws Exception {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        GridInClosure<TestObject> writer = new CIX1<TestObject>() {
+        IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
             @Override public void applyx(TestObject obj) throws GridException {
                 out.reset();
 
@@ -96,7 +96,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
 
         marsh.setClassNames(Arrays.asList(TestObject.class.getName()));
 
-        GridInClosure<TestObject> writer = new CIX1<TestObject>() {
+        IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
             @Override public void applyx(TestObject obj) throws GridException {
                 tuple.set(marsh.marshal(obj));
             }
@@ -117,7 +117,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     public void testByteBuffer() throws Exception {
         final ByteBuffer buf = ByteBuffer.allocate(1024);
 
-        GridInClosure<TestObject> writer = new CI1<TestObject>() {
+        IgniteInClosure<TestObject> writer = new CI1<TestObject>() {
             @Override public void apply(TestObject obj) {
                 buf.clear();
 
@@ -144,7 +144,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        GridInClosure<TestObject> writer = new CI1<TestObject>() {
+        IgniteInClosure<TestObject> writer = new CI1<TestObject>() {
             @Override public void apply(TestObject obj) {
                 out.reset();
 
@@ -185,7 +185,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
      * @param reader Reader closure.
      * @throws Exception In case of error.
      */
-    private void runTest(String name, GridInClosure<TestObject> writer,
+    private void runTest(String name, IgniteInClosure<TestObject> writer,
         GridOutClosure<TestObject> reader) throws Exception {
         ArrayList<Float> list = new ArrayList<>();
 

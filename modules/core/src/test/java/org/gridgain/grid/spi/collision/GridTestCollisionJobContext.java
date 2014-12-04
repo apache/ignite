@@ -36,7 +36,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
     private GridTestJob job;
 
     /** Job activation callback. */
-    private GridInClosure<GridTestCollisionJobContext> onActivate;
+    private IgniteInClosure<GridTestCollisionJobContext> onActivate;
 
     /**
      * @param ses Session.
@@ -68,7 +68,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
      * @param onActivate Closure to be called when current task get activated.
      */
     public GridTestCollisionJobContext(GridComputeTaskSession ses, int idx,
-        GridInClosure<GridTestCollisionJobContext> onActivate) {
+        IgniteInClosure<GridTestCollisionJobContext> onActivate) {
         this(ses, idx);
 
         this.onActivate = onActivate;

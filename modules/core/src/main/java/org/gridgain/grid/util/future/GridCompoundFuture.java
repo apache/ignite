@@ -294,7 +294,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /**
      * Listener for futures.
      */
-    private class Listener implements GridInClosure<GridFuture<T>> {
+    private class Listener implements IgniteInClosure<GridFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 

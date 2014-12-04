@@ -31,7 +31,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
     private static final long serialVersionUID = 0L;
 
     /** Closure. */
-    private GridInClosure<GridStreamerContext> clo;
+    private IgniteInClosure<GridStreamerContext> clo;
 
     /** Streamer. */
     private String streamer;
@@ -40,7 +40,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
      * @param clo Closure.
      * @param streamer Streamer.
      */
-    public GridStreamerBroadcastTask(GridInClosure<GridStreamerContext> clo, @Nullable String streamer) {
+    public GridStreamerBroadcastTask(IgniteInClosure<GridStreamerContext> clo, @Nullable String streamer) {
         super(U.peerDeployAware(clo));
 
         this.clo = clo;
@@ -84,7 +84,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
         private Ignite g;
 
         /** Closure. */
-        private GridInClosure<GridStreamerContext> clo;
+        private IgniteInClosure<GridStreamerContext> clo;
 
         /** Streamer. */
         private String streamer;
@@ -100,7 +100,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
          * @param clo Closure.
          * @param streamer Streamer.
          */
-        private StreamerBroadcastJob(GridInClosure<GridStreamerContext> clo, String streamer) {
+        private StreamerBroadcastJob(IgniteInClosure<GridStreamerContext> clo, String streamer) {
             this.clo = clo;
             this.streamer = streamer;
         }
@@ -124,7 +124,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            clo = (GridInClosure<GridStreamerContext>)in.readObject();
+            clo = (IgniteInClosure<GridStreamerContext>)in.readObject();
             streamer = U.readString(in);
         }
     }

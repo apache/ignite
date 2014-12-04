@@ -259,7 +259,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridInClosure<?> PRINTLN = new CI1() {
+    private static final IgniteInClosure<?> PRINTLN = new CI1() {
         @Override public void apply(Object o) {
             System.out.println(o);
         }
@@ -270,7 +270,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridInClosure<?> PRINT = new CI1() {
+    private static final IgniteInClosure<?> PRINT = new CI1() {
         @Override public void apply(Object o) {
             System.out.print(o);
         }
@@ -633,7 +633,7 @@ public class GridFunc {
      * @return Reflective in closure.
      * @throws GridClosureException Thrown in case of any reflective invocation errors.
      */
-    public static <T> GridInClosure<T> ciInvoke(final String mtdName, final Object... args) {
+    public static <T> IgniteInClosure<T> ciInvoke(final String mtdName, final Object... args) {
         A.notNull(mtdName, "mtdName");
 
         return new CI1<T>() {
@@ -1645,8 +1645,8 @@ public class GridFunc {
      * @return Closure that calls {@code System.out.println()} on its bound variable.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridInClosure<T> println() {
-        return (GridInClosure<T>)PRINTLN;
+    public static <T> IgniteInClosure<T> println() {
+        return (IgniteInClosure<T>)PRINTLN;
     }
 
     /**
@@ -1686,7 +1686,7 @@ public class GridFunc {
      * @return Closure that calls {@code System.out.print(pre); System.out.print(t); System.out.println(post)}
      *      on its bound variable.
      */
-    public static <T> GridInClosure<T> println(@Nullable final String pre, @Nullable final String post) {
+    public static <T> IgniteInClosure<T> println(@Nullable final String pre, @Nullable final String post) {
         return new CI1<T>() {
             @Override public void apply(T t) {
                 String sPre = pre == null ? "" : pre;
@@ -1704,7 +1704,7 @@ public class GridFunc {
      * @param <T> Type of the bound variable.
      * @return Closure that prints out its bound variable.
      */
-    public static <T> GridInClosure<T> printf(final String fmt) {
+    public static <T> IgniteInClosure<T> printf(final String fmt) {
         return new CI1<T>() {
             @Override public void apply(T t) {
                 System.out.printf(fmt, t);
@@ -1718,8 +1718,8 @@ public class GridFunc {
      * @return Closure that prints out its bound variable.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridInClosure<T> print() {
-        return (GridInClosure<T>)PRINT;
+    public static <T> IgniteInClosure<T> print() {
+        return (IgniteInClosure<T>)PRINT;
     }
 
     /**
@@ -1729,7 +1729,7 @@ public class GridFunc {
      * @param post String value to print after each variable.
      * @return Closure that prints out its bound variable.
      */
-    public static <T> GridInClosure<T> print(@Nullable final String pre, @Nullable final String post) {
+    public static <T> IgniteInClosure<T> print(@Nullable final String pre, @Nullable final String post) {
         return new CI1<T>() {
             @Override public void apply(T t) {
                 String sPre = pre == null ? "" : pre;
@@ -2897,7 +2897,7 @@ public class GridFunc {
      * @param <T> Input type.
      * @return Curried closure.
      */
-    public static <T> GridAbsClosure curry(final GridInClosure<? super T> f, final T e) {
+    public static <T> GridAbsClosure curry(final IgniteInClosure<? super T> f, final T e) {
         return new GridAbsClosure() {
             @Override public void apply() {
                 f.apply(e);
@@ -2936,7 +2936,7 @@ public class GridFunc {
      * @param <T> Type of the input collection.
      * @return Read only collection of closures closed on each element of input collection.
      */
-    public static <T> Collection<GridAbsClosure> yield(Collection<? extends T> c, final GridInClosure<? super T> f) {
+    public static <T> Collection<GridAbsClosure> yield(Collection<? extends T> c, final IgniteInClosure<? super T> f) {
         A.notNull(c, "c", f, "f");
 
         return viewReadOnly(c, new C1<T, GridAbsClosure>() {
@@ -2955,7 +2955,7 @@ public class GridFunc {
      * @param <T> Type of the input collection.
      * @return Collection of closures closed on each element of input collection.
      */
-    public static <T> Collection<GridAbsClosure> yield(T[] c, GridInClosure<? super T> f) {
+    public static <T> Collection<GridAbsClosure> yield(T[] c, IgniteInClosure<? super T> f) {
         A.notNull(c, "c", f, "f");
 
         return yield(asList(c), f);
@@ -5643,7 +5643,7 @@ public class GridFunc {
      * @param <X> Type of the free variable for the closure and type of the
      *      collection elements.
      */
-    public static <X> void forEach(Iterable<? extends X> c, GridInClosure<? super X> f,
+    public static <X> void forEach(Iterable<? extends X> c, IgniteInClosure<? super X> f,
         @Nullable GridPredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
 
@@ -5665,7 +5665,7 @@ public class GridFunc {
      *      elements.
      */
     @SuppressWarnings("RedundantTypeArguments")
-    public static <X> void forEach(X[] c, GridInClosure<? super X> f, @Nullable GridPredicate<? super X>... p) {
+    public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable GridPredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
 
         F.<X>forEach(asList(c), f, p);
@@ -5873,7 +5873,7 @@ public class GridFunc {
      * @param <K> Type of the free variable for the closure and type of the map keys.
      * @param <V> Type of the closure's return value and type of the map values.
      */
-    public static <K, V> void forEach(Map<? extends K, ? extends V> m, GridInClosure<? super IgniteBiTuple<K, V>> f,
+    public static <K, V> void forEach(Map<? extends K, ? extends V> m, IgniteInClosure<? super IgniteBiTuple<K, V>> f,
         @Nullable GridPredicate<? super IgniteBiTuple<K, V>>... p) {
         A.notNull(m, "m");
 
@@ -7704,7 +7704,7 @@ public class GridFunc {
      * @param <T> Type of closure argument.
      * @return Collection of curried closures.
      */
-    public static <T> Collection<GridAbsClosure> curry0(Collection<? extends GridInClosure<? super T>> in,
+    public static <T> Collection<GridAbsClosure> curry0(Collection<? extends IgniteInClosure<? super T>> in,
         Collection<? extends T> args) {
         A.notNull(in, "in", args, "args");
         A.ensure(in.size() == args.size(), "in.size() == args.size()");
@@ -7713,7 +7713,7 @@ public class GridFunc {
 
         Iterator<? extends T> iter = args.iterator();
 
-        for (GridInClosure<? super T> c : in) {
+        for (IgniteInClosure<? super T> c : in) {
             ret.add(curry(c, iter.next()));
         }
 
@@ -7773,7 +7773,7 @@ public class GridFunc {
      * @param <T> Type of closure argument.
      * @return Collection of curried closures.
      */
-    public static <T> Collection<GridAbsClosure> curry(GridInClosure<? super T> c, Collection<? extends T> args) {
+    public static <T> Collection<GridAbsClosure> curry(IgniteInClosure<? super T> c, Collection<? extends T> args) {
         A.notNull(c, "c", args, "args");
 
         Collection<GridAbsClosure> ret = new ArrayList<>(args.size());
@@ -7794,7 +7794,7 @@ public class GridFunc {
      * @param <T> Type of closure argument.
      * @return Collection of curried closures.
      */
-    public static <T> Collection<GridAbsClosure> curry(int cnt, GridInClosure<? super T> c, GridOutClosure<T> pdc) {
+    public static <T> Collection<GridAbsClosure> curry(int cnt, IgniteInClosure<? super T> c, GridOutClosure<T> pdc) {
         A.notNull(c, "c", pdc, "pdc");
         A.ensure(cnt > 0, "cnt > 0");
 
@@ -8681,7 +8681,7 @@ public class GridFunc {
 
         final AtomicReference<GridFuture<T>> t = new AtomicReference<>();
 
-        GridInClosure<GridFuture<T>> c = null;
+        IgniteInClosure<GridFuture<T>> c = null;
 
         for (GridFuture<T> fut : futs) {
             if (fut != null) {

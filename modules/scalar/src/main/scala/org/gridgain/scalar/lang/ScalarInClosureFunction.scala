@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.{GridInClosure}
+import org.gridgain.grid.lang.{IgniteInClosure}
 
 /**
  * Wrapping Scala function for `GridInClosure`.
  */
-class ScalarInClosureFunction[T](val inner: GridInClosure[T]) extends (T => Unit) {
+class ScalarInClosureFunction[T](val inner: IgniteInClosure[T]) extends (T => Unit) {
     assert(inner != null)
 
     /**

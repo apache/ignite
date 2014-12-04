@@ -60,7 +60,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static GridMarshaller marsh;
 
     /** Closure job. */
-    protected GridInClosure<String> c1 = new GridInClosure<String>() {
+    protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
         @Override public void apply(String s) {
             // No-op.
         }

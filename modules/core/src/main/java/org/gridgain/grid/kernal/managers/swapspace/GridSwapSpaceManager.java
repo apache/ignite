@@ -228,7 +228,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param ldr Class loader (optional).
      * @throws GridException If failed.
      */
-    public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable GridInClosure<byte[]> c,
+    public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
         @Nullable ClassLoader ldr) throws GridException {
         assert key != null;
 
@@ -275,7 +275,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param ldr Class loader (optional).
      * @throws GridException If failed.
      */
-    public void remove(@Nullable String spaceName, Object key, @Nullable GridInClosure<byte[]> c,
+    public void remove(@Nullable String spaceName, Object key, @Nullable IgniteInClosure<byte[]> c,
         @Nullable ClassLoader ldr) throws GridException {
         assert key != null;
 

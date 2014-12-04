@@ -72,7 +72,7 @@ public class GridCircularBuffer<T> {
      *
      * @param c Closure to execute.
      */
-    public void forEach(GridInClosure<T> c) {
+    public void forEach(IgniteInClosure<T> c) {
         for (Item<T> t : arr) {
             T item = t.item();
 
@@ -113,7 +113,7 @@ public class GridCircularBuffer<T> {
      * @throws InterruptedException If interrupted.
      * @throws GridException If closure throws exception.
      */
-    @Nullable public T add(T t, @Nullable GridInClosureX<T> c) throws InterruptedException, GridException {
+    @Nullable public T add(T t, @Nullable IgniteInClosureX<T> c) throws InterruptedException, GridException {
         long idx = idxGen.getAndIncrement();
 
         int idx0 = (int)(idx & sizeMask);
@@ -185,7 +185,7 @@ public class GridCircularBuffer<T> {
          * @throws InterruptedException If interrupted.
          * @throws GridException If closure throws exception.
          */
-        @Nullable synchronized V update(long newIdx, V newItem, long maxIdxDiff, @Nullable GridInClosureX<V> c)
+        @Nullable synchronized V update(long newIdx, V newItem, long maxIdxDiff, @Nullable IgniteInClosureX<V> c)
             throws InterruptedException, GridException {
             assert newIdx >= 0;
 

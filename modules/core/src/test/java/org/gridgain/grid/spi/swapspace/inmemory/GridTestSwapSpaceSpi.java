@@ -82,7 +82,7 @@ public class GridTestSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable GridInClosure<byte[]> c,
+    @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
         GridSwapContext ctx) throws GridSpiException {
         Space space = space(spaceName);
 
@@ -243,7 +243,7 @@ public class GridTestSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
          * @param key Key to remove.
          * @param c Closure.
          */
-        public void remove(GridSwapKey key, GridInClosure<byte[]> c) {
+        public void remove(GridSwapKey key, IgniteInClosure<byte[]> c) {
             byte[] val = data.remove(key);
 
             if (val != null) {

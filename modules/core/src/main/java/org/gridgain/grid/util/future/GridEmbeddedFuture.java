@@ -251,7 +251,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener1 implements GridInClosure<GridFuture<B>> {
+    private abstract class AsyncListener1 implements IgniteInClosure<GridFuture<B>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -283,7 +283,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener2 implements GridInClosure<GridFuture<A>> {
+    private abstract class AsyncListener2 implements IgniteInClosure<GridFuture<A>> {
         /** */
         private static final long serialVersionUID = 0L;
 

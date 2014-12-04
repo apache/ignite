@@ -52,7 +52,7 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
                 if (fut.isDone() || F.eq(jobCtx.getAttribute(ATTR_HELD), true))
                     return hadoop.status(jobId);
                 else {
-                    fut.listenAsync(new GridInClosure<GridFuture<?>>() {
+                    fut.listenAsync(new IgniteInClosure<GridFuture<?>>() {
                         @Override public void apply(GridFuture<?> fut0) {
                             jobCtx.callcc();
                         }

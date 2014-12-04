@@ -219,7 +219,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     fut.onDone(res);
                 }
 
-                taskFut.listenAsync(new GridInClosure<GridFuture<Object>>() {
+                taskFut.listenAsync(new IgniteInClosure<GridFuture<Object>>() {
                     @Override public void apply(GridFuture<Object> f) {
                         try {
                             TaskDescriptor desc;

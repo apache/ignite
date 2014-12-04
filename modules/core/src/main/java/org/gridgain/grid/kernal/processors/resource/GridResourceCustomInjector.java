@@ -203,7 +203,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
         lock.writeLock().lock();
 
         try {
-            GridInClosure<Map<Class<?>, Map<String, CachedResource>>> x = new CI1<Map<Class<?>, Map<String, CachedResource>>>() {
+            IgniteInClosure<Map<Class<?>, Map<String, CachedResource>>> x = new CI1<Map<Class<?>, Map<String, CachedResource>>>() {
                 @Override public void apply(Map<Class<?>, Map<String, CachedResource>> map) {
                     if (map != null) {
                         for (Map<String, CachedResource> m : map.values()) {

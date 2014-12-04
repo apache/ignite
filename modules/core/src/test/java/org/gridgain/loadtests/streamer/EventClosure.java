@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Closure for events generation.
  */
-class EventClosure implements GridInClosure<GridStreamer> {
+class EventClosure implements IgniteInClosure<GridStreamer> {
     /** Random range. */
     private int rndRange = 100;
 

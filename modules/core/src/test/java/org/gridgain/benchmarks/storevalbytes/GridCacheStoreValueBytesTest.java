@@ -194,7 +194,7 @@ public class GridCacheStoreValueBytesTest {
 
         final Semaphore sem = new Semaphore(concurrentGetNum);
 
-        final GridInClosure<GridFuture> lsnr = new CI1<GridFuture>() {
+        final IgniteInClosure<GridFuture> lsnr = new CI1<GridFuture>() {
             @Override public void apply(GridFuture t) {
                 sem.release();
             }

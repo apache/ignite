@@ -27,7 +27,7 @@ import java.util.concurrent.*;
 /**
  * Basic warm-up closure which warm-ups cache operations.
  */
-public class GridBasicWarmupClosure implements GridInClosure<IgniteConfiguration> {
+public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> {
     /** */
     private static final long serialVersionUID = 9175346848249957458L;
 

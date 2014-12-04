@@ -342,7 +342,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void forEach(GridInClosure<GridCacheEntry<K, V>> vis) {
+    @Override public void forEach(IgniteInClosure<GridCacheEntry<K, V>> vis) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

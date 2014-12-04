@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Closure for events generation.
  */
-class QueryClosure implements GridInClosure<GridStreamer> {
+class QueryClosure implements IgniteInClosure<GridStreamer> {
     /** Sleep period (seconds). */
     private static final int SLEEP_PERIOD_SEC = 3;
 

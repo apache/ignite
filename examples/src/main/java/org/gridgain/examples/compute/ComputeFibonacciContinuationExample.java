@@ -143,7 +143,7 @@ public final class ComputeFibonacciContinuationExample {
 
                     // If futures are not done, then wait asynchronously for the result
                     if (!fut1.isDone() || !fut2.isDone()) {
-                        GridInClosure<GridFuture<BigInteger>> lsnr = new GridInClosure<GridFuture<BigInteger>>() {
+                        IgniteInClosure<GridFuture<BigInteger>> lsnr = new IgniteInClosure<GridFuture<BigInteger>>() {
                             @Override public void apply(GridFuture<BigInteger> f) {
                                 // If both futures are done, resume the continuation.
                                 if (fut1.isDone() && fut2.isDone())

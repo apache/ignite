@@ -354,7 +354,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param vis Closure which will be invoked for each cache entry.
      */
-    public void forEach(GridInClosure<GridCacheEntry<K, V>> vis);
+    public void forEach(IgniteInClosure<GridCacheEntry<K, V>> vis);
 
     /**
      * Tests whether the predicate holds for all entries. If cache is empty,

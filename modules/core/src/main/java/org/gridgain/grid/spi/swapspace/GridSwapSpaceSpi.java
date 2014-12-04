@@ -115,7 +115,7 @@ public interface GridSwapSpaceSpi extends GridSpi {
      * @throws GridSpiException In case of any errors.
      */
     public void remove(@Nullable String spaceName, GridSwapKey key,
-        @Nullable GridInClosure<byte[]> c, GridSwapContext ctx) throws GridSpiException;
+        @Nullable IgniteInClosure<byte[]> c, GridSwapContext ctx) throws GridSpiException;
 
     /**
      * Removes values stored in data space with given name corresponding to specified keys.

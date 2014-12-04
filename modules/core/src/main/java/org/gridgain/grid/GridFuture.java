@@ -161,7 +161,7 @@ public interface GridFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable GridInClosure<? super GridFuture<R>> lsnr);
+    public void listenAsync(@Nullable IgniteInClosure<? super GridFuture<R>> lsnr);
 
     /**
      * Removes given listeners from the future. If no listener is passed in, then all listeners
@@ -169,7 +169,7 @@ public interface GridFuture<R> {
      *
      * @param lsnr Listeners to remove.
      */
-    public void stopListenAsync(@Nullable GridInClosure<? super GridFuture<R>>... lsnr);
+    public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.

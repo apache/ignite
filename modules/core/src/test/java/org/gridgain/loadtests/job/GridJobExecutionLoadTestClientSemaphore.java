@@ -50,7 +50,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     /** {@inheritDoc} */
     @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
-        final GridInClosure<GridFuture<?>> lsnr = new CI1<GridFuture<?>>() {
+        final IgniteInClosure<GridFuture<?>> lsnr = new CI1<GridFuture<?>>() {
             @Override public void apply(GridFuture<?> t) {
                 tasksSem.release();
             }

@@ -610,7 +610,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /**
      * Listener to track tasks.
      */
-    private class TaskTerminateListener<T> implements GridInClosure<GridFuture<T>> {
+    private class TaskTerminateListener<T> implements IgniteInClosure<GridFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -67,7 +67,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     private GridSpinReadWriteLock busyLock;
 
     /** Closure to check result of async transform of system cache. */
-    private final GridInClosure<GridFuture<?>> failsLog = new CI1<GridFuture<?>>() {
+    private final IgniteInClosure<GridFuture<?>> failsLog = new CI1<GridFuture<?>>() {
         @Override public void apply(GridFuture<?> gridFut) {
             try {
                 gridFut.get();
@@ -1142,7 +1142,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 return;
             }
 
-            GridInClosure<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
+            IgniteInClosure<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
                 @Override public void applyx(GridFuture<?> f) {
                     Throwable err = null;
 

@@ -45,7 +45,7 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
 
         if (err != null)
             onDone(err);
-        else delegate.listenAsync(new GridInClosure<GridNioFuture<R>>() {
+        else delegate.listenAsync(new IgniteInClosure<GridNioFuture<R>>() {
             @Override public void apply(GridNioFuture<R> t) {
                 try {
                     onDone(t.get());

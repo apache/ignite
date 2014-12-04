@@ -57,7 +57,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     private boolean valid = true;
 
     /** Asynchronous listener. */
-    private final ConcurrentLinkedDeque8<GridInClosure<? super GridFuture<R>>>
+    private final ConcurrentLinkedDeque8<IgniteInClosure<? super GridFuture<R>>>
         lsnrs = new ConcurrentLinkedDeque8<>();
 
     /**
@@ -202,18 +202,18 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    @Override public void listenAsync(@Nullable final GridInClosure<? super GridFuture<R>> lsnr) {
+    @Override public void listenAsync(@Nullable final IgniteInClosure<? super GridFuture<R>> lsnr) {
         if (lsnr != null) {
             checkValid();
 
             boolean done;
 
-            GridInClosure<? super GridFuture<R>> lsnr0 = lsnr;
+            IgniteInClosure<? super GridFuture<R>> lsnr0 = lsnr;
 
             done = isDone();
 
             if (!done) {
-                lsnr0 = new GridInClosure<GridFuture<R>>() {
+                lsnr0 = new IgniteInClosure<GridFuture<R>>() {
                     private final AtomicBoolean called = new AtomicBoolean();
 
                     @Override public void apply(GridFuture<R> t) {
@@ -241,15 +241,15 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable GridInClosure<? super GridFuture<R>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr) {
         if (lsnr == null || lsnr.length == 0)
             lsnrs.clear();
         else {
             // Iterate through the whole list, removing all occurrences, if any.
-            for (Iterator<GridInClosure<? super GridFuture<R>>> it = lsnrs.iterator(); it.hasNext(); ) {
-                GridInClosure<? super GridFuture<R>> l1 = it.next();
+            for (Iterator<IgniteInClosure<? super GridFuture<R>>> it = lsnrs.iterator(); it.hasNext(); ) {
+                IgniteInClosure<? super GridFuture<R>> l1 = it.next();
 
-                for (GridInClosure<? super GridFuture<R>> l2 : lsnr)
+                for (IgniteInClosure<? super GridFuture<R>> l2 : lsnr)
                     // Must be l1.equals(l2), not l2.equals(l1), because of the way listeners are added.
                     if (l1.equals(l2))
                         it.remove();
@@ -265,7 +265,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
             }
         };
 
-        listenAsync(new GridInClosure<GridFuture<R>>() {
+        listenAsync(new IgniteInClosure<GridFuture<R>>() {
             @Override public void apply(GridFuture<R> t) {
                 try {
                     fut.onDone(doneCb.apply(t));
@@ -302,7 +302,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
         if (lsnrs.isEmptyx())
             return;
 
-        for (GridInClosure<? super GridFuture<R>> lsnr : lsnrs)
+        for (IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs)
             notifyListener(lsnr);
     }
 
@@ -311,7 +311,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
      *
      * @param lsnr Listener.
      */
-    private void notifyListener(GridInClosure<? super GridFuture<R>> lsnr) {
+    private void notifyListener(IgniteInClosure<? super GridFuture<R>> lsnr) {
         assert lsnr != null;
 
         try {
