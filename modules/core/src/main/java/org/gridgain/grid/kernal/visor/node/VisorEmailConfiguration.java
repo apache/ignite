@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for node email configuration properties.
  */
-public class VisorEmailConfig implements Serializable {
+public class VisorEmailConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,8 +50,8 @@ public class VisorEmailConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node email configuration properties.
      */
-    public static VisorEmailConfig from(GridConfiguration c) {
-        VisorEmailConfig cfg = new VisorEmailConfig();
+    public static VisorEmailConfiguration from(GridConfiguration c) {
+        VisorEmailConfiguration cfg = new VisorEmailConfiguration();
 
         cfg.smtpHost(getProperty(GG_SMTP_HOST, c.getSmtpHost()));
         cfg.smtpPort(intValue(GG_SMTP_PORT, c.getSmtpPort()));
@@ -164,6 +164,6 @@ public class VisorEmailConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorEmailConfig.class, this);
+        return S.toString(VisorEmailConfiguration.class, this);
     }
 }

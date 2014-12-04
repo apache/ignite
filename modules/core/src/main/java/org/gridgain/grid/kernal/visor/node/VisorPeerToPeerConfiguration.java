@@ -20,7 +20,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for node P2P configuration properties.
  */
-public class VisorPeerToPeerConfig implements Serializable {
+public class VisorPeerToPeerConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,8 +37,8 @@ public class VisorPeerToPeerConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node P2P configuration properties.
      */
-    public static VisorPeerToPeerConfig from(GridConfiguration c) {
-        VisorPeerToPeerConfig cfg = new VisorPeerToPeerConfig();
+    public static VisorPeerToPeerConfiguration from(GridConfiguration c) {
+        VisorPeerToPeerConfiguration cfg = new VisorPeerToPeerConfiguration();
 
         cfg.p2pEnabled(c.isPeerClassLoadingEnabled());
         cfg.p2pMissedResponseCacheSize(c.getPeerClassLoadingMissedResourcesCacheSize());
@@ -92,6 +92,6 @@ public class VisorPeerToPeerConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorPeerToPeerConfig.class, this);
+        return S.toString(VisorPeerToPeerConfiguration.class, this);
     }
 }

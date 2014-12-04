@@ -22,7 +22,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Create data transfer object for node REST configuration properties.
  */
-public class VisorRestConfig implements Serializable {
+public class VisorRestConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,8 +57,8 @@ public class VisorRestConfig implements Serializable {
      * @param c Grid configuration.
      * @return Create data transfer object for node REST configuration properties.
      */
-    public static VisorRestConfig from(GridConfiguration c) {
-        VisorRestConfig cfg = new VisorRestConfig();
+    public static VisorRestConfiguration from(GridConfiguration c) {
+        VisorRestConfiguration cfg = new VisorRestConfiguration();
 
         GridClientConnectionConfiguration clnCfg = c.getClientConnectionConfiguration();
 
@@ -208,6 +208,6 @@ public class VisorRestConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorRestConfig.class, this);
+        return S.toString(VisorRestConfiguration.class, this);
     }
 }

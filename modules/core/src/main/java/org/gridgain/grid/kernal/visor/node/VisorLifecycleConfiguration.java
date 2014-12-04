@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for node lifecycle configuration properties.
  */
-public class VisorLifecycleConfig implements Serializable {
+public class VisorLifecycleConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,8 +35,8 @@ public class VisorLifecycleConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node lifecycle configuration properties.
      */
-    public static VisorLifecycleConfig from(GridConfiguration c) {
-        VisorLifecycleConfig cfg = new VisorLifecycleConfig();
+    public static VisorLifecycleConfiguration from(GridConfiguration c) {
+        VisorLifecycleConfiguration cfg = new VisorLifecycleConfiguration();
 
         cfg.beans(compactArray(c.getLifecycleBeans()));
         cfg.emailNotification(boolValue(GG_LIFECYCLE_EMAIL_NOTIFY, c.isLifeCycleEmailNotification()));
@@ -74,6 +74,6 @@ public class VisorLifecycleConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorLifecycleConfig.class, this);
+        return S.toString(VisorLifecycleConfiguration.class, this);
     }
 }

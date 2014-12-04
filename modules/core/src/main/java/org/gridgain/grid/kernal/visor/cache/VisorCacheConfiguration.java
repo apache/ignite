@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for cache configuration properties.
  */
-public class VisorCacheConfig implements Serializable {
+public class VisorCacheConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -107,32 +107,32 @@ public class VisorCacheConfig implements Serializable {
     private VisorCacheAffinityConfig affinity;
 
     /** Preload config. */
-    private VisorCachePreloadConfig preload;
+    private VisorCachePreloadConfiguration preload;
 
     /** Eviction config. */
-    private VisorCacheEvictionConfig evict;
+    private VisorCacheEvictionConfiguration evict;
 
     /** Near cache config. */
-    private VisorCacheNearConfig near;
+    private VisorCacheNearConfiguration near;
 
     /** Default config */
     private VisorCacheDefaultConfig dflt;
 
     /** Dgc config */
-    private VisorCacheDgcConfig dgc;
+    private VisorCacheDgcConfiguration dgc;
 
     /** Store config */
-    private VisorCacheStoreConfig store;
+    private VisorCacheStoreConfiguration store;
 
     /** Write behind config */
-    private VisorCacheWriteBehindConfig writeBehind;
+    private VisorCacheWriteBehindConfiguration writeBehind;
 
     /**
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfig from(GridCacheConfiguration ccfg) {
-        VisorCacheConfig cfg = new VisorCacheConfig();
+    public static VisorCacheConfiguration from(GridCacheConfiguration ccfg) {
+        VisorCacheConfiguration cfg = new VisorCacheConfiguration();
 
         cfg.name(ccfg.getName());
         cfg.mode(ccfg.getCacheMode());
@@ -161,13 +161,13 @@ public class VisorCacheConfig implements Serializable {
         cfg.indexingSpiName(ccfg.getIndexingSpiName());
         cfg.interceptor(compactClass(ccfg.getInterceptor()));
         cfg.affinityConfig(VisorCacheAffinityConfig.from(ccfg));
-        cfg.preloadConfig(VisorCachePreloadConfig.from(ccfg));
-        cfg.evictConfig(VisorCacheEvictionConfig.from(ccfg));
-        cfg.nearConfig(VisorCacheNearConfig.from(ccfg));
+        cfg.preloadConfig(VisorCachePreloadConfiguration.from(ccfg));
+        cfg.evictConfig(VisorCacheEvictionConfiguration.from(ccfg));
+        cfg.nearConfig(VisorCacheNearConfiguration.from(ccfg));
         cfg.defaultConfig(VisorCacheDefaultConfig.from(ccfg));
-        cfg.dgcConfig(VisorCacheDgcConfig.from(ccfg));
-        cfg.storeConfig(VisorCacheStoreConfig.from(ccfg));
-        cfg.VisorWriteBehindConfig(VisorCacheWriteBehindConfig.from(ccfg));
+        cfg.dgcConfig(VisorCacheDgcConfiguration.from(ccfg));
+        cfg.storeConfig(VisorCacheStoreConfiguration.from(ccfg));
+        cfg.VisorWriteBehindConfig(VisorCacheWriteBehindConfiguration.from(ccfg));
 
         return cfg;
     }
@@ -176,11 +176,11 @@ public class VisorCacheConfig implements Serializable {
      * @param caches Cache configurations.
      * @return Data transfer object for cache configurations properties.
      */
-    public static Iterable<VisorCacheConfig> list(GridCacheConfiguration[] caches) {
+    public static Iterable<VisorCacheConfiguration> list(GridCacheConfiguration[] caches) {
         if (caches == null)
             return Collections.emptyList();
 
-        final Collection<VisorCacheConfig> cfgs = new ArrayList<>(caches.length);
+        final Collection<VisorCacheConfiguration> cfgs = new ArrayList<>(caches.length);
 
         for (GridCacheConfiguration cache : caches)
             cfgs.add(from(cache));
@@ -570,42 +570,42 @@ public class VisorCacheConfig implements Serializable {
     /**
      * @return Preload config.
      */
-    public VisorCachePreloadConfig preloadConfig() {
+    public VisorCachePreloadConfiguration preloadConfig() {
         return preload;
     }
 
     /**
      * @param preload New preload config.
      */
-    public void preloadConfig(VisorCachePreloadConfig preload) {
+    public void preloadConfig(VisorCachePreloadConfiguration preload) {
         this.preload = preload;
     }
 
     /**
      * @return Eviction config.
      */
-    public VisorCacheEvictionConfig evictConfig() {
+    public VisorCacheEvictionConfiguration evictConfig() {
         return evict;
     }
 
     /**
      * @param evict New eviction config.
      */
-    public void evictConfig(VisorCacheEvictionConfig evict) {
+    public void evictConfig(VisorCacheEvictionConfiguration evict) {
         this.evict = evict;
     }
 
     /**
      * @return Near cache config.
      */
-    public VisorCacheNearConfig nearConfig() {
+    public VisorCacheNearConfiguration nearConfig() {
         return near;
     }
 
     /**
      * @param near New near cache config.
      */
-    public void nearConfig(VisorCacheNearConfig near) {
+    public void nearConfig(VisorCacheNearConfiguration near) {
         this.near = near;
     }
 
@@ -626,47 +626,47 @@ public class VisorCacheConfig implements Serializable {
     /**
      * @return Dgc config
      */
-    public VisorCacheDgcConfig dgcConfig() {
+    public VisorCacheDgcConfiguration dgcConfig() {
         return dgc;
     }
 
     /**
      * @param dgc New dgc config
      */
-    public void dgcConfig(VisorCacheDgcConfig dgc) {
+    public void dgcConfig(VisorCacheDgcConfiguration dgc) {
         this.dgc = dgc;
     }
 
     /**
      * @return Store config
      */
-    public VisorCacheStoreConfig storeConfig() {
+    public VisorCacheStoreConfiguration storeConfig() {
         return store;
     }
 
     /**
      * @param store New store config
      */
-    public void storeConfig(VisorCacheStoreConfig store) {
+    public void storeConfig(VisorCacheStoreConfiguration store) {
         this.store = store;
     }
 
     /**
      * @return Write behind config
      */
-    public VisorCacheWriteBehindConfig writeBehind() {
+    public VisorCacheWriteBehindConfiguration writeBehind() {
         return writeBehind;
     }
 
     /**
      * @param writeBehind New write behind config
      */
-    public void VisorWriteBehindConfig(VisorCacheWriteBehindConfig writeBehind) {
+    public void VisorWriteBehindConfig(VisorCacheWriteBehindConfiguration writeBehind) {
         this.writeBehind = writeBehind;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheConfig.class, this);
+        return S.toString(VisorCacheConfiguration.class, this);
     }
 }

@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Data transfer object for cache preload configuration properties.
  */
-public class VisorCachePreloadConfig implements Serializable {
+public class VisorCachePreloadConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,8 +43,8 @@ public class VisorCachePreloadConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for preload configuration properties.
      */
-    public static VisorCachePreloadConfig from(GridCacheConfiguration ccfg) {
-        VisorCachePreloadConfig cfg = new VisorCachePreloadConfig();
+    public static VisorCachePreloadConfiguration from(GridCacheConfiguration ccfg) {
+        VisorCachePreloadConfiguration cfg = new VisorCachePreloadConfiguration();
 
         cfg.mode(ccfg.getPreloadMode());
         cfg.batchSize(ccfg.getPreloadBatchSize());
@@ -142,6 +142,6 @@ public class VisorCachePreloadConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCachePreloadConfig.class, this);
+        return S.toString(VisorCachePreloadConfiguration.class, this);
     }
 }

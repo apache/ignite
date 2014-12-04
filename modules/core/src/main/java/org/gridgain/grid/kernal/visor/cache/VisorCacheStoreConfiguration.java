@@ -20,7 +20,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for cache store configuration properties.
  */
-public class VisorCacheStoreConfig implements Serializable {
+public class VisorCacheStoreConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,8 +34,8 @@ public class VisorCacheStoreConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache store configuration properties.
      */
-    public static VisorCacheStoreConfig from(GridCacheConfiguration ccfg) {
-        VisorCacheStoreConfig cfg = new VisorCacheStoreConfig();
+    public static VisorCacheStoreConfiguration from(GridCacheConfiguration ccfg) {
+        VisorCacheStoreConfiguration cfg = new VisorCacheStoreConfiguration();
 
         cfg.store(compactClass(ccfg.getStore()));
         cfg.valueBytes(ccfg.isStoreValueBytes());
@@ -77,6 +77,6 @@ public class VisorCacheStoreConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheStoreConfig.class, this);
+        return S.toString(VisorCacheStoreConfiguration.class, this);
     }
 }

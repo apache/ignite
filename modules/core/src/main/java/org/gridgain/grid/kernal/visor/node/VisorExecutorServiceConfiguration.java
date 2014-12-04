@@ -19,7 +19,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for node executors configuration properties.
  */
-public class VisorExecutorServiceConfig implements Serializable {
+public class VisorExecutorServiceConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,8 +51,8 @@ public class VisorExecutorServiceConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node executors configuration properties.
      */
-    public static VisorExecutorServiceConfig from(GridConfiguration c) {
-        VisorExecutorServiceConfig cfg = new VisorExecutorServiceConfig();
+    public static VisorExecutorServiceConfiguration from(GridConfiguration c) {
+        VisorExecutorServiceConfiguration cfg = new VisorExecutorServiceConfiguration();
 
         cfg.executeService(compactClass(c.getExecutorService()));
         cfg.executeServiceShutdown(c.getExecutorServiceShutdown());
@@ -187,6 +187,6 @@ public class VisorExecutorServiceConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorExecutorServiceConfig.class, this);
+        return S.toString(VisorExecutorServiceConfiguration.class, this);
     }
 }

@@ -6,24 +6,24 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Grid configuration data collect job.
  */
-public class VisorNodeConfigCollectorJob extends VisorJob<Void, VisorGridConfig> {
+public class VisorNodeConfigurationCollectorJob extends VisorJob<Void, VisorGridConfiguration> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param arg Formal job argument.
      */
-    public VisorNodeConfigCollectorJob(Void arg) {
+    public VisorNodeConfigurationCollectorJob(Void arg) {
         super(arg);
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorGridConfig run(Void arg) {
-        return new VisorGridConfig().fill(g);
+    @Override protected VisorGridConfiguration run(Void arg) {
+        return new VisorGridConfiguration().fill(g);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorNodeConfigCollectorJob.class, this);
+        return S.toString(VisorNodeConfigurationCollectorJob.class, this);
     }
 }

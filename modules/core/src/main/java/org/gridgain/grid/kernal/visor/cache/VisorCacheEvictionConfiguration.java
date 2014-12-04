@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.visor.cache;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.eviction.fifo.*;
-import org.gridgain.grid.cache.eviction.lru.*;
-import org.gridgain.grid.cache.eviction.random.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -24,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for eviction configuration properties.
  */
-public class VisorCacheEvictionConfig implements Serializable {
+public class VisorCacheEvictionConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,8 +56,8 @@ public class VisorCacheEvictionConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for eviction configuration properties.
      */
-    public static VisorCacheEvictionConfig from(GridCacheConfiguration ccfg) {
-        VisorCacheEvictionConfig cfg = new VisorCacheEvictionConfig();
+    public static VisorCacheEvictionConfiguration from(GridCacheConfiguration ccfg) {
+        VisorCacheEvictionConfiguration cfg = new VisorCacheEvictionConfiguration();
 
         final GridCacheEvictionPolicy policy = ccfg.getEvictionPolicy();
 
@@ -205,6 +202,6 @@ public class VisorCacheEvictionConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheEvictionConfig.class, this);
+        return S.toString(VisorCacheEvictionConfiguration.class, this);
     }
 }

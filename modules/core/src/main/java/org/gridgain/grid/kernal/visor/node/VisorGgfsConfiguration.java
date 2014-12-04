@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for GGFS configuration properties.
  */
-public class VisorGgfsConfig implements Serializable {
+public class VisorGgfsConfiguration implements Serializable {
     /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 
@@ -116,8 +116,8 @@ public class VisorGgfsConfig implements Serializable {
      * @param ggfs GGFS configuration.
      * @return Data transfer object for GGFS configuration properties.
      */
-    public static VisorGgfsConfig from(GridGgfsConfiguration ggfs) {
-        VisorGgfsConfig cfg = new VisorGgfsConfig();
+    public static VisorGgfsConfiguration from(GridGgfsConfiguration ggfs) {
+        VisorGgfsConfiguration cfg = new VisorGgfsConfiguration();
 
         cfg.name(ggfs.getName());
         cfg.metaCacheName(ggfs.getMetaCacheName());
@@ -167,11 +167,11 @@ public class VisorGgfsConfig implements Serializable {
      * @param ggfss ggfs configurations.
      * @return ggfs configurations properties.
      */
-    public static Iterable<VisorGgfsConfig> list(GridGgfsConfiguration[] ggfss) {
+    public static Iterable<VisorGgfsConfiguration> list(GridGgfsConfiguration[] ggfss) {
         if (ggfss == null)
             return Collections.emptyList();
 
-        final Collection<VisorGgfsConfig> cfgs = new ArrayList<>(ggfss.length);
+        final Collection<VisorGgfsConfiguration> cfgs = new ArrayList<>(ggfss.length);
 
         for (GridGgfsConfiguration ggfs : ggfss)
             cfgs.add(from(ggfs));
@@ -559,7 +559,7 @@ public class VisorGgfsConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorGgfsConfig.class, this);
+        return S.toString(VisorGgfsConfiguration.class, this);
     }
 
 }

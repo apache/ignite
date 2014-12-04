@@ -12,8 +12,8 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cache.{VisorCacheMetricsCollectorTask, VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfig}
-import org.gridgain.grid.kernal.visor.node.{VisorNodeConfigCollectorTask, VisorGridConfig}
+import org.gridgain.grid.kernal.visor.cache.{VisorCacheMetricsCollectorTask, VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfiguration}
+import org.gridgain.grid.kernal.visor.node.{VisorNodeConfigurationCollectorTask, VisorGridConfiguration}
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
 
@@ -482,10 +482,10 @@ class VisorCacheCommand {
      * @param node Specified node.
      * @return Grid configuration for specified node.
      */
-    private def config(node: GridNode): VisorGridConfig = {
+    private def config(node: GridNode): VisorGridConfiguration = {
         try
             grid.compute(grid.forNode(node)).withNoFailover()
-                .execute(classOf[VisorNodeConfigCollectorTask], emptyTaskArgument(node.id()))
+                .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
         catch {
             case e: GridException =>
                 scold(e.getMessage)
@@ -783,7 +783,7 @@ object VisorCacheCommand {
      * @param title Specified title for table.
      * @param cfg Config to show information.
      */
-    private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfig) {
+    private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
         val affinityCfg = cfg.affinityConfig()
         val nearCfg = cfg.nearConfig()
         val preloadCfg = cfg.preloadConfig()

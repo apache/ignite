@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for node segmentation configuration properties.
  */
-public class VisorSegmentationConfig implements Serializable {
+public class VisorSegmentationConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,8 +44,8 @@ public class VisorSegmentationConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node segmentation configuration properties.
      */
-    public static VisorSegmentationConfig from(GridConfiguration c) {
-        VisorSegmentationConfig cfg = new VisorSegmentationConfig();
+    public static VisorSegmentationConfiguration from(GridConfiguration c) {
+        VisorSegmentationConfiguration cfg = new VisorSegmentationConfiguration();
 
         cfg.policy(c.getSegmentationPolicy());
         cfg.resolvers(compactArray(c.getSegmentationResolvers()));
@@ -128,6 +128,6 @@ public class VisorSegmentationConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorSegmentationConfig.class, this);
+        return S.toString(VisorSegmentationConfiguration.class, this);
     }
 }

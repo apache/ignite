@@ -24,7 +24,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for node basic configuration properties.
  */
-public class VisorBasicConfig implements Serializable {
+public class VisorBasicConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -99,8 +99,8 @@ public class VisorBasicConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node basic configuration properties.
      */
-    public static VisorBasicConfig from(GridEx g, GridConfiguration c) {
-        VisorBasicConfig cfg = new VisorBasicConfig();
+    public static VisorBasicConfiguration from(GridEx g, GridConfiguration c) {
+        VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
         cfg.gridName(c.getGridName());
         cfg.ggHome(getProperty(GG_HOME, c.getGridGainHome()));
@@ -438,6 +438,6 @@ public class VisorBasicConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorBasicConfig.class, this);
+        return S.toString(VisorBasicConfiguration.class, this);
     }
 }

@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for near cache configuration properties.
  */
-public class VisorCacheNearConfig implements Serializable {
+public class VisorCacheNearConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,8 +41,8 @@ public class VisorCacheNearConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for near cache configuration properties.
      */
-    public static VisorCacheNearConfig from(GridCacheConfiguration ccfg) {
-        VisorCacheNearConfig cfg = new VisorCacheNearConfig();
+    public static VisorCacheNearConfiguration from(GridCacheConfiguration ccfg) {
+        VisorCacheNearConfiguration cfg = new VisorCacheNearConfiguration();
 
         cfg.nearEnabled(GridCacheUtils.isNearEnabled(ccfg));
         cfg.nearStartSize(ccfg.getNearStartSize());
@@ -96,7 +96,7 @@ public class VisorCacheNearConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheNearConfig.class, this);
+        return S.toString(VisorCacheNearConfiguration.class, this);
     }
 
     /**

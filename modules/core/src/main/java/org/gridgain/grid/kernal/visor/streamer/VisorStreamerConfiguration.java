@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for streamer configuration properties.
  */
-public class VisorStreamerConfig implements Serializable {
+public class VisorStreamerConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,8 +47,8 @@ public class VisorStreamerConfig implements Serializable {
      * @param scfg Streamer configuration.
      * @return Data transfer object for streamer configuration properties.
      */
-    public static VisorStreamerConfig from(GridStreamerConfiguration scfg) {
-        VisorStreamerConfig cfg = new VisorStreamerConfig();
+    public static VisorStreamerConfiguration from(GridStreamerConfiguration scfg) {
+        VisorStreamerConfiguration cfg = new VisorStreamerConfiguration();
 
         cfg.name(scfg.getName());
         cfg.router(compactClass(scfg.getRouter()));
@@ -66,11 +66,11 @@ public class VisorStreamerConfig implements Serializable {
      * @param streamers streamer configurations.
      * @return streamer configurations properties.
      */
-    public static Iterable<VisorStreamerConfig> list(GridStreamerConfiguration[] streamers) {
+    public static Iterable<VisorStreamerConfiguration> list(GridStreamerConfiguration[] streamers) {
         if (streamers == null)
             return Collections.emptyList();
 
-        final Collection<VisorStreamerConfig> cfgs = new ArrayList<>(streamers.length);
+        final Collection<VisorStreamerConfiguration> cfgs = new ArrayList<>(streamers.length);
 
         for (GridStreamerConfiguration streamer : streamers)
             cfgs.add(from(streamer));
@@ -165,6 +165,6 @@ public class VisorStreamerConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorStreamerConfig.class, this);
+        return S.toString(VisorStreamerConfiguration.class, this);
     }
 }

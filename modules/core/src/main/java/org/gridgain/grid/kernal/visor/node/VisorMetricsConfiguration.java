@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Data transfer object for node metrics configuration properties.
  */
-public class VisorMetricsConfig implements Serializable {
+public class VisorMetricsConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,8 +33,8 @@ public class VisorMetricsConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node metrics configuration properties.
      */
-    public static VisorMetricsConfig from(GridConfiguration c) {
-        VisorMetricsConfig cfg = new VisorMetricsConfig();
+    public static VisorMetricsConfiguration from(GridConfiguration c) {
+        VisorMetricsConfiguration cfg = new VisorMetricsConfiguration();
 
         cfg.expireTime(c.getMetricsExpireTime());
         cfg.historySize(c.getMetricsHistorySize());

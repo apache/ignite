@@ -23,7 +23,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for node SPIs configuration properties.
  */
-public class VisorSpisConfig implements Serializable {
+public class VisorSpisConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -132,8 +132,8 @@ public class VisorSpisConfig implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node SPIs configuration properties.
      */
-    public static VisorSpisConfig from(GridConfiguration c) {
-        VisorSpisConfig cfg = new VisorSpisConfig();
+    public static VisorSpisConfiguration from(GridConfiguration c) {
+        VisorSpisConfiguration cfg = new VisorSpisConfiguration();
 
         cfg.discoverySpi(collectSpiInfo(c.getDiscoverySpi()));
         cfg.communicationSpi(collectSpiInfo(c.getCommunicationSpi()));
@@ -321,6 +321,6 @@ public class VisorSpisConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorSpisConfig.class, this);
+        return S.toString(VisorSpisConfiguration.class, this);
     }
 }

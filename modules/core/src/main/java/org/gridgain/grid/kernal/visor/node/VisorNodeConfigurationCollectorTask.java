@@ -16,12 +16,12 @@ import org.gridgain.grid.kernal.visor.*;
  * Grid configuration data collect task.
  */
 @GridInternal
-public class VisorNodeConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridConfig> {
+public class VisorNodeConfigurationCollectorTask extends VisorOneNodeTask<Void, VisorGridConfiguration> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorNodeConfigCollectorJob job(Void arg) {
-        return new VisorNodeConfigCollectorJob(arg);
+    @Override protected VisorNodeConfigurationCollectorJob job(Void arg) {
+        return new VisorNodeConfigurationCollectorJob(arg);
     }
 }
