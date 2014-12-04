@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -2621,7 +2622,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
      * @throws GridException In case of error.
-     * @see {@link org.gridgain.grid.IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
+     * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
      */
     GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws GridException {
         A.notNull(file, "file");
@@ -2663,7 +2664,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
      * @throws GridException In case of error.
-     * @see {@link org.gridgain.grid.IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
+     * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
      */
     GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,

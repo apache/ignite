@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.pimps
 
-import org.apache.ignite.Ignite
+import org.apache.ignite.{IgniteCluster, Ignite}
 import org.gridgain.grid._
 import org.jetbrains.annotations.Nullable
 import org.gridgain.grid.scheduler.GridSchedulerFuture
