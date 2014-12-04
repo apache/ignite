@@ -96,8 +96,9 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
         this.cands = cands;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (candsBytes == null && cands != null) {
@@ -114,7 +115,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (candsBytes != null && cands == null)
@@ -177,13 +178,13 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
         }
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (!commState.putByteArray(candsBytes))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (!commState.putByteArray(errBytes))
                     return false;
 
@@ -203,7 +204,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
             return false;
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 byte[] candsBytes0 = commState.getByteArray();
 
                 if (candsBytes0 == BYTE_ARR_NOT_READ)
@@ -213,7 +214,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 byte[] errBytes0 = commState.getByteArray();
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)

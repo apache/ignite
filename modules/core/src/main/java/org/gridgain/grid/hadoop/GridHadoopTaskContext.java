@@ -29,9 +29,6 @@ public abstract class GridHadoopTaskContext {
     /** */
     private GridHadoopTaskInfo taskInfo;
 
-    /** */
-    private GridHadoopCounters counters;
-
     /**
      * @param taskInfo Task info.
      * @param job Job.
@@ -91,18 +88,14 @@ public abstract class GridHadoopTaskContext {
      * @param name Counter name.
      * @return Counter.
      */
-    public GridHadoopCounter counter(String grp, String name) {
-        return counters.counter(grp, name, true);
-    }
+    public abstract <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls);
 
     /**
      * Gets all known counters.
      *
      * @return Unmodifiable collection of counters.
      */
-    public Collection<GridHadoopCounter> counters() {
-        return counters.all();
-    }
+    public abstract GridHadoopCounters counters();
 
     /**
      * Sets input of the task.
@@ -120,15 +113,6 @@ public abstract class GridHadoopTaskContext {
      */
     public void output(GridHadoopTaskOutput out) {
         output = out;
-    }
-
-    /**
-     * Sets container for counters of the task.
-     *
-     * @param counters Counters.
-     */
-    public void counters(GridHadoopCounters counters) {
-        this.counters = counters;
     }
 
     /**

@@ -23,10 +23,11 @@ public class GridCacheReplicatedJobExecutionTest extends GridCacheAbstractJobExe
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(GridCacheMode.REPLICATED);
-        cc.setTxSerializableEnabled(true);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         c.setCacheConfiguration(cc);

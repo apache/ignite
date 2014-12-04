@@ -36,7 +36,7 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 /**
  * Manages lock order within a thread.
  */
-public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Maxim number of removed locks. */
     private static final int MAX_REMOVED_LOCKS = 10240;
 
@@ -60,7 +60,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** Locked keys. */
     @GridToStringExclude
-    private final ConcurrentMap<K, GridDistributedCacheEntry<K, V>> locked = newMap();
+    private final ConcurrentMap<GridCacheTxKey<K>, GridDistributedCacheEntry<K, V>> locked = newMap();
 
     /** Active futures mapped by version ID. */
     @GridToStringExclude
@@ -134,12 +134,12 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public void onLocked(GridDistributedCacheEntry<K, V> entry) {
-            locked.put(entry.key(), entry);
+            locked.put(entry.txKey(), entry);
         }
 
         /** {@inheritDoc} */
         @Override public void onFreed(GridDistributedCacheEntry<K, V> entry) {
-            locked.remove(entry.key());
+            locked.remove(entry.txKey());
         }
     };
 
@@ -198,8 +198,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
     @Override protected void start0() throws GridException {
         exchLog = cctx.logger(getClass().getName() + ".exchange");
 
-        if (cctx.isNear() || cctx.isColocated())
-            pendingExplicit = GridConcurrentFactory.newMap();
+        pendingExplicit = GridConcurrentFactory.newMap();
     }
 
     /** {@inheritDoc} */
@@ -487,16 +486,16 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param ver Lock version to check.
      * @return {@code True} if lock had been removed.
      */
-    public boolean isRemoved(GridCacheVersion ver) {
-        return !cctx.isNear() && !cctx.isLocal() && ver != null && rmvLocks.contains(ver);
+    public boolean isRemoved(GridCacheContext<K, V> cacheCtx, GridCacheVersion ver) {
+        return !cacheCtx.isNear() && !cacheCtx.isLocal() && ver != null && rmvLocks.contains(ver);
     }
 
     /**
      * @param ver Obsolete entry version.
      * @return {@code True} if added.
      */
-    public boolean addRemoved(GridCacheVersion ver) {
-        if (cctx.isNear() || cctx.isLocal())
+    public boolean addRemoved(GridCacheContext<K, V> cacheCtx, GridCacheVersion ver) {
+        if (cacheCtx.isNear() || cacheCtx.isLocal())
             return true;
 
         boolean ret = rmvLocks.add(ver);
@@ -634,13 +633,13 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if added as a result of this operation,
      *      {@code false} if was previously added.
      */
-    public boolean addNext(GridCacheMvccCandidate<K> cand) {
+    public boolean addNext(GridCacheContext<K, V> cacheCtx, GridCacheMvccCandidate<K> cand) {
         assert cand != null;
         assert !cand.reentry() : "Lock reentries should not be linked: " + cand;
 
         // Don't order near candidates by thread as they will be ordered on
         // DHT node. Also, if candidate is implicit, no point to order him.
-        if (cctx.isNear() || cand.singleImplicit())
+        if (cacheCtx.isNear() || cand.singleImplicit())
             return true;
 
         Queue<GridCacheMvccCandidate<K>> queue = pending.get();
@@ -844,7 +843,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Mvcc manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> Mvcc manager memory stats [grid=" + cctx.gridName() + ']');
         X.println(">>>   rmvLocksSize: " + rmvLocks.size());
         X.println(">>>   dhtLocCandsSize: " + dhtLocCands.size());
         X.println(">>>   lockedSize: " + locked.size());
@@ -872,18 +871,13 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
-     * @param parts Partition numbers.
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions are released.
      */
     @SuppressWarnings({"unchecked"})
-    public GridFuture<?> finishLocks(final Collection<Integer> parts, long topVer) {
+    public GridFuture<?> finishLocks(long topVer) {
         assert topVer > 0;
-        return finishLocks(new P1<K>() {
-            @Override public boolean apply(K key) {
-                return parts != null && parts.contains(cctx.affinity().partition(key));
-            }
-        }, topVer);
+        return finishLocks(null, topVer);
     }
 
     /**
@@ -912,19 +906,15 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param topVer Topology version to finish.
      *
      * @return Finish update future.
-     * @param parts Moving partitions.
      */
-    public GridFuture<?> finishAtomicUpdates(long topVer, Collection<Integer> parts) {
+    public GridFuture<?> finishAtomicUpdates(long topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
 
         res.ignoreChildFailures(GridTopologyException.class, GridCachePartialUpdateException.class);
 
         for (GridCacheAtomicFuture<K, ?> fut : atomicFuts.values()) {
-            if (fut.waitForPartitionExchange() && fut.topologyVersion() < topVer) {
-                // Check if future has moving keys.
-                if (cctx.hasKey(fut.keys(), parts))
-                    res.add((GridFuture<Object>)fut);
-            }
+            if (fut.waitForPartitionExchange() && fut.topologyVersion() < topVer)
+                res.add((GridFuture<Object>)fut);
         }
 
         res.markInitialized();
@@ -963,13 +953,16 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
             return new GridFinishedFuture(context().kernalContext());
 
         final FinishLockFuture finishFut = new FinishLockFuture(
-            F.view(locked.values(),
-                new P1<GridDistributedCacheEntry<K, V>>() {
-                    @Override public boolean apply(GridDistributedCacheEntry<K, V> e) {
-                        return F.isAll(e.key(), keyFilter);
+            keyFilter == null ?
+                locked.values() :
+                F.view(locked.values(),
+                    new P1<GridDistributedCacheEntry<K, V>>() {
+                        @Override public boolean apply(GridDistributedCacheEntry<K, V> e) {
+                            return F.isAll(e.key(), keyFilter);
+                        }
                     }
-                }
-            ), topVer);
+                ),
+            topVer);
 
         finishFuts.add(finishFut);
 
@@ -1012,7 +1005,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         /** */
         @GridToStringInclude
-        private final Map<K, Collection<GridCacheMvccCandidate<K>>> pendingLocks =
+        private final Map<GridCacheTxKey<K>, Collection<GridCacheMvccCandidate<K>>> pendingLocks =
             new ConcurrentHashMap8<>();
 
         /**
@@ -1048,7 +1041,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             cands.addAll(F.view(locs, versionFilter()));
 
                         if (!F.isEmpty(cands))
-                            pendingLocks.put(entry.key(), cands);
+                            pendingLocks.put(entry.txKey(), cands);
                     }
                 }
                 catch (GridCacheEntryRemovedException ignored) {
@@ -1081,10 +1074,12 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
          *
          */
         void recheck() {
-            for (Iterator<K> it = pendingLocks.keySet().iterator(); it.hasNext(); ) {
-                K key = it.next();
+            for (Iterator<GridCacheTxKey<K>> it = pendingLocks.keySet().iterator(); it.hasNext(); ) {
+                GridCacheTxKey<K> key = it.next();
 
-                GridCacheEntryEx<K, V> entry = cctx.cache().peekEx(key);
+                GridCacheContext<K, V> cacheCtx = cctx.cacheContext(key.cacheId());
+
+                GridCacheEntryEx<K, V> entry = cacheCtx.cache().peekEx(key.key());
 
                 if (entry == null)
                     it.remove();
@@ -1114,7 +1109,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (exchLog.isDebugEnabled())
                 exchLog.debug("Rechecking entry for completion [entry=" + entry + ", finFut=" + this + ']');
 
-            Collection<GridCacheMvccCandidate<K>> cands = pendingLocks.get(entry.key());
+            Collection<GridCacheMvccCandidate<K>> cands = pendingLocks.get(entry.txKey());
 
             if (cands != null) {
                 synchronized (cands) {
@@ -1127,7 +1122,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     }
 
                     if (cands.isEmpty())
-                        pendingLocks.remove(entry.key());
+                        pendingLocks.remove(entry.txKey());
 
                     if (pendingLocks.isEmpty()) {
                         onDone();

@@ -65,7 +65,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
-        ctx.io().addHandler(GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
                 processGetResponse(nodeId, res);
             }
@@ -599,24 +599,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable GridCacheTxIsolation isolation,
         GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return dht.lockAllAsync(keys, timeout, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit,
-        boolean implicitSingle,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
-        long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
-        int txSize,
-        @Nullable Object grpLockKey,
-        boolean partLock) {
-        return dht.newTx(implicit, implicitSingle, concurrency, isolation, timeout, invalidate, syncCommit,
-            syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);
     }
 
     /** {@inheritDoc} */

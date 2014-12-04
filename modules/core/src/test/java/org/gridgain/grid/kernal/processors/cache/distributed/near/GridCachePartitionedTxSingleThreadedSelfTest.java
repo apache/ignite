@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -37,12 +36,13 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends GridCacheTxSin
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
-        cc.setTxSerializableEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         cc.setEvictionPolicy(null);

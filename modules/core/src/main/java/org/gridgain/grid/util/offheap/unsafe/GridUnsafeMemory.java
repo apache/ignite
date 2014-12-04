@@ -422,9 +422,10 @@ public class GridUnsafeMemory {
             ptr = allocate(size + 5);
 
             writeInt(ptr, size);
-            writeByte(ptr + 4, (byte)(plain ? 1 : 0));
         }
 
+        // Must override plain flag.
+        writeByte(ptr + 4, (byte)(plain ? 1 : 0));
         writeBytes(ptr + 5, val);
 
         return ptr;

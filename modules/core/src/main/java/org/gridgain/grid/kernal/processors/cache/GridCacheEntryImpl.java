@@ -481,7 +481,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
             tx = ctx.tm().localTx();
 
         if (tx != null)
-            tx.entryTtl(key, ttl);
+            tx.entryTtl(ctx.txKey(key), ttl);
     }
 
     /** {@inheritDoc} */

@@ -35,7 +35,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     private boolean trackable = true;
 
     /** Context. */
-    private final GridCacheContext<K, V> cctx;
+    private final GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private final GridUuid futId = GridUuid.randomUuid();
@@ -58,7 +58,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      * @param failedNodeId ID of failed node started transaction.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCachePessimisticCheckCommittedTxFuture(GridCacheContext<K, V> cctx, GridCacheTxEx<K, V> tx,
+    public GridCachePessimisticCheckCommittedTxFuture(GridCacheSharedContext<K, V> cctx, GridCacheTxEx<K, V> tx,
         UUID failedNodeId) {
         super(cctx.kernalContext(), new SingleReducer<K, V>());
 

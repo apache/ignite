@@ -81,9 +81,9 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
@@ -139,9 +139,9 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -211,20 +211,20 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache(K key, long topVer) {
-        if (!cctx.isDht() || !isNearEnabled(cctx) || cctx.localNodeId().equals(nearNodeId))
+    @Override protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
+        if (!cacheCtx.isDht() || !isNearEnabled(cacheCtx) || cctx.localNodeId().equals(nearNodeId))
             return false;
 
-        if (cctx.config().getBackups() == 0)
+        if (cacheCtx.config().getBackups() == 0)
             return true;
 
         // Check if we are on the backup node.
-        return !cctx.affinity().backups(key, topVer).contains(cctx.localNode());
+        return !cacheCtx.affinity().backups(key, topVer).contains(cctx.localNode());
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(int part) {
-        super.addInvalidPartition(part);
+    @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
+        super.addInvalidPartition(cacheCtx, part);
 
         for (Iterator<GridCacheTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
             GridCacheTxEntry<K, V> e = it.next();
@@ -235,7 +235,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
                 if (cached.partition() == part)
                     it.remove();
             }
-            else if (cctx.affinity().partition(e.key()) == part)
+            else if (cacheCtx.affinity().partition(e.key()) == part)
                 it.remove();
         }
     }
@@ -245,23 +245,25 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param ldr Class loader.
      * @throws GridException If failed.
      */
-    void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws GridException {
-        entry.unmarshal(cctx, ldr);
+    public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws GridException {
+        entry.unmarshal(cctx, false, ldr);
+
+        GridCacheContext<K, V> cacheCtx = entry.context();
 
         try {
-            GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(entry.key(), topologyVersion());
+            GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
 
-            checkInternal(entry.key());
+            checkInternal(entry.txKey());
 
             // Initialize cache entry.
             entry.cached(cached, entry.keyBytes());
 
-            writeMap.put(entry.key(), entry);
+            writeMap.put(entry.txKey(), entry);
 
             addExplicit(entry);
         }
         catch (GridDhtInvalidPartitionException e) {
-            addInvalidPartition(e.partition());
+            addInvalidPartition(cacheCtx, e.partition());
         }
     }
 
@@ -274,16 +276,17 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param drVer Data center replication version.
      * @param clos Transform closures.
      */
-    void addWrite(GridCacheOperation op, K key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        @Nullable Collection<GridClosure<V, V>> clos, @Nullable GridCacheVersion drVer) {
+    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheOperation op, GridCacheTxKey<K> key, byte[] keyBytes,
+        @Nullable V val, @Nullable byte[] valBytes, @Nullable Collection<GridClosure<V, V>> clos,
+        @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
         if (isSystemInvalidate())
             return;
 
-        GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(key, topologyVersion());
+        GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, op, val, 0L, -1L, cached, drVer);
+        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached, drVer);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);

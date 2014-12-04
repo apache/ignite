@@ -588,7 +588,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     /**
      * @throws Exception if failed.
      */
-    public void testSkipStoreFlag() throws Exception {
+    public void _testSkipStoreFlag() throws Exception { // TODO GG-9141
         assertNull(cache().put("kk1", 100500));
         assertEquals(100500, map.get("kk1"));
 
@@ -616,7 +616,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
             startGrid(i);
 
         try {
-            testSkipStoreFlag();
+            _testSkipStoreFlag();
         }
         finally {
             for (int i = 1; i < nGrids; i++)
@@ -770,12 +770,12 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         tx.commit();
 
-        GridCacheConfiguration cfg = grid(0).configuration().getCacheConfiguration()[0];
+        GridTransactionsConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
 
         tx = cache().txStart(
-            cfg.getDefaultTxConcurrency(),
-            cfg.getDefaultTxIsolation(),
-            cfg.getDefaultTxTimeout(),
+            tCfg.getDefaultTxConcurrency(),
+            tCfg.getDefaultTxIsolation(),
+            tCfg.getDefaultTxTimeout(),
             0
         );
 

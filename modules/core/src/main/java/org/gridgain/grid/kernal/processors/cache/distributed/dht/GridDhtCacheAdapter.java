@@ -345,7 +345,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.versions().nextForLoad(topology().topologyVersion());
+        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topology().topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 
@@ -495,7 +495,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         fut.listenAsync(new CI1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
-                GridNearGetResponse<K, V> res = new GridNearGetResponse<>(
+                GridNearGetResponse<K, V> res = new GridNearGetResponse<>(ctx.cacheId(),
                     req.futureId(), req.miniId(), req.version());
 
                 GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
@@ -523,16 +523,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle,
-        GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
-        boolean syncCommit, boolean syncRollback, boolean swapOrOffheapEnabled, boolean storeEnabled, int txSize,
-        @Nullable Object grpLockKey, boolean partLock) {
-        assert false;
-
-        return null;
     }
 
     /** {@inheritDoc} */

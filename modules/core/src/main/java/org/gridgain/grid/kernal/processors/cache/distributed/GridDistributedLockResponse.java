@@ -60,11 +60,12 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param futId Future ID.
      * @param cnt Key count.
      */
-    public GridDistributedLockResponse(GridCacheVersion lockVer, GridUuid futId, int cnt) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, int cnt) {
         super(lockVer, cnt);
 
         assert futId != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
 
         vals = new ArrayList<>(cnt);
@@ -76,11 +77,12 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param futId Future ID.
      * @param err Error.
      */
-    public GridDistributedLockResponse(GridCacheVersion lockVer, GridUuid futId, Throwable err) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, Throwable err) {
         super(lockVer, 0);
 
         assert futId != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
     }
@@ -91,11 +93,12 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param cnt Count.
      * @param err Error.
      */
-    public GridDistributedLockResponse(GridCacheVersion lockVer, GridUuid futId, int cnt, Throwable err) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, int cnt, Throwable err) {
         super(lockVer, cnt);
 
         assert futId != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
 
@@ -180,7 +183,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      */
     public void addValueBytes(V val, @Nullable byte[] valBytes, GridCacheContext<K, V> ctx) throws GridException {
         if (ctx.deploymentEnabled())
-            prepareObject(val, ctx);
+            prepareObject(val, ctx.shared());
 
         GridCacheValueBytes vb = null;
 
@@ -227,8 +230,9 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (F.isEmpty(valBytes) && !F.isEmpty(vals))
@@ -239,7 +243,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (F.isEmpty(vals) && !F.isEmpty(valBytes))
@@ -289,19 +293,19 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
         }
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (!commState.putByteArray(errBytes))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (valBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(valBytes.size()))
@@ -342,7 +346,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
             return false;
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 byte[] errBytes0 = commState.getByteArray();
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
@@ -352,7 +356,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -362,7 +366,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

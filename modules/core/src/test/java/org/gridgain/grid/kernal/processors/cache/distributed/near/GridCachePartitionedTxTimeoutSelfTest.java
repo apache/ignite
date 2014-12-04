@@ -34,6 +34,11 @@ public class GridCachePartitionedTxTimeoutSelfTest extends GridCacheTxTimeoutAbs
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+
+        txCfg.setTxSerializableEnabled(true);
+        txCfg.setDefaultTxTimeout(TIMEOUT);
+
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
@@ -45,8 +50,6 @@ public class GridCachePartitionedTxTimeoutSelfTest extends GridCacheTxTimeoutAbs
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setTxSerializableEnabled(true);
-        cc.setDefaultTxTimeout(TIMEOUT);
 
         //cacheCfg.setPreloadMode(NONE);
 

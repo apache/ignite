@@ -42,7 +42,6 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
@@ -80,6 +79,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Kernal context. */
     private GridKernalContext ctx;
 
+    /** Cache shared context. */
+    private GridCacheSharedContext<K, V> sharedCtx;
+
     /** Logger. */
     private GridLogger log;
 
@@ -92,15 +94,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Affinity manager. */
     private GridCacheAffinityManager<K, V> affMgr;
 
-    /** Cache transaction manager. */
-    private GridCacheTxManager<K, V> txMgr;
-
-    /** Version manager. */
-    private GridCacheVersionManager<K, V> verMgr;
-
-    /** Lock manager. */
-    private GridCacheMvccManager<K, V> mvccMgr;
-
     /** Event manager. */
     private GridCacheEventManager<K, V> evtMgr;
 
@@ -112,15 +105,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Swap manager. */
     private GridCacheSwapManager<K, V> swapMgr;
-
-    /** Garbage collector manager.*/
-    private GridCacheDgcManager<K, V> dgcMgr;
-
-    /** Deployment manager. */
-    private GridCacheDeploymentManager<K, V> depMgr;
-
-    /** Communication manager. */
-    private GridCacheIoManager<K, V> ioMgr;
 
     /** Evictions manager. */
     private GridCacheEvictionManager<K, V> evictMgr;
@@ -185,6 +169,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache name. */
     private String cacheName;
 
+    /** Cache ID. */
+    private int cacheId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -194,20 +181,15 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param ctx Kernal context.
+     * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
-     * @param mvccMgr Cache locking manager.
-     * @param verMgr Cache version manager.
      * @param evtMgr Cache event manager.
      * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
-     * @param depMgr Cache deployment manager.
      * @param evictMgr Cache eviction manager.
-     * @param ioMgr Cache communication manager.
      * @param qryMgr Cache query manager.
      * @param contQryMgr Continuous query manager.
-     * @param dgcMgr Distributed garbage collector manager.
      * @param affMgr Affinity manager.
-     * @param txMgr Cache transaction manager.
      * @param dataStructuresMgr Cache dataStructures manager.
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
@@ -216,6 +198,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
         GridKernalContext ctx,
+        GridCacheSharedContext sharedCtx,
         GridCacheConfiguration cacheCfg,
 
         /*
@@ -223,62 +206,46 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
 
-        GridCacheMvccManager<K, V> mvccMgr,
-        GridCacheVersionManager<K, V> verMgr,
         GridCacheEventManager<K, V> evtMgr,
         GridCacheSwapManager<K, V> swapMgr,
         GridCacheStoreManager<K, V> storeMgr,
-        GridCacheDeploymentManager<K, V> depMgr,
         GridCacheEvictionManager<K, V> evictMgr,
-        GridCacheIoManager<K, V> ioMgr,
         GridCacheQueryManager<K, V> qryMgr,
         GridCacheContinuousQueryManager<K, V> contQryMgr,
-        GridCacheDgcManager<K, V> dgcMgr,
         GridCacheAffinityManager<K, V> affMgr,
-        GridCacheTxManager<K, V> txMgr,
         GridCacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
         GridCacheJtaManagerAdapter<K, V> jtaMgr) {
         assert ctx != null;
+        assert sharedCtx != null;
         assert cacheCfg != null;
 
-        assert mvccMgr != null;
-        assert verMgr != null;
         assert evtMgr != null;
         assert swapMgr != null;
         assert storeMgr != null;
-        assert depMgr != null;
         assert evictMgr != null;
-        assert ioMgr != null;
         assert qryMgr != null;
         assert contQryMgr != null;
-        assert dgcMgr != null;
         assert affMgr != null;
-        assert txMgr != null;
         assert dataStructuresMgr != null;
         assert ttlMgr != null;
 
         this.ctx = ctx;
+        this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
 
         /*
          * Managers in starting order!
          * ===========================
          */
-        this.mvccMgr = add(mvccMgr);
-        this.verMgr = add(verMgr);
         this.evtMgr = add(evtMgr);
         this.swapMgr = add(swapMgr);
         this.storeMgr = add(storeMgr);
-        this.depMgr = add(depMgr);
         this.evictMgr = add(evictMgr);
-        this.ioMgr = add(ioMgr);
         this.qryMgr = add(qryMgr);
         this.contQryMgr = add(contQryMgr);
-        this.dgcMgr = add(dgcMgr);
         this.affMgr = add(affMgr);
-        this.txMgr = add(txMgr);
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
@@ -299,6 +266,17 @@ public class GridCacheContext<K, V> implements Externalizable {
         gate = new GridCacheGateway<>(this);
 
         cacheName = cacheCfg.getName();
+
+        if (cacheName != null) {
+            int hash = cacheName.hashCode();
+
+            if (hash == 0)
+                hash = 1;
+
+            cacheId = hash;
+        }
+        else
+            cacheId = 1;
     }
 
     /**
@@ -317,6 +295,20 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public List<GridCacheManager<K, V>> managers() {
         return mgrs;
+    }
+
+    /**
+     * @return Shared cache context.
+     */
+    public GridCacheSharedContext<K, V> shared() {
+        return sharedCtx;
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
     }
 
     /**
@@ -523,6 +515,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param key Key to construct tx key for.
+     * @return Transaction key.
+     */
+    public GridCacheTxKey<K> txKey(K key) {
+        return new GridCacheTxKey<>(key, cacheId);
+    }
+
+    /**
      * @param op Operation to check.
      * @throws GridSecurityException If security check failed.
      */
@@ -582,7 +582,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Local node ID.
      */
     public UUID localNodeId() {
-        return discovery().localNode().id();
+        return ctx.localNodeId();
     }
 
     /**
@@ -754,28 +754,21 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache transaction manager.
      */
     public GridCacheTxManager<K, V> tm() {
-         return txMgr;
-    }
-
-    /**
-     * @return Cache affinity manager.
-     */
-    public GridCacheAffinityManager<K, V> affinity() {
-        return affMgr;
+         return sharedCtx.tm();
     }
 
     /**
      * @return Lock order manager.
      */
     public GridCacheVersionManager<K, V> versions() {
-        return verMgr;
+        return sharedCtx.versions();
     }
 
     /**
      * @return Lock manager.
      */
     public GridCacheMvccManager<K, V> mvcc() {
-        return mvccMgr;
+        return sharedCtx.mvcc();
     }
 
     /**
@@ -783,6 +776,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheEventManager<K, V> events() {
         return evtMgr;
+    }
+
+    /**
+     * @return Cache affinity manager.
+     */
+    public GridCacheAffinityManager<K, V> affinity() {
+        return affMgr;
     }
 
     /**
@@ -814,24 +814,17 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Swap manager.
-     */
-    public GridCacheDgcManager<K, V> dgc() {
-        return dgcMgr;
-    }
-
-    /**
      * @return Cache deployment manager.
      */
     public GridCacheDeploymentManager<K, V> deploy() {
-        return depMgr;
+        return sharedCtx.deploy();
     }
 
     /**
      * @return Cache communication manager.
      */
     public GridCacheIoManager<K, V> io() {
-        return ioMgr;
+        return sharedCtx.io();
     }
 
     /**
@@ -1248,25 +1241,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param flags Flags to turn on.
-     * @throws GridCacheFlagException If given flags are conflicting with given transaction.
-     */
-    public void checkTxFlags(@Nullable Collection<GridCacheFlag> flags) throws GridCacheFlagException {
-        GridCacheTxEx tx = tm().userTxx();
-
-        if (tx == null || F.isEmpty(flags))
-            return;
-
-        assert flags != null;
-
-        if (flags.contains(INVALIDATE) && !tx.isInvalidate())
-            throw new GridCacheFlagException(INVALIDATE);
-
-        if (flags.contains(SYNC_COMMIT) && !tx.syncCommit())
-            throw new GridCacheFlagException(SYNC_COMMIT);
-    }
-
-    /**
      * Creates Runnable that can be executed safely in a different thread inheriting
      * the same thread local projection as for the current thread. If no projection is
      * set for current thread then there's no need to create new object and method simply
@@ -1480,63 +1454,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return ret;
-    }
-
-    /**
-     * @return Timeout for initial map exchange before preloading. We make it {@code 4} times
-     * bigger than network timeout by default.
-     */
-    public long preloadExchangeTimeout() {
-        long t1 = gridConfig().getNetworkTimeout() * 4;
-        long t2 = gridConfig().getNetworkTimeout() * gridConfig().getCacheConfiguration().length * 2;
-
-        long timeout = Math.max(t1, t2);
-
-        return timeout < 0 ? Long.MAX_VALUE : timeout;
-    }
-
-    /**
-     * Waits for partition locks and transactions release.
-     *
-     * @param parts Partitions.
-     * @param topVer Topology version.
-     * @return {@code true} if waiting was successful.
-     */
-    @SuppressWarnings({"unchecked"})
-    public GridFuture<?> partitionReleaseFuture(Collection<Integer> parts, long topVer) {
-        assert parts != null;
-
-        if (parts.isEmpty() || !(isDht() || isColocated() || isDhtAtomic()))
-            return new GridFinishedFuture<Object>(kernalContext());
-
-        GridCacheContext<K, V> cacheCtx = isDht() ? dht().near().context() : cache().context();
-
-        GridFuture<?> release;
-
-        if (cacheCtx.transactional()) {
-            GridCompoundFuture f = new GridCompoundFuture(ctx);
-
-            f.add(cacheCtx.mvcc().finishExplicitLocks(topVer));
-            f.add(cacheCtx.tm().finishTxs(parts, topVer));
-
-            // Must finish dht transactions as well so that preloading sees correct values.
-            if (isDht())
-                f.add(dht().context().tm().finishTxs(parts, topVer));
-
-            GridFuture<?> multiFut = cacheCtx.isNear() ? cacheCtx.near().dht().multiUpdateFinishFuture(topVer) :
-                cacheCtx.colocated().multiUpdateFinishFuture(topVer);
-
-            if (multiFut != null)
-                f.add(multiFut);
-
-            f.markInitialized();
-
-            release = f;
-        }
-        else
-            release = mvcc().finishAtomicUpdates(topVer, parts);
-
-        return release;
     }
 
     /**
@@ -1798,11 +1715,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         cache = null;
         cacheCfg = null;
         evictMgr = null;
-        mvccMgr = null;
         qryMgr = null;
-        dgcMgr = null;
         dataStructuresMgr = null;
-        ioMgr = null;
 
         mgrs.clear();
     }

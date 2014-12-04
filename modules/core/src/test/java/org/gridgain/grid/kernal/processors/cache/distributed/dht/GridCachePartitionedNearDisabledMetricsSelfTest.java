@@ -25,6 +25,14 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     /** */
     private static final int GRID_CNT = 2;
 
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
@@ -32,7 +40,6 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(gridCount() - 1);
         cfg.setPreloadMode(SYNC);
-        cfg.setTxSerializableEnabled(true);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setDistributionMode(PARTITIONED_ONLY);
 

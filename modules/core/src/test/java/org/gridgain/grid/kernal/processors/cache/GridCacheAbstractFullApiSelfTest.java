@@ -95,6 +95,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+
+        for (int i = 0; i < gridCount(); i++)
+            info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assertEquals("Primary key set: " + cache().primaryKeySet(), 0, cache().primaryKeySet().size());
         assertEquals(0, cache().primarySize());
@@ -124,16 +133,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, cache().globalPrimarySize());
 
         dfltGrid = null;
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testDgc() throws Exception {
-        // Just check dgc() call does not fail.
-        cache().dgc();
-
-        cache().dgc(1000, true, true);
     }
 
     /**
@@ -261,7 +260,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             try {
                 cache.remove("a");
 
-                // This will fail with "Transaction lock is not acquired."
+                // Make sure single-key operation did not remove lock.
                 cache.putAll(F.asMap("b", 2, "c", 3, "d", 4));
             }
             finally {
@@ -799,7 +798,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertNull(cache.get("key3"));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull(cache(i).peek("key3"));
+            assertNull("Failed for cache: " + i, cache(i).peek("key3"));
 
         cache.remove("key1");
         cache.put("key2", 1);
@@ -1524,11 +1523,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutxFiltered() throws Exception {
         GridCacheTx tx = txEnabled() ? cache().txStart() : null;
 
-        cache().putx("key1", 1, F.<String, Integer>cacheHasPeekValue());
-        cache().putx("key2", 100, F.<String, Integer>cacheNoPeekValue());
+        try {
+            cache().putx("key1", 1, F.<String, Integer>cacheHasPeekValue());
+            cache().putx("key2", 100, F.<String, Integer>cacheNoPeekValue());
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key2"));
 
@@ -1647,76 +1652,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 return null;
             }
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
-    }
-
-    /**
-     * Test affinity resolution performance.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testAffinityPerformance() throws Exception {
-        GridCache<String, Integer> cache = cache();
-
-        long start = System.currentTimeMillis();
-
-        long ops;
-
-        for (ops = 0; ops < 20 * 1000 * 1000; ops++) {
-            cache.affinity().mapKeyToPrimaryAndBackups(Long.toString(ops));
-
-            if (ops % 1000 == 0 && Thread.interrupted()) {
-                Thread.currentThread().interrupt();
-
-                break;
-            }
-        }
-
-        long opsPerMs = ops / (System.currentTimeMillis() - start);
-
-        info("Operations per ms [opsPerMs=" + opsPerMs + ']');
-
-        assertTrue("Expect more then 1000 operations per ms [opsPerMs=" + opsPerMs + ']', opsPerMs > 1000);
-    }
-
-    /**
-     * Test affinity resolution performance.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testAffinityPerformanceMultithreaded() throws Exception {
-        final GridCache<String, Integer> cache = cache();
-
-        final int total = 20 * 1000 * 1000;
-        final int threads = 20;
-        final int size = total / threads;
-
-        final AtomicLong ops = new AtomicLong(0);
-        final CountDownLatch latch = new CountDownLatch(1);
-        final CountDownLatch done = new CountDownLatch(threads);
-
-        multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                latch.await();
-
-                for (long start = ops.getAndAdd(size), op = start; op < start + size; op++)
-                    cache.affinity().mapKeyToPrimaryAndBackups(Long.toString(op));
-
-                done.countDown();
-
-                return null;
-            }
-        }, threads);
-
-        long start = System.currentTimeMillis();
-
-        latch.countDown(); // Start affinity calculations.
-        done.await(); // Wait until affinity calculations finishes.
-
-        long opsPerMs = ops.get() / (System.currentTimeMillis() - start);
-
-        info("Operations per ms [opsPerMs=" + opsPerMs + ']');
-
-        assertTrue("Expect more then 1000 operations per ms [opsPerMs=" + opsPerMs + ']', opsPerMs > 800);
     }
 
     /**
@@ -2244,7 +2179,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert cache().replacexAsync("key", 2).get();
 
-        assert cache().get("key") == 2;
+        U.debug(log, "Finished replace.");
+
+        assertEquals((Integer)2, cache().get("key"));
 
         assert !cache().replacexAsync("wrong", 2).get();
 
@@ -2448,7 +2385,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert !cache().removexAsync("key1", gte100).get();
         assert cache().get("key1") != null && cache().get("key1") == 1;
         assert cache().removexAsync("key2", gte100).get();
-        assert cache().get("key2") == null;
+        assertNull(cache().get("key2"));
     }
 
     /**
@@ -3604,8 +3541,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             List<String> keys = primaryKeysForCache(cache(), 2);
 
-            String key1 = keys.get(0);
-            String key2 = keys.get(1);
+            info("Keys: " + keys);
+
+            final String key1 = keys.get(0);
+            final String key2 = keys.get(1);
 
             cache().put(key1, 1);
             cache().put(key2, 100);
@@ -3622,16 +3561,38 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache().unlock(key1, gte100);
             cache().unlock(key2, gte100);
 
-            for (int i = 0; i < 100; i++)
-                if (cache().isLocked(key2))
-                    Thread.sleep(10);
-                else
-                    break;
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int g = 0; g < gridCount(); g++) {
+                        if (cache(g).isLocked(key2)) {
+                            info(key2 + " is locked on grid: " + g);
+
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }, 2000);
 
             assert cache().isLocked(key1);
             assert !cache().isLocked(key2);
 
             cache().unlockAll(F.asList(key1, key2));
+
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int g = 0; g < gridCount(); g++) {
+                        if (cache(g).isLocked(key1))
+                            info(key1 + " is locked on grid: " + g);
+
+                        if (cache(g).isLocked(key2))
+                            info(key2 + " is locked on grid: " + g);
+                    }
+
+                    return true;
+                }
+            }, 2000);
         }
     }
 
@@ -4423,11 +4384,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put(key2, 102);
         cache().put(key3, 3);
 
+        U.debug(log, "Before evictAll");
+
         cache().projection(gte100).evictAll();
 
-        assert cache().peek(key1) == 1;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == 3;
+        U.debug(log, "After evictAll");
+
+        assertEquals((Integer)1, cache().peek(key1));
+        assertNull(cache().peek(key2));
+        assertEquals((Integer)3, cache().peek(key3));
 
         cache().put(key1, 1);
         cache().put(key2, 102);

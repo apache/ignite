@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -102,7 +101,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
             info("Evict finished.");
 
             for (int i = 0; i < ENTRY_CNT; i++)
-                assert cache.peek(i) == null;
+                assertNull(cache.peek(i));
 
             assert cache.isEmpty();
 

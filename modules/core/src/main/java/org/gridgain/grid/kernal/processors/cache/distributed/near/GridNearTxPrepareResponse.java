@@ -52,7 +52,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     /** Map of owned values to set on near node. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<K, GridTuple3<GridCacheVersion, V, byte[]>> ownedVals;
+    private Map<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedVals;
 
     /** Marshalled owned bytes. */
     @GridToStringExclude
@@ -135,7 +135,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param val Value.
      * @param valBytes Value bytes.
      */
-    public void addOwnedValue(K key, GridCacheVersion ver, V val, byte[] valBytes) {
+    public void addOwnedValue(GridCacheTxKey<K> key, GridCacheVersion ver, V val, byte[] valBytes) {
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
@@ -145,8 +145,8 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     /**
      * @return Owned values map.
      */
-    public Map<K, GridTuple3<GridCacheVersion, V, byte[]>> ownedValues() {
-        return ownedVals == null ? Collections.<K, GridTuple3<GridCacheVersion,V,byte[]>>emptyMap() :
+    public Map<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedValues() {
+        return ownedVals == null ? Collections.<GridCacheTxKey<K>, GridTuple3<GridCacheVersion,V,byte[]>>emptyMap() :
             Collections.unmodifiableMap(ownedVals);
     }
 
@@ -154,7 +154,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param key Key.
      * @return {@code True} if response has owned value for given key.
      */
-    public boolean hasOwnedValue(K key) {
+    public boolean hasOwnedValue(GridCacheTxKey<K> key) {
         return ownedVals != null && ownedVals.containsKey(key);
     }
 
@@ -165,14 +165,15 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         return invalidParts;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (ownedVals != null && ownedValsBytes == null) {
             ownedValsBytes = new ArrayList<>(ownedVals.size());
 
-            for (Map.Entry<K, GridTuple3<GridCacheVersion, V, byte[]>> entry : ownedVals.entrySet()) {
+            for (Map.Entry<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> entry : ownedVals.entrySet()) {
                 GridTuple3<GridCacheVersion, V, byte[]> tup = entry.getValue();
 
                 boolean rawBytes = false;
@@ -195,14 +196,14 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (ownedValsBytes != null && ownedVals == null) {
             ownedVals = new HashMap<>();
 
             for (byte[] bytes : ownedValsBytes) {
-                GridTuple4<K, GridCacheVersion, byte[], Boolean> tup = ctx.marshaller().unmarshal(bytes, ldr);
+                GridTuple4<GridCacheTxKey<K>, GridCacheVersion, byte[], Boolean> tup = ctx.marshaller().unmarshal(bytes, ldr);
 
                 V val = tup.get4() ? (V)tup.get3() : ctx.marshaller().<V>unmarshal(tup.get3(), ldr);
 
@@ -252,19 +253,19 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         }
 
         switch (commState.idx) {
-            case 9:
+            case 10:
                 if (!commState.putCacheVersion(dhtVer))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (invalidParts != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(invalidParts.size()))
@@ -291,13 +292,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (ownedValsBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(ownedValsBytes.size()))
@@ -324,7 +325,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (pending != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(pending.size()))
@@ -365,7 +366,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             return false;
 
         switch (commState.idx) {
-            case 9:
+            case 10:
                 GridCacheVersion dhtVer0 = commState.getCacheVersion();
 
                 if (dhtVer0 == CACHE_VER_NOT_READ)
@@ -375,7 +376,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -385,7 +386,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -414,7 +415,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -424,7 +425,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -453,7 +454,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

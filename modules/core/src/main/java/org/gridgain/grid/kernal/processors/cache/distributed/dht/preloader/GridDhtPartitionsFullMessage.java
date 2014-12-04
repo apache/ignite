@@ -31,7 +31,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private GridDhtPartitionFullMap parts;
+    private Map<Integer, GridDhtPartitionFullMap> parts = new HashMap<>();
 
     /** */
     private byte[] partsBytes;
@@ -54,29 +54,36 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
     /**
      * @param id Exchange ID.
-     * @param parts Partitions.
      * @param lastVer Last version.
      */
-    GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, GridDhtPartitionFullMap parts,
-        @Nullable GridCacheVersion lastVer, long topVer) {
+    public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, @Nullable GridCacheVersion lastVer,
+        long topVer) {
         super(id, lastVer);
 
         assert parts != null;
         assert id == null || topVer == id.topologyVersion();
 
-        this.parts = parts;
         this.topVer = topVer;
     }
 
     /**
      * @return Local partitions.
      */
-    public GridDhtPartitionFullMap partitions() {
+    public Map<Integer, GridDhtPartitionFullMap> partitions() {
         return parts;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /**
+     * @param cacheId Cache ID.
+     * @param fullMap Full partitions map.
+     */
+    public void addFullPartitionsMap(int cacheId, GridDhtPartitionFullMap fullMap) {
+        parts.put(cacheId, fullMap);
+    }
+
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (parts != null)
@@ -115,7 +122,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null)
@@ -164,19 +171,19 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
         }
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 if (!commState.putByteArray(affAssignmentBytes))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putByteArray(partsBytes))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -196,7 +203,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
             return false;
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 byte[] affAssignmentBytes0 = commState.getByteArray();
 
                 if (affAssignmentBytes0 == BYTE_ARR_NOT_READ)
@@ -206,7 +213,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 byte[] partsBytes0 = commState.getByteArray();
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)
@@ -216,7 +223,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (buf.remaining() < 8)
                     return false;
 

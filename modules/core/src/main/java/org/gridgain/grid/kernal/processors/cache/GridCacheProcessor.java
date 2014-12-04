@@ -31,8 +31,10 @@ import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -59,6 +61,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  * Cache processor.
  */
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** Shared cache context. */
+    private GridCacheSharedContext<?, ?> sharedCtx;
+
     /** */
     private final Map<String, GridCacheAdapter<?, ?>> caches;
 
@@ -86,6 +91,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Cache MBeans. */
     private final Collection<ObjectName> cacheMBeans = new LinkedList<>();
 
+    /** Transaction interface implementation. */
+    private GridTransactionsImpl transactions;
+
     /**
      * @param ctx Kernal context.
      */
@@ -110,12 +118,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void initialize(GridCacheConfiguration cfg) {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
-
-        if (cfg.getDefaultTxConcurrency() == null)
-            cfg.setDefaultTxConcurrency(DFLT_TX_CONCURRENCY);
-
-        if (cfg.getDefaultTxIsolation() == null)
-            cfg.setDefaultTxIsolation(DFLT_TX_ISOLATION);
 
         if (cfg.getMemoryMode() == null)
             cfg.setMemoryMode(DFLT_MEMORY_MODE);
@@ -243,9 +245,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg.isWriteBehindEnabled());
 
         perf.add("Disable query index (set 'queryIndexEnabled' to false)", !cfg.isQueryIndexEnabled());
-
-        perf.add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
-            !cfg.isTxSerializableEnabled());
     }
 
     /**
@@ -308,7 +307,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
 
-        if (!cc.isTxSerializableEnabled() && cc.getDefaultTxIsolation() == SERIALIZABLE)
+        if (!c.getTransactionsConfiguration().isTxSerializableEnabled() &&
+            c.getTransactionsConfiguration().getDefaultTxIsolation() == SERIALIZABLE)
             U.warn(log,
                 "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
                     "(most likely misconfiguration - either update 'isTxSerializableEnabled' or " +
@@ -405,8 +405,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return DHT managers.
      */
     private List<GridCacheManager> dhtManagers(GridCacheContext ctx) {
-        return F.asList(ctx.store(), ctx.mvcc(), ctx.events(), ctx.tm(), ctx.swap(), ctx.dgc(), ctx.evicts(),
-            ctx.queries(), ctx.continuousQueries(), ctx.dr());
+        return F.asList(ctx.store(), ctx.events(), ctx.swap(), ctx.evicts(), ctx.queries(), ctx.continuousQueries(),
+            ctx.dr());
     }
 
     /**
@@ -418,7 +418,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
             return Collections.emptyList();
         else
-            return F.asList((GridCacheManager)ctx.dgc(), ctx.queries(), ctx.continuousQueries());
+            return F.asList((GridCacheManager)ctx.queries(), ctx.continuousQueries());
     }
 
     /**
@@ -525,6 +525,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
+        sharedCtx = createSharedContext(ctx);
+
+        ctx.performance().add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
+            !ctx.config().getTransactionsConfiguration().isTxSerializableEnabled());
+
+        Collection<GridCacheAdapter<?, ?>> startSeq = new ArrayList<>(cfgs.length);
+
         for (int i = 0; i < cfgs.length; i++) {
             GridCacheConfiguration cfg = new GridCacheConfiguration(cfgs[i]);
 
@@ -547,18 +554,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cfgs[i] = cfg; // Replace original configuration value.
 
-            GridCacheMvccManager mvccMgr = new GridCacheMvccManager();
-            GridCacheTxManager tm = new GridCacheTxManager();
             GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
-            GridCacheVersionManager verMgr = new GridCacheVersionManager();
             GridCacheEventManager evtMgr = new GridCacheEventManager();
             GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL || !isNearEnabled(cfg));
-            GridCacheDgcManager dgcMgr = new GridCacheDgcManager();
-            GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
             GridCacheQueryManager qryMgr = queryManager(cfg);
             GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
-            GridCacheIoManager ioMgr = new GridCacheIoManager();
             GridCacheDataStructuresManager dataStructuresMgr = new GridCacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
@@ -568,25 +569,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
                 ctx,
+                sharedCtx,
                 cfg,
 
                 /*
                  * Managers in starting order!
                  * ===========================
                  */
-                mvccMgr,
-                verMgr,
                 evtMgr,
                 swapMgr,
                 storeMgr,
-                depMgr,
                 evictMgr,
-                ioMgr,
                 qryMgr,
                 contQryMgr,
-                dgcMgr,
                 affMgr,
-                tm,
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
@@ -684,12 +680,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else
                 stopSeq.addFirst(cache);
 
-            // Start managers.
-            for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
-                mgr.start(cacheCtx);
+            startSeq.add(cache);
 
             /*
-             * Start DHT cache.
+             * Create DHT cache.
              * ================
              */
             if (cfg.getCacheMode() != LOCAL && isNearEnabled(cfg)) {
@@ -705,8 +699,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * 7. GridCacheTtlManager.
                  * ===============================================
                  */
-                mvccMgr = new GridCacheMvccManager();
-                tm = new GridCacheTxManager();
                 swapMgr = new GridCacheSwapManager(true);
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
@@ -718,25 +710,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 cacheCtx = new GridCacheContext(
                     ctx,
+                    sharedCtx,
                     cfg,
 
                     /*
                      * Managers in starting order!
                      * ===========================
                      */
-                    mvccMgr,
-                    verMgr,
                     evtMgr,
                     swapMgr,
                     storeMgr,
-                    depMgr,
                     evictMgr,
-                    ioMgr,
                     qryMgr,
                     contQryMgr,
-                    dgcMgr,
                     affMgr,
-                    tm,
                     dataStructuresMgr,
                     ttlMgr,
                     drMgr,
@@ -785,18 +772,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 cacheCtx.cache(dht);
-
-                // Start managers.
-                for (GridCacheManager mgr : dhtManagers(cacheCtx))
-                    mgr.start(cacheCtx);
-
-                dht.start();
-
-                if (log.isDebugEnabled())
-                    log.debug("Started DHT cache: " + dht.name());
             }
 
-            cache.start();
+            sharedCtx.addCacheContext(cache.context());
+        }
+
+        // Start shared managers.
+        for (GridCacheSharedManager mgr : sharedCtx.managers())
+            mgr.start(sharedCtx);
+
+        for (GridCacheAdapter<?, ?> cache : startSeq) {
+            GridCacheContext<?, ?> cacheCtx = cache.context();
+
+            GridCacheConfiguration cfg = cacheCtx.config();
+
+            // Start managers.
+            for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
+                mgr.start(cacheCtx);
+
+            if (cfg.getCacheMode() != LOCAL && isNearEnabled(cfg)) {
+                GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
+
+                // Start DHT managers.
+                for (GridCacheManager mgr : dhtManagers(dhtCtx))
+                    mgr.start(dhtCtx);
+
+                // Start DHT cache.
+                dhtCtx.cache().start();
+
+                if (log.isDebugEnabled())
+                    log.debug("Started DHT cache: " + dhtCtx.cache().name());
+            }
+
+            cacheCtx.cache().start();
+
 
             if (log.isInfoEnabled())
                 log.info("Started cache [name=" + cfg.getName() + ", mode=" + cfg.getCacheMode() + ']');
@@ -831,8 +840,36 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
         }
 
+        transactions = new GridTransactionsImpl(sharedCtx);
+
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
+    }
+
+    /**
+     * Creates shared context.
+     *
+     * @param kernalCtx Kernal context.
+     * @return Shared context.
+     */
+    @SuppressWarnings("unchecked")
+    private GridCacheSharedContext createSharedContext(GridKernalContext kernalCtx) {
+        GridCacheTxManager tm = new GridCacheTxManager();
+        GridCacheMvccManager mvccMgr = new GridCacheMvccManager();
+        GridCacheVersionManager verMgr = new GridCacheVersionManager();
+        GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
+        GridCachePartitionExchangeManager exchMgr = new GridCachePartitionExchangeManager();
+        GridCacheIoManager ioMgr = new GridCacheIoManager();
+
+        return new GridCacheSharedContext(
+            kernalCtx,
+            tm,
+            verMgr,
+            mvccMgr,
+            depMgr,
+            exchMgr,
+            ioMgr
+        );
     }
 
     /** {@inheritDoc} */
@@ -973,6 +1010,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridDeploymentMode locDepMode = ctx.config().getDeploymentMode();
         GridDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
+        // TODO GG-9141 Check tx configuration consistency.
+
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {
                 if (F.eq(rmtAttr.cacheName(), locAttr.cacheName())) {
@@ -1022,9 +1061,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             "Atomic sequence reserve size", locAttr.sequenceReserveSize(),
                             rmtAttr.sequenceReserveSize(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "batchUpdateOnCommit",
-                            "Batch update on commit", locAttr.txBatchUpdate(), rmtAttr.txBatchUpdate(), false);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
                             "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
 
@@ -1038,18 +1074,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTimeToLive",
                             "Default time to live", locAttr.defaultTimeToLive(), rmtAttr.defaultTimeToLive(), false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTxConcurrency",
-                            "Default transaction concurrency", locAttr.defaultConcurrency(),
-                            rmtAttr.defaultConcurrency(), false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTxIsolation",
-                            "Default transaction isolation", locAttr.defaultIsolation(), rmtAttr.defaultIsolation(),
-                            false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTxTimeout",
-                            "Default transaction timeout", locAttr.defaultTxTimeout(), rmtAttr.defaultTxTimeout(),
-                            false);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "dgcFrequency",
                             "Distributed garbage collector frequency", locAttr.dgcFrequency(), rmtAttr.dgcFrequency(),
@@ -1104,10 +1128,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
                             "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "txSerializableEnabled",
-                            "Transaction serializable enabled", locAttr.txSerializableEnabled(),
-                            rmtAttr.txSerializableEnabled(), true);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
@@ -1247,6 +1267,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridFuture<?> fut : preloadFuts.values())
             ((GridCompoundFuture<Object, Object>)fut).markInitialized();
 
+        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
+            mgr.onKernalStart();
+
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
 
@@ -1268,7 +1291,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (!F.isEmpty(cacheMBeans))
+        if (!F.isEmpty(cacheMBeans)) {
             for (ObjectName mb : cacheMBeans) {
                 try {
                     mBeanSrv.unregisterMBean(mb);
@@ -1280,6 +1303,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     U.error(log, "Failed to unregister cache MBean: " + mb, e);
                 }
             }
+        }
+
+        List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
+
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
+            it.hasPrevious();) {
+            GridCacheSharedManager<?, ?> mgr = it.previous();
+
+            mgr.onKernalStop(cancel);
+        }
 
         for (GridCacheAdapter<?, ?> cache : stopSeq) {
             GridCacheContext ctx = cache.context();
@@ -1363,6 +1396,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cleanup(ctx);
         }
 
+        List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
+
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+            GridCacheSharedManager<?, ?> mgr = it.previous();
+
+            mgr.stop(cancel);
+        }
+
+        sharedCtx.cleanup();
+
         if (log.isDebugEnabled())
             log.debug("Stopped cache processor.");
     }
@@ -1406,7 +1449,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (qryMgr != null) {
                 try {
-                    Object key = cctx.marshaller().unmarshal(keyBytes, cctx.deploy().globalLoader());
+                    Object key = cctx.marshaller().unmarshal(keyBytes, cctx.shared().deploy().globalLoader());
 
                     qryMgr.remove(key, keyBytes);
                 }
@@ -1598,6 +1641,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.isStopping())
             for (GridCacheAdapter<?, ?> cache : caches.values())
                 cache.onUndeploy(leftNodeId, ldr);
+    }
+
+    /**
+     * @return Shared context.
+     */
+    public <K, V> GridCacheSharedContext<K, V> context() {
+        return (GridCacheSharedContext<K, V>)sharedCtx;
+    }
+
+    /**
+     * @return Transactions interface implementation.
+     */
+    public GridTransactions transactions() {
+        return transactions;
     }
 
     /**

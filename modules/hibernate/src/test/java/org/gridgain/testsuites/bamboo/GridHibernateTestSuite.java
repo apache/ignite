@@ -25,8 +25,8 @@ public class GridHibernateTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Hibernate Integration Test Suite");
 
         // Hibernate L2 cache.
-        suite.addTestSuite(GridHibernateL2CacheSelfTest.class);
-        suite.addTestSuite(GridHibernateL2CacheTransactionalSelfTest.class);
+//        suite.addTestSuite(GridHibernateL2CacheSelfTest.class); // TODO GG-9141
+//        suite.addTestSuite(GridHibernateL2CacheTransactionalSelfTest.class);
         suite.addTestSuite(GridHibernateL2CacheConfigurationSelfTest.class);
 
         suite.addTestSuite(GridCacheHibernateBlobStoreSelfTest.class);

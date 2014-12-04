@@ -231,7 +231,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     boolean valIsByteArr = val != null && val instanceof byte[];
 
                     if (valBytes == null && !valIsByteArr)
-                        valBytes = CU.marshal(cctx, val);
+                        valBytes = CU.marshal(cctx.shared(), val);
 
                     valPtr = mem.putOffHeap(valPtr, valIsByteArr ? (byte[])val : valBytes, valIsByteArr);
                 }
@@ -305,18 +305,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         if (kb == null || (vb.isNull() && v != null)) {
             if (kb == null)
-                kb = CU.marshal(cctx, key);
+                kb = CU.marshal(cctx.shared(), key);
 
             if (vb.isNull())
                 vb = (v != null && v instanceof byte[]) ? GridCacheValueBytes.plain(v) :
-                    GridCacheValueBytes.marshaled(CU.marshal(cctx, v));
+                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), v));
 
             synchronized (this) {
                 if (keyBytes == null)
                     keyBytes = kb;
 
                 // If value didn't change.
-                if (!isOffHeapValuesOnly() && valBytes == null && val == v)
+                if (!isOffHeapValuesOnly() && valBytes == null && val == v && cctx.config().isStoreValueBytes())
                     valBytes = vb.isPlain() ? null : vb.get();
             }
         }
@@ -1382,7 +1382,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                         // If entry was not marked obsolete, then removed lock
                         // will be registered whenever removeLock is called.
-                        cctx.mvcc().addRemoved(obsoleteVer);
+                        cctx.mvcc().addRemoved(cctx, obsoleteVer);
 
                         if (log.isDebugEnabled())
                             log.debug("Entry was marked obsolete: " + this);
@@ -2418,6 +2418,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheTxKey<K> txKey() {
+        return cctx.txKey(key);
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized GridCacheVersion version() throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -2619,7 +2624,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private void groupLockSanityCheck(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException, GridException {
         assert tx.groupLock();
 
-        GridCacheTxEntry<K, V> txEntry = tx.entry(key);
+        GridCacheTxEntry<K, V> txEntry = tx.entry(txKey());
 
         if (txEntry.groupLockEntry()) {
             if (lockedByAny())
@@ -2660,7 +2665,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @Nullable private GridTuple<V> peekTx(boolean failFast,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         @Nullable GridCacheTxEx<K, V> tx) throws GridCacheFilterFailedException {
-        return tx == null ? null : tx.peek(failFast, key, filter);
+        return tx == null ? null : tx.peek(cctx, failFast, key, filter);
     }
 
     /**
@@ -3166,7 +3171,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             tx = cctx.tm().localTx();
 
         if (tx != null) {
-            long time = tx.entryExpireTime(key);
+            long time = tx.entryExpireTime(txKey());
 
             if (time > 0)
                 return time;
@@ -3252,7 +3257,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             tx = cctx.tm().localTx();
 
         if (tx != null) {
-            long entryTtl = tx.entryTtl(key);
+            long entryTtl = tx.entryTtl(txKey());
 
             if (entryTtl > 0)
                 return entryTtl;
@@ -3285,7 +3290,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (bytes != null)
             return bytes;
 
-        bytes = CU.marshal(cctx, key);
+        bytes = CU.marshal(cctx.shared(), key);
 
         synchronized (this) {
             keyBytes = bytes;
@@ -3325,7 +3330,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (valBytes.isNull()) {
             if (val != null)
                 valBytes = (val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
-                    GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
+                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), val));
 
             if (ver != null && !isOffHeapValuesOnly()) {
                 synchronized (this) {
@@ -3584,7 +3589,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             GridCacheValueBytes res = valueBytesUnlocked();
 
             if (res.isNull())
-                res = GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
+                res = GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), val));
 
             assert res.get() != null;
 
@@ -3619,7 +3624,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheTxEx<K, V> tx = cctx.tm().localTxx();
 
-        return tx == null || !tx.removed(key);
+        return tx == null || !tx.removed(txKey());
     }
 
     /**
@@ -4059,7 +4064,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         assert cctx.portableEnabled();
 
-        return GridCacheValueBytes.marshaled(CU.marshal(cctx, cctx.portable().unmarshal(valPtr, true)));
+        return GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), cctx.portable().unmarshal(valPtr, true)));
     }
 
     /**

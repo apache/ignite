@@ -22,6 +22,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
+import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -41,6 +43,9 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(GridCacheMode.PARTITIONED);
@@ -53,8 +58,6 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         cc.setAtomicSequenceReserveSize(10);
         cc.setEvictSynchronized(true);
         cc.setEvictNearSynchronized(true);
-        cc.setDefaultTxConcurrency(GridCacheTxConcurrency.PESSIMISTIC);
-        cc.setDefaultTxIsolation(GridCacheTxIsolation.REPEATABLE_READ);
 
         c.setCacheConfiguration(cc);
 

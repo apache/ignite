@@ -21,6 +21,7 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -78,6 +79,9 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** Local node ID */
     private UUID locNodeId;
 
+    /** Counters for task. */
+    private final GridHadoopCounters cntrs = new GridHadoopCountersImpl();
+
     /**
      * @param taskInfo Task info.
      * @param job Job.
@@ -115,6 +119,16 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         finally {
             Thread.currentThread().setContextClassLoader(null);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls) {
+        return cntrs.counter(grp, name, cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopCounters counters() {
+        return cntrs;
     }
 
     /**

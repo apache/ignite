@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -27,7 +26,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * like, for example GridCacheContext, as it may be reused between different
  * caches.
  */
-public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
 
@@ -46,7 +45,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
     /** Serializable transaction flag. */
     private boolean txSerEnabled;
 
-    /** Data cetner ID. */
+    /** Data center ID. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private byte dataCenterId;
 
@@ -62,7 +61,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
 
             GridNode node = cctx.discovery().node(discoEvt.node().id());
 
-            if (node != null && !node.id().equals(cctx.nodeId()))
+            if (node != null && !node.id().equals(cctx.localNodeId()))
                 onReceived(discoEvt.eventNode().id(), node.metrics().getLastDataVersion());
         }
     };
@@ -76,9 +75,9 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public void start0() throws GridException {
-        txSerEnabled = cctx.config().isTxSerializableEnabled();
+        txSerEnabled = cctx.gridConfig().getTransactionsConfiguration().isTxSerializableEnabled();
 
-        dataCenterId = cctx.dataCenterId();
+        dataCenterId = 0; //cctx.dataCenterId(); TODO GG-9141 Grab data center ID from DR manager.
 
         last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
 
@@ -219,8 +218,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
             topVer += (gridStartTime - TOP_VER_BASE_TIME) / 1000;
         }
 
-        long globalTime = cctx.config().getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.CLOCK ?
-            cctx.kernalContext().clockSync().adjustedTime(topVer) : 0;
+        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
 
         int locNodeOrder = (int)cctx.localNode().order();
 

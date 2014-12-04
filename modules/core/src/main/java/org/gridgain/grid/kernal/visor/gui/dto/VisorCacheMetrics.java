@@ -84,6 +84,8 @@ public class VisorCacheMetrics implements Serializable {
      * @return Data transfer object for given cache metrics.
      */
     public static VisorCacheMetrics from(GridCacheMetrics m) {
+        // TODO gg-9141
+
         assert m != null;
 
         VisorCacheMetrics metrics = new VisorCacheMetrics();
@@ -91,23 +93,23 @@ public class VisorCacheMetrics implements Serializable {
         metrics.createTime(m.createTime());
         metrics.writeTime(m.writeTime());
         metrics.readTime(m.readTime());
-        metrics.commitTime(m.commitTime());
-        metrics.rollbackTime(m.rollbackTime());
+//        metrics.commitTime(m.commitTime());
+//        metrics.rollbackTime(m.rollbackTime());
 
         metrics.reads(m.reads());
         metrics.writes(m.writes());
         metrics.hits(m.hits());
         metrics.misses(m.misses());
 
-        metrics.txCommits(m.txCommits());
-        metrics.txRollbacks(m.txRollbacks());
+//        metrics.txCommits(m.txCommits());
+//        metrics.txRollbacks(m.txRollbacks());
 
         metrics.readsPerSecond(perSecond(m.reads(), m.readTime(), m.createTime()));
         metrics.writesPerSecond(perSecond(m.writes(), m.writeTime(), m.createTime()));
         metrics.hitsPerSecond(perSecond(m.hits(), m.readTime(), m.createTime()));
         metrics.missesPerSecond(perSecond(m.misses(), m.readTime(), m.createTime()));
-        metrics.commitsPerSecond(perSecond(m.txCommits(), m.commitTime(), m.createTime()));
-        metrics.rollbacksPerSecond(perSecond(m.txRollbacks(), m.rollbackTime(), m.createTime()));
+//        metrics.commitsPerSecond(perSecond(m.txCommits(), m.commitTime(), m.createTime()));
+//        metrics.rollbacksPerSecond(perSecond(m.txRollbacks(), m.rollbackTime(), m.createTime()));
 
         return metrics;
     }

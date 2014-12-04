@@ -171,9 +171,6 @@ public class GridConfiguration {
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
-    /** Default max queue capacity of GGFS thread pool. */
-    public static final int DFLT_GGFS_THREADPOOL_QUEUE_CAP = 16;
-
     /** Default size of REST thread pool. */
     public static final int DFLT_REST_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
 
@@ -395,6 +392,9 @@ public class GridConfiguration {
 
     /** Cache configurations. */
     private GridCacheConfiguration[] cacheCfg;
+
+    /** Transactions configuration. */
+    private GridTransactionsConfiguration txCfg = new GridTransactionsConfiguration();
 
     /** Configuration for .Net nodes. */
     private GridDotNetConfiguration dotNetCfg;
@@ -665,6 +665,7 @@ public class GridConfiguration {
         sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
+        txCfg = cfg.getTransactionsConfiguration();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
@@ -1191,7 +1192,6 @@ public class GridConfiguration {
      * <ul>
      *     <li>Core pool size - number of processors available in system</li>
      *     <li>Max pool size - number of processors available in system</li>
-     *     <li>Queue capacity - {@link #DFLT_GGFS_THREADPOOL_QUEUE_CAP}</li>
      * </ul>
      *
      * @return Thread pool implementation to be used for GGFS outgoing message sending.
@@ -3212,6 +3212,24 @@ public class GridConfiguration {
      */
     public void setDotNetConfiguration(@Nullable GridDotNetConfiguration dotNetCfg) {
         this.dotNetCfg = dotNetCfg;
+    }
+
+    /**
+     * Gets transactions configuration.
+     *
+     * @return Transactions configuration.
+     */
+    public GridTransactionsConfiguration getTransactionsConfiguration() {
+        return txCfg;
+    }
+
+    /**
+     * Sets transactions configuration.
+     *
+     * @param txCfg Transactions configuration.
+     */
+    public void setTransactionsConfiguration(GridTransactionsConfiguration txCfg) {
+        this.txCfg = txCfg;
     }
 
     /**

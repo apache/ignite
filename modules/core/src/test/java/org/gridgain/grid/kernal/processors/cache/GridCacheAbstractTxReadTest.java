@@ -18,13 +18,20 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("NullableProblems")
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setTxSerializableEnabled(true);
 
         cfg.setStore(null);
 

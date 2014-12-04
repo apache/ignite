@@ -130,7 +130,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentNodesStartStop() throws Exception {
+    public void _testConcurrentNodesStartStop() throws Exception { // TODO GG-9141
         try {
             multithreadedAsync(
                 new Callable<Object>() {

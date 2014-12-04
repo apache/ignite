@@ -35,11 +35,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /** Mini future ID. */
     private GridUuid miniId;
 
-    /** Synchronous commit flag. */
-    private boolean syncCommit;
-
-    /** Synchronous rollback flag. */
-    private boolean syncRollback;
+    /** Near mapping flag. */
+    private boolean near;
 
     /** Topology version. */
     private long topVer;
@@ -74,25 +71,33 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param writes Write entries.
      * @param grpLockKey Group lock key if preparing group-lock transaction.
      * @param partLock {@code True} if preparing group-lock transaction with partition lock.
-     * @param syncCommit Synchronous commit.
-     * @param syncRollback Synchronous rollback.
+     * @param near {@code True} if mapping is for near caches.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
-    public GridNearTxPrepareRequest(GridUuid futId, long topVer, GridCacheTxEx<K, V> tx,
-        Collection<GridCacheTxEntry<K, V>> reads, Collection<GridCacheTxEntry<K, V>> writes, Object grpLockKey,
-        boolean partLock, boolean syncCommit, boolean syncRollback,
-        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups, @Nullable UUID subjId,
-        int taskNameHash) {
+    public GridNearTxPrepareRequest(
+        GridUuid futId,
+        long topVer,
+        GridCacheTxEx<K, V> tx,
+        Collection<GridCacheTxEntry<K, V>> reads,
+        Collection<GridCacheTxEntry<K, V>> writes,
+        GridCacheTxKey grpLockKey,
+        boolean partLock,
+        boolean near,
+        Map<UUID, Collection<UUID>> txNodes,
+        boolean last,
+        Collection<UUID> lastBackups,
+        @Nullable UUID subjId,
+        int taskNameHash
+    ) {
         super(tx, reads, writes, grpLockKey, partLock, txNodes);
 
         assert futId != null;
 
         this.futId = futId;
         this.topVer = topVer;
-        this.syncCommit = syncCommit;
-        this.syncRollback = syncRollback;
+        this.near = near;
         this.last = last;
         this.lastBackups = lastBackups;
         this.subjId = subjId;
@@ -111,6 +116,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      */
     public boolean last() {
         return last;
+    }
+
+    /**
+     * @return {@code True} if mapping is for near-enabled caches.
+     */
+    public boolean near() {
+        return near;
     }
 
     /**
@@ -149,20 +161,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     }
 
     /**
-     * @return Synchronous commit.
-     */
-    public boolean syncCommit() {
-        return syncCommit;
-    }
-
-    /**
-     * @return Synchronous rollback.
-     */
-    public boolean syncRollback() {
-        return syncRollback;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public long topologyVersion() {
@@ -170,27 +168,35 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     }
 
     /**
-     * @param ctx Cache context.
+     *
      */
-    void cloneEntries(GridCacheContext<K, V> ctx) {
-        reads(cloneEntries(ctx, reads()));
-        writes(cloneEntries(ctx, writes()));
+    public void cloneEntries() {
+        reads(cloneEntries(reads()));
+        writes(cloneEntries(writes()));
     }
 
     /**
-     * @param ctx Cache context.
+     * Clones entries so that tx entries with initialized near entries are not passed to DHT transaction.
+     * Used only when local part of prepare is invoked.
+     *
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
-    private Collection<GridCacheTxEntry<K, V>> cloneEntries(GridCacheContext<K, V> ctx,
-        Collection<GridCacheTxEntry<K, V>> c) {
+    private Collection<GridCacheTxEntry<K, V>> cloneEntries(Collection<GridCacheTxEntry<K, V>> c) {
         if (F.isEmpty(c))
             return c;
 
         Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(c.size());
 
-        for (GridCacheTxEntry<K, V> e : c)
-            cp.add(e.cleanCopy(ctx));
+        for (GridCacheTxEntry<K, V> e : c) {
+            GridCacheContext<K, V> cacheCtx = e.context();
+
+            // Clone only if it is a near cache.
+            if (cacheCtx.isNear())
+                cp.add(e.cleanCopy(cacheCtx.nearTx().dht().context()));
+            else
+                cp.add(e);
+        }
 
         return cp;
     }
@@ -213,8 +219,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.syncCommit = syncCommit;
-        _clone.syncRollback = syncRollback;
         _clone.topVer = topVer;
         _clone.last = last;
         _clone.lastBackups = lastBackups;
@@ -238,19 +242,19 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         }
 
         switch (commState.idx) {
-            case 20:
+            case 21:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (!commState.putBoolean(last))
                     return false;
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (lastBackups != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(lastBackups.size()))
@@ -277,20 +281,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 24:
-                if (!commState.putBoolean(syncCommit))
-                    return false;
-
-                commState.idx++;
-
             case 25:
-                if (!commState.putBoolean(syncRollback))
+                if (!commState.putBoolean(near))
                     return false;
 
                 commState.idx++;
@@ -327,7 +325,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         switch (commState.idx) {
-            case 20:
+            case 21:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -337,7 +335,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -345,7 +343,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -374,7 +372,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -384,19 +382,11 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 24:
-                if (buf.remaining() < 1)
-                    return false;
-
-                syncCommit = commState.getBoolean();
-
-                commState.idx++;
-
             case 25:
                 if (buf.remaining() < 1)
                     return false;
 
-                syncRollback = commState.getBoolean();
+                near = commState.getBoolean();
 
                 commState.idx++;
 

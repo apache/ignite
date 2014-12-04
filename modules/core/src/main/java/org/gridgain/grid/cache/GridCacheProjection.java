@@ -205,7 +205,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Returns queries facade responsible for creating various SQL, TEXT, or SCAN queries.
-     *
+
      * @return Queries facade responsible for creating various SQL, TEXT, or SCAN queries.
      */
     public GridCacheQueries<K, V> queries();

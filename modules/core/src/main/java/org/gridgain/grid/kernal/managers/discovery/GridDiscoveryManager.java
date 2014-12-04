@@ -1014,6 +1014,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     }
 
     /**
+     * Gets all nodes with at least one cache configured.
+     *
+     * @param topVer Topology version.
+     * @return Collection of cache nodes.
+     */
+    public Collection<GridNode> cacheNodes(long topVer) {
+        return resolveDiscoCache(null, topVer).allNodesWithCaches(topVer);
+    }
+
+    /**
      * Gets cache remote nodes for cache with given name.
      *
      * @param cacheName Cache name.
@@ -1022,6 +1032,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      */
     public Collection<GridNode> remoteCacheNodes(@Nullable String cacheName, long topVer) {
         return resolveDiscoCache(cacheName, topVer).remoteCacheNodes(cacheName, topVer);
+    }
+
+    /**
+     * Gets cache remote nodes for cache with given name.
+     *
+     * @param topVer Topology version.
+     * @return Collection of cache nodes.
+     */
+    public Collection<GridNode> remoteCacheNodes(long topVer) {
+        return resolveDiscoCache(null, topVer).remoteCacheNodes(topVer);
     }
 
     /**
@@ -1044,6 +1064,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      */
     public Collection<GridNode> aliveRemoteCacheNodes(@Nullable String cacheName, long topVer) {
         return resolveDiscoCache(cacheName, topVer).aliveRemoteCacheNodes(cacheName, topVer);
+    }
+
+    /**
+     * Gets alive remote nodes with at least one cache configured.
+     *
+     * @param topVer Topology version (maximum allowed node order).
+     * @return Collection of alive cache nodes.
+     */
+    public Collection<GridNode> aliveRemoteNodesWithCaches(long topVer) {
+        return resolveDiscoCache(null, topVer).aliveRemoteNodesWithCaches(topVer);
+    }
+
+    /**
+     * Gets alive nodes with at least one cache configured.
+     *
+     * @param topVer Topology version (maximum allowed node order).
+     * @return Collection of alive cache nodes.
+     */
+    public Collection<GridNode> aliveNodesWithCaches(long topVer) {
+        return resolveDiscoCache(null, topVer).aliveNodesWithCaches(topVer);
     }
 
     /**
@@ -1680,6 +1720,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         /** All nodes. */
         private final List<GridNode> allNodes;
 
+        /** All nodes with at least one cache configured. */
+        private final Collection<GridNode> allNodesWithCaches;
+
+        /** All nodes with at least one cache configured. */
+        private final Collection<GridNode> rmtNodesWithCaches;
+
         /** Cache nodes by cache name. */
         private final Map<String, Collection<GridNode>> allCacheNodes;
 
@@ -1720,6 +1766,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         private final ConcurrentMap<String, Collection<GridNode>> aliveRmtCacheNodes;
 
         /**
+         * Cached alive remote nodes with caches.
+         */
+        private final Collection<GridNode> aliveNodesWithCaches;
+
+        /**
+         * Cached alive remote nodes with caches.
+         */
+        private final Collection<GridNode> aliveRmtNodesWithCaches;
+
+        /**
          * @param loc Local node.
          * @param rmts Remote nodes.
          */
@@ -1746,9 +1802,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 new HashMap<>(allNodes.size(), 1.0f);
             Map<String, Collection<GridNode>> dhtNodesMap =
                 new HashMap<>(allNodes.size(), 1.0f);
+            Collection<GridNode> nodesWithCaches = new ArrayList<>(allNodes.size());
+            Collection<GridNode> rmtNodesWithCaches = new ArrayList<>(allNodes.size());
 
             aliveCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
             aliveRmtCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
+            aliveNodesWithCaches = new ConcurrentSkipListSet<>();
+            aliveRmtNodesWithCaches = new ConcurrentSkipListSet<>();
             nodesByVer = new TreeMap<>();
 
             long maxOrder0 = 0;
@@ -1764,6 +1824,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
 
                 if (caches != null) {
+                    nodesWithCaches.add(node);
+
+                    if (!loc.id().equals(node.id()))
+                        rmtNodesWithCaches.add(node);
+
                     for (GridCacheAttributes attrs : caches) {
                         addToMap(cacheMap, attrs.cacheName(), node);
 
@@ -1782,6 +1847,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                             if (alive(node.id()))
                                 addToMap(aliveRmtCacheNodes, maskNull(attrs.cacheName()), node);
                         }
+                    }
+
+                    if (alive(node.id())) {
+                        aliveNodesWithCaches.add(node);
+
+                        if (!loc.id().equals(node.id()))
+                            aliveRmtNodesWithCaches.add(node);
                     }
                 }
 
@@ -1816,6 +1888,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             allCacheNodes = Collections.unmodifiableMap(cacheMap);
             rmtCacheNodes = Collections.unmodifiableMap(rmtCacheMap);
             affCacheNodes = Collections.unmodifiableMap(dhtNodesMap);
+            allNodesWithCaches = Collections.unmodifiableCollection(nodesWithCaches);
+            this.rmtNodesWithCaches = Collections.unmodifiableCollection(rmtNodesWithCaches);
             nearEnabledCaches = Collections.unmodifiableSet(nearEnabledSet);
 
             daemonNodes = Collections.unmodifiableList(new ArrayList<>(
@@ -1864,6 +1938,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
 
         /**
+         * @return All nodes with at least one cache configured.
+         */
+        Collection<GridNode> allNodesWithCaches() {
+            return allNodesWithCaches;
+        }
+
+        /**
          * Gets collection of nodes which have version equal or greater than {@code ver}.
          *
          * @param ver Version to check.
@@ -1886,6 +1967,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
 
         /**
+         * Gets collection of nodes with at least one cache configured.
+         *
+         * @param topVer Topology version (maximum allowed node order).
+         * @return Collection of nodes.
+         */
+        Collection<GridNode> allNodesWithCaches(final long topVer) {
+            return filter(topVer, allNodesWithCaches);
+        }
+
+        /**
          * Gets all nodes that have cache with given name.
          *
          * @param cacheName Cache name.
@@ -1905,6 +1996,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          */
         Collection<GridNode> remoteCacheNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, rmtCacheNodes.get(cacheName));
+        }
+
+        /**
+         * Gets all remote nodes that have at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<GridNode> remoteCacheNodes(final long topVer) {
+            return filter(topVer, rmtNodesWithCaches);
         }
 
         /**
@@ -1942,6 +2043,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
 
         /**
+         * Gets all alive remote nodes with at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<GridNode> aliveRemoteNodesWithCaches(final long topVer) {
+            return filter(topVer, aliveRmtNodesWithCaches);
+        }
+
+        /**
+         * Gets all alive remote nodes with at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<GridNode> aliveNodesWithCaches(final long topVer) {
+            return filter(topVer, aliveNodesWithCaches);
+        }
+
+        /**
          * Checks if cache with given name has at least one node with near cache enabled.
          *
          * @param cacheName Cache name.
@@ -1963,6 +2084,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             filterNodeMap(aliveCacheNodes, leftNode);
 
             filterNodeMap(aliveRmtCacheNodes, leftNode);
+
+            aliveNodesWithCaches.remove(leftNode);
+            aliveRmtNodesWithCaches.remove(leftNode);
         }
 
         /**

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -55,6 +54,8 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
@@ -67,7 +68,6 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         cc.setDistributionMode(PARTITIONED_ONLY);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setTxSerializableEnabled(true);
         cc.setSwapEnabled(true);
         cc.setEvictSynchronized(false);
         cc.setEvictNearSynchronized(false);

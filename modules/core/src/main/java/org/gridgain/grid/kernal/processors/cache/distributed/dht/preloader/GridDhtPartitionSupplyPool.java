@@ -20,7 +20,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -51,7 +50,7 @@ class GridDhtPartitionSupplyPool<K, V> {
     private final Collection<SupplyWorker> workers = new LinkedList<>();
 
     /** */
-    private final LinkedBlockingDeque<DemandMessage<K, V>> queue = new LinkedBlockingDeque<>();
+    private final BlockingQueue<DemandMessage<K, V>> queue = new LinkedBlockingDeque<>();
 
     /** */
     private final boolean depEnabled;
@@ -79,7 +78,7 @@ class GridDhtPartitionSupplyPool<K, V> {
         for (int i = 0; i < poolSize; i++)
             workers.add(new SupplyWorker());
 
-        cctx.io().addHandler(GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage<K, V>>() {
+        cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage<K, V>>() {
             @Override public void apply(UUID id, GridDhtPartitionDemandMessage<K, V> m) {
                 processDemandMessage(id, m);
             }
@@ -171,7 +170,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      * @return Polled item.
      * @throws InterruptedException If interrupted.
      */
-    @Nullable private <T> T poll(LinkedBlockingDeque<T> deque, GridWorker w) throws InterruptedException {
+    @Nullable private <T> T poll(BlockingQueue<T> deque, GridWorker w) throws InterruptedException {
         assert w != null;
 
         // There is currently a case where {@code interrupted}
@@ -229,7 +228,7 @@ class GridDhtPartitionSupplyPool<K, V> {
             GridDhtPartitionDemandMessage<K, V> d = msg.message();
 
             GridDhtPartitionSupplyMessage<K, V> s = new GridDhtPartitionSupplyMessage<>(d.workerId(),
-                d.updateSequence());
+                d.updateSequence(), cctx.cacheId());
 
             long preloadThrottle = cctx.config().getPreloadThrottle();
 
@@ -244,7 +243,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 // Partition map exchange is finished which means that all near transactions with given
                 // topology version are committed. We can wait for local locks here as it will not take
                 // much time.
-                cctx.mvcc().finishLocks(d.partitions(), d.topologyVersion()).get();
+                cctx.mvcc().finishLocks(d.topologyVersion()).get();
 
                 for (Integer part : d.partitions()) {
                     GridDhtLocalPartition<K, V> loc = top.localPartition(part, d.topologyVersion(), false);
@@ -300,14 +299,15 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 if (preloadThrottle > 0)
                                     U.sleep(preloadThrottle);
 
-                                s = new GridDhtPartitionSupplyMessage<>(d.workerId(), d.updateSequence());
+                                s = new GridDhtPartitionSupplyMessage<>(d.workerId(), d.updateSequence(),
+                                    cctx.cacheId());
                             }
 
                             GridCacheEntryInfo<K, V> info = e.info();
 
                             if (info != null && !(info.key() instanceof GridPartitionLockKey) && !info.isNew()) {
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx);
+                                    s.addEntry(part, info, cctx.shared());
                                 else if (log.isDebugEnabled())
                                     log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
                                         info);
@@ -355,7 +355,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                                 U.sleep(preloadThrottle);
 
                                             s = new GridDhtPartitionSupplyMessage<>(d.workerId(),
-                                                d.updateSequence());
+                                                d.updateSequence(), cctx.cacheId());
                                         }
 
                                         GridCacheSwapEntry<V> swapEntry = e.getValue();
@@ -377,7 +377,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                             info.value(swapEntry.value());
 
                                         if (preloadPred == null || preloadPred.apply(info))
-                                            s.addEntry0(part, info, cctx);
+                                            s.addEntry0(part, info, cctx.shared());
                                         else {
                                             if (log.isDebugEnabled())
                                                 log.debug("Preload predicate evaluated to false (will not send " +
@@ -448,11 +448,12 @@ class GridDhtPartitionSupplyPool<K, V> {
                                         return;
                                     }
 
-                                    s = new GridDhtPartitionSupplyMessage<>(d.workerId(), d.updateSequence());
+                                    s = new GridDhtPartitionSupplyMessage<>(d.workerId(), d.updateSequence(),
+                                        cctx.cacheId());
                                 }
 
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx);
+                                    s.addEntry(part, info, cctx.shared());
                                 else if (log.isDebugEnabled())
                                     log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
                                         info);

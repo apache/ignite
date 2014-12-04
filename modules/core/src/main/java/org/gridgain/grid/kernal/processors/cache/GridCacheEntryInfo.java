@@ -29,6 +29,9 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     @GridDirectTransient
     private K key;
 
+    /** Cache ID. */
+    private int cacheId;
+
     /** Key bytes. */
     private byte[] keyBytes;
 
@@ -59,6 +62,13 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
 
     /** Deleted flag. */
     private transient boolean deleted;
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
 
     /**
      * @param key Entry key.
@@ -200,7 +210,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      * @param ctx Cache context.
      * @throws GridException In case of error.
      */
-    public void marshal(GridCacheContext<K, V> ctx) throws GridException {
+    public void marshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         boolean depEnabled = ctx.gridDeploy().enabled();
 
         boolean valIsByteArr = val != null && val instanceof byte[];

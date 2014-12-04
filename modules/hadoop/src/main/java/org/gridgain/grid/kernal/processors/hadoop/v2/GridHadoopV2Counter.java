@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapreduce.*;
-import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 
 import java.io.*;
 
@@ -19,17 +19,17 @@ import java.io.*;
  */
 public class GridHadoopV2Counter implements Counter {
     /** Delegate. */
-    private final GridHadoopCounter counter;
+    private final GridHadoopLongCounter cntr;
 
     /**
      * Creates new instance with given delegate.
      *
-     * @param counter Internal counter.
+     * @param cntr Internal counter.
      */
-    public GridHadoopV2Counter(GridHadoopCounter counter) {
-        assert counter != null : "counter must be non-null";
+    public GridHadoopV2Counter(GridHadoopLongCounter cntr) {
+        assert cntr != null : "counter must be non-null";
 
-        this.counter = counter;
+        this.cntr = cntr;
     }
 
     /** {@inheritDoc} */
@@ -39,7 +39,7 @@ public class GridHadoopV2Counter implements Counter {
 
     /** {@inheritDoc} */
     @Override public String getName() {
-        return counter.name();
+        return cntr.name();
     }
 
     /** {@inheritDoc} */
@@ -49,17 +49,17 @@ public class GridHadoopV2Counter implements Counter {
 
     /** {@inheritDoc} */
     @Override public long getValue() {
-        return counter.value();
+        return cntr.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setValue(long value) {
-        counter.value(value);
+    @Override public void setValue(long val) {
+        cntr.value(val);
     }
 
     /** {@inheritDoc} */
     @Override public void increment(long incr) {
-        counter.increment(incr);
+        cntr.increment(incr);
     }
 
     /** {@inheritDoc} */

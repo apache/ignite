@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -43,6 +44,12 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Commit flag. */
     private boolean commit;
 
+    /** Sync commit flag. */
+    private boolean syncCommit;
+
+    /** Sync commit flag. */
+    private boolean syncRollback;
+
     /** Min version used as base for completed versions. */
     private GridCacheVersion baseVer;
 
@@ -64,15 +71,12 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     @GridDirectCollection(byte[].class)
     private Collection<byte[]> recoveryWritesBytes;
 
-    /** */
-    private boolean reply;
-
     /** Expected txSize. */
     private int txSize;
 
     /** Group lock key. */
     @GridDirectTransient
-    private Object grpLockKey;
+    private GridCacheTxKey grpLockKey;
 
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
@@ -98,7 +102,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param writeEntries Write entries.
      * @param recoveryWrites Recover entries. In pessimistic mode entries which were not transferred to remote nodes
      *      with lock requests. {@code Null} for optimistic mode.
-     * @param reply Reply flag.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      */
     public GridDistributedTxFinishRequest(
@@ -108,14 +111,15 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         long threadId,
         boolean commit,
         boolean invalidate,
+        boolean syncCommit,
+        boolean syncRollback,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoveryWrites,
-        boolean reply,
-        @Nullable Object grpLockKey
+        @Nullable GridCacheTxKey grpLockKey
     ) {
         super(xidVer, writeEntries == null ? 0 : writeEntries.size());
         assert xidVer != null;
@@ -125,14 +129,37 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.threadId = threadId;
         this.commit = commit;
         this.invalidate = invalidate;
+        this.syncCommit = syncCommit;
+        this.syncRollback = syncRollback;
         this.baseVer = baseVer;
         this.txSize = txSize;
         this.writeEntries = writeEntries;
         this.recoveryWrites = recoveryWrites;
-        this.reply = reply;
         this.grpLockKey = grpLockKey;
 
         completedVersions(committedVers, rolledbackVers);
+    }
+
+    /**
+     * Clones write entries so that near entries are not passed to DHT cache.
+     */
+    public void cloneEntries() {
+        if (F.isEmpty(writeEntries))
+            return;
+
+        Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(writeEntries.size());
+
+        for (GridCacheTxEntry<K, V> e : writeEntries) {
+            GridCacheContext<K, V> cacheCtx = e.context();
+
+            // Clone only if it is a near cache.
+            if (cacheCtx.isNear())
+                cp.add(e.cleanCopy(cacheCtx.nearTx().dht().context()));
+            else
+                cp.add(e);
+        }
+
+        writeEntries = cp;
     }
 
     /**
@@ -172,6 +199,20 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /**
+     * @return Sync commit flag.
+     */
+    public boolean syncCommit() {
+        return syncCommit;
+    }
+
+    /**
+     * @return Sync rollback flag.
+     */
+    public boolean syncRollback() {
+        return syncRollback;
+    }
+
+    /**
      * @return Base version.
      */
     public GridCacheVersion baseVersion() {
@@ -204,7 +245,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @return {@code True} if reply is required.
      */
     public boolean replyRequired() {
-        return reply;
+        return commit ? syncCommit : syncRollback;
     }
 
     /**
@@ -217,12 +258,13 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /**
      * @return Group lock key.
      */
-    @Nullable public Object groupLockKey() {
+    @Nullable public GridCacheTxKey groupLockKey() {
         return grpLockKey;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (writeEntries != null) {
@@ -252,7 +294,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (writeEntriesBytes != null) {
@@ -261,7 +303,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             for (byte[] arr : writeEntriesBytes)
                 writeEntries.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
 
-            unmarshalTx(writeEntries, ctx, ldr);
+            unmarshalTx(writeEntries, false, ctx, ldr);
         }
 
         if (recoveryWritesBytes != null) {
@@ -270,7 +312,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             for (byte[] arr : recoveryWritesBytes)
                 recoveryWrites.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
 
-            unmarshalTx(recoveryWrites, ctx, ldr);
+            unmarshalTx(recoveryWrites, false, ctx, ldr);
         }
 
         if (grpLockKeyBytes != null && grpLockKey == null)
@@ -304,7 +346,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         _clone.writeEntriesBytes = writeEntriesBytes;
         _clone.recoveryWrites = recoveryWrites;
         _clone.recoveryWritesBytes = recoveryWritesBytes;
-        _clone.reply = reply;
         _clone.txSize = txSize;
         _clone.grpLockKey = grpLockKey;
         _clone.grpLockKeyBytes = grpLockKeyBytes;
@@ -326,43 +367,55 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         }
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (!commState.putCacheVersion(baseVer))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (!commState.putBoolean(commit))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (!commState.putCacheVersion(commitVer))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (!commState.putByteArray(grpLockKeyBytes))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (!commState.putBoolean(invalidate))
                     return false;
 
                 commState.idx++;
 
-            case 13:
+            case 14:
+                if (!commState.putBoolean(syncCommit))
+                    return false;
+
+                commState.idx++;
+
+            case 15:
+                if (!commState.putBoolean(syncRollback))
+                    return false;
+
+                commState.idx++;
+
+            case 16:
                 if (recoveryWritesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(recoveryWritesBytes.size()))
@@ -389,25 +442,19 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 14:
-                if (!commState.putBoolean(reply))
-                    return false;
-
-                commState.idx++;
-
-            case 15:
+            case 17:
                 if (!commState.putLong(threadId))
                     return false;
 
                 commState.idx++;
 
-            case 16:
+            case 18:
                 if (!commState.putInt(txSize))
                     return false;
 
                 commState.idx++;
 
-            case 17:
+            case 19:
                 if (writeEntriesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(writeEntriesBytes.size()))
@@ -448,7 +495,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             return false;
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 GridCacheVersion baseVer0 = commState.getCacheVersion();
 
                 if (baseVer0 == CACHE_VER_NOT_READ)
@@ -458,7 +505,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -466,7 +513,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 GridCacheVersion commitVer0 = commState.getCacheVersion();
 
                 if (commitVer0 == CACHE_VER_NOT_READ)
@@ -476,7 +523,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -486,7 +533,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 byte[] grpLockKeyBytes0 = commState.getByteArray();
 
                 if (grpLockKeyBytes0 == BYTE_ARR_NOT_READ)
@@ -496,7 +543,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -504,7 +551,23 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 13:
+            case 14:
+                if (buf.remaining() < 1)
+                    return false;
+
+                syncCommit = commState.getBoolean();
+
+                commState.idx++;
+
+            case 15:
+                if (buf.remaining() < 1)
+                    return false;
+
+                syncRollback = commState.getBoolean();
+
+                commState.idx++;
+
+            case 16:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -533,15 +596,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 14:
-                if (buf.remaining() < 1)
-                    return false;
-
-                reply = commState.getBoolean();
-
-                commState.idx++;
-
-            case 15:
+            case 17:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -549,7 +604,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 16:
+            case 18:
                 if (buf.remaining() < 4)
                     return false;
 
@@ -557,7 +612,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 17:
+            case 19:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
