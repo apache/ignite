@@ -24,5 +24,5 @@ public interface GridGainListener extends EventListener {
      * @param name Grid name ({@code null} for default un-named grid).
      * @param state New state.
      */
-    public void onStateChange(@Nullable String name, GridGainState state);
+    public void onStateChange(@Nullable String name, IgniteState state);
 }

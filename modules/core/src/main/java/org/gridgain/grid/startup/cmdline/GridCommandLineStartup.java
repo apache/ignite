@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 
@@ -295,7 +295,7 @@ public final class GridCommandLineStartup {
         final CountDownLatch latch = new CountDownLatch(1);
 
         G.addListener(new GridGainListener() {
-            @Override public void onStateChange(String name, GridGainState state) {
+            @Override public void onStateChange(String name, IgniteState state) {
                 // Skip all grids except loaded from the command line.
                 if (!F.eq(gridName, name))
                     return;

@@ -74,7 +74,7 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
-import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -110,7 +110,7 @@ public class GridGainEx {
     private static final ConcurrentMap<Object, GridNamedInstance> grids = new ConcurrentHashMap8<>();
 
     /** Map of grid states ever started in this JVM. */
-    private static final Map<Object, GridGainState> gridStates = new ConcurrentHashMap8<>();
+    private static final Map<Object, IgniteState> gridStates = new ConcurrentHashMap8<>();
 
     /** Mutex to synchronize updates of default grid reference. */
     private static final Object dfltGridMux = new Object();
@@ -119,7 +119,7 @@ public class GridGainEx {
     private static volatile GridNamedInstance dfltGrid;
 
     /** Default grid state. */
-    private static volatile GridGainState dfltGridState;
+    private static volatile IgniteState dfltGridState;
 
     /** List of state listeners. */
     private static final Collection<GridGainListener> lsnrs = new GridConcurrentHashSet<>(4);
@@ -186,7 +186,7 @@ public class GridGainEx {
      *
      * @return Default grid state.
      */
-    public static GridGainState state() {
+    public static IgniteState state() {
         return state(null);
     }
 
@@ -198,11 +198,11 @@ public class GridGainEx {
      *      default no-name grid is returned.
      * @return Grid state.
      */
-    public static GridGainState state(@Nullable String name) {
+    public static IgniteState state(@Nullable String name) {
         GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         if (grid == null) {
-            GridGainState state = name != null ? gridStates.get(name) : dfltGridState;
+            IgniteState state = name != null ? gridStates.get(name) : dfltGridState;
 
             return state != null ? state : STOPPED;
         }
@@ -1002,7 +1002,7 @@ public class GridGainEx {
      * @param gridName Grid instance name.
      * @param state Factory state.
      */
-    private static void notifyStateChange(@Nullable String gridName, GridGainState state) {
+    private static void notifyStateChange(@Nullable String gridName, IgniteState state) {
         if (gridName != null)
             gridStates.put(gridName, state);
         else
@@ -1170,7 +1170,7 @@ public class GridGainEx {
         private ExecutorService utilityCacheExecSvc;
 
         /** Grid state. */
-        private volatile GridGainState state = STOPPED;
+        private volatile IgniteState state = STOPPED;
 
         /** Shutdown hook. */
         private Thread shutdownHook;
@@ -1235,7 +1235,7 @@ public class GridGainEx {
          *
          * @return Grid state.
          */
-        GridGainState state() {
+        IgniteState state() {
             if (starterThread != Thread.currentThread())
                 U.awaitQuiet(startLatch);
 

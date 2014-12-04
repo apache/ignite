@@ -28,7 +28,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.IgniteState.*;
 
 /**
  * This class defines random command-line GridGain loader. This loader can be used
@@ -216,7 +216,7 @@ public final class GridRandomCommandLineLoader {
         System.out.println("Maximum TTL: " + maxTtl);
 
         G.addListener(new GridGainListener() {
-            @Override public void onStateChange(String name, GridGainState state) {
+            @Override public void onStateChange(String name, IgniteState state) {
                 if (state == STOPPED && latch != null)
                     latch.countDown();
             }

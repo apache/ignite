@@ -345,7 +345,7 @@ object scalar extends ScalarConversions {
      * @param name Gird name.
      */
     def isStarted(@Nullable name: String) =
-        Ignition.state(name) == GridGainState.STARTED
+        Ignition.state(name) == IgniteState.STARTED
 
     /**
      * Tests if specified grid is stopped.
@@ -353,19 +353,19 @@ object scalar extends ScalarConversions {
      * @param name Gird name.
      */
     def isStopped(@Nullable name: String) =
-        Ignition.state(name) == GridGainState.STOPPED
+        Ignition.state(name) == IgniteState.STOPPED
 
     /**
      * Tests if default grid is started.
      */
     def isStarted =
-        Ignition.state == GridGainState.STARTED
+        Ignition.state == IgniteState.STARTED
 
     /**
      * Tests if default grid is stopped.
      */
     def isStopped =
-        Ignition.state == GridGainState.STOPPED
+        Ignition.state == IgniteState.STOPPED
 
     /**
      * Stops given grid and specified cancel flag.

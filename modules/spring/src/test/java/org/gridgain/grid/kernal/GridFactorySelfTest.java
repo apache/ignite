@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
@@ -212,13 +212,13 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         info("Loading Grid from configuration file: " + path);
 
-        final GridTuple<GridGainState> gridState1 = F.t(null);
-        final GridTuple<GridGainState> gridState2 = F.t(null);
+        final GridTuple<IgniteState> gridState1 = F.t(null);
+        final GridTuple<IgniteState> gridState2 = F.t(null);
 
         final Object mux = new Object();
 
         GridGainListener factoryLsnr = new GridGainListener() {
-            @Override public void onStateChange(String name, GridGainState state) {
+            @Override public void onStateChange(String name, IgniteState state) {
                 synchronized (mux) {
                     if ("grid-factory-test-1".equals(name))
                         gridState1.set(state);
@@ -352,7 +352,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         GridGainListener lsnr = new GridGainListener() {
             @SuppressWarnings("StringEquality")
-            @Override public void onStateChange(@Nullable String name, GridGainState state) {
+            @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 assert name == gridName;
 
                 info("On state change fired: " + state);

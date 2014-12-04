@@ -130,7 +130,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
                 futThread.interrupt();
             }
 
-            if (G.state(getTestGridName()) != GridGainState.STOPPED)
+            if (G.state(getTestGridName()) != IgniteState.STOPPED)
                 stopGrid(getTestGridName());
         }
     }

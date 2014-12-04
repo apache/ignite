@@ -47,7 +47,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            assertEquals(GridGainState.STARTED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STARTED, G.state(getTestGridName()));
 
             assertEquals(1, bean.count(BEFORE_GRID_START));
             assertEquals(1, bean.count(AFTER_GRID_START));
@@ -59,7 +59,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
 
-        assertEquals(GridGainState.STOPPED, G.state(getTestGridName()));
+        assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
 
         assertEquals(1, bean.count(BEFORE_GRID_START));
         assertEquals(1, bean.count(AFTER_GRID_START));
@@ -110,7 +110,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         catch (GridException expected) {
             info("Got expected exception: " + expected);
 
-            assertEquals(GridGainState.STOPPED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
         }
         finally {
             stopAllGrids();
@@ -137,7 +137,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         catch (GridException expected) {
             info("Got expected exception: " + expected);
 
-            assertEquals(GridGainState.STOPPED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
         }
         finally {
             stopAllGrids();
@@ -208,7 +208,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         try {
             startGrid();
 
-            assertEquals(GridGainState.STARTED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STARTED, G.state(getTestGridName()));
         }
         catch (GridException ignore) {
             assertTrue(false);
@@ -217,7 +217,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
             try {
                 stopAllGrids();
 
-                assertEquals(GridGainState.STOPPED, G.state(getTestGridName()));
+                assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
             }
             catch (Exception ignore) {
                 assertTrue(false);

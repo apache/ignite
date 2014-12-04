@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.IgniteState.*;
 
 /**
  * Tests for {@link org.apache.ignite.Ignition}.
@@ -34,12 +34,12 @@ public class GridFactoryVmShutdownTest {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        final ConcurrentMap<String, GridGainState> states = new ConcurrentHashMap<>();
+        final ConcurrentMap<String, IgniteState> states = new ConcurrentHashMap<>();
 
         G.addListener(new GridGainListener() {
-            @Override public void onStateChange(@Nullable String name, GridGainState state) {
+            @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 if (state == STARTED) {
-                    GridGainState state0 = states.put(maskNull(name), STARTED);
+                    IgniteState state0 = states.put(maskNull(name), STARTED);
 
                     assert state0 == null;
                 }

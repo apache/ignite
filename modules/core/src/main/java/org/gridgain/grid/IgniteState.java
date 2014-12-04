@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
  * state change notifications via {@link org.apache.ignite.Ignition#addListener(GridGainListener)}
  * method.
  */
-public enum GridGainState {
+public enum IgniteState {
     /**
      * Grid factory started.
      */
@@ -38,7 +38,7 @@ public enum GridGainState {
     STOPPED_ON_SEGMENTATION;
 
     /** Enumerated values. */
-    private static final GridGainState[] VALS = values();
+    private static final IgniteState[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -46,7 +46,7 @@ public enum GridGainState {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridGainState fromOrdinal(byte ord) {
+    @Nullable public static IgniteState fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

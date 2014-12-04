@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.IgniteState.*;
 
 /**
  * Command line loader test.
@@ -42,7 +42,7 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
         info("Loading Grid from configuration file: " + path);
 
         G.addListener(new GridGainListener() {
-            @Override public void onStateChange(String name, GridGainState state) {
+            @Override public void onStateChange(String name, IgniteState state) {
                 if (state == STARTED) {
                     info("Received started notification from grid: " + name);
 

@@ -9,7 +9,6 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
@@ -137,7 +136,7 @@ public class Ignition {
      *
      * @return Default grid state.
      */
-    public static GridGainState state() {
+    public static IgniteState state() {
         return GridGainEx.state();
     }
 
@@ -149,7 +148,7 @@ public class Ignition {
      *      default no-name grid is returned.
      * @return Grid state.
      */
-    public static GridGainState state(@Nullable String name) {
+    public static IgniteState state(@Nullable String name) {
         return GridGainEx.state(name);
     }
 

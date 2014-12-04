@@ -24,7 +24,7 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
@@ -203,7 +203,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         catch (GridCacheTxOptimisticException e) {
             U.warn(log, "Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
 
-            if (G.state(g.name()) == GridGainState.STARTED)
+            if (G.state(g.name()) == IgniteState.STARTED)
                 tx.rollback();
 
             assert concurrency == OPTIMISTIC && isolation == SERIALIZABLE;
@@ -211,7 +211,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         catch (Throwable e) {
             error("Transaction failed (will rollback): " + tx, e);
 
-            if (G.state(g.name()) == GridGainState.STARTED)
+            if (G.state(g.name()) == IgniteState.STARTED)
                 tx.rollback();
 
             throw e;
