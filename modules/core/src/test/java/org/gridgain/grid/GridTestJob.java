@@ -18,7 +18,7 @@ import org.gridgain.grid.logger.*;
  */
 public class GridTestJob extends ComputeJobAdapter {
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */

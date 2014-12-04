@@ -39,7 +39,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     private boolean mgmt;
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

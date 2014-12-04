@@ -40,7 +40,8 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
     private transient GridAbstractUserExternalResource rsrc4;
 
     /** */
-    @GridLoggerResource private GridLogger log;
+    @IgniteLoggerResource
+    private GridLogger log;
 
     /** */
     @GridTaskSessionResource private ComputeTaskSession ses;
@@ -108,7 +109,7 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
         private transient GridUserExternalResource2 rsrc8;
 
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locId;
 
         /** {@inheritDoc} */

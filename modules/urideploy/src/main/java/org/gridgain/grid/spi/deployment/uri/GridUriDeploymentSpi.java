@@ -369,11 +369,11 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
     private final Object mux = new Object();
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID locNodeId;
 
     /** NOTE: flag for test purposes only. */

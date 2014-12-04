@@ -81,7 +81,7 @@ public class GridCacheCheckpointSpi extends GridSpiAdapter implements GridCheckp
     public static final String DFLT_CACHE_NAME = "checkpoints";
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Cache name. */

@@ -108,7 +108,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
     private static final String MAX_FAILOVER_ATTEMPT_ATTR = "gg:failover:maxattempts";
 
     /** Injected grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Maximum number of attempts to execute a failed job on another node. */

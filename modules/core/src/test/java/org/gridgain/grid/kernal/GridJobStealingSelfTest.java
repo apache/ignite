@@ -298,7 +298,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** Number of jobs to spawn from task. */
@@ -388,7 +388,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /**

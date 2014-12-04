@@ -64,7 +64,7 @@ public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T
     private static final long serialVersionUID = 0L;
 
     /** Load balancer. */
-    @GridLoadBalancerResource
+    @IgniteLoadBalancerResource
     private ComputeLoadBalancer balancer;
 
     /**

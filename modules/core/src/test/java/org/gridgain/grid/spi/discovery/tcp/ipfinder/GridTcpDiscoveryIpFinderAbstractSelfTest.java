@@ -96,7 +96,7 @@ public abstract class GridTcpDiscoveryIpFinderAbstractSelfTest<T extends GridTcp
 
         for (Class cls = finder.getClass(); cls != Object.class; cls = cls.getSuperclass())
             for (Field fld : cls.getDeclaredFields())
-                if (fld.getAnnotation(GridLoggerResource.class) != null) {
+                if (fld.getAnnotation(IgniteLoggerResource.class) != null) {
                     boolean accessible = fld.isAccessible();
 
                     fld.setAccessible(true);

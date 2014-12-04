@@ -63,7 +63,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     public static final String CHK_QRY = "select count(*) from tbl_addrs";
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Data source. */

@@ -49,7 +49,7 @@ import java.util.concurrent.*;
 public class GridLocalDeploymentSpi extends GridSpiAdapter implements GridDeploymentSpi, GridLocalDeploymentSpiMBean {
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Map of all resources. */

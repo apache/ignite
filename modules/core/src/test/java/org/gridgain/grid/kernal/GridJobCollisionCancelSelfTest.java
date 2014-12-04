@@ -116,7 +116,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      */
     public static class GridCancelTestTask extends ComputeTaskSplitAdapter<Serializable, Object> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */
@@ -156,11 +156,11 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      */
     public static class GridCancelTestJob extends ComputeJobAdapter {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /** */
@@ -225,7 +225,8 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     @GridSpiMultipleInstancesSupport(true)
     public static class GridTestCollision extends GridSpiAdapter implements GridCollisionSpi {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public void onCollision(GridCollisionContext ctx) {

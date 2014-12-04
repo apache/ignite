@@ -229,7 +229,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
     private static final Random RAND = new Random();
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */

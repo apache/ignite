@@ -89,11 +89,11 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     private File tokDir;
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Local node ID. */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID locNodeId;
 
     /** Grid name. */

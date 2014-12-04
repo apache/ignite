@@ -753,7 +753,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends GridTcpCommunicationSpi {
         /** Node ID. */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID nodeId;
 
         /** {@inheritDoc} */

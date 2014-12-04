@@ -46,6 +46,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridJobContextResource {
+public @interface IgniteJobContextResource {
     // No-op.
 }

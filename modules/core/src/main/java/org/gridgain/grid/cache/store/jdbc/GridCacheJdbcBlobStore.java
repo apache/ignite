@@ -133,7 +133,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     private boolean initSchema = true;
 
     /** Log. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Marshaller. */

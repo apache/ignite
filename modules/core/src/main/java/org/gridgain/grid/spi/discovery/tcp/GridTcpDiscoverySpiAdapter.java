@@ -134,7 +134,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     protected final GridTcpDiscoveryStatistics stats = new GridTcpDiscoveryStatistics();
 
     /** Local node ID. */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     protected UUID locNodeId;
 
     /** Name of the grid. */
@@ -142,7 +142,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     protected String gridName;
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     protected GridLogger log;
 
     /**
@@ -155,7 +155,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
      * @param locAddr IP address.
      */
     @GridSpiConfiguration(optional = true)
-    @GridLocalHostResource
+    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)

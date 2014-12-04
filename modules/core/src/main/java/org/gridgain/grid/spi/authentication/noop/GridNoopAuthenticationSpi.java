@@ -60,7 +60,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 public class GridNoopAuthenticationSpi extends GridSpiAdapter
     implements GridAuthenticationSpi, GridNoopAuthenticationSpiMBean {
     /** Injected grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     @GridToStringExclude
     private GridLogger log;
 

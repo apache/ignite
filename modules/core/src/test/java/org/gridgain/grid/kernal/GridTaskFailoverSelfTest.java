@@ -61,7 +61,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridFailoverTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */

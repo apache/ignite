@@ -141,11 +141,11 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
     private int readStripesNum = -1;
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Local node ID. */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID locNodeId;
 
     /** Name of the grid. */

@@ -401,7 +401,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private transient UserResource2 rsrc4;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -409,11 +409,11 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridLocalHostResource
+        @IgniteLocalHostResource
         private String locHost;
 
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID nodeId;
 
         /** */
@@ -425,7 +425,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private ExecutorService exec;
 
         /** */
-        @GridLoadBalancerResource
+        @IgniteLoadBalancerResource
         private ComputeLoadBalancer balancer;
 
         /** */
@@ -453,7 +453,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** Job context is job resource, not task resource. */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext outerJobCtx;
 
         /** */
@@ -535,7 +535,8 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
                     private transient UserSpringBean springBean2;
 
                     /** */
-                    @GridJobContextResource private ComputeJobContext jobCtx;
+                    @IgniteJobContextResource
+                    private ComputeJobContext jobCtx;
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {

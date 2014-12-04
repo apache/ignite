@@ -183,7 +183,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
      */
     private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, String> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */

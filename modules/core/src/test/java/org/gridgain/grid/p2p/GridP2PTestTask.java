@@ -26,11 +26,11 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     public static final String TASK_NAME = GridP2PTestTask.class.getName();
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID nodeId;
 
     /** {@inheritDoc} */

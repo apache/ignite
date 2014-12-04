@@ -21,7 +21,7 @@ import java.io.*;
  */
 public class GridTestGridifyJob extends ComputeJobAdapter {
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /**

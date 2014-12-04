@@ -71,7 +71,7 @@ public abstract class ComputeJobContinuationAdapter extends ComputeJobAdapter im
     private static final long serialVersionUID = 0L;
 
     /** Job context. */
-    @GridJobContextResource
+    @IgniteJobContextResource
     private transient ComputeJobContext jobCtx;
 
     /**

@@ -312,7 +312,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private transient UserResource2 rsrc4;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */
@@ -428,7 +428,8 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private transient UserResource2 rsrc4;
 
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -539,7 +540,8 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private transient UserResource2 rsrc4;
 
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -650,7 +652,8 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private transient UserResource2 rsrc4;
 
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

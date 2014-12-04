@@ -103,7 +103,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     private String cacheName;
 
     /** Injected logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Initialization flag. */

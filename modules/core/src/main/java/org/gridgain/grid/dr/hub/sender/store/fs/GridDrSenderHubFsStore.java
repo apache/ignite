@@ -139,7 +139,7 @@ public class GridDrSenderHubFsStore implements GridDrSenderHubStore, LifecycleAw
 
     /** */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Name of the grid. */

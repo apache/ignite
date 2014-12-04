@@ -273,7 +273,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param log Logger.
          */
-        @GridLoggerResource
+        @IgniteLoggerResource
         public void setLog(GridLogger log) {
             this.log = log;
         }
@@ -289,7 +289,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param nodeId Node ID.
          */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         public void setNodeId(UUID nodeId) {
             this.nodeId = nodeId;
         }
@@ -353,7 +353,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param locHost Local host.
          */
-        @GridLocalHostResource
+        @IgniteLocalHostResource
         public void setLocalHost(String locHost) {
             this.locHost = locHost;
         }
@@ -361,7 +361,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param balancer Load balancer.
          */
-        @GridLoadBalancerResource
+        @IgniteLoadBalancerResource
         public void setBalancer(ComputeLoadBalancer balancer) {
             this.balancer = balancer;
         }
@@ -369,7 +369,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param jobCtx Job context.
          */
-        @GridJobContextResource
+        @IgniteJobContextResource
         public void setJobContext(ComputeJobContext jobCtx) {
             this.jobCtx = jobCtx;
         }
@@ -507,7 +507,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     }
 
                     /** */
-                    @GridJobContextResource
+                    @IgniteJobContextResource
                     private ComputeJobContext jobCtx;
 
                     /**

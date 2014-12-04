@@ -22,7 +22,7 @@ import java.util.*;
 @GridSpiNoop
 public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingSpi {
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

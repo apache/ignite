@@ -170,7 +170,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
      */
     public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, String> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -199,7 +199,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
                     private volatile Thread thread;
 
                     /** */
-                    @GridJobContextResource
+                    @IgniteJobContextResource
                     private ComputeJobContext jobCtx;
 
                     /** {@inheritDoc} */

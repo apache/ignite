@@ -107,7 +107,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         protected Thread runner;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         protected GridLogger log;
 
         /** {@inheritDoc} */

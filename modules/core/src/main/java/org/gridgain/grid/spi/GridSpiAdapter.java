@@ -46,7 +46,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
     private long startTstamp;
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */
@@ -58,7 +58,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
     private String ggHome;
 
     /** */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID nodeId;
 
     /** SPI name. */

@@ -22,15 +22,15 @@ import java.util.*;
  */
 public class GridStealingLoadTestJob extends ComputeJobAdapter {
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID nodeId;
 
     /** */
-    @GridJobContextResource
+    @IgniteJobContextResource
     private ComputeJobContext ctx;
 
     /** {@inheritDoc} */

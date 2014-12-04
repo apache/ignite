@@ -86,7 +86,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** */
-                @GridLocalNodeIdResource
+                @IgniteLocalNodeIdResource
                 private UUID locNodeId;
 
                 @Override public Serializable execute() throws GridException {

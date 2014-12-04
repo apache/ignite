@@ -125,7 +125,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
     @ComputeTaskSessionFullSupport
     public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */

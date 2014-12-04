@@ -176,7 +176,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
     private String hibernateCfgPath;
 
     /** Log. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Marshaller. */

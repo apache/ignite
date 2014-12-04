@@ -142,7 +142,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
             return F.asMap(
                 new ComputeJobAdapter() {
-                    @GridLocalNodeIdResource
+                    @IgniteLocalNodeIdResource
                     private UUID nodeId;
 
                     @GridTaskSessionResource
@@ -196,7 +196,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
             return F.asMap(
                 new ComputeJobAdapter() {
-                    @GridLocalNodeIdResource
+                    @IgniteLocalNodeIdResource
                     private UUID nodeId;
 
                     @GridTaskSessionResource

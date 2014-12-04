@@ -114,7 +114,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
 
         /** Grid ID. */
         @SuppressWarnings("unused")
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID gridId;
 
         /** {@inheritDoc} */
@@ -134,7 +134,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         private transient UserResource1 rsrc;
 
         /** Logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */

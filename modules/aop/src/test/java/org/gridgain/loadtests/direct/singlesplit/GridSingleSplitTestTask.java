@@ -25,7 +25,7 @@ public class GridSingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer
     private ComputeTaskSession taskSes;
 
     /** */
-    @GridLoadBalancerResource
+    @IgniteLoadBalancerResource
     private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */

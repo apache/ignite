@@ -177,7 +177,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         private Ignite ignite;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /* Sequence name. */
@@ -231,7 +231,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         private Ignite ignite;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** Sequence name. */

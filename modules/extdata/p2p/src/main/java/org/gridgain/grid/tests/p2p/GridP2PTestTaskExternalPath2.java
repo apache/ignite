@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class GridP2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, int[]> {
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /**
@@ -87,7 +87,7 @@ public class GridP2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, int
         private transient GridTestUserResource rsrc;
 
         /** Local node ID. */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locNodeId;
 
         /** Task session. */
@@ -95,7 +95,7 @@ public class GridP2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, int
         private ComputeTaskSession ses;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /**  */

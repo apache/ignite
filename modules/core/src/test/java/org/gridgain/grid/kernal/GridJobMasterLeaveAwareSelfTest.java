@@ -579,7 +579,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestCallable implements Callable<Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -603,7 +603,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestRunnable implements Runnable, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -625,7 +625,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestClosure implements IgniteClosure<String, Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -685,7 +685,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestJob extends ComputeJobAdapter implements ComputeJobMasterLeaveAware {
         /** Task session. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */

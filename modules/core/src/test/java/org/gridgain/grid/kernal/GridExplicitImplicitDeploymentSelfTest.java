@@ -392,7 +392,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
     @ComputeTaskName("GridDeploymentResourceTestTask")
     public static class GridDeploymentResourceTestTask extends ComputeTaskAdapter<String, Integer> {
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locId;
 
         /** {@inheritDoc} */
@@ -429,7 +429,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"PublicInnerClass"})
     public static final class GridDeploymentResourceTestJob extends ComputeJobAdapter {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public Serializable execute() throws GridException {

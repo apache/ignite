@@ -58,7 +58,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     @GridSpiMultipleInstancesSupport(true)
     public static class TestCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */

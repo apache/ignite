@@ -231,10 +231,11 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      */
     public static class GridP2PTestTask extends ComputeTaskAdapter<Serializable, Object> {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID nodeId;
 
         /** {@inheritDoc} */

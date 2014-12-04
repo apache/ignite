@@ -92,7 +92,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         private Ignite ignite;
 
         /** Logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */

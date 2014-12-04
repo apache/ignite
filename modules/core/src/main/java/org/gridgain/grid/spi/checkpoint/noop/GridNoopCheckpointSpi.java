@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopCheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi {
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

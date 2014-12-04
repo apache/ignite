@@ -111,7 +111,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
     private static final int CODES_LEN = CODES.length();
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Grid marshaller. */

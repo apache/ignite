@@ -37,7 +37,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
     /** Logger. */
     @SuppressWarnings("UnusedDeclaration")
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

@@ -57,7 +57,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
     public static final String DELIM = "#";
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** File-system path. */

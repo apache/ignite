@@ -229,11 +229,11 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         new LinkedHashMap<>();
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Node ID. */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID nodeId;
 
     /** */

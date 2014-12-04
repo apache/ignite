@@ -91,7 +91,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
     /** */
     private static class ResourceOverrideTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -107,7 +107,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         private ComputeTaskSession ses;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /** {@inheritDoc} */
@@ -133,7 +133,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
                     private transient UserResource rsrc;
 
                     /** */
-                    @GridLoggerResource
+                    @IgniteLoggerResource
                     private GridLogger log;
 
                     /** */
@@ -141,7 +141,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
                     private ComputeTaskSession ses;
 
                     /** */
-                    @GridJobContextResource
+                    @IgniteJobContextResource
                     private ComputeJobContext jobCtx;
 
                     /** */

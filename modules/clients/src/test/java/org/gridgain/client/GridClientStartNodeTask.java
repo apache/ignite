@@ -46,7 +46,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
     }};
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private transient GridLogger log;
 
     /** */

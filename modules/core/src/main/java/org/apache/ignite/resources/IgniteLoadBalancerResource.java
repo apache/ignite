@@ -50,6 +50,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridLoadBalancerResource {
+public @interface IgniteLoadBalancerResource {
     // No-op.
 }

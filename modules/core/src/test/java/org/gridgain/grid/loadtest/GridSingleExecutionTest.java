@@ -241,7 +241,7 @@ public final class GridSingleExecutionTest {
 
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @GridLoggerResource
+                    @IgniteLoggerResource
                     private GridLogger log;
 
                     @Override public Serializable execute() throws GridException {
@@ -276,7 +276,8 @@ public final class GridSingleExecutionTest {
 
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @GridLoggerResource private GridLogger log;
+                    @IgniteLoggerResource
+                    private GridLogger log;
 
                     @Override public Serializable execute() throws GridException {
                         if (log.isInfoEnabled())

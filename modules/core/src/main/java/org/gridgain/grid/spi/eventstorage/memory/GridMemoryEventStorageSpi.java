@@ -91,7 +91,7 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     public static final int DFLT_EXPIRE_COUNT = 10000;
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Event time-to-live value in milliseconds. */

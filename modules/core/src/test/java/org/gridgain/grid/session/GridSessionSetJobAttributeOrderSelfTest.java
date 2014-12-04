@@ -74,7 +74,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */
@@ -115,7 +115,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         private ComputeTaskSession taskSes;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */

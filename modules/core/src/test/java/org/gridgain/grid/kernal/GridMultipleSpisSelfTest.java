@@ -261,7 +261,8 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
      */
     private static class GridTestMultipleSpisJob extends ComputeJobAdapter {
         /** Local node ID. */
-        @GridLocalNodeIdResource private UUID locId;
+        @IgniteLocalNodeIdResource
+        private UUID locId;
 
         /** */
         @GridTaskSessionResource private ComputeTaskSession jobSes;

@@ -21,8 +21,8 @@ import java.lang.annotation.*;
  * You can inject other resources into your user resource.
  * The following grid resources can be injected:
  * <ul>
- * <li>{@link GridLoggerResource}</li>
- * <li>{@link GridLocalNodeIdResource}</li>
+ * <li>{@link IgniteLoggerResource}</li>
+ * <li>{@link IgniteLocalNodeIdResource}</li>
  * <li>{@link IgniteHomeResource}</li>
  * <li>{@link GridNameResource}</li>
  * <li>{@link GridMBeanServerResource}</li>

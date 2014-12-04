@@ -26,11 +26,11 @@ public class GridP2PTestJob extends ComputeJobAdapter {
     private ComputeTaskSession taskSes;
 
     /** Injected logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Injected grid. */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID locNodeId;
 
     /**

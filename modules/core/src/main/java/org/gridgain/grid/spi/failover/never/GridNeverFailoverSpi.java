@@ -54,7 +54,7 @@ import java.util.*;
 @GridSpiMultipleInstancesSupport(true)
 public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
     /** Injected grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

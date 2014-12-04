@@ -64,7 +64,7 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
     );
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private transient GridLogger log;
 
     /**

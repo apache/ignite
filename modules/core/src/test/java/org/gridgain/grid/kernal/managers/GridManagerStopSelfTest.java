@@ -72,7 +72,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     private void injectLogger(GridSpi target) throws GridException {
         ctx.resource().injectBasicResource(
             target,
-            GridLoggerResource.class,
+            IgniteLoggerResource.class,
             ctx.config().getGridLogger().getLogger(target.getClass())
         );
     }

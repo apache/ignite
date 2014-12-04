@@ -55,7 +55,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
      */
     private static class PrivateClassTask extends ComputeTaskAdapter<String, Object> {
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locId;
 
         /** {@inheritDoc} */

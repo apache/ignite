@@ -301,7 +301,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger taskLog;
 
         /**

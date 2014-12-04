@@ -207,7 +207,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
             @IgniteInstanceResource
             private Ignite ignite;
 
-            @GridLoggerResource
+            @IgniteLoggerResource
             private GridLogger log;
 
             @Nullable @Override public Object call() throws Exception {

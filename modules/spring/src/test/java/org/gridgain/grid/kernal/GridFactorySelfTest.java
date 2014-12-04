@@ -539,7 +539,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @GridSpiMultipleInstancesSupport(true)
     private static class TestMultipleInstancesCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public void onCollision(GridCollisionContext ctx) {
@@ -576,7 +577,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @GridSpiMultipleInstancesSupport(true)
     private static class TestSingleInstancesCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public void onCollision(GridCollisionContext ctx) {
@@ -611,7 +613,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestLifecycleBean implements LifecycleBean {
         /** Grid logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** Marshaller. */
@@ -635,7 +637,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private String gridName;
 
         /** Local node ID. */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID nodeId;
 
         /** */

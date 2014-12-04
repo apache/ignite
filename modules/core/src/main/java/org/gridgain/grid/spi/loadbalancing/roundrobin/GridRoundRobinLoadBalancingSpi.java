@@ -156,7 +156,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements GridLoadBalancingSpi,
     GridRoundRobinLoadBalancingSpiMBean {
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */

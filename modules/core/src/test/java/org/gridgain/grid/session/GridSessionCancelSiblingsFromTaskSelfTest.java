@@ -177,7 +177,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, String> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */

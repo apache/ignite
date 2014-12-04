@@ -164,7 +164,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locId;
 
         /** {@inheritDoc} */
@@ -177,11 +177,11 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** Local node ID. */
-                @GridLocalNodeIdResource
+                @IgniteLocalNodeIdResource
                 private UUID locId;
 
                 /** Logger. */
-                @GridLoggerResource
+                @IgniteLoggerResource
                 private GridLogger log;
 
                 @Override public Serializable execute() throws GridException {

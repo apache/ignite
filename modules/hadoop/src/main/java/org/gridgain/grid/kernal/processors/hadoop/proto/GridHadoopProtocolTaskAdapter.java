@@ -58,7 +58,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<Gr
         private Ignite ignite;
 
         @SuppressWarnings("UnusedDeclaration")
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /** Argument. */

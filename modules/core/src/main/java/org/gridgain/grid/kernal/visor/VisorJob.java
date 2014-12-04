@@ -23,7 +23,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     @IgniteInstanceResource
     protected GridEx g;
 
-    @GridLoggerResource
+    @IgniteLoggerResource
     protected GridLogger log;
 
     /**

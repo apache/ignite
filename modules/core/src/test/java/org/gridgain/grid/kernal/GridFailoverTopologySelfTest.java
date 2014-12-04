@@ -44,7 +44,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
 
         cfg.setFailoverSpi(new GridAlwaysFailoverSpi() {
             /** */
-            @GridLocalNodeIdResource
+            @IgniteLocalNodeIdResource
             private UUID locNodeId;
 
             /** {@inheritDoc} */
@@ -102,7 +102,8 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
     /** */
     private static class JobFailTask implements ComputeTask<String, Object> {
          /** */
-        @GridLocalNodeIdResource private UUID locNodeId;
+        @IgniteLocalNodeIdResource
+        private UUID locNodeId;
 
         /** */
         private boolean jobFailedOver;

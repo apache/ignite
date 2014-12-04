@@ -417,11 +417,12 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
         @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /** Logger. */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /**
          * @param arg Wait attribute type.

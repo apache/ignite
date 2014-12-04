@@ -275,11 +275,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /**
@@ -323,11 +323,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /**
@@ -383,11 +383,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /**
@@ -439,11 +439,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /**
@@ -509,7 +509,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /**
@@ -548,7 +548,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Object affKey;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -622,7 +622,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /**
@@ -658,7 +658,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /**

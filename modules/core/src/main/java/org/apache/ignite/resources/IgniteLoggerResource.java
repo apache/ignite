@@ -55,7 +55,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridLoggerResource {
+public @interface IgniteLoggerResource {
     /**
      * Optional log category class. If not provided (i.e. by default
      * {@link Void} class is returned), then the category will

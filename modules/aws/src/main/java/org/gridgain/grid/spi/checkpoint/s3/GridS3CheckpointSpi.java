@@ -96,7 +96,7 @@ import java.util.*;
 public class GridS3CheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi, GridS3CheckpointSpiMBean {
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Marshaller. */

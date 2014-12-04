@@ -120,7 +120,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession taskSes;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -218,7 +218,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession taskSes;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /**

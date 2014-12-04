@@ -252,7 +252,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             @GridUserResource private transient UserResource rsrc;
 
             /** Local node ID. */
-            @GridLocalNodeIdResource
+            @IgniteLocalNodeIdResource
             private UUID locNodeId;
 
             /**

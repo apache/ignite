@@ -159,7 +159,7 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
     private static final String DELETE_EXPIRED_SQL = "DELETE FROM {0} WHERE {1} IS NOT NULL AND {1} <= ?";
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */

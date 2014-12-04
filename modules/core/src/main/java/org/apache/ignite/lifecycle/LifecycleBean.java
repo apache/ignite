@@ -47,8 +47,8 @@ import org.gridgain.grid.*;
  * grid resources. Both, field and method based injection are supported.
  * The following grid resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.GridLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.GridLocalNodeIdResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
  * <li>{@link org.apache.ignite.resources.GridMBeanServerResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>

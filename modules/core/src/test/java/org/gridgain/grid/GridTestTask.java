@@ -20,7 +20,7 @@ import java.util.*;
  */
 public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

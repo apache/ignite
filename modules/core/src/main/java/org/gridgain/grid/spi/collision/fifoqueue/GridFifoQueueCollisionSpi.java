@@ -85,7 +85,7 @@ public class GridFifoQueueCollisionSpi extends GridSpiAdapter implements GridCol
     private volatile int waitJobsNum = DFLT_WAIT_JOBS_NUM;
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Number of jobs that were active last time. */

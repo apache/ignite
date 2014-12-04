@@ -106,7 +106,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /**

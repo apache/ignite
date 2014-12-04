@@ -228,7 +228,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     @ComputeTaskName(value="GridDeploymentTestTask")
     public static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locNodeId;
 
         /** {@inheritDoc} */
@@ -266,7 +266,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridDeploymentTestJob extends ComputeJobAdapter {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public Integer execute() throws GridException {

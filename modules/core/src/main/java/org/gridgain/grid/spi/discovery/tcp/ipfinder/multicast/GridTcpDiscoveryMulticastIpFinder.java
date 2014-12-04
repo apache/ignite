@@ -73,7 +73,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     private static final GridMarshaller marsh = new GridJdkMarshaller();
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Grid name. */

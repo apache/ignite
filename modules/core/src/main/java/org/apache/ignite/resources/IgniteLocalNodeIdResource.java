@@ -55,6 +55,6 @@ import java.util.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridLocalNodeIdResource {
+public @interface IgniteLocalNodeIdResource {
     // No-op.
 }

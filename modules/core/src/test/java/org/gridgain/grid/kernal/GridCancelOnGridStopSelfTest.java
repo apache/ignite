@@ -60,7 +60,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
      */
     private static final class CancelledTask extends ComputeTaskAdapter<String, Void> {
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locId;
 
         /** {@inheritDoc} */

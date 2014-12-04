@@ -61,7 +61,7 @@ public class ComputeFailoverExample {
         private ComputeTaskSession jobSes;
 
         /** Injected grid logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */

@@ -39,7 +39,7 @@ public class GridUserExternalResourceTask1 extends ComputeTaskSplitAdapter<Objec
     private transient GridUserExternalResource2 rsrc4;
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

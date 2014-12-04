@@ -136,7 +136,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private ComputeTaskContinuousMapper mapper;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */
@@ -233,7 +233,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private ComputeTaskContinuousMapper mapper;
 
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */
@@ -283,7 +283,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext ctx;
 
         /** */

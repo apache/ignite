@@ -71,11 +71,11 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
                     private ComputeTaskSession taskSes;
 
                     /** */
-                    @GridJobContextResource
+                    @IgniteJobContextResource
                     private ComputeJobContext jobCtx;
 
                     /** */
-                    @GridLoggerResource
+                    @IgniteLoggerResource
                     private GridLogger log;
 
                     /** {@inheritDoc} */
@@ -110,7 +110,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
      */
     private static class GridSessionCollisionSpi extends GridFifoQueueCollisionSpi {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** {@inheritDoc} */

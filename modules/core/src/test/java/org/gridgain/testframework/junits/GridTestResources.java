@@ -167,12 +167,12 @@ public class GridTestResources {
         if (execSvc != null)
             rsrcProc.injectBasicResource(target, IgniteExecutorServiceResource.class, execSvc);
 
-        rsrcProc.injectBasicResource(target, GridLoggerResource.class, getLogger().getLogger(target.getClass()));
+        rsrcProc.injectBasicResource(target, IgniteLoggerResource.class, getLogger().getLogger(target.getClass()));
         rsrcProc.injectBasicResource(target, GridMarshallerResource.class, getMarshaller());
-        rsrcProc.injectBasicResource(target, GridLocalNodeIdResource.class, getNodeId());
+        rsrcProc.injectBasicResource(target, IgniteLocalNodeIdResource.class, getNodeId());
         rsrcProc.injectBasicResource(target, GridMBeanServerResource.class, getMBeanServer());
         rsrcProc.injectBasicResource(target, IgniteHomeResource.class, getGridgainHome());
-        rsrcProc.injectBasicResource(target, GridLocalHostResource.class, getLocalHost());
+        rsrcProc.injectBasicResource(target, IgniteLocalHostResource.class, getLocalHost());
     }
 
     /**

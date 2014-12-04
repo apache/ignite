@@ -72,7 +72,8 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static final class CancelledTask extends ComputeTaskAdapter<String, Object> {
         /** */
-        @GridLocalNodeIdResource private UUID locId;
+        @IgniteLocalNodeIdResource
+        private UUID locId;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,

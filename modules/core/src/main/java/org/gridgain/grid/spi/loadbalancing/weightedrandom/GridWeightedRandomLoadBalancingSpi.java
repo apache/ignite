@@ -168,7 +168,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     public static final int DFLT_NODE_WEIGHT = 10;
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */

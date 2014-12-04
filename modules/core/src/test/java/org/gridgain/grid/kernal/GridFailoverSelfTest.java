@@ -83,7 +83,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** Local node ID. */
-                @GridLocalNodeIdResource
+                @IgniteLocalNodeIdResource
                 private UUID locId;
 
                 /** {@inheritDoc} */

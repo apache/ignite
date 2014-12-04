@@ -46,7 +46,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         Ignite ignite = grid(0);
 
         ignite.compute().call(new IgniteCallable<Object>() {
-            @GridLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
+            @IgniteLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private GridLogger log;
 
             @Override public Object call() throws Exception {
@@ -73,7 +73,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         Ignite ignite = grid(0);
 
         ignite.compute().call(new IgniteCallable<Object>() {
-            @GridLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
+            @IgniteLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private void log(GridLogger log) {
                 if (log instanceof GridLoggerProxy) {
                     Object category = U.field(log,  "ctgr");
@@ -92,7 +92,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
     }
 
     /**
-     * Test that closure gets right log category injected through {@link GridLoggerResource#categoryName()}.
+     * Test that closure gets right log category injected through {@link org.apache.ignite.resources.IgniteLoggerResource#categoryName()}.
      *
      * @throws Exception If failed.
      */
@@ -100,7 +100,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         Ignite ignite = grid(0);
 
         ignite.compute().call(new IgniteCallable<Object>() {
-            @GridLoggerResource(categoryName = "GridLoggerInjectionSelfTest")
+            @IgniteLoggerResource(categoryName = "GridLoggerInjectionSelfTest")
             private void log(GridLogger log) {
                 if (log instanceof GridLoggerProxy) {
                     Object category = U.field(log,  "ctgr");

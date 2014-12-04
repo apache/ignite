@@ -426,7 +426,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         private Ignite ignite;
 
         /** Logger. */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */

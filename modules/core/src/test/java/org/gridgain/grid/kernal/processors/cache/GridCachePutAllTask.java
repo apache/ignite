@@ -52,7 +52,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
 
         return Collections.singletonMap(
             new ComputeJobAdapter() {
-                @GridLoggerResource
+                @IgniteLoggerResource
                 private GridLogger log;
 
                 @IgniteInstanceResource

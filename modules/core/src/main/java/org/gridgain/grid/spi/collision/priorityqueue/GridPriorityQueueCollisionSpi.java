@@ -221,7 +221,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
     private Comparator<GridCollisionJobContextWrapper> priComp;
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

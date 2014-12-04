@@ -38,15 +38,15 @@ public class GridJobLoadTestJob implements ComputeJob {
     private final int completionDelay;
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Local node id. */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID nodeId;
 
     /** Job context. */
-    @GridJobContextResource
+    @IgniteJobContextResource
     private ComputeJobContext cntx;
 
     /** Task session. */

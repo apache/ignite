@@ -45,7 +45,7 @@ public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Obje
     private Ignite ignite;
 
     /** Load balancer. */
-    @GridLoadBalancerResource
+    @IgniteLoadBalancerResource
     private ComputeLoadBalancer balancer;
 
     /**

@@ -54,7 +54,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * for additional information.
  * <p>
  * It's recommended to use GridGain logger injection instead of using/instantiating
- * logger in your task/job code. See {@link org.apache.ignite.resources.GridLoggerResource} annotation about logger
+ * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
 public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdAware {

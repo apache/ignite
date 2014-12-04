@@ -260,10 +260,10 @@ class GridResourceCustomInjector implements GridResourceInjector {
             }
 
             // Clean up injected resources.
-            cleanup(rsrc, GridLoggerResource.class);
+            cleanup(rsrc, IgniteLoggerResource.class);
             cleanup(rsrc, IgniteInstanceResource.class);
             cleanup(rsrc, IgniteExecutorServiceResource.class);
-            cleanup(rsrc, GridLocalNodeIdResource.class);
+            cleanup(rsrc, IgniteLocalNodeIdResource.class);
             cleanup(rsrc, GridMBeanServerResource.class);
             cleanup(rsrc, IgniteHomeResource.class);
             cleanup(rsrc, GridMarshallerResource.class);
@@ -442,18 +442,18 @@ class GridResourceCustomInjector implements GridResourceInjector {
             Object rsrc = rsrcCls.newInstance();
 
             // Inject resources into shared resource.
-            ioc.inject(rsrc, GridLoggerResource.class, new GridResourceBasicInjector<>(
+            ioc.inject(rsrc, IgniteLoggerResource.class, new GridResourceBasicInjector<>(
                 log.getLogger(rsrcCls)), dep, depCls);
             ioc.inject(rsrc, IgniteInstanceResource.class, gridInjector, dep, depCls);
             ioc.inject(rsrc, IgniteExecutorServiceResource.class, execInjector, dep, depCls);
-            ioc.inject(rsrc, GridLocalNodeIdResource.class, nodeIdInjector, dep, depCls);
+            ioc.inject(rsrc, IgniteLocalNodeIdResource.class, nodeIdInjector, dep, depCls);
             ioc.inject(rsrc, GridMBeanServerResource.class, mbeanServerInjector, dep, depCls);
             ioc.inject(rsrc, IgniteHomeResource.class, ggHomeInjector, dep, depCls);
             ioc.inject(rsrc, GridNameResource.class, ggNameInjector, dep, depCls);
             ioc.inject(rsrc, GridMarshallerResource.class, marshallerInjector, dep, depCls);
             ioc.inject(rsrc, GridSpringApplicationContextResource.class, springCtxInjector, dep, depCls);
             ioc.inject(rsrc, GridSpringResource.class, springBeanInjector, dep, depCls);
-            ioc.inject(rsrc, GridLoggerResource.class, logInjector, dep, depCls);
+            ioc.inject(rsrc, IgniteLoggerResource.class, logInjector, dep, depCls);
             ioc.inject(rsrc, GridServiceResource.class, srvcInjector, dep, depCls);
 
             for (Method mtd : getMethodsWithAnnotation(rsrcCls, GridUserResourceOnDeployed.class)) {

@@ -424,7 +424,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locNodeId;
 
         /** */

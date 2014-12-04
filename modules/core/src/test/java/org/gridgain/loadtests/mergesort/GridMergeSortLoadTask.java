@@ -48,7 +48,7 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
         for (final int[] arr : splitArray(initArr)) {
             jobs.add(new ComputeJobAdapter() {
                 // Auto-inject job context.
-                @GridJobContextResource
+                @IgniteJobContextResource
                 private ComputeJobContext jobCtx;
 
                 // Task execution result future.

@@ -32,14 +32,16 @@ public abstract class GridAbstractUserExternalResource {
     static final Map<Class<?>, Integer> undeployClss = new HashMap<>();
 
     /** */
-    @GridLoggerResource private GridLogger log;
+    @IgniteLoggerResource
+    private GridLogger log;
 
     /** */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** */
-    @GridLocalNodeIdResource private UUID nodeId;
+    @IgniteLocalNodeIdResource
+    private UUID nodeId;
 
     /** */
     @GridMBeanServerResource private MBeanServer mbeanSrv;

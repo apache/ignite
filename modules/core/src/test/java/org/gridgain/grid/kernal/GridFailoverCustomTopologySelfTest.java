@@ -113,10 +113,11 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PublicInnerClass")
     public static class JobTask extends ComputeTaskAdapter<String, String> {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @IgniteLoggerResource
+        private GridLogger log;
 
          /** */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         private UUID locNodeId;
 
         /** {@inheritDoc} */
@@ -135,7 +136,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonMap(new ComputeJobAdapter(locNodeId) {
                 /** */
-               @GridLocalNodeIdResource private UUID nodeId;
+               @IgniteLocalNodeIdResource
+               private UUID nodeId;
 
                 /** {@inheritDoc} */
                 @SuppressWarnings("NakedNotify")

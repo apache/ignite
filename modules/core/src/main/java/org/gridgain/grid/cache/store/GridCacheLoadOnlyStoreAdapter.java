@@ -74,7 +74,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
     public static final int DFLT_THREADS_COUNT = Runtime.getRuntime().availableProcessors();
 
     /** Auto-injected logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Batch size. */

@@ -26,7 +26,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
     private ComputeTaskSession taskSes;
 
     /** */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** */

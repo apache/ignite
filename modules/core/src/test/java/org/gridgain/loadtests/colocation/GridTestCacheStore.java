@@ -27,7 +27,7 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
     @IgniteInstanceResource
     private Ignite ignite;
 
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /**

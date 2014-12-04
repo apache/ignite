@@ -50,7 +50,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
     private Ignite ignite;
 
     /** Injected logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /**

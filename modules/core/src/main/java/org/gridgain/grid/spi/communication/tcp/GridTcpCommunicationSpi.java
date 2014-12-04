@@ -330,11 +330,11 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         };
 
     /** Logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** Node ID. */
-    @GridLocalNodeIdResource
+    @IgniteLocalNodeIdResource
     private UUID locNodeId;
 
     /** Marshaller. */
@@ -603,7 +603,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      *      IP address.
      */
     @GridSpiConfiguration(optional = true)
-    @GridLocalHostResource
+    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)

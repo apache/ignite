@@ -106,7 +106,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
     @ComputeTaskSessionFullSupport
     private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @GridLoggerResource
+        @IgniteLoggerResource
         private GridLogger log;
 
         /** */

@@ -65,7 +65,7 @@ public class GridNoopSecureSessionSpi extends GridSpiAdapter
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     /** Injected grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */

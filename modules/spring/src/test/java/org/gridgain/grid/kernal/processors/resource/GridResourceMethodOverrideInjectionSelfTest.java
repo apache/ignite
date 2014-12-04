@@ -165,7 +165,8 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          * @param log GridLogger.
          */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridLoggerResource private void setLog(GridLogger log) { this.log = log; }
+        @IgniteLoggerResource
+        private void setLog(GridLogger log) { this.log = log; }
 
         /**
          * @param ignite Grid.
@@ -177,7 +178,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param nodeId UUID.
          */
-        @GridLocalNodeIdResource
+        @IgniteLocalNodeIdResource
         public void setNodeId(UUID nodeId) {
             this.nodeId = nodeId;
         }
@@ -231,7 +232,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param jobCtx Job context.
          */
-        @GridJobContextResource
+        @IgniteJobContextResource
         @SuppressWarnings("unused")
         public void setJobContext(ComputeJobContext jobCtx) {
             this.jobCtx = jobCtx;
@@ -287,7 +288,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          * @param log GridLogger. The grid logger resource.
          */
         @SuppressWarnings({"MethodOverridesPrivateMethodOfSuperclass", "unused"})
-        @GridLoggerResource
+        @IgniteLoggerResource
         public void setLog(GridLogger log) {
             this.log = log;
         }
@@ -303,7 +304,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param jobCtx Job context.
          */
-        @GridJobContextResource
+        @IgniteJobContextResource
         @Override public void setJobContext(ComputeJobContext jobCtx) {
             this.jobCtx = jobCtx;
 
@@ -397,7 +398,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                      * @param jobCtx Job context.
                      */
                     @SuppressWarnings("unused")
-                    @GridJobContextResource
+                    @IgniteJobContextResource
                     public void setJobContext(ComputeJobContext jobCtx) { this.jobCtx = jobCtx; }
 
                     /** {@inheritDoc} */

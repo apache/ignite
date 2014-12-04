@@ -85,7 +85,7 @@ public final class ComputeFibonacciContinuationExample {
         private IgniteFuture<BigInteger> fut2;
 
         /** Auto-inject job context. */
-        @GridJobContextResource
+        @IgniteJobContextResource
         private ComputeJobContext jobCtx;
 
         /** Auto-inject grid instance. */

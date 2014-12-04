@@ -28,13 +28,13 @@ public class GridResourceLoggerInjector extends GridResourceBasicInjector<GridLo
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
         throws GridException {
-        GridResourceUtils.inject(field.getField(), target, resource((GridLoggerResource)field.getAnnotation(), target));
+        GridResourceUtils.inject(field.getField(), target, resource((IgniteLoggerResource)field.getAnnotation(), target));
     }
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
         throws GridException {
-        GridResourceUtils.inject(mtd.getMethod(), target, resource((GridLoggerResource)mtd.getAnnotation(), target));
+        GridResourceUtils.inject(mtd.getMethod(), target, resource((IgniteLoggerResource)mtd.getAnnotation(), target));
     }
 
     /**
@@ -43,7 +43,7 @@ public class GridResourceLoggerInjector extends GridResourceBasicInjector<GridLo
      * @return Logger.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private GridLogger resource(GridLoggerResource ann, Object target) {
+    private GridLogger resource(IgniteLoggerResource ann, Object target) {
         Class<?> cls = ann.categoryClass();
         String cat = ann.categoryName();
 

@@ -30,7 +30,7 @@ public class GridP2PAwareTestUserResource {
     private Ignite ignite;
 
     /** Grid logger. */
-    @GridLoggerResource
+    @IgniteLoggerResource
     private GridLogger log;
 
     /**

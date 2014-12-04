@@ -53,11 +53,11 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @GridJobContextResource
+                    @IgniteJobContextResource
                     private ComputeJobContext jobCtx;
 
                     /** */
-                    @GridLocalNodeIdResource
+                    @IgniteLocalNodeIdResource
                     private UUID locNodeId;
 
                     /** {@inheritDoc} */
