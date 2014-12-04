@@ -78,7 +78,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestLifecycleBean extends TestLifecycleAware implements GridLifecycleBean {
+    private static class TestLifecycleBean extends TestLifecycleAware implements LifecycleBean {
         /**
          */
         TestLifecycleBean() {

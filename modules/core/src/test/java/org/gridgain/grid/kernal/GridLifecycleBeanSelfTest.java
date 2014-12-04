@@ -227,7 +227,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class LifeCycleBaseBean implements GridLifecycleBean {
+    private static class LifeCycleBaseBean implements LifecycleBean {
         /** */
         private Map<GridLifecycleEventType, AtomicInteger> callsCntr =
             new EnumMap<>(GridLifecycleEventType.class);

@@ -41,7 +41,7 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
     protected GridCachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
 
     /** */
-    protected GridLifecycleBean lifecycleBean;
+    protected LifecycleBean lifecycleBean;
 
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);

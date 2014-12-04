@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.resources;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 
 import java.lang.annotation.*;
@@ -23,7 +22,7 @@ import java.lang.annotation.*;
  * <ul>
  * <li>{@link GridComputeTask}</li>
  * <li>{@link GridComputeJob}</li>
- * <li>{@link GridLifecycleBean}</li>
+ * <li>{@link org.gridgain.grid.LifecycleBean}</li>
  * <li>All closures and predicates that can run on grid.</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>

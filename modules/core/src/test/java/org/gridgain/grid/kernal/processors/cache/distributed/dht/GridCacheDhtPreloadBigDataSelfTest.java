@@ -55,7 +55,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     private int partitions = DFLT_PARTITIONS;
 
     /** */
-    private GridLifecycleBean lbean;
+    private LifecycleBean lbean;
 
     /** IP finder. */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
@@ -153,7 +153,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
         try {
             final int cnt = 10000;
 
-            lbean = new GridLifecycleBean() {
+            lbean = new LifecycleBean() {
                 @GridInstanceResource
                 private Ignite ignite;
 

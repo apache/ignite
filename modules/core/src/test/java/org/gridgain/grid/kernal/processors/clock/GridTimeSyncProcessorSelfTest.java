@@ -169,7 +169,7 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Time bean that sets shifted time source to context.
      */
-    private static class TimeShiftLifecycleBean implements GridLifecycleBean {
+    private static class TimeShiftLifecycleBean implements LifecycleBean {
         /** Injected grid. */
         @GridInstanceResource
         private Ignite g;

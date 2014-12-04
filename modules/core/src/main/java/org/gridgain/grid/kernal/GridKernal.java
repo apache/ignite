@@ -485,9 +485,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
 
     /** {@inheritDoc} */
     @Override public Collection<String> getLifecycleBeansFormatted() {
-        GridLifecycleBean[] beans = cfg.getLifecycleBeans();
+        LifecycleBean[] beans = cfg.getLifecycleBeans();
 
-        return F.isEmpty(beans) ? Collections.<String>emptyList() : F.transform(beans, F.<GridLifecycleBean>string());
+        return F.isEmpty(beans) ? Collections.<String>emptyList() : F.transform(beans, F.<LifecycleBean>string());
     }
 
     /**
@@ -520,7 +520,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
     @SuppressWarnings({"CatchGenericClass"})
     private void notifyLifecycleBeans(GridLifecycleEventType evt) throws GridException {
         if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null)
-            for (GridLifecycleBean bean : cfg.getLifecycleBeans())
+            for (LifecycleBean bean : cfg.getLifecycleBeans())
                 if (bean != null)
                     bean.onLifecycleEvent(evt);
     }
@@ -680,7 +680,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
 
             // Inject resources into lifecycle beans.
             if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null)
-                for (GridLifecycleBean bean : cfg.getLifecycleBeans())
+                for (LifecycleBean bean : cfg.getLifecycleBeans())
                     if (bean != null)
                         rsrcProc.inject(bean);
 

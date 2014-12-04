@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.resources;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 
@@ -27,7 +26,7 @@ import java.lang.annotation.*;
  * <li>{@link GridComputeTask}</li>
  * <li>{@link GridComputeJob}</li>
  * <li>{@link GridSpi}</li>
- * <li>{@link GridLifecycleBean}</li>
+ * <li>{@link org.gridgain.grid.LifecycleBean}</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>

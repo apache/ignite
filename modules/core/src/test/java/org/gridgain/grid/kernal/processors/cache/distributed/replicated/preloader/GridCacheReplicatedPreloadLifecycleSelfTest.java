@@ -70,8 +70,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
      * @param keys Keys.
      * @return Lifecycle bean.
      */
-    private GridLifecycleBean lifecycleBean(final Object[] keys) {
-        return new GridLifecycleBean() {
+    private LifecycleBean lifecycleBean(final Object[] keys) {
+        return new LifecycleBean() {
             @GridInstanceResource
             private Ignite ignite;
 

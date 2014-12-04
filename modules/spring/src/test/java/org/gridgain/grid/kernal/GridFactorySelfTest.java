@@ -608,7 +608,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Lifecycle bean for testing.
      */
-    private static class TestLifecycleBean implements GridLifecycleBean {
+    private static class TestLifecycleBean implements LifecycleBean {
         /** Grid logger. */
         @GridLoggerResource
         private GridLogger log;

@@ -17,7 +17,7 @@ import org.gridgain.grid.resources.*;
 /**
  * Lifecycle bean.
  */
-public class GridTestLifecycleBean implements GridLifecycleBean {
+public class GridTestLifecycleBean implements LifecycleBean {
     @GridInstanceResource
     private Ignite g;
 

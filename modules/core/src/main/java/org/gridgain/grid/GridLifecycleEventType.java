@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
  * Grid lifecycle event types. These events are used to notify lifecycle beans
  * about changes in grid lifecycle state.
  * <p>
- * For more information and detailed examples refer to {@link GridLifecycleBean}
+ * For more information and detailed examples refer to {@link LifecycleBean}
  * documentation.
  */
 public enum GridLifecycleEventType {
@@ -39,7 +39,7 @@ public enum GridLifecycleEventType {
 
     /**
      * Invoked after grid had stopped. Grid is stopped and
-     * cannot be used. 
+     * cannot be used.
      */
     AFTER_GRID_STOP;
 

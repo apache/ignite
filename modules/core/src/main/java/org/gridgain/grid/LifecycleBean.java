@@ -93,7 +93,7 @@ import org.gridgain.grid.resources.*;
  * &lt;/bean&gt;
  * </pre>
  */
-public interface GridLifecycleBean {
+public interface LifecycleBean {
     /**
      * This method is called when lifecycle event occurs.
      *

@@ -560,7 +560,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param lifecycleBean Lifecycle bean.
      * @throws GridException Thrown in case of any errors.
      */
-    public void inject(GridLifecycleBean lifecycleBean) throws GridException {
+    public void inject(LifecycleBean lifecycleBean) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + lifecycleBean);
 
@@ -589,7 +589,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param lifecycleBean Lifecycle bean.
      * @throws GridException Thrown in case of any errors.
      */
-    public void cleanup(GridLifecycleBean lifecycleBean) throws GridException {
+    public void cleanup(LifecycleBean lifecycleBean) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Cleaning up resources: " + lifecycleBean);
 

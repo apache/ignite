@@ -332,7 +332,7 @@ public class IgniteConfiguration {
     private long metricsExpTime = DFLT_METRICS_EXPIRE_TIME;
 
     /** Collection of life-cycle beans. */
-    private GridLifecycleBean[] lifecycleBeans;
+    private LifecycleBean[] lifecycleBeans;
 
     /** Discovery SPI. */
     private GridDiscoverySpi discoSpi;
@@ -1757,10 +1757,10 @@ public class IgniteConfiguration {
      * routines.
      *
      * @return Collection of life-cycle beans.
-     * @see GridLifecycleBean
+     * @see org.gridgain.grid.LifecycleBean
      * @see GridLifecycleEventType
      */
-    public GridLifecycleBean[] getLifecycleBeans() {
+    public LifecycleBean[] getLifecycleBeans() {
         return lifecycleBeans;
     }
 
@@ -1773,7 +1773,7 @@ public class IgniteConfiguration {
      * @param lifecycleBeans Collection of lifecycle beans.
      * @see GridLifecycleEventType
      */
-    public void setLifecycleBeans(GridLifecycleBean... lifecycleBeans) {
+    public void setLifecycleBeans(LifecycleBean... lifecycleBeans) {
         this.lifecycleBeans = lifecycleBeans;
     }
 
