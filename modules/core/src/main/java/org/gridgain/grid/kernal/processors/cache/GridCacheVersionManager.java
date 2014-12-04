@@ -45,7 +45,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
     /** Serializable transaction flag. */
     private boolean txSerEnabled;
 
-    /** Data cetner ID. */
+    /** Data center ID. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private byte dataCenterId;
 
@@ -77,7 +77,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
     @Override public void start0() throws GridException {
         txSerEnabled = cctx.gridConfig().getTransactionsConfiguration().isTxSerializableEnabled();
 
-        dataCenterId = cctx.dataCenterId();
+        dataCenterId = 0; //cctx.dataCenterId(); TODO GG-9141 Grab data center ID from DR manager.
 
         last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
 
