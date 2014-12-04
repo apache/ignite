@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -22,6 +23,15 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    protected static final int CLIENT_FLAG_POS = 0;
+
+    /** */
+    protected static final int RESPONDED_FLAG_POS = 1;
+
+    /** */
+    protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
+
     /** Sender of the message (transient). */
     private UUID senderNodeId;
 
@@ -33,6 +43,16 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
 
     /** Topology version. */
     private long topVer;
+
+    /** Destination client node ID. */
+    private UUID destClientNodeId;
+
+    /** Flags. */
+    @GridToStringExclude
+    private int flags;
+
+    /** Pending message index. */
+    private short pendingIdx;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
@@ -131,11 +151,87 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         this.topVer = topVer;
     }
 
+    /**
+     * Get client node flag.
+     *
+     * @return Client node flag.
+     */
+    public boolean client() {
+        return getFlag(CLIENT_FLAG_POS);
+    }
+
+    /**
+     * Sets client node flag.
+     *
+     * @param client Client node flag.
+     */
+    public void client(boolean client) {
+        setFlag(CLIENT_FLAG_POS, client);
+    }
+
+    /**
+     * @return Destination client node ID.
+     */
+    public UUID destinationClientNodeId() {
+        return destClientNodeId;
+    }
+
+    /**
+     * @param destClientNodeId Destination client node ID.
+     */
+    public void destinationClientNodeId(UUID destClientNodeId) {
+        this.destClientNodeId = destClientNodeId;
+    }
+
+    /**
+     * @return Pending message index.
+     */
+    public short pendingIndex() {
+        return pendingIdx;
+    }
+
+    /**
+     * @param pendingIdx Pending message index.
+     */
+    public void pendingIndex(short pendingIdx) {
+        this.pendingIdx = pendingIdx;
+    }
+
+    /**
+     * @param pos Flag position.
+     * @return Flag value.
+     */
+    protected boolean getFlag(int pos) {
+        assert pos >= 0 && pos < 32;
+
+        int mask = 1 << pos;
+
+        return (flags & mask) == mask;
+    }
+
+    /**
+     * @param pos Flag position.
+     * @param val Flag value.
+     */
+    protected void setFlag(int pos, boolean val) {
+        assert pos >= 0 && pos < 32;
+
+        int mask = 1 << pos;
+
+        if (val)
+            flags |= mask;
+        else
+            flags &= ~mask;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         U.writeUuid(out, verifierNodeId);
         out.writeLong(topVer);
+        U.writeUuid(out, destClientNodeId);
+        out.writeInt(flags);
+        out.writeShort(pendingIdx);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +239,9 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         id = U.readGridUuid(in);
         verifierNodeId = U.readUuid(in);
         topVer = in.readLong();
+        destClientNodeId = U.readUuid(in);
+        flags = in.readInt();
+        pendingIdx = in.readShort();
     }
 
     /** {@inheritDoc} */
@@ -162,6 +261,6 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryAbstractMessage.class, this);
+        return S.toString(GridTcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS));
     }
 }

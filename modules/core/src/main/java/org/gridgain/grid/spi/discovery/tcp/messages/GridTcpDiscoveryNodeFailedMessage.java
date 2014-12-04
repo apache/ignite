@@ -19,6 +19,7 @@ import java.util.*;
  * then sent by coordinator across the ring.
  */
 @GridTcpDiscoveryEnsureDelivery
+@GridTcpDiscoveryRedirectToClient
 public class GridTcpDiscoveryNodeFailedMessage extends GridTcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;

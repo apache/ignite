@@ -182,7 +182,8 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      *      includes port range).
      * @throws GridSpiException If failed.
      */
-    private static Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg) throws GridSpiException {
+    private static Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg)
+        throws GridSpiException {
         String[] tokens = ipStr.split(regexDelim);
 
         if (tokens.length == 2) {

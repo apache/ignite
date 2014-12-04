@@ -205,6 +205,11 @@ public class GridTestNode extends GridMetadataAwareAdapter implements GridNode {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isClient() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return id.hashCode();
     }

@@ -10,15 +10,12 @@
 package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -29,27 +26,34 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
-    public static final int GRID_CNT = 15;
+    private static final int GRID_CNT = 5;
 
     /** */
-    public static final int THREAD_CNT = 14;
+    private static final int CLIENT_GRID_CNT = 5;
+
+    /** */
+    private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocal<>();
+
+    /** */
+    private static volatile boolean clientFlagGlobal;
+
+    /**
+     * @return Client node flag.
+     */
+    private static boolean client() {
+        Boolean client = clientFlagPerThread.get();
+
+        return client != null ? client : clientFlagGlobal;
+    }
 
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private GridTcpDiscoveryVmMetricsStore metricsStore = new GridTcpDiscoveryVmMetricsStore();
-
-    /** */
-    private boolean useMetricsStore;
 
     /**
      * @throws Exception If fails.
      */
     public GridTcpDiscoveryMultiThreadedTest() throws Exception {
         super(false);
-
-        metricsStore.setMetricsExpireTime(2000);
     }
 
     /** {@inheritDoc} */
@@ -57,11 +61,20 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        if (client()) {
+            GridTcpClientDiscoverySpi spi = new GridTcpClientDiscoverySpi();
 
-        spi.setIpFinder(ipFinder);
+            spi.setIpFinder(ipFinder);
 
-        cfg.setDiscoverySpi(spi);
+            cfg.setDiscoverySpi(spi);
+        }
+        else {
+            GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+
+            spi.setIpFinder(ipFinder);
+
+            cfg.setDiscoverySpi(spi);
+        }
 
         cfg.setCacheConfiguration();
 
@@ -70,11 +83,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         cfg.setIncludeProperties();
 
         cfg.setLocalHost("127.0.0.1");
-
-        cfg.setRestEnabled(false);
-
-        if (useMetricsStore)
-            spi.setMetricsStore(metricsStore);
 
         return cfg;
     }
@@ -95,15 +103,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     public void testMultiThreaded() throws Exception {
-        execute();
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testMetricsStoreMultiThreaded() throws Exception {
-        useMetricsStore = true;
-
         execute();
     }
 
@@ -132,62 +131,67 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"RedundantCast"})
     private void execute() throws Exception {
         info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");
 
         startGridsMultiThreaded(GRID_CNT);
 
+        clientFlagGlobal = true;
+
+        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
+
         final AtomicBoolean done = new AtomicBoolean();
-        final AtomicBoolean done0 = new AtomicBoolean();
 
-        final AtomicInteger idx = new AtomicInteger();
+        final AtomicInteger clientIdx = new AtomicInteger(GRID_CNT);
 
-        final List<Integer> idxs = new ArrayList<>();
-
-        for (int i = 0; i < GRID_CNT; i++)
-            idxs.add(i);
-
-        final CyclicBarrier barrier = new CyclicBarrier(THREAD_CNT, new Runnable() {
-            @Override public void run() {
-                if (done0.get())
-                    done.set(true);
-
-                Collections.shuffle(idxs);
-
-                idx.set(0);
-            }
-        });
-
-        GridFuture<?> fut = multithreadedAsync(
+        GridFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    while (true) {
-                        barrier.await();
+                    clientFlagPerThread.set(true);
 
-                        if (done.get())
-                            break;
+                    int idx = clientIdx.getAndIncrement();
 
-                        int i = idxs.get(idx.getAndIncrement());
-
-                        stopGrid(i);
-
-                        startGrid(i);
+                    while (!done.get()) {
+                        stopGrid(idx);
+                        startGrid(idx);
                     }
-
-                    info("Thread finished.");
 
                     return null;
                 }
             },
-            THREAD_CNT
+            CLIENT_GRID_CNT
         );
 
-        // Duration = test timeout - 1 min.
+        final BlockingQueue<Integer> srvIdx = new LinkedBlockingQueue<>();
+
+        for (int i = 0; i < GRID_CNT; i++)
+            srvIdx.add(i);
+
+        GridFuture<?> fut2 = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    clientFlagPerThread.set(false);
+
+                    while (!done.get()) {
+                        int idx = srvIdx.take();
+
+                        stopGrid(idx);
+                        startGrid(idx);
+
+                        srvIdx.add(idx);
+                    }
+
+                    return null;
+                }
+            },
+            GRID_CNT - 1
+        );
+
         Thread.sleep(getTestTimeout() - 60 * 1000);
 
-        done0.set(true);
+        done.set(true);
 
-        fut.get();
+        fut1.get();
+        fut2.get();
     }
 }

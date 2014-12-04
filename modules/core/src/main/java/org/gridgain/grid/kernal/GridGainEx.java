@@ -75,6 +75,7 @@ import static org.gridgain.grid.GridConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -1847,7 +1848,7 @@ public class GridGainEx {
                 copies = new GridCacheConfiguration[1];
 
             // Always add utility cache.
-            copies[0] = utilitySystemCache();
+            copies[0] = utilitySystemCache(discoSpi instanceof GridTcpClientDiscoverySpi);
 
             myCfg.setCacheConfiguration(copies);
 
@@ -2020,7 +2021,7 @@ public class GridGainEx {
          *
          * @return Utility system cache configuration.
          */
-        private GridCacheConfiguration utilitySystemCache() {
+        private GridCacheConfiguration utilitySystemCache(boolean client) {
             GridCacheConfiguration cache = new GridCacheConfiguration();
 
             cache.setName(CU.UTILITY_CACHE_NAME);
@@ -2031,6 +2032,9 @@ public class GridGainEx {
             cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new GridCacheRendezvousAffinityFunction(false, 100));
+
+            if (client)
+                cache.setDistributionMode(CLIENT_ONLY);
 
             return cache;
         }

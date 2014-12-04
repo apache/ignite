@@ -509,6 +509,13 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param types Event types to subscribe listener for.
      */
     public void addLocalEventListener(GridPredicate<? extends GridEvent> lsnr, int[] types) {
+        try {
+            ctx.resource().injectGeneric(lsnr);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException("Failed to inject resources to event listener: " + lsnr, e);
+        }
+
         addLocalEventListener(new UserListenerWrapper(lsnr), types);
     }
 

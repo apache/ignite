@@ -18,6 +18,7 @@ import java.util.*;
  * Sent by coordinator across the ring to finish node add process.
  */
 @GridTcpDiscoveryEnsureDelivery
+@GridTcpDiscoveryRedirectToClient
 public class GridTcpDiscoveryNodeAddFinishedMessage extends GridTcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;

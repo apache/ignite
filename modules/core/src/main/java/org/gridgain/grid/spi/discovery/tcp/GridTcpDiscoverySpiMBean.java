@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
 import org.gridgain.grid.util.mbean.*;
 import org.jetbrains.annotations.*;
 
@@ -44,15 +43,6 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      */
     @GridMBeanDescription("IP Finder.")
     public String getIpFinderFormatted();
-
-    /**
-     * Gets {@link GridTcpDiscoveryMetricsStore} (string representation).
-     *
-     * @return Metrics store string representation or {@code null} if SPI
-     * does not use metrics store.
-     */
-    @GridMBeanDescription("Metrics store.")
-    @Nullable public String getMetricsStoreFormatted();
 
     /**
      * Gets number of connection attempts.
@@ -95,6 +85,14 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
     public int getMaxMissedHeartbeats();
 
     /**
+     * Gets max heartbeats count node can miss without failing client node.
+     *
+     * @return Max missed client heartbeats.
+     */
+    @GridMBeanDescription("Max missed client heartbeats.")
+    public int getMaxMissedClientHeartbeats();
+
+    /**
      * Gets thread priority. All threads within SPI will be started with it.
      *
      * @return Thread priority.
@@ -103,12 +101,12 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
     public int getThreadPriority();
 
     /**
-     * Gets stores (IP finder and metrics store) clean frequency.
+     * Gets IP finder clean frequency.
      *
      * @return IP finder clean frequency.
      */
-    @GridMBeanDescription("Stores clean frequency.")
-    public long getStoresCleanFrequency();
+    @GridMBeanDescription("IP finder clean frequency.")
+    public long getIpFinderCleanFrequency();
 
     /**
      * Gets statistics print frequency.

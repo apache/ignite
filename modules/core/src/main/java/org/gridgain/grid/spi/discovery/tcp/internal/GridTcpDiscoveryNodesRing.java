@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.spi.discovery.tcp.internal;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -22,6 +24,20 @@ import java.util.concurrent.locks.*;
  * Convenient way to represent topology for {@link GridTcpDiscoverySpi}
  */
 public class GridTcpDiscoveryNodesRing {
+    /** Visible nodes filter. */
+    private static final GridPredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
+        @Override public boolean apply(GridTcpDiscoveryNode node) {
+            return node.visible();
+        }
+    };
+
+    /** Client nodes filter. */
+    private static final PN CLIENT_NODES = new PN() {
+        @Override public boolean apply(GridNode node) {
+            return node.isClient();
+        }
+    };
+
     /** Local node. */
     private GridTcpDiscoveryNode locNode;
 
@@ -69,14 +85,16 @@ public class GridTcpDiscoveryNodesRing {
      * @return Collection of all nodes.
      */
     public Collection<GridTcpDiscoveryNode> allNodes() {
-        rwLock.readLock().lock();
+        return nodes();
+    }
 
-        try {
-            return Collections.unmodifiableCollection(nodes);
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
+    /**
+     * Gets visible nodes in the topology.
+     *
+     * @return Collection of visible nodes.
+     */
+    public Collection<GridTcpDiscoveryNode> visibleNodes() {
+        return nodes(VISIBLE_NODES);
     }
 
     /**
@@ -85,15 +103,23 @@ public class GridTcpDiscoveryNodesRing {
      * @return Collection of remote nodes in grid.
      */
     public Collection<GridTcpDiscoveryNode> remoteNodes() {
-        rwLock.readLock().lock();
+        return nodes(F.remoteNodes(locNode.id()));
+    }
 
-        try {
-            return Collections.unmodifiableCollection(F.view(nodes,
-                F.<GridTcpDiscoveryNode>remoteNodes(locNode.id())));
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
+    /**
+     * Gets visible remote nodes in the topology.
+     *
+     * @return Collection of visible remote nodes.
+     */
+    public Collection<GridTcpDiscoveryNode> visibleRemoteNodes() {
+        return nodes(VISIBLE_NODES, F.remoteNodes(locNode.id()));
+    }
+
+    /**
+     * @return Client nodes.
+     */
+    public Collection<GridTcpDiscoveryNode> clientNodes() {
+        return nodes(CLIENT_NODES);
     }
 
     /**
@@ -361,8 +387,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = F.isEmpty(excluded) ? nodes :
-                F.view(nodes, F.notContains(excluded));
+            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (F.isEmpty(filtered))
                 return null;
@@ -409,8 +434,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = F.isEmpty(excluded) ? nodes :
-                F.view(nodes, F.notContains(excluded));
+            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (filtered.size() < 2)
                 return null;
@@ -464,8 +488,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = F.isEmpty(excluded) ? nodes.descendingSet() :
-                F.view(nodes.descendingSet(), F.notContains(excluded));
+            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (filtered.size() < 2)
                 return null;
@@ -518,6 +541,8 @@ public class GridTcpDiscoveryNodesRing {
                 return true;
             }
 
+            U.debug("KARAMBA [old=" + this.topVer + ", new=" + topVer + ']');
+
             return false;
         }
         finally {
@@ -563,6 +588,39 @@ public class GridTcpDiscoveryNodesRing {
         finally {
             rwLock.writeLock().unlock();
         }
+    }
+
+    /**
+     * @param p Filters.
+     * @return Unmodifiable collection of nodes.
+     */
+    private Collection<GridTcpDiscoveryNode> nodes(GridPredicate<? super GridTcpDiscoveryNode>... p) {
+        rwLock.readLock().lock();
+
+        try {
+            List<GridTcpDiscoveryNode> list = U.arrayList(nodes, p);
+
+            return Collections.unmodifiableCollection(list);
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Gets server nodes from topology.
+     *
+     * @param excluded Nodes to exclude from the search (optional).
+     * @return Collection of server nodes.
+     */
+    private Collection<GridTcpDiscoveryNode> serverNodes(@Nullable final Collection<GridTcpDiscoveryNode> excluded) {
+        final boolean excludedEmpty = F.isEmpty(excluded);
+
+        return F.view(nodes, new P1<GridTcpDiscoveryNode>() {
+            @Override public boolean apply(GridTcpDiscoveryNode node) {
+                return !node.isClient() && (excludedEmpty || !excluded.contains(node));
+            }
+        });
     }
 
     /** {@inheritDoc} */
