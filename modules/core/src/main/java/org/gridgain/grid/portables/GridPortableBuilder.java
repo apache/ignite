@@ -53,9 +53,9 @@ import org.jetbrains.annotations.*;
  * String city = personPortableObj.getField("address").getField("city");
  * </pre>
  *
- * @see IgnitePortables#builder(int)
- * @see IgnitePortables#builder(String)
- * @see IgnitePortables#builder(GridPortableObject)
+ * @see org.apache.ignite.IgnitePortables#builder(int)
+ * @see org.apache.ignite.IgnitePortables#builder(String)
+ * @see org.apache.ignite.IgnitePortables#builder(GridPortableObject)
  */
 public interface GridPortableBuilder {
     /**

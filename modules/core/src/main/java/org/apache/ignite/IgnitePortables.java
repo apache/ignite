@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.portables;
+package org.apache.ignite;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
@@ -27,7 +28,7 @@ import java.util.Date;
  * <li>Automatically convert collections and maps between Java, .NET, and C++.</li>
  * <li>
  *      Optionally avoid deserialization of objects on the server side
- *      (objects are stored in {@link GridPortableObject} format).
+ *      (objects are stored in {@link org.gridgain.grid.portables.GridPortableObject} format).
  * </li>
  * <li>Avoid need to have concrete class definitions on the server side.</li>
  * <li>Dynamically change structure of the classes without having to restart the cluster.</li>
@@ -73,7 +74,7 @@ import java.util.Date;
  * GridCacheProjection&lt;Integer.class, GridPortableObject.class&gt; prj = cache.keepPortable();
  * </pre>
  * <h1 class="header">Automatic Portable Types</h1>
- * Note that only portable classes are converted to {@link GridPortableObject} format. Following
+ * Note that only portable classes are converted to {@link org.gridgain.grid.portables.GridPortableObject} format. Following
  * classes are never converted (e.g., {@link #toPortable(Object)} method will return original
  * object, and instances of these classes will be stored in cache without changes):
  * <ul>
@@ -97,7 +98,7 @@ import java.util.Date;
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
  * in C#, etc.
  * <h1 class="header">Building Portable Objects</h1>
- * GridGain comes with {@link GridPortableBuilder} which allows to build portable objects dynamically:
+ * GridGain comes with {@link org.gridgain.grid.portables.GridPortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder();
  *
@@ -137,7 +138,7 @@ import java.util.Date;
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
  * <h1 class="header">Configuration</h1>
- * To make any object portable, you have to specify it in {@link GridPortableConfiguration}
+ * To make any object portable, you have to specify it in {@link org.gridgain.grid.portables.GridPortableConfiguration}
  * at startup. The only requirement GridGain imposes is that your object has an empty
  * constructor. Note, that since server side does not have to know the class definition,
  * you only need to list portable objects in configuration on the client side. However, if you
@@ -173,7 +174,7 @@ import java.util.Date;
  *
  * gridCfg.setPortableConfiguration(portCfg);
  * </pre>
- * You can also specify class name for a portable object via {@link GridPortableTypeConfiguration}.
+ * You can also specify class name for a portable object via {@link org.gridgain.grid.portables.GridPortableTypeConfiguration}.
  * Do it in case if you need to override other configuration properties on per-type level, like
  * ID-mapper, or serializer.
  * <h1 class="header">Custom Affinity Keys</h1>
@@ -199,9 +200,9 @@ import java.util.Date;
  * &lt;/property&gt;
  * </pre>
  * <h1 class="header">Serialization</h1>
- * Once portable object is specified in {@link GridPortableConfiguration}, GridGain will
+ * Once portable object is specified in {@link org.gridgain.grid.portables.GridPortableConfiguration}, GridGain will
  * be able to serialize and deserialize it. However, you can provide your own custom
- * serialization logic by optionally implementing {@link GridPortableMarshalAware} interface, like so:
+ * serialization logic by optionally implementing {@link org.gridgain.grid.portables.GridPortableMarshalAware} interface, like so:
  * <pre name=code class=java>
  * public class Address implements GridPortableMarshalAware {
  *     private String street;
@@ -222,8 +223,8 @@ import java.util.Date;
  * }
  * </pre>
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
- * logic in {@link GridPortableSerializer} either globally in {@link GridPortableConfiguration} or
- * for a specific type via {@link GridPortableTypeConfiguration} instance.
+ * logic in {@link org.gridgain.grid.portables.GridPortableSerializer} either globally in {@link org.gridgain.grid.portables.GridPortableConfiguration} or
+ * for a specific type via {@link org.gridgain.grid.portables.GridPortableTypeConfiguration} instance.
  * <p>
  * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
  * <ul>
@@ -240,10 +241,10 @@ import java.util.Date;
  * <h1 class="header">Custom ID Mappers</h1>
  * GridGain implementation uses name hash codes to generate IDs for class names or field names
  * internally. However, in cases when you want to provide your own ID mapping schema,
- * you can provide your own {@link GridPortableIdMapper} implementation.
+ * you can provide your own {@link org.gridgain.grid.portables.GridPortableIdMapper} implementation.
  * <p>
- * ID-mapper may be provided either globally in {@link GridPortableConfiguration},
- * or for a specific type via {@link GridPortableTypeConfiguration} instance.
+ * ID-mapper may be provided either globally in {@link org.gridgain.grid.portables.GridPortableConfiguration},
+ * or for a specific type via {@link org.gridgain.grid.portables.GridPortableTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
  * {@link GridCacheQueryTypeMetadata} inside of specific {@link GridCacheConfiguration} instance,
@@ -286,13 +287,13 @@ public interface IgnitePortables {
     public int typeId(String typeName);
 
     /**
-     * Converts provided object to instance of {@link GridPortableObject}.
+     * Converts provided object to instance of {@link org.gridgain.grid.portables.GridPortableObject}.
      * <p>
-     * Note that object's type needs to be configured in {@link GridPortableConfiguration}.
+     * Note that object's type needs to be configured in {@link org.gridgain.grid.portables.GridPortableConfiguration}.
      *
      * @param obj Object to convert.
      * @return Converted object.
-     * @throws GridPortableException In case of error.
+     * @throws org.gridgain.grid.portables.GridPortableException In case of error.
      */
     public <T> T toPortable(@Nullable Object obj) throws GridPortableException;
 
