@@ -17,10 +17,10 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Defines executable unit for {@link GridComputeTask}.
+ * Defines executable unit for {@link ComputeTask}.
  * <h1 class="header">Description</h1>
- * Grid job is an executable unit of {@link GridComputeTask}. Grid task gets split into jobs
- * when {@link GridComputeTask#map(List, Object)} method is called. This method returns
+ * Grid job is an executable unit of {@link ComputeTask}. Grid task gets split into jobs
+ * when {@link ComputeTask#map(List, Object)} method is called. This method returns
  * all jobs for the task mapped to their corresponding grid nodes for execution. Grid
  * will then serialize this jobs and send them to requested nodes for execution.
  * When a node receives a request to execute a job, the following sequence of events
@@ -44,7 +44,7 @@ import java.util.*;
  *      </li>
  *      <li>
  *          Job will be rejected. In this case the {@link ComputeJobResult} passed into
- *          {@link GridComputeTask#result(ComputeJobResult, List)} method will contain
+ *          {@link ComputeTask#result(ComputeJobResult, List)} method will contain
  *          {@link ComputeExecutionRejectedException} exception. If you are using any
  *          of the task adapters shipped with GridGain, then job will be failed
  *          over automatically for execution on another node.
@@ -73,7 +73,7 @@ import java.util.*;
  * </li>
  * <li>
  *      Once job execution is complete, the return value will be sent back to parent
- *      task and will be passed into {@link GridComputeTask#result(ComputeJobResult, List)}
+ *      task and will be passed into {@link ComputeTask#result(ComputeJobResult, List)}
  *      method via {@link ComputeJobResult} instance. If job execution resulted
  *      in a checked exception, then {@link ComputeJobResult#getException()} method
  *      will contain that exception. If job execution threw a runtime exception
@@ -151,10 +151,10 @@ public interface ComputeJob extends Serializable {
      *
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link ComputeJobResult#getData()} method passed into
-     *      {@link GridComputeTask#result(ComputeJobResult, List)} task method on caller node.
+     *      {@link ComputeTask#result(ComputeJobResult, List)} task method on caller node.
      * @throws GridException If job execution caused an exception. This exception will be
      *      returned in {@link ComputeJobResult#getException()} method passed into
-     *      {@link GridComputeTask#result(ComputeJobResult, List)} task method on caller node.
+     *      {@link ComputeTask#result(ComputeJobResult, List)} task method on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link GridException}.
      */

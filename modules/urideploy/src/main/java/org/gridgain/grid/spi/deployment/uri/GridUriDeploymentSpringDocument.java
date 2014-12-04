@@ -25,7 +25,7 @@ class GridUriDeploymentSpringDocument {
     private final XmlBeanFactory factory;
 
     /** List of tasks from GAR description. */
-    private List<Class<? extends GridComputeTask<?, ?>>> tasks;
+    private List<Class<? extends ComputeTask<?, ?>>> tasks;
 
     /**
      * Creates new instance of configuration helper with given configuration.
@@ -47,7 +47,7 @@ class GridUriDeploymentSpringDocument {
      *      configuration or configuration could not be read.
      */
     @SuppressWarnings({"unchecked"})
-    List<Class<? extends GridComputeTask<?, ?>>> getTasks(ClassLoader clsLdr) throws GridSpiException {
+    List<Class<? extends ComputeTask<?, ?>>> getTasks(ClassLoader clsLdr) throws GridSpiException {
         assert clsLdr!= null;
 
         try {

@@ -284,8 +284,8 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
                 GridResourceSharedUndeploySelfTest.SharedResourceTask1.GridSharedJob1.class.getName(),
                 GridResourceSharedUndeploySelfTest.class.getName());
 
-            Class<? extends GridComputeTask<Object, Object>> taskCls =
-                (Class<? extends GridComputeTask<Object, Object>>)tstClsLdr.loadClass(
+            Class<? extends ComputeTask<Object, Object>> taskCls =
+                (Class<? extends ComputeTask<Object, Object>>)tstClsLdr.loadClass(
                     SharedResourceTask1.class.getName());
 
             ignite.compute().execute(taskCls, null);

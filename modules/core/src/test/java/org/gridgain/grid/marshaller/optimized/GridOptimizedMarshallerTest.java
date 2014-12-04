@@ -309,8 +309,8 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
             ClassLoader ldr = getExternalClassLoader();
 
-            Class<? extends GridComputeTask<?, ?>> taskCls = (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(taskClsName);
-            Class<? extends GridComputeTask<?, ?>> jobCls = (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(jobClsName);
+            Class<? extends ComputeTask<?, ?>> taskCls = (Class<? extends ComputeTask<?, ?>>)ldr.loadClass(taskClsName);
+            Class<? extends ComputeTask<?, ?>> jobCls = (Class<? extends ComputeTask<?, ?>>)ldr.loadClass(jobClsName);
 
             ignite.compute().localDeployTask(taskCls, ldr);
 

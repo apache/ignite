@@ -25,8 +25,8 @@ import java.util.*;
 @GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstractTest<GridUriDeploymentSpi> {
     /** */
-    private static Map<ClassLoader, Set<Class<? extends GridComputeTask<?, ?>>>> tasks =
-        Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends GridComputeTask<?, ?>>>>());
+    private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
+        Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -49,10 +49,10 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
      * @param taskCls Class to be deployed.
      * @throws Exception if deployment failed.
      */
-    private void deploy(Class<? extends GridComputeTask<?, ?>> taskCls) throws Exception {
+    private void deploy(Class<? extends ComputeTask<?, ?>> taskCls) throws Exception {
         getSpi().register(taskCls.getClassLoader(), taskCls);
 
-        Set<Class<? extends GridComputeTask<?, ?>>> clss = new HashSet<>(1);
+        Set<Class<? extends ComputeTask<?, ?>>> clss = new HashSet<>(1);
 
         clss.add(taskCls);
 
@@ -62,7 +62,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
     /**
      * @param taskCls Unavailable task class.
      */
-    private void checkUndeployed(Class<? extends GridComputeTask<?, ?>> taskCls) {
+    private void checkUndeployed(Class<? extends ComputeTask<?, ?>> taskCls) {
         assert !tasks.containsKey(taskCls.getClassLoader());
     }
 
@@ -70,7 +70,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
      * @throws Exception If failed.
      */
     public void testDeploy() throws Exception {
-        Class<? extends GridComputeTask<?, ?>> task = GridFileDeploymentTestTask.class;
+        Class<? extends ComputeTask<?, ?>> task = GridFileDeploymentTestTask.class;
 
         deploy(task);
 
@@ -95,11 +95,11 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
      */
     public void testRedeploy() throws Exception {
         // Test non-versioned redeploy.
-        Class<? extends GridComputeTask<?, ?>> t1 = GridFileDeploymentTestTask.class;
+        Class<? extends ComputeTask<?, ?>> t1 = GridFileDeploymentTestTask.class;
 
         deploy(t1);
 
-        Class<? extends GridComputeTask<?, ?>> t2 = GridFileDeploymentTestTask.class;
+        Class<? extends ComputeTask<?, ?>> t2 = GridFileDeploymentTestTask.class;
 
         deploy(t2);
 

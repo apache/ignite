@@ -63,17 +63,17 @@ import java.util.*;
  *      determine the way task reacts to every job result:
  *      <ul>
  *      <li>
- *          If {@link GridComputeJobResultPolicy#WAIT} policy is returned, task will continue to wait
+ *          If {@link ComputeJobResultPolicy#WAIT} policy is returned, task will continue to wait
  *          for other job results. If this result is the last job result, then
  *          {@link #reduce(List) reduce(List)} method will be called.
  *      </li>
  *      <li>
- *          If {@link GridComputeJobResultPolicy#REDUCE} policy is returned, then method
+ *          If {@link ComputeJobResultPolicy#REDUCE} policy is returned, then method
  *          {@link #reduce(List) reduce(List)} will be called right away without waiting for
  *          other jobs' completion (all remaining jobs will receive a cancel request).
  *      </li>
  *      <li>
- *          If {@link GridComputeJobResultPolicy#FAILOVER} policy is returned, then job will
+ *          If {@link ComputeJobResultPolicy#FAILOVER} policy is returned, then job will
  *          be failed over to another node for execution. The node to which job will get
  *          failed over is decided by {@link GridFailoverSpi} SPI implementation.
  *          Note that if you use {@link GridComputeTaskAdapter} adapter for {@code GridComputeTask}
@@ -96,7 +96,7 @@ import java.util.*;
  * </li>
  * <li>
  *      Once all results are received or {@link #result(ComputeJobResult, List) result(GridComputeJobResult, List)}
- *      method returned {@link GridComputeJobResultPolicy#REDUCE} policy, method {@link #reduce(List) reduce(List)}
+ *      method returned {@link ComputeJobResultPolicy#REDUCE} policy, method {@link #reduce(List) reduce(List)}
  *      is called to aggregate received results into one final result. Once this method is finished the
  *      execution of the grid task is complete. This result will be returned to the user through
  *      {@link GridComputeTaskFuture#get()} method.
@@ -144,7 +144,7 @@ import java.util.*;
  * {@code GridComputeTask} comes with several convenience adapters to make the usage easier:
  * <ul>
  * <li>
- * {@link GridComputeTaskAdapter} provides default implementation for {@link GridComputeTask#result(ComputeJobResult, List)}
+ * {@link GridComputeTaskAdapter} provides default implementation for {@link ComputeTask#result(ComputeJobResult, List)}
  * method which provides automatic fail-over to another node if remote job has failed
  * due to node crash (detected by {@link GridTopologyException} exception) or due to job
  * execution rejection (detected by {@link ComputeExecutionRejectedException} exception).
@@ -226,10 +226,10 @@ import java.util.*;
  * </pre>
  * </li>
  * </ul>
- * @param <T> Type of the task argument that is passed into {@link GridComputeTask#map(List, Object)} method.
- * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
+ * @param <T> Type of the task argument that is passed into {@link ComputeTask#map(List, Object)} method.
+ * @param <R> Type of the task result returning from {@link ComputeTask#reduce(List)} method.
  */
-public interface GridComputeTask<T, R> extends Serializable {
+public interface ComputeTask<T, R> extends Serializable {
     /**
      * This method is called to map or split grid task into multiple grid jobs. This is the
      * first method that gets called when task execution starts.
@@ -252,7 +252,7 @@ public interface GridComputeTask<T, R> extends Serializable {
      * received. It is ultimately upto this method to return a policy based
      * on which the system will either wait for more results, reduce results
      * received so far, or failover this job to another node. See
-     * {@link GridComputeJobResultPolicy} for more information about result policies.
+     * {@link ComputeJobResultPolicy} for more information about result policies.
      *
      * @param res Received remote grid executable result.
      * @param rcvd All previously received results. Note that if task class has
@@ -262,7 +262,7 @@ public interface GridComputeTask<T, R> extends Serializable {
      * @throws GridException If handling a job result caused an error. This exception will
      *      be thrown out of {@link GridComputeTaskFuture#get()} method.
      */
-    public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException;
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException;
 
     /**
      * Reduces (or aggregates) results received so far into one compound result to be returned to

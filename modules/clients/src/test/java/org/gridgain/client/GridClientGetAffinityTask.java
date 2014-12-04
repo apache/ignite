@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * Get affinity for task argument.
@@ -48,7 +48,7 @@ public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<Str
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         if (res.getException() != null)
             return FAILOVER;
 

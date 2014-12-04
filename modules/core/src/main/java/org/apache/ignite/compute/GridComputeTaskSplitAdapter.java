@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * This class defines simplified adapter for {@link GridComputeTask}. This adapter can be used
+ * This class defines simplified adapter for {@link ComputeTask}. This adapter can be used
  * when jobs can be randomly assigned to available grid nodes. This adapter is sufficient
  * in most homogeneous environments where all nodes are equally suitable for executing grid
  * job. See {@link #split(int, Object)} method for more details.
@@ -57,7 +57,7 @@ import java.util.*;
  * }
  * </pre>
  * @param <T> Type of the task execution argument.
- * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
+ * @param <R> Type of the task result returning from {@link ComputeTask#reduce(List)} method.
  */
 public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskAdapter<T, R> {
     /** */
@@ -65,10 +65,10 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
 
     /** Load balancer. */
     @GridLoadBalancerResource
-    private GridComputeLoadBalancer balancer;
+    private ComputeLoadBalancer balancer;
 
     /**
-     * This is a simplified version of {@link GridComputeTask#map(List, Object)} method.
+     * This is a simplified version of {@link ComputeTask#map(List, Object)} method.
      * <p>
      * This method basically takes given argument and splits it into a collection
      * of {@link ComputeJob} using provided grid size as indication of how many node are
@@ -85,7 +85,7 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
      *      will end up on the same grid nodes.
      * @throws GridException Thrown in case of any errors.
      *
-     * @see GridComputeTask#map(List, Object)
+     * @see ComputeTask#map(List, Object)
      */
     protected abstract Collection<? extends ComputeJob> split(int gridSize, T arg) throws GridException;
 

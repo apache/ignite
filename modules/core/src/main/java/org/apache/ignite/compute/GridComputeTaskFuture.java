@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * This class defines a handler for asynchronous task execution. It's similar in design
  * to standard JDK {@link Future} interface but has improved and easier to use exception
  * hierarchy.
- * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
+ * @param <R> Type of the task result returning from {@link ComputeTask#reduce(List)} method.
  */
 public interface GridComputeTaskFuture<R> extends IgniteFuture<R> {
     /**

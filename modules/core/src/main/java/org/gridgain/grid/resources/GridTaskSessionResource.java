@@ -17,7 +17,7 @@ import java.lang.annotation.*;
  * <p>
  * Distributed Task Session can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.apache.ignite.compute.GridComputeTask}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * </ul>
  * <p>

@@ -296,7 +296,7 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res,
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res,
             List<ComputeJobResult> received) throws GridException {
             ses.setAttribute("attr7", 7);
             ses.setAttribute("attr8", 8);

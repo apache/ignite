@@ -91,7 +91,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
 
     /** */
     @SuppressWarnings({"PublicInnerClass", "unused"})
-    public static class TestTask implements GridComputeTask<Object, Object> {
+    public static class TestTask implements ComputeTask<Object, Object> {
         /** */
         @GridTaskContinuousMapperResource
         private GridComputeTaskContinuousMapper mapper;
@@ -109,16 +109,16 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
             throws GridException {
             if (res.getException() != null) {
                 if (res.getException() instanceof GridComputeUserUndeclaredException)
                     throw new GridException("Job threw unexpected exception.", res.getException());
 
-                return GridComputeJobResultPolicy.FAILOVER;
+                return ComputeJobResultPolicy.FAILOVER;
             }
 
-            return GridComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

@@ -216,12 +216,12 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
             throws GridException {
             if (res.getException() != null)
                 throw res.getException();
 
-            return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
+            return received.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

@@ -60,7 +60,7 @@ public interface VisorPluginModel {
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
-     * refer to {@link org.apache.ignite.compute.GridComputeTask} documentation.
+     * refer to {@link org.apache.ignite.compute.ComputeTask} documentation.
      *
      * @param taskCls Class of the task to execute. If class has {@link org.apache.ignite.compute.GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
@@ -72,12 +72,12 @@ public interface VisorPluginModel {
      * @return Task result.
      * @throws IllegalStateException If Visor not connected to the grid.
      */
-    public <A, R> R execute(Class<? extends GridComputeTask<A, R>> taskCls, Collection<UUID> nodeIds, @Nullable A arg)
+    public <A, R> R execute(Class<? extends ComputeTask<A, R>> taskCls, Collection<UUID> nodeIds, @Nullable A arg)
         throws IllegalStateException;
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
-     * refer to {@link GridComputeTask} documentation.
+     * refer to {@link org.apache.ignite.compute.ComputeTask} documentation.
      *
      * @param taskName Name of the task to execute.
      * @param nodeIds Node IDs on with execute task.

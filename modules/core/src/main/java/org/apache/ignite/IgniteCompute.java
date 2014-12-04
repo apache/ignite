@@ -59,7 +59,7 @@ import java.util.concurrent.*;
  * which by default sequentially picks next available node from grid projection. Other load balancing
  * policies, such as {@code random} or {@code adaptive}, can be configured as well by selecting
  * a different load balancing SPI in grid configuration. If your logic requires some custom
- * load balancing behavior, consider implementing {@link org.apache.ignite.compute.GridComputeTask} directly.
+ * load balancing behavior, consider implementing {@link org.apache.ignite.compute.ComputeTask} directly.
  * <h1 class="header">Fault Tolerance</h1>
  * GridGain guarantees that as long as there is at least one grid node standing, every job will be
  * executed. Jobs will automatically failover to another node if a remote node crashed
@@ -97,7 +97,7 @@ import java.util.concurrent.*;
  * Note that regardless of which method is used for executing computations, all relevant SPI implementations
  * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution,
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
- * {@link org.apache.ignite.compute.GridComputeTaskSpis} annotation. Refer to {@link org.apache.ignite.compute.GridComputeTask} documentation for more information.
+ * {@link org.apache.ignite.compute.GridComputeTaskSpis} annotation. Refer to {@link org.apache.ignite.compute.ComputeTask} documentation for more information.
  */
 public interface IgniteCompute extends IgniteAsyncSupport {
     /**
@@ -140,7 +140,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
-     * refer to {@link org.apache.ignite.compute.GridComputeTask} documentation.
+     * refer to {@link org.apache.ignite.compute.ComputeTask} documentation.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -151,11 +151,11 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Task result.
      * @throws GridException If task failed.
      */
-    public <T, R> R execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg) throws GridException;
+    public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) throws GridException;
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
-     * refer to {@link GridComputeTask} documentation.
+     * refer to {@link org.apache.ignite.compute.ComputeTask} documentation.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -166,11 +166,11 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Task result.
      * @throws GridException If task failed.
      */
-    public <T, R> R execute(GridComputeTask<T, R> task, @Nullable T arg) throws GridException;
+    public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws GridException;
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
-     * refer to {@link GridComputeTask} documentation.
+     * refer to {@link org.apache.ignite.compute.ComputeTask} documentation.
      * <p>
      * If task for given name has not been deployed yet, then {@code taskName} will be
      * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
@@ -181,7 +181,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task result.
      * @throws GridException If task failed.
-     * @see GridComputeTask for information about task execution.
+     * @see org.apache.ignite.compute.ComputeTask for information about task execution.
      */
     public <T, R> R execute(String taskName, @Nullable T arg) throws GridException;
 
@@ -334,7 +334,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Sets task name for the next executed task on this projection in the <b>current thread</b>.
      * When task starts execution, the name is reset, so one name is used only once. You may use
      * this method to set task name when executing jobs directly, without explicitly
-     * defining {@link GridComputeTask}.
+     * defining {@link org.apache.ignite.compute.ComputeTask}.
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
@@ -350,7 +350,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Sets task timeout for the next executed task on this projection in the <b>current thread</b>.
      * When task starts execution, the timeout is reset, so one timeout is used only once. You may use
      * this method to set task name when executing jobs directly, without explicitly
-     * defining {@link GridComputeTask}.
+     * defining {@link org.apache.ignite.compute.ComputeTask}.
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
@@ -402,14 +402,14 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      of loading all necessary resources for task execution.
      * @throws GridException If task is invalid and cannot be deployed.
      */
-    public void localDeployTask(Class<? extends GridComputeTask> taskCls, ClassLoader clsLdr) throws GridException;
+    public void localDeployTask(Class<? extends ComputeTask> taskCls, ClassLoader clsLdr) throws GridException;
 
     /**
      * Gets map of all locally deployed tasks keyed by their task name .
      *
      * @return Map of locally deployed tasks keyed by their task name.
      */
-    public Map<String, Class<? extends GridComputeTask<?, ?>>> localTasks();
+    public Map<String, Class<? extends ComputeTask<?, ?>>> localTasks();
 
     /**
      * Makes the best attempt to undeploy a task with given name from this grid projection. Note that this

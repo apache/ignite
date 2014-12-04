@@ -54,7 +54,7 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
 
     /** Load balancer. */
     @GridLoadBalancerResource
-    private GridComputeLoadBalancer balancer;
+    private ComputeLoadBalancer balancer;
 
     /** */
     @SuppressWarnings({"UnusedDeclaration"})

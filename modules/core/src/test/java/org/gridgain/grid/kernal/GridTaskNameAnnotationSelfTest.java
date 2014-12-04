@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * Tests for {@link GridComputeTaskName} annotation.
@@ -72,7 +72,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
      * Test task.
      */
     @GridComputeTaskName(TASK_NAME)
-    private static class TestTask implements GridComputeTask<Void, String> {
+    private static class TestTask implements ComputeTask<Void, String> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) throws GridException {
@@ -87,7 +87,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             return WAIT;
         }

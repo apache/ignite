@@ -35,7 +35,7 @@ class GridRoundRobinPerTaskLoadBalancer {
 
     /**
      * Gets balanced node for given topology. This implementation
-     * is to be used only from {@link org.apache.ignite.compute.GridComputeTask#map(List, Object)} method
+     * is to be used only from {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method
      * and, therefore, does not need to be thread-safe.
      *
      * @param top Topology to pick from.

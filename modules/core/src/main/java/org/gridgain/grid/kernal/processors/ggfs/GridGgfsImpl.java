@@ -2042,9 +2042,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             // Never failover.
-            return GridComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.WAIT;
         }
     }
 

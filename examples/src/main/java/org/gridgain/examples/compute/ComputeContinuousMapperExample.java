@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Demonstrates usage of continuous mapper. With continuous mapper
  * it is possible to continue mapping jobs asynchronously even after
- * initial {@link GridComputeTask#map(List, Object)} method completes.
+ * initial {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method completes.
  * <p>
  * String "Hello Continuous Mapper" is passed as an argument for execution
  * of {@link GridContinuousMapperTask}. As an outcome, participating
@@ -97,7 +97,7 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             // If there is an error, fail-over to another node.
             if (res.getException() != null)
@@ -109,7 +109,7 @@ public class ComputeContinuousMapperExample {
             sendWord();
 
             // If next word was sent, keep waiting, otherwise work queue is empty and we reduce.
-            return GridComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

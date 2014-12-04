@@ -108,7 +108,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         if (res.getException() != null)
             throw new GridException(res.getException());
 
@@ -121,7 +121,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
         if (sentJobs.get() < maxExecs)
             sendJob(res.getNode());
 
-        return GridComputeJobResultPolicy.WAIT;
+        return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */

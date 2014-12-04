@@ -173,7 +173,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
             throws GridException {
             if (result.getException() != null)
                 throw result.getException();
@@ -186,7 +186,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
             else
                 log.info("Got result from waiting job: " + result);
 
-            return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
+            return received.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

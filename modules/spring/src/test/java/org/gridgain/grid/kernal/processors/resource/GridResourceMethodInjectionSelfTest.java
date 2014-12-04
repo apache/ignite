@@ -227,7 +227,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private GridComputeTaskSession ses;
 
         /** */
-        private GridComputeLoadBalancer balancer;
+        private ComputeLoadBalancer balancer;
 
         /** */
         private ComputeJobContext jobCtx;
@@ -362,7 +362,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * @param balancer Load balancer.
          */
         @GridLoadBalancerResource
-        public void setBalancer(GridComputeLoadBalancer balancer) {
+        public void setBalancer(ComputeLoadBalancer balancer) {
             this.balancer = balancer;
         }
 

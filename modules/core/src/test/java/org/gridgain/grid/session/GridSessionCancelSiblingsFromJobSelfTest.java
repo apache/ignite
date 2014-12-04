@@ -266,9 +266,9 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
             throws GridException {
-            return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
+            return received.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

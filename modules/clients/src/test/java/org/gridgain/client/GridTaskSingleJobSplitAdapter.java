@@ -19,7 +19,7 @@ import java.util.*;
  * overriding {@code split(...)} method to return singleton with self instance.
  * This adapter should be used for tasks that always splits to a single task.
  * @param <T> Type of the task execution argument.
- * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
+ * @param <R> Type of the task result returning from {@link org.apache.ignite.compute.ComputeTask#reduce(List)} method.
  */
 public abstract class GridTaskSingleJobSplitAdapter<T, R> extends GridComputeTaskSplitAdapter<T, R> {
     /** Empty constructor. */
@@ -56,10 +56,10 @@ public abstract class GridTaskSingleJobSplitAdapter<T, R> extends GridComputeTas
      * @param arg Task execution argument. Can be {@code null}.
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link org.apache.ignite.compute.ComputeJobResult#getData()} method passed into
-     *      {@link GridComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
+     *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
      * @throws GridException If job execution caused an exception. This exception will be
      *      returned in {@link org.apache.ignite.compute.ComputeJobResult#getException()} method passed into
-     *      {@link GridComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
+     *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link GridException}.
      */

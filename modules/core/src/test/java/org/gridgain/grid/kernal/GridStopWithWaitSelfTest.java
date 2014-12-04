@@ -158,7 +158,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
      *
      */
     @GridComputeTaskSessionFullSupport
-    private static class JobFailTask implements GridComputeTask<String, Object> {
+    private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
         @GridTaskSessionResource
         private GridComputeTaskSession ses;
@@ -224,16 +224,16 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             if (res.getException() != null && !(res.getException() instanceof GridComputeUserUndeclaredException)) {
                 assert res.getNode().id().equals(nodeRef.get().id());
 
-                return GridComputeJobResultPolicy.FAILOVER;
+                return ComputeJobResultPolicy.FAILOVER;
             }
 
             assert !res.getNode().id().equals(nodeRef.get().id());
 
-            return GridComputeJobResultPolicy.REDUCE;
+            return ComputeJobResultPolicy.REDUCE;
         }
 
         /** {@inheritDoc} */

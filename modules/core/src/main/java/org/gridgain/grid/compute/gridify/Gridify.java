@@ -39,7 +39,7 @@ import java.lang.annotation.*;
  * <a target="github" href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/session">HelloWorld - Gridify With State</a>
  * example). In either case, GridGain must be able to serialize the state passed to remote node.
  * <p>
- * Refer to {@link org.apache.ignite.compute.GridComputeTask} documentation for more information on how a task
+ * Refer to {@link org.apache.ignite.compute.ComputeTask} documentation for more information on how a task
  * can be split into multiple sub-jobs.
  * <p>
  * <h1 class="header">Java Example</h1>
@@ -156,7 +156,7 @@ public @interface Gridify {
      * will be used as a default name.
      */
     @SuppressWarnings({"JavaDoc"})
-    Class<? extends GridComputeTask<GridifyArgument, ?>> taskClass() default GridifyDefaultTask.class;
+    Class<? extends ComputeTask<GridifyArgument, ?>> taskClass() default GridifyDefaultTask.class;
 
     /**
      * Optional gridify task execution timeout. Default is {@code 0}

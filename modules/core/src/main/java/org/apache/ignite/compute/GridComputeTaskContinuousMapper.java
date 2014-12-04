@@ -22,19 +22,19 @@ import java.util.*;
  * not grow indefinitely.
  * <p>
  * Continuous mapper methods can be used right after it injected into a task.
- * Mapper can not be used after {@link GridComputeTask#result(ComputeJobResult, List)}
- * method returned the {@link GridComputeJobResultPolicy#REDUCE} policy. Also if
- * {@link GridComputeTask#result(ComputeJobResult, List)} method returned the
- * {@link GridComputeJobResultPolicy#WAIT} policy and all jobs are finished then task
+ * Mapper can not be used after {@link ComputeTask#result(ComputeJobResult, List)}
+ * method returned the {@link ComputeJobResultPolicy#REDUCE} policy. Also if
+ * {@link ComputeTask#result(ComputeJobResult, List)} method returned the
+ * {@link ComputeJobResultPolicy#WAIT} policy and all jobs are finished then task
  * will go to reducing results and continuous mapper can not be used.
  * <p>
- * Note that whenever continuous mapper is used, {@link GridComputeTask#map(List, Object)}
+ * Note that whenever continuous mapper is used, {@link ComputeTask#map(List, Object)}
  * method is allowed to return {@code null} in case when at least one job
- * has been sent prior to completing the {@link GridComputeTask#map(List, Object)} method.
+ * has been sent prior to completing the {@link ComputeTask#map(List, Object)} method.
  * <p>
  * Task continuous mapper can be injected into a task using IoC (dependency
  * injection) by attaching {@link GridTaskContinuousMapperResource}
- * annotation to a field or a setter method inside of {@link GridComputeTask} implementations
+ * annotation to a field or a setter method inside of {@link ComputeTask} implementations
  * as follows:
  * <pre name="code" class="java">
  * ...

@@ -111,8 +111,8 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
      * @throws Exception Thrown if any exception occurs.
      */
     @SuppressWarnings({"unchecked"})
-    private Class<? extends GridComputeTask<int[], ?>> loadTaskClass() throws Exception {
-        return (Class<? extends GridComputeTask<int[], ?>>)new GridTestExternalClassLoader(new URL[]{
+    private Class<? extends ComputeTask<int[], ?>> loadTaskClass() throws Exception {
+        return (Class<? extends ComputeTask<int[], ?>>)new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))}).loadClass(TASK_NAME);
     }
 }

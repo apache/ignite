@@ -66,12 +66,12 @@ public class GridResourceUserExternalTest extends GridCommonAbstractTest {
                 GridUserExternalResource1.class.getName(),
                 GridUserExternalResource2.class.getName());
 
-            Class<? extends GridComputeTask<Object, Object>> taskCls1 =
-                (Class<? extends GridComputeTask<Object, Object>>)tstClsLdr.loadClass(
+            Class<? extends ComputeTask<Object, Object>> taskCls1 =
+                (Class<? extends ComputeTask<Object, Object>>)tstClsLdr.loadClass(
                 GridUserExternalResourceTask1.class.getName());
 
-            Class<? extends GridComputeTask<Object, Object>> taskCls2 =
-                (Class<? extends GridComputeTask<Object, Object>>)tstClsLdr.loadClass(
+            Class<? extends ComputeTask<Object, Object>> taskCls2 =
+                (Class<? extends ComputeTask<Object, Object>>)tstClsLdr.loadClass(
                 GridUserExternalResourceTask2.class.getName());
 
             // Execute the same task twice.

@@ -23,7 +23,7 @@ import java.util.*;
  * Interface representing a single grid node. Use {@link #attribute(String)} or
  * {@link #metrics()} to get static and dynamic information about remote nodes.
  * {@code GridNode} list, which includes all nodes within task topology, is provided
- * to {@link org.apache.ignite.compute.GridComputeTask#map(List, Object)} method. You can also get a handle on
+ * to {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method. You can also get a handle on
  * discovered nodes by calling any of the following methods:
  * <ul>
  * <li>{@link IgniteCluster#localNode()}</li>
@@ -92,7 +92,7 @@ import java.util.*;
  * Grid node metrics provide information about other nodes that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
  * grid jobs, etc... This information can become useful during job collision resolution or
- * {@link org.apache.ignite.compute.GridComputeTask#map(List, Object)} operation when jobs are assigned to remote nodes
+ * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} operation when jobs are assigned to remote nodes
  * for execution. For example, you can only pick nodes that don't have any jobs waiting
  * to be executed.
  * <p>
@@ -141,7 +141,7 @@ public interface ClusterNode extends GridMetadataAware {
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
      * and provide up to date information about nodes. For example, you can get
      * an idea about CPU load on remote node via {@link ClusterNodeMetrics#getCurrentCpuLoad()}
-     * method and use it during {@link org.apache.ignite.compute.GridComputeTask#map(List, Object)} or during collision
+     * method and use it during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
      * Node metrics are updated with some delay which is directly related to heartbeat

@@ -69,11 +69,11 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
                     Collections.<String, String>emptyMap(), getClass().getClassLoader(),
                     GridP2PTestTask.class.getName(), GridP2PTestTask1.class.getName(), GridP2PTestJob.class.getName());
 
-            Class<? extends GridComputeTask<?, ?>> task1 =
-                (Class<? extends GridComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PTestTask.class.getName());
+            Class<? extends ComputeTask<?, ?>> task1 =
+                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PTestTask.class.getName());
 
-            Class<? extends GridComputeTask<?, ?>> task2 =
-                (Class<? extends GridComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PTestTask1.class.getName());
+            Class<? extends ComputeTask<?, ?>> task2 =
+                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 
@@ -126,11 +126,11 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
                     GridP2PTestTask1.class.getName(), GridP2PTestJob.class.getName());
 
-            Class<? extends GridComputeTask<?, ?>> task1 =
-                (Class<? extends GridComputeTask<?, ?>>) tstClsLdr1.loadClass(GridP2PTestTask.class.getName());
+            Class<? extends ComputeTask<?, ?>> task1 =
+                (Class<? extends ComputeTask<?, ?>>) tstClsLdr1.loadClass(GridP2PTestTask.class.getName());
 
-            Class<? extends GridComputeTask<?, ?>> task2 =
-                (Class<? extends GridComputeTask<?, ?>>) tstClsLdr2.loadClass(GridP2PTestTask1.class.getName());
+            Class<? extends ComputeTask<?, ?>> task2 =
+                (Class<? extends ComputeTask<?, ?>>) tstClsLdr2.loadClass(GridP2PTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 

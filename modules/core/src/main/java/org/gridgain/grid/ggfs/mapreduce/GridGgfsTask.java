@@ -24,8 +24,8 @@ import java.util.*;
 
 /**
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
- * is regular {@link GridComputeTask} with different map logic. Instead of implementing
- * {@link GridComputeTask#map(List, Object)} method to split task into jobs, you must implement
+ * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
+ * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
  * {@link GridGgfsTask#createJob(GridGgfsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link GridGgfsFileRange}s first. Normally range is a number of

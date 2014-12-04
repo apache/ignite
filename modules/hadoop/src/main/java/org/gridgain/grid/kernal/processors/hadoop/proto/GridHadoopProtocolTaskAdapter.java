@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * Hadoop protocol task adapter.
  */
-public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTask<GridHadoopProtocolTaskArguments, R> {
+public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<GridHadoopProtocolTaskArguments, R> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable GridHadoopProtocolTaskArguments arg) throws GridException {
@@ -31,9 +31,9 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
         throws GridException {
-        return GridComputeJobResultPolicy.REDUCE;
+        return ComputeJobResultPolicy.REDUCE;
     }
 
     /** {@inheritDoc} */

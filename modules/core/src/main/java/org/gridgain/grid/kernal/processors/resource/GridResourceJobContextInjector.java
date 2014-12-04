@@ -31,7 +31,7 @@ public class GridResourceJobContextInjector extends GridResourceBasicInjector<Co
         throws GridException {
         assert target != null;
 
-        if (!(target instanceof GridComputeTask))
+        if (!(target instanceof ComputeTask))
             super.inject(field, target, depCls, dep);
     }
 
@@ -40,7 +40,7 @@ public class GridResourceJobContextInjector extends GridResourceBasicInjector<Co
         throws GridException {
         assert target != null;
 
-        if (!(target instanceof GridComputeTask))
+        if (!(target instanceof ComputeTask))
             super.inject(mtd, target, depCls, dep);
     }
 }

@@ -54,7 +54,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskNoResultCache
     private static class GridResultNoCacheTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             assert res.getData() != null;
             assert rcvd.isEmpty();
 
@@ -74,7 +74,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
      */
     private static class GridResultCacheTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             assert res.getData() != null;
             assert rcvd.contains(res);

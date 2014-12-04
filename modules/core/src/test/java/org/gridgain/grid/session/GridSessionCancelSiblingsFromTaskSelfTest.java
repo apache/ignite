@@ -259,7 +259,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @SuppressWarnings("deprecation")
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
             throws GridException {
             if (received.size() == 1) {
                 Collection<ComputeJobSibling> jobSiblings = taskSes.getJobSiblings();
@@ -275,7 +275,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
                 }
             }
 
-            return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
+            return received.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

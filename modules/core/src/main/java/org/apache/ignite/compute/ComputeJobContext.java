@@ -29,8 +29,8 @@ import java.util.concurrent.*;
  * node. However, it is possible that collision SPI rejects a job before
  * it ever got a chance to execute (job rejection) which will cause fail-over
  * to another node. Or user is not satisfied with the outcome of a job and
- * fails it over to another node by returning {@link GridComputeJobResultPolicy#FAILOVER}
- * policy from {@link GridComputeTask#result(ComputeJobResult, List)} method. In this case
+ * fails it over to another node by returning {@link ComputeJobResultPolicy#FAILOVER}
+ * policy from {@link ComputeTask#result(ComputeJobResult, List)} method. In this case
  * all context attributes set on one node will be available on any other node
  * this job travels to.
  * <p>
@@ -40,7 +40,7 @@ import java.util.concurrent.*;
  * that a job was cancelled by grid and not by a user. Context attributes can
  * also be assigned in {@link GridFailoverSpi} prior to failing over a job.
  * <p>
- * From within {@link GridComputeTask#result(ComputeJobResult, List)} or {@link GridComputeTask#reduce(List)} methods,
+ * From within {@link ComputeTask#result(ComputeJobResult, List)} or {@link ComputeTask#reduce(List)} methods,
  * job context is available via {@link ComputeJobResult#getJobContext()} method which gives user the
  * ability to check context attributes from within grid task implementation for every job
  * returned from remote nodes.

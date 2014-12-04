@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 
 import java.util.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * Test task calculate length of the string passed in the argument.
@@ -55,7 +55,7 @@ public class GridClientStringLengthTask extends GridComputeTaskSplitAdapter<Stri
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
         throws GridException {
         if (res.getException() != null)
             return FAILOVER;

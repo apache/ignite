@@ -68,8 +68,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             ClassLoader tstClsLdr = new GridTestClassLoader(GridP2PTestTask.class.getName(),
                 GridP2PTestJob.class.getName());
 
-            Class<? extends GridComputeTask<?, ?>> task1 =
-                (Class<? extends GridComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PTestTask.class.getName());
+            Class<? extends ComputeTask<?, ?>> task1 =
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PTestTask.class.getName());
 
             ignite1.compute().localDeployTask(task1, tstClsLdr);
 
@@ -120,8 +120,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             ClassLoader ldr = new URLClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))},
                 GridP2PSameClassLoaderSelfTest.class.getClassLoader());
 
-            Class<? extends GridComputeTask<?, ?>> task1 =
-                (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(TEST_TASK_NAME);
+            Class<? extends ComputeTask<?, ?>> task1 =
+                (Class<? extends ComputeTask<?, ?>>)ldr.loadClass(TEST_TASK_NAME);
 
             ignite1.compute().localDeployTask(task1, ldr);
 

@@ -99,7 +99,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
      * @return {@code True} if class is task class.
      */
     protected final boolean isTask(Class<?> cls) {
-        return GridComputeTask.class.isAssignableFrom(cls);
+        return ComputeTask.class.isAssignableFrom(cls);
     }
 
     /**

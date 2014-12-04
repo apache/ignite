@@ -36,7 +36,7 @@ import java.util.*;
  * </li>
  * <li>
  *      Priority attribute session key (see {@link #getPriorityAttributeKey()}). Prior to
- *      returning from {@link GridComputeTask#map(List, Object)} method, task implementation should
+ *      returning from {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method, task implementation should
  *      set a value into the task session keyed by this attribute key. See {@link GridComputeTaskSession}
  *      for more information about task session.
  * </li>

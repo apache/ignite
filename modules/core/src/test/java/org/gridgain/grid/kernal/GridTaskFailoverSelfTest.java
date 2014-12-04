@@ -85,12 +85,12 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws
             GridException {
             if (res.getException() != null)
                 throw res.getException();
 
-            return GridComputeJobResultPolicy.FAILOVER;
+            return ComputeJobResultPolicy.FAILOVER;
         }
 
         /** {@inheritDoc} */

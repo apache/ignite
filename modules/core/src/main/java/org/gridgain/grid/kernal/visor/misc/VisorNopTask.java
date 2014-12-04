@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Nop task with random timeout.
  */
-public class VisorNopTask implements GridComputeTask<Integer, Void> {
+public class VisorNopTask implements ComputeTask<Integer, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,9 +38,9 @@ public class VisorNopTask implements GridComputeTask<Integer, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res,
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res,
         List<ComputeJobResult> rcvd) throws GridException {
-        return GridComputeJobResultPolicy.WAIT;
+        return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */

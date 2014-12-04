@@ -26,7 +26,7 @@ public class GridSingleSplitTestTask extends GridComputeTaskAdapter<Integer, Int
 
     /** */
     @GridLoadBalancerResource
-    private GridComputeLoadBalancer balancer;
+    private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {

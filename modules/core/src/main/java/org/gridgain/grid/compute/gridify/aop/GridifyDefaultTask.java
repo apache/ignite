@@ -46,7 +46,7 @@ public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, 
 
     /** Load balancer. */
     @GridLoadBalancerResource
-    private GridComputeLoadBalancer balancer;
+    private ComputeLoadBalancer balancer;
 
     /**
      * Creates gridify default task with given deployment class.

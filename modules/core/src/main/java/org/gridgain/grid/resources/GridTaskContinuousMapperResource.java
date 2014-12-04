@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  * Annotates a field or a setter method for injection of
  * {@link org.apache.ignite.compute.GridComputeTaskContinuousMapper} resource.
  * <p>
- * Task continuous mapper can be injected into {@link org.apache.ignite.compute.GridComputeTask} class
+ * Task continuous mapper can be injected into {@link org.apache.ignite.compute.ComputeTask} class
  * instance.
  * <p>
  * Here is how injection would typically happen:

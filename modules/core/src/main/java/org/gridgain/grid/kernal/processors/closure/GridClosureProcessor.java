@@ -31,7 +31,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
 
 /**
@@ -199,7 +199,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Mapping.
      */
     private Map<ComputeJob, ClusterNode> absMap(GridClosureCallMode mode, Collection<? extends Runnable> jobs,
-        Collection<ClusterNode> nodes, GridComputeLoadBalancer lb) throws GridException {
+        Collection<ClusterNode> nodes, ComputeLoadBalancer lb) throws GridException {
         assert mode != null;
         assert jobs != null;
         assert nodes != null;
@@ -247,7 +247,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Mapping.
      */
     private <R> Map<ComputeJob, ClusterNode> outMap(GridClosureCallMode mode,
-        Collection<? extends Callable<R>> jobs, Collection<ClusterNode> nodes, GridComputeLoadBalancer lb)
+        Collection<? extends Callable<R>> jobs, Collection<ClusterNode> nodes, ComputeLoadBalancer lb)
         throws GridException {
         assert mode != null;
         assert jobs != null;
@@ -1238,7 +1238,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /** */
         private IgniteBiTuple<GridClosureCallMode, Collection<? extends Runnable>> t;
@@ -1273,7 +1273,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /** */
         private IgniteBiTuple<GridClosureCallMode, Runnable> t;
@@ -1305,7 +1305,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /** */
         private GridTuple3<GridClosureCallMode,
@@ -1336,9 +1336,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
-            GridComputeJobResultPolicy resPlc = super.result(res, rcvd);
+            ComputeJobResultPolicy resPlc = super.result(res, rcvd);
 
             if (res.getException() == null && resPlc != FAILOVER && !t.get3().collect((R1)res.getData()))
                 resPlc = REDUCE; // If reducer returned false - reduce right away.
@@ -1369,7 +1369,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /**
          * @param cacheName Cache name.
@@ -1410,7 +1410,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /**
          * @param cacheName Cache name.
@@ -1460,7 +1460,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /**
          *
@@ -1501,7 +1501,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /**
          * @param mode Call mode.
@@ -1543,7 +1543,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /**
          * @param job Job.
@@ -1588,7 +1588,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /**
          * @param job Job.
@@ -1640,7 +1640,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
+        private ComputeLoadBalancer lb;
 
         /**
          * @param job Job.
@@ -1672,9 +1672,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
-            GridComputeJobResultPolicy resPlc = super.result(res, rcvd);
+            ComputeJobResultPolicy resPlc = super.result(res, rcvd);
 
             if (res.getException() == null && resPlc != FAILOVER && !rdc.collect((R1) res.getData()))
                 resPlc = REDUCE; // If reducer returned false - reduce right away.

@@ -251,11 +251,11 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Received job result [job=" + this + ", result=" + res + ']');
 
-            return rcvd.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
+            return rcvd.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

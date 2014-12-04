@@ -73,8 +73,8 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
                 GridP2PTestJob.class.getName()
             );
 
-            Class<? extends GridComputeTask<?, ?>> taskCls =
-                (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(GridP2PTestTask.class.getName());
+            Class<? extends ComputeTask<?, ?>> taskCls =
+                (Class<? extends ComputeTask<?, ?>>)ldr.loadClass(GridP2PTestTask.class.getName());
 
             ignite1.compute().localDeployTask(taskCls, ldr);
 

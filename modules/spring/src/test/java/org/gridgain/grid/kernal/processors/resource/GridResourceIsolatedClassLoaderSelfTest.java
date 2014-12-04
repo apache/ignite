@@ -237,7 +237,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
                 GridResourceIsolatedClassLoaderSelfTest.SharedResourceTask1.GridSharedJob1.class.getName(),
                 GridResourceIsolatedClassLoaderSelfTest.class.getName());
 
-            Class<? extends GridComputeTask<Object, Object>> taskCls = (Class<? extends GridComputeTask<Object, Object>>)
+            Class<? extends ComputeTask<Object, Object>> taskCls = (Class<? extends ComputeTask<Object, Object>>)
                 ldr.loadClass(SharedResourceTask1.class.getName());
 
             ignite.compute().execute(taskCls, null);

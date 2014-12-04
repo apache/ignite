@@ -23,7 +23,7 @@ import org.springframework.context.support.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * Start node task, applicable arguments:
@@ -77,7 +77,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
         throws GridException {
         if (res.getException() != null)
             return FAILOVER;

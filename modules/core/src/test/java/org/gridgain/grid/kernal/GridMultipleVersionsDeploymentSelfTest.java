@@ -69,7 +69,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      * @return {@code true} if task has been deployed on passed grid.
      */
     private boolean checkDeployed(Ignite ignite, String taskName) {
-        Map<String, Class<? extends GridComputeTask<?, ?>>> locTasks = ignite.compute().localTasks();
+        Map<String, Class<? extends ComputeTask<?, ?>>> locTasks = ignite.compute().localTasks();
 
         if (log().isInfoEnabled())
             log().info("Local tasks found: " + locTasks);
@@ -96,10 +96,10 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
                 EXCLUDE_CLASSES
             );
 
-            Class<? extends GridComputeTask<?, ?>> taskCls1 = (Class<? extends GridComputeTask<?, ?>>)ldr1.
+            Class<? extends ComputeTask<?, ?>> taskCls1 = (Class<? extends ComputeTask<?, ?>>)ldr1.
                 loadClass(GridDeploymentTestTask.class.getName());
 
-            Class<? extends GridComputeTask<?, ?>> taskCls2 = (Class<? extends GridComputeTask<?, ?>>)ldr2.
+            Class<? extends ComputeTask<?, ?>> taskCls2 = (Class<? extends ComputeTask<?, ?>>)ldr2.
                 loadClass(GridDeploymentTestTask.class.getName());
 
             ignite.compute().localDeployTask(taskCls1, ldr1);
@@ -169,10 +169,10 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
                 getClass().getClassLoader(),
                 EXCLUDE_CLASSES);
 
-            Class<? extends GridComputeTask<?, ?>> taskCls1 = (Class<? extends GridComputeTask<?, ?>>)ldr1.
+            Class<? extends ComputeTask<?, ?>> taskCls1 = (Class<? extends ComputeTask<?, ?>>)ldr1.
                 loadClass(GridDeploymentTestTask.class.getName());
 
-            Class<? extends GridComputeTask<?, ?>> taskCls2 = (Class<? extends GridComputeTask<?, ?>>)ldr2.
+            Class<? extends ComputeTask<?, ?>> taskCls2 = (Class<? extends ComputeTask<?, ?>>)ldr2.
                 loadClass(GridDeploymentTestTask.class.getName());
 
             g1.compute().localDeployTask(taskCls1, ldr1);

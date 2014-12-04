@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 import static org.apache.ignite.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
@@ -106,7 +106,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final Map<GridTaskThreadContextKey, Object> thCtx;
 
     /** */
-    private GridComputeTask<T, R> task;
+    private ComputeTask<T, R> task;
 
     /** */
     private final Queue<GridJobExecuteResponse> delayedRess = new ConcurrentLinkedDeque8<>();
@@ -160,7 +160,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (jobs.isEmpty())
                 throw new GridException("Empty jobs collection passed to send(...) method.");
 
-            GridComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, getTaskTopology());
+            ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, getTaskTopology());
 
             for (ComputeJob job : jobs) {
                 if (job == null)
@@ -189,7 +189,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         GridTaskSessionImpl ses,
         GridTaskFutureImpl<R> fut,
         @Nullable Class<?> taskCls,
-        @Nullable GridComputeTask<T, R> task,
+        @Nullable ComputeTask<T, R> task,
         GridDeployment dep,
         GridTaskEventListener evtLsnr,
         @Nullable Map<GridTaskThreadContextKey, Object> thCtx,
@@ -267,14 +267,14 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @return Grid task.
      */
-    public GridComputeTask<T, R> getTask() {
+    public ComputeTask<T, R> getTask() {
         return task;
     }
 
     /**
      * @param task Deployed task.
      */
-    public void setTask(GridComputeTask<T, R> task) {
+    public void setTask(ComputeTask<T, R> task) {
         this.task = task;
     }
 
@@ -316,8 +316,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @return Task instance.
      * @throws GridException Thrown in case of any instantiation error.
      */
-    private GridComputeTask<T, R> newTask(Class<? extends GridComputeTask<T, R>> taskCls) throws GridException {
-        GridComputeTask<T, R> task = dep.newInstance(taskCls);
+    private ComputeTask<T, R> newTask(Class<? extends ComputeTask<T, R>> taskCls) throws GridException {
+        ComputeTask<T, R> task = dep.newInstance(taskCls);
 
         if (task == null)
             throw new GridException("Failed to instantiate task (is default constructor available?): " + taskCls);
@@ -349,10 +349,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // Use either user task or deployed one.
             if (task == null) {
                 assert taskCls != null;
-                assert GridComputeTask.class.isAssignableFrom(taskCls);
+                assert ComputeTask.class.isAssignableFrom(taskCls);
 
                 try {
-                    task = newTask((Class<? extends GridComputeTask<T, R>>)taskCls);
+                    task = newTask((Class<? extends ComputeTask<T, R>>)taskCls);
                 }
                 catch (GridException e) {
                     // If cannot instantiate task, then assign internal flag based
@@ -376,7 +376,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             final List<ClusterNode> shuffledNodes = getTaskTopology();
 
             // Load balancer.
-            GridComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
+            ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
 
             continuous = ctx.resource().isAnnotationPresent(dep, task, GridTaskContinuousMapperResource.class);
 
@@ -692,7 +692,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                 }
 
-                GridComputeJobResultPolicy plc = result(jobRes, results);
+                ComputeJobResultPolicy plc = result(jobRes, results);
 
                 if (plc == null) {
                     String errMsg = "Failed to obtain remote job result policy for result from GridComputeTask.result(..) " +
@@ -731,7 +731,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             // If result cache is disabled, then we reduce
                             // when both collections are empty.
                             if (results.size() == this.jobRes.size()) {
-                                plc = GridComputeJobResultPolicy.REDUCE;
+                                plc = ComputeJobResultPolicy.REDUCE;
 
                                 // All results are received, proceed to reduce method.
                                 state = State.REDUCING;
@@ -757,7 +757,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     else {
                         evtLsnr.onJobFinished(this, jobRes.getSibling());
 
-                        if (plc == GridComputeJobResultPolicy.REDUCE)
+                        if (plc == ComputeJobResultPolicy.REDUCE)
                             reduce(results);
                     }
                 }
@@ -793,14 +793,14 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @return Job result policy.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    @Nullable private GridComputeJobResultPolicy result(final ComputeJobResult jobRes, final List<ComputeJobResult> results) {
+    @Nullable private ComputeJobResultPolicy result(final ComputeJobResult jobRes, final List<ComputeJobResult> results) {
         assert !Thread.holdsLock(mux);
 
-        return U.wrapThreadLoader(dep.classLoader(), new CO<GridComputeJobResultPolicy>() {
-            @Nullable @Override public GridComputeJobResultPolicy apply() {
+        return U.wrapThreadLoader(dep.classLoader(), new CO<ComputeJobResultPolicy>() {
+            @Nullable @Override public ComputeJobResultPolicy apply() {
                 try {
                     // Obtain job result policy.
-                    GridComputeJobResultPolicy plc = null;
+                    ComputeJobResultPolicy plc = null;
 
                     try {
                         plc = task.result(jobRes, results);

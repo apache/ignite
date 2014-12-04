@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 import java.util.*;
 
 /**
- * Convenience adapter for {@link GridComputeTask} interface. Here is an example of
+ * Convenience adapter for {@link ComputeTask} interface. Here is an example of
  * how {@code GridComputeTaskAdapter} can be used:
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
@@ -53,11 +53,11 @@ import java.util.*;
  *     }
  * }
  * </pre>
- * For more information refer to {@link GridComputeTask} documentation.
+ * For more information refer to {@link ComputeTask} documentation.
  * @param <T> Type of the task argument.
- * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
+ * @param <R> Type of the task result returning from {@link ComputeTask#reduce(List)} method.
  */
-public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T, R> {
+public abstract class GridComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,7 +66,7 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
      * calling {@link #reduce(List)} method.
      * <p>
      * If remote job resulted in exception ({@link ComputeJobResult#getException()} is not {@code null}),
-     * then {@link GridComputeJobResultPolicy#FAILOVER} policy will be returned if the exception is instance
+     * then {@link ComputeJobResultPolicy#FAILOVER} policy will be returned if the exception is instance
      * of {@link GridTopologyException} or {@link ComputeExecutionRejectedException}, which means that
      * remote node either failed or job execution was rejected before it got a chance to start. In all
      * other cases the exception will be rethrown which will ultimately cause task to fail.
@@ -78,7 +78,7 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
      * @throws GridException If handling a job result caused an error effectively rejecting
      *      a failover. This exception will be thrown out of {@link GridComputeTaskFuture#get()} method.
      */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         GridException e = res.getException();
 
         // Try to failover if result is failed.
@@ -88,13 +88,13 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
                 e instanceof GridTopologyException ||
                 // Failover exception is always wrapped.
                 e.hasCause(ComputeJobFailoverException.class))
-                return GridComputeJobResultPolicy.FAILOVER;
+                return ComputeJobResultPolicy.FAILOVER;
 
             throw new GridException("Remote job threw user exception (override or implement GridComputeTask.result(..) " +
                 "method if you would like to have automatic failover for this exception).", e);
         }
 
         // Wait for all job responses.
-        return GridComputeJobResultPolicy.WAIT;
+        return ComputeJobResultPolicy.WAIT;
     }
 }

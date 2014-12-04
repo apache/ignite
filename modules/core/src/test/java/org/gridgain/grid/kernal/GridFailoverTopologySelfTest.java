@@ -99,7 +99,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class JobFailTask implements GridComputeTask<String, Object> {
+    private static class JobFailTask implements ComputeTask<String, Object> {
          /** */
         @GridLocalNodeIdResource private UUID locNodeId;
 
@@ -125,14 +125,14 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
             if (res.getException() != null && !jobFailedOver) {
                 jobFailedOver = true;
 
-                return GridComputeJobResultPolicy.FAILOVER;
+                return ComputeJobResultPolicy.FAILOVER;
             }
 
-            return GridComputeJobResultPolicy.REDUCE;
+            return ComputeJobResultPolicy.REDUCE;
         }
 
         /** {@inheritDoc} */

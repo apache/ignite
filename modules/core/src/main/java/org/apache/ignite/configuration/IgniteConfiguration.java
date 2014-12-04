@@ -1485,7 +1485,7 @@ public class IgniteConfiguration {
      * execution. This way, a task can be physically deployed only on one node
      * and then internally penetrate to all other nodes.
      * <p>
-     * See {@link org.apache.ignite.compute.GridComputeTask} documentation for more information about task deployment.
+     * See {@link org.apache.ignite.compute.ComputeTask} documentation for more information about task deployment.
      *
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.

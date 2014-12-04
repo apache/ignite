@@ -22,7 +22,7 @@ class GridUriDeploymentFileProcessorResult {
     private ClassLoader clsLdr;
 
     /** Task class. */
-    private List<Class<? extends GridComputeTask<?, ?>>> taskClss;
+    private List<Class<? extends ComputeTask<?, ?>>> taskClss;
 
     /** Deploument unit file. */
     private File file;
@@ -53,7 +53,7 @@ class GridUriDeploymentFileProcessorResult {
      *
      * @return Value for property 'taskClss'.
      */
-    public List<Class<? extends GridComputeTask<?, ?>>> getTaskClasses() {
+    public List<Class<? extends ComputeTask<?, ?>>> getTaskClasses() {
         return taskClss;
     }
 
@@ -62,7 +62,7 @@ class GridUriDeploymentFileProcessorResult {
      *
      * @param taskClss Value to set for property 'taskClss'.
      */
-    public void setTaskClasses(List<Class<? extends GridComputeTask<?, ?>>> taskClss) {
+    public void setTaskClasses(List<Class<? extends ComputeTask<?, ?>>> taskClss) {
         this.taskClss = taskClss;
     }
 

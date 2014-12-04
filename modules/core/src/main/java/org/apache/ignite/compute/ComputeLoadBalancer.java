@@ -22,8 +22,8 @@ import java.util.*;
  * query the {@link GridLoadBalancingSpi}
  * to get the balanced node.
  * <p>
- * Load balancer can be used <i>explicitly</i> from inside {@link GridComputeTask#map(List, Object)}
- * method when you implement {@link GridComputeTask} interface directly or use
+ * Load balancer can be used <i>explicitly</i> from inside {@link ComputeTask#map(List, Object)}
+ * method when you implement {@link ComputeTask} interface directly or use
  * {@link GridComputeTaskAdapter}. If you use {@link GridComputeTaskSplitAdapter} then
  * load balancer is accessed <i>implicitly</i> by the adapter so you don't have
  * to use it directly in your logic.
@@ -93,7 +93,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public interface GridComputeLoadBalancer extends GridMetadataAware {
+public interface ComputeLoadBalancer extends GridMetadataAware {
     /**
      * Gets the next balanced node according to the underlying load balancing policy.
      *

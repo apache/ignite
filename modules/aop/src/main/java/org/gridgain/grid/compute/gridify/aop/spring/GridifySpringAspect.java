@@ -79,7 +79,7 @@ public class GridifySpringAspect implements MethodInterceptor {
 
             if (!ann.taskClass().equals(GridifyDefaultTask.class))
                 return ignite.compute().withTimeout(ann.timeout()).execute(
-                    (Class<? extends GridComputeTask<GridifyArgument, Object>>)ann.taskClass(), arg);
+                    (Class<? extends ComputeTask<GridifyArgument, Object>>)ann.taskClass(), arg);
 
             // If task name was not specified.
             if (ann.taskName().isEmpty())

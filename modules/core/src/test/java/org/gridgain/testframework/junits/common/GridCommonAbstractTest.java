@@ -430,7 +430,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Task future.
      * @throws GridException If failed.
      */
-    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, GridComputeTask task, @Nullable Object arg)
+    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, ComputeTask task, @Nullable Object arg)
         throws GridException {
         comp = comp.enableAsync();
 

@@ -62,7 +62,7 @@ public final class DeploymentExample {
             // passing your task name as first parameter.
             g.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
 
-            for (Map.Entry<String, Class<? extends GridComputeTask<?, ?>>> e : g.compute().localTasks().entrySet())
+            for (Map.Entry<String, Class<? extends ComputeTask<?, ?>>> e : g.compute().localTasks().entrySet())
                 System.out.println(">>> Found locally deployed task [alias=" + e.getKey() + ", taskCls=" + e.getValue());
 
             // Execute the task passing its name as a parameter. The system will find

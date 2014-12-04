@@ -37,7 +37,7 @@ class GridMarshallerResourceBean implements Serializable {
     private GridMarshaller marshaller;
 
     /** Load balancer. */
-    private GridComputeLoadBalancer balancer;
+    private ComputeLoadBalancer balancer;
 
     /** MBean server. */
     private MBeanServer mbeanSrv;

@@ -24,8 +24,8 @@ import java.util.*;
 @GridSpiTest(spi = GridLocalDeploymentSpi.class, group = "Deployment SPI")
 public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLocalDeploymentSpi> {
     /** */
-    private static Map<ClassLoader, Set<Class<? extends GridComputeTask<?, ?>>>> tasks =
-        Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends GridComputeTask<?, ?>>>>());
+    private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
+        Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -48,10 +48,10 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
      * @param taskCls Task class.
      * @throws Exception If failed.
      */
-    private void deploy(Class<? extends GridComputeTask<?, ?>> taskCls) throws Exception {
+    private void deploy(Class<? extends ComputeTask<?, ?>> taskCls) throws Exception {
         getSpi().register(taskCls.getClassLoader(), taskCls);
 
-        Set<Class<? extends GridComputeTask<?, ?>>> clss = new HashSet<>(1);
+        Set<Class<? extends ComputeTask<?, ?>>> clss = new HashSet<>(1);
 
         clss.add(taskCls);
 
@@ -61,7 +61,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
     /**
      * @param taskCls Task class.
      */
-    private void checkUndeployed(Class<? extends GridComputeTask<?, ?>> taskCls) {
+    private void checkUndeployed(Class<? extends ComputeTask<?, ?>> taskCls) {
         assert !tasks.containsKey(taskCls.getClassLoader());
     }
 
@@ -72,7 +72,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
     public void testDeploy() throws Exception {
         String taskName = "GridDeploymentTestTask";
 
-        Class<? extends GridComputeTask<?, ?>> task = GridDeploymentTestTask.class;
+        Class<? extends ComputeTask<?, ?>> task = GridDeploymentTestTask.class;
 
         deploy(task);
 
@@ -100,8 +100,8 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
         String taskName = "GridDeploymentTestTask";
 
         // Test versioned redeploy.
-        Class<? extends GridComputeTask<?, ?>> t1 = GridDeploymentTestTask.class;
-        Class<? extends GridComputeTask<?, ?>> t2 = GridDeploymentTestTask1.class;
+        Class<? extends ComputeTask<?, ?>> t1 = GridDeploymentTestTask.class;
+        Class<? extends ComputeTask<?, ?>> t2 = GridDeploymentTestTask1.class;
 
         deploy(t1);
 

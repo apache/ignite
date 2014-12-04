@@ -153,9 +153,9 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @return All deployed tasks for given predicate.
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Class<? extends GridComputeTask<?, ?>>> findAllTasks(
-        @Nullable IgnitePredicate<? super Class<? extends GridComputeTask<?, ?>>>... p) {
-        Map<String, Class<? extends GridComputeTask<?, ?>>> map = new HashMap<>();
+    public Map<String, Class<? extends ComputeTask<?, ?>>> findAllTasks(
+        @Nullable IgnitePredicate<? super Class<? extends ComputeTask<?, ?>>>... p) {
+        Map<String, Class<? extends ComputeTask<?, ?>>> map = new HashMap<>();
         if (locDep != null)
             tasks(map, locDep, p);
         else {
@@ -173,14 +173,14 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @param dep Deployment.
      * @param p Predicate.
      */
-    private void tasks(Map<String, Class<? extends GridComputeTask<?, ?>>> map, GridDeployment dep,
-        IgnitePredicate<? super Class<? extends GridComputeTask<?, ?>>>[] p) {
+    private void tasks(Map<String, Class<? extends ComputeTask<?, ?>>> map, GridDeployment dep,
+        IgnitePredicate<? super Class<? extends ComputeTask<?, ?>>>[] p) {
         assert map != null;
         assert dep != null;
 
         for (Map.Entry<String, Class<?>> clsEntry : dep.deployedClassMap().entrySet()) {
-            if (GridComputeTask.class.isAssignableFrom(clsEntry.getValue())) {
-                Class<? extends GridComputeTask<?, ?>> taskCls = (Class<? extends GridComputeTask<?, ?>>)clsEntry.getValue();
+            if (ComputeTask.class.isAssignableFrom(clsEntry.getValue())) {
+                Class<? extends ComputeTask<?, ?>> taskCls = (Class<? extends ComputeTask<?, ?>>)clsEntry.getValue();
 
                 if (F.isAll(taskCls, p))
                     map.put(clsEntry.getKey(), taskCls);
@@ -285,7 +285,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
             return dep;
         }
         else if (locDep != null) {
-            if (GridComputeTask.class.isAssignableFrom(cls)) {
+            if (ComputeTask.class.isAssignableFrom(cls)) {
                 GridComputeTaskName taskNameAnn = locDep.annotation(cls, GridComputeTaskName.class);
 
                 if (taskNameAnn != null)

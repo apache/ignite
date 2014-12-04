@@ -35,7 +35,7 @@ import java.util.Date;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * Task for JDBC adapter.
@@ -115,7 +115,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         return WAIT;
     }
 

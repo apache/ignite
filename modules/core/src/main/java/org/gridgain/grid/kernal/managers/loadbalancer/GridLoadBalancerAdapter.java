@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * This adapter allows for graceful exception when load balancer gets marshalled.
  */
-public abstract class GridLoadBalancerAdapter extends GridMetadataAwareAdapter implements GridComputeLoadBalancer,
+public abstract class GridLoadBalancerAdapter extends GridMetadataAwareAdapter implements ComputeLoadBalancer,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -349,7 +349,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @return {@code True} if task is internal.
      */
     @SuppressWarnings("unchecked")
-    public boolean internalTask(@Nullable GridComputeTask task, Class<?> taskCls) {
+    public boolean internalTask(@Nullable ComputeTask task, Class<?> taskCls) {
         assert task != null;
         assert taskCls != null;
 

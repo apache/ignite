@@ -433,8 +433,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param mapper Continuous task mapper.
      * @throws GridException Thrown in case of any errors.
      */
-    public void inject(GridDeployment dep, GridComputeTask<?, ?> task, GridTaskSessionImpl ses,
-        GridComputeLoadBalancer balancer, GridComputeTaskContinuousMapper mapper) throws GridException {
+    public void inject(GridDeployment dep, ComputeTask<?, ?> task, GridTaskSessionImpl ses,
+        ComputeLoadBalancer balancer, GridComputeTaskContinuousMapper mapper) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + task);
 

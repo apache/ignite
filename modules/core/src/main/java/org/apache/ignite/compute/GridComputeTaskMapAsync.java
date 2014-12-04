@@ -15,8 +15,8 @@ import java.util.*;
 /**
  * Annotation for asynchronous task mapping.
  * <p>
- * This annotation enables map step ({@link GridComputeTask#map(List, Object)}) for task
- * to be performed asynchronously when attached to {@link GridComputeTask} class being executed.
+ * This annotation enables map step ({@link ComputeTask#map(List, Object)}) for task
+ * to be performed asynchronously when attached to {@link ComputeTask} class being executed.
  * <p>
  * Use this annotation when tasks spawns large amount of jobs or map step takes a long time
  * and it is better to perform it in GridGain system thread.

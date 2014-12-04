@@ -411,7 +411,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         String msg = "Failed to deploy " + (isTask ? "task" : "class") + " [cls=" + cls + ", clsLdr=" + clsLdr + ']';
 
         if (recordEvt && ctx.event().isRecordable(isTask ? EVT_CLASS_DEPLOY_FAILED : EVT_TASK_DEPLOY_FAILED)) {
-            String taskName = isTask ? U.getTaskName((Class<? extends GridComputeTask<?, ?>>)cls) : null;
+            String taskName = isTask ? U.getTaskName((Class<? extends ComputeTask<?, ?>>)cls) : null;
 
             GridDeploymentEvent evt = new GridDeploymentEvent();
 

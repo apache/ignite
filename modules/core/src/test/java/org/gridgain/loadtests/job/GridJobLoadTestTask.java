@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * Test task for {@link GridJobLoadTest}
@@ -46,7 +46,7 @@ public class GridJobLoadTestTask extends GridComputeTaskAdapter<GridJobLoadTestP
      *
      * {@inheritDoc}
      */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         return res.getException() == null ? WAIT :
             res.getException().getCause() instanceof AssertionError ? REDUCE : FAILOVER;
     }

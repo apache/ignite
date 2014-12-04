@@ -142,8 +142,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
-            GridComputeJobResultPolicy plc = super.result(res, received);
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+            ComputeJobResultPolicy plc = super.result(res, received);
 
             if (received != null && received.size() == 2)
                 mapper.send(new TestJob());

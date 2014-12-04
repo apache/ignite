@@ -119,7 +119,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
             info("Loader1: " + ldr1);
             info("Loader2: " + ldr2);
 
-            Class<? extends GridComputeTask<String, Integer>> taskCls = (Class<? extends GridComputeTask<String, Integer>>)
+            Class<? extends ComputeTask<String, Integer>> taskCls = (Class<? extends ComputeTask<String, Integer>>)
                 ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
             // Check auto-deploy. It should pick up resource class loader.
@@ -185,10 +185,10 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
            );
 
            // The same name but different classes/ class loaders.
-           Class<? extends GridComputeTask<String, Integer>> taskCls1 = (Class<? extends GridComputeTask<String, Integer>>)
+           Class<? extends ComputeTask<String, Integer>> taskCls1 = (Class<? extends ComputeTask<String, Integer>>)
                ldr1.loadClass(GridDeploymentResourceTestTask.class.getName());
 
-           Class<? extends GridComputeTask<String, Integer>> taskCls2 = (Class<? extends GridComputeTask<String, Integer>>)
+           Class<? extends ComputeTask<String, Integer>> taskCls2 = (Class<? extends ComputeTask<String, Integer>>)
                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
            if (byCls) {
@@ -263,7 +263,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
                GridDeploymentResourceTestJob.class.getName()
            );
 
-           Class<? extends GridComputeTask<String, Integer>> taskCls = (Class<? extends GridComputeTask<String, Integer>>)
+           Class<? extends ComputeTask<String, Integer>> taskCls = (Class<? extends ComputeTask<String, Integer>>)
                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
            if (byCls) {
@@ -335,10 +335,10 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
               GridDeploymentResourceTestJob.class.getName()
           );
 
-          Class<? extends GridComputeTask<String, Integer>> taskCls1 = (Class<? extends GridComputeTask<String, Integer>>)
+          Class<? extends ComputeTask<String, Integer>> taskCls1 = (Class<? extends ComputeTask<String, Integer>>)
               ldr1.loadClass(GridDeploymentResourceTestTask.class.getName());
 
-          Class<? extends GridComputeTask<String, Integer>> taskCls2 = (Class<? extends GridComputeTask<String, Integer>>)
+          Class<? extends ComputeTask<String, Integer>> taskCls2 = (Class<? extends ComputeTask<String, Integer>>)
               ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
           if (byCls) {

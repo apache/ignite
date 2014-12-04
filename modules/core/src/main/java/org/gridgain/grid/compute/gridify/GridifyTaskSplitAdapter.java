@@ -21,7 +21,7 @@ import java.util.*;
  * <p>
  * Please refer to {@link org.apache.ignite.compute.GridComputeTaskSplitAdapter} documentation for more information
  * on additional functionality this adapter provides.
- * @param <R> Return value of the task (see {@link GridComputeTask#reduce(List)} method).
+ * @param <R> Return value of the task (see {@link org.apache.ignite.compute.ComputeTask#reduce(List)} method).
  */
 public abstract class GridifyTaskSplitAdapter<R> extends GridComputeTaskSplitAdapter<GridifyArgument, R> {
     /** */

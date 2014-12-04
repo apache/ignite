@@ -103,11 +103,11 @@ class GridCachePutAllTask extends GridComputeTaskAdapter<Collection<Integer>, Vo
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         if (res.getException() != null)
-            return GridComputeJobResultPolicy.FAILOVER;
+            return ComputeJobResultPolicy.FAILOVER;
 
-        return GridComputeJobResultPolicy.WAIT;
+        return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * Stop node task, applicable arguments:
@@ -47,8 +47,8 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
-        GridComputeJobResultPolicy superRes = super.result(res, rcvd);
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        ComputeJobResultPolicy superRes = super.result(res, rcvd);
 
         // Deny failover.
         if (superRes == FAILOVER)

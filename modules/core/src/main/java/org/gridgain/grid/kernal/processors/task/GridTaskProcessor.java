@@ -270,7 +270,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg) {
+    public <T, R> GridComputeTaskFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         assert taskCls != null;
 
         lock.readLock();
@@ -293,7 +293,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg) {
+    public <T, R> GridComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
         return execute(task, arg, false);
     }
 
@@ -305,7 +305,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg, boolean sys) {
+    public <T, R> GridComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
 
         try {
@@ -370,7 +370,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private <T, R> GridComputeTaskFuture<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
-        @Nullable GridComputeTask<T, R> task,
+        @Nullable ComputeTask<T, R> task,
         IgniteUuid sesId,
         @Nullable T arg,
         boolean sys) {
@@ -427,7 +427,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     throw new GridDeploymentException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
 
-                if (!GridComputeTask.class.isAssignableFrom(taskCls))
+                if (!ComputeTask.class.isAssignableFrom(taskCls))
                     throw new GridException("Failed to auto-deploy task (deployed class is not a task) [taskName=" +
                         taskName + ", depCls=" + taskCls + ']');
             }
@@ -474,7 +474,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 else {
                     taskCls = task.getClass();
 
-                    assert GridComputeTask.class.isAssignableFrom(taskCls);
+                    assert ComputeTask.class.isAssignableFrom(taskCls);
 
                     cls = task.getClass();
                     ldr = U.detectClassLoader(cls);
@@ -560,7 +560,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     // Check if someone reuses the same task instance by walking
                     // through the "tasks" map
                     for (GridTaskWorker worker : tasks.values()) {
-                        GridComputeTask workerTask = worker.getTask();
+                        ComputeTask workerTask = worker.getTask();
 
                         // Check that the same instance of task is being used by comparing references.
                         if (workerTask != null && task == workerTask)

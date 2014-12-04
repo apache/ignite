@@ -137,7 +137,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(Class<? extends GridComputeTask<T, R>> taskCls,
+    @Override public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls,
         @Nullable T arg) throws GridException {
         A.notNull(taskCls, "taskCls");
 
@@ -155,7 +155,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(GridComputeTask<T, R> task, @Nullable T arg) throws GridException {
+    @Override public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws GridException {
         A.notNull(task, "task");
 
         guard();
@@ -391,7 +391,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void localDeployTask(Class<? extends GridComputeTask> taskCls, ClassLoader clsLdr) throws GridException {
+    @Override public void localDeployTask(Class<? extends ComputeTask> taskCls, ClassLoader clsLdr) throws GridException {
         A.notNull(taskCls, "taskCls", clsLdr, "clsLdr");
 
         guard();
@@ -408,7 +408,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<? extends GridComputeTask<?, ?>>> localTasks() {
+    @Override public Map<String, Class<? extends ComputeTask<?, ?>>> localTasks() {
         guard();
 
         try {

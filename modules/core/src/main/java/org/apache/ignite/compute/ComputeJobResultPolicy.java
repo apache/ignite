@@ -15,10 +15,10 @@ import java.util.*;
 
 /**
  * This enumeration provides different types of actions following the last
- * received job result. See {@link GridComputeTask#result(ComputeJobResult, List)} for
+ * received job result. See {@link ComputeTask#result(ComputeJobResult, List)} for
  * more details.
  */
-public enum GridComputeJobResultPolicy {
+public enum ComputeJobResultPolicy {
     /**
      * Wait for results if any are still expected. If all results have been received -
      * it will start reducing results.
@@ -34,7 +34,7 @@ public enum GridComputeJobResultPolicy {
     FAILOVER;
 
     /** Enumerated values. */
-    private static final GridComputeJobResultPolicy[] VALS = values();
+    private static final ComputeJobResultPolicy[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -43,7 +43,7 @@ public enum GridComputeJobResultPolicy {
      * @return Enumerated value.
      */
     @Nullable
-    public static GridComputeJobResultPolicy fromOrdinal(byte ord) {
+    public static ComputeJobResultPolicy fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

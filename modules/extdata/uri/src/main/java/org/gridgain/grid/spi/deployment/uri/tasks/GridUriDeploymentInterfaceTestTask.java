@@ -14,6 +14,6 @@ import org.apache.ignite.compute.*;
 /**
  * URI deployment interface test task.
  */
-public interface GridUriDeploymentInterfaceTestTask extends GridComputeTask<Object, Object> {
+public interface GridUriDeploymentInterfaceTestTask extends ComputeTask<Object, Object> {
     // No-op.
 }

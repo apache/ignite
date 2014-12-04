@@ -130,8 +130,8 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
-            return GridComputeJobResultPolicy.REDUCE;
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
+            return ComputeJobResultPolicy.REDUCE;
         }
 
         /** {@inheritDoc} */

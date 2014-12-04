@@ -174,12 +174,12 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
             throws GridException {
             if (result.getException() != null)
                 throw result.getException();
 
-            return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
+            return received.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

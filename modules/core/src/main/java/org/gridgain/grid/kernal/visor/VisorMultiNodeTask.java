@@ -25,7 +25,7 @@ import java.util.*;
  * @param <A> Task argument type.
  * @param <R> Task result type.
  */
-public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<VisorTaskArgument<A>, R> {
+public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
     @GridInstanceResource
     protected GridEx g;
 
@@ -56,9 +56,9 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<Vis
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res,
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res,
         List<ComputeJobResult> rcvd) throws GridException {
         // All Visor tasks should handle exceptions in reduce method.
-        return GridComputeJobResultPolicy.WAIT;
+        return ComputeJobResultPolicy.WAIT;
     }
 }

@@ -227,7 +227,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
             assert ignite.compute().localTasks().get("GridDeploymentTestTask") != null;
 
-            Class<? extends GridComputeTask<?, ?>> cls = ignite.compute().localTasks().get("GridDeploymentTestTask");
+            Class<? extends ComputeTask<?, ?>> cls = ignite.compute().localTasks().get("GridDeploymentTestTask");
 
             assert cls.getName().equals(GridDeploymentTestTask1.class.getName());
         }

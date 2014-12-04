@@ -15,7 +15,7 @@ import org.gridgain.grid.*;
 import java.util.*;
 
 /**
- * Result of remote job which gets passed into {@link GridComputeTask#result(ComputeJobResult, List)}
+ * Result of remote job which gets passed into {@link ComputeTask#result(ComputeJobResult, List)}
  * method.
  */
 public interface ComputeJobResult {
@@ -36,8 +36,8 @@ public interface ComputeJobResult {
      * <p>
      * Note that if task is annotated with {@link GridComputeTaskNoResultCache} annotation,
      * then job results will not be cached and will be available only in
-     * {@link GridComputeTask#result(ComputeJobResult, List)} method for every individual job,
-     * but not in {@link GridComputeTask#reduce(List)} method. This feature was added to
+     * {@link ComputeTask#result(ComputeJobResult, List)} method for every individual job,
+     * but not in {@link ComputeTask#reduce(List)} method. This feature was added to
      * avoid excessive storing of overly large results.
      *
      * @param <T> Type of the return value returning from {@link ComputeJob#execute()} method.
@@ -65,10 +65,10 @@ public interface ComputeJobResult {
     public GridException getException();
 
     /**
-     * Gets local instance of remote job returned by {@link GridComputeTask#map(List, Object)} method.
+     * Gets local instance of remote job returned by {@link ComputeTask#map(List, Object)} method.
      *
      * @param <T> Type of {@link ComputeJob} that was sent to remote node.
-     * @return Local instance of remote job returned by {@link GridComputeTask#map(List, Object)} method.
+     * @return Local instance of remote job returned by {@link ComputeTask#map(List, Object)} method.
      */
     public <T extends ComputeJob> T getJob();
 

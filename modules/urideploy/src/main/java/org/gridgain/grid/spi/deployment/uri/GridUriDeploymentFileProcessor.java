@@ -42,7 +42,7 @@ final class GridUriDeploymentFileProcessor {
 
     /**
      * Method processes given GAR file and extracts all tasks from it which are
-     * either mentioned in GAR descriptor or implements interface {@link org.apache.ignite.compute.GridComputeTask}
+     * either mentioned in GAR descriptor or implements interface {@link org.apache.ignite.compute.ComputeTask}
      * if there is no descriptor in file.
      *
      * @param file GAR file with tasks.
@@ -318,14 +318,14 @@ final class GridUriDeploymentFileProcessor {
         File file, String uri, GridLogger log) throws GridSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
-        List<Class<? extends GridComputeTask<?, ?>>> tasks = doc.getTasks(clsLdr);
+        List<Class<? extends ComputeTask<?, ?>>> tasks = doc.getTasks(clsLdr);
 
-        List<Class<? extends GridComputeTask<?, ?>>> validTasks = null;
+        List<Class<? extends ComputeTask<?, ?>>> validTasks = null;
 
         if (!F.isEmpty(tasks)) {
             validTasks = new ArrayList<>();
 
-            for (Class<? extends GridComputeTask<?, ?>> task : tasks) {
+            for (Class<? extends ComputeTask<?, ?>> task : tasks) {
                 if (!isAllowedTaskClass(task)) {
                     U.warn(log, "Failed to load task. Task should be public none-abstract class " +
                         "(might be inner static one) that implements GridComputeTask interface [taskCls=" + task + ']');
@@ -367,7 +367,7 @@ final class GridUriDeploymentFileProcessor {
         throws GridSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
-        Set<Class<? extends GridComputeTask<?, ?>>> clss = GridUriDeploymentDiscovery.getClasses(clsLdr, file);
+        Set<Class<? extends ComputeTask<?, ?>>> clss = GridUriDeploymentDiscovery.getClasses(clsLdr, file);
 
         GridUriDeploymentFileProcessorResult res = new GridUriDeploymentFileProcessorResult();
 
@@ -375,10 +375,10 @@ final class GridUriDeploymentFileProcessor {
         res.setClassLoader(clsLdr);
 
         if (clss != null) {
-            List<Class<? extends GridComputeTask<?, ?>>> validTasks =
+            List<Class<? extends ComputeTask<?, ?>>> validTasks =
                 new ArrayList<>(clss.size());
 
-            for (Class<? extends GridComputeTask<?, ?>> cls : clss) {
+            for (Class<? extends ComputeTask<?, ?>> cls : clss) {
                 if (isAllowedTaskClass(cls)) {
                     if (log.isDebugEnabled())
                         log.debug("Found grid deployment task: " + cls.getName());
@@ -398,10 +398,10 @@ final class GridUriDeploymentFileProcessor {
     }
 
     /**
-     * Check that class may be instantiated as {@link GridComputeTask} and used
+     * Check that class may be instantiated as {@link org.apache.ignite.compute.ComputeTask} and used
      * in deployment.
      *
-     * Loaded task class must implement interface {@link GridComputeTask}.
+     * Loaded task class must implement interface {@link org.apache.ignite.compute.ComputeTask}.
      * Only non-abstract, non-interfaces and public classes allowed.
      * Inner static classes also allowed for loading.
      *
@@ -409,7 +409,7 @@ final class GridUriDeploymentFileProcessor {
      * @return {@code true} if class allowed for deployment.
      */
     private static boolean isAllowedTaskClass(Class<?> cls) {
-        if (!GridComputeTask.class.isAssignableFrom(cls))
+        if (!ComputeTask.class.isAssignableFrom(cls))
             return false;
 
         int modifiers = cls.getModifiers();

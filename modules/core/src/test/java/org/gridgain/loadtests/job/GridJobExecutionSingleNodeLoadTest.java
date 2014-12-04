@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  * This test measures the performance of task execution engine by
@@ -195,7 +195,7 @@ public class GridJobExecutionSingleNodeLoadTest {
     /**
      * Empty task (spawns one empty job).
      */
-    private static class GridJobExecutionLoadTestTask implements GridComputeTask<Object, Object> {
+    private static class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
             throws GridException {
@@ -203,7 +203,7 @@ public class GridJobExecutionSingleNodeLoadTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             return REDUCE;
         }
 

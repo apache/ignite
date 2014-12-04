@@ -47,9 +47,9 @@ final class GridUriDeploymentDiscovery {
      * @throws GridSpiException Thrown if given JAR file references to none
      *      existed class or IOException occurred during processing.
      */
-    static Set<Class<? extends GridComputeTask<?, ?>>> getClasses(ClassLoader clsLdr, File file)
+    static Set<Class<? extends ComputeTask<?, ?>>> getClasses(ClassLoader clsLdr, File file)
         throws GridSpiException {
-        Set<Class<? extends GridComputeTask<?, ?>>> rsrcs = new HashSet<>();
+        Set<Class<? extends ComputeTask<?, ?>>> rsrcs = new HashSet<>();
 
         if (file.exists() == false)
             return rsrcs;
@@ -61,7 +61,7 @@ final class GridUriDeploymentDiscovery {
         else {
             try {
                 for (JarEntry entry : U.asIterable(new JarFile(file.getAbsolutePath()).entries())) {
-                    Class<? extends GridComputeTask<?, ?>> rsrc = fileRsrcLdr.createResource(entry.getName(), false);
+                    Class<? extends ComputeTask<?, ?>> rsrc = fileRsrcLdr.createResource(entry.getName(), false);
 
                     if (rsrc != null)
                         rsrcs.add(rsrc);
@@ -84,7 +84,7 @@ final class GridUriDeploymentDiscovery {
      */
     @SuppressWarnings({"UnusedCatchParameter"})
     private static void findResourcesInDirectory(GridUriDeploymentFileResourceLoader clsLdr, File dir,
-        Set<Class<? extends GridComputeTask<?, ?>>> rsrcs) {
+        Set<Class<? extends ComputeTask<?, ?>>> rsrcs) {
         assert dir.isDirectory() == true;
 
         for (File file : dir.listFiles()) {
@@ -93,7 +93,7 @@ final class GridUriDeploymentDiscovery {
                 findResourcesInDirectory(clsLdr, file, rsrcs);
             }
             else {
-                Class<? extends GridComputeTask<?, ?>> rsrc = null;
+                Class<? extends ComputeTask<?, ?>> rsrc = null;
 
                 try {
                     rsrc = clsLdr.createResource(file.getAbsolutePath(), true);

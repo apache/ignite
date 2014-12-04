@@ -425,12 +425,12 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             GridP2PTestTask.class.getName(), GridP2PTestJob.class.getName()
             );
 
-        GridComputeTask<?, ?> inTask = (GridComputeTask<?, ?>)tstClsLdr.loadClass(GridP2PTestTask.class.getName()).
+        ComputeTask<?, ?> inTask = (ComputeTask<?, ?>)tstClsLdr.loadClass(GridP2PTestTask.class.getName()).
             newInstance();
 
         byte[] buf = marsh.marshal(inTask);
 
-        GridComputeTask<?, ?> outTask = marsh.unmarshal(buf, tstClsLdr);
+        ComputeTask<?, ?> outTask = marsh.unmarshal(buf, tstClsLdr);
 
         assert inTask != outTask;
         assert inTask.getClass().equals(outTask.getClass());

@@ -102,7 +102,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     while (end - System.currentTimeMillis() > 0) {
-                        Class<? extends GridComputeTask<?, ?>> cls = loadTaskClass();
+                        Class<? extends ComputeTask<?, ?>> cls = loadTaskClass();
 
                         // info("Deploying class: " + cls);
 
@@ -161,7 +161,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"unchecked"})
-    private Class<? extends GridComputeTask<?, ?>> loadTaskClass() throws Exception {
-        return (Class<? extends GridComputeTask<?, ?>>)getExternalClassLoader().loadClass(TASK_NAME);
+    private Class<? extends ComputeTask<?, ?>> loadTaskClass() throws Exception {
+        return (Class<? extends ComputeTask<?, ?>>)getExternalClassLoader().loadClass(TASK_NAME);
     }
 }

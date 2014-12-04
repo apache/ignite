@@ -98,7 +98,7 @@ class GridUriDeploymentUnitDescriptor {
     }
 
     /**
-     * Constructs deployment unit descriptor based on timestamp and {@link org.apache.ignite.compute.GridComputeTask} instances.
+     * Constructs deployment unit descriptor based on timestamp and {@link org.apache.ignite.compute.ComputeTask} instances.
      *
      * @param tstamp Tasks deployment timestamp.
      * @param clsLdr Class loader.

@@ -17,12 +17,12 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
  *
  */
-public class GridJobExecutionLoadTestTask implements GridComputeTask<Object, Object> {
+public class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
         throws GridException {
@@ -30,7 +30,7 @@ public class GridJobExecutionLoadTestTask implements GridComputeTask<Object, Obj
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         return REDUCE;
     }
 

@@ -58,8 +58,8 @@ class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
-        return GridComputeJobResultPolicy.WAIT;
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
+        return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */

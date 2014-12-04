@@ -87,7 +87,7 @@ import java.util.Map.*;
  * </ul>
  * GAR file may be deployed without descriptor file. If there is no descriptor file, SPI
  * will scan all classes in archive and instantiate those that implement
- * {@link GridComputeTask} interface. In that case, all grid task classes must have a
+ * {@link org.apache.ignite.compute.ComputeTask} interface. In that case, all grid task classes must have a
  * public no-argument constructor. Use {@link GridComputeTaskAdapter} adapter for
  * convenience when creating grid tasks.
  * <p>
@@ -173,7 +173,7 @@ import java.util.Map.*;
  * <a name="classes"></a>
  * <h1 class="header">Classes</h1>
  * For this protocol SPI will scan folder specified by URI on file system
- * looking for compiled classes that implement {@link GridComputeTask} interface.
+ * looking for compiled classes that implement {@link org.apache.ignite.compute.ComputeTask} interface.
  * This protocol comes very handy during development, as it allows developer
  * to specify IDE compilation output folder as URI and all task classes
  * in that folder will be deployed automatically.
@@ -719,7 +719,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
                             unitDesc.getClassLoader());
                     }
                     // Ignore invalid tasks.
-                    else if (!GridComputeTask.class.isAssignableFrom(cls)) {
+                    else if (!ComputeTask.class.isAssignableFrom(cls)) {
                         unitDesc.addResource(cls);
 
                         return new GridDeploymentResourceAdapter(rsrcName, cls, unitDesc.getClassLoader());
@@ -827,7 +827,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
         for (Class<?> cls : clss) {
             String alias = null;
 
-            if (GridComputeTask.class.isAssignableFrom(cls)) {
+            if (ComputeTask.class.isAssignableFrom(cls)) {
                 GridComputeTaskName nameAnn = U.getAnnotation(cls, GridComputeTaskName.class);
 
                 if (nameAnn != null)
@@ -1237,7 +1237,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
         }
 
         for (Class<?> rsrcCls : existDesc.getResources()) {
-            if (!GridComputeTask.class.isAssignableFrom(rsrcCls) &&
+            if (!ComputeTask.class.isAssignableFrom(rsrcCls) &&
                 isResourceExist(newDesc.getClassLoader(), rsrcCls.getName())) {
                 U.warn(log, "Found collision with task class in different GAR files. " +
                     "Class loader will be removed [taskCls=" + rsrcCls +
@@ -1261,7 +1261,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
      * @param md5 md5 of the new unit.
      */
     private void newUnitReceived(String uri, File file, long tstamp, ClassLoader ldr,
-        Collection<Class<? extends GridComputeTask<?, ?>>> clss, @Nullable String md5) {
+        Collection<Class<? extends ComputeTask<?, ?>>> clss, @Nullable String md5) {
         assert uri != null;
         assert file != null;
         assert tstamp > 0;

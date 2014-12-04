@@ -48,11 +48,11 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"serial", "ConstantConditions"})
     public void testClassLoading() throws Exception {
-        GridComputeTask<?, ?> task = (GridComputeTask<?, ?>)tstClsLdr.loadClass(GridP2PTestTask.class.getName()).newInstance();
+        ComputeTask<?, ?> task = (ComputeTask<?, ?>)tstClsLdr.loadClass(GridP2PTestTask.class.getName()).newInstance();
 
         byte[] rawTask = GridTestIoUtils.serializeJdk(task);
 
-        GridComputeTask<Object, Integer> res = GridTestIoUtils.deserializeJdk(rawTask, tstClsLdr);
+        ComputeTask<Object, Integer> res = GridTestIoUtils.deserializeJdk(rawTask, tstClsLdr);
 
         ClusterNode fakeNode = new TestGridNode();
 

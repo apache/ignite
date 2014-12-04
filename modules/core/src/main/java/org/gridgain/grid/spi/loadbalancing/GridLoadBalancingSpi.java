@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Load balancing SPI provides the next best balanced node for job
  * execution. This SPI is used either implicitly or explicitly whenever
- * a job gets mapped to a node during {@link GridComputeTask#map(List, Object)}
+ * a job gets mapped to a node during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)}
  * invocation.
  * <h1 class="header">Coding Examples</h1>
  * If you are using {@link GridComputeTaskSplitAdapter} then load balancing logic

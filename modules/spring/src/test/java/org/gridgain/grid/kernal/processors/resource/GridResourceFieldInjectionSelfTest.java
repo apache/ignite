@@ -426,7 +426,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridLoadBalancerResource
-        private GridComputeLoadBalancer balancer;
+        private ComputeLoadBalancer balancer;
 
         /** */
         @GridHomeResource

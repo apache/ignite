@@ -20,7 +20,7 @@ import java.io.*;
  * if any.
  * <p>
  * Note that this class implements {@link org.apache.ignite.compute.ComputeJob} interface for convenience and can be
- * used in {@link org.apache.ignite.compute.GridComputeTask} implementations directly, if needed, as an alternative to
+ * used in {@link org.apache.ignite.compute.ComputeTask} implementations directly, if needed, as an alternative to
  * {@link org.apache.ignite.compute.ComputeJobAdapter}.
  * @see GridFunc
  */

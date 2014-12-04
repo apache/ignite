@@ -75,7 +75,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
             throws GridException {
             if (res.getException() != null)
                 throw new GridException("Job resulted in error: " + res, res.getException());
@@ -88,7 +88,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
                 assert ses.getJobSiblings().size() == jobCnt;
             }
 
-            return GridComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */

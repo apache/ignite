@@ -83,7 +83,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancin
      * @return Load balancer.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public GridComputeLoadBalancer getLoadBalancer(final GridTaskSessionImpl ses, final List<ClusterNode> top) {
+    public ComputeLoadBalancer getLoadBalancer(final GridTaskSessionImpl ses, final List<ClusterNode> top) {
         assert ses != null;
 
         // Return value is not intended for sending over network.

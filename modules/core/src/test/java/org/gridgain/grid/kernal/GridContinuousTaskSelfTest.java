@@ -130,7 +130,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestJobsChainTask implements GridComputeTask<Boolean, Integer> {
+    public static class TestJobsChainTask implements ComputeTask<Boolean, Integer> {
         /** */
         @GridTaskContinuousMapperResource
         private GridComputeTaskContinuousMapper mapper;
@@ -164,7 +164,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
             assert mapper != null;
             assert res.getException() == null : "Unexpected exception: " + res.getException();
 
@@ -178,7 +178,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                 log.info("Sent test task by continuous mapper (from result() method).");
             }
 
-            return GridComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
