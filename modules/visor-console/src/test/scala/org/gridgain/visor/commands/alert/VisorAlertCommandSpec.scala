@@ -13,6 +13,7 @@ package org.gridgain.visor.commands.alert
 
 import java.util.regex.Pattern
 
+import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.GridDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi

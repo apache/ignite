@@ -15,7 +15,6 @@ import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.grid._
-import org.gridgain.grid.events._
 import IgniteEventType._
 import org.gridgain.grid.util.lang.{GridFunc => F}
 

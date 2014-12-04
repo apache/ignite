@@ -16,7 +16,6 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.gridgain.scalar._
 import scalar._
-import org.gridgain.grid.lang._
 import java.util.concurrent.atomic._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

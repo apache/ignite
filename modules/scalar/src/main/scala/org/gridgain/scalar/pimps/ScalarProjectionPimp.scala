@@ -14,7 +14,6 @@ package org.gridgain.scalar.pimps
 import org.apache.ignite.cluster.{ClusterGroup, ClusterNode}
 import org.apache.ignite.lang.{IgniteFutureCancelledException, IgniteFuture, IgnitePredicate}
 import org.gridgain.grid._
-import org.gridgain.grid.lang._
 import org.jetbrains.annotations._
 
 /**

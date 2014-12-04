@@ -11,7 +11,6 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang._
 import org.gridgain.grid._
 import org.gridgain.grid.util.lang.GridInClosure3X
 

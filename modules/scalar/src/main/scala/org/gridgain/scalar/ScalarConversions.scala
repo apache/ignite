@@ -15,9 +15,7 @@ import org.apache.ignite.Ignite
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.compute.ComputeJob
 import org.apache.ignite.lang._
-import org.gridgain.grid.lang._
 import org.gridgain.grid.cache._
-import org.gridgain.grid._
 import org.gridgain.scalar.lang._
 import org.gridgain.scalar.pimps._
 import org.jetbrains.annotations._

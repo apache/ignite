@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.cswap
 
+import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi

@@ -18,7 +18,6 @@ import scalar._
 import org.scalatest.matchers._
 import org.scalatest._
 import junit.JUnitRunner
-import org.gridgain.grid.events.GridEventType
 import IgniteEventType._
 import collection.JavaConversions._
 import org.junit.runner.RunWith

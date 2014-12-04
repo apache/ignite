@@ -12,7 +12,6 @@
 package org.gridgain.scalar.lang
 
 import org.gridgain.grid._
-import lang._
 import org.gridgain.grid.util.lang.IgniteOutClosureX
 
 /**

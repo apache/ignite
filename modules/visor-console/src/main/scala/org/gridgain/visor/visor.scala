@@ -11,6 +11,7 @@
 
 package org.gridgain.visor
 
+import org.apache.ignite.{IgniteState, Ignition}
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
@@ -26,7 +27,6 @@ import java.util.{HashSet => JHashSet, _}
 
 import org.gridgain.grid.GridSystemProperties._
 import IgniteEventType._
-import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
@@ -37,7 +37,7 @@ import org.gridgain.grid.thread._
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
-import org.gridgain.grid.GridException
+import org.gridgain.grid._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable
 
@@ -1701,8 +1701,8 @@ object visor extends VisorTag {
         grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
         nodeStopLsnr = new GridGainListener {
-            def onStateChange(name: String, state: GridGainState) {
-                if (name == grid.name && state == GridGainState.STOPPED) {
+            def onStateChange(name: String, state: IgniteState) {
+                if (name == grid.name && state == IgniteState.STOPPED) {
                     warn("Closing Visor console due to stopping of host grid instance.")
 
                     nl()
@@ -2155,7 +2155,7 @@ object visor extends VisorTag {
             // Call all close callbacks.
             cbs foreach(_.apply())
 
-            if (grid != null && Ignition.state(grid.name) == GridGainState.STARTED) {
+            if (grid != null && Ignition.state(grid.name) == IgniteState.STARTED) {
                 if (nodeJoinLsnr != null)
                     grid.events().stopLocalListen(nodeJoinLsnr)
 

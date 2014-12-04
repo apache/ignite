@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
+import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.GridCacheAtomicityMode._
 import org.gridgain.grid.cache.GridCacheMode._
