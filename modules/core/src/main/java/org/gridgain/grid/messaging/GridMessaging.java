@@ -10,7 +10,6 @@
 package org.gridgain.grid.messaging;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 

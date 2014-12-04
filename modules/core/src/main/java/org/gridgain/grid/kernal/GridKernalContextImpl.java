@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
+import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.*;
-import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;

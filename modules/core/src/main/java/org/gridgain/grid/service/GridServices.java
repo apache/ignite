@@ -10,7 +10,7 @@
 package org.gridgain.grid.service;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.lang.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 

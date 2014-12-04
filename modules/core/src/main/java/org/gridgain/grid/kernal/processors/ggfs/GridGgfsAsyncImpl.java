@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
+import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

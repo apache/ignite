@@ -10,7 +10,6 @@
 package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;

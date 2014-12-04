@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.managers;
 
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.design.plugin.extensions.communication.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;

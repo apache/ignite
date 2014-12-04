@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -474,7 +474,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     /**
      * @param name Plugin name.
      * @return Plugin provider instance.
-     * @throws PluginNotFoundException If plugin provider for the given name was not found.
+     * @throws org.apache.ignite.plugin.PluginNotFoundException If plugin provider for the given name was not found.
      */
     public PluginProvider pluginProvider(String name) throws PluginNotFoundException;
 

@@ -10,7 +10,6 @@
 package org.gridgain.testframework.junits;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.spi.*;
 import org.jetbrains.annotations.*;
 

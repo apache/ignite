@@ -10,7 +10,7 @@
 package org.gridgain.grid;
 
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.design.lang.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
