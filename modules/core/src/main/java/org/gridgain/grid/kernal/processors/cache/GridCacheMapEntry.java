@@ -1483,7 +1483,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (op == GridCacheOperation.TRANSFORM) {
                 transformCloClsName = writeObj.getClass().getName();
 
-                GridClosure<V, V> transform = (GridClosure<V, V>)writeObj;
+                IgniteClosure<V, V> transform = (IgniteClosure<V, V>)writeObj;
 
                 assert transform != null;
 
@@ -1779,7 +1779,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (op == GridCacheOperation.TRANSFORM) {
                 transformClo = writeObj;
 
-                GridClosure<V, V> transform = (GridClosure<V, V>)writeObj;
+                IgniteClosure<V, V> transform = (IgniteClosure<V, V>)writeObj;
 
                 updated = cctx.unwrapTemporary(transform.apply(old));
 

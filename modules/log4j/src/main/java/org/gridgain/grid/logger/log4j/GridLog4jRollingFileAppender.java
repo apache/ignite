@@ -64,7 +64,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void updateFilePath(GridClosure<String, String> filePathClos) {
+    @Override public synchronized void updateFilePath(IgniteClosure<String, String> filePathClos) {
         A.notNull(filePathClos, "filePathClos");
 
         if (baseFileName == null)

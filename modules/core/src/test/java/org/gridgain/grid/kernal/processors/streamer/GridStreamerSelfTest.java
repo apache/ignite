@@ -225,7 +225,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
             assertTrue(metrics.maximumActiveSessions() > 0);
 
-            ignite0.streamer(null).context().query(new GridClosure<GridStreamerContext, Object>() {
+            ignite0.streamer(null).context().query(new IgniteClosure<GridStreamerContext, Object>() {
                 @Override public Object apply(GridStreamerContext ctx) {
                     try {
                         U.sleep(1000);

@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.GridClosure
+import org.gridgain.grid.lang.IgniteClosure
 
 /**
  * Peer deploy aware adapter for Java's `GridClosure`.
  */
-class ScalarClosure[E, R](private val f: E => R) extends GridClosure[E, R] {
+class ScalarClosure[E, R](private val f: E => R) extends IgniteClosure[E, R] {
     assert(f != null)
 
     /**

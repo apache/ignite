@@ -181,7 +181,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     @SuppressWarnings("unchecked")
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<Map<K, V>>, ClusterNode>() {
+            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<Map<K, V>>, ClusterNode>() {
                 @Nullable @Override public ClusterNode apply(GridFuture<Map<K, V>> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();

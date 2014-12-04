@@ -257,7 +257,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridFuture<T> chain(final GridClosure<? super GridFuture<R>, T> doneCb) {
+    @Override public <T> GridFuture<T> chain(final IgniteClosure<? super GridFuture<R>, T> doneCb) {
         final GridFutureAdapterEx<T> fut = new GridFutureAdapterEx<T>() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + GridFutureAdapterEx.this + ", doneCb=" + doneCb + ']';

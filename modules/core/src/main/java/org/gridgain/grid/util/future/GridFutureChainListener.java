@@ -29,7 +29,7 @@ public class GridFutureChainListener<T, R> implements GridInClosure<GridFuture<T
     private final GridFutureAdapter<R> fut;
 
     /** Done callback. */
-    private final GridClosure<? super GridFuture<T>, R> doneCb;
+    private final IgniteClosure<? super GridFuture<T>, R> doneCb;
 
     /**
      * Constructs chain listener.
@@ -39,7 +39,7 @@ public class GridFutureChainListener<T, R> implements GridInClosure<GridFuture<T
      * @param doneCb Done callback.
      */
     public GridFutureChainListener(GridKernalContext ctx, GridFutureAdapter<R> fut,
-        GridClosure<? super GridFuture<T>, R> doneCb) {
+        IgniteClosure<? super GridFuture<T>, R> doneCb) {
         this.ctx = ctx;
         this.fut = fut;
         this.doneCb = doneCb;

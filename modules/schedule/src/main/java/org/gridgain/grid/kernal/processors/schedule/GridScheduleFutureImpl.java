@@ -608,7 +608,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public <T> GridFuture<T> chain(final GridClosure<? super GridFuture<R>, T> doneCb) {
+    @Override public <T> GridFuture<T> chain(final IgniteClosure<? super GridFuture<R>, T> doneCb) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx, syncNotify) {
             @Override public String toString() {
                 return "ChainFuture[orig=" + GridScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
@@ -939,7 +939,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         }
 
         /** {@inheritDoc} */
-        @Override public <T> GridFuture<T> chain(GridClosure<? super GridFuture<R>, T> doneCb) {
+        @Override public <T> GridFuture<T> chain(IgniteClosure<? super GridFuture<R>, T> doneCb) {
             return ref.chain(doneCb);
         }
     }

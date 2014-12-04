@@ -42,7 +42,7 @@ public class ComputeClosureExample {
 
             // Execute closure on all grid nodes.
             Collection<Integer> res = g.compute().apply(
-                new GridClosure<String, Integer>() {
+                new IgniteClosure<String, Integer>() {
                     @Override public Integer apply(String word) {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");

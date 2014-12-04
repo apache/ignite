@@ -18,7 +18,7 @@ import org.junit.*;
 /**
  * Top-level closure class.
  */
-public class TestClosure implements GridClosure<Object, Object> {
+public class TestClosure implements IgniteClosure<Object, Object> {
     /** */
     @GridInstanceResource
     private Ignite ignite;

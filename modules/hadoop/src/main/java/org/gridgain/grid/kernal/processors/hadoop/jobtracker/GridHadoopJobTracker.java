@@ -449,7 +449,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param jobId Job id.
      * @param c Closure of operation.
      */
-    private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> c) {
+    private void transform(GridHadoopJobId jobId, IgniteClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> c) {
         jobMetaCache().transformAsync(jobId, c).listenAsync(failsLog);
     }
 
@@ -1523,7 +1523,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /**
      * Abstract stacked closure.
      */
-    private abstract static class StackedClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+    private abstract static class StackedClosure implements IgniteClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
         /** */
         private static final long serialVersionUID = 0L;
 

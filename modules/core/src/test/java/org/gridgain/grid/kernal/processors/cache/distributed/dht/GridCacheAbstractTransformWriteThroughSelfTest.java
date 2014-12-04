@@ -55,14 +55,14 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Value increment closure. */
-    private static final GridClosure<Integer, Integer> INCR_CLOS = new GridClosure<Integer, Integer>() {
+    private static final IgniteClosure<Integer, Integer> INCR_CLOS = new IgniteClosure<Integer, Integer>() {
         @Override public Integer apply(Integer src) {
             return src == null ? 1 : src + 1;
         }
     };
 
     /** Value remove closure. */
-    private static final GridClosure<Integer, Integer> RMV_CLOS = new GridClosure<Integer, Integer>() {
+    private static final IgniteClosure<Integer, Integer> RMV_CLOS = new IgniteClosure<Integer, Integer>() {
         @Override public Integer apply(Integer src) {
             return null;
         }

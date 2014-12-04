@@ -135,7 +135,7 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> chain(GridClosure<? super GridFuture<T>, R> doneCb) {
+    @Override public <R> GridFuture<R> chain(IgniteClosure<? super GridFuture<T>, R> doneCb) {
         try {
             return new GridFinishedFutureEx<>(doneCb.apply(this));
         }

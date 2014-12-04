@@ -387,7 +387,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridCacheQueryFuture<R> execute(GridClosure<T, R> rmtTransform, @Nullable Object... args) {
+    @Override public <R> GridCacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
         return execute(null, rmtTransform, args);
     }
 
@@ -407,7 +407,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     @SuppressWarnings("IfMayBeConditional")
     private <R> GridCacheQueryFuture<R> execute(@Nullable GridReducer<T, R> rmtReducer,
-        @Nullable GridClosure<T, R> rmtTransform, @Nullable Object... args) {
+        @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
         Collection<ClusterNode> nodes = nodes();
 
         cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -431,7 +431,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
         GridCacheQueryBean bean = new GridCacheQueryBean(this, (GridReducer<Object, Object>)rmtReducer,
-            (GridClosure<Object, Object>)rmtTransform, args);
+            (IgniteClosure<Object, Object>)rmtTransform, args);
 
         GridCacheQueryManager qryMgr = cctx.queries();
 

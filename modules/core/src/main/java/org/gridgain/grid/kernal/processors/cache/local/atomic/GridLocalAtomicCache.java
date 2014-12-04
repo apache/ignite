@@ -309,7 +309,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws GridException {
         ctx.denyOnLocalRead();
 
         updateAllInternal(TRANSFORM,
@@ -324,7 +324,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         return (R)updateAllInternal(TRANSFORM,
             Collections.singleton(key),
@@ -338,7 +338,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> transformAsync(K key,
-        GridClosure<V, V> transformer,
+        IgniteClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl) {
         ctx.denyOnLocalRead();
@@ -348,7 +348,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) throws GridException {
+    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException {
         ctx.denyOnLocalRead();
 
         if (F.isEmpty(m))
@@ -365,7 +365,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) {
+    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         ctx.denyOnLocalRead();
 
         if (F.isEmpty(m))
@@ -668,7 +668,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      */
     private GridFuture updateAllAsync0(
         @Nullable final Map<? extends K, ? extends V> map,
-        @Nullable final Map<? extends K, ? extends GridClosure<V, V>> transformMap,
+        @Nullable final Map<? extends K, ? extends IgniteClosure<V, V>> transformMap,
         final boolean retval,
         final boolean rawRetval,
         final long ttl,
@@ -909,7 +909,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     }
 
                     if (op == TRANSFORM) {
-                        GridClosure<V, V> transform = (GridClosure<V, V>)val;
+                        IgniteClosure<V, V> transform = (IgniteClosure<V, V>)val;
 
                         V old = entry.innerGet(null,
                             /*swap*/true,

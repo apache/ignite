@@ -791,7 +791,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testReflectiveClosures() {
-        GridClosure<String, Integer> c = F.cInvoke("length");
+        IgniteClosure<String, Integer> c = F.cInvoke("length");
 
         try {
             assert c.apply("grid") == 4;
@@ -1147,7 +1147,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testCompose() {
-        GridClosure<String, Class<?>> c = new C1<String, Class<?>>() {
+        IgniteClosure<String, Class<?>> c = new C1<String, Class<?>>() {
             @Nullable
             @Override public Class<?> apply(String s) {
                 return s == null ? null : s.getClass();
@@ -1202,7 +1202,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testIdentity() {
-        GridClosure<Object, Object> c = F.identity();
+        IgniteClosure<Object, Object> c = F.identity();
 
         Object obj = new Object();
         String str = "test";
@@ -1216,7 +1216,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testAsClosure() {
-        GridClosure<String, Boolean> c = F.as(F.equalTo("test"));
+        IgniteClosure<String, Boolean> c = F.as(F.equalTo("test"));
 
         assert c.apply("test");
         assert !c.apply("test1");
@@ -1231,7 +1231,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         map.put("test-key", "test-value");
 
-        GridClosure<String, String> c = F.forMap(map);
+        IgniteClosure<String, String> c = F.forMap(map);
 
         assert c.apply("test") == null;
         assert c.apply("test-key") != null;
@@ -1254,7 +1254,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testStringify() {
-        GridClosure<Object, String> c = F.string();
+        IgniteClosure<Object, String> c = F.string();
 
         assert "1".equals(c.apply(1L));
         assert "test".equals(c.apply("test"));
@@ -2391,7 +2391,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         P1<Integer> nullPred = null;
 
         int cSize = c.size();
-        GridClosure<Integer, Integer> identity = F.identity();
+        IgniteClosure<Integer, Integer> identity = F.identity();
 
         assertEquals(cSize, F.transformList(c, identity, nullPred).size());
         assertEquals(cSize - 1, F.transformList(c, identity, pred, null).size());
@@ -2490,7 +2490,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         P1<Integer> nullPred = null;
 
         int cSize = c.size();
-        GridClosure<Integer, Integer> identity = F.identity();
+        IgniteClosure<Integer, Integer> identity = F.identity();
 
         assertEquals(cSize, F.transformSet(c, identity, nullPred).size());
         assertEquals(cSize - 1, F.transformSet(c, identity, pred, null).size());
@@ -2644,7 +2644,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testViewAsMap() {
         Set<Integer> c = F.asSet(1, 2, 3);
 
-        GridClosure<Integer, String> clo = new C1<Integer, String>() {
+        IgniteClosure<Integer, String> clo = new C1<Integer, String>() {
             @Override public String apply(Integer e) {
                 return String.valueOf(e);
             }

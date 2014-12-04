@@ -94,7 +94,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      */
     public GridFuture<GridCacheReturn<V>> transformAllAsync(
         GridCacheContext<K, V> cacheCtx,
-        @Nullable Map<? extends K, ? extends GridClosure<V, V>> map,
+        @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> map,
         boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl);

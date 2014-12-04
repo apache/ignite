@@ -32,7 +32,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
     private static final long serialVersionUID = 0L;
 
     /** Query closure. */
-    private GridClosure<GridStreamerContext, R1> clos;
+    private IgniteClosure<GridStreamerContext, R1> clos;
 
     /** Reducer. */
     private GridReducer<R1, R2> rdc;
@@ -45,7 +45,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
      * @param rdc Query reducer.
      * @param streamer Streamer.
      */
-    public GridStreamerReduceTask(GridClosure<GridStreamerContext, R1> clos, GridReducer<R1, R2> rdc,
+    public GridStreamerReduceTask(IgniteClosure<GridStreamerContext, R1> clos, GridReducer<R1, R2> rdc,
         @Nullable String streamer) {
         super(U.peerDeployAware(clos));
 
@@ -93,7 +93,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
         private Ignite g;
 
         /** Query closure. */
-        private GridClosure<GridStreamerContext, R> qryClos;
+        private IgniteClosure<GridStreamerContext, R> qryClos;
 
         /** Streamer. */
         private String streamer;
@@ -109,7 +109,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
          * @param qryClos Query closure.
          * @param streamer Streamer.
          */
-        private ReduceJob(GridClosure<GridStreamerContext, R> qryClos, String streamer) {
+        private ReduceJob(IgniteClosure<GridStreamerContext, R> qryClos, String streamer) {
             this.qryClos = qryClos;
             this.streamer = streamer;
         }
@@ -131,7 +131,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            qryClos = (GridClosure<GridStreamerContext, R>)in.readObject();
+            qryClos = (IgniteClosure<GridStreamerContext, R>)in.readObject();
             streamer = U.readString(in);
         }
     }

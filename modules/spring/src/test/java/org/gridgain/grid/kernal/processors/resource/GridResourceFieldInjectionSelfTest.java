@@ -174,7 +174,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            ignite.compute().apply(new GridClosure<Object, Object>() {
+            ignite.compute().apply(new IgniteClosure<Object, Object>() {
                 /** */
                 @GridInstanceResource
                 private Ignite ignite;
@@ -186,7 +186,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
                 }
             }, new Object());
 
-            ignite.compute().broadcast(new GridClosure<Object, Object>() {
+            ignite.compute().broadcast(new IgniteClosure<Object, Object>() {
                 /** */
                 @GridInstanceResource
                 private Ignite ignite;

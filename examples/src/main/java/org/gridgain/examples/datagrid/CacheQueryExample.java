@@ -233,8 +233,8 @@ public class CacheQueryExample {
         // Transformer to convert Person objects to String.
         // Since caller only needs employee names, we only
         // send names back.
-        GridClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String> trans =
-            new GridClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String>() {
+        IgniteClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String> trans =
+            new IgniteClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String>() {
                 @Override public String apply(Map.Entry<GridCacheAffinityKey<UUID>, Person> e) {
                     return e.getValue().lastName;
                 }

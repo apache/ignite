@@ -963,7 +963,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             try {
                 // Preparing query closures.
                 GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
-                GridClosure<List<?>, Object> trans = (GridClosure<List<?>, Object>)qryInfo.transformer();
+                IgniteClosure<List<?>, Object> trans = (IgniteClosure<List<?>, Object>)qryInfo.transformer();
                 GridReducer<List<?>, Object> rdc = (GridReducer<List<?>, Object>)qryInfo.reducer();
 
                 injectResources(prjFilter);
@@ -1139,7 +1139,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             try {
                 // Preparing query closures.
                 GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
-                GridClosure<Map.Entry<K, V>, Object> trans = (GridClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
+                IgniteClosure<Map.Entry<K, V>, Object> trans = (IgniteClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
                 GridReducer<Map.Entry<K, V>, Object> rdc = (GridReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
 
                 injectResources(prjFilter);
@@ -2658,12 +2658,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public void transform(GridClosure<V, V> transformer) {
+        @Override public void transform(IgniteClosure<V, V> transformer) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+        @Override public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
             throw new UnsupportedOperationException();
         }
 

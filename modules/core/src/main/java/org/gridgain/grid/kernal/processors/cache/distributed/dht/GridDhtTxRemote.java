@@ -277,7 +277,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param clos Transform closures.
      */
     public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheOperation op, GridCacheTxKey<K> key, byte[] keyBytes,
-        @Nullable V val, @Nullable byte[] valBytes, @Nullable Collection<GridClosure<V, V>> clos,
+        @Nullable V val, @Nullable byte[] valBytes, @Nullable Collection<IgniteClosure<V, V>> clos,
         @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 

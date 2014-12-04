@@ -313,24 +313,24 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#transform(Object, GridClosure)} method.
+     * {@link GridCacheProjection#transform(Object, org.gridgain.grid.lang.IgniteClosure)} method.
      *
      * @param transformer Closure to be applied to the previous value in cache. If this closure returns
      *      {@code null}, the associated value will be removed from cache.
      * @throws GridException If cache update failed.
-     * @see GridCacheProjection#transform(Object, GridClosure)
+     * @see GridCacheProjection#transform(Object, org.gridgain.grid.lang.IgniteClosure)
      */
-    public void transform(GridClosure<V, V> transformer) throws GridException;
+    public void transform(IgniteClosure<V, V> transformer) throws GridException;
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#transformAsync(Object, GridClosure)} method.
+     * {@link GridCacheProjection#transformAsync(Object, org.gridgain.grid.lang.IgniteClosure)} method.
      *
      * @param transformer Closure to be applied to the previous value in cache. If this closure returns
      *      {@code null}, the associated value will be removed from cache.
      * @return Transform operation future.
      */
-    public GridFuture<?> transformAsync(GridClosure<V, V> transformer);
+    public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer);
 
     /**
      * This method has the same semantic as

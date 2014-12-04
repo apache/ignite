@@ -30,7 +30,7 @@ import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
  */
 public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridStreamerIndexProvider<E, K, V> {
     /** */
-    protected final GridClosure<GridStreamerIndexEntry<E, K, V>, V> entryToVal =
+    protected final IgniteClosure<GridStreamerIndexEntry<E, K, V>, V> entryToVal =
         new C1<GridStreamerIndexEntry<E, K, V>, V>() {
             @Override public V apply(GridStreamerIndexEntry<E, K, V> e) {
                 return e.value();
@@ -38,7 +38,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
         };
 
     /** */
-    protected final GridClosure<GridStreamerIndexEntry<E, K, V>, K> entryToKey =
+    protected final IgniteClosure<GridStreamerIndexEntry<E, K, V>, K> entryToKey =
         new C1<GridStreamerIndexEntry<E, K, V>, K>() {
             @Override public K apply(GridStreamerIndexEntry<E, K, V> e) {
                 return e.key();

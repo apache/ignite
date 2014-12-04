@@ -266,12 +266,12 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
         throw unsupported();
     }
 

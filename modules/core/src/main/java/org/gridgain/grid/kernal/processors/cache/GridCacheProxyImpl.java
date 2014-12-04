@@ -711,7 +711,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -723,7 +723,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -762,7 +762,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -822,7 +822,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer,
+    @Override public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -920,7 +920,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) throws GridException {
+    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -932,7 +932,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Set<? extends K> keys, GridClosure<V, V> transformer)
+    @Override public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
         throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -958,7 +958,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) {
+    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -970,7 +970,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, GridClosure<V, V> transformer)
+    @Override public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
         throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

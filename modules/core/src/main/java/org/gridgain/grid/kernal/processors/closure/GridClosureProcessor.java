@@ -535,7 +535,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R> GridFuture<R> callAsync(GridClosure<T, R> job, @Nullable T arg,
+    public <T, R> GridFuture<R> callAsync(IgniteClosure<T, R> job, @Nullable T arg,
         @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
@@ -558,7 +558,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg,
+    public <T, R> GridFuture<Collection<R>> broadcast(IgniteClosure<T, R> job, @Nullable T arg,
         @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
@@ -581,7 +581,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R> GridFuture<Collection<R>> broadcastNoFailover(GridClosure<T, R> job, @Nullable T arg,
+    public <T, R> GridFuture<Collection<R>> broadcastNoFailover(IgniteClosure<T, R> job, @Nullable T arg,
         @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
@@ -605,7 +605,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R> GridFuture<Collection<R>> callAsync(GridClosure<T, R> job, @Nullable Collection<? extends T> args,
+    public <T, R> GridFuture<Collection<R>> callAsync(IgniteClosure<T, R> job, @Nullable Collection<? extends T> args,
         @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
@@ -629,7 +629,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R1, R2> GridFuture<R2> callAsync(GridClosure<T, R1> job,
+    public <T, R1, R2> GridFuture<R2> callAsync(IgniteClosure<T, R1> job,
         Collection<? extends T> args, GridReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
@@ -961,7 +961,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Job.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private <T, R> GridComputeJob job(final GridClosure<T, R> job, @Nullable final T arg) {
+    private <T, R> GridComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
         A.notNull(job, "job");
 
         if (job instanceof GridComputeJobMasterLeaveAware) {
@@ -1537,7 +1537,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridClosure<T, R> job;
+        private IgniteClosure<T, R> job;
 
         /** */
         private T arg;
@@ -1550,7 +1550,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param job Job.
          * @param arg Optional job argument.
          */
-        private T8(GridClosure<T, R> job, @Nullable T arg) {
+        private T8(IgniteClosure<T, R> job, @Nullable T arg) {
             super(U.peerDeployAware(job));
 
             this.job = job;
@@ -1582,7 +1582,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridClosure<T, R> job;
+        private IgniteClosure<T, R> job;
 
         /** */
         private Collection<? extends T> args;
@@ -1595,7 +1595,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param job Job.
          * @param args Job arguments.
          */
-        private T9(GridClosure<T, R> job, Collection<? extends T> args) {
+        private T9(IgniteClosure<T, R> job, Collection<? extends T> args) {
             super(U.peerDeployAware(job));
 
             this.job = job;
@@ -1631,7 +1631,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridClosure<T, R1> job;
+        private IgniteClosure<T, R1> job;
 
         /** */
         private Collection<? extends T> args;
@@ -1648,7 +1648,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param args Job arguments.
          * @param rdc Reducer.
          */
-        private T10(GridClosure<T, R1> job, Collection<? extends T> args, GridReducer<R1, R2> rdc) {
+        private T10(IgniteClosure<T, R1> job, Collection<? extends T> args, GridReducer<R1, R2> rdc) {
             super(U.peerDeployAware(job));
 
             this.job = job;
@@ -1696,7 +1696,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridClosure<T, R> job;
+        private final IgniteClosure<T, R> job;
 
         /** */
         private final T arg;
@@ -1706,7 +1706,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param arg Job argument.
          * @param nodes Collection of nodes.
          */
-        private T11(GridClosure<T, R> job, @Nullable T arg, Collection<ClusterNode> nodes) {
+        private T11(IgniteClosure<T, R> job, @Nullable T arg, Collection<ClusterNode> nodes) {
             super(U.peerDeployAware(job));
 
             this.job = job;

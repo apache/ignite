@@ -33,7 +33,7 @@ public class GridConcurrentWeakHashSet<E> implements Set<E> {
     private final ReferenceQueue<E> gcQ = new ReferenceQueue<>();
 
     /** Reference factory. */
-    private final GridClosure<E, WeakReferenceElement<E>> fact = new GridClosure<E, WeakReferenceElement<E>>() {
+    private final IgniteClosure<E, WeakReferenceElement<E>> fact = new IgniteClosure<E, WeakReferenceElement<E>>() {
         @Override public WeakReferenceElement<E> apply(E e) {
             assert e != null;
 

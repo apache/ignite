@@ -1219,7 +1219,7 @@ public abstract class GridAbstractTest extends TestCase {
                     runTestInternal();
                 }
                 catch (Throwable e) {
-                    GridClosure<Throwable, Throwable> hnd = errorHandler();
+                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
                     ex.set(hnd != null ? hnd.apply(e) : e);
                 }
@@ -1264,7 +1264,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Error handler to process all uncaught exceptions of the test run
      *      ({@code null} by default).
      */
-    protected GridClosure<Throwable, Throwable> errorHandler() {
+    protected IgniteClosure<Throwable, Throwable> errorHandler() {
         return null;
     }
 

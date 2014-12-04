@@ -27,7 +27,7 @@ class GridCacheQueryInfo {
     private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
 
     /** */
-    private GridClosure<Object, Object> trans;
+    private IgniteClosure<Object, Object> trans;
 
     /** */
     private GridReducer<Object, Object> rdc;
@@ -69,7 +69,7 @@ class GridCacheQueryInfo {
     GridCacheQueryInfo(
         boolean loc,
         GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-        GridClosure<Object, Object> trans,
+        IgniteClosure<Object, Object> trans,
         GridReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
         GridCacheLocalQueryFuture<?, ?, ?> locFut,
@@ -123,7 +123,7 @@ class GridCacheQueryInfo {
     /**
      * @return Transformer.
      */
-    GridClosure<?, Object> transformer() {
+    IgniteClosure<?, Object> transformer() {
         return trans;
     }
 

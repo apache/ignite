@@ -495,7 +495,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @param taskStarter Task started.
      * @throws Exception If failed.
      */
-    private void testMasterLeaveAwareCallback(int expJobs, GridClosure<ClusterGroup, GridFuture<?>> taskStarter)
+    private void testMasterLeaveAwareCallback(int expJobs, IgniteClosure<ClusterGroup, GridFuture<?>> taskStarter)
         throws Exception {
         jobLatch = new CountDownLatch(expJobs);
         invokeLatch  = new CountDownLatch(expJobs);
@@ -623,7 +623,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware closure.
      */
-    private static class TestClosure implements GridClosure<String, Void>, GridComputeJobMasterLeaveAware {
+    private static class TestClosure implements IgniteClosure<String, Void>, GridComputeJobMasterLeaveAware {
         /** Task session. */
         @GridLoggerResource
         private GridLogger log;

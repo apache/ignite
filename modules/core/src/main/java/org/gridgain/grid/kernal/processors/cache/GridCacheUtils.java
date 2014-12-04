@@ -72,7 +72,7 @@ public class GridCacheUtils {
     private static final GridPredicate[] EMPTY = new GridPredicate[0];
 
     /** Partition to state transformer. */
-    private static final GridClosure PART2STATE =
+    private static final IgniteClosure PART2STATE =
         new C1<GridDhtLocalPartition, GridDhtPartitionState>() {
             @Override public GridDhtPartitionState apply(GridDhtLocalPartition p) {
                 return p.state();
@@ -87,7 +87,7 @@ public class GridCacheUtils {
     };
 
     /** */
-    private static final GridClosure<Integer, GridCacheVersion[]> VER_ARR_FACTORY =
+    private static final IgniteClosure<Integer, GridCacheVersion[]> VER_ARR_FACTORY =
         new C1<Integer, GridCacheVersion[]>() {
             @Override public GridCacheVersion[] apply(Integer size) {
                 return new GridCacheVersion[size];
@@ -136,7 +136,7 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final GridClosure tx2key = new C1<GridCacheTxEntry, Object>() {
+    private static final IgniteClosure tx2key = new C1<GridCacheTxEntry, Object>() {
         @Override public Object apply(GridCacheTxEntry e) {
             return e.key();
         }
@@ -147,7 +147,7 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final GridClosure txCol2key = new C1<Collection<GridCacheTxEntry>, Collection<Object>>() {
+    private static final IgniteClosure txCol2key = new C1<Collection<GridCacheTxEntry>, Collection<Object>>() {
         @SuppressWarnings( {"unchecked"})
         @Override public Collection<Object> apply(Collection<GridCacheTxEntry> e) {
             return F.viewReadOnly(e, tx2key);
@@ -159,7 +159,7 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID. */
-    private static final GridClosure<GridCacheTx, GridUuid> tx2xid = new C1<GridCacheTx, GridUuid>() {
+    private static final IgniteClosure<GridCacheTx, GridUuid> tx2xid = new C1<GridCacheTx, GridUuid>() {
         @Override public GridUuid apply(GridCacheTx tx) {
             return tx.xid();
         }
@@ -170,7 +170,7 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID version. */
-    private static final GridClosure tx2xidVer = new C1<GridCacheTxEx, GridCacheVersion>() {
+    private static final IgniteClosure tx2xidVer = new C1<GridCacheTxEx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(GridCacheTxEx tx) {
             return tx.xidVersion();
         }
@@ -181,14 +181,14 @@ public class GridCacheUtils {
     };
 
     /** Converts tx entry to entry. */
-    private static final GridClosure tx2entry = new C1<GridCacheTxEntry, GridCacheEntryEx>() {
+    private static final IgniteClosure tx2entry = new C1<GridCacheTxEntry, GridCacheEntryEx>() {
         @Override public GridCacheEntryEx apply(GridCacheTxEntry e) {
             return e.cached();
         }
     };
 
     /** Transaction entry to key bytes. */
-    private static final GridClosure tx2keyBytes = new C1<GridCacheTxEntry, byte[]>() {
+    private static final IgniteClosure tx2keyBytes = new C1<GridCacheTxEntry, byte[]>() {
         @Nullable @Override public byte[] apply(GridCacheTxEntry e) {
             return e.keyBytes();
         }
@@ -199,7 +199,7 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final GridClosure entry2key = new C1<GridCacheEntryEx, Object>() {
+    private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, Object>() {
         @Override public Object apply(GridCacheEntryEx e) {
             return e.key();
         }
@@ -210,7 +210,7 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final GridClosure info2key = new C1<GridCacheEntryInfo, Object>() {
+    private static final IgniteClosure info2key = new C1<GridCacheEntryInfo, Object>() {
         @Override public Object apply(GridCacheEntryInfo e) {
             return e.key();
         }
@@ -334,8 +334,8 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Factory instance.
      */
-    public static <K, V> GridClosure<Integer, GridPredicate<GridCacheEntry<K, V>>[]> factory() {
-        return new GridClosure<Integer, GridPredicate<GridCacheEntry<K, V>>[]>() {
+    public static <K, V> IgniteClosure<Integer, GridPredicate<GridCacheEntry<K, V>>[]> factory() {
+        return new IgniteClosure<Integer, GridPredicate<GridCacheEntry<K, V>>[]>() {
             @SuppressWarnings({"unchecked"})
             @Override public GridPredicate<GridCacheEntry<K, V>>[] apply(Integer len) {
                 return (GridPredicate<GridCacheEntry<K, V>>[])(len == 0 ? EMPTY : new GridPredicate[len]);
@@ -387,9 +387,9 @@ public class GridCacheUtils {
      * @param <V> Cache value type.
      * @return Closure which returns {@link GridCacheEntry} given cache key or {@code null} if partition is invalid.
      */
-    public static <K, V> GridClosure<K, GridCacheEntry<K, V>> cacheKey2Entry(
+    public static <K, V> IgniteClosure<K, GridCacheEntry<K, V>> cacheKey2Entry(
         final GridCacheContext<K, V> ctx) {
-        return new GridClosure<K, GridCacheEntry<K, V>>() {
+        return new IgniteClosure<K, GridCacheEntry<K, V>>() {
             @Nullable @Override public GridCacheEntry<K, V> apply(K k) {
                 try {
                     return ctx.cache().entry(k);
@@ -409,7 +409,7 @@ public class GridCacheUtils {
      * @return Partition to state transformer.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridDhtLocalPartition<K, V>, GridDhtPartitionState> part2state() {
+    public static <K, V> IgniteClosure<GridDhtLocalPartition<K, V>, GridDhtPartitionState> part2state() {
         return PART2STATE;
     }
 
@@ -761,46 +761,46 @@ public class GridCacheUtils {
      * @return Closure that converts tx entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridCacheTxEntry<K, V>, K> tx2key() {
-        return (GridClosure<GridCacheTxEntry<K, V>, K>)tx2key;
+    public static <K, V> IgniteClosure<GridCacheTxEntry<K, V>, K> tx2key() {
+        return (IgniteClosure<GridCacheTxEntry<K, V>, K>)tx2key;
     }
 
     /**
      * @return Closure that converts tx entry collection to key collection.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<Collection<GridCacheTxEntry<K, V>>, Collection<K>> txCol2Key() {
-        return (GridClosure<Collection<GridCacheTxEntry<K, V>>, Collection<K>>)txCol2key;
+    public static <K, V> IgniteClosure<Collection<GridCacheTxEntry<K, V>>, Collection<K>> txCol2Key() {
+        return (IgniteClosure<Collection<GridCacheTxEntry<K, V>>, Collection<K>>)txCol2key;
     }
 
     /**
      * @return Closure that converts tx entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridCacheTxEntry<K, V>, byte[]> tx2keyBytes() {
-        return (GridClosure<GridCacheTxEntry<K, V>, byte[]>)tx2keyBytes;
+    public static <K, V> IgniteClosure<GridCacheTxEntry<K, V>, byte[]> tx2keyBytes() {
+        return (IgniteClosure<GridCacheTxEntry<K, V>, byte[]>)tx2keyBytes;
     }
 
     /**
      * @return Converts transaction entry to cache entry.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> GridClosure<GridCacheTxEntry<K, V>, GridCacheEntryEx<K, V>> tx2entry() {
-        return (GridClosure<GridCacheTxEntry<K, V>, GridCacheEntryEx<K, V>>)tx2entry;
+    public static <K, V> IgniteClosure<GridCacheTxEntry<K, V>, GridCacheEntryEx<K, V>> tx2entry() {
+        return (IgniteClosure<GridCacheTxEntry<K, V>, GridCacheEntryEx<K, V>>)tx2entry;
     }
 
     /**
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> GridClosure<GridCacheTxEx<K, V>, GridCacheVersion> tx2xidVersion() {
-        return (GridClosure<GridCacheTxEx<K, V>, GridCacheVersion>)tx2xidVer;
+    public static <K, V> IgniteClosure<GridCacheTxEx<K, V>, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<GridCacheTxEx<K, V>, GridCacheVersion>)tx2xidVer;
     }
 
     /**
      * @return Closure which converts transaction to xid.
      */
-    public static GridClosure<GridCacheTx, GridUuid> tx2xid() {
+    public static IgniteClosure<GridCacheTx, GridUuid> tx2xid() {
         return tx2xid;
     }
 
@@ -808,16 +808,16 @@ public class GridCacheUtils {
      * @return Closure that converts entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridCacheEntryEx<K, V>, K> entry2Key() {
-        return (GridClosure<GridCacheEntryEx<K, V>, K>)entry2key;
+    public static <K, V> IgniteClosure<GridCacheEntryEx<K, V>, K> entry2Key() {
+        return (IgniteClosure<GridCacheEntryEx<K, V>, K>)entry2key;
     }
 
     /**
      * @return Closure that converts entry info to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridCacheEntryInfo<K, V>, K> info2Key() {
-        return (GridClosure<GridCacheEntryInfo<K, V>, K>)info2key;
+    public static <K, V> IgniteClosure<GridCacheEntryInfo<K, V>, K> info2Key() {
+        return (IgniteClosure<GridCacheEntryInfo<K, V>, K>)info2key;
     }
 
     /**
@@ -1307,7 +1307,7 @@ public class GridCacheUtils {
     /**
      * @return Version array factory.
      */
-    public static GridClosure<Integer, GridCacheVersion[]> versionArrayFactory() {
+    public static IgniteClosure<Integer, GridCacheVersion[]> versionArrayFactory() {
         return VER_ARR_FACTORY;
     }
 

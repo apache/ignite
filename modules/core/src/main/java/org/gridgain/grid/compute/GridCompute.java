@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * </pre>
  * The methods are grouped as follows:
  * <ul>
- * <li>{@code apply(...)} methods execute {@link GridClosure} jobs over nodes in the projection.</li>
+ * <li>{@code apply(...)} methods execute {@link org.gridgain.grid.lang.IgniteClosure} jobs over nodes in the projection.</li>
  * <li>
  *     {@code call(...)} methods execute {@link Callable} jobs over nodes in the projection.
  *     Use {@link org.apache.ignite.lang.IgniteCallable} for better performance as it implements {@link Serializable}.
@@ -219,7 +219,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @return Collection of results for this execution.
      * @throws GridException If execution failed.
      */
-    public <R, T> Collection<R> broadcast(GridClosure<T, R> job, @Nullable T arg) throws GridException;
+    public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws GridException;
 
     /**
      * Executes provided job on a node in this grid projection.
@@ -290,7 +290,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws GridException If execution failed.
      */
-    public <R, T> R apply(GridClosure<T, R> job, @Nullable T arg) throws GridException;
+    public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws GridException;
 
     /**
      * Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -304,7 +304,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @return Collection of job results.
      * @throws GridException If execution failed.
      */
-    public <T, R> Collection<R> apply(GridClosure<T, R> job, Collection<? extends T> args) throws GridException;
+    public <T, R> Collection<R> apply(IgniteClosure<T, R> job, Collection<? extends T> args) throws GridException;
 
     /**
      * Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -320,7 +320,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @return Future with reduced job result for this execution.
      * @throws GridException If execution failed.
      */
-    public <R1, R2, T> R2 apply(GridClosure<T, R1> job, Collection<? extends T> args,
+    public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
         GridReducer<R1, R2> rdc) throws GridException;
 
     /**

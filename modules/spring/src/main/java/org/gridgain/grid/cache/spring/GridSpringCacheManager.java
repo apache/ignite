@@ -224,7 +224,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     @Override public Collection<String> getCacheNames() {
         assert ignite != null;
 
-        return F.viewReadOnly(ignite.caches(), new GridClosure<GridCache<?, ?>, String>() {
+        return F.viewReadOnly(ignite.caches(), new IgniteClosure<GridCache<?, ?>, String>() {
             @Override public String apply(GridCache<?, ?> c) {
                 return c.name();
             }

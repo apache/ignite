@@ -154,7 +154,7 @@ public class GridWebSessionFilter implements Filter {
     private ServletContext ctx;
 
     /** Session ID transformer. */
-    private GridClosure<String, String> sesIdTransformer;
+    private IgniteClosure<String, String> sesIdTransformer;
 
     /** Transactions enabled flag. */
     private boolean txEnabled;

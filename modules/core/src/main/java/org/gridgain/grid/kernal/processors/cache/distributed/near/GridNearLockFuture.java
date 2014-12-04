@@ -169,7 +169,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      */
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, ClusterNode>() {
+            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<?>, ClusterNode>() {
                 @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();

@@ -103,12 +103,12 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo) throws GridException {
+    @Override public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo) throws GridException {
         return query(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
+    @Override public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException {
         ctx.gateway().readLock();
 
@@ -155,13 +155,13 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc)
+    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc)
         throws GridException {
         return reduce(clo, rdc, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
+    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
         Collection<ClusterNode> nodes) throws GridException {
         ctx.gateway().readLock();
 

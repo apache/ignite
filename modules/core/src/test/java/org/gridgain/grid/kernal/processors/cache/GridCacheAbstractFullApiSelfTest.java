@@ -42,14 +42,14 @@ import static org.gridgain.testframework.GridTestUtils.*;
  */
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
     /** Increment closure for transform operations. */
-    public static final GridClosure<Integer,Integer> INCR_CLOS = new GridClosure<Integer, Integer>() {
+    public static final IgniteClosure<Integer,Integer> INCR_CLOS = new IgniteClosure<Integer, Integer>() {
         @Override public Integer apply(Integer old) {
             return old == null ? 1 : old + 1;
         }
     };
 
     /** Remove closure for transform operations. */
-    public static final GridClosure<Integer,Integer> RMV_CLOS = new GridClosure<Integer, Integer>() {
+    public static final IgniteClosure<Integer,Integer> RMV_CLOS = new IgniteClosure<Integer, Integer>() {
         @Override public Integer apply(Integer e) {
             return null;
         }
@@ -912,7 +912,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         {
-            Map<String, GridClosure<Integer, Integer>> tm = new HashMap<>(2);
+            Map<String, IgniteClosure<Integer, Integer>> tm = new HashMap<>(2);
 
             tm.put("key1", INCR_CLOS);
             tm.put(null, INCR_CLOS);
@@ -923,7 +923,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         {
-            Map<String, GridClosure<Integer, Integer>> tm = new HashMap<>(2);
+            Map<String, IgniteClosure<Integer, Integer>> tm = new HashMap<>(2);
 
             tm.put("key1", INCR_CLOS);
             tm.put("key2", null);
@@ -1225,9 +1225,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testTransformCompute() throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
-        GridClosure<Integer, IgniteBiTuple<Integer, String>> c;
+        IgniteClosure<Integer, IgniteBiTuple<Integer, String>> c;
 
-        c = new GridClosure<Integer, IgniteBiTuple<Integer, String>>() {
+        c = new IgniteClosure<Integer, IgniteBiTuple<Integer, String>>() {
             @Override public IgniteBiTuple<Integer, String> apply(Integer val) {
                 return val == null ? new IgniteBiTuple<>(0, "null") : new IgniteBiTuple<>(val + 1, String.valueOf(val));
             }
@@ -1251,7 +1251,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)3, cache.get("k1"));
 
-        c = new GridClosure<Integer, IgniteBiTuple<Integer, String>>() {
+        c = new IgniteClosure<Integer, IgniteBiTuple<Integer, String>>() {
             @Override public IgniteBiTuple<Integer, String> apply(Integer integer) {
                 return new IgniteBiTuple<>(null, null);
             }

@@ -200,7 +200,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> Collection<R> broadcast(GridClosure<T, R> job, @Nullable T arg) throws GridException {
+    @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws GridException {
         A.notNull(job, "job");
 
         guard();
@@ -242,7 +242,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> R apply(GridClosure<T, R> job, @Nullable T arg) throws GridException {
+    @Override public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws GridException {
         A.notNull(job, "job");
 
         guard();
@@ -284,7 +284,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> Collection<R> apply(final GridClosure<T, R> job,
+    @Override public <T, R> Collection<R> apply(final IgniteClosure<T, R> job,
         @Nullable Collection<? extends T> args) throws GridException {
         A.notNull(job, "job");
         A.notNull(args, "args");
@@ -316,7 +316,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2, T> R2 apply(GridClosure<T, R1> job, Collection<? extends T> args,
+    @Override public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
         GridReducer<R1, R2> rdc) throws GridException {
         A.notNull(job, "job");
         A.notNull(rdc, "rdc");

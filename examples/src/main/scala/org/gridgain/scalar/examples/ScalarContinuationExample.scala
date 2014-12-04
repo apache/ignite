@@ -16,7 +16,7 @@ import java.math._
 import org.gridgain.grid._
 import resources._
 import org.jetbrains.annotations.Nullable
-import org.gridgain.grid.lang.GridClosure
+import org.gridgain.grid.lang.IgniteClosure
 import java.util
 import org.gridgain.grid.compute._
 
@@ -68,7 +68,7 @@ object ScalarContinuationExample {
  */
 class FibonacciClosure (
     private[this] val excludeNodeId: util.UUID
-) extends GridClosure[Long, BigInteger] {
+) extends IgniteClosure[Long, BigInteger] {
     // These fields must be *transient* so they do not get
     // serialized and sent to remote nodes.
     // However, these fields will be preserved locally while

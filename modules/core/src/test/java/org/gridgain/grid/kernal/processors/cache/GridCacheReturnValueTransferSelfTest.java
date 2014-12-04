@@ -158,7 +158,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
         }
     }
 
-    private static class Transform implements GridClosure<TestObject, TestObject> {
+    private static class Transform implements IgniteClosure<TestObject, TestObject> {
         /** {@inheritDoc} */
         @Override public TestObject apply(TestObject testObject) {
             return new TestObject();

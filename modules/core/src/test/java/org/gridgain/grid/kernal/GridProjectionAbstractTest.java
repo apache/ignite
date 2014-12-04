@@ -51,7 +51,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private Callable<String> calJob = new TestCallable<>();
 
     /** Closure job. */
-    private GridClosure<String, String> clrJob = new GridClosure<String, String>() {
+    private IgniteClosure<String, String> clrJob = new IgniteClosure<String, String>() {
         @Override public String apply(String s) {
             return s;
         }
@@ -676,7 +676,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      *  Test closure.
      */
-    private static class TestClosure implements GridClosure<String, String> {
+    private static class TestClosure implements IgniteClosure<String, String> {
         /** {@inheritDoc} */
         @Override public String apply(String s) {
             return s;

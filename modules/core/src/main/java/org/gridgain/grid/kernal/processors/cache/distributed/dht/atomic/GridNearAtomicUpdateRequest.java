@@ -271,7 +271,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     public void addUpdateEntry(K key, @Nullable Object val, long drTtl, long drExpireTime,
         @Nullable GridCacheVersion drVer, boolean primary) {
         assert val != null || op == DELETE;
-        assert op != TRANSFORM || val instanceof GridClosure;
+        assert op != TRANSFORM || val instanceof IgniteClosure;
 
         keys.add(key);
         vals.add(val);
@@ -350,10 +350,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @param idx Key index.
      * @return Transform closure.
      */
-    public GridClosure<V, V> transformClosure(int idx) {
+    public IgniteClosure<V, V> transformClosure(int idx) {
         assert op == TRANSFORM : op;
 
-        return (GridClosure<V, V>)vals.get(idx);
+        return (IgniteClosure<V, V>)vals.get(idx);
     }
 
     /**

@@ -74,7 +74,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object, Object> trans;
+    private IgniteClosure<Object, Object> trans;
 
     /** */
     private byte[] transBytes;
@@ -196,7 +196,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         IgniteBiPredicate<Object, Object> keyValFilter,
         GridPredicate<GridCacheEntry<Object, Object>> prjFilter,
         GridReducer<Object, Object> rdc,
-        GridClosure<Object, Object> trans,
+        IgniteClosure<Object, Object> trans,
         int pageSize,
         boolean incBackups,
         Object[] args,
@@ -302,7 +302,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         GridMarshaller marsh = ctx.marshaller();
 
         rdc = rdc != null ? marsh.<GridReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
-        trans = trans != null ? marsh.<GridClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;
+        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;
     }
 
     /**
@@ -383,7 +383,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * @return Transformer.
      */
-    public GridClosure<Object, Object> transformer() {
+    public IgniteClosure<Object, Object> transformer() {
         return trans;
     }
 

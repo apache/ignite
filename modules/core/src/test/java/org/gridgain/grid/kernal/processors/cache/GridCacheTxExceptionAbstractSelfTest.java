@@ -418,7 +418,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).transform(key, new GridClosure<Object, Object>() {
+                grid(0).cache(null).transform(key, new IgniteClosure<Object, Object>() {
                     @Override public Object apply(Object o) {
                         return 2;
                     }

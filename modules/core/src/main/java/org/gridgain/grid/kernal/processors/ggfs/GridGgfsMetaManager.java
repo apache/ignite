@@ -1266,7 +1266,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     Map<String, GridGgfsListingEntry> listing = trashInfo.listing();
 
                     if (listing != null && !listing.isEmpty()) {
-                        return F.viewReadOnly(listing.values(), new GridClosure<GridGgfsListingEntry, GridUuid>() {
+                        return F.viewReadOnly(listing.values(), new IgniteClosure<GridGgfsListingEntry, GridUuid>() {
                             @Override public GridUuid apply(GridGgfsListingEntry e) {
                                 return e.fileId();
                             }
@@ -1443,7 +1443,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws GridException If failed.
      */
-    @Nullable public GridGgfsFileInfo updateInfo(GridUuid fileId, GridClosure<GridGgfsFileInfo, GridGgfsFileInfo> c)
+    @Nullable public GridGgfsFileInfo updateInfo(GridUuid fileId, IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> c)
         throws GridException {
         assert validTxState(false);
         assert fileId != null;
@@ -2531,7 +2531,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return {@code True} if value was stored in cache, {@code false} otherwise.
      * @throws GridException If operation failed.
      */
-    private <K, V> boolean putx(GridCacheProjection<K, V> cache, K key, GridClosure<V, V> c) throws GridException {
+    private <K, V> boolean putx(GridCacheProjection<K, V> cache, K key, IgniteClosure<V, V> c) throws GridException {
         assert validTxState(true);
 
         V oldVal = cache.get(key);
@@ -2740,7 +2740,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     /**
      * Updates file length information in parent listing.
      */
-    private static final class UpdateListingEntry implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class UpdateListingEntry implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -2828,7 +2828,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update directory listing closure.
      */
     @GridInternal
-    private static final class UpdateListing implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class UpdateListing implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -2923,7 +2923,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update path closure.
      */
     @GridInternal
-    private static final class UpdatePath implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class UpdatePath implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;

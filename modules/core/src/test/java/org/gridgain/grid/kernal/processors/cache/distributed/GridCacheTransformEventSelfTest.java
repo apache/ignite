@@ -570,7 +570,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /**
      * Transform closure.
      */
-    private static class Transformer implements GridClosure<Integer, Integer>, Serializable {
+    private static class Transformer implements IgniteClosure<Integer, Integer>, Serializable {
         /** {@inheritDoc} */
         @Override public Integer apply(Integer val) {
             return ++val;

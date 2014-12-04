@@ -1149,7 +1149,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         CU.<K, V>empty());
 
                 try {
-                    for (GridClosure<V, V> clos : txEntry.transformClosures())
+                    for (IgniteClosure<V, V> clos : txEntry.transformClosures())
                         val = clos.apply(val);
                 }
                 catch (Throwable e) {

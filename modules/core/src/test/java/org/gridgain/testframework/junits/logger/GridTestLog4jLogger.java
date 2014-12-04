@@ -258,7 +258,7 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Gri
      * @param implInitC Optional log implementation init closure.
      */
     private void addConsoleAppenderIfNeeded(@Nullable Level logLevel,
-        @Nullable GridClosure<Boolean, Logger> implInitC) {
+        @Nullable IgniteClosure<Boolean, Logger> implInitC) {
         if (inited) {
             if (implInitC != null)
                 // Do not init.

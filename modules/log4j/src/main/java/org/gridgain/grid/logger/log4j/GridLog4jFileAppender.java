@@ -88,7 +88,7 @@ public class GridLog4jFileAppender extends FileAppender implements GridLog4jFile
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void updateFilePath(GridClosure<String, String> filePathClos) {
+    @Override public synchronized void updateFilePath(IgniteClosure<String, String> filePathClos) {
         A.notNull(filePathClos, "filePathClos");
 
         if (baseFileName == null)

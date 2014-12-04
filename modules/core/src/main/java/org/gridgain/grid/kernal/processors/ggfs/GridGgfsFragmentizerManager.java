@@ -310,7 +310,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @param status Status.
      * @return Update closure.
      */
-    private GridClosure<GridGgfsFileInfo, GridGgfsFileInfo> updateRange(final GridGgfsFileAffinityRange range,
+    private IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> updateRange(final GridGgfsFileAffinityRange range,
         final int status) {
         return new CX1<GridGgfsFileInfo, GridGgfsFileInfo>() {
             @Override public GridGgfsFileInfo applyx(GridGgfsFileInfo info) throws GridException {
@@ -337,7 +337,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @param range Range to mark as moving.
      * @return Update closure.
      */
-    private GridClosure<GridGgfsFileInfo, GridGgfsFileInfo> deleteRange(final GridGgfsFileAffinityRange range) {
+    private IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> deleteRange(final GridGgfsFileAffinityRange range) {
         return new CX1<GridGgfsFileInfo, GridGgfsFileInfo>() {
             @Override public GridGgfsFileInfo applyx(GridGgfsFileInfo info) throws GridException {
                 GridGgfsFileMap map = new GridGgfsFileMap(info.fileMap());

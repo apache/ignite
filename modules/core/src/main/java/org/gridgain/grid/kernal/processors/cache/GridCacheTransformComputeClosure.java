@@ -17,12 +17,12 @@ import java.io.*;
 
 /**
  */
-public final class GridCacheTransformComputeClosure<V, R> implements GridClosure<V, V>, Externalizable {
+public final class GridCacheTransformComputeClosure<V, R> implements IgniteClosure<V, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridClosure<V, IgniteBiTuple<V, R>> transformer;
+    private IgniteClosure<V, IgniteBiTuple<V, R>> transformer;
 
     /** */
     private R retVal;
@@ -37,12 +37,12 @@ public final class GridCacheTransformComputeClosure<V, R> implements GridClosure
     /**
      * @param transformer Transformer closure.
      */
-    public GridCacheTransformComputeClosure(GridClosure<V, IgniteBiTuple<V, R>> transformer) {
+    public GridCacheTransformComputeClosure(IgniteClosure<V, IgniteBiTuple<V, R>> transformer) {
         this.transformer = transformer;
     }
 
     /**
-     * @return Return value for {@link GridCacheProjection#transformAndCompute(Object, GridClosure)}
+     * @return Return value for {@link GridCacheProjection#transformAndCompute(Object, org.gridgain.grid.lang.IgniteClosure)}
      */
     public R returnValue() {
         return retVal;
@@ -64,6 +64,6 @@ public final class GridCacheTransformComputeClosure<V, R> implements GridClosure
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        transformer = (GridClosure<V, IgniteBiTuple<V, R>>)in.readObject();
+        transformer = (IgniteClosure<V, IgniteBiTuple<V, R>>)in.readObject();
     }
 }

@@ -20,5 +20,5 @@ interface GridLog4jFileAware {
      *
      * @param filePathClos Closure that generates actual file path.
      */
-    void updateFilePath(GridClosure<String, String> filePathClos);
+    void updateFilePath(IgniteClosure<String, String> filePathClos);
 }

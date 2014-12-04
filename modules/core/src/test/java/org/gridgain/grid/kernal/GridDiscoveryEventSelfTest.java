@@ -46,7 +46,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static final GridClosure<ClusterNode, UUID> NODE_2ID = new GridClosure<ClusterNode, UUID>() {
+    private static final IgniteClosure<ClusterNode, UUID> NODE_2ID = new IgniteClosure<ClusterNode, UUID>() {
         @Override public UUID apply(ClusterNode n) {
             return n.id();
         }

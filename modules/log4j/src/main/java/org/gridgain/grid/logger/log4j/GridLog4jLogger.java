@@ -259,7 +259,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
      * @param implInitC Optional log implementation init closure.
      */
     private void addConsoleAppenderIfNeeded(@Nullable Level logLevel,
-        @Nullable GridClosure<Boolean, Logger> implInitC) {
+        @Nullable IgniteClosure<Boolean, Logger> implInitC) {
         if (inited) {
             if (implInitC != null)
                 // Do not init.
@@ -502,7 +502,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
     }
 
     /** {@inheritDoc} */
-    @Override public void updateFilePath(GridClosure<String, String> filePathClos) {
+    @Override public void updateFilePath(IgniteClosure<String, String> filePathClos) {
         A.notNull(filePathClos, "filePathClos");
 
         for (FileAppender a : fileAppenders) {

@@ -647,8 +647,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /**
      */
-    protected static class ClearClosure implements GridClosure<GridCacheQueueHeader,
-        IgniteBiTuple<GridCacheQueueHeader, IgniteBiTuple<Long, Long>>>,
+    protected static class ClearClosure implements IgniteClosure<GridCacheQueueHeader,
+            IgniteBiTuple<GridCacheQueueHeader, IgniteBiTuple<Long, Long>>>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -699,7 +699,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      */
     protected static class PollClosure implements
-        GridClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -771,7 +771,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      */
     protected static class AddClosure implements
-        GridClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -835,7 +835,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      */
     protected static class RemoveClosure implements
-        GridClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

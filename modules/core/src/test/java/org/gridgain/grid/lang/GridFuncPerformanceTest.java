@@ -57,7 +57,7 @@ public class GridFuncPerformanceTest extends GridCommonAbstractTest {
         for (int i = 0; i < MAX / 10; i++)
             l.add(i);
 
-        GridClosure<Integer, Integer> c = new GridClosure<Integer, Integer>() {
+        IgniteClosure<Integer, Integer> c = new IgniteClosure<Integer, Integer>() {
             @Override public Integer apply(Integer e) {
                 return e;
             }

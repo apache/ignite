@@ -571,8 +571,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
      * @param i Value to wrap.
      * @return Closure.
      */
-    private static GridClosure<Integer, Integer> closure(@Nullable final Integer i) {
-        return new GridClosure<Integer, Integer>() {
+    private static IgniteClosure<Integer, Integer> closure(@Nullable final Integer i) {
+        return new IgniteClosure<Integer, Integer>() {
             @Override public Integer apply(Integer e) {
                 return e == null ? i : e + i;
             }
@@ -585,8 +585,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
      * @param obj Value to wrap.
      * @return Closure.
      */
-    private static <T> GridClosure<T, T> fixedClosure(@Nullable final T obj) {
-        return new GridClosure<T, T>() {
+    private static <T> IgniteClosure<T, T> fixedClosure(@Nullable final T obj) {
+        return new IgniteClosure<T, T>() {
             @Override public T apply(T e) {
                 assert e == null || obj == null || e.getClass() == obj.getClass() :
                     "Expects the same types [e=" + e + ", obj=" + obj + ']';
@@ -602,8 +602,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
      * @param exp Expected closure value.
      * @return Remove expected cache value closure.
      */
-    private static <T> GridClosure<T, T> removeClosure(@Nullable final T exp) {
-        return new GridClosure<T, T>() {
+    private static <T> IgniteClosure<T, T> removeClosure(@Nullable final T exp) {
+        return new IgniteClosure<T, T>() {
             @Override public T apply(T act) {
                 if (exp == null ? act == null : exp.equals(act))
                     return null;

@@ -49,7 +49,7 @@ public class GridJettyRestHandler extends AbstractHandler {
     private volatile byte[] favicon;
 
     /** Authentication checker. */
-    private final GridClosure<String, Boolean> authChecker;
+    private final IgniteClosure<String, Boolean> authChecker;
 
     /**
      * Creates new HTTP requests handler.
@@ -58,7 +58,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param authChecker Authentication checking closure.
      * @param log Logger.
      */
-    GridJettyRestHandler(GridRestProtocolHandler hnd, GridClosure<String, Boolean> authChecker, GridLogger log) {
+    GridJettyRestHandler(GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, GridLogger log) {
         assert hnd != null;
         assert log != null;
 

@@ -81,7 +81,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     };
 
     /** {@link GridCacheReturn}-to-value conversion. */
-    private static final GridClosure RET2VAL =
+    private static final IgniteClosure RET2VAL =
         new CX1<GridFuture<GridCacheReturn<Object>>, Object>() {
             @Nullable @Override public Object applyx(GridFuture<GridCacheReturn<Object>> fut) throws GridException {
                 return fut.get().value();
@@ -93,7 +93,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         };
 
     /** {@link GridCacheReturn}-to-success conversion. */
-    private static final GridClosure RET2FLAG =
+    private static final IgniteClosure RET2FLAG =
         new CX1<GridFuture<GridCacheReturn<Object>>, Boolean>() {
             @Override public Boolean applyx(GridFuture<GridCacheReturn<Object>> fut) throws GridException {
                 return fut.get().success();
@@ -2084,7 +2084,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             @Override
             public GridFuture<V> op(GridCacheTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, entry, ttl, filter)
-                    .chain((GridClosure<GridFuture<GridCacheReturn<V>>, V>)RET2VAL);
+                    .chain((IgniteClosure<GridFuture<GridCacheReturn<V>>, V>)RET2VAL);
             }
 
             @Override
@@ -2161,7 +2161,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(final K key, final GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(final K key, final IgniteClosure<V, V> transformer) throws GridException {
         A.notNull(key, "key", transformer, "valTransform");
 
         if (keyCheck)
@@ -2181,7 +2181,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(final K key, final GridClosure<V, IgniteBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(final K key, final IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         A.notNull(key, "key", transformer, "transformer");
 
@@ -2226,7 +2226,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return asyncOp(new AsyncOp<Boolean>(key) {
             @Override public GridFuture<Boolean> op(GridCacheTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), false, entry, ttl, filter).chain(
-                    (GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
+                    (IgniteClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -2236,12 +2236,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(final K key, final GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(final K key, final IgniteClosure<V, V> transformer) {
         return transformAsync(key, transformer, null, -1);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(final K key, final GridClosure<V, V> transformer,
+    @Override public GridFuture<?> transformAsync(final K key, final IgniteClosure<V, V> transformer,
         @Nullable final GridCacheEntryEx<K, V> entry, final long ttl) {
         A.notNull(key, "key", transformer, "transformer");
 
@@ -2297,7 +2297,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
             @Override public GridFuture<V> op(GridCacheTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.noPeekArray())
-                    .chain((GridClosure<GridFuture<GridCacheReturn<V>>, V>)RET2VAL);
+                    .chain((IgniteClosure<GridFuture<GridCacheReturn<V>>, V>)RET2VAL);
             }
 
             @Override public String toString() {
@@ -2342,7 +2342,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return asyncOp(new AsyncOp<Boolean>(key) {
             @Override public GridFuture<Boolean> op(GridCacheTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, ctx.noPeekArray()).chain(
-                    (GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
+                    (IgniteClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -2388,7 +2388,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
             @Override public GridFuture<V> op(GridCacheTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.hasPeekArray()).chain(
-                    (GridClosure<GridFuture<GridCacheReturn<V>>, V>)RET2VAL);
+                    (IgniteClosure<GridFuture<GridCacheReturn<V>>, V>)RET2VAL);
             }
 
             @Override public String toString() {
@@ -2433,7 +2433,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return asyncOp(new AsyncOp<Boolean>(key) {
             @Override public GridFuture<Boolean> op(GridCacheTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, ctx.hasPeekArray()).chain(
-                    (GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
+                    (IgniteClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -2497,7 +2497,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 }
 
                 return tx.putAllAsync(ctx, F.t(key, newVal), false, null, -1, ctx.equalsPeekArray(oldVal)).chain(
-                    (GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
+                    (IgniteClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -2531,7 +2531,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable final Map<? extends K, ? extends GridClosure<V, V>> m)
+    @Override public void transformAll(@Nullable final Map<? extends K, ? extends IgniteClosure<V, V>> m)
         throws GridException {
         if (F.isEmpty(m))
             return;
@@ -2553,14 +2553,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Set<? extends K> keys, final GridClosure<V, V> transformer)
+    @Override public void transformAll(@Nullable Set<? extends K> keys, final IgniteClosure<V, V> transformer)
         throws GridException {
         if (F.isEmpty(keys))
             return;
 
         // Reuse transformAll(Map), mapping all keys to a transformer closure.
-        transformAll(F.viewAsMap(keys, new C1<K, GridClosure<V, V>>() {
-            @Override public GridClosure<V, V> apply(K k) {
+        transformAll(F.viewAsMap(keys, new C1<K, IgniteClosure<V, V>>() {
+            @Override public IgniteClosure<V, V> apply(K k) {
                 return transformer;
             }
         }));
@@ -2591,7 +2591,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable final Map<? extends K, ? extends GridClosure<V, V>> m) {
+    @Override public GridFuture<?> transformAllAsync(@Nullable final Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         if (F.isEmpty(m))
             return new GridFinishedFuture<>(ctx.kernalContext());
 
@@ -2613,13 +2613,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys,
-        final GridClosure<V, V> transformer) throws GridException {
+        final IgniteClosure<V, V> transformer) throws GridException {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext());
 
         // Reuse transformAllAsync(Map), mapping all keys to a transformer closure.
-        return transformAllAsync(F.viewAsMap(keys, new C1<K, GridClosure<V, V>>() {
-            @Override public GridClosure<V, V> apply(K k) {
+        return transformAllAsync(F.viewAsMap(keys, new C1<K, IgniteClosure<V, V>>() {
+            @Override public IgniteClosure<V, V> apply(K k) {
                 return transformer;
             }
         }));
@@ -2676,7 +2676,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             @Override public GridFuture<V> op(GridCacheTxLocalAdapter<K, V> tx) {
                 // TODO should we invoke interceptor here?
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter)
-                    .chain((GridClosure<GridFuture<GridCacheReturn<V>>, V>) RET2VAL);
+                    .chain((IgniteClosure<GridFuture<GridCacheReturn<V>>, V>) RET2VAL);
             }
 
             @Override public String toString() {
@@ -2785,7 +2785,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return asyncOp(new AsyncOp<Boolean>(key) {
             @Override public GridFuture<Boolean> op(GridCacheTxLocalAdapter<K, V> tx) {
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), entry, false, filter).chain(
-                    (GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
+                    (IgniteClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -3011,7 +3011,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                 return tx.removeAllAsync(ctx, Collections.singletonList(key0), null, false,
                     ctx.vararg(F.<K, V>cacheContainsPeek(val))).chain(
-                    (GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
+                    (IgniteClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -4912,7 +4912,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalSizeCallable implements GridClosure<Object, Integer>, Externalizable {
+    private static class GlobalSizeCallable implements IgniteClosure<Object, Integer>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -430,7 +430,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
      * Helper closure to reserve specified space and update file's length
      */
     @GridInternal
-    private static final class ReserveSpaceClosure implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class ReserveSpaceClosure implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;

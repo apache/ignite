@@ -162,7 +162,7 @@ public class StreamingCheckInExample {
                     // Send reduce query to all streamers running on local and remote noes.
                     Map<String, Place> userPlaces = streamer.context().reduce(
                         // This closure will execute on remote nodes.
-                        new GridClosure<GridStreamerContext, Map<String, Place>>() {
+                        new IgniteClosure<GridStreamerContext, Map<String, Place>>() {
                             @Override public Map<String, Place> apply(
                                 GridStreamerContext ctx) {
                                 GridStreamerWindow<LocationInfo> win =

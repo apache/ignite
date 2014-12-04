@@ -180,7 +180,7 @@ public class GridFinishedFuture<T> implements GridFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> chain(final GridClosure<? super GridFuture<T>, R> doneCb) {
+    @Override public <R> GridFuture<R> chain(final IgniteClosure<? super GridFuture<T>, R> doneCb) {
         GridFutureAdapter<R> fut = new GridFutureAdapter<R>(ctx, syncNotify) {
             @Override public String toString() {
                 return "ChainFuture[orig=" + GridFinishedFuture.this + ", doneCb=" + doneCb + ']';

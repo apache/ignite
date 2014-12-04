@@ -102,7 +102,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
     /**
      *
      */
-    private static class Transformer implements GridClosure<Integer, Integer> {
+    private static class Transformer implements IgniteClosure<Integer, Integer> {
         private int key;
 
         private Transformer(int key) {

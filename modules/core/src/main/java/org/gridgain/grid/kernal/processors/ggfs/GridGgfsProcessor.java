@@ -46,7 +46,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Converts context to GGFS. */
-    private static final GridClosure<GridGgfsContext,GridGgfs> CTX_TO_GGFS = new C1<GridGgfsContext, GridGgfs>() {
+    private static final IgniteClosure<GridGgfsContext,GridGgfs> CTX_TO_GGFS = new C1<GridGgfsContext, GridGgfs>() {
         @Override public GridGgfs apply(GridGgfsContext ggfsCtx) {
             return ggfsCtx.ggfs();
         }

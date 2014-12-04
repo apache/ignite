@@ -68,7 +68,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
 
     /** Transform. */
     @GridToStringInclude
-    private Collection<GridClosure<V, V>> transformClosCol;
+    private Collection<IgniteClosure<V, V>> transformClosCol;
 
     /** Transform closure bytes. */
     @GridToStringExclude
@@ -184,7 +184,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param drVer Data center replication version.
      */
     public GridCacheTxEntry(GridCacheContext<K, V> ctx, GridCacheTxEx<K, V> tx, GridCacheOperation op,
-        V val, GridClosure<V, V> transformClos, long ttl, GridCacheEntryEx<K,V> entry,
+        V val, IgniteClosure<V, V> transformClos, long ttl, GridCacheEntryEx<K,V> entry,
         GridPredicate<GridCacheEntry<K, V>>[] filters, GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
@@ -585,7 +585,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /**
      * @param transformClos Transform closure.
      */
-    public void addTransformClosure(GridClosure<V, V> transformClos) {
+    public void addTransformClosure(IgniteClosure<V, V> transformClos) {
         if (transformClosCol  == null)
             transformClosCol = new LinkedList<>();
 
@@ -600,14 +600,14 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /**
      * @return Collection of transform closures.
      */
-    public Collection<GridClosure<V, V>> transformClosures() {
+    public Collection<IgniteClosure<V, V>> transformClosures() {
         return transformClosCol;
     }
 
     /**
      * @param transformClosCol Collection of transform closures.
      */
-    public void transformClosures(@Nullable Collection<GridClosure<V, V>> transformClosCol) {
+    public void transformClosures(@Nullable Collection<IgniteClosure<V, V>> transformClosCol) {
         this.transformClosCol = transformClosCol;
 
         // Must clear transform closure bytes since collection has changed.

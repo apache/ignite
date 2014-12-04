@@ -1571,7 +1571,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * Helper closure to update data in cache.
      */
     @GridInternal
-    private static final class UpdateClosure implements GridClosure<byte[], byte[]>, Externalizable {
+    private static final class UpdateClosure implements IgniteClosure<byte[], byte[]>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

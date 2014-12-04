@@ -567,7 +567,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         leftLatch = new CountDownLatch(2);
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
-            new GridClosure<ClusterNode, UUID>() {
+            new IgniteClosure<ClusterNode, UUID>() {
             @Override public UUID apply(ClusterNode node) {
                 return node.id();
             }
@@ -784,7 +784,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         X.println("Restarting nodes with " + CUSTOM_CFG_ATTR_KEY);
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
-            new GridClosure<ClusterNode, UUID>() {
+            new IgniteClosure<ClusterNode, UUID>() {
                 @Override public UUID apply(ClusterNode node) {
                     return node.id();
                 }

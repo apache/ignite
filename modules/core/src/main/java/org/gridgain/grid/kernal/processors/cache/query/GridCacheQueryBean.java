@@ -24,7 +24,7 @@ public class GridCacheQueryBean {
     private final GridReducer<Object, Object> rdc;
 
     /** */
-    private final GridClosure<Object, Object> trans;
+    private final IgniteClosure<Object, Object> trans;
 
     /** */
     private final Object[] args;
@@ -36,7 +36,7 @@ public class GridCacheQueryBean {
      * @param args Optional arguments.
      */
     public GridCacheQueryBean(GridCacheQueryAdapter<?> qry, @Nullable GridReducer<Object, Object> rdc,
-        @Nullable GridClosure<Object, Object> trans, @Nullable Object[] args) {
+        @Nullable IgniteClosure<Object, Object> trans, @Nullable Object[] args) {
         assert qry != null;
 
         this.qry = qry;
@@ -62,7 +62,7 @@ public class GridCacheQueryBean {
     /**
      * @return Transformer.
      */
-    @Nullable public GridClosure<Object, Object> transform() {
+    @Nullable public IgniteClosure<Object, Object> transform() {
 
 
         return trans;

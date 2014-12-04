@@ -6719,7 +6719,7 @@ public abstract class GridUtils {
      * @param ctx Kernal context.
      * @return Closure that converts node ID to a node.
      */
-    public static GridClosure<UUID, ClusterNode> id2Node(final GridKernalContext ctx) {
+    public static IgniteClosure<UUID, ClusterNode> id2Node(final GridKernalContext ctx) {
         assert ctx != null;
 
         return new C1<UUID, ClusterNode>() {

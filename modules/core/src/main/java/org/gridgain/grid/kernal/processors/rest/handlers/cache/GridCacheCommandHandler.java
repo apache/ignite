@@ -546,7 +546,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param key Affinity key for previous operation.
      * @return Rest response.
      */
-    private static GridClosure<GridFuture<?>, GridRestResponse> resultWrapper(
+    private static IgniteClosure<GridFuture<?>, GridRestResponse> resultWrapper(
         final GridCacheProjection<Object, Object> c, @Nullable final Object key) {
         return new CX1<GridFuture<?>, GridRestResponse>() {
             @Override public GridRestResponse applyx(GridFuture<?> f) throws GridException {

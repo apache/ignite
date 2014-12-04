@@ -790,7 +790,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class TransformClosure implements GridClosure<Integer, Integer> {
+    private static class TransformClosure implements IgniteClosure<Integer, Integer> {
         /** */
         private final Integer newVal;
 

@@ -35,7 +35,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     private static final int DHT_SIZE_OVERHEAD = 16;
 
     /** Gets node value from reader ID. */
-    private static final GridClosure<ReaderId, UUID> R2N = new C1<ReaderId, UUID>() {
+    private static final IgniteClosure<ReaderId, UUID> R2N = new C1<ReaderId, UUID>() {
         @Override public UUID apply(ReaderId e) {
             return e.nodeId();
         }

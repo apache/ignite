@@ -70,7 +70,7 @@ public class StreamingRunningAverageExample {
 
                         // Running average.
                         double avg = streamer.context().reduce(
-                            new GridClosure<GridStreamerContext, Average>() {
+                            new IgniteClosure<GridStreamerContext, Average>() {
                                 @Override public Average apply(GridStreamerContext ctx) {
                                     return ctx.<String, Average>localSpace().get("avg");
                                 }

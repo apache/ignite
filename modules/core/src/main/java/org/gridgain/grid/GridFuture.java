@@ -177,5 +177,5 @@ public interface GridFuture<R> {
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
-    public <T> GridFuture<T> chain(GridClosure<? super GridFuture<R>, T> doneCb);
+    public <T> GridFuture<T> chain(IgniteClosure<? super GridFuture<R>, T> doneCb);
 }

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
@@ -121,7 +120,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param ttl Optional time-to-lve.
      * @return Transform operation future.
      */
-    public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer, @Nullable GridCacheEntryEx<K, V> entry,
+    public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer, @Nullable GridCacheEntryEx<K, V> entry,
         long ttl);
 
     /**

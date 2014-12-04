@@ -124,7 +124,7 @@ public class StreamingPriceBarsExample {
                 try {
                     Collection<Bar> bars = streamer.context().reduce(
                         // This closure will execute on remote nodes.
-                        new GridClosure<GridStreamerContext, Collection<Bar>>() {
+                        new IgniteClosure<GridStreamerContext, Collection<Bar>>() {
                             @Override public Collection<Bar> apply(GridStreamerContext ctx) {
                                 Collection<Bar> values = ctx.<String, Bar>localSpace().values();
 

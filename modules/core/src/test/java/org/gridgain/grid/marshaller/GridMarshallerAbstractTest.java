@@ -66,7 +66,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     };
 
     /** Closure job. */
-    protected GridClosure<String, String> c2 = new GridClosure<String, String>() {
+    protected IgniteClosure<String, String> c2 = new IgniteClosure<String, String>() {
         @Override public String apply(String s) {
             return s;
         }
@@ -240,7 +240,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     public void testMarshallingAnonymousClassInstance() throws Exception {
         final Ignite g = grid();
 
-        GridMarshallerTestBean inBean = newTestBean(new GridClosure() {
+        GridMarshallerTestBean inBean = newTestBean(new IgniteClosure() {
             /** */
             private Iterable<ClusterNode> nodes = g.cluster().nodes();
 
@@ -257,8 +257,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert GridClosure.class.isAssignableFrom(inBean.getObjectField().getClass());
-        assert GridClosure.class.isAssignableFrom(outBean.getObjectField().getClass());
+        assert IgniteClosure.class.isAssignableFrom(inBean.getObjectField().getClass());
+        assert IgniteClosure.class.isAssignableFrom(outBean.getObjectField().getClass());
 
         assert inBean.getObjectField() != outBean.getObjectField();
 

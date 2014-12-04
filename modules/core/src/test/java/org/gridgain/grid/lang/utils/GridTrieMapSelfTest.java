@@ -102,7 +102,7 @@ public class GridTrieMapSelfTest extends GridCommonAbstractTest {
      * @return Time taken.
      * @throws Exception If failed.
      */
-    private long runOps(final int iterCnt, int threadCnt, @Nullable final GridClosure<Map, Map> cloner)
+    private long runOps(final int iterCnt, int threadCnt, @Nullable final IgniteClosure<Map, Map> cloner)
         throws Exception {
         long start = System.currentTimeMillis();
 

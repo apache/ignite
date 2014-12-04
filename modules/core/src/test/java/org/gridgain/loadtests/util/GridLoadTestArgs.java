@@ -152,7 +152,7 @@ public class GridLoadTestArgs {
      *         are {@code null}.
      * @throws GridException If the value didn't pass the validation.
      */
-    public static int getIntProperty(String name, int dflt, GridClosure<Integer, String> validClo)
+    public static int getIntProperty(String name, int dflt, IgniteClosure<Integer, String> validClo)
         throws GridException {
         int ret = getIntProperty(name, dflt);
 

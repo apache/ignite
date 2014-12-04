@@ -326,7 +326,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     /**
      *
      */
-    protected abstract static class TestClosure implements GridClosure<Object, Object> {
+    protected abstract static class TestClosure implements IgniteClosure<Object, Object> {
         /** */
         protected String expVal;
 

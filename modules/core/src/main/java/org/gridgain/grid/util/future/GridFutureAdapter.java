@@ -313,7 +313,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridFuture<T> chain(final GridClosure<? super GridFuture<R>, T> doneCb) {
+    @Override public <T> GridFuture<T> chain(final IgniteClosure<? super GridFuture<R>, T> doneCb) {
         return new ChainFuture<>(ctx, syncNotify, this, doneCb);
     }
 
@@ -586,7 +586,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         private GridFutureAdapter<R> fut;
 
         /** */
-        private GridClosure<? super GridFuture<R>, T> doneCb;
+        private IgniteClosure<? super GridFuture<R>, T> doneCb;
 
         /**
          *
@@ -602,7 +602,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
          * @param doneCb Closure.
          */
         ChainFuture(GridKernalContext ctx, boolean syncNotify,
-            GridFutureAdapter<R> fut, GridClosure<? super GridFuture<R>, T> doneCb) {
+            GridFutureAdapter<R> fut, IgniteClosure<? super GridFuture<R>, T> doneCb) {
             super(ctx, syncNotify);
 
             this.fut = fut;

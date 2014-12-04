@@ -169,8 +169,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param val Value.
      * @return Closure.
      */
-    private GridClosure<T, T> wrapperClosure(final T val) {
-        return new GridClosure<T, T>() {
+    private IgniteClosure<T, T> wrapperClosure(final T val) {
+        return new IgniteClosure<T, T>() {
             @Override public T apply(T e) {
                 return val;
             }
@@ -223,7 +223,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @return Callable for execution in async and sync mode.
      */
     private Callable<Boolean> internalCompareAndSet(final GridPredicate<T> expValPred,
-        final GridClosure<T, T> newValClos) {
+        final IgniteClosure<T, T> newValClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);

@@ -273,7 +273,7 @@ public interface GridCacheQuery<T> {
      * @param args Optional arguments.
      * @return Future for the query result.
      */
-    public <R> GridCacheQueryFuture<R> execute(GridClosure<T, R> rmtTransform, @Nullable Object... args);
+    public <R> GridCacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args);
 
     /**
      * Gets metrics for this query.

@@ -102,7 +102,7 @@ public class CacheApiExample {
 
         // Transform - assign new value based on previous value.
         cache.putx(6, "6");
-        cache.transform(6, new GridClosure<String, String>() {
+        cache.transform(6, new IgniteClosure<String, String>() {
             @Override public String apply(String v) {
                 return v + "6"; // Set new value based on previous value.
             }

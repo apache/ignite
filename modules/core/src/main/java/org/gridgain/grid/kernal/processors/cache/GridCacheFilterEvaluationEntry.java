@@ -238,12 +238,12 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
         throw new UnsupportedOperationException("transform");
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
         throw new UnsupportedOperationException("transformAsync");
     }
 

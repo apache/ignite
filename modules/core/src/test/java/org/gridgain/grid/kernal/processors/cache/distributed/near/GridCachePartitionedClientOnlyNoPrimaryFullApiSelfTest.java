@@ -42,8 +42,8 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     /**
      * @return Handler that discards grid exceptions.
      */
-    @Override protected GridClosure<Throwable, Throwable> errorHandler() {
-        return new GridClosure<Throwable, Throwable>() {
+    @Override protected IgniteClosure<Throwable, Throwable> errorHandler() {
+        return new IgniteClosure<Throwable, Throwable>() {
             @Override public Throwable apply(Throwable e) {
                 if (e instanceof GridException || X.hasCause(e, GridTopologyException.class)) {
                     info("Discarding exception: " + e);

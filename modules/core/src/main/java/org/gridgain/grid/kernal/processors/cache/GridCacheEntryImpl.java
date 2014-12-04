@@ -506,12 +506,12 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
         transformAsync(transformer).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
         return proxy.transformAsync(key, transformer, isNearEnabled(ctx) ? null : cached, ttl);
     }
 

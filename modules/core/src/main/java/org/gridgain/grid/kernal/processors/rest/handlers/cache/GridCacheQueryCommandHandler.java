@@ -331,7 +331,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     req.queryArguments());
             else if (req.remoteTransformerClassName() != null)
                 fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(
-                    instance(GridClosure.class, req.remoteTransformerClassName()),
+                    instance(IgniteClosure.class, req.remoteTransformerClassName()),
                     req.queryArguments());
             else
                 fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());

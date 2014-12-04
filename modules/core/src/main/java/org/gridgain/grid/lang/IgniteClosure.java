@@ -18,12 +18,12 @@ import java.io.*;
  * returns a value.
  * <p>
  * In GridGain closures are mainly used for executing distributed computations
- * on the grid, like in {@link GridCompute#apply(GridClosure, Object)} method.
+ * on the grid, like in {@link GridCompute#apply(IgniteClosure, Object)} method.
  *
  * @param <E> Type of closure parameter.
  * @param <R> Type of the closure return value.
  */
-public interface GridClosure<E, R> extends Serializable {
+public interface IgniteClosure<E, R> extends Serializable {
     /**
      * Closure body.
      *

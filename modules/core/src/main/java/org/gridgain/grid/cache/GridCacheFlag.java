@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -76,7 +75,7 @@ public enum GridCacheFlag {
     INVALIDATE,
 
     /**
-     * Skips version check during {@link GridCacheProjection#transform(Object, GridClosure)} writes in
+     * Skips version check during {@link GridCacheProjection#transform(Object, org.gridgain.grid.lang.IgniteClosure)} writes in
      * {@link GridCacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
      * {@code transform(...)} is called, cache values (and not the {@code transform} closure) are sent from primary
      * node to backup nodes to ensure proper update ordering.

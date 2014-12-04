@@ -146,7 +146,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      */
     private static class IncrementingUpdater implements GridDataLoadCacheUpdater<Integer, Long> {
         /** */
-        private static final GridClosure<Long, Long> INC = new GridClosure<Long, Long>() {
+        private static final IgniteClosure<Long, Long> INC = new IgniteClosure<Long, Long>() {
             @Override public Long apply(Long e) {
                 return e == null ? 1L : e + 1;
             }

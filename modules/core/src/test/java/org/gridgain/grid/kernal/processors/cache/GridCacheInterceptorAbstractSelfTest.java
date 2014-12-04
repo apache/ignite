@@ -1202,7 +1202,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    cache.transform(key, new GridClosure<Integer, Integer>() {
+                    cache.transform(key, new IgniteClosure<Integer, Integer>() {
                         @Nullable @Override public Integer apply(Integer old) {
                             assertEquals(expOld, old);
 
@@ -1244,7 +1244,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    cache.transform(key, new GridClosure<Integer, Integer>() {
+                    cache.transform(key, new IgniteClosure<Integer, Integer>() {
                         @Override public Integer apply(Integer old) {
                             assertEquals(expOld, old);
 
@@ -1304,7 +1304,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    cache.transformAll(map.keySet(), new GridClosure<Integer, Integer>() {
+                    cache.transformAll(map.keySet(), new IgniteClosure<Integer, Integer>() {
                         @Nullable
                         @Override
                         public Integer apply(Integer old) {
@@ -1328,10 +1328,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    Map<String, GridClosure<Integer, Integer>> m = new HashMap<>();
+                    Map<String, IgniteClosure<Integer, Integer>> m = new HashMap<>();
 
                     for (final String key : map.keySet()) {
-                        m.put(key, new GridClosure<Integer, Integer>() {
+                        m.put(key, new IgniteClosure<Integer, Integer>() {
                             @Override public Integer apply(Integer old) {
                                 return map.get(key);
                             }

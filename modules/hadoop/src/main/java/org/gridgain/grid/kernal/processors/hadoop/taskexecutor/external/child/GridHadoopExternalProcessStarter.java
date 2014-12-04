@@ -155,7 +155,7 @@ public class GridHadoopExternalProcessStarter {
             logger = new GridLog4jLogger(true);
         }
 
-        logger.updateFilePath(new GridClosure<String, String>() {
+        logger.updateFilePath(new IgniteClosure<String, String>() {
             @Override public String apply(String s) {
                 return new File(outputDir, args.childProcId + ".log").getAbsolutePath();
             }

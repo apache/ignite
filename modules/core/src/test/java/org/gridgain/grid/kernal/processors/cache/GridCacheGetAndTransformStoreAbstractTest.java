@@ -109,7 +109,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
             startGrid(1);
             startGrid(2);
 
-            final GridClosure<String, String> trans = new TransformClosure();
+            final IgniteClosure<String, String> trans = new TransformClosure();
 
             GridFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
@@ -148,7 +148,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /**
      *
      */
-    private static class TransformClosure implements GridClosure<String, String> {
+    private static class TransformClosure implements IgniteClosure<String, String> {
         /** {@inheritDoc} */
         @Override public String apply(String s) {
             return "str";

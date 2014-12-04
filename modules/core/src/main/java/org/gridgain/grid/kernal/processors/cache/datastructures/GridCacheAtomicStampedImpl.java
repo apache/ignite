@@ -194,8 +194,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @param val Value.
      * @return Closure.
      */
-    private <N> GridClosure<N, N> wrapperClosure(final N val) {
-        return new GridClosure<N, N>() {
+    private <N> IgniteClosure<N, N> wrapperClosure(final N val) {
+        return new IgniteClosure<N, N>() {
             @Override public N apply(N e) {
                 return val;
             }
@@ -251,8 +251,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @return Callable for execution in async and sync mode.
      */
     private Callable<Boolean> internalCompareAndSet(final GridPredicate<T> expValPred,
-        final GridClosure<T, T> newValClos, final GridPredicate<S> expStampPred,
-        final GridClosure<S, S> newStampClos) {
+        final IgniteClosure<T, T> newValClos, final GridPredicate<S> expStampPred,
+        final IgniteClosure<S, S> newStampClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);

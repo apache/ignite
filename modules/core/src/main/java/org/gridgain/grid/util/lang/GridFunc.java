@@ -56,7 +56,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure IDENTITY = new C1() {
+    private static final IgniteClosure IDENTITY = new C1() {
         @Override public Object apply(Object o) {
             return o;
         }
@@ -292,7 +292,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<Runnable, GridAbsClosure> R2C = new C1<Runnable, GridAbsClosure>() {
+    private static final IgniteClosure<Runnable, GridAbsClosure> R2C = new C1<Runnable, GridAbsClosure>() {
         @Override public GridAbsClosure apply(Runnable r) {
             return as(r);
         }
@@ -303,7 +303,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<ClusterGroup, GridPredicate<ClusterNode>> P2P =
+    private static final IgniteClosure<ClusterGroup, GridPredicate<ClusterNode>> P2P =
         new C1<ClusterGroup, GridPredicate<ClusterNode>>() {
             @Override public GridPredicate<ClusterNode> apply(ClusterGroup e) {
                 return e.predicate();
@@ -315,7 +315,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<Object, Class<?>> CLAZZ = new C1<Object, Class<?>>() {
+    private static final IgniteClosure<Object, Class<?>> CLAZZ = new C1<Object, Class<?>>() {
         @Override public Class<?> apply(Object o) {
             return o.getClass();
         }
@@ -326,7 +326,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure MAP_ENTRY_KEY = new GridClosure() {
+    private static final IgniteClosure MAP_ENTRY_KEY = new IgniteClosure() {
         @Override public Object apply(Object o) {
             return ((Map.Entry)o).getKey();
         }
@@ -337,7 +337,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure MAP_ENTRY_VAL = new GridClosure() {
+    private static final IgniteClosure MAP_ENTRY_VAL = new IgniteClosure() {
         @Override public Object apply(Object o) {
             return ((Map.Entry)o).getValue();
         }
@@ -348,7 +348,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure CACHE_ENTRY_VAL_GET = new GridClosure() {
+    private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
             try {
@@ -365,7 +365,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure CACHE_ENTRY_VAL_PEEK = new GridClosure() {
+    private static final IgniteClosure CACHE_ENTRY_VAL_PEEK = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
             return ((GridCacheEntry<?, ?>)o).peek();
@@ -459,7 +459,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<ClusterNode, UUID> NODE2ID = new GridClosure<ClusterNode, UUID>() {
+    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new IgniteClosure<ClusterNode, UUID>() {
         @Override public UUID apply(ClusterNode n) {
             return n.id();
         }
@@ -470,7 +470,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<ClusterNode, String> NODE2ID8 = new GridClosure<ClusterNode, String>() {
+    private static final IgniteClosure<ClusterNode, String> NODE2ID8 = new IgniteClosure<ClusterNode, String>() {
         @Override public String apply(ClusterNode n) {
             return U.id8(n.id());
         }
@@ -481,7 +481,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<UUID, String> ID2ID8 = new GridClosure<UUID, String>() {
+    private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosure<UUID, String>() {
         @Override public String apply(UUID id) {
             return U.id8(id);
         }
@@ -539,7 +539,7 @@ public class GridFunc {
      *
      * @return Closure transforming a grid projection into its predicate.
      */
-    public static GridClosure<ClusterGroup, GridPredicate<ClusterNode>> predicate() {
+    public static IgniteClosure<ClusterGroup, GridPredicate<ClusterNode>> predicate() {
         return P2P;
     }
 
@@ -587,7 +587,7 @@ public class GridFunc {
      * Creates closure that will reflectively call a method with the given name on
      * closure's argument and return result of that call.
      * <p>
-     * Method reflects the typedef for {@link GridClosure} which is {@link C1}.
+     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteClosure} which is {@link C1}.
      *
      * @param mtdName Method name.
      * @param args Optional set of arguments for the method call.
@@ -596,7 +596,7 @@ public class GridFunc {
      * @return Reflective closure.
      * @throws GridClosureException Thrown in case of any reflective invocation errors.
      */
-    public static <T, R> GridClosure<T, R> cInvoke(final String mtdName, final Object... args) {
+    public static <T, R> IgniteClosure<T, R> cInvoke(final String mtdName, final Object... args) {
         A.notNull(mtdName, "mtdName");
 
         return new C1<T, R>() {
@@ -625,7 +625,7 @@ public class GridFunc {
      * Creates in closure that will reflectively call a method with the given name on
      * closure's argument.
      * <p>
-     * Method reflects the typedef for {@link GridClosure} which is {@link C1}.
+     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteClosure} which is {@link C1}.
      *
      * @param mtdName Method name.
      * @param args Optional set of arguments for the method call.
@@ -866,7 +866,7 @@ public class GridFunc {
      *
      * @return Closure that converts object to its runtime class.
      */
-    public static GridClosure<Object, Class<?>> clazz() {
+    public static IgniteClosure<Object, Class<?>> clazz() {
         return CLAZZ;
     }
 
@@ -2400,7 +2400,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID.
      */
-    public static GridClosure<ClusterNode, UUID> node2id() {
+    public static IgniteClosure<ClusterNode, UUID> node2id() {
         return NODE2ID;
     }
 
@@ -2409,7 +2409,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID8 representation (shorter and good enough).
      */
-    public static GridClosure<ClusterNode, String> node2id8() {
+    public static IgniteClosure<ClusterNode, String> node2id8() {
         return NODE2ID8;
     }
 
@@ -2418,7 +2418,7 @@ public class GridFunc {
      *
      * @return Closure which converts node ID to node ID8 representation (shorter and good enough).
      */
-    public static GridClosure<UUID, String> id2id8() {
+    public static IgniteClosure<UUID, String> id2id8() {
         return ID2ID8;
     }
 
@@ -2830,7 +2830,7 @@ public class GridFunc {
      * @param <T> Type of future.
      * @return Closure that converts {@link GridFuture} to {@link Future}.
      */
-    public static <T> GridClosure<GridFuture<T>, Future<T>> future() {
+    public static <T> IgniteClosure<GridFuture<T>, Future<T>> future() {
         return new C1<GridFuture<T>, Future<T>>() {
             @Override public Future<T> apply(GridFuture<T> fut) {
                 return as(fut);
@@ -2847,7 +2847,7 @@ public class GridFunc {
      * @param <R> Output type.
      * @return Curried closure.
      */
-    public static <T, R> GridOutClosure<R> curry(final GridClosure<? super T, R> f, final T e) {
+    public static <T, R> GridOutClosure<R> curry(final IgniteClosure<? super T, R> f, final T e) {
         return new GridOutClosure<R>() {
             @Override public R apply() {
                 return f.apply(e);
@@ -2865,8 +2865,8 @@ public class GridFunc {
      * @param <R> Output type.
      * @return Curried closure.
      */
-    public static <T1, T2, R> GridClosure<T2, R> curry(final IgniteBiClosure<? super T1, ? super T2, R> f, final T1 e) {
-        return new GridClosure<T2, R>() {
+    public static <T1, T2, R> IgniteClosure<T2, R> curry(final IgniteBiClosure<? super T1, ? super T2, R> f, final T1 e) {
+        return new IgniteClosure<T2, R>() {
             @Override public R apply(T2 t) {
                 return f.apply(e, t);
             }
@@ -2917,7 +2917,7 @@ public class GridFunc {
      * @return Read only collection of closures closed on each element of input collection.
      */
     public static <T, R> Collection<GridOutClosure<R>> yield(Collection<? extends T> c,
-        final GridClosure<? super T, R> f) {
+        final IgniteClosure<? super T, R> f) {
         A.notNull(c, "c", f, "f");
 
         return viewReadOnly(c, new C1<T, GridOutClosure<R>>() {
@@ -2971,7 +2971,7 @@ public class GridFunc {
      * @param <R> Type of the return value for the closure.
      * @return Collection of closures closed on each element of array.
      */
-    public static <T, R> Collection<GridOutClosure<R>> yield(T[] c, GridClosure<? super T, R> f) {
+    public static <T, R> Collection<GridOutClosure<R>> yield(T[] c, IgniteClosure<? super T, R> f) {
         A.notNull(c, "c", f, "f");
 
         return yield(asList(c), f);
@@ -3244,7 +3244,7 @@ public class GridFunc {
      *
      * @return closure that converts {@link Runnable} to {@link GridAbsClosure}.
      */
-    public static GridClosure<Runnable, GridAbsClosure> r2c() {
+    public static IgniteClosure<Runnable, GridAbsClosure> r2c() {
         return R2C;
     }
 
@@ -3253,7 +3253,7 @@ public class GridFunc {
      *
      * @return closure that converts {@link Callable} to {@link GridOutClosure}.
      */
-    public static <T> GridClosure<Callable<T>, GridOutClosure<T>> c2c() {
+    public static <T> IgniteClosure<Callable<T>, GridOutClosure<T>> c2c() {
         return new C1<Callable<T>, GridOutClosure<T>>() {
             @Override public GridOutClosure<T> apply(Callable<T> c) {
                 return as0(c);
@@ -3394,7 +3394,7 @@ public class GridFunc {
      */
     @SuppressWarnings("RedundantTypeArguments")
     public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
-        final GridClosure<? super T1, T2> trans, @Nullable final GridPredicate<? super T1>... p) {
+        final IgniteClosure<? super T1, T2> trans, @Nullable final GridPredicate<? super T1>... p) {
         A.notNull(trans, "trans");
 
         if (isEmpty(c) || isAlwaysFalse(p))
@@ -3430,7 +3430,7 @@ public class GridFunc {
      */
     @SuppressWarnings("RedundantTypeArguments")
     public static <T1, T2> List<T2> viewListReadOnly(@Nullable final List<? extends T1> c,
-        final GridClosure<? super T1, T2> trans) {
+        final IgniteClosure<? super T1, T2> trans) {
         A.notNull(trans, "trans");
 
         if (isEmpty(c))
@@ -3470,7 +3470,7 @@ public class GridFunc {
      * @return View on given list with provided predicate.
      */
     public static <T1, T2> List<T2> transformList(Collection<? extends T1> c,
-        GridClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
+        IgniteClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -3490,7 +3490,7 @@ public class GridFunc {
      * @return View on given set with provided predicate.
      */
     public static <T1, T2> Set<T2> transformSet(Collection<? extends T1> c,
-        GridClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
+        IgniteClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -3596,7 +3596,7 @@ public class GridFunc {
      * @return Light-weight view on given map with provided predicate and transformer.
      */
     public static <K0, K extends K0, V0, V extends V0, V1> Map<K, V1> viewReadOnly(@Nullable final Map<K, V> m,
-        final GridClosure<V, V1> trans, @Nullable final GridPredicate<? super K>... p) {
+        final IgniteClosure<V, V1> trans, @Nullable final GridPredicate<? super K>... p) {
         A.notNull(trans, "trans");
 
         if (isEmpty(m) || isAlwaysFalse(p))
@@ -3837,7 +3837,7 @@ public class GridFunc {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
-        final GridClosure<? super K, V> mapClo, @Nullable final GridPredicate<? super K>... p) {
+        final IgniteClosure<? super K, V> mapClo, @Nullable final GridPredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
 
         if (isEmpty(c) || isAlwaysFalse(p))
@@ -4255,7 +4255,7 @@ public class GridFunc {
      * @return Iterator from given collection and optional filtering predicate.
      */
     public static <T1, T2> GridIterator<T2> iterator(final Iterable<? extends T1> c,
-        final GridClosure<? super T1, T2> trans, final boolean readOnly,
+        final IgniteClosure<? super T1, T2> trans, final boolean readOnly,
         @Nullable final GridPredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
@@ -5050,7 +5050,7 @@ public class GridFunc {
      */
     @SuppressWarnings({"JavaDoc"})
     public static <X, Y> GridPredicate<X> compose(final GridPredicate<? super Y> p,
-        final GridClosure<? super X, ? extends Y> f) {
+        final IgniteClosure<? super X, ? extends Y> f) {
         A.notNull(p, "p", f, "f");
 
         return isAlwaysFalse(p) ? F.<X>alwaysFalse() : isAlwaysTrue(p) ? F.<X>alwaysTrue() : new P1<X>() {
@@ -5068,7 +5068,7 @@ public class GridFunc {
      * @param <R> Type of the closure's return value.
      * @return Closure that returns constant value.
      */
-    public static <T1, R> GridClosure<T1, R> constant1(@Nullable final R val) {
+    public static <T1, R> IgniteClosure<T1, R> constant1(@Nullable final R val) {
         return new C1<T1, R>() {
             @Nullable @Override public R apply(T1 t1) {
                 return val;
@@ -5155,7 +5155,7 @@ public class GridFunc {
      * @return Identity closure, i.e. the closure that returns its variable value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> GridClosure<T, T> identity() {
+    public static <T> IgniteClosure<T, T> identity() {
         return IDENTITY;
     }
 
@@ -5195,7 +5195,7 @@ public class GridFunc {
      * @param c Closure to convert.
      * @return Closure converted to predicate.
      */
-    public static <T> GridPredicate<T> as(final GridClosure<? super T, Boolean> c) {
+    public static <T> GridPredicate<T> as(final IgniteClosure<? super T, Boolean> c) {
         A.notNull(c, "c");
 
         return new P1<T>() {
@@ -5261,7 +5261,7 @@ public class GridFunc {
      * @param <X> Type of the free variable for the predicate.
      * @return Predicate converted to closure.
      */
-    public static <X> GridClosure<X, Boolean> as(final GridPredicate<? super X> p) {
+    public static <X> IgniteClosure<X, Boolean> as(final GridPredicate<? super X> p) {
         A.notNull(p, "p");
 
         return new C1<X, Boolean>() {
@@ -5322,8 +5322,8 @@ public class GridFunc {
      * @return Composition closure.
      */
     @SuppressWarnings({"JavaDoc"})
-    public static <D, B, C> GridClosure<D, C> compose(final GridClosure<? super D, ? extends B> f,
-        final GridClosure<? super B, C> g) {
+    public static <D, B, C> IgniteClosure<D, C> compose(final IgniteClosure<? super D, ? extends B> f,
+        final IgniteClosure<? super B, C> g) {
         A.notNull(f, "f", g, "g");
 
         return new C1<D, C>() {
@@ -5342,7 +5342,7 @@ public class GridFunc {
      * @param <V> Type of the closure's return value and type of the map values.
      * @return Closure that wraps given map access.
      */
-    public static <K, V> GridClosure<K, V> forMap(final Map<? extends K, ? extends V> m) {
+    public static <K, V> IgniteClosure<K, V> forMap(final Map<? extends K, ? extends V> m) {
         A.notNull(m, "m");
 
         return new C1<K, V>() {
@@ -5365,7 +5365,7 @@ public class GridFunc {
      * @param <V> Type of the closure's return value and type of the map values.
      * @return Closure that wraps given map's access.
      */
-    public static <K, V> GridClosure<K, V> forMap(final Map<? extends K, ? extends V> m,
+    public static <K, V> IgniteClosure<K, V> forMap(final Map<? extends K, ? extends V> m,
         @Nullable final Callable<V> c) {
         A.notNull(m, "m");
 
@@ -5383,7 +5383,7 @@ public class GridFunc {
      * @param <T> Type of the free variable for the closure.
      * @return Closure that return {@code toString()} value for its free variable.
      */
-    public static <T> GridClosure<T, String> string() {
+    public static <T> IgniteClosure<T, String> string() {
         return new C1<T, String>() {
             @Override public String apply(@Nullable T t) {
                 return String.valueOf(t); // This is null-safe.
@@ -5848,7 +5848,7 @@ public class GridFunc {
      * @return Destination collection.
      */
     public static <X, Y> Collection<Y> transform(Collection<Y> to, Iterable<? extends X> from,
-        GridClosure<? super X, Y> f, @Nullable GridPredicate<? super X>... p) {
+        IgniteClosure<? super X, Y> f, @Nullable GridPredicate<? super X>... p) {
         A.notNull(to, "to", from, "from", f, "f");
 
         if (!isAlwaysFalse(p)) {
@@ -5898,7 +5898,7 @@ public class GridFunc {
      * @param <Y> Type of the closure's return value.
      * @return Transformed newly created collection.
      */
-    public static <X, Y> Collection<Y> transform(Collection<? extends X> c, GridClosure<? super X, Y> f) {
+    public static <X, Y> Collection<Y> transform(Collection<? extends X> c, IgniteClosure<? super X, Y> f) {
         A.notNull(c, "c", f, "f");
 
         Collection<Y> d = new ArrayList<>(c.size());
@@ -5931,7 +5931,7 @@ public class GridFunc {
      * @param <Y> Type of the closure's return value.
      * @return Transformed read only collection.
      */
-    public static <X, Y> Collection<Y> transform(X[] c, GridClosure<? super X, Y> f) {
+    public static <X, Y> Collection<Y> transform(X[] c, IgniteClosure<? super X, Y> f) {
         A.notNull(c, "c", f, "f");
 
         return viewReadOnly(asList(c), f);
@@ -6238,7 +6238,7 @@ public class GridFunc {
      * @param <Y> Type of the closure's return value.
      * @return Transformed newly created collection.
      */
-    public static <X, Y> Collection<Y> transform(Collection<? extends X> c, GridClosure<? super X, Y> f,
+    public static <X, Y> Collection<Y> transform(Collection<? extends X> c, IgniteClosure<? super X, Y> f,
         GridPredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
 
@@ -6335,7 +6335,7 @@ public class GridFunc {
      * @return First element in given collection for which predicate evaluates to
      *      {@code true} - or {@code null} if such element cannot be found.
      */
-    public static <V, Y> Y find(Iterable<? extends V> c, @Nullable Y dfltVal, GridClosure<? super V, Y> f,
+    public static <V, Y> Y find(Iterable<? extends V> c, @Nullable Y dfltVal, IgniteClosure<? super V, Y> f,
         @Nullable GridPredicate<? super V>... p) {
         A.notNull(c, "c", f, "f");
 
@@ -6365,7 +6365,7 @@ public class GridFunc {
      *      {@code true} - or {@code null} if such element cannot be found.
      */
     @SuppressWarnings("RedundantTypeArguments")
-    public static <V, Y> Y find(V[] c, @Nullable Y dfltVal, GridClosure<? super V, Y> f,
+    public static <V, Y> Y find(V[] c, @Nullable Y dfltVal, IgniteClosure<? super V, Y> f,
         @Nullable GridPredicate<? super V>... p) {
         A.notNull(c, "c", f, "f");
 
@@ -7659,12 +7659,12 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Read only collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends GridClosure<? super T, R>> iter,
+    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends IgniteClosure<? super T, R>> iter,
         final T arg) {
         A.notNull(iter, "iter", arg, "arg");
 
-        return viewReadOnly(iter, new C1<GridClosure<? super T, R>, GridOutClosure<R>>() {
-            @Override public GridOutClosure<R> apply(GridClosure<? super T, R> c) {
+        return viewReadOnly(iter, new C1<IgniteClosure<? super T, R>, GridOutClosure<R>>() {
+            @Override public GridOutClosure<R> apply(IgniteClosure<? super T, R> c) {
                 return curry(c, arg);
             }
         });
@@ -7679,7 +7679,7 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends GridClosure<? super T, R>> closures,
+    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends IgniteClosure<? super T, R>> closures,
         Collection<? extends T> args) {
         A.notNull(closures, "in", args, "args");
         A.ensure(closures.size() == args.size(), "closures.size() == args.size()");
@@ -7688,7 +7688,7 @@ public class GridFunc {
 
         Iterator<? extends T> iter = args.iterator();
 
-        for (GridClosure<? super T, R> c : closures) {
+        for (IgniteClosure<? super T, R> c : closures) {
             ret.add(curry(c, iter.next()));
         }
 
@@ -7729,7 +7729,7 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(GridClosure<? super T, R> c,
+    public static <T, R> Collection<GridOutClosure<R>> curry(IgniteClosure<? super T, R> c,
         Collection<? extends T> args) {
         A.notNull(c, "c", args, "args");
 
@@ -7752,7 +7752,7 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(int cnt, GridClosure<? super T, R> c,
+    public static <T, R> Collection<GridOutClosure<R>> curry(int cnt, IgniteClosure<? super T, R> c,
         GridOutClosure<T> pdc) {
         A.notNull(c, "c", pdc, "pdc");
         A.ensure(cnt > 0, "cnt > 0");
@@ -7816,12 +7816,12 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Read only collection of curried closures.
      */
-    public static <T1, T2, R> Collection<GridClosure<T2, R>> curry2(Collection<? extends IgniteBiClosure<? super T1,
+    public static <T1, T2, R> Collection<IgniteClosure<T2, R>> curry2(Collection<? extends IgniteBiClosure<? super T1,
             T2, R>> iter, final T1 arg) {
         A.notNull(iter, "iter", arg, "arg");
 
-        return viewReadOnly(iter, new C1<IgniteBiClosure<? super T1, T2, R>, GridClosure<T2, R>>() {
-            @Override public GridClosure<T2, R> apply(IgniteBiClosure<? super T1, T2, R> c) {
+        return viewReadOnly(iter, new C1<IgniteBiClosure<? super T1, T2, R>, IgniteClosure<T2, R>>() {
+            @Override public IgniteClosure<T2, R> apply(IgniteBiClosure<? super T1, T2, R> c) {
                 return curry(c, arg);
             }
         });
@@ -7835,8 +7835,8 @@ public class GridFunc {
      * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K> GridClosure<Map.Entry<K, ?>, K> mapEntry2Key() {
-        return (GridClosure<Map.Entry<K, ?>, K>)MAP_ENTRY_KEY;
+    public static <K> IgniteClosure<Entry<K, ?>, K> mapEntry2Key() {
+        return (IgniteClosure<Entry<K, ?>, K>)MAP_ENTRY_KEY;
     }
 
     /**
@@ -7847,8 +7847,8 @@ public class GridFunc {
      * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridCacheEntry<K, V>, K> cacheEntry2Key() {
-        return (GridClosure<GridCacheEntry<K, V>, K>)MAP_ENTRY_KEY;
+    public static <K, V> IgniteClosure<GridCacheEntry<K, V>, K> cacheEntry2Key() {
+        return (IgniteClosure<GridCacheEntry<K, V>, K>)MAP_ENTRY_KEY;
     }
 
     /**
@@ -7859,8 +7859,8 @@ public class GridFunc {
      * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <V> GridClosure<Map.Entry<?, V>, V> mapEntry2Value() {
-        return (GridClosure<Map.Entry<?, V>, V>)MAP_ENTRY_VAL;
+    public static <V> IgniteClosure<Entry<?, V>, V> mapEntry2Value() {
+        return (IgniteClosure<Entry<?, V>, V>)MAP_ENTRY_VAL;
     }
 
     /**
@@ -7872,8 +7872,8 @@ public class GridFunc {
      * @return Closure that returns value for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridCacheEntry<K, V>, V> cacheEntry2Get() {
-        return (GridClosure<GridCacheEntry<K, V>, V>)CACHE_ENTRY_VAL_GET;
+    public static <K, V> IgniteClosure<GridCacheEntry<K, V>, V> cacheEntry2Get() {
+        return (IgniteClosure<GridCacheEntry<K, V>, V>)CACHE_ENTRY_VAL_GET;
     }
 
     /**
@@ -7886,8 +7886,8 @@ public class GridFunc {
      *      {@link GridCacheEntry#peek()} method.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridClosure<GridCacheEntry<K, V>, V> cacheEntry2Peek() {
-        return (GridClosure<GridCacheEntry<K, V>, V>)CACHE_ENTRY_VAL_PEEK;
+    public static <K, V> IgniteClosure<GridCacheEntry<K, V>, V> cacheEntry2Peek() {
+        return (IgniteClosure<GridCacheEntry<K, V>, V>)CACHE_ENTRY_VAL_PEEK;
     }
 
     /**

@@ -117,8 +117,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
     }
 
     private def toRemoteTransformer[K, V, T](trans: V => T):
-        GridClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] = {
-        new GridClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] {
+        IgniteClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] = {
+        new IgniteClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] {
             @impl def apply(e: java.util.Map.Entry[K, V]): java.util.Map.Entry[K, T] = {
                 new IgniteBiTuple[K, T](e.getKey, trans(e.getValue))
             }

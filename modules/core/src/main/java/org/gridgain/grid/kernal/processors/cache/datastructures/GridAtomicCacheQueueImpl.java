@@ -230,7 +230,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private Long transformHeader(GridClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>> c)
+    @Nullable private Long transformHeader(IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>> c)
         throws GridException {
         int cnt = 0;
 

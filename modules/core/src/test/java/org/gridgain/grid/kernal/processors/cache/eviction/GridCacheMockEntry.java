@@ -201,12 +201,12 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
         // No-op.
         return null;
     }

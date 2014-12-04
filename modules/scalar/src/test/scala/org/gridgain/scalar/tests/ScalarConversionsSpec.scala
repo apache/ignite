@@ -221,7 +221,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     }
 
     it should "convert closure" in {
-        val f = new GridClosure[Int, Int] {
+        val f = new IgniteClosure[Int, Int] {
             override def apply(e: Int): Int =
                 e * 3
         }

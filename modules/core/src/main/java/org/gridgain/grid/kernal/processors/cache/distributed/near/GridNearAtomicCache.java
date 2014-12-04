@@ -277,7 +277,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
                         V val = req.nearValue(i);
                         byte[] valBytes = req.nearValueBytes(i);
-                        GridClosure<V, V> transform = req.nearTransformClosure(i);
+                        IgniteClosure<V, V> transform = req.nearTransformClosure(i);
 
                         GridCacheOperation op = transform != null ? TRANSFORM :
                             (val != null || valBytes != null) ?
@@ -489,31 +489,31 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws GridException {
         dht.transform(key, transformer);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         return dht.transformAndCompute(key, transformer);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> transformAsync(K key,
-        GridClosure<V, V> transformer,
+        IgniteClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl) {
         return dht.transformAsync(key, transformer, entry, ttl);
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) throws GridException {
+    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException {
         dht.transformAll(m);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) {
+    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         return dht.transformAllAsync(m);
     }
 

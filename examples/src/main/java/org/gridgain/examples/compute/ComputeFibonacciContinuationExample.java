@@ -77,7 +77,7 @@ public final class ComputeFibonacciContinuationExample {
     /**
      * Closure to execute.
      */
-    private static class FibonacciClosure implements GridClosure<Long, BigInteger> {
+    private static class FibonacciClosure implements IgniteClosure<Long, BigInteger> {
         /** Future for spawned task. */
         private GridFuture<BigInteger> fut1;
 

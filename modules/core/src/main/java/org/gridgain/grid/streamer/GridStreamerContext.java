@@ -69,7 +69,7 @@ public interface GridStreamerContext {
      * @return Result received from all streamers.
      * @throws GridException If query execution failed.
      */
-    public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo) throws GridException;
+    public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo) throws GridException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes
@@ -82,7 +82,7 @@ public interface GridStreamerContext {
      * @return Result received from all streamers.
      * @throws GridException If query execution failed.
      */
-    public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
+    public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException;
 
     /**
@@ -115,7 +115,7 @@ public interface GridStreamerContext {
      * @return Reducer result.
      * @throws GridException If query execution failed.
      */
-    public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc) throws GridException;
+    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc) throws GridException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes on which
@@ -129,6 +129,6 @@ public interface GridStreamerContext {
      * @return Reducer result.
      * @throws GridException If query execution failed.
      */
-    public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
+    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
         Collection<ClusterNode> nodes) throws GridException;
 }

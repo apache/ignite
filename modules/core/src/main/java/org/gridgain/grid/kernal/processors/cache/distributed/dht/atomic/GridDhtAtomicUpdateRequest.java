@@ -110,7 +110,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Transform closures. */
     @GridDirectTransient
-    private List<GridClosure<V, V>> transformClos;
+    private List<IgniteClosure<V, V>> transformClos;
 
     /** Transform closure bytes. */
     @GridDirectCollection(byte[].class)
@@ -119,7 +119,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Near transform closures. */
     @GridDirectTransient
-    private List<GridClosure<V, V>> nearTransformClos;
+    private List<IgniteClosure<V, V>> nearTransformClos;
 
     /** Near transform closures bytes. */
     @GridDirectCollection(byte[].class)
@@ -207,7 +207,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param drVer DR version (optional).
      */
     public void addWriteValue(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        GridClosure<V, V> transformC, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer) {
+        IgniteClosure<V, V> transformC, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer) {
         keys.add(key);
         this.keyBytes.add(keyBytes);
 
@@ -262,7 +262,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param valBytes Value bytes, {@code null} if should be removed.
      */
     public void addNearWriteValue(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        GridClosure<V, V> transformC) {
+        IgniteClosure<V, V> transformC) {
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
             nearKeyBytes = new ArrayList<>();
@@ -431,7 +431,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Key index.
      * @return Transform closure.
      */
-    @Nullable public GridClosure<V, V> transformClosure(int idx) {
+    @Nullable public IgniteClosure<V, V> transformClosure(int idx) {
         return transformClos == null ? null : transformClos.get(idx);
     }
 
@@ -461,7 +461,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Key index.
      * @return Transform closure.
      */
-    @Nullable public GridClosure<V, V> nearTransformClosure(int idx) {
+    @Nullable public IgniteClosure<V, V> nearTransformClosure(int idx) {
         return nearTransformClos == null ? null : nearTransformClos.get(idx);
     }
 

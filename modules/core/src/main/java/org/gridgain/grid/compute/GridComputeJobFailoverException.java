@@ -10,7 +10,6 @@
 package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -18,7 +17,7 @@ import java.util.concurrent.*;
 /**
  * This runtime exception can be thrown from {@link GridComputeJob#execute()} method to force
  * job failover to another node within task topology. Any
- * {@link GridClosure}, {@link Callable}, or {@link Runnable} instance passed into
+ * {@link org.gridgain.grid.lang.IgniteClosure}, {@link Callable}, or {@link Runnable} instance passed into
  * any of the {@link GridCompute} methods can also throw this exception to force failover.
  */
 public class GridComputeJobFailoverException extends GridRuntimeException {

@@ -400,12 +400,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws GridException {
         transformAsync(key, transformer).get();
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         return (R)updateAllAsync0(null,
             Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, null, true,
@@ -413,19 +413,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer,
+    @Override public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
         return updateAllAsync0(null, Collections.singletonMap(key, transformer), null, null, false, false, entry, ttl,
             null);
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) throws GridException {
+    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException {
         transformAllAsync(m).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) {
+    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         if (F.isEmpty(m))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
 
@@ -580,7 +580,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private GridFuture updateAllAsync0(
         @Nullable final Map<? extends K, ? extends V> map,
-        @Nullable final Map<? extends K, ? extends GridClosure<V, V>> transformMap,
+        @Nullable final Map<? extends K, ? extends IgniteClosure<V, V>> transformMap,
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drPutMap,
         @Nullable final Map<? extends K, GridCacheVersion> drRmvMap,
         final boolean retval,
@@ -1003,7 +1003,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         int size = req.keys().size();
 
         Map<K, V> putMap = null;
-        Map<K, GridClosure<V, V>> transformMap = null;
+        Map<K, IgniteClosure<V, V>> transformMap = null;
         Collection<K> rmvKeys = null;
         UpdateBatchResult<K, V> updRes = new UpdateBatchResult<>();
         List<GridDhtCacheEntry<K, V>> filtered = new ArrayList<>(size);
@@ -1034,7 +1034,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 if (op == TRANSFORM) {
-                    GridClosure<V, V> transform = req.transformClosure(i);
+                    IgniteClosure<V, V> transform = req.transformClosure(i);
 
                     V old = entry.innerGet(
                         null,
@@ -1364,10 +1364,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             newValBytes = null; // Value has been changed.
                         }
 
-                        GridClosure<V, V> transformC = null;
+                        IgniteClosure<V, V> transformC = null;
 
                         if (req.forceTransformBackups() && op == TRANSFORM)
-                            transformC = (GridClosure<V, V>)writeVal;
+                            transformC = (IgniteClosure<V, V>)writeVal;
 
                         if (!readersOnly)
                             dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, transformC,
@@ -1467,7 +1467,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ClusterNode node,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
-        @Nullable Map<K, GridClosure<V, V>> transformMap,
+        @Nullable Map<K, IgniteClosure<V, V>> transformMap,
         @Nullable GridDhtAtomicUpdateFuture<K, V> dhtFut,
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb,
         final GridNearAtomicUpdateRequest<K, V> req,
@@ -1600,7 +1600,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         byte[] valBytes = valBytesTuple.getIfMarshaled();
 
-                        GridClosure<V, V> transformC = transformMap == null ? null : transformMap.get(entry.key());
+                        IgniteClosure<V, V> transformC = transformMap == null ? null : transformMap.get(entry.key());
 
                         if (!batchRes.readersOnly())
                             dhtFut.addWriteEntry(entry, writeVal, valBytes, transformC, -1, -1, null, req.ttl());
@@ -2030,7 +2030,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         V val = req.value(i);
                         byte[] valBytes = req.valueBytes(i);
-                        GridClosure<V, V> transform = req.transformClosure(i);
+                        IgniteClosure<V, V> transform = req.transformClosure(i);
 
                         GridCacheOperation op = transform != null ? TRANSFORM :
                             (val != null || valBytes != null) ?

@@ -341,7 +341,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
 
     /**
      */
-    protected static class IncClosure implements GridClosure<Integer, Integer> {
+    protected static class IncClosure implements IgniteClosure<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public Integer apply(Integer val) {
             if (val == null) {

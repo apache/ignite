@@ -395,12 +395,12 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
         ctx.denyOnFlag(READ);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
         ctx.denyOnFlag(READ);
 
         return new GridFinishedFuture<>(ctx.kernalContext(), false);

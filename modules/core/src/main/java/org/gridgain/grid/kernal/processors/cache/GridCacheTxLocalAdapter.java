@@ -1045,7 +1045,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     // Read value from locked entry in group-lock transaction as well.
                     if (txEntry.hasValue()) {
                         if (!F.isEmpty(txEntry.transformClosures())) {
-                            for (GridClosure<V, V> clos : txEntry.transformClosures())
+                            for (IgniteClosure<V, V> clos : txEntry.transformClosures())
                                 val = clos.apply(val);
                         }
 
@@ -1085,7 +1085,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         txEntry.readValue(val);
 
                                     if (!F.isEmpty(txEntry.transformClosures())) {
-                                        for (GridClosure<V, V> clos : txEntry.transformClosures())
+                                        for (IgniteClosure<V, V> clos : txEntry.transformClosures())
                                             val = clos.apply(val);
                                     }
 
@@ -1292,7 +1292,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             txEntry.readValue(val);
 
                         if (!F.isEmpty(txEntry.transformClosures())) {
-                            for (GridClosure<V, V> clos : txEntry.transformClosures())
+                            for (IgniteClosure<V, V> clos : txEntry.transformClosures())
                                 visibleVal = clos.apply(visibleVal);
                         }
                     }
@@ -1507,7 +1507,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         txEntry.setAndMarkValid(val);
 
                                         if (!F.isEmpty(txEntry.transformClosures())) {
-                                            for (GridClosure<V, V> clos : txEntry.transformClosures())
+                                            for (IgniteClosure<V, V> clos : txEntry.transformClosures())
                                                 val = clos.apply(val);
                                         }
 
@@ -1635,7 +1635,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         txEntry.readValue(val);
 
                                     if (!F.isEmpty(txEntry.transformClosures())) {
-                                        for (GridClosure<V, V> clos : txEntry.transformClosures())
+                                        for (IgniteClosure<V, V> clos : txEntry.transformClosures())
                                             val = clos.apply(val);
                                     }
 
@@ -1681,7 +1681,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /** {@inheritDoc} */
     @Override public GridFuture<GridCacheReturn<V>> transformAllAsync(
         GridCacheContext<K, V> cacheCtx,
-        @Nullable Map<? extends K, ? extends GridClosure<V, V>> map,
+        @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> map,
         boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl
@@ -1735,7 +1735,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         long ttl,
         boolean implicit,
         @Nullable Map<? extends K, ? extends V> lookup,
-        @Nullable Map<? extends K, ? extends GridClosure<V, V>> transformMap,
+        @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> transformMap,
         boolean retval,
         boolean lockOnly,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
@@ -1767,7 +1767,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             for (K key : keys) {
                 V val = rmv || lookup == null ? null : lookup.get(key);
-                GridClosure<V, V> transformClo = transformMap == null ? null : transformMap.get(key);
+                IgniteClosure<V, V> transformClo = transformMap == null ? null : transformMap.get(key);
 
                 GridCacheVersion drVer;
                 long drTtl;
@@ -2014,7 +2014,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         Iterable<? extends K> keys,
         Set<K> failed,
         @Nullable Map<K, V> transformed,
-        @Nullable Map<? extends K, ? extends GridClosure<V, V>> transformMap,
+        @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> transformMap,
         GridCacheReturn<V> ret,
         boolean rmv,
         boolean retval,
@@ -2137,7 +2137,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     private GridFuture<GridCacheReturn<V>> putAllAsync0(
         final GridCacheContext<K, V> cacheCtx,
         @Nullable Map<? extends K, ? extends V> map,
-        @Nullable Map<? extends K, ? extends GridClosure<V, V>> transformMap,
+        @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> transformMap,
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
         final boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -2147,12 +2147,12 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
         // Cached entry may be passed only from entry wrapper.
         final Map<K, V> map0;
-        final Map<K, GridClosure<V, V>> transformMap0;
+        final Map<K, IgniteClosure<V, V>> transformMap0;
 
         if (drMap != null) {
             assert map == null;
 
-            map0 = (Map<K, V>)F.viewReadOnly(drMap, new GridClosure<GridCacheDrInfo<V>, V>() {
+            map0 = (Map<K, V>)F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo<V>, V>() {
                 @Override public V apply(GridCacheDrInfo<V> val) {
                     return val.value();
                 }
@@ -2183,7 +2183,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 transformMap0 = U.newHashMap(transformMap.size());
 
                 try {
-                    for (Map.Entry<? extends K, ? extends GridClosure<V, V>> e : transformMap.entrySet()) {
+                    for (Map.Entry<? extends K, ? extends IgniteClosure<V, V>> e : transformMap.entrySet()) {
                         K key = (K)cacheCtx.marshalToPortable(e.getKey());
 
                         transformMap0.put(key, e.getValue());
@@ -2198,7 +2198,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         }
         else {
             map0 = (Map<K, V>)map;
-            transformMap0 = (Map<K, GridClosure<V, V>>)transformMap;
+            transformMap0 = (Map<K, IgniteClosure<V, V>>)transformMap;
         }
 
         if (log.isDebugEnabled())
@@ -2679,7 +2679,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @return Transaction entry.
      */
     protected final GridCacheTxEntry<K, V> addEntry(GridCacheOperation op, @Nullable V val,
-        @Nullable GridClosure<V, V> transformClos, GridCacheEntryEx<K, V> entry, long ttl,
+        @Nullable IgniteClosure<V, V> transformClos, GridCacheEntryEx<K, V> entry, long ttl,
         GridPredicate<GridCacheEntry<K, V>>[] filter, boolean filtersSet, long drTtl,
         long drExpireTime, @Nullable GridCacheVersion drVer) {
         GridCacheTxKey<K> key = entry.txKey();

@@ -735,7 +735,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or transform closure is {@code null}.
      * @throws GridException On any error occurred while storing value in cache.
      */
-    public void transform(K key, GridClosure<V, V> transformer) throws GridException;
+    public void transform(K key, IgniteClosure<V, V> transformer) throws GridException;
 
     /**
      * Applies {@code transformer} closure to the previous value associated with given key in cache,
@@ -753,7 +753,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Value computed by the closure.
      * @throws GridException On any error occurred while storing value in cache.
      */
-    public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer) throws GridException;
+    public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer) throws GridException;
 
     /**
      * Stores result of applying {@code transformer} closure to the previous value associated with
@@ -782,7 +782,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Future for the transform operation.
      * @throws NullPointerException If either key or transform closure is {@code null}.
      */
-    public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer);
+    public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer);
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -1103,7 +1103,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param m Map containing keys and closures to be applied to values.
      * @throws GridException On any error occurred while storing value in cache.
      */
-    public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) throws GridException;
+    public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException;
 
     /**
      * Stores result of applying the specified transform closure to previous values associated
@@ -1131,7 +1131,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param transformer Transformation closure to be applied to each value.
      * @throws GridException On any error occurred while storing value in cache.
      */
-    public void transformAll(@Nullable Set<? extends K> keys, GridClosure<V, V> transformer) throws GridException;
+    public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer) throws GridException;
 
     /**
      * Asynchronously stores given key-value pairs in cache. If filters are provided, then entries will
@@ -1180,7 +1180,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param m Map containing keys and closures to be applied to values.
      * @return Future for operation.
      */
-    public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m);
+    public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m);
 
     /**
      * Stores result of applying the specified transform closure to previous values associated
@@ -1209,7 +1209,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Future for operation.
      * @throws GridException On any error occurred while storing value in cache.
      */
-    public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, GridClosure<V, V> transformer)
+    public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
         throws GridException;
 
     /**

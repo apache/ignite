@@ -734,14 +734,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, GridClosure<V, V> transformer) throws GridException {
+    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws GridException {
         A.notNull(key, "key", transformer, "valTransform");
 
         cache.transform(key, transformer);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         A.notNull(key, "key", transformer, "transformer");
 
@@ -767,7 +767,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer) {
+    @Override public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer) {
         A.notNull(key, "key", transformer, "valTransform");
 
         return cache.transformAsync(key, transformer);
@@ -794,7 +794,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer,
+    @Override public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
         return cache.transformAsync(key, transformer, entry, ttl);
     }
@@ -838,7 +838,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) throws GridException {
+    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException {
         if (F.isEmpty(m))
             return;
 
@@ -846,7 +846,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Set<? extends K> keys, GridClosure<V, V> transformer)
+    @Override public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
         throws GridException {
         if (F.isEmpty(keys))
             return;
@@ -866,7 +866,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) {
+    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         if (F.isEmpty(m))
             return new GridFinishedFuture<>(cctx.kernalContext());
 
@@ -874,7 +874,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, GridClosure<V, V> transformer)
+    @Override public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
         throws GridException {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext());

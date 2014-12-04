@@ -47,7 +47,7 @@ public interface GridScheduler {
      * @param r Runnable to execute. If {@code null} - this method is no-op.
      * @return Future for this execution.
      * @see #callLocal(Callable)
-     * @see GridClosure
+     * @see org.gridgain.grid.lang.IgniteClosure
      */
     public GridFuture<?> runLocal(@Nullable Runnable r);
 
