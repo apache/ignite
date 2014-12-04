@@ -11,8 +11,8 @@
 
 package org.gridgain.visor.plugin;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.logger.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

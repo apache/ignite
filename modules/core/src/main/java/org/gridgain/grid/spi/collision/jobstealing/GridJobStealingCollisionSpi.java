@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.spi.collision.jobstealing;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;

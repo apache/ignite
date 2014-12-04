@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.resources.*;
@@ -16,7 +17,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.securesession.*;

@@ -23,7 +23,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
@@ -3734,7 +3733,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Shortcut for {@link #error(org.gridgain.grid.logger.IgniteLogger, Object, Object, Throwable)}.
+     * Shortcut for {@link #error(org.apache.ignite.IgniteLogger, Object, Object, Throwable)}.
      *
      * @param log Optional logger.
      * @param shortMsg Message to log using quiet logger.

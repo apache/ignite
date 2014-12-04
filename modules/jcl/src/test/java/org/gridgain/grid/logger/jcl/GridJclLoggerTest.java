@@ -11,7 +11,7 @@ package org.gridgain.grid.logger.jcl;
 
 import junit.framework.*;
 import org.apache.commons.logging.*;
-import org.gridgain.grid.logger.*;
+import org.apache.ignite.*;
 import org.gridgain.testframework.junits.common.*;
 
 /**

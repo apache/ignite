@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.deployment.uri.scanners.ftp;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

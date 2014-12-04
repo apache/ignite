@@ -16,7 +16,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 import org.springframework.context.support.*;

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 
 /**
  * Abstract class for all hadoop components.

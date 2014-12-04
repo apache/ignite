@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.logger.log4j;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
@@ -417,13 +418,13 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements IgniteL
     }
 
     /**
-     * Gets {@link org.gridgain.grid.logger.IgniteLogger} wrapper around log4j logger for the given
+     * Gets {@link org.apache.ignite.IgniteLogger} wrapper around log4j logger for the given
      * category. If category is {@code null}, then root logger is returned. If
      * category is an instance of {@link Class} then {@code (Class)ctgr).getName()}
      * is used as category name.
      *
      * @param ctgr {@inheritDoc}
-     * @return {@link org.gridgain.grid.logger.IgniteLogger} wrapper around log4j logger.
+     * @return {@link org.apache.ignite.IgniteLogger} wrapper around log4j logger.
      */
     @Override public GridLog4jLogger getLogger(Object ctgr) {
         return new GridLog4jLogger(ctgr == null ? Logger.getRootLogger() :

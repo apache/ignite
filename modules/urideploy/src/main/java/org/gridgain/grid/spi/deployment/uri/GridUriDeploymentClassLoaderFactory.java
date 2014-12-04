@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
-import org.gridgain.grid.logger.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.spi.*;
 import java.io.*;
 import java.net.*;

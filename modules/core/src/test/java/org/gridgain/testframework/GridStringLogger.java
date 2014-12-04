@@ -9,7 +9,7 @@
 
 package org.gridgain.testframework;
 
-import org.gridgain.grid.logger.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

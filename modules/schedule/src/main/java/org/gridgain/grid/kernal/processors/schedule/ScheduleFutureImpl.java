@@ -10,12 +10,12 @@
 package org.gridgain.grid.kernal.processors.schedule;
 
 import it.sauronsoftware.cron4j.*;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;

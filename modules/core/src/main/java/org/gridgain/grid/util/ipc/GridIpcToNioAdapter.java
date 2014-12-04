@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.ipc;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 

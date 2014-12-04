@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.nio;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.internal.*;

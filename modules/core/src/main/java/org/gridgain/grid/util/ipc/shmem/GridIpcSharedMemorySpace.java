@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

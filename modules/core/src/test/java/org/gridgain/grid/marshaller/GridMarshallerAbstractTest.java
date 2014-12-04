@@ -26,7 +26,6 @@ import org.gridgain.grid.kernal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.p2p.*;
 import org.gridgain.grid.product.*;
@@ -491,7 +490,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link org.gridgain.grid.logger.IgniteLogger} instance.
+     * Tests marshal {@link org.apache.ignite.IgniteLogger} instance.
      *
      * @throws Exception If test failed.
      */

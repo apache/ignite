@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.spi.deployment.local;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.util.*;

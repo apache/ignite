@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.nodestart;
 
-import org.gridgain.grid.logger.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

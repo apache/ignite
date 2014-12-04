@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
+import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;

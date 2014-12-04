@@ -14,7 +14,7 @@ import org.gridgain.grid.spi.*;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.gridgain.grid.logger.IgniteLogger}. Grid logger is provided to grid
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.IgniteLogger}. Grid logger is provided to grid
  * via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
  * Logger can be injected into instances of following classes:

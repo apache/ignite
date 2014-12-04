@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.spi.discovery.tcp.ipfinder.vm;
 
+import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.util.tostring.*;

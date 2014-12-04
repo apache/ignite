@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.resource;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.logger.*;
 import org.junit.*;
 
 /**

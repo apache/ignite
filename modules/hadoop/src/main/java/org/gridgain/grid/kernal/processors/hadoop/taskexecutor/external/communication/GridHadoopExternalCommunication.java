@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;

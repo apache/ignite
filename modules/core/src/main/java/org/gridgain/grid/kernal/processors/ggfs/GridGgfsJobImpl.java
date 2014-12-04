@@ -16,7 +16,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.logger.*;
 
 import java.io.*;
 

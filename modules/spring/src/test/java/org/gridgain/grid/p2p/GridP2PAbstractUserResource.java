@@ -11,7 +11,6 @@ package org.gridgain.grid.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.logger.*;
 import org.springframework.context.*;
 import javax.management.*;
 import java.util.*;

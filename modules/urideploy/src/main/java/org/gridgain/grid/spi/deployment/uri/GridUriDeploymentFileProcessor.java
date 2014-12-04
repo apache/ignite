@@ -11,9 +11,9 @@ package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.commons.codec.binary.*;
 import org.apache.commons.codec.digest.*;
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

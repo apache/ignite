@@ -54,7 +54,6 @@ import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.lang.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.client.router.impl;
 
-import org.gridgain.grid.logger.*;
+import org.apache.ignite.*;
 
 /**
  * Router NIO listener.

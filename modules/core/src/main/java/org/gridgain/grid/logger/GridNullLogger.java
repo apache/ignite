@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.logger;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**

@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.dr.hub.sender.store.fs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.dr.hub.sender.store.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.tostring.*;

@@ -10,8 +10,8 @@
 package org.gridgain.grid.logger.log4j;
 
 import junit.framework.*;
+import org.apache.ignite.*;
 import org.apache.log4j.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.testframework.junits.common.*;
 
 /**

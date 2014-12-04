@@ -11,10 +11,10 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import org.apache.commons.collections.comparators.*;
 import org.apache.hadoop.io.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

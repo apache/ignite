@@ -9,11 +9,11 @@
 
 package org.test.gridify;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 
 import java.io.*;
 import java.util.*;

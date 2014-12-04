@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
