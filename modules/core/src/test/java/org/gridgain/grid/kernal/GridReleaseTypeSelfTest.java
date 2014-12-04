@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

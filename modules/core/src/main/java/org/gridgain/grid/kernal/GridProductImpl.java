@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.product.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -18,7 +18,7 @@ import java.text.*;
 import java.util.*;
 
 /**
- * {@link GridProduct} implementation.
+ * {@link org.apache.ignite.product.GridProduct} implementation.
  */
 public class GridProductImpl implements GridProduct, Externalizable {
     /** */

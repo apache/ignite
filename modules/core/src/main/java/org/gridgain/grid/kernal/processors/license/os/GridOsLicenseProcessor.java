@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.license.os;
 
+import org.apache.ignite.product.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.license.*;
-import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
 /**

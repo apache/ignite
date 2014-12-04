@@ -14,9 +14,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -30,7 +30,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.product.GridProductVersion.*;
+import static org.apache.ignite.product.GridProductVersion.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**

@@ -10,14 +10,14 @@
 package org.gridgain.testframework;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.product.GridProductVersion.*;
+import static org.apache.ignite.product.GridProductVersion.*;
 
 /**
  * Test node.

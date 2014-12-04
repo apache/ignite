@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.product.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.jetbrains.annotations.*;

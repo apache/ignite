@@ -10,9 +10,9 @@
 package org.gridgain.testframework.junits.spi;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.communication.*;
@@ -33,7 +33,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.product.GridProductVersion.*;
+import static org.apache.ignite.product.GridProductVersion.*;
 
 /**
  * Base SPI test class.

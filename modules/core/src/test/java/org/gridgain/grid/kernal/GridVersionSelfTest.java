@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.product.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 

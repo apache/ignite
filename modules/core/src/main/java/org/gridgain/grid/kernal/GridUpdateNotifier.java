@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.product.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.license.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
