@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal.processors.cache.distributed.replicated.preload
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -22,7 +22,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Tests that preload start/preload stop events are fired only once for replicated cache.

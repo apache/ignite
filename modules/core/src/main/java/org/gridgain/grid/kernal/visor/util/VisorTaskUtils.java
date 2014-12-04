@@ -11,13 +11,13 @@ package org.gridgain.grid.kernal.visor.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.eviction.random.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.visor.event.*;
 import org.gridgain.grid.kernal.visor.file.*;
@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
 /**

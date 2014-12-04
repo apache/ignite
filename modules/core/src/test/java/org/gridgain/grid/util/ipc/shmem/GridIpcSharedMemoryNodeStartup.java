@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;

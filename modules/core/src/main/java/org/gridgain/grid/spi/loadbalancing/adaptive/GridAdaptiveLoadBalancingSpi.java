@@ -10,10 +10,10 @@
 package org.gridgain.grid.spi.loadbalancing.adaptive;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -30,7 +30,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Load balancing SPI that adapts to overall node performance. It

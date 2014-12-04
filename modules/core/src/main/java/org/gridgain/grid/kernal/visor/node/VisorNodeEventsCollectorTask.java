@@ -10,10 +10,10 @@
 package org.gridgain.grid.kernal.visor.node;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.kernal.visor.event.*;
@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Task that runs on specified node and returns events data.

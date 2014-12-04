@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.visor.event;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -18,7 +17,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Base class for lightweight counterpart for various {@link GridEvent}.
+ * Base class for lightweight counterpart for various {@link org.apache.ignite.events.GridEvent}.
  */
 public class VisorGridEvent implements Serializable {
     /** */

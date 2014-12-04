@@ -11,13 +11,14 @@
 
 package org.gridgain.scalar.tests
 
+import org.apache.ignite.events.{GridEventType, GridEvent}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.scalar._
 import scalar._
 import org.scalatest.matchers._
 import org.scalatest._
 import junit.JUnitRunner
-import org.gridgain.grid.events.{GridEventType, GridEvent}
+import org.gridgain.grid.events.GridEventType
 import GridEventType._
 import collection.JavaConversions._
 import org.junit.runner.RunWith

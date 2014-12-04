@@ -10,9 +10,9 @@
 package org.gridgain.grid.spi.loadbalancing.weightedrandom;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Load balancing SPI that picks a random node for job execution. Note that you can

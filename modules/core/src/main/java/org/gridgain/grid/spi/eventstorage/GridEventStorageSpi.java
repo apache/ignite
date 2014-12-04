@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.eventstorage;
 
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.spi.*;
 
 import java.util.*;
@@ -35,7 +35,7 @@ import java.util.*;
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
- * @see GridEvent
+ * @see org.apache.ignite.events.GridEvent
  */
 public interface GridEventStorageSpi extends GridSpi {
     /**

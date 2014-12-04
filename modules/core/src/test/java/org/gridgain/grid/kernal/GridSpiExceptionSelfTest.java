@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.spi.eventstorage.*;

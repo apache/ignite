@@ -10,11 +10,11 @@
 package org.gridgain.loadtests.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.util.typedef.*;
@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 import static org.gridgain.loadtests.util.GridLoadTestArgs.*;
 import static org.gridgain.testframework.GridLoadTestUtils.*;
 import static org.gridgain.testframework.GridTestUtils.*;

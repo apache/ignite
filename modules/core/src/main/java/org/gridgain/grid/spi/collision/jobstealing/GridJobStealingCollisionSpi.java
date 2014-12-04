@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi.collision.jobstealing;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
@@ -30,7 +30,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Collision SPI that supports job stealing from over-utilized nodes to

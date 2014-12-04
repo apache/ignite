@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
@@ -19,7 +19,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Cache query read event.
+ * Cache query execution event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -50,12 +50,12 @@ import java.util.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @see GridEventType#EVT_CACHE_QUERY_OBJECT_READ
+ * @see GridEventType#EVT_CACHE_QUERY_EXECUTED
  * @see GridEventType#EVTS_CACHE_QUERY
  */
-public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
+public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
     /** */
-    private static final long serialVersionUID = -1984731272984397445L;
+    private static final long serialVersionUID = 3738753361235304496L;
 
     /** Query type. */
     private final GridCacheQueryType qryType;
@@ -87,37 +87,19 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
     /** Task name. */
     private final String taskName;
 
-    /** Key. */
-    @GridToStringInclude
-    private final K key;
-
-    /** Value. */
-    @GridToStringInclude
-    private final V val;
-
-    /** Old value. */
-    @GridToStringInclude
-    private final V oldVal;
-
-    /** Result row. */
-    @GridToStringInclude
-    private final List<?> row;
-
     /**
      * @param node Node where event was fired.
      * @param msg Event message.
      * @param type Event type.
+     * @param qryType Query type.
      * @param cacheName Cache name.
      * @param clsName Class name.
      * @param clause Clause.
      * @param scanQryFilter Scan query filter.
      * @param args Query arguments.
      * @param subjId Security subject ID.
-     * @param key Key.
-     * @param val Value.
-     * @param oldVal Old value.
      */
-    public GridCacheQueryReadEvent(
+    public GridCacheQueryExecutedEvent(
         ClusterNode node,
         String msg,
         int type,
@@ -129,11 +111,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
         @Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
-        @Nullable String taskName,
-        @Nullable K key,
-        @Nullable V val,
-        @Nullable V oldVal,
-        @Nullable List<?> row) {
+        @Nullable String taskName) {
         super(node, msg, type);
 
         assert qryType != null;
@@ -147,10 +125,6 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
         this.args = args;
         this.subjId = subjId;
         this.taskName = taskName;
-        this.key = key;
-        this.val = val;
-        this.oldVal = oldVal;
-        this.row = row;
     }
 
     /**
@@ -244,45 +218,9 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
         return taskName;
     }
 
-    /**
-     * Gets read entry key.
-     *
-     * @return Key.
-     */
-    @Nullable public K key() {
-        return key;
-    }
-
-    /**
-     * Gets read entry value.
-     *
-     * @return Value.
-     */
-    @Nullable public V value() {
-        return val;
-    }
-
-    /**
-     * Gets read entry old value (applicable for continuous queries).
-     *
-     * @return Old value.
-     */
-    @Nullable public V oldValue() {
-        return oldVal;
-    }
-
-    /**
-     * Gets read results set row.
-     *
-     * @return Result row.
-     */
-    @Nullable public List<?> row() {
-        return row;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryReadEvent.class, this,
+        return S.toString(GridCacheQueryExecutedEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

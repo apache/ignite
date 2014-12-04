@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.eventstorage;
 
-import org.gridgain.grid.events.*;
+import org.apache.ignite.events.*;
 
 import java.util.*;
 

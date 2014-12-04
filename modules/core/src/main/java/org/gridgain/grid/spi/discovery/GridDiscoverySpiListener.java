@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.events.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -23,7 +22,7 @@ public interface GridDiscoverySpiListener {
     /**
      * Notification for grid node discovery events.
      *
-     * @param type Node discovery event type. See {@link GridDiscoveryEvent}
+     * @param type Node discovery event type. See {@link org.apache.ignite.events.GridDiscoveryEvent}
      * @param topVer Topology version or {@code 0} if configured discovery SPI implementation
      *      does not support versioning.
      * @param node Node affected (e.g. newly joined node, left node, failed node or local node).

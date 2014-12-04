@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;

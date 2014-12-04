@@ -9,17 +9,17 @@
 
 package org.gridgain.grid.util.typedef;
 
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;GridEvent&gt;</tt> by extending
  * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link GridEvent}.
+ * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link org.apache.ignite.events.GridEvent}.
  * @see org.apache.ignite.lang.IgnitePredicate
- * @see GridEvent
+ * @see org.apache.ignite.events.GridEvent
  * @see GridFunc
  */
 public interface PE extends IgnitePredicate<GridEvent> { /* No-op. */ }

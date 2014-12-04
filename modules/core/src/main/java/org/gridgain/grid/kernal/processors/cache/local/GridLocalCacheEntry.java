@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Cache entry for local caches.

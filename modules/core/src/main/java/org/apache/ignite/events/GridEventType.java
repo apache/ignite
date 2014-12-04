@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.typedef.internal.*;

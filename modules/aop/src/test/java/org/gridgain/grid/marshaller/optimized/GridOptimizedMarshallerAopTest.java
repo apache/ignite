@@ -10,15 +10,15 @@
 package org.gridgain.grid.marshaller.optimized;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.compute.gridify.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Test use GridOptimizedMarshaller and AspectJ AOP.

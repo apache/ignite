@@ -10,7 +10,7 @@
 package org.gridgain.grid.cache.affinity;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.events.*;
+import org.apache.ignite.events.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

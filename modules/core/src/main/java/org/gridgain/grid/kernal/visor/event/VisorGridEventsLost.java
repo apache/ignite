@@ -14,7 +14,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Special event for events lost situations.

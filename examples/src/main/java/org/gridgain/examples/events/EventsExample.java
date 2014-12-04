@@ -10,16 +10,16 @@
 package org.gridgain.examples.events;
 
 import org.apache.ignite.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.resources.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Demonstrates event consume API that allows to register event listeners on remote nodes.

@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Grid checkpoint event.
+ * Grid authorization event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -34,78 +35,101 @@ import org.gridgain.grid.util.typedef.internal.*;
  * </ul>
  * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
- * Note that by default all events in GridGain are enabled and therefore generated and stored
- * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
- * under the load and therefore it creates a significant additional load on the system. If these events are
- * not needed by the application this load is unnecessary and leads to significant performance degradation.
- * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_CHECKPOINT_LOADED
- * @see GridEventType#EVT_CHECKPOINT_REMOVED
- * @see GridEventType#EVT_CHECKPOINT_SAVED
- * @see GridEventType#EVTS_CHECKPOINT
+ * @see GridEventType#EVT_AUTHORIZATION_FAILED
+ * @see GridEventType#EVT_AUTHORIZATION_SUCCEEDED
  */
-public class GridCheckpointEvent extends GridEventAdapter {
+public class GridAuthorizationEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private String cpKey;
+    /** Requested operation. */
+    private GridSecurityPermission op;
+
+    /** Authenticated subject authorized to perform operation. */
+    private GridSecuritySubject subj;
+
+    /** {@inheritDoc} */
+    @Override public String shortDisplay() {
+        return name() + ": op=" + op;
+    }
 
     /**
      * No-arg constructor.
      */
-    public GridCheckpointEvent() {
+    public GridAuthorizationEvent() {
         // No-op.
     }
 
     /**
-     * Creates new checkpoint event with given parameters.
+     * Creates authorization event with given parameters.
      *
-     * @param node Local node.
-     * @param msg Optional event message.
+     * @param msg Optional message.
      * @param type Event type.
-     * @param cpKey Checkpoint key associated with this event.
      */
-    public GridCheckpointEvent(ClusterNode node, String msg, int type, String cpKey) {
+    public GridAuthorizationEvent(ClusterNode node, String msg, int type) {
+        super(node, msg, type);
+    }
+
+    /**
+     * Creates authorization event with given parameters.
+     *
+     * @param node Node.
+     * @param msg Optional message.
+     * @param type Event type.
+     * @param op Requested operation.
+     * @param subj Authenticated subject.
+     */
+    public GridAuthorizationEvent(ClusterNode node, String msg, int type, GridSecurityPermission op,
+        GridSecuritySubject subj) {
         super(node, msg, type);
 
-        this.cpKey = cpKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String shortDisplay() {
-        return name() + ": cpKey=" + cpKey;
+        this.op = op;
+        this.subj = subj;
     }
 
     /**
-     * Gets checkpoint key associated with this event.
+     * Gets requested operation.
      *
-     * @return Checkpoint key associated with this event.
+     * @return Requested operation.
      */
-    public String key() {
-        assert cpKey != null;
-
-        return cpKey;
+    public GridSecurityPermission operation() {
+        return op;
     }
 
     /**
-     * Sets checkpoint key.
+     * Sets requested operation.
      *
-     * @param cpKey Checkpoint key to set.
+     * @param op Requested operation.
      */
-    public void key(String cpKey) {
-        assert cpKey != null;
+    public void operation(GridSecurityPermission op) {
+        this.op = op;
+    }
 
-        this.cpKey = cpKey;
+    /**
+     * Gets authenticated subject.
+     *
+     * @return Authenticated subject.
+     */
+    public GridSecuritySubject subject() {
+        return subj;
+    }
+
+    /**
+     * Sets authenticated subject.
+     *
+     * @param subj Authenticated subject.
+     */
+    public void subject(GridSecuritySubject subj) {
+        this.subj = subj;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCheckpointEvent.class, this,
+        return S.toString(GridAuthorizationEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

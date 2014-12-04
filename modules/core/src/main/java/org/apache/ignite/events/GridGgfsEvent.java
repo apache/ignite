@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.ggfs.*;
@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * GGFS event.

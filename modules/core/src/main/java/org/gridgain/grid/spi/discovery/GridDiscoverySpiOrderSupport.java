@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.spi.discovery;
 
-import org.gridgain.grid.events.*;
-
 import java.lang.annotation.*;
 
 /**
@@ -23,7 +21,7 @@ import java.lang.annotation.*;
  * at later point of time have order values greater than previous nodes.
  * </li>
  * <li>
- * All {@link GridEventType#EVT_NODE_JOINED} events come in proper order. This means that all
+ * All {@link org.apache.ignite.events.GridEventType#EVT_NODE_JOINED} events come in proper order. This means that all
  * listeners to discovery events will receive discovery notifications in proper order.
  * </li>
  * </ul>

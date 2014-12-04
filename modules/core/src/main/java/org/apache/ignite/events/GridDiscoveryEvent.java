@@ -7,13 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
- * Grid deployment event.
+ * Grid discovery event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -43,65 +46,109 @@ import org.gridgain.grid.util.typedef.internal.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_CLASS_DEPLOY_FAILED
- * @see GridEventType#EVT_CLASS_DEPLOYED
- * @see GridEventType#EVT_CLASS_UNDEPLOYED
- * @see GridEventType#EVT_TASK_DEPLOY_FAILED
- * @see GridEventType#EVT_TASK_DEPLOYED
- * @see GridEventType#EVT_TASK_UNDEPLOYED
- * @see GridEventType#EVTS_DEPLOYMENT
+ * @see GridEventType#EVT_NODE_METRICS_UPDATED
+ * @see GridEventType#EVT_NODE_FAILED
+ * @see GridEventType#EVT_NODE_JOINED
+ * @see GridEventType#EVT_NODE_LEFT
+ * @see GridEventType#EVT_NODE_SEGMENTED
+ * @see GridEventType#EVTS_DISCOVERY_ALL
+ * @see GridEventType#EVTS_DISCOVERY
  */
-public class GridDeploymentEvent extends GridEventAdapter {
+public class GridDiscoveryEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String alias;
+    private ClusterNode evtNode;
+
+    /** Topology version. */
+    private long topVer;
+
+    /** Collection of nodes corresponding to topology version. */
+    private Collection<ClusterNode> topSnapshot;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + (alias != null ? ": " + alias : "");
+        return name() + ": id8=" + U.id8(evtNode.id()) + ", ip=" + F.first(evtNode.addresses());
     }
 
     /**
      * No-arg constructor.
      */
-    public GridDeploymentEvent() {
+    public GridDiscoveryEvent() {
         // No-op.
     }
 
     /**
-     * Creates deployment event with given parameters.
+     * Creates new discovery event with given parameters.
      *
-     * @param node Node.
+     * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
+     * @param evtNode Node that caused this event to be generated.
      */
-    public GridDeploymentEvent(ClusterNode node, String msg, int type) {
+    public GridDiscoveryEvent(ClusterNode node, String msg, int type, ClusterNode evtNode) {
         super(node, msg, type);
+
+        this.evtNode = evtNode;
     }
 
     /**
-     * Gets deployment alias for this event.
+     * Sets node this event is referring to.
      *
-     * @return Deployment alias.
+     * @param evtNode Event node.
      */
-    public String alias() {
-        return alias;
+    public void eventNode(ClusterNode evtNode) {
+        this.evtNode = evtNode;
     }
 
     /**
-     * Sets deployment alias for this event.
+     * Gets node that caused this event to be generated. It is potentially different from the node
+     * on which this event was recorded. For example, node {@code A} locally recorded the event that a remote node
+     * {@code B} joined the topology. In this case this method will return ID of {@code B}.
      *
-     * @param alias Deployment alias.
+     * @return Event node ID.
      */
-    public void alias(String alias) {
-        this.alias = alias;
+    public ClusterNode eventNode() {
+        return evtNode;
+    }
+
+    /**
+     * Gets topology version if this event is raised on
+     * topology change and configured discovery SPI implementation
+     * supports topology versioning.
+     *
+     * @return Topology version or {@code 0} if configured discovery SPI implementation
+     *      does not support versioning.
+     */
+    public long topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * Gets topology nodes from topology snapshot. If SPI implementation does not support
+     * versioning, the best effort snapshot will be captured.
+     *
+     * @return Topology snapshot.
+     */
+    public Collection<ClusterNode> topologyNodes() {
+        return topSnapshot;
+    }
+
+    /**
+     * Sets the topology snapshot.
+     *
+     * @param topVer Topology version.
+     * @param topSnapshot Topology snapshot.
+     */
+    public void topologySnapshot(long topVer, Collection<ClusterNode> topSnapshot) {
+        this.topVer = topVer;
+        this.topSnapshot = topSnapshot;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDeploymentEvent.class, this,
+        return S.toString(GridDiscoveryEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

@@ -10,14 +10,14 @@
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.events.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * This examples demonstrates events API. Note that grid events are disabled by default and

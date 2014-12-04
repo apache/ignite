@@ -7,15 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
- * Grid license event.
+ * Grid deployment event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -45,61 +43,65 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_LIC_CLEARED
- * @see GridEventType#EVT_LIC_GRACE_EXPIRED
- * @see GridEventType#EVT_LIC_VIOLATION
+ * @see GridEventType#EVT_CLASS_DEPLOY_FAILED
+ * @see GridEventType#EVT_CLASS_DEPLOYED
+ * @see GridEventType#EVT_CLASS_UNDEPLOYED
+ * @see GridEventType#EVT_TASK_DEPLOY_FAILED
+ * @see GridEventType#EVT_TASK_DEPLOYED
+ * @see GridEventType#EVT_TASK_UNDEPLOYED
+ * @see GridEventType#EVTS_DEPLOYMENT
  */
-public class GridLicenseEvent extends GridEventAdapter {
+public class GridDeploymentEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** License ID. */
-    private UUID licId;
+    /** */
+    private String alias;
+
+    /** {@inheritDoc} */
+    @Override public String shortDisplay() {
+        return name() + (alias != null ? ": " + alias : "");
+    }
 
     /**
      * No-arg constructor.
      */
-    public GridLicenseEvent() {
+    public GridDeploymentEvent() {
         // No-op.
     }
 
     /**
-     * Creates license event with given parameters.
+     * Creates deployment event with given parameters.
      *
      * @param node Node.
-     * @param msg Optional message.
+     * @param msg Optional event message.
      * @param type Event type.
      */
-    public GridLicenseEvent(ClusterNode node, String msg, int type) {
+    public GridDeploymentEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
-    /** {@inheritDoc} */
-    @Override public String shortDisplay() {
-        return name() + ": licId8=" + U.id8(licId) + ", msg=" + message();
+    /**
+     * Gets deployment alias for this event.
+     *
+     * @return Deployment alias.
+     */
+    public String alias() {
+        return alias;
     }
 
     /**
-     * Gets license ID.
+     * Sets deployment alias for this event.
      *
-     * @return License ID.
+     * @param alias Deployment alias.
      */
-    public UUID licenseId() {
-        return licId;
-    }
-
-    /**
-     * Sets license ID.
-     *
-     * @param licId License ID to set.
-     */
-    public void licenseId(UUID licId) {
-        this.licId = licId;
+    public void alias(String alias) {
+        this.alias = alias;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridLicenseEvent.class, this,
+        return S.toString(GridDeploymentEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

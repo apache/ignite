@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.clock;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
@@ -25,7 +25,7 @@ import org.gridgain.grid.util.worker.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;

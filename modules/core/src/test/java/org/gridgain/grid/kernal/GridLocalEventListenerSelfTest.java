@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

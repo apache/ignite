@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -33,7 +33,7 @@ import java.text.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * This class provides convenient adapter for SPI implementations.

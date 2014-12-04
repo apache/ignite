@@ -44,7 +44,7 @@
 
         <!-- Enable cache events for examples. -->
         <property name="includeEventTypes">
-            <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/>
+            <util:constant static-field="org.apache.ignite.events.GridEventType.EVTS_CACHE"/>
         </property>
 
         <!-- Cache configurations (all properties are optional). -->

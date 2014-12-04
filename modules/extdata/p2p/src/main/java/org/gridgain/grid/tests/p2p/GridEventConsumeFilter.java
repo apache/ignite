@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.tests.p2p;
 
-import org.gridgain.grid.events.*;
+import org.apache.ignite.events.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**

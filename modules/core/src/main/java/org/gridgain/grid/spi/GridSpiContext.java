@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
@@ -137,7 +137,7 @@ public interface GridSpiContext {
      * @param lsnr Event listener for local events.
      * @param types Optional types for which this listener will be notified. If no types are provided
      *      this listener will be notified for all local events.
-     * @see GridEvent
+     * @see org.apache.ignite.events.GridEvent
      */
     public void addLocalEventListener(GridLocalEventListener lsnr, int... types);
 

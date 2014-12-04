@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Deployment storage for {@link GridDeploymentMode#SHARED} and

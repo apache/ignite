@@ -1,4 +1,4 @@
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.util.typedef.internal.*;

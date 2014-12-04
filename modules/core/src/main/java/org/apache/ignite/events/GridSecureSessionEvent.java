@@ -7,17 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Grid task event.
+ * Grid secure session validation event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -47,111 +46,98 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_TASK_FAILED
- * @see GridEventType#EVT_TASK_FINISHED
- * @see GridEventType#EVT_TASK_REDUCED
- * @see GridEventType#EVT_TASK_STARTED
- * @see GridEventType#EVT_TASK_SESSION_ATTR_SET
- * @see GridEventType#EVT_TASK_TIMEDOUT
- * @see GridEventType#EVTS_TASK_EXECUTION
+ * @see GridEventType#EVT_SECURE_SESSION_VALIDATION_FAILED
+ * @see GridEventType#EVT_SECURE_SESSION_VALIDATION_SUCCEEDED
  */
-public class GridTaskEvent extends GridEventAdapter {
+public class GridSecureSessionEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final String taskName;
+    /**  Subject type. */
+    private GridSecuritySubjectType subjType;
 
-    /** */
-    private final String taskClsName;
-
-    /** */
-    private final IgniteUuid sesId;
-
-    /** */
-    private final boolean internal;
-
-    /**  */
-    private final UUID subjId;
+    /** Subject ID. */
+    private UUID subjId;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": taskName=" + taskName;
+        return name() + ": subjType=" + subjType;
     }
 
     /**
-     * Creates task event with given parameters.
+     * No-arg constructor.
+     */
+    public GridSecureSessionEvent() {
+        // No-op.
+    }
+
+    /**
+     * Creates secure session event with given parameters.
      *
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
-     * @param sesId Task session ID.
-     * @param taskName Task name.
+     */
+    public GridSecureSessionEvent(ClusterNode node, String msg, int type) {
+        super(node, msg, type);
+    }
+
+    /**
+     * Creates secure session event with given parameters.
+     *
+     * @param node Node.
+     * @param msg Optional message.
+     * @param type Event type.
+     * @param subjType Subject type.
      * @param subjId Subject ID.
      */
-    public GridTaskEvent(ClusterNode node, String msg, int type, IgniteUuid sesId, String taskName, String taskClsName,
-        boolean internal, @Nullable UUID subjId) {
+    public GridSecureSessionEvent(ClusterNode node, String msg, int type, GridSecuritySubjectType subjType,
+        UUID subjId) {
         super(node, msg, type);
 
-        this.sesId = sesId;
-        this.taskName = taskName;
-        this.taskClsName = taskClsName;
-        this.internal = internal;
+        this.subjType = subjType;
         this.subjId = subjId;
     }
 
     /**
-     * Gets name of the task that triggered the event.
+     * Gets subject type that triggered the event.
      *
-     * @return Name of the task that triggered the event.
+     * @return Subject type that triggered the event.
      */
-    public String taskName() {
-        return taskName;
+    public GridSecuritySubjectType subjectType() {
+        return subjType;
     }
 
     /**
-     * Gets name of task class that triggered this event.
+     * Gets subject ID that triggered the event.
      *
-     * @return Name of task class that triggered the event.
+     * @return Subject ID that triggered the event.
      */
-    public String taskClassName() {
-        return taskClsName;
-    }
-
-    /**
-     * Gets session ID of the task that triggered the event.
-     *
-     * @return Session ID of the task that triggered the event.
-     */
-    public IgniteUuid taskSessionId() {
-        return sesId;
-    }
-
-    /**
-     * Returns {@code true} if task is created by GridGain and is used for system needs.
-     *
-     * @return {@code True} if task is created by GridGain and is used for system needs.
-     */
-    public boolean internal() {
-        return internal;
-    }
-
-    /**
-     * Gets security subject ID initiated this task event, if available. This property
-     * is not available for GridEventType#EVT_TASK_SESSION_ATTR_SET task event.
-     * <p>
-     * Subject ID will be set either to node ID or client ID initiated
-     * task execution.
-     *
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
+    public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * Sets subject type that triggered the event.
+     *
+     * @param subjType Subject type to set.
+     */
+    public void subjectType(GridSecuritySubjectType subjType) {
+        this.subjType = subjType;
+    }
+
+    /**
+     * Sets subject ID that triggered the event.
+     *
+     * @param subjId Subject ID to set.
+     */
+    public void subjectId(UUID subjId) {
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTaskEvent.class, this,
+        return S.toString(GridSecureSessionEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

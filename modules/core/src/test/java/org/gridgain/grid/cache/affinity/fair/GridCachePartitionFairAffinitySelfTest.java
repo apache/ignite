@@ -10,8 +10,8 @@
 package org.gridgain.grid.cache.affinity.fair;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;

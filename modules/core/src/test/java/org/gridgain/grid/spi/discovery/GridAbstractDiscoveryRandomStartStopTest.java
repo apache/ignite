@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.events.*;
+import org.apache.ignite.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.testframework.junits.spi.*;
 

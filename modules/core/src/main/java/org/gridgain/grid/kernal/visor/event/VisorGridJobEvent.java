@@ -10,14 +10,13 @@
 package org.gridgain.grid.kernal.visor.event;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link GridJobEvent} .
+ * Lightweight counterpart for {@link org.apache.ignite.events.GridJobEvent} .
  */
 public class VisorGridJobEvent extends VisorGridEvent {
     /** */

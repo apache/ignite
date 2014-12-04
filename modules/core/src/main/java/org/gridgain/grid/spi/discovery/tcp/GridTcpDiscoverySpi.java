@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.discovery.tcp;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.logger.*;
@@ -43,7 +42,7 @@ import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.spi.GridPortProtocol.*;
 import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiState.*;
@@ -1705,7 +1704,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * Notify external listener on discovery event.
      *
-     * @param type Discovery event type. See {@link GridDiscoveryEvent} for more details.
+     * @param type Discovery event type. See {@link org.apache.ignite.events.GridDiscoveryEvent} for more details.
      * @param topVer Topology version.
      * @param node Remote node this event is connected with.
      */

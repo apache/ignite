@@ -10,16 +10,16 @@
 package org.gridgain.grid.spi.loadbalancing.roundrobin;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 import static org.gridgain.grid.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.*;
 
 /**

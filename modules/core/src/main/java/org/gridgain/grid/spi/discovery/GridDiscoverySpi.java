@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -78,7 +77,7 @@ public interface GridDiscoverySpi extends GridSpi {
 
     /**
      * Sets a listener for discovery events. Refer to
-     * {@link GridDiscoveryEvent} for a set of all possible
+     * {@link org.apache.ignite.events.GridDiscoveryEvent} for a set of all possible
      * discovery events.
      * <p>
      * Note that as of GridGain 3.0.2 this method is called <b>before</b>

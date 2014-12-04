@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
+import static org.apache.ignite.events.GridEventType.*;
 
 /**
  * Test for {@link GridTcpDiscoverySpi}.
