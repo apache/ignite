@@ -15,7 +15,7 @@ import org.apache.ignite.mbean.*;
  * MBean that provides access to information about executor service.
  */
 @IgniteMBeanDescription("MBean that provides access to information about executor service.")
-public interface GridExecutorServiceMBean {
+public interface IgniteThreadPoolMBean {
     /**
      * Returns the approximate number of threads that are actively executing tasks.
      *

@@ -13,10 +13,10 @@ import org.gridgain.grid.*;
 import java.util.concurrent.*;
 
 /**
- * Adapter for {@link GridExecutorServiceMBean} which delegates all method calls to the underlying
+ * Adapter for {@link org.gridgain.grid.IgniteThreadPoolMBean} which delegates all method calls to the underlying
  * {@link ExecutorService} instance.
  */
-public class GridExecutorServiceMBeanAdapter implements GridExecutorServiceMBean {
+public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {
     /** */
     private final ExecutorService exec;
 
@@ -25,7 +25,7 @@ public class GridExecutorServiceMBeanAdapter implements GridExecutorServiceMBean
      *
      * @param exec Executor service
      */
-    public GridExecutorServiceMBeanAdapter(ExecutorService exec) {
+    public IgniteThreadPoolMBeanAdapter(ExecutorService exec) {
         assert exec != null;
 
         this.exec = exec;

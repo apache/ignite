@@ -1492,8 +1492,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 cfg.getGridName(),
                 "Thread Pools",
                 name,
-                new GridExecutorServiceMBeanAdapter(exec),
-                GridExecutorServiceMBean.class);
+                new IgniteThreadPoolMBeanAdapter(exec),
+                IgniteThreadPoolMBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered executor service MBean: " + res);
