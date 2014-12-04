@@ -129,13 +129,13 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter) {
+    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
         return new GridCacheQueryAdapter<>(ctx,
             SCAN,
             filter(),
             null,
             null,
-            (GridBiPredicate<Object, Object>)filter,
+            (IgniteBiPredicate<Object, Object>)filter,
             false,
             prj != null && prj.isKeepPortable());
     }

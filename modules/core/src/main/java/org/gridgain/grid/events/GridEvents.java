@@ -29,7 +29,7 @@ import java.util.*;
  * of subscribed events happen on local node regardless of whether local node belongs to underlying
  * grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(GridBiPredicate, GridPredicate, int...)}, will add an
+ * Remote subscription, defined by {@link #remoteListen(org.gridgain.grid.lang.IgniteBiPredicate, GridPredicate, int...)}, will add an
  * event listener for specified events on all nodes in the projection (possibly including local node if
  * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events.
  * If the events pass the remote event filter, the events will be sent to local node for local listener notification.
@@ -91,7 +91,7 @@ public interface GridEvents extends IgniteAsyncSupport {
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws GridException If failed to add listener.
      */
-    public <T extends GridEvent> UUID remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
+    public <T extends GridEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) throws GridException;
 
     /**
@@ -130,7 +130,7 @@ public interface GridEvents extends IgniteAsyncSupport {
      * @throws GridException If failed to add listener.
      */
     public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
+        boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
         @Nullable int... types) throws GridException;
 
     /**
@@ -140,8 +140,8 @@ public interface GridEvents extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Operation ID that was returned from
-     *      {@link #remoteListen(GridBiPredicate, GridPredicate, int...)} method.
-     * @see #remoteListen(GridBiPredicate, GridPredicate, int...)
+     *      {@link #remoteListen(org.gridgain.grid.lang.IgniteBiPredicate, GridPredicate, int...)} method.
+     * @see #remoteListen(org.gridgain.grid.lang.IgniteBiPredicate, GridPredicate, int...)
      * @throws GridException If failed to stop listeners.
      */
     public void stopRemoteListen(UUID opId) throws GridException;

@@ -199,7 +199,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *      {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
      * @throws GridException If loading failed.
      */
-    public void loadCache(@Nullable GridBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws GridException;
+    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws GridException;
 
     /**
      * Asynchronously delegates to {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
@@ -223,7 +223,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *      {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
      * @return Future to be completed whenever loading completes.
      */
-    public GridFuture<?> loadCacheAsync(@Nullable GridBiPredicate<K, V> p, long ttl, @Nullable Object... args);
+    public GridFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
 
     /**
      * Gets a random entry out of cache. In the worst cache scenario this method

@@ -254,7 +254,7 @@ public class GridLuceneIndex implements Closeable {
             throw new GridSpiException(e);
         }
 
-        GridBiPredicate<K, V> fltr = null;
+        IgniteBiPredicate<K, V> fltr = null;
 
         if (filters != null) {
             try {
@@ -291,7 +291,7 @@ public class GridLuceneIndex implements Closeable {
         private final ScoreDoc[] docs;
 
         /** */
-        private final GridBiPredicate<K, V> filters;
+        private final IgniteBiPredicate<K, V> filters;
 
         /** */
         private int idx;
@@ -308,7 +308,7 @@ public class GridLuceneIndex implements Closeable {
          * @param filters Filters over result.
          * @throws GridSpiException if failed.
          */
-        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, GridBiPredicate<K, V> filters)
+        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, IgniteBiPredicate<K, V> filters)
             throws GridSpiException {
             this.reader = reader;
             this.searcher = searcher;

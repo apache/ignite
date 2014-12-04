@@ -103,7 +103,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Filtered iterator.
      */
     protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
-        GridBiPredicate<Object, Object> p = null;
+        IgniteBiPredicate<Object, Object> p = null;
 
         GridIndexingQueryFilter f = filters.get();
 
@@ -161,7 +161,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      */
     protected class FilteringIterator extends GridFilteredIterator<GridH2Row> {
         /** */
-        private final GridBiPredicate<Object, Object> fltr;
+        private final IgniteBiPredicate<Object, Object> fltr;
 
         /** */
         private final long time;
@@ -171,7 +171,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param time Time for expired rows filtering.
          */
         protected FilteringIterator(Iterator<GridH2Row> iter, long time,
-            GridBiPredicate<Object, Object> fltr) {
+            IgniteBiPredicate<Object, Object> fltr) {
             super(iter);
 
             this.time = time;

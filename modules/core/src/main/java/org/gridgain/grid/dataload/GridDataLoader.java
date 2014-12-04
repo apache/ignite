@@ -11,7 +11,6 @@ package org.gridgain.grid.dataload;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -27,7 +26,7 @@ import java.util.*;
  * the loader.
  * <p>
  * Also note that {@code GridDataLoader} is not the only way to load data into cache.
- * Alternatively you can use {@link GridCache#loadCache(GridBiPredicate, long, Object...)}
+ * Alternatively you can use {@link GridCache#loadCache(org.gridgain.grid.lang.IgniteBiPredicate, long, Object...)}
  * method to load data from underlying data store. You can also use standard
  * cache {@code put(...)} and {@code putAll(...)} operations as well, but they most
  * likely will not perform as well as this class for loading data. And finally,

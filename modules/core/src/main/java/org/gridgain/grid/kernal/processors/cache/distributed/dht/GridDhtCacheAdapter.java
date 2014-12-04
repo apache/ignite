@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -337,7 +336,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final GridBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
+    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
         if (ctx.store().isLocalStore()) {
             super.loadCache(p, ttl, args);
 

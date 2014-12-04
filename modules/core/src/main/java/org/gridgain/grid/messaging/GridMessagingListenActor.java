@@ -21,10 +21,10 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, GridBiPredicate)}
+ * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)}
  * method.
  */
-public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUID, T> {
+public abstract class GridMessagingListenActor<T> implements IgniteBiPredicate<UUID, T> {
     /** */
     private static final long serialVersionUID = 0L;
 

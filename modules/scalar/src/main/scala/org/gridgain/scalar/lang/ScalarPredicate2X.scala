@@ -13,12 +13,12 @@ package org.gridgain.scalar.lang
 
 import org.gridgain.grid.lang._
 import org.gridgain.grid._
-import org.gridgain.grid.util.lang.GridPredicate2X
+import org.gridgain.grid.util.lang.IgnitePredicate2X
 
 /**
  * Peer deploy aware adapter for Java's `GridPredicate2X`.
  */
-class ScalarPredicate2X[T1, T2](private val p: (T1, T2) => Boolean) extends GridPredicate2X[T1, T2] {
+class ScalarPredicate2X[T1, T2](private val p: (T1, T2) => Boolean) extends IgnitePredicate2X[T1, T2] {
     assert(p != null)
 
     /**

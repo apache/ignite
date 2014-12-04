@@ -55,7 +55,7 @@ public class CacheContinuousQueryExample {
             try (GridCacheContinuousQuery<Integer, String> qry = cache.queries().createContinuousQuery()) {
                 // Callback that is called locally when update notifications are received.
                 qry.localCallback(
-                    new GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, String>>>() {
+                    new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, String>>>() {
                         @Override public boolean apply(
                             UUID nodeId,
                             Collection<GridCacheContinuousQueryEntry<Integer, String>> entries

@@ -98,7 +98,7 @@ public class EventsExample {
 
         // This optional local callback is called for each event notification
         // that passed remote predicate listener.
-        GridBiPredicate<UUID, GridTaskEvent> locLsnr = new GridBiPredicate<UUID, GridTaskEvent>() {
+        IgniteBiPredicate<UUID, GridTaskEvent> locLsnr = new IgniteBiPredicate<UUID, GridTaskEvent>() {
             @Override public boolean apply(UUID nodeId, GridTaskEvent evt) {
                 // Remote filter only accepts tasks whose name being with "good-task" prefix.
                 assert evt.taskName().startsWith("good-task");

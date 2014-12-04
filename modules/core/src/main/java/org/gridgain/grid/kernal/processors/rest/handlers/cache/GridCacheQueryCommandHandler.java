@@ -294,7 +294,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     break;
 
                 case SCAN:
-                    qry = queries.createScanQuery(instance(GridBiPredicate.class, req.className()));
+                    qry = queries.createScanQuery(instance(IgniteBiPredicate.class, req.className()));
 
                     break;
 

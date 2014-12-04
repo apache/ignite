@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.typedef.*;
@@ -358,7 +357,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
 
     /**
      * Default empty implementation. This method needs to be overridden only if
-     * {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method
+     * {@link GridCache#loadCache(org.gridgain.grid.lang.IgniteBiPredicate, long, Object...)} method
      * is explicitly called.
      *
      * @param clo {@inheritDoc}

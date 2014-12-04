@@ -93,7 +93,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
      * Note that returned iterator doesn't have to be thread-safe. Thus it could
      * operate on raw streams, DB connections, etc. without additional synchronization.
      *
-     * @param args Arguments passes into {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method.
+     * @param args Arguments passes into {@link GridCache#loadCache(org.gridgain.grid.lang.IgniteBiPredicate, long, Object...)} method.
      * @return Iterator over input records.
      * @throws GridException If iterator can't be created with the given arguments.
      */
@@ -106,7 +106,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
      * If {@code null} is returned then this record will be just skipped.
      *
      * @param rec A raw data record.
-     * @param args Arguments passed into {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method.
+     * @param args Arguments passed into {@link GridCache#loadCache(org.gridgain.grid.lang.IgniteBiPredicate, long, Object...)} method.
      * @return Cache entry to be saved in cache or {@code null} if no entry could be produced from this record.
      */
     @Nullable protected abstract GridBiTuple<K, V> parse(I rec, @Nullable Object... args);
@@ -273,7 +273,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
         /**
          * @param c Closure for loaded entries.
          * @param buf Set of input records to process.
-         * @param args Arguments passed into {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method.
+         * @param args Arguments passed into {@link GridCache#loadCache(org.gridgain.grid.lang.IgniteBiPredicate, long, Object...)} method.
          */
         Worker(IgniteBiInClosure<K, V> c, Collection<I> buf, Object[] args) {
             this.c = c;

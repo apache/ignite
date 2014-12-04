@@ -43,7 +43,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private GridBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb;
+    private IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb;
 
     /** Filter. */
     private GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter;
@@ -76,7 +76,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param internal If {@code true} then query is notified about internal entries updates.
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
-        GridBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
+        IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
         @Nullable GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
         @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
         assert topic != null;

@@ -31,7 +31,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     private Object topic;
 
     /** */
-    private GridBiPredicate<UUID, Object> pred;
+    private IgniteBiPredicate<UUID, Object> pred;
 
     /** */
     private byte[] topicBytes;
@@ -59,7 +59,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
      * @param topic Topic.
      * @param pred Predicate.
      */
-    public GridMessageListenHandler(@Nullable Object topic, GridBiPredicate<UUID, Object> pred) {
+    public GridMessageListenHandler(@Nullable Object topic, IgniteBiPredicate<UUID, Object> pred) {
         assert pred != null;
 
         this.topic = topic;
@@ -181,7 +181,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         }
         else {
             topic = in.readObject();
-            pred = (GridBiPredicate<UUID, Object>)in.readObject();
+            pred = (IgniteBiPredicate<UUID, Object>)in.readObject();
         }
     }
 

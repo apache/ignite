@@ -28,12 +28,12 @@ import java.util.*;
  * <p>
  * There are {@code 2} ways to subscribe to message listening, {@code local} and {@code remote}.
  * <p>
- * Local subscription, defined by {@link #localListen(Object, GridBiPredicate)} method, will add
+ * Local subscription, defined by {@link #localListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)} method, will add
  * a listener for a given topic on local node only. This listener will be notified whenever any
  * node within grid projection will send a message for a given topic to this node. Local listen
  * subscription will happen regardless of whether local node belongs to this grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(Object, GridBiPredicate)}, will add a
+ * Remote subscription, defined by {@link #remoteListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)}, will add a
  * message listener for a given topic to all nodes in the projection (possibly including this node if
  * it belongs to the projection as well). This means that any node within this grid projection can send
  * a message for a given topic and all nodes within projection will receive listener notification.
@@ -102,7 +102,7 @@ public interface GridMessaging extends IgniteAsyncSupport {
      * @param p Predicate that is called on each received message. If predicate returns {@code false},
      *      then it will be unsubscribed from any further notifications.
      */
-    public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+    public void localListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Unregisters local listener for given topic on local node only.
@@ -110,7 +110,7 @@ public interface GridMessaging extends IgniteAsyncSupport {
      * @param topic Topic to unsubscribe from.
      * @param p Listener predicate.
      */
-    public void stopLocalListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+    public void stopLocalListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Adds a message listener for a given topic to all nodes in the projection (possibly including
@@ -126,14 +126,14 @@ public interface GridMessaging extends IgniteAsyncSupport {
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws GridException If failed to add listener.
      */
-    public UUID remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) throws GridException;
+    public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws GridException;
 
     /**
      * Unregisters all listeners identified with provided operation ID on all nodes in this projection.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @param opId Listen ID that was returned from {@link #remoteListen(Object, GridBiPredicate)} method.
+     * @param opId Listen ID that was returned from {@link #remoteListen(Object, org.gridgain.grid.lang.IgniteBiPredicate)} method.
      * @throws GridException If failed to unregister listeners.
      */
     public void stopRemoteListen(UUID opId) throws GridException;

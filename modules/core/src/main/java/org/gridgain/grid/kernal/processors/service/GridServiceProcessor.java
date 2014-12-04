@@ -907,7 +907,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Service deployment listener.
      */
     private class DeploymentListener
-        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
+        implements IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
         /** Serial version ID. */
         private static final long serialVersionUID = 0L;
 
@@ -1185,7 +1185,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Assignment listener.
      */
     private class AssignmentListener
-        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
+        implements IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
         /** Serial version ID. */
         private static final long serialVersionUID = 0L;
 

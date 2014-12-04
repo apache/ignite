@@ -136,19 +136,19 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * can get deadlocks.
      *
      * @param cb Local callback.
-     * @deprecated Deprecated in favor of {@link #localCallback(GridBiPredicate)} method.
+     * @deprecated Deprecated in favor of {@link #localCallback(org.gridgain.grid.lang.IgniteBiPredicate)} method.
      */
     @Deprecated
-    public void callback(@Nullable GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb);
+    public void callback(@Nullable IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb);
 
     /**
-     * Gets local callback. See {@link #callback(GridBiPredicate)} for more information.
+     * Gets local callback. See {@link #callback(org.gridgain.grid.lang.IgniteBiPredicate)} for more information.
      *
      * @return Local callback.
      * @deprecated Deprecated in favor of {@link #localCallback()} method.
      */
     @Deprecated
-    public GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback();
+    public IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback();
 
     /**
      * Sets optional key-value filter. This filter is called before
@@ -164,16 +164,16 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * @deprecated Deprecated in favor of {@link #remoteFilter(GridPredicate)} method.
      */
     @Deprecated
-    public void filter(@Nullable GridBiPredicate<K, V> filter);
+    public void filter(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
-     * Gets key-value filter. See {@link #filter(GridBiPredicate)} for more information.
+     * Gets key-value filter. See {@link #filter(org.gridgain.grid.lang.IgniteBiPredicate)} for more information.
      *
      * @return Key-value filter.
      * @deprecated Deprecated in favor of {@link #remoteFilter()} method.
      */
     @Deprecated
-    @Nullable public GridBiPredicate<K, V> filter();
+    @Nullable public IgniteBiPredicate<K, V> filter();
 
     /**
      * Sets local callback. This callback is called only
@@ -194,14 +194,14 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      *
      * @param locCb Local callback.
      */
-    public void localCallback(GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb);
+    public void localCallback(IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb);
 
     /**
-     * Gets local callback. See {@link #callback(GridBiPredicate)} for more information.
+     * Gets local callback. See {@link #callback(org.gridgain.grid.lang.IgniteBiPredicate)} for more information.
      *
      * @return Local callback.
      */
-    @Nullable public GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> localCallback();
+    @Nullable public IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> localCallback();
 
     /**
      * Sets optional key-value filter. This filter is called before
@@ -218,7 +218,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public void remoteFilter(@Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> filter);
 
     /**
-     * Gets key-value filter. See {@link #filter(GridBiPredicate)} for more information.
+     * Gets key-value filter. See {@link #filter(org.gridgain.grid.lang.IgniteBiPredicate)} for more information.
      *
      * @return Key-value filter.
      */

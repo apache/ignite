@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.{GridBiPredicate}
+import org.gridgain.grid.lang.{IgniteBiPredicate}
 
 /**
  * Wrapping Scala function for `GridPredicate2`.
  */
-class ScalarPredicate2Function[T1, T2](val inner: GridBiPredicate[T1, T2]) extends ((T1, T2) => Boolean) {
+class ScalarPredicate2Function[T1, T2](val inner: IgniteBiPredicate[T1, T2]) extends ((T1, T2) => Boolean) {
     assert(inner != null)
 
     /**

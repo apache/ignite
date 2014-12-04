@@ -589,9 +589,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             return f1;
 
         return new GridIndexingQueryFilter() {
-            @Nullable @Override public <K, V> GridBiPredicate<K, V> forSpace(String spaceName) throws GridException {
-                final GridBiPredicate<K, V> fltr1 = f1.forSpace(spaceName);
-                final GridBiPredicate<K, V> fltr2 = f2.forSpace(spaceName);
+            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) throws GridException {
+                final IgniteBiPredicate<K, V> fltr1 = f1.forSpace(spaceName);
+                final IgniteBiPredicate<K, V> fltr2 = f2.forSpace(spaceName);
 
                 if (fltr1 == null)
                     return fltr2;
@@ -599,7 +599,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 if (fltr2 == null)
                     return fltr1;
 
-                return new GridBiPredicate<K, V>() {
+                return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
                         return fltr1.apply(k, v) && fltr2.apply(k, v);
                     }
@@ -691,13 +691,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             return null;
 
         return new GridIndexingQueryFilter() {
-            @Nullable @Override public GridBiPredicate<K, V> forSpace(final String spaceName) {
+            @Nullable @Override public IgniteBiPredicate<K, V> forSpace(final String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
                 if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
                     return null;
 
-                return new GridBiPredicate<K, V>() {
+                return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
                         return cache.context().affinity().primary(ctx.discovery().localNode(), k, -1);
                     }

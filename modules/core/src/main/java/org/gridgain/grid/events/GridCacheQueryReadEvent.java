@@ -71,7 +71,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
 
     /** Scan query filter. */
     @GridToStringInclude
-    private final GridBiPredicate<K, V> scanQryFilter;
+    private final IgniteBiPredicate<K, V> scanQryFilter;
 
     /** Continuous query filter. */
     @GridToStringInclude
@@ -125,7 +125,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
         @Nullable String cacheName,
         @Nullable String clsName,
         @Nullable String clause,
-        @Nullable GridBiPredicate<K, V> scanQryFilter,
+        @Nullable IgniteBiPredicate<K, V> scanQryFilter,
         @Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
@@ -200,7 +200,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
      *
      * @return Scan query filter.
      */
-    @Nullable public GridBiPredicate<K, V> scanQueryFilter() {
+    @Nullable public IgniteBiPredicate<K, V> scanQueryFilter() {
         return scanQryFilter;
     }
 

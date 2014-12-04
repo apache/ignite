@@ -140,7 +140,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         try {
             GridCacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(
-                new GridBiPredicate<Key, Person>() {
+                new IgniteBiPredicate<Key, Person>() {
                     @Override public boolean apply(Key key, Person p) {
                         assertEquals(key.id, (Integer)p.salary);
 
@@ -216,7 +216,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         }
 
         GridCacheQuery<Map.Entry<Key, Person>> qry = prj.queries().createScanQuery(
-            new GridBiPredicate<Key, Person>() {
+            new IgniteBiPredicate<Key, Person>() {
                 @Override public boolean apply(Key key, Person p) {
                     assertEquals(key.id, (Integer)p.salary);
 
@@ -242,7 +242,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             @SuppressWarnings("unchecked")
             @Override public Void call() throws Exception {
                 GridCacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(
-                    new GridBiPredicate<Key, Person>() {
+                    new IgniteBiPredicate<Key, Person>() {
                         @Override public boolean apply(Key key, Person p) {
                             assertEquals(key.id, (Integer)p.salary);
 
@@ -287,7 +287,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         try {
             GridCacheQuery<Map.Entry<String, Long>> qry = cache.queries().createScanQuery(
-                new GridBiPredicate<String, Long>() {
+                new IgniteBiPredicate<String, Long>() {
                     @Override public boolean apply(String key, Long val) {
                         assertEquals(key, String.valueOf(val));
 
@@ -343,7 +343,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         try {
             GridCacheQuery<Map.Entry<Integer, byte[]>> qry = cache.queries().createScanQuery(
-                new GridBiPredicate<Integer, byte[]>() {
+                new IgniteBiPredicate<Integer, byte[]>() {
                     @Override public boolean apply(Integer key, byte[] val) {
                         assertEquals(key, (Integer)val.length);
 

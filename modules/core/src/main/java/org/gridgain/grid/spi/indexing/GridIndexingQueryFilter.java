@@ -23,5 +23,5 @@ public interface GridIndexingQueryFilter {
      * @param spaceName Space name.
      * @return Predicate or {@code null} if no filtering is needed.
      */
-    @Nullable public <K, V> GridBiPredicate<K, V> forSpace(String spaceName) throws GridException;
+    @Nullable public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) throws GridException;
 }

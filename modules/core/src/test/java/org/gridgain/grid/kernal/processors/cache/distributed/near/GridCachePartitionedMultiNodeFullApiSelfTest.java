@@ -325,7 +325,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(nearEnabled() ? 2 : 0, cache(2).nearSize());
         assertEquals(0, cache(2).size() - cache(2).nearSize());
 
-        GridBiPredicate<String, Integer> prjFilter = new P2<String, Integer>() {
+        IgniteBiPredicate<String, Integer> prjFilter = new P2<String, Integer>() {
             @Override public boolean apply(String key, Integer val) {
                 return val >= 1 && val <= 3;
             }

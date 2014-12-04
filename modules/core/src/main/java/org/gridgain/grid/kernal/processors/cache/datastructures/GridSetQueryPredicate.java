@@ -20,7 +20,7 @@ import java.io.*;
 /**
  * Predicate for query over {@link GridCacheSet} items.
  */
-public class GridSetQueryPredicate<K, V> implements GridBiPredicate<K, V>, Externalizable {
+public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

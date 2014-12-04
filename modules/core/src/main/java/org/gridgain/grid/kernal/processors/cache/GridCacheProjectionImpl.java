@@ -91,7 +91,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     public GridCacheProjectionImpl(
         GridCacheProjection<K, V> parent,
         GridCacheContext<K, V> cctx,
-        @Nullable GridBiPredicate<K, V> kvFilter,
+        @Nullable IgniteBiPredicate<K, V> kvFilter,
         @Nullable GridPredicate<? super GridCacheEntry<K, V>> entryFilter,
         @Nullable Set<GridCacheFlag> flags,
         @Nullable UUID subjId,
@@ -148,7 +148,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param noNulls Flag indicating whether filter should accept nulls or not.
      * @return Key-value filter for the flag.
      */
-    GridBiPredicate<K, V> kvFilter(boolean noNulls) {
+    IgniteBiPredicate<K, V> kvFilter(boolean noNulls) {
         return noNulls ? noNullKvFilter : withNullKvFilter;
     }
 
@@ -190,8 +190,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param noNulls Flag indicating whether filter should accept nulls or not.
      * @return {@code Anded} filter array.
      */
-    @SuppressWarnings({"unchecked"}) GridBiPredicate<K, V> and(final GridBiPredicate<K, V> filter, boolean noNulls) {
-        final GridBiPredicate<K, V> kvFilter = kvFilter(noNulls);
+    @SuppressWarnings({"unchecked"})
+    IgniteBiPredicate<K, V> and(final IgniteBiPredicate<K, V> filter, boolean noNulls) {
+        final IgniteBiPredicate<K, V> kvFilter = kvFilter(noNulls);
 
         if (filter == null)
             return kvFilter;
@@ -210,8 +211,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param noNulls Flag indicating whether filter should accept nulls or not.
      * @return {@code Anded} filter array.
      */
-    @SuppressWarnings({"unchecked"}) GridBiPredicate<K, V> and(final GridBiPredicate<K, V>[] filter, boolean noNulls) {
-        final GridBiPredicate<K, V> kvFilter = kvFilter(noNulls);
+    @SuppressWarnings({"unchecked"})
+    IgniteBiPredicate<K, V> and(final IgniteBiPredicate<K, V>[] filter, boolean noNulls) {
+        final IgniteBiPredicate<K, V> kvFilter = kvFilter(noNulls);
 
         if (filter == null)
             return kvFilter;
@@ -263,7 +265,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @return {@code True} if filter passed.
      */
     boolean isAll(K k, V v, boolean noNulls) {
-        GridBiPredicate<K, V> p = kvFilter(noNulls);
+        IgniteBiPredicate<K, V> p = kvFilter(noNulls);
 
         if (p != null) {
             GridCacheFlag[] f = cctx.forceLocalRead();
@@ -419,11 +421,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjection<K, V> projection(GridBiPredicate<K, V> p) {
+    @Override public GridCacheProjection<K, V> projection(IgniteBiPredicate<K, V> p) {
         if (p == null)
             return new GridCacheProxyImpl<>(cctx, this, this);
 
-        GridBiPredicate<K, V> kvFilter = p;
+        IgniteBiPredicate<K, V> kvFilter = p;
 
         if (noNullKvFilter.kvFilter != null)
             kvFilter = and(p, true);
@@ -510,7 +512,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
                 (GridCacheProjection<K1, V1>)this,
                 (GridCacheContext<K1, V1>)cctx,
-                (GridBiPredicate<K1, V1>)noNullKvFilter.kvFilter,
+                (IgniteBiPredicate<K1, V1>)noNullKvFilter.kvFilter,
                 (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
                 flags,
                 subjId,
@@ -1338,12 +1340,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    public static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
+    public static class KeyValueFilter<K, V> implements IgniteBiPredicate<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Key filter. */
-        private GridBiPredicate<K, V> kvFilter;
+        private IgniteBiPredicate<K, V> kvFilter;
 
         /** No nulls flag. */
         private boolean noNulls;
@@ -1352,7 +1354,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
          * @param kvFilter Key-value filter.
          * @param noNulls Filter without null-values.
          */
-        private KeyValueFilter(GridBiPredicate<K, V> kvFilter, boolean noNulls) {
+        private KeyValueFilter(IgniteBiPredicate<K, V> kvFilter, boolean noNulls) {
             this.kvFilter = kvFilter;
             this.noNulls = noNulls;
         }
@@ -1360,7 +1362,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         /**
          * @return Key-value filter.
          */
-        public GridBiPredicate<K, V> filter() {
+        public IgniteBiPredicate<K, V> filter() {
             return kvFilter;
         }
 

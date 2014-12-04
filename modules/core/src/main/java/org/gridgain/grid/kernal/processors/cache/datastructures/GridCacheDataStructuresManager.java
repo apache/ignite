@@ -641,7 +641,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             queueQry.filter(new QueueHeaderPredicate());
 
-            queueQry.localCallback(new GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry>>() {
+            queueQry.localCallback(new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry>>() {
                @Override public boolean apply(UUID id, Collection<GridCacheContinuousQueryEntry> entries) {
                    if (!busyLock.enterBusy())
                        return false;
@@ -1412,7 +1412,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * Predicate for queue continuous query.
      */
-    private static class QueueHeaderPredicate implements GridBiPredicate, Externalizable {
+    private static class QueueHeaderPredicate implements IgniteBiPredicate, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

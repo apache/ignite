@@ -40,7 +40,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         super.start(ctx);
 
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
-            new GridBiPredicate<UUID, Object>() {
+            new IgniteBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID nodeId, Object msg) {
                     return onMessageReceived(nodeId, (GridHadoopMessage)msg);
                 }

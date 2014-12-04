@@ -12,17 +12,18 @@ package org.gridgain.grid.lang;
 import java.io.*;
 
 /**
- * Closure with two in-parameters and void return type.
+ * Defines a predicate which accepts two parameters and returns {@code true} or {@code false}.
  *
  * @param <E1> Type of the first parameter.
  * @param <E2> Type of the second parameter.
  */
-public interface GridBiInClosure<E1, E2> extends Serializable {
+public interface IgniteBiPredicate<E1, E2> extends Serializable {
     /**
-     * Closure body.
+     * Predicate body.
      *
      * @param e1 First parameter.
      * @param e2 Second parameter.
+     * @return Return value.
      */
-    public void apply(E1 e1, E2 e2);
+    public boolean apply(E1 e1, E2 e2);
 }

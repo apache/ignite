@@ -51,7 +51,7 @@ public class CacheEventsExample {
 
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.
-            GridBiPredicate<UUID, GridCacheEvent> locLsnr = new GridBiPredicate<UUID, GridCacheEvent>() {
+            IgniteBiPredicate<UUID, GridCacheEvent> locLsnr = new IgniteBiPredicate<UUID, GridCacheEvent>() {
                 @Override public boolean apply(UUID uuid, GridCacheEvent evt) {
                     System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
                         ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());

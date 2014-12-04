@@ -208,7 +208,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiPredicate<K, V> p, long ttl, @Nullable Object[] args) throws GridException {
+    @Override public void loadCache(IgniteBiPredicate<K, V> p, long ttl, @Nullable Object[] args) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -220,7 +220,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> loadCacheAsync(GridBiPredicate<K, V> p, long ttl, @Nullable Object[] args) {
+    @Override public GridFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, @Nullable Object[] args) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -286,7 +286,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjection<K, V> projection(@Nullable GridBiPredicate<K, V> p) {
+    @Override public GridCacheProjection<K, V> projection(@Nullable IgniteBiPredicate<K, V> p) {
         return delegate.projection(p);
     }
 

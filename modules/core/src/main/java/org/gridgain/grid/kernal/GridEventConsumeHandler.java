@@ -43,7 +43,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private GridBiPredicate<UUID, GridEvent> cb;
+    private IgniteBiPredicate<UUID, GridEvent> cb;
 
     /** Filter. */
     private GridPredicate<GridEvent> filter;
@@ -75,7 +75,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
      * @param filter Filter.
      * @param types Types.
      */
-    GridEventConsumeHandler(@Nullable GridBiPredicate<UUID, GridEvent> cb, @Nullable GridPredicate<GridEvent> filter,
+    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, GridEvent> cb, @Nullable GridPredicate<GridEvent> filter,
         @Nullable int[] types) {
         this.cb = cb == null ? DFLT_CALLBACK : cb;
         this.filter = filter;

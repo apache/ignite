@@ -101,7 +101,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     }
 
     /** */
-    private GridBiPredicate<String, Integer> kvFilter = new P2<String, Integer>() {
+    private IgniteBiPredicate<String, Integer> kvFilter = new P2<String, Integer>() {
         @Override public boolean apply(String key, Integer val) {
             return key.contains("key") && val >= 0;
         }

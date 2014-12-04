@@ -56,7 +56,7 @@ public class MessagingPingPongExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            g.message(nodeB).remoteListen(null, new GridBiPredicate<UUID, String>() {
+            g.message(nodeB).remoteListen(null, new IgniteBiPredicate<UUID, String>() {
                 /** This will be injected on node listener comes to. */
                 @GridInstanceResource
                 private Ignite ignite;
@@ -84,7 +84,7 @@ public class MessagingPingPongExample {
             final CountDownLatch cnt = new CountDownLatch(MAX_PLAYS);
 
             // Set up local player.
-            g.message().localListen(null, new GridBiPredicate<UUID, String>() {
+            g.message().localListen(null, new IgniteBiPredicate<UUID, String>() {
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
                     System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 

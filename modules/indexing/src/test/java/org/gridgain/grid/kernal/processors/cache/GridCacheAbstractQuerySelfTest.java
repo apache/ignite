@@ -1464,7 +1464,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             assertTrue(cache.putx(i, i));
 
         GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createScanQuery(
-            new GridBiPredicate<Integer, Integer>() {
+            new IgniteBiPredicate<Integer, Integer>() {
                 @Override public boolean apply(Integer key, Integer val) {
                     return key >= 10;
                 }

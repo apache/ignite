@@ -713,7 +713,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         final GridCacheProjection<K, V> prj = prj0;
 
-        final GridBiPredicate<K, V> keyValFilter = qry.scanFilter();
+        final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
         injectResources(keyValFilter);
 
@@ -823,7 +823,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         throws GridException {
         GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
 
-        GridBiPredicate<K, V> filter = qry.scanFilter();
+        IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
         Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawSwapIterator();
 
@@ -837,7 +837,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridIterator<GridIndexingKeyValueRow<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
         GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
 
-        GridBiPredicate<K, V> filter = qry.scanFilter();
+        IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
         if ((cctx.portableEnabled() && cctx.offheapTiered()) && (prjPred != null || filter != null)) {
             OffheapIteratorClosure c = new OffheapIteratorClosure(prjPred, filter, qry.keepPortable());
@@ -861,7 +861,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridIteratorAdapter<GridIndexingKeyValueRow<K, V>> scanIterator(
         @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
         @Nullable final GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-        @Nullable final GridBiPredicate<K, V> filter,
+        @Nullable final IgniteBiPredicate<K, V> filter,
         final boolean keepPortable) {
         if (it == null)
             return new GridEmptyCloseableIterator<>();
@@ -1756,11 +1756,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return null;
 
         return new GridIndexingQueryFilter() {
-            @Nullable @Override public GridBiPredicate<K, V> forSpace(String spaceName) throws GridException {
+            @Nullable @Override public IgniteBiPredicate<K, V> forSpace(String spaceName) throws GridException {
                 if (!F.eq(space, spaceName))
                     return null;
 
-                return new GridBiPredicate<K, V>() {
+                return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
                         try {
                             GridCacheEntry<K, V> entry = context().cache().entry(k);
@@ -2395,7 +2395,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
 
         /** */
-        private GridBiPredicate<K, V> filter;
+        private IgniteBiPredicate<K, V> filter;
 
         /** */
         private boolean keepPortable;
@@ -2407,7 +2407,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          */
         private OffheapIteratorClosure(
             @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-            @Nullable GridBiPredicate<K, V> filter,
+            @Nullable IgniteBiPredicate<K, V> filter,
             boolean keepPortable) {
             assert prjPred != null || filter != null;
 

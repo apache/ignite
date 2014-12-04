@@ -74,14 +74,14 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> UUID remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
+    @Override public <T extends GridEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) throws GridException {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
+        boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
         @Nullable int... types) throws GridException {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
@@ -90,7 +90,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
 
         try {
             return saveOrGet(ctx.continuous().startRoutine(
-                new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>)locLsnr,
+                new GridEventConsumeHandler((IgniteBiPredicate<UUID, GridEvent>)locLsnr,
                     (GridPredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
         finally {

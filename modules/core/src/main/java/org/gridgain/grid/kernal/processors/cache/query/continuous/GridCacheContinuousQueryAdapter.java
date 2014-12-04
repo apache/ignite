@@ -52,13 +52,13 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     private final GridLogger log;
 
     /** Local callback. */
-    private volatile GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
+    private volatile IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
 
     /** Local callback. */
-    private volatile GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb;
+    private volatile IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb;
 
     /** Filter. */
-    private volatile GridBiPredicate<K, V> filter;
+    private volatile IgniteBiPredicate<K, V> filter;
 
     /** Remote filter. */
     private volatile GridPredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter;
@@ -94,7 +94,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Override public void callback(final GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
+    @Override public void callback(final IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
         if (cb != null) {
             this.cb = cb;
 
@@ -105,12 +105,12 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback() {
+    @Nullable @Override public IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback() {
         return cb;
     }
 
     /** {@inheritDoc} */
-    @Override public void filter(final GridBiPredicate<K, V> filter) {
+    @Override public void filter(final IgniteBiPredicate<K, V> filter) {
         if (filter != null) {
             this.filter = filter;
 
@@ -121,12 +121,12 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiPredicate<K, V> filter() {
+    @Nullable @Override public IgniteBiPredicate<K, V> filter() {
         return filter;
     }
 
     /** {@inheritDoc} */
-    @Override public void localCallback(GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb) {
+    @Override public void localCallback(IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb) {
         if (!guard.enterBusy())
             throw new IllegalStateException("Continuous query can't be changed after it was executed.");
 
@@ -139,7 +139,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> localCallback() {
+    @Nullable @Override public IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> localCallback() {
         return locCb;
     }
 
@@ -305,17 +305,17 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     /**
      * Deprecated callback wrapper.
      */
-    static class CallbackWrapper<K, V> implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> {
+    static class CallbackWrapper<K, V> implements IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> {
         /** Serialization ID. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
+        private final IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
 
         /**
          * @param cb Deprecated callback.
          */
-        private CallbackWrapper(GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
+        private CallbackWrapper(IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
             this.cb = cb;
         }
 
@@ -334,12 +334,12 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridBiPredicate<K, V> filter;
+        private final IgniteBiPredicate<K, V> filter;
 
         /**
          * @param filter Deprecated callback.
          */
-        FilterWrapper(GridBiPredicate<K, V> filter) {
+        FilterWrapper(IgniteBiPredicate<K, V> filter) {
             this.filter = filter;
         }
 

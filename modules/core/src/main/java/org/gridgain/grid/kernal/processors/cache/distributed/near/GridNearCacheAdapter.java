@@ -270,12 +270,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(GridBiPredicate<K, V> p, long ttl, Object[] args) throws GridException {
+    @Override public void loadCache(IgniteBiPredicate<K, V> p, long ttl, Object[] args) throws GridException {
         dht().loadCache(p, ttl, args);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> loadCacheAsync(GridBiPredicate<K, V> p, long ttl, Object[] args) {
+    @Override public GridFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, Object[] args) {
         return dht().loadCacheAsync(p, ttl, args);
     }
 

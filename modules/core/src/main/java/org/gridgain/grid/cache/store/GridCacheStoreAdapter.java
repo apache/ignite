@@ -12,7 +12,6 @@ package org.gridgain.grid.cache.store;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -34,7 +33,7 @@ import java.util.*;
 public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V> {
     /**
      * Default empty implementation. This method needs to be overridden only if
-     * {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method
+     * {@link GridCache#loadCache(org.gridgain.grid.lang.IgniteBiPredicate, long, Object...)} method
      * is explicitly called.
      *
      * @param clo {@inheritDoc}

@@ -432,7 +432,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjection<K, V> projection(GridBiPredicate<K, V> p) {
+    @Override public GridCacheProjection<K, V> projection(IgniteBiPredicate<K, V> p) {
         if (p == null)
             return this;
 
@@ -3309,7 +3309,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final GridBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
+    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
         final boolean replicate = ctx.isDrEnabled();
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -3389,7 +3389,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> loadCacheAsync(final GridBiPredicate<K, V> p, final long ttl, final Object[] args) {
+    @Override public GridFuture<?> loadCacheAsync(final IgniteBiPredicate<K, V> p, final long ttl, final Object[] args) {
         return ctx.closures().callLocalSafe(
             ctx.projectSafe(new Callable<Object>() {
                 @Nullable

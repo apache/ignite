@@ -2748,7 +2748,7 @@ public class GridFunc {
      * @param <E2> Type of the 2nd value.
      * @return Converted predicate.
      */
-    public static <E1, E2> GridPredicate<GridBiTuple<E1, E2>> as0(final GridBiPredicate<? super E1, ? super E2> p) {
+    public static <E1, E2> GridPredicate<GridBiTuple<E1, E2>> as0(final IgniteBiPredicate<? super E1, ? super E2> p) {
         return new P1<GridBiTuple<E1, E2>>() {
             @Override public boolean apply(GridBiTuple<E1, E2> e) {
                 return p.apply(e.get1(), e.get2());
@@ -5211,7 +5211,7 @@ public class GridFunc {
      * @param c Closure to convert.
      * @return Closure converted to predicate.
      */
-    public static <T1, T2> GridBiPredicate<T1, T2> as(final IgniteBiClosure<? super T1, ? super T2, Boolean> c) {
+    public static <T1, T2> IgniteBiPredicate<T1, T2> as(final IgniteBiClosure<? super T1, ? super T2, Boolean> c) {
         A.notNull(c, "c");
 
         return new P2<T1, T2>() {
@@ -5279,7 +5279,7 @@ public class GridFunc {
      * @param <X2> Type of the free variable for the predicate.
      * @return Predicate converted to closure.
      */
-    public static <X1, X2> IgniteBiClosure<X1, X2, Boolean> as(final GridBiPredicate<? super X1, ? super X2> p) {
+    public static <X1, X2> IgniteBiClosure<X1, X2, Boolean> as(final IgniteBiPredicate<? super X1, ? super X2> p) {
         A.notNull(p, "p");
 
         return new C2<X1, X2, Boolean>() {
@@ -5990,8 +5990,8 @@ public class GridFunc {
      *      values, {@code false} otherwise.
      */
     public static <A, B> boolean isAll2(@Nullable A a, @Nullable B b,
-        @Nullable GridBiPredicate<? super A, ? super B> p) {
-        return p == null || isAll2(a, b, p == null ? Collections.<GridBiPredicate<? super A,? super B>>emptyList() :
+        @Nullable IgniteBiPredicate<? super A, ? super B> p) {
+        return p == null || isAll2(a, b, p == null ? Collections.<IgniteBiPredicate<? super A,? super B>>emptyList() :
             Collections.singletonList(p));
     }
 
@@ -6009,7 +6009,7 @@ public class GridFunc {
      *      values, {@code false} otherwise.
      */
     public static <A, B> boolean isAll2(@Nullable A a, @Nullable B b,
-        @Nullable GridBiPredicate<? super A, ? super B>[] p) {
+        @Nullable IgniteBiPredicate<? super A, ? super B>[] p) {
         return isEmpty(p) || isAll2(a, b, asList(p));
     }
 
@@ -6027,11 +6027,11 @@ public class GridFunc {
      *      values, {@code false} otherwise.
      */
     public static <A, B> boolean isAll2(@Nullable A a, @Nullable B b,
-        @Nullable Iterable<? extends GridBiPredicate<? super A, ? super B>> p) {
+        @Nullable Iterable<? extends IgniteBiPredicate<? super A, ? super B>> p) {
         if (!isEmpty(p)) {
             assert p != null;
 
-            for (GridBiPredicate<? super A, ? super B> r : p) {
+            for (IgniteBiPredicate<? super A, ? super B> r : p) {
                 if (r != null && !r.apply(a, b))
                     return false;
             }
@@ -6145,7 +6145,7 @@ public class GridFunc {
      *      values, {@code false} otherwise.
      */
     public static <A, B> boolean isAny2(@Nullable A a, @Nullable B b,
-        @Nullable GridBiPredicate<? super A, ? super B>... p) {
+        @Nullable IgniteBiPredicate<? super A, ? super B>... p) {
         return !isEmpty(p) && isAny2(a, b, asList(p));
     }
 
@@ -6163,11 +6163,11 @@ public class GridFunc {
      *      values, {@code false} otherwise.
      */
     public static <A, B> boolean isAny2(@Nullable A a, @Nullable B b,
-        @Nullable Iterable<? extends GridBiPredicate<? super A, ? super B>> p) {
+        @Nullable Iterable<? extends IgniteBiPredicate<? super A, ? super B>> p) {
         if (!isEmpty(p)) {
             assert p != null;
 
-            for (GridBiPredicate<? super A, ? super B> r : p) {
+            for (IgniteBiPredicate<? super A, ? super B> r : p) {
                 if (r != null && r.apply(a, b))
                     return true;
             }
@@ -6555,7 +6555,7 @@ public class GridFunc {
      *      {@code true} - and second containing the entries for which predicate evaluates to {@code false}.
      */
     public static <K, V> GridBiTuple<Map<K, V>, Map<K, V>> partition(Map<? extends K, ? extends V> m,
-        GridBiPredicate<? super K, ? super V> p) {
+        IgniteBiPredicate<? super K, ? super V> p) {
         A.notNull(m, "m", p, "p");
 
         Map<K, V> m1 = new HashMap<>();

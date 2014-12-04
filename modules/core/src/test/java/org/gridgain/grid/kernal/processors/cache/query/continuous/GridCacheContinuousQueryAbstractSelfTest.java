@@ -1373,7 +1373,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             final CountDownLatch latch = new CountDownLatch(1);
             final Collection<Integer> keys = new GridConcurrentHashSet<>();
 
-            qry.localCallback(new GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            qry.localCallback(new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
                 @Override public boolean apply(UUID nodeId,
                     Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                     for (Map.Entry<Integer, Integer> e : entries) {
@@ -1464,7 +1464,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             try (GridCacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery()) {
-                qry.localCallback(new GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+                qry.localCallback(new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
                     @Override public boolean apply(UUID uuid,
                         Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                         return true;

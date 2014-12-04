@@ -89,7 +89,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * Optional backup filter. First node passed to this filter is primary node,
      * and second node is a node being tested.
      */
-    private GridBiPredicate<ClusterNode, ClusterNode> backupFilter;
+    private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
     /** */
     private GridCacheAffinityNodeHashResolver hashIdRslvr = new GridCacheAffinityNodeAddressHashResolver();
@@ -121,7 +121,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
     /** Optional backup filter. */
     @GridToStringExclude
-    private final GridBiPredicate<NodeInfo, NodeInfo> backupIdFilter = new GridBiPredicate<NodeInfo, NodeInfo>() {
+    private final IgniteBiPredicate<NodeInfo, NodeInfo> backupIdFilter = new IgniteBiPredicate<NodeInfo, NodeInfo>() {
         @Override public boolean apply(NodeInfo primaryNodeInfo, NodeInfo nodeInfo) {
             return backupFilter == null || backupFilter.apply(primaryNodeInfo.node(), nodeInfo.node());
         }
@@ -182,7 +182,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
     public GridCacheConsistentHashAffinityFunction(int parts,
-        @Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts != 0, "parts != 0");
 
         this.parts = parts;
@@ -279,7 +279,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      *
      * @return Optional backup filter.
      */
-    @Nullable public GridBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
+    @Nullable public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
         return backupFilter;
     }
 
@@ -292,7 +292,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      *
      * @param backupFilter Optional backup filter.
      */
-    public void setBackupFilter(@Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
     }
 

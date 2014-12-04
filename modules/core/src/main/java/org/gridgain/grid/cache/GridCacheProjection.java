@@ -237,11 +237,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      same projection is returned.
      * @return Projection for given key-value predicate.
      */
-    public GridCacheProjection<K, V> projection(@Nullable GridBiPredicate<K, V> p);
+    public GridCacheProjection<K, V> projection(@Nullable IgniteBiPredicate<K, V> p);
 
     /**
      * Gets cache projection based on given entry filter. This filter will be simply passed through
-     * to all cache operations on this projection. Unlike {@link #projection(GridBiPredicate)}
+     * to all cache operations on this projection. Unlike {@link #projection(org.gridgain.grid.lang.IgniteBiPredicate)}
      * method, this filter will <b>not</b> be used for pre-filtering.
      *
      * @param filter Filter to be passed through to all cache operations. If {@code null}, then the

@@ -81,7 +81,7 @@ public interface GridCacheQueries<K, V> {
      * @param filter Scan filter.
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter);
+    public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
      * Creates new continuous query.

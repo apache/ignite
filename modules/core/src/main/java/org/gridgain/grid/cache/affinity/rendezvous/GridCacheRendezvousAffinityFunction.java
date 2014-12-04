@@ -79,7 +79,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     private boolean exclNeighbors;
 
     /** Optional backup filter. First node is primary, second node is a node being tested. */
-    private GridBiPredicate<ClusterNode, ClusterNode> backupFilter;
+    private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
     /** Hash ID resolver. */
     private GridCacheAffinityNodeHashResolver hashIdRslvr = new GridCacheAffinityNodeAddressHashResolver();
@@ -134,7 +134,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
     public GridCacheRendezvousAffinityFunction(int parts,
-        @Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this(false, parts, backupFilter);
     }
 
@@ -146,7 +146,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      * @param backupFilter Backup filter.
      */
     private GridCacheRendezvousAffinityFunction(boolean exclNeighbors, int parts,
-        GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts != 0, "parts != 0");
 
         this.exclNeighbors = exclNeighbors;
@@ -227,7 +227,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      *
      * @return Optional backup filter.
      */
-    @Nullable public GridBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
+    @Nullable public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
         return backupFilter;
     }
 
@@ -240,7 +240,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      *
      * @param backupFilter Optional backup filter.
      */
-    public void setBackupFilter(@Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
     }
 
@@ -424,7 +424,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         parts = in.readInt();
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (GridCacheAffinityNodeHashResolver)in.readObject();
-        backupFilter = (GridBiPredicate<ClusterNode, ClusterNode>)in.readObject();
+        backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 
     /**

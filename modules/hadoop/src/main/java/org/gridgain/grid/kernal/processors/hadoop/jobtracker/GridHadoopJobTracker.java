@@ -127,8 +127,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
 
-        qry.callback(new GridBiPredicate<UUID,
-            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
+        qry.callback(new IgniteBiPredicate<UUID,
+                    Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
             @Override public boolean apply(UUID nodeId,
                 final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
                 if (!busyLock.tryReadLock())

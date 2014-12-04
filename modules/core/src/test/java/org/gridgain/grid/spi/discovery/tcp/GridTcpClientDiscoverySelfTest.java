@@ -668,7 +668,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class MessageListener implements GridBiPredicate<UUID, Object> {
+    private static class MessageListener implements IgniteBiPredicate<UUID, Object> {
         @GridLocalNodeIdResource
         private UUID nodeId;
 

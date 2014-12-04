@@ -44,7 +44,7 @@ public class GridCacheContinuousQueryHandlerV2<K, V> extends GridCacheContinuous
      * @param taskHash Task hash.
      */
     public GridCacheContinuousQueryHandlerV2(@Nullable String cacheName, Object topic,
-        GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> cb,
+        IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> cb,
         @Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> filter,
         @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred, boolean internal, int taskHash) {
         super(cacheName, topic, cb, filter, prjPred, internal);

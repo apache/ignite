@@ -852,7 +852,7 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Type filter.
      */
-    public static <K, V> GridBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
+    public static <K, V> IgniteBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
         return new P2<K, V>() {
             @Override public boolean apply(K k, V v) {
                 return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());

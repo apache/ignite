@@ -52,7 +52,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridBiPredicate<Object, Object> keyValFilter;
+    private IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
     private byte[] keyValFilterBytes;
@@ -192,7 +192,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean fields,
         String clause,
         String clsName,
-        GridBiPredicate<Object, Object> keyValFilter,
+        IgniteBiPredicate<Object, Object> keyValFilter,
         GridPredicate<GridCacheEntry<Object, Object>> prjFilter,
         GridReducer<Object, Object> rdc,
         GridClosure<Object, Object> trans,
@@ -363,7 +363,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * @return Key-value filter.
      */
-    public GridBiPredicate<Object, Object> keyValueFilter() {
+    public IgniteBiPredicate<Object, Object> keyValueFilter() {
         return keyValFilter;
     }
 

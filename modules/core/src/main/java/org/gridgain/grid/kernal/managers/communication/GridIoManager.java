@@ -1178,11 +1178,11 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    public void addUserMessageListener(@Nullable final Object topic, @Nullable final GridBiPredicate<UUID, ?> p) {
+    public void addUserMessageListener(@Nullable final Object topic, @Nullable final IgniteBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
                 addMessageListener(TOPIC_COMM_USER,
-                    new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
+                    new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);
@@ -1194,10 +1194,10 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param topic Topic to unsubscribe from.
      * @param p Message predicate.
      */
-    public void removeUserMessageListener(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+    public void removeUserMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
         try {
             removeMessageListener(TOPIC_COMM_USER,
-                new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
+                new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -1639,7 +1639,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      */
     private class GridUserMessageListener implements GridMessageListener {
         /** Predicate listeners. */
-        private final GridBiPredicate<UUID, Object> predLsnr;
+        private final IgniteBiPredicate<UUID, Object> predLsnr;
 
         /** User message topic. */
         private final Object topic;
@@ -1649,7 +1649,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
          * @param predLsnr Predicate listener.
          * @throws GridException If failed to inject resources to predicates.
          */
-        GridUserMessageListener(@Nullable Object topic, @Nullable GridBiPredicate<UUID, Object> predLsnr)
+        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
             throws GridException {
             this.topic = topic;
             this.predLsnr = predLsnr;

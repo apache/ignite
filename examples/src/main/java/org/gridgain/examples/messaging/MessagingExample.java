@@ -97,7 +97,7 @@ public final class MessagingExample {
      */
     private static void startListening(GridMessaging msg) throws GridException {
         // Add ordered message listener.
-        msg.remoteListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
+        msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @GridInstanceResource
             private Ignite g;
 
@@ -116,7 +116,7 @@ public final class MessagingExample {
         });
 
         // Add unordered message listener.
-        msg.remoteListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
+        msg.remoteListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
             @GridInstanceResource
             private Ignite g;
 
@@ -147,7 +147,7 @@ public final class MessagingExample {
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        msg.localListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
+        msg.localListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
                 orderedLatch.countDown();
 
@@ -156,7 +156,7 @@ public final class MessagingExample {
             }
         });
 
-        msg.localListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
+        msg.localListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
                 unorderedLatch.countDown();
 

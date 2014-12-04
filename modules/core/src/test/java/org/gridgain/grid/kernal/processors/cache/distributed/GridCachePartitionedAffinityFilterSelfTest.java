@@ -46,8 +46,8 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
     private String splitAttrVal;
 
     /** Test backup filter. */
-    private static final GridBiPredicate<ClusterNode, ClusterNode> backupFilter =
-        new GridBiPredicate<ClusterNode, ClusterNode>() {
+    private static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
+        new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode primary, ClusterNode backup) {
                 assert primary != null : "primary is null";
                 assert backup != null : "backup is null";

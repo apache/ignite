@@ -283,7 +283,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNullTopicWithDeployment() throws Exception {
         Class<?> cls = getExternalClassLoader().loadClass(LSNR_CLS_NAME);
 
-        grid(0).message().remoteListen(null, (GridBiPredicate<UUID, Object>)cls.newInstance());
+        grid(0).message().remoteListen(null, (IgniteBiPredicate<UUID, Object>)cls.newInstance());
 
         send();
 
@@ -307,7 +307,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         Object topic = topicCls.newInstance();
 
-        grid(0).message().remoteListen(topic, (GridBiPredicate<UUID, Object>)lsnrCls.newInstance());
+        grid(0).message().remoteListen(topic, (IgniteBiPredicate<UUID, Object>)lsnrCls.newInstance());
 
         send(topic);
 

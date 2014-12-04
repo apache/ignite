@@ -124,7 +124,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+    @Override public void localListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
         guard();
@@ -138,7 +138,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void stopLocalListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+    @Override public void stopLocalListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
         guard();
@@ -152,13 +152,13 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public UUID remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) throws GridException {
+    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws GridException {
         A.notNull(p, "p");
 
         guard();
 
         try {
-            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (GridBiPredicate<UUID, Object>)p);
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
 
             return saveOrGet(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
         }

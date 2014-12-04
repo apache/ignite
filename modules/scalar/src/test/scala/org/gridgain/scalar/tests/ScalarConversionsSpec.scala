@@ -201,7 +201,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     }
 
     it should "convert predicate 2" in {
-        val p = new GridBiPredicate[Int, Int] {
+        val p = new IgniteBiPredicate[Int, Int] {
             override def apply(e1: Int, e2: Int): Boolean =
                 e1 + e2 > 5
         }

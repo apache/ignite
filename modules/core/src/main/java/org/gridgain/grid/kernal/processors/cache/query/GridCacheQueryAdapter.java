@@ -48,7 +48,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private final String clause;
 
     /** */
-    private final GridBiPredicate<Object, Object> filter;
+    private final IgniteBiPredicate<Object, Object> filter;
 
     /** */
     private final boolean incMeta;
@@ -98,7 +98,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
         @Nullable String clsName,
         @Nullable String clause,
-        @Nullable GridBiPredicate<Object, Object> filter,
+        @Nullable IgniteBiPredicate<Object, Object> filter,
         boolean incMeta,
         boolean keepPortable) {
         assert cctx != null;
@@ -154,7 +154,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         boolean incBackups,
         boolean dedup,
         ClusterGroup prj,
-        GridBiPredicate<Object, Object> filter,
+        IgniteBiPredicate<Object, Object> filter,
         @Nullable String clsName,
         String clause,
         boolean incMeta,
@@ -343,8 +343,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @return Key-value filter.
      */
-    @Nullable public <K, V> GridBiPredicate<K, V> scanFilter() {
-        return (GridBiPredicate<K, V>)filter;
+    @Nullable public <K, V> IgniteBiPredicate<K, V> scanFilter() {
+        return (IgniteBiPredicate<K, V>)filter;
     }
 
     /**
