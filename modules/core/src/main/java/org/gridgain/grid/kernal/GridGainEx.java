@@ -2190,7 +2190,7 @@ public class GridGainEx {
 
                 if (data == null) {
                     try {
-                        GridGainMBean mbean = new GridGainMBeanAdapter();
+                        IgnitionMBean mbean = new IgnitionMBeanAdapter();
 
                         ObjectName objName = U.makeMBeanName(
                             null,
@@ -2208,7 +2208,7 @@ public class GridGainEx {
                                 "Kernal",
                                 GridGain.class.getSimpleName(),
                                 mbean,
-                                GridGainMBean.class
+                                IgnitionMBean.class
                             );
 
                             data = new GridMBeanServerData(objName);

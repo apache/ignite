@@ -17,7 +17,7 @@ import org.gridgain.grid.util.mbean.*;
  * This interface defines JMX view on {@link GridGain}.
  */
 @IgniteMBeanDescription("MBean that provides access to grid life-cycle operations.")
-public interface GridGainMBean {
+public interface IgnitionMBean {
     /**
      * Gets state of default grid instance.
      *

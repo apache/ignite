@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.*;
 /**
  * Management bean that provides access to {@link GridGain}.
  */
-public class GridGainMBeanAdapter implements GridGainMBean {
+public class IgnitionMBeanAdapter implements IgnitionMBean {
     /** {@inheritDoc} */
     @Override public String getState() {
         return G.state().toString();
