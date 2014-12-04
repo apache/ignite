@@ -10,6 +10,7 @@
 package org.gridgain.examples.messaging;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
@@ -54,7 +55,7 @@ public final class MessagingExample {
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            GridProjection rmtPrj = g.cluster().forRemotes();
+            ClusterGroup rmtPrj = g.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;

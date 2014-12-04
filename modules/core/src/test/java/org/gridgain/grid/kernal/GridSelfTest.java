@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
@@ -42,7 +41,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridProjection projection() {
+    @Override protected ClusterGroup projection() {
         return grid(0);
     }
 
@@ -78,7 +77,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
     /** {@inheritDoc} */
     @Override public void testRemoteProjection() throws Exception {
-        GridProjection remotePrj = projection().forRemotes();
+        ClusterGroup remotePrj = projection().forRemotes();
 
         int size = remotePrj.nodes().size();
 
@@ -146,7 +145,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         ClusterNode node2 = grid(2).localNode();
         ClusterNode node3 = grid(3).localNode();
 
-        GridProjection p1 = grid(0).forOthers(node0);
+        ClusterGroup p1 = grid(0).forOthers(node0);
 
         assertEquals(3, p1.nodes().size());
 

@@ -14,14 +14,14 @@ import java.io.*;
 /**
  * This interface defines cumulative metrics for the projection. Projection metrics are
  * defined as combined total, min, max, and average measurements from participating nodes'
- * metrics. Projection metrics are obtained by calling {@link org.gridgain.grid.GridProjection#metrics()}
+ * metrics. Projection metrics are obtained by calling {@link ClusterGroup#metrics()}
  * method.
  * <p>
  * Note that these metrics already represent the current snapshot and can change from call
  * to call. If projection is dynamic the metrics snapshot will also change with changes
  * in participating nodes.
  * @see ClusterNodeMetrics
- * @see org.gridgain.grid.GridProjection#metrics()
+ * @see ClusterGroup#metrics()
  */
 public interface ClusterMetrics extends Serializable {
     /**

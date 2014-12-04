@@ -26,7 +26,7 @@ public interface GridStreamerContext {
      *
      * @return Projection with all nodes on which streamer is configured.
      */
-    public GridProjection projection();
+    public ClusterGroup projection();
 
     /**
      * Gets streamer local space. Note that all updates to this space will be local.

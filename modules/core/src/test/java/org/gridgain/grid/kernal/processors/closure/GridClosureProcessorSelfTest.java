@@ -212,7 +212,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        GridProjection prj = grid(idx);
+        ClusterGroup prj = grid(idx);
 
         if (p != null)
             prj = prj.forPredicate(p);

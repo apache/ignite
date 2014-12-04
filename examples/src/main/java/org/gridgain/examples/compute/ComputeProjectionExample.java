@@ -49,7 +49,7 @@ public class ComputeProjectionExample {
             sayHello(ignite, cluster.forRemotes());
 
             // Pick random node out of remote nodes.
-            GridProjection randomNode = cluster.forRemotes().forRandom();
+            ClusterGroup randomNode = cluster.forRemotes().forRandom();
 
             // Say hello to a random node.
             sayHello(ignite, randomNode);
@@ -73,7 +73,7 @@ public class ComputeProjectionExample {
      * @param prj Grid projection.
      * @throws GridException If failed.
      */
-    private static void sayHello(Ignite ignite, final GridProjection prj) throws GridException {
+    private static void sayHello(Ignite ignite, final ClusterGroup prj) throws GridException {
         // Print out hello message on all projection nodes.
         ignite.compute(prj).broadcast(
             new GridRunnable() {

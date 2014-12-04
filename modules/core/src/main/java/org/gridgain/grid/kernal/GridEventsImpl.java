@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
@@ -30,7 +31,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     private GridKernalContext ctx;
 
     /** */
-    private GridProjectionAdapter prj;
+    private ClusterGroupAdapter prj;
 
     /**
      * Required by {@link Externalizable}.
@@ -44,7 +45,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
      * @param prj Projection.
      * @param async Async support flag.
      */
-    public GridEventsImpl(GridKernalContext ctx, GridProjectionAdapter prj, boolean async) {
+    public GridEventsImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
         super(async);
 
         this.ctx = ctx;
@@ -52,7 +53,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection projection() {
+    @Override public ClusterGroup projection() {
         return prj;
     }
 
@@ -275,7 +276,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjectionAdapter)in.readObject();
+        prj = (ClusterGroupAdapter)in.readObject();
     }
 
     /**

@@ -518,7 +518,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param prj Projection.
      * @return {@link GridCompute} for given projection.
      */
-    protected GridCompute compute(GridProjection prj) {
+    protected GridCompute compute(ClusterGroup prj) {
         return prj.grid().compute(prj);
     }
 
@@ -526,7 +526,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param prj Projection.
      * @return {@link GridMessaging} for given projection.
      */
-    protected GridMessaging message(GridProjection prj) {
+    protected GridMessaging message(ClusterGroup prj) {
         return prj.grid().message(prj);
     }
 
@@ -534,7 +534,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param prj Projection.
      * @return {@link GridMessaging} for given projection.
      */
-    protected GridEvents events(GridProjection prj) {
+    protected GridEvents events(ClusterGroup prj) {
         return prj.grid().events(prj);
     }
 

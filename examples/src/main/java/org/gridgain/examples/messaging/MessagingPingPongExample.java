@@ -10,6 +10,7 @@
 package org.gridgain.examples.messaging;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
@@ -47,7 +48,7 @@ public class MessagingPingPongExample {
             System.out.println(">>> Messaging ping-pong example started.");
 
             // Pick random remote node as a partner.
-            GridProjection nodeB = g.cluster().forRemotes().forRandom();
+            ClusterGroup nodeB = g.cluster().forRemotes().forRandom();
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly

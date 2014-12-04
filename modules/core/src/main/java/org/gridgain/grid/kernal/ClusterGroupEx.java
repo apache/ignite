@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 
 import java.util.*;
 
 /**
  * Internal projection interface.
  */
-public interface GridProjectionEx extends GridProjection {
+public interface ClusterGroupEx extends ClusterGroup {
     /**
      * Creates projection for specified subject ID.
      *
      * @param subjId Subject ID.
      * @return Internal projection.
      */
-    public GridProjectionEx forSubjectId(UUID subjId);
+    public ClusterGroupEx forSubjectId(UUID subjId);
 }

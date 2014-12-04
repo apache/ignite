@@ -26,7 +26,7 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests for {@link GridProjection#forCache(String, String...)} method.
+ * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCache(String, String...)} method.
  */
 public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /** */
@@ -101,7 +101,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        GridProjection prj = ignite.cluster().forCache(null);
+        ClusterGroup prj = ignite.cluster().forCache(null);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -116,7 +116,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForNamedCache() throws Exception {
-        GridProjection prj = ignite.cluster().forCache(CACHE_NAME);
+        ClusterGroup prj = ignite.cluster().forCache(CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -131,7 +131,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForBothCaches() throws Exception {
-        GridProjection prj = ignite.cluster().forCache(null, CACHE_NAME);
+        ClusterGroup prj = ignite.cluster().forCache(null, CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 2;
@@ -146,7 +146,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForWrongCacheName() throws Exception {
-        GridProjection prj = ignite.cluster().forCache("wrong");
+        ClusterGroup prj = ignite.cluster().forCache("wrong");
 
         assert prj != null;
         assert prj.nodes().isEmpty();
@@ -163,7 +163,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         assertEquals(5, ignite.cluster().nodes().size());
 
-        GridProjection prj = ignite.cluster().forLocal();
+        ClusterGroup prj = ignite.cluster().forLocal();
 
         assertEquals(1, prj.nodes().size());
         assertEquals(locNode, F.first(prj.nodes()));

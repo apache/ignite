@@ -38,7 +38,7 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection projection() {
+    @Override public ClusterGroup projection() {
         return delegate.projection();
     }
 

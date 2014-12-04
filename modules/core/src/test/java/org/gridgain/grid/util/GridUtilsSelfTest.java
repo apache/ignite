@@ -11,7 +11,6 @@ package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -281,7 +280,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
         private ClusterNode node;
 
         /** */
-        private GridProjection subGrid;
+        private ClusterGroup subGrid;
 
         /**
          * @param ignite Grid.

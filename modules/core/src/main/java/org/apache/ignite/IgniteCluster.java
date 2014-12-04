@@ -26,7 +26,7 @@ import java.util.*;
  * on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to caching nodes,
  * and get other useful information about topology.
  */
-public interface IgniteCluster extends GridProjection, IgniteAsyncSupport {
+public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Gets local grid node.
      *
@@ -39,7 +39,7 @@ public interface IgniteCluster extends GridProjection, IgniteAsyncSupport {
      *
      * @return Monadic projection consisting from the local node.
      */
-    public GridProjection forLocal();
+    public ClusterGroup forLocal();
 
     /**
      * Gets node-local storage instance.

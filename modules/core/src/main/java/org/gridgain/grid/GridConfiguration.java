@@ -1013,7 +1013,7 @@ public class GridConfiguration {
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
      * visible on the main APIs, i.e. they are not part of any projections. The only
-     * way to see daemon nodes is to use {@link GridProjection#forDaemons()} method.
+     * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
      * is build on GridGain and needs to participate in the topology but also needs to be
@@ -1021,7 +1021,7 @@ public class GridConfiguration {
      * or in-memory data grid storage.
      *
      * @return {@code True} if this node should be a daemon node, {@code false} otherwise.
-     * @see GridProjection#forDaemons()
+     * @see org.apache.ignite.cluster.ClusterGroup#forDaemons()
      */
     public boolean isDaemon() {
         return daemon;
@@ -1032,7 +1032,7 @@ public class GridConfiguration {
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
      * visible on the main APIs, i.e. they are not part of any projections. The only
-     * way to see daemon nodes is to use {@link GridProjection#forDaemons()} method.
+     * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
      * is build on GridGain and needs to participate in the topology but also needs to be

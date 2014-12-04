@@ -1,6 +1,7 @@
 package org.gridgain.grid.messaging;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
@@ -200,7 +201,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection rNode1 = ignite2.cluster().forRemotes();
+        ClusterGroup rNode1 = ignite2.cluster().forRemotes();
 
         message(rNode1).send(null, MSG_1);
         message(rNode1).send(null, MSG_2);
@@ -264,7 +265,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         ignite1.message().localListen(topic2, lsnr2);
         ignite1.message().localListen(topic3, lsnr3);
 
-        GridProjection rNode1 = ignite2.cluster().forRemotes();
+        ClusterGroup rNode1 = ignite2.cluster().forRemotes();
 
         message(rNode1).send(topic1, "msg1-1");
         message(rNode1).send(topic2, "msg1-2");
@@ -434,7 +435,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection rNode1 = ignite1.cluster().forLocal();
+        ClusterGroup rNode1 = ignite1.cluster().forLocal();
 
         message(rNode1).send(S_TOPIC_1, MSG_1);
         message(rNode1).send(S_TOPIC_2, MSG_2);
@@ -557,7 +558,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection rNode1 = ignite1.cluster().forLocal();
+        ClusterGroup rNode1 = ignite1.cluster().forLocal();
 
         message(rNode1).send(TestTopic.TOPIC_1, MSG_1);
         message(rNode1).send(TestTopic.TOPIC_2, MSG_2);
@@ -598,7 +599,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
+        ClusterGroup prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
 
         message(prj2).send(null, MSG_1);
         message(prj2).send(null, MSG_2);
@@ -744,7 +745,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
+        ClusterGroup prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
 
         for (TestMessage msg : msgs)
             message(prj2).sendOrdered(S_TOPIC_1, msg, 15000);
@@ -881,7 +882,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
+        ClusterGroup prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
 
         message(prj2).send(I_TOPIC_1, MSG_1);
         message(prj2).send(I_TOPIC_2, MSG_2);

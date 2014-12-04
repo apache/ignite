@@ -10,7 +10,6 @@
 package org.gridgain.grid.cache.affinity;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -93,7 +92,7 @@ public interface GridCacheAffinity<K> {
      * Gets partition ids for which nodes of the given projection has primary
      * ownership.
      * <p>
-     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link GridProjection},
+     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link org.apache.ignite.cluster.ClusterGroup},
      * to find out primary partitions for a single node just pass
      * a single node into this method.
      * <p>
@@ -115,7 +114,7 @@ public interface GridCacheAffinity<K> {
      * {@code 'levels} parameter. If no {@code 'level'} is specified then
      * all backup partitions are returned.
      * <p>
-     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link GridProjection},
+     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link org.apache.ignite.cluster.ClusterGroup},
      * to find out backup partitions for a single node, just pass that single
      * node into this method.
      * <p>
@@ -134,7 +133,7 @@ public interface GridCacheAffinity<K> {
      * Gets partition ids for which nodes of the given projection has ownership
      * (either primary or backup).
      * <p>
-     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link GridProjection},
+     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link org.apache.ignite.cluster.ClusterGroup},
      * to find out all partitions for a single node, just pass that single
      * node into this method.
      * <p>

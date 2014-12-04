@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.pimps
 
+import org.apache.ignite.cluster.ClusterGroup
 import org.gridgain.grid._
 import org.gridgain.scalar._
 import org.jetbrains.annotations._
@@ -22,7 +23,7 @@ import org.jetbrains.annotations._
  * called on a sub-class. This trait's methods return the instance of the same type
  * it was called on.
  */
-trait ScalarTaskThreadContext[T <: GridProjection] extends ScalarConversions { this: PimpedType[T] =>
+trait ScalarTaskThreadContext[T <: ClusterGroup] extends ScalarConversions { this: PimpedType[T] =>
     /**
      * Properly typed version of `GridCompute#withName(...)` method.
      *

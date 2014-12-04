@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -34,7 +35,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     private GridKernalContext ctx;
 
     /** */
-    private GridProjectionAdapter prj;
+    private ClusterGroupAdapter prj;
 
     /** */
     private UUID subjId;
@@ -55,7 +56,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
      * @param subjId Subject ID.
      * @param async Async support flag.
      */
-    public GridComputeImpl(GridKernalContext ctx, GridProjectionAdapter prj, UUID subjId, boolean async) {
+    public GridComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async) {
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
@@ -82,7 +83,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection projection() {
+    @Override public ClusterGroup projection() {
         return prj;
     }
 
@@ -452,7 +453,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjectionAdapter)in.readObject();
+        prj = (ClusterGroupAdapter)in.readObject();
     }
 
     /**

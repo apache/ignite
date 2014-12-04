@@ -72,7 +72,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private volatile boolean dedup;
 
     /** */
-    private volatile GridProjection prj;
+    private volatile ClusterGroup prj;
 
     /** */
     private boolean keepPortable;
@@ -153,7 +153,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         boolean keepAll,
         boolean incBackups,
         boolean dedup,
-        GridProjection prj,
+        ClusterGroup prj,
         GridBiPredicate<Object, Object> filter,
         @Nullable String clsName,
         String clause,
@@ -327,7 +327,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<T> projection(GridProjection prj) {
+    @Override public GridCacheQuery<T> projection(ClusterGroup prj) {
         this.prj = prj;
 
         return this;
@@ -336,7 +336,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @return Grid projection.
      */
-    public GridProjection projection() {
+    public ClusterGroup projection() {
         return prj;
     }
 

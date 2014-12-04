@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.service;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
@@ -121,7 +122,7 @@ public interface GridServices extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridServices} instance belongs.
      */
-    public GridProjection projection();
+    public ClusterGroup projection();
 
     /**
      * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always

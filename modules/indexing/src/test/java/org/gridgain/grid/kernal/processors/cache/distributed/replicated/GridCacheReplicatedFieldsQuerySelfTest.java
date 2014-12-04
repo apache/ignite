@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -65,7 +66,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             q.pageSize(50);
 
-            GridProjection prj = g.cluster().forNodes(Arrays.asList(g.cluster().localNode(), grid(0).localNode()));
+            ClusterGroup prj = g.cluster().forNodes(Arrays.asList(g.cluster().localNode(), grid(0).localNode()));
 
             q = q.projection(prj);
 

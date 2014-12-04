@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface GridEx extends Ignite, GridProjectionEx, IgniteCluster {
+public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
     /**
      * Gets utility cache.
      *

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.compute;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
@@ -23,7 +24,7 @@ import java.util.concurrent.*;
 
 /**
  * Defines compute grid functionality for executing tasks and closures over nodes
- * in the {@link GridProjection}. Instance of {@code GridCompute} is obtained from grid projection
+ * in the {@link org.apache.ignite.cluster.ClusterGroup}. Instance of {@code GridCompute} is obtained from grid projection
  * as follows:
  * <pre name="code" class="java">
  * GridCompute c = GridGain.grid().compute();
@@ -103,7 +104,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridCompute} instance belongs.
      */
-    public GridProjection projection();
+    public ClusterGroup projection();
 
     /**
      * Executes given job on the node where data for provided affinity key is located

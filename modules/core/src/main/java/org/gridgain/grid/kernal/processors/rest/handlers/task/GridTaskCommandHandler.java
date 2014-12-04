@@ -180,7 +180,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 final GridComputeTaskFuture<Object> taskFut;
 
                 if (locExec) {
-                    GridProjection prj = ctx.grid().forSubjectId(clientId);
+                    ClusterGroup prj = ctx.grid().forSubjectId(clientId);
 
                     GridCompute comp = ctx.grid().compute(prj).withTimeout(timeout).enableAsync();
 
@@ -193,7 +193,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
-                    GridProjection prj = ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId()));
+                    ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId()));
 
                     GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
 

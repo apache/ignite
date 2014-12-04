@@ -10,7 +10,7 @@
 package org.gridgain.examples;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.streamer.*;
 
 import java.net.*;
@@ -59,7 +59,7 @@ public class ExamplesUtils {
      * @param size Minimum number of nodes required to run a certain example.
      * @return {@code True} if check passed, {@code false} otherwise.
      */
-    public static boolean checkMinTopologySize(GridProjection prj, int size) {
+    public static boolean checkMinTopologySize(ClusterGroup prj, int size) {
         int prjSize = prj.nodes().size();
 
         if (prjSize < size) {

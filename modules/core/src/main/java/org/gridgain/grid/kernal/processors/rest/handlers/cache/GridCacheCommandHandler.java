@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -349,7 +350,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key));
         }
         else {
-            GridProjection prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
             GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
 
@@ -387,7 +388,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            GridProjection prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
             GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
 

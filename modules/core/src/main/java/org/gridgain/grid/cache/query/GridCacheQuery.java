@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.query;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
@@ -235,7 +235,7 @@ public interface GridCacheQuery<T> {
      * @param prj Projection.
      * @return {@code this} query instance for chaining.
      */
-    public GridCacheQuery<T> projection(GridProjection prj);
+    public GridCacheQuery<T> projection(ClusterGroup prj);
 
     /**
      * Executes the query and returns the query future. Caller may decide to iterate

@@ -205,7 +205,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleNodeProjection() throws Exception {
-        GridProjection prj = ignite1.cluster().forNodeIds(Collections.singleton(ignite1.cluster().localNode().id()));
+        ClusterGroup prj = ignite1.cluster().forNodeIds(Collections.singleton(ignite1.cluster().localNode().id()));
 
         executeAsync(compute(prj), new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
@@ -221,7 +221,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullArgumentToVariableArgMethod")
     public void testSingleNodeProjectionNullPredicate() throws Exception {
-        GridProjection prj = ignite1.cluster().forNodeIds(Collections.singleton(ignite1.cluster().localNode().id()));
+        ClusterGroup prj = ignite1.cluster().forNodeIds(Collections.singleton(ignite1.cluster().localNode().id()));
 
         executeAsync(compute(prj).withTimeout(TASK_EXEC_TIMEOUT_MS), new JobStealingSpreadTask(2), null).
             get(TASK_EXEC_TIMEOUT_MS);

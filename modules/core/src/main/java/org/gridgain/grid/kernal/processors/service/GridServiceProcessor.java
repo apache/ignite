@@ -252,7 +252,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public GridFuture<?> deployNodeSingleton(GridProjection prj, String name, GridService svc) {
+    public GridFuture<?> deployNodeSingleton(ClusterGroup prj, String name, GridService svc) {
         return deployMultiple(prj, name, svc, 0, 1);
     }
 
@@ -261,7 +261,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public GridFuture<?> deployClusterSingleton(GridProjection prj, String name, GridService svc) {
+    public GridFuture<?> deployClusterSingleton(ClusterGroup prj, String name, GridService svc) {
         return deployMultiple(prj, name, svc, 1, 1);
     }
 
@@ -272,7 +272,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param maxPerNodeCnt Max per-node count.
      * @return Future.
      */
-    public GridFuture<?> deployMultiple(GridProjection prj, String name, GridService svc, int totalCnt,
+    public GridFuture<?> deployMultiple(ClusterGroup prj, String name, GridService svc, int totalCnt,
         int maxPerNodeCnt) {
         GridServiceConfiguration cfg = new GridServiceConfiguration();
 
@@ -544,7 +544,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     @SuppressWarnings("unchecked")
-    public <T> T serviceProxy(GridProjection prj, String name, Class<? super T> svcItf, boolean sticky)
+    public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky)
         throws GridRuntimeException {
 
         if (hasLocalNode(prj)) {
@@ -566,7 +566,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param prj Grid nodes projection.
      * @return Whether given projection contains any local node.
      */
-    private boolean hasLocalNode(GridProjection prj) {
+    private boolean hasLocalNode(ClusterGroup prj) {
         for (ClusterNode n : prj.nodes()) {
             if (n.isLocal())
                 return true;

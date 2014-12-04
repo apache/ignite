@@ -48,7 +48,7 @@ public class MessagingPingPongListenActorExample {
             // Pick first remote node as a partner.
             Collection<ClusterNode> rmtNodes = g.cluster().forRemotes().nodes();
 
-            GridProjection nodeB = g.cluster().forNode(rmtNodes.iterator().next());
+            ClusterGroup nodeB = g.cluster().forNode(rmtNodes.iterator().next());
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly

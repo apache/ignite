@@ -11,7 +11,7 @@
 
 package org.gridgain.visor
 
-import org.apache.ignite.cluster.{ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 
@@ -1885,7 +1885,7 @@ object visor extends VisorTag {
      * @param title Title displayed before the list of hosts.
      * @return `Option` for projection of nodes located on selected host.
      */
-    def askForHost(title: String): Option[GridProjection] = {
+    def askForHost(title: String): Option[ClusterGroup] = {
         assert(title != null)
         assert(isCon)
 

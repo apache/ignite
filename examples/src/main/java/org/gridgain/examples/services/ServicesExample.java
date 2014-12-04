@@ -10,6 +10,7 @@
 package org.gridgain.examples.services;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
@@ -33,7 +34,7 @@ import java.util.*;
 public class ServicesExample {
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
-            GridProjection rmts = ignite.cluster().forRemotes();
+            ClusterGroup rmts = ignite.cluster().forRemotes();
 
             if (rmts.nodes().isEmpty()) {
                 System.err.println(">>>");

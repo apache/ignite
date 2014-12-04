@@ -463,7 +463,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link GridProjection} instance.
+     * Tests marshal {@link org.apache.ignite.cluster.ClusterGroup} instance.
      *
      * @throws Exception If test failed.
      */
@@ -483,8 +483,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridProjectionAdapter.class);
-        assert outBean.getObjectField().getClass().equals(GridProjectionAdapter.class);
+        assert inBean.getObjectField().getClass().equals(ClusterGroupAdapter.class);
+        assert outBean.getObjectField().getClass().equals(ClusterGroupAdapter.class);
 
         assert inBean != outBean;
         assert inBean.equals(outBean);
@@ -671,8 +671,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            GridProjection inPrj = compute.projection();
-            GridProjection outPrj = ((GridCompute)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = compute.projection();
+            ClusterGroup outPrj = ((GridCompute)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -713,8 +713,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            GridProjection inPrj = evts.projection();
-            GridProjection outPrj = ((GridEvents)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = evts.projection();
+            ClusterGroup outPrj = ((GridEvents)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -749,8 +749,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            GridProjection inPrj = messaging.projection();
-            GridProjection outPrj = ((GridMessaging)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = messaging.projection();
+            ClusterGroup outPrj = ((GridMessaging)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -785,8 +785,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            GridProjection inPrj = services.projection();
-            GridProjection outPrj = ((GridServices)outBean.getObjectField()).projection();
+            ClusterGroup inPrj = services.projection();
+            ClusterGroup outPrj = ((GridServices)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());

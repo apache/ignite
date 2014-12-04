@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -91,9 +92,9 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
         Ignite g0 = grid(0);
         Ignite g1 = grid(1);
 
-        GridProjection g0Pinned = g0.cluster().forNodeIds(F.asList(g0.cluster().localNode().id()));
+        ClusterGroup g0Pinned = g0.cluster().forNodeIds(F.asList(g0.cluster().localNode().id()));
 
-        GridProjection g01Pinned =
+        ClusterGroup g01Pinned =
             g1.cluster().forNodeIds(F.asList(g0.cluster().localNode().id(), g1.cluster().localNode().id()));
 
         for (int i = 0; i < 100; i++)

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.messaging;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
@@ -49,7 +50,7 @@ public interface GridMessaging extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridMessaging} instance belongs.
      */
-    public GridProjection projection();
+    public ClusterGroup projection();
 
     /**
      * Sends given message with specified topic to the nodes in this projection.

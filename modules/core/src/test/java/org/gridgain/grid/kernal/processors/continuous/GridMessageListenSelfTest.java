@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
@@ -357,7 +358,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      * @param ret Value returned from listener.
      * @throws Exception In case of error.
      */
-    private void listen(final GridProjection prj, @Nullable Object topic, final boolean ret) throws Exception {
+    private void listen(final ClusterGroup prj, @Nullable Object topic, final boolean ret) throws Exception {
         assert prj != null;
 
         message(prj).remoteListen(topic, new Listener(prj, ret));
@@ -413,7 +414,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /** */
     private static class Listener implements P2<UUID, Object> {
         /** */
-        private final GridProjection prj;
+        private final ClusterGroup prj;
 
         /** */
         private final boolean ret;
@@ -434,7 +435,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
          * @param prj Projection.
          * @param ret Return value.
          */
-        private Listener(GridProjection prj, boolean ret) {
+        private Listener(ClusterGroup prj, boolean ret) {
             this.prj = prj;
             this.ret = ret;
         }
@@ -461,12 +462,12 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /** */
     private static class Actor extends GridMessagingListenActor<Object> {
         /** */
-        private final GridProjection prj;
+        private final ClusterGroup prj;
 
         /**
          * @param prj Projection.
          */
-        private Actor(GridProjection prj) {
+        private Actor(ClusterGroup prj) {
             this.prj = prj;
         }
 

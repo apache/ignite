@@ -176,7 +176,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection gridProjection() {
+    @Override public ClusterGroup gridProjection() {
         return ctx.grid().forCache(name());
     }
 

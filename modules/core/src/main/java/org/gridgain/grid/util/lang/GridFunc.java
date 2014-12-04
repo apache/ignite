@@ -302,9 +302,9 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<GridProjection, GridPredicate<ClusterNode>> P2P =
-        new C1<GridProjection, GridPredicate<ClusterNode>>() {
-            @Override public GridPredicate<ClusterNode> apply(GridProjection e) {
+    private static final GridClosure<ClusterGroup, GridPredicate<ClusterNode>> P2P =
+        new C1<ClusterGroup, GridPredicate<ClusterNode>>() {
+            @Override public GridPredicate<ClusterNode> apply(ClusterGroup e) {
                 return e.predicate();
             }
 
@@ -538,7 +538,7 @@ public class GridFunc {
      *
      * @return Closure transforming a grid projection into its predicate.
      */
-    public static GridClosure<GridProjection, GridPredicate<ClusterNode>> predicate() {
+    public static GridClosure<ClusterGroup, GridPredicate<ClusterNode>> predicate() {
         return P2P;
     }
 

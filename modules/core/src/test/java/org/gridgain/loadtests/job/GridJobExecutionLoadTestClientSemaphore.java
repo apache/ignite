@@ -10,6 +10,7 @@
 package org.gridgain.loadtests.job;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
@@ -55,7 +56,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
             }
         };
 
-        GridProjection rmts = g.cluster().forRemotes();
+        ClusterGroup rmts = g.cluster().forRemotes();
 
         GridCompute comp = g.compute(rmts).enableAsync();
 

@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
@@ -52,7 +52,7 @@ import java.util.*;
  * <li>{@link GridEvents} - functionality for querying and listening to events on nodes in this projection.</li>
  * </ul>
  */
-public interface GridProjection {
+public interface ClusterGroup {
     /**
      * Gets instance of grid.
      *
@@ -66,7 +66,7 @@ public interface GridProjection {
      * @param nodes Collection of nodes to create a projection from.
      * @return Projection over provided grid nodes.
      */
-    public GridProjection forNodes(Collection<? extends ClusterNode> nodes);
+    public ClusterGroup forNodes(Collection<? extends ClusterNode> nodes);
 
     /**
      * Creates a grid projection for the given node.
@@ -75,7 +75,7 @@ public interface GridProjection {
      * @param nodes Optional additional nodes to include into projection.
      * @return Grid projection for the given node.
      */
-    public GridProjection forNode(ClusterNode node, ClusterNode... nodes);
+    public ClusterGroup forNode(ClusterNode node, ClusterNode... nodes);
 
     /**
      * Creates a grid projection for nodes other than given nodes.
@@ -85,7 +85,7 @@ public interface GridProjection {
      * @return Projection that will contain all nodes that original projection contained excluding
      *      given nodes.
      */
-    public GridProjection forOthers(ClusterNode node, ClusterNode... nodes);
+    public ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes);
 
     /**
      * Creates a grid projection for nodes not included into given projection.
@@ -93,7 +93,7 @@ public interface GridProjection {
      * @param prj Projection to exclude from new grid projection.
      * @return Projection for nodes not included into given projection.
      */
-    public GridProjection forOthers(GridProjection prj);
+    public ClusterGroup forOthers(ClusterGroup prj);
 
     /**
      * Creates a grid projection over nodes with specified node IDs.
@@ -101,7 +101,7 @@ public interface GridProjection {
      * @param ids Collection of node IDs.
      * @return Projection over nodes with specified node IDs.
      */
-    public GridProjection forNodeIds(Collection<UUID> ids);
+    public ClusterGroup forNodeIds(Collection<UUID> ids);
 
     /**
      * Creates a grid projection for a node with specified ID.
@@ -110,7 +110,7 @@ public interface GridProjection {
      * @param ids Optional additional node IDs to include into projection.
      * @return Projection over node with specified node ID.
      */
-    public GridProjection forNodeId(UUID id, UUID... ids);
+    public ClusterGroup forNodeId(UUID id, UUID... ids);
 
     /**
      * Creates a grid projection which includes all nodes that pass the given predicate filter.
@@ -118,21 +118,21 @@ public interface GridProjection {
      * @param p Predicate filter for nodes to include into this projection.
      * @return Grid projection for nodes that passed the predicate filter.
      */
-    public GridProjection forPredicate(GridPredicate<ClusterNode> p);
+    public ClusterGroup forPredicate(GridPredicate<ClusterNode> p);
 
     /**
      * Creates projection for nodes containing given name and value
      * specified in user attributes.
      * <p>
      * User attributes for every node are optional and can be specified in
-     * grid node configuration. See {@link GridConfiguration#getUserAttributes()}
+     * grid node configuration. See {@link org.gridgain.grid.GridConfiguration#getUserAttributes()}
      * for more information.
      *
      * @param name Name of the attribute.
      * @param val Optional attribute value to match.
      * @return Grid projection for nodes containing specified attribute.
      */
-    public GridProjection forAttribute(String name, @Nullable String val);
+    public ClusterGroup forAttribute(String name, @Nullable String val);
 
     /**
      * Creates projection for all nodes that have cache with specified name running.
@@ -141,7 +141,7 @@ public interface GridProjection {
      * @param cacheNames Optional additional cache names to include into projection.
      * @return Projection over nodes that have specified cache running.
      */
-    public GridProjection forCache(String cacheName, @Nullable String... cacheNames);
+    public ClusterGroup forCache(String cacheName, @Nullable String... cacheNames);
 
     /**
      * Creates projection for all nodes that have streamer with specified name running.
@@ -150,14 +150,14 @@ public interface GridProjection {
      * @param streamerNames Optional additional streamer names to include into projection.
      * @return Projection over nodes that have specified streamer running.
      */
-    public GridProjection forStreamer(String streamerName, @Nullable String... streamerNames);
+    public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames);
 
     /**
      * Gets grid projection consisting from the nodes in this projection excluding the local node.
      *
      * @return Grid projection consisting from the nodes in this projection excluding the local node, if any.
      */
-    public GridProjection forRemotes();
+    public ClusterGroup forRemotes();
 
     /**
      * Gets grid projection consisting from the nodes in this projection residing on the
@@ -166,7 +166,7 @@ public interface GridProjection {
      * @param node Node residing on the host for which projection is created.
      * @return Projection for nodes residing on the same host as passed in node.
      */
-    public GridProjection forHost(ClusterNode node);
+    public ClusterGroup forHost(ClusterNode node);
 
     /**
      * Gets projection consisting from the daemon nodes in this projection.
@@ -182,14 +182,14 @@ public interface GridProjection {
      *
      * @return Grid projection consisting from the daemon nodes in this projection.
      */
-    public GridProjection forDaemons();
+    public ClusterGroup forDaemons();
 
     /**
      * Creates grid projection with one random node from current projection.
      *
      * @return Grid projection with one random node from current projection.
      */
-    public GridProjection forRandom();
+    public ClusterGroup forRandom();
 
     /**
      * Creates grid projection with one oldest node in the current projection.
@@ -199,7 +199,7 @@ public interface GridProjection {
      *
      * @return Grid projection with one oldest node from the current projection.
      */
-    public GridProjection forOldest();
+    public ClusterGroup forOldest();
 
     /**
      * Creates grid projection with one youngest node in the current projection.
@@ -209,7 +209,7 @@ public interface GridProjection {
      *
      * @return Grid projection with one youngest node from the current projection.
      */
-    public GridProjection forYoungest();
+    public ClusterGroup forYoungest();
 
     /**
      * Gets read-only collections of nodes in this projection.
@@ -246,7 +246,7 @@ public interface GridProjection {
      * Gets a metrics snapshot for this projection.
      *
      * @return Grid projection metrics snapshot.
-     * @throws GridException If projection is empty.
+     * @throws org.gridgain.grid.GridException If projection is empty.
      */
     public ClusterMetrics metrics() throws GridException;
 }

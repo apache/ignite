@@ -146,7 +146,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(ignite2);
 
-        GridProjection prj = ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()));
+        ClusterGroup prj = ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()));
 
         Collection<GridEvent> evts = events(prj).remoteQuery(filter, 0);
 

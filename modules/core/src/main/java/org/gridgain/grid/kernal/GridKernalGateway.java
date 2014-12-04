@@ -9,14 +9,13 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.tostring.*;
 
 /**
  * This interface guards access to implementations of public methods that access kernal
  * functionality from the following main API interfaces:
  * <ul>
- * <li>{@link GridProjection}</li>
+ * <li>{@link org.apache.ignite.cluster.ClusterGroup}</li>
  * </ul>
  * Note that this kernal gateway <b>should not</b> be used to guard against method from
  * the following non-rich interfaces since their implementations are already managed

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
@@ -317,7 +318,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * @param prj Grid projection.
      * @throws GridException In case of error.
      */
-    public void execute(@Nullable GridProjection prj) throws GridException;
+    public void execute(@Nullable ClusterGroup prj) throws GridException;
 
     /**
      * Stops continuous query execution.

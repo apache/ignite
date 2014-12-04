@@ -122,7 +122,7 @@ public final class ComputeFibonacciContinuationExample {
                     fut1 = locMap.get(n - 1);
                     fut2 = locMap.get(n - 2);
 
-                    GridProjection p = g.cluster().forPredicate(nodeFilter);
+                    ClusterGroup p = g.cluster().forPredicate(nodeFilter);
 
                     GridCompute compute = g.compute(p).enableAsync();
 

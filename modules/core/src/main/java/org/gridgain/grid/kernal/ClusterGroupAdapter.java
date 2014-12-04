@@ -31,7 +31,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 /**
  *
  */
-public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
+public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,7 +39,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     protected transient GridKernalContext ctx;
 
     /** Parent projection. */
-    private transient GridProjection parent;
+    private transient ClusterGroup parent;
 
     /** Compute. */
     private transient GridComputeImpl compute;
@@ -68,7 +68,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridProjectionAdapter() {
+    public ClusterGroupAdapter() {
         // No-op.
     }
 
@@ -77,8 +77,8 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * @param ctx Grid kernal context.
      * @param p Predicate.
      */
-    protected GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
-        @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p) {
+    protected ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
+                                  @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p) {
         this.parent = parent;
 
         if (ctx != null)
@@ -95,8 +95,8 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * @param ctx Grid kernal context.
      * @param ids Node IDs.
      */
-    protected GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
-        @Nullable UUID subjId, Set<UUID> ids) {
+    protected ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
+                                  @Nullable UUID subjId, Set<UUID> ids) {
         this.parent = parent;
 
         if (ctx != null)
@@ -116,8 +116,8 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * @param p Predicate.
      * @param ids Node IDs.
      */
-    private GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
-        @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p, Set<UUID> ids) {
+    private ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
+                                @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p, Set<UUID> ids) {
         this.parent = parent;
 
         if (ctx != null)
@@ -333,13 +333,13 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forPredicate(GridPredicate<ClusterNode> p) {
+    @Override public final ClusterGroup forPredicate(GridPredicate<ClusterNode> p) {
         A.notNull(p, "p");
 
         guard();
 
         try {
-            return new GridProjectionAdapter(this, ctx, subjId, this.p != null ? F.and(p, this.p) : p);
+            return new ClusterGroupAdapter(this, ctx, subjId, this.p != null ? F.and(p, this.p) : p);
         }
         finally {
             unguard();
@@ -347,14 +347,14 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forAttribute(String name, @Nullable final String val) {
+    @Override public final ClusterGroup forAttribute(String name, @Nullable final String val) {
         A.notNull(name, "n");
 
         return forPredicate(new AttributeFilter(name, val));
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forNode(ClusterNode node, ClusterNode... nodes) {
+    @Override public final ClusterGroup forNode(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
         guard();
@@ -375,7 +375,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                     nodeIds.add(node.id());
             }
 
-            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -383,7 +383,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forNodes(Collection<? extends ClusterNode> nodes) {
+    @Override public final ClusterGroup forNodes(Collection<? extends ClusterNode> nodes) {
         A.notEmpty(nodes, "nodes");
 
         guard();
@@ -395,7 +395,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                 if (contains(n))
                     nodeIds.add(n.id());
 
-            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -403,7 +403,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forNodeId(UUID id, UUID... ids) {
+    @Override public final ClusterGroup forNodeId(UUID id, UUID... ids) {
         A.notNull(id, "id");
 
         guard();
@@ -425,7 +425,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                     nodeIds.add(id);
             }
 
-            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -433,7 +433,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forNodeIds(Collection<UUID> ids) {
+    @Override public final ClusterGroup forNodeIds(Collection<UUID> ids) {
         A.notEmpty(ids, "ids");
 
         guard();
@@ -446,7 +446,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                     nodeIds.add(id);
             }
 
-            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -454,14 +454,14 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forOthers(ClusterNode node, ClusterNode... nodes) {
+    @Override public final ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
         return forOthers(F.concat(false, node.id(), F.nodeIds(Arrays.asList(nodes))));
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOthers(GridProjection prj) {
+    @Override public ClusterGroup forOthers(ClusterGroup prj) {
         A.notNull(prj, "prj");
 
         if (ids != null) {
@@ -477,7 +477,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                         nodeIds.add(id);
                 }
 
-                return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
+                return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
             }
             finally {
                 unguard();
@@ -488,7 +488,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forRemotes() {
+    @Override public final ClusterGroup forRemotes() {
         return forOthers(Collections.singleton(ctx.localNodeId()));
     }
 
@@ -496,7 +496,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * @param excludeIds Node IDs.
      * @return New projection.
      */
-    private GridProjection forOthers(Collection<UUID> excludeIds) {
+    private ClusterGroup forOthers(Collection<UUID> excludeIds) {
         assert excludeIds != null;
 
         if (ids != null) {
@@ -510,7 +510,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                         nodeIds.add(id);
                 }
 
-                return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
+                return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
             }
             finally {
                 unguard();
@@ -521,17 +521,17 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forCache(@Nullable String cacheName, @Nullable String... cacheNames) {
+    @Override public final ClusterGroup forCache(@Nullable String cacheName, @Nullable String... cacheNames) {
         return forPredicate(new CachesFilter(cacheName, cacheNames));
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forStreamer(@Nullable String streamerName, @Nullable String... streamerNames) {
+    @Override public final ClusterGroup forStreamer(@Nullable String streamerName, @Nullable String... streamerNames) {
         return forPredicate(new StreamersFilter(streamerName, streamerNames));
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forHost(ClusterNode node) {
+    @Override public final ClusterGroup forHost(ClusterNode node) {
         A.notNull(node, "node");
 
         String macs = node.attribute(ATTR_MACS);
@@ -542,35 +542,35 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forDaemons() {
+    @Override public final ClusterGroup forDaemons() {
         return forPredicate(new DaemonFilter());
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forRandom() {
+    @Override public final ClusterGroup forRandom() {
         return ids != null ? forNodeId(F.rand(ids)) : forNode(F.rand(nodes()));
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOldest() {
+    @Override public ClusterGroup forOldest() {
         return new AgeProjection(this, true);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forYoungest() {
+    @Override public ClusterGroup forYoungest() {
         return new AgeProjection(this, false);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjectionEx forSubjectId(UUID subjId) {
+    @Override public ClusterGroupEx forSubjectId(UUID subjId) {
         if (subjId == null)
             return this;
 
         guard();
 
         try {
-            return ids != null ? new GridProjectionAdapter(this, ctx, subjId, ids) :
-                new GridProjectionAdapter(this, ctx, subjId, p);
+            return ids != null ? new ClusterGroupAdapter(this, ctx, subjId, ids) :
+                new ClusterGroupAdapter(this, ctx, subjId, p);
         }
         finally {
             unguard();
@@ -637,8 +637,8 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         try {
             GridKernal g = GridGainEx.gridx(gridName);
 
-            return ids != null ? new GridProjectionAdapter(g, g.context(), subjId, ids) :
-                p != null ? new GridProjectionAdapter(g, g.context(), subjId, p) : g;
+            return ids != null ? new ClusterGroupAdapter(g, g.context(), subjId, ids) :
+                p != null ? new ClusterGroupAdapter(g, g.context(), subjId, p) : g;
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -779,7 +779,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     /**
      * Age-based projection.
      */
-    private static class AgeProjection extends GridProjectionAdapter {
+    private static class AgeProjection extends ClusterGroupAdapter {
         /** Serialization version. */
         private static final long serialVersionUID = 0L;
 
@@ -803,7 +803,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
          * @param prj Parent projection.
          * @param isOldest Oldest flag.
          */
-        private AgeProjection(GridProjectionAdapter prj, boolean isOldest) {
+        private AgeProjection(ClusterGroupAdapter prj, boolean isOldest) {
             super(prj.parent, prj.ctx, prj.subjId, prj.p, prj.ids);
 
             this.isOldest = isOldest;

@@ -10,6 +10,7 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -204,35 +205,35 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute compute(GridProjection prj) {
+    @Override public GridCompute compute(ClusterGroup prj) {
         assert g != null;
 
         return g.compute(prj);
     }
 
     /** {@inheritDoc} */
-    @Override public GridMessaging message(GridProjection prj) {
+    @Override public GridMessaging message(ClusterGroup prj) {
         assert g != null;
 
         return g.message(prj);
     }
 
     /** {@inheritDoc} */
-    @Override public GridEvents events(GridProjection prj) {
+    @Override public GridEvents events(ClusterGroup prj) {
         assert g != null;
 
         return g.events(prj);
     }
 
     /** {@inheritDoc} */
-    @Override public GridServices services(GridProjection prj) {
+    @Override public GridServices services(ClusterGroup prj) {
         assert g != null;
 
         return g.services(prj);
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(GridProjection prj) {
+    @Override public ExecutorService executorService(ClusterGroup prj) {
         assert g != null;
 
         return g.executorService(prj);

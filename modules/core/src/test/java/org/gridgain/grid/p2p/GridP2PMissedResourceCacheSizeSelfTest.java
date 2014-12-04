@@ -10,6 +10,7 @@
 package org.gridgain.grid.p2p;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
@@ -98,7 +99,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @param g Grid.
      * @param filter Event filter.
      */
-    private void executeFail(GridProjection g, GridPredicate<GridEvent> filter) {
+    private void executeFail(ClusterGroup g, GridPredicate<GridEvent> filter) {
         try {
             g.grid().events(g).remoteQuery(filter, 0);
 

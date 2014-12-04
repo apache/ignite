@@ -44,7 +44,7 @@ class GridServiceProxy<T> implements Serializable {
     private final T proxy;
 
     /** Grid projection. */
-    private final GridProjection prj;
+    private final ClusterGroup prj;
 
     /** Kernal context. */
     @GridToStringExclude
@@ -62,7 +62,7 @@ class GridServiceProxy<T> implements Serializable {
      * @param svc Service type class.
      * @param sticky Whether multi-node request should be done.
      */
-    @SuppressWarnings("unchecked") GridServiceProxy(GridProjection prj, String name, Class<? super T> svc,
+    @SuppressWarnings("unchecked") GridServiceProxy(ClusterGroup prj, String name, Class<? super T> svc,
         boolean sticky, GridKernalContext ctx) {
         this.prj = prj;
         this.ctx = ctx;
@@ -81,7 +81,7 @@ class GridServiceProxy<T> implements Serializable {
      * @param prj Grid nodes projection.
      * @return Whether given projection contains any local node.
      */
-    private boolean hasLocalNode(GridProjection prj) {
+    private boolean hasLocalNode(ClusterGroup prj) {
         for (ClusterNode n : prj.nodes()) {
             if (n.isLocal())
                 return true;

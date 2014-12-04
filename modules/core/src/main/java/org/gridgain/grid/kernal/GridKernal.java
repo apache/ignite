@@ -107,7 +107,7 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
+public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKernalMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -261,28 +261,28 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public final GridCompute compute(GridProjection prj) {
-        return ((GridProjectionAdapter)prj).compute();
+    @Override public final GridCompute compute(ClusterGroup prj) {
+        return ((ClusterGroupAdapter)prj).compute();
     }
 
     /** {@inheritDoc} */
-    @Override public final GridMessaging message(GridProjection prj) {
-        return ((GridProjectionAdapter)prj).message();
+    @Override public final GridMessaging message(ClusterGroup prj) {
+        return ((ClusterGroupAdapter)prj).message();
     }
 
     /** {@inheritDoc} */
-    @Override public final GridEvents events(GridProjection prj) {
-        return ((GridProjectionAdapter)prj).events();
+    @Override public final GridEvents events(ClusterGroup prj) {
+        return ((ClusterGroupAdapter)prj).events();
     }
 
     /** {@inheritDoc} */
-    @Override public GridServices services(GridProjection prj) {
-        return ((GridProjectionAdapter)prj).services();
+    @Override public GridServices services(ClusterGroup prj) {
+        return ((ClusterGroupAdapter)prj).services();
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(GridProjection prj) {
-        return ((GridProjectionAdapter)prj).executorService();
+    @Override public ExecutorService executorService(ClusterGroup prj) {
+        return ((ClusterGroupAdapter)prj).executorService();
     }
 
     /** {@inheritDoc} */
@@ -3158,11 +3158,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forLocal() {
+    @Override public ClusterGroup forLocal() {
         ctx.gateway().readLock();
 
         try {
-            return new GridProjectionAdapter(this, ctx, null, Collections.singleton(cfg.getNodeId()));
+            return new ClusterGroupAdapter(this, ctx, null, Collections.singleton(cfg.getNodeId()));
         }
         finally {
             ctx.gateway().readUnlock();

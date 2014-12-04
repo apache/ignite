@@ -41,7 +41,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forLocal() {
+    @Override public ClusterGroup forLocal() {
         return grid.forLocal();
     }
 
@@ -125,82 +125,82 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNodes(Collection<? extends ClusterNode> nodes) {
+    @Override public ClusterGroup forNodes(Collection<? extends ClusterNode> nodes) {
         return grid.forNodes(nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNode(ClusterNode node, ClusterNode... nodes) {
+    @Override public ClusterGroup forNode(ClusterNode node, ClusterNode... nodes) {
         return grid.forNode(node, nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOthers(ClusterNode node, ClusterNode... nodes) {
+    @Override public ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes) {
         return grid.forOthers(node, nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOthers(GridProjection prj) {
+    @Override public ClusterGroup forOthers(ClusterGroup prj) {
         return grid.forOthers(prj);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNodeIds(Collection<UUID> ids) {
+    @Override public ClusterGroup forNodeIds(Collection<UUID> ids) {
         return grid.forNodeIds(ids);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNodeId(UUID id, UUID... ids) {
+    @Override public ClusterGroup forNodeId(UUID id, UUID... ids) {
         return grid.forNodeId(id, ids);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forPredicate(GridPredicate<ClusterNode> p) {
+    @Override public ClusterGroup forPredicate(GridPredicate<ClusterNode> p) {
         return grid.forPredicate(p);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forAttribute(String name, @Nullable String val) {
+    @Override public ClusterGroup forAttribute(String name, @Nullable String val) {
         return grid.forAttribute(name, val);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forCache(String cacheName, @Nullable String... cacheNames) {
+    @Override public ClusterGroup forCache(String cacheName, @Nullable String... cacheNames) {
         return grid.forCache(cacheName, cacheNames);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forStreamer(String streamerName, @Nullable String... streamerNames) {
+    @Override public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames) {
         return grid.forStreamer(streamerName, streamerNames);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forRemotes() {
+    @Override public ClusterGroup forRemotes() {
         return grid.forRemotes();
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forHost(ClusterNode node) {
+    @Override public ClusterGroup forHost(ClusterNode node) {
         return grid.forHost(node);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forDaemons() {
+    @Override public ClusterGroup forDaemons() {
         return grid.forDaemons();
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forRandom() {
+    @Override public ClusterGroup forRandom() {
         return grid.forRandom();
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOldest() {
+    @Override public ClusterGroup forOldest() {
         return grid.forOldest();
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forYoungest() {
+    @Override public ClusterGroup forYoungest() {
         return grid.forYoungest();
     }
 

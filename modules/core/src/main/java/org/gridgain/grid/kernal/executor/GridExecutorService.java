@@ -69,7 +69,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     private static final long serialVersionUID = 0L;
 
     /** Projection. */
-    private GridProjectionAdapter prj;
+    private ClusterGroupAdapter prj;
 
     /** Compute. */
     private GridCompute comp;
@@ -102,7 +102,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      * @param prj Projection.
      * @param log Grid logger.
      */
-    public GridExecutorService(GridProjectionAdapter prj, GridLogger log) {
+    public GridExecutorService(ClusterGroupAdapter prj, GridLogger log) {
         assert prj != null;
         assert log != null;
 
@@ -120,7 +120,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjectionAdapter)in.readObject();
+        prj = (ClusterGroupAdapter)in.readObject();
     }
 
     /**

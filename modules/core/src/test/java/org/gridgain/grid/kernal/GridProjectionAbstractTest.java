@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
- * Abstract test for {@link GridProjection}
+ * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
  */
 @SuppressWarnings("deprecation")
 public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest implements Externalizable {
@@ -41,7 +41,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private static final Object mux = new Object();
 
     /** Projection. */
-    private GridProjection prj;
+    private ClusterGroup prj;
 
     /** Runnable job. */
     private Runnable runJob = new TestRunnable();
@@ -97,7 +97,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      * @return Projection.
      */
-    protected abstract GridProjection projection();
+    protected abstract ClusterGroup projection();
 
     /**
      * @return Local node ID.
@@ -151,7 +151,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         ids.add(UUID.randomUUID());
         ids.add(UUID.randomUUID());
 
-        GridProjection invalidPrj = prj.forNodeIds(ids);
+        ClusterGroup invalidPrj = prj.forNodeIds(ids);
 
         assertEquals(0, invalidPrj.nodes().size());
     }
@@ -211,7 +211,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     public void testRemoteProjection() throws Exception {
         Collection<UUID> remoteNodeIds = remoteNodeIds();
 
-        GridProjection remotePrj = projection().forRemotes();
+        ClusterGroup remotePrj = projection().forRemotes();
 
         Collection<UUID> prjNodeIds = F.nodeIds(remotePrj.nodes());
 

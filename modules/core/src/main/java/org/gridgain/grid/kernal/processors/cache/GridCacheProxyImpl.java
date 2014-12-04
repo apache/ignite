@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -118,7 +118,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection gridProjection() {
+    @Override public ClusterGroup gridProjection() {
         return cache.gridProjection();
     }
 

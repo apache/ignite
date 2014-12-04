@@ -11,14 +11,13 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
 /**
- * Test for {@link GridProjection}.
+ * Test for {@link org.apache.ignite.cluster.ClusterGroup}.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridProjectionSelfTest extends GridProjectionAbstractTest {
@@ -55,7 +54,7 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridProjection projection() {
+    @Override protected ClusterGroup projection() {
         return grid(0).forPredicate(F.<ClusterNode>nodeForNodeIds(ids));
     }
 
@@ -75,7 +74,7 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
      * @throws Exception If failed.
      */
     public void testOldest() throws Exception {
-        GridProjection oldest = ignite.cluster().forOldest();
+        ClusterGroup oldest = ignite.cluster().forOldest();
 
         ClusterNode node = null;
 
@@ -96,7 +95,7 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
      * @throws Exception If failed.
      */
     public void testYoungest() throws Exception {
-        GridProjection youngest = ignite.cluster().forYoungest();
+        ClusterGroup youngest = ignite.cluster().forYoungest();
 
         ClusterNode node = null;
 
@@ -117,8 +116,8 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
      * @throws Exception If failed.
      */
     public void testNewNodes() throws Exception {
-        GridProjection youngest = ignite.cluster().forYoungest();
-        GridProjection oldest = ignite.cluster().forOldest();
+        ClusterGroup youngest = ignite.cluster().forYoungest();
+        ClusterGroup oldest = ignite.cluster().forOldest();
 
         ClusterNode old = oldest.node();
         ClusterNode last = youngest.node();

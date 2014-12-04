@@ -154,7 +154,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert ignite3 != null;
 
             // Get projection only for first 2 nodes.
-            GridProjection nodes = ignite1.cluster().forNodeIds(Arrays.asList(
+            ClusterGroup nodes = ignite1.cluster().forNodeIds(Arrays.asList(
                 ignite1.cluster().localNode().id(),
                 ignite2.cluster().localNode().id()));
 

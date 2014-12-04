@@ -34,7 +34,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     private final ConcurrentMap<Object, Object> locSpace = new ConcurrentHashMap8<>();
 
     /** Streamer projection. */
-    private AtomicReference<GridProjection> streamPrj = new AtomicReference<>();
+    private AtomicReference<ClusterGroup> streamPrj = new AtomicReference<>();
 
     /** Streamer. */
     private GridStreamerEx streamer;
@@ -57,7 +57,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection projection() {
+    @Override public ClusterGroup projection() {
         ctx.gateway().readLock();
 
         try {
@@ -113,7 +113,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         ctx.gateway().readLock();
 
         try {
-            GridProjection prj = projection0();
+            ClusterGroup prj = projection0();
 
             if (!F.isEmpty(nodes))
                 prj = prj.forNodes(nodes);
@@ -142,7 +142,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         ctx.gateway().readLock();
 
         try {
-            GridProjection prj = projection0();
+            ClusterGroup prj = projection0();
 
             if (!F.isEmpty(nodes))
                 prj = prj.forNodes(nodes);
@@ -166,7 +166,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         ctx.gateway().readLock();
 
         try {
-            GridProjection prj = projection0();
+            ClusterGroup prj = projection0();
 
             if (!F.isEmpty(nodes))
                 prj = prj.forNodes(nodes);
@@ -181,8 +181,8 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     /**
      * @return Streamer projection without grabbing read lock.
      */
-    private GridProjection projection0() {
-        GridProjection prj = streamPrj.get();
+    private ClusterGroup projection0() {
+        ClusterGroup prj = streamPrj.get();
 
         if (prj == null) {
             prj = ctx.grid().forStreamer(streamer.name());

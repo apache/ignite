@@ -310,7 +310,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      */
     private void submitDataChunk(final Ignite master, UUID preferredNodeId, final Collection<Integer> dataChunk)
         throws GridException {
-        GridProjection prj = master.cluster().forPredicate(workerNodesFilter);
+        ClusterGroup prj = master.cluster().forPredicate(workerNodesFilter);
 
         GridCompute comp = master.compute(prj).enableAsync();
 

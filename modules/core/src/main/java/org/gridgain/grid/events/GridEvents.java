@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.events;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
@@ -48,7 +49,7 @@ public interface GridEvents extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridMessaging} instance belongs.
      */
-    public GridProjection projection();
+    public ClusterGroup projection();
 
     /**
      * Queries nodes in this projection for events using passed in predicate filter for event

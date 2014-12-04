@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -245,7 +244,7 @@ class ClusterMetricsImpl implements ClusterMetrics {
     /**
      * @param p Projection to get metrics for.
      */
-    ClusterMetricsImpl(GridProjection p) {
+    ClusterMetricsImpl(ClusterGroup p) {
         assert p != null;
 
         Collection<ClusterNode> nodes = p.nodes();

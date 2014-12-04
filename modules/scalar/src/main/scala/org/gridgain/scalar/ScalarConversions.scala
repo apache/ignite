@@ -12,6 +12,7 @@
 package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
+import org.apache.ignite.cluster.ClusterGroup
 import org.gridgain.grid.lang._
 import org.gridgain.grid.cache._
 import org.gridgain.grid._
@@ -383,7 +384,7 @@ trait ScalarConversions {
      *
      * @param impl Grid projection to convert.
      */
-    implicit def toScalarProjection(impl: GridProjection): ScalarProjectionPimp[GridProjection] =
+    implicit def toScalarProjection(impl: ClusterGroup): ScalarProjectionPimp[ClusterGroup] =
         ScalarProjectionPimp(impl)
 
     /**

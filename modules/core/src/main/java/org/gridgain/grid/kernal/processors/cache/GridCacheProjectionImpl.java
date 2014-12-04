@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
@@ -952,7 +952,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection gridProjection() {
+    @Override public ClusterGroup gridProjection() {
         return cache.gridProjection();
     }
 

@@ -996,7 +996,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjectionEx forSubjectId(UUID subjId) {
+        @Override public ClusterGroupEx forSubjectId(UUID subjId) {
             return null;
         }
 
@@ -1011,7 +1011,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forLocal() {
+        @Override public ClusterGroup forLocal() {
             return null;
         }
 
@@ -1090,82 +1090,82 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forNodes(Collection<? extends ClusterNode> nodes) {
+        @Override public ClusterGroup forNodes(Collection<? extends ClusterNode> nodes) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forNode(ClusterNode node, ClusterNode... nodes) {
+        @Override public ClusterGroup forNode(ClusterNode node, ClusterNode... nodes) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forOthers(ClusterNode node, ClusterNode... nodes) {
+        @Override public ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forOthers(GridProjection prj) {
+        @Override public ClusterGroup forOthers(ClusterGroup prj) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forNodeIds(Collection<UUID> ids) {
+        @Override public ClusterGroup forNodeIds(Collection<UUID> ids) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forNodeId(UUID id, UUID... ids) {
+        @Override public ClusterGroup forNodeId(UUID id, UUID... ids) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forPredicate(GridPredicate<ClusterNode> p) {
+        @Override public ClusterGroup forPredicate(GridPredicate<ClusterNode> p) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forAttribute(String name, @Nullable String val) {
+        @Override public ClusterGroup forAttribute(String name, @Nullable String val) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forCache(String cacheName, @Nullable String... cacheNames) {
+        @Override public ClusterGroup forCache(String cacheName, @Nullable String... cacheNames) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forStreamer(String streamerName, @Nullable String... streamerNames) {
+        @Override public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forRemotes() {
+        @Override public ClusterGroup forRemotes() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forHost(ClusterNode node) {
+        @Override public ClusterGroup forHost(ClusterNode node) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forDaemons() {
+        @Override public ClusterGroup forDaemons() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forRandom() {
+        @Override public ClusterGroup forRandom() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forOldest() {
+        @Override public ClusterGroup forOldest() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forYoungest() {
+        @Override public ClusterGroup forYoungest() {
             return null;
         }
 

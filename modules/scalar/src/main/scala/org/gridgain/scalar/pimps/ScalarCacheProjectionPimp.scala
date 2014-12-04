@@ -11,6 +11,8 @@
 
 package org.gridgain.scalar.pimps
 
+import org.apache.ignite.cluster.ClusterGroup
+
 import collection._
 import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
@@ -567,7 +569,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
+    def scan(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
         assert(cls != null)
         assert(kvp != null)
 
@@ -594,7 +596,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(@Nullable grid: GridProjection, kvp: KvPred)
+    def scan(@Nullable grid: ClusterGroup, kvp: KvPred)
         (implicit m: Manifest[V]): Iterable[(K, V)] = {
         assert(kvp != null)
 
@@ -663,7 +665,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sql(@Nullable grid: GridProjection, cls: Class[_ <: V], clause: String, args: Any*): Iterable[(K, V)] = {
+    def sql(@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String, args: Any*): Iterable[(K, V)] = {
         assert(cls != null)
         assert(clause != null)
         assert(args != null)
@@ -692,7 +694,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param clause Query SQL clause. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def sql(@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
+    def sql(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
         assert(cls != null)
         assert(clause != null)
 
@@ -718,7 +720,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sql(@Nullable grid: GridProjection, clause: String, args: Any*)
+    def sql(@Nullable grid: ClusterGroup, clause: String, args: Any*)
         (implicit m: Manifest[V]): Iterable[(K, V)] = {
         assert(clause != null)
         assert(args != null)
@@ -746,7 +748,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(cls != null)
         assert(clause != null)
 
-        sql(null.asInstanceOf[GridProjection], cls, clause, args: _*)
+        sql(null.asInstanceOf[ClusterGroup], cls, clause, args: _*)
     }
 
     /**
@@ -789,7 +791,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param clause Query text clause. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def text(@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
+    def text(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
         assert(cls != null)
         assert(clause != null)
 
@@ -816,7 +818,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param clause Query text clause. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def text(@Nullable grid: GridProjection, clause: String)(implicit m: Manifest[V]): Iterable[(K, V)] = {
+    def text(@Nullable grid: ClusterGroup, clause: String)(implicit m: Manifest[V]): Iterable[(K, V)] = {
         assert(clause != null)
 
         text(grid, m.erasure.asInstanceOf[Class[V]], clause)
@@ -884,7 +886,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def scanTransform[T](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred, trans: V => T):
+    def scanTransform[T](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred, trans: V => T):
         Iterable[(K, T)] = {
         assert(cls != null)
         assert(kvp != null)
@@ -913,7 +915,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def scanTransform[T](@Nullable grid: GridProjection, kvp: KvPred, trans: V => T)(implicit m: Manifest[V]):
+    def scanTransform[T](@Nullable grid: ClusterGroup, kvp: KvPred, trans: V => T)(implicit m: Manifest[V]):
         Iterable[(K, T)] = {
         assert(kvp != null)
         assert(trans != null)
@@ -989,7 +991,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sqlTransform[T](@Nullable grid: GridProjection, cls: Class[_ <: V], clause: String,
+    def sqlTransform[T](@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String,
         trans: V => T, args: Any*): Iterable[(K, T)] = {
         assert(cls != null)
         assert(clause != null)
@@ -1020,7 +1022,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def sqlTransform[T](@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String,
+    def sqlTransform[T](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
         trans: V => T): Iterable[(K, T)] = {
         assert(cls != null)
         assert(clause != null)
@@ -1049,7 +1051,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sqlTransform[T](@Nullable grid: GridProjection, clause: String, trans: V => T, args: Any*)
+    def sqlTransform[T](@Nullable grid: ClusterGroup, clause: String, trans: V => T, args: Any*)
         (implicit m: Manifest[V]): Iterable[(K, T)] = {
         assert(clause != null)
         assert(trans != null)
@@ -1129,7 +1131,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def textTransform[T](@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String,
+    def textTransform[T](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
         trans: V => T): Iterable[(K, T)] = {
         assert(cls != null)
         assert(clause != null)
@@ -1159,7 +1161,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def textTransform[T](@Nullable grid: GridProjection, clause: String, trans: V => T)
+    def textTransform[T](@Nullable grid: ClusterGroup, clause: String, trans: V => T)
         (implicit m: Manifest[V]): Iterable[(K, T)] = {
         assert(clause != null)
         assert(trans != null)
@@ -1235,7 +1237,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def scanReduce[R1, R2](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred,
+    def scanReduce[R1, R2](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred,
         rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
         assert(cls != null)
         assert(kvp != null)
@@ -1267,7 +1269,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def scanReduce[R1, R2](@Nullable grid: GridProjection, kvp: KvPred,
+    def scanReduce[R1, R2](@Nullable grid: ClusterGroup, kvp: KvPred,
         rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
         assert(kvp != null)
         assert(rmtRdc != null)
@@ -1350,7 +1352,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Reduced value.
      */
-    def sqlReduce[R1, R2](@Nullable grid: GridProjection, cls: Class[_ <: V], clause: String,
+    def sqlReduce[R1, R2](@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String,
         rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2, args: Any*): R2 = {
         assert(cls != null)
         assert(clause != null)
@@ -1383,7 +1385,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def sqlReduce[R1, R2](@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String,
+    def sqlReduce[R1, R2](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
         rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
         assert(cls != null)
         assert(clause != null)
@@ -1414,7 +1416,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Reduced value.
      */
-    def sqlReduce[R1, R2](@Nullable grid: GridProjection, clause: String, rmtRdc: Iterable[(K, V)] => R1,
+    def sqlReduce[R1, R2](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R1,
         locRdc: Iterable[R1] => R2, args: Any*)(implicit m: Manifest[V]): R2 = {
         assert(clause != null)
         assert(rmtRdc != null)
@@ -1501,7 +1503,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def textReduce[R1, R2](@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String,
+    def textReduce[R1, R2](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
         rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
         assert(cls != null)
         assert(clause != null)
@@ -1533,7 +1535,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def textReduce[R1, R2](@Nullable grid: GridProjection, clause: String, rmtRdc: Iterable[(K, V)] => R1,
+    def textReduce[R1, R2](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R1,
         locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
         assert(clause != null)
         assert(rmtRdc != null)
@@ -1614,7 +1616,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def scanReduceRemote[R](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred,
+    def scanReduceRemote[R](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred,
         rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
         assert(cls != null)
         assert(kvp != null)
@@ -1643,7 +1645,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def scanReduceRemote[R](@Nullable grid: GridProjection, kvp: KvPred,
+    def scanReduceRemote[R](@Nullable grid: ClusterGroup, kvp: KvPred,
         rmtRdc: Iterable[(K, V)] => R)(implicit m: Manifest[V]): Iterable[R] = {
         assert(kvp != null)
         assert(rmtRdc != null)
@@ -1718,7 +1720,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
      */
-    def sqlReduceRemote[R](@Nullable grid: GridProjection, cls: Class[_ <: V], clause: String,
+    def sqlReduceRemote[R](@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String,
         rmtRdc: Iterable[(K, V)] => R, args: Any*): Iterable[R] = {
         assert(cls != null)
         assert(clause != null)
@@ -1749,7 +1751,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def sqlReduceRemote[R](@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String,
+    def sqlReduceRemote[R](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
         rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
         assert(cls != null)
         assert(clause != null)
@@ -1778,7 +1780,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
      */
-    def sqlReduceRemote[R](@Nullable grid: GridProjection, clause: String, rmtRdc: Iterable[(K, V)] => R,
+    def sqlReduceRemote[R](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R,
         args: Any*)(implicit m: Manifest[V]): Iterable[R] = {
         assert(clause != null)
         assert(rmtRdc != null)
@@ -1859,7 +1861,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def textReduceRemote[R](@Nullable grid: GridProjection = null, cls: Class[_ <: V], clause: String,
+    def textReduceRemote[R](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
         rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
         assert(cls != null)
         assert(clause != null)
@@ -1889,7 +1891,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def textReduceRemote[R](@Nullable grid: GridProjection, clause: String, rmtRdc: Iterable[(K, V)] => R)
+    def textReduceRemote[R](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R)
         (implicit m: Manifest[V]): Iterable[R] = {
         assert(clause != null)
         assert(rmtRdc != null)
@@ -1963,7 +1965,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Sequence of sequences of field values.
      */
-    def sqlFields(@Nullable grid: GridProjection, clause: String, args: Any*): IndexedSeq[IndexedSeq[Any]] = {
+    def sqlFields(@Nullable grid: ClusterGroup, clause: String, args: Any*): IndexedSeq[IndexedSeq[Any]] = {
         assert(clause != null)
         assert(args != null)
 
@@ -1988,7 +1990,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param clause Query SQL clause. See `GridCacheQuery` for more details.
      * @return Sequence of sequences of field values.
      */
-    def sqlFields(@Nullable grid: GridProjection = null, clause: String): IndexedSeq[IndexedSeq[Any]] = {
+    def sqlFields(@Nullable grid: ClusterGroup = null, clause: String): IndexedSeq[IndexedSeq[Any]] = {
         assert(clause != null)
 
         sqlFields(grid, clause, Nil: _*)

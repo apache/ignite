@@ -10,6 +10,7 @@
 package org.gridgain.examples;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 
 import java.util.concurrent.*;
@@ -54,7 +55,7 @@ public final class MessagingExample {
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            GridProjection rmtPrj = g.forRemotes();
+            ClusterGroup rmtPrj = g.forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
@@ -94,7 +95,7 @@ public final class MessagingExample {
      * @param prj Grid projection.
      * @throws GridException If failed.
      */
-    private static void startListening(GridProjection prj) throws GridException {
+    private static void startListening(ClusterGroup prj) throws GridException {
         // Add ordered message listener.
         prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
@@ -136,7 +137,7 @@ public final class MessagingExample {
      * @param unorderedLatch Latch for unordered messages acks.
      */
     private static void localListen(
-        GridProjection prj,
+        ClusterGroup prj,
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {

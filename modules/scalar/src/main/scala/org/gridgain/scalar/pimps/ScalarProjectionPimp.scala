@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.pimps
 
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{ClusterGroup, ClusterNode}
 import org.gridgain.grid._
 import org.gridgain.grid.lang._
 import org.jetbrains.annotations._
@@ -25,11 +25,11 @@ object ScalarProjectionPimp {
      *
      * @param impl Java-side implementation.
      */
-    def apply(impl: GridProjection) = {
+    def apply(impl: ClusterGroup) = {
         if (impl == null)
             throw new NullPointerException("impl")
 
-        val pimp = new ScalarProjectionPimp[GridProjection]
+        val pimp = new ScalarProjectionPimp[ClusterGroup]
 
         pimp.impl = impl
 
@@ -56,7 +56,7 @@ object ScalarProjectionPimp {
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
  */
-class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Iterable[ClusterNode]
+class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterable[ClusterNode]
     with ScalarTaskThreadContext[A] {
     /** */
     lazy val value: A = impl
@@ -105,7 +105,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @param p Optional predicate.
      * @return If `p` not `null` return projection for this predicate otherwise return pimped projection.
      */
-    private def forPredicate(@Nullable p: NF): GridProjection =
+    private def forPredicate(@Nullable p: NF): ClusterGroup =
         if (p != null) value.forPredicate(p) else value
 
     /**

@@ -9,6 +9,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -40,10 +41,10 @@ import java.util.concurrent.*;
  * can have multiple instances of {@code Grid} running in the same VM by giving
  * each instance a different name.
  * <p>
- * Note that {@code Grid} extends {@link org.gridgain.grid.GridProjection} which means that it provides grid projection
+ * Note that {@code Grid} extends {@link org.apache.ignite.cluster.ClusterGroup} which means that it provides grid projection
  * functionality over the whole grid (instead os a subgroup of nodes).
  * <p>
- * In addition to {@link org.gridgain.grid.GridProjection} functionality, from here you can get the following:
+ * In addition to {@link org.apache.ignite.cluster.ClusterGroup} functionality, from here you can get the following:
  * <ul>
  * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link GridDataLoader} - functionality for loading data large amounts of data into cache.</li>
@@ -52,9 +53,9 @@ import java.util.concurrent.*;
  * <li>{@link GridStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
- * <li>{@link GridCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.gridgain.grid.GridProjection}).</li>
- * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.gridgain.grid.GridProjection}).</li>
- * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.gridgain.grid.GridProjection}).</li>
+ * <li>{@link GridCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
@@ -114,7 +115,7 @@ public interface Ignite extends AutoCloseable {
      * @param prj Projection.
      * @return Compute instance over given projection.
      */
-    public GridCompute compute(GridProjection prj);
+    public GridCompute compute(ClusterGroup prj);
 
     /**
      * Gets {@code messaging} functionality over this grid projection. All operations
@@ -129,7 +130,7 @@ public interface Ignite extends AutoCloseable {
      * @param prj Projection.
      * @return Messaging instance over given projection.
      */
-    public GridMessaging message(GridProjection prj);
+    public GridMessaging message(ClusterGroup prj);
 
     /**
      * Gets {@code events} functionality over this grid projection. All operations
@@ -144,7 +145,7 @@ public interface Ignite extends AutoCloseable {
      * @param prj Projection.
      * @return Events instance over given projection.
      */
-    public GridEvents events(GridProjection prj);
+    public GridEvents events(ClusterGroup prj);
 
     /**
      * Gets {@code services} functionality over this grid projection. All operations
@@ -159,7 +160,7 @@ public interface Ignite extends AutoCloseable {
      * @param prj Projection.
      * @return {@code Services} functionality over given projection.
      */
-    public GridServices services(GridProjection prj);
+    public GridServices services(ClusterGroup prj);
 
     /**
      * Creates new {@link ExecutorService} which will execute all submitted
@@ -176,7 +177,7 @@ public interface Ignite extends AutoCloseable {
      * @param prj Projection.
      * @return {@link ExecutorService} which will execute jobs on nodes in given projection.
      */
-    public ExecutorService executorService(GridProjection prj);
+    public ExecutorService executorService(ClusterGroup prj);
 
     /**
      * Gets information about product as well as license management capabilities.

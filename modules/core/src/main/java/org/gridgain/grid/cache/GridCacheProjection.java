@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
@@ -92,7 +93,7 @@ import java.util.concurrent.*;
  *  with distributed cache queries.
  * </li>
  * <li>
- *  Various {@code 'gridProjection(..)'} methods which provide {@link GridProjection} only
+ *  Various {@code 'gridProjection(..)'} methods which provide {@link org.apache.ignite.cluster.ClusterGroup} only
  *  for nodes on which given keys reside. All {@code 'gridProjection(..)'} methods are not
  *  transactional and will not enlist keys into ongoing transaction.
  * </li>
@@ -184,7 +185,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @return Projection instance.
      */
-    public GridProjection gridProjection();
+    public ClusterGroup gridProjection();
 
     /**
      * Gets base cache for this projection.
