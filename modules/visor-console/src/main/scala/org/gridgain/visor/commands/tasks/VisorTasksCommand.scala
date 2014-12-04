@@ -11,15 +11,16 @@
 
 package org.gridgain.visor.commands.tasks
 
-import java.util.UUID
-
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.visor.cmd.dto.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import org.gridgain.grid.kernal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
+
+import java.util.UUID
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -614,8 +615,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val evts = grid.compute(prj).execute(classOf[VisorEventsCollectTask],
-                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, taskName, null)))
+                val evts = grid.compute(prj).execute(classOf[VisorNodeEventsCollectorTask],
+                    toTaskArgument(prj.nodes.map(_.id()), VisorNodeEventsCollectorTaskArg.createTasksArg(p, taskName, null)))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -822,8 +823,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val evts = grid.compute(prj).execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(null, taskName, null)))
+                val evts = grid.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(null, taskName, null)))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -999,8 +1000,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val evts = grid.compute(prj).execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(null, null, uuid)))
+                val evts = grid.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(null, null, uuid)))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -1117,8 +1118,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val evts = grid.compute(prj).execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(f, null, null)))
+                val evts = grid.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
 
                 val eLst = mkData(evts)._2
 
@@ -1229,8 +1230,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val evts = grid.compute(prj).execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(f, null, null)))
+                val evts = grid.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
 
                 val eLst = mkData(evts)._2
 

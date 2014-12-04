@@ -11,18 +11,20 @@ package org.gridgain.grid.spi.discovery.tcp.messages;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 
 import java.io.*;
 import java.util.*;
+
+import static org.gridgain.grid.spi.discovery.GridDiscoveryMetricsHelper.*;
 
 /**
  * Heartbeat message.
  * <p>
  * It is sent by coordinator node across the ring once a configured period.
- * In case if topology does not use metrics store, message makes two passes.
+ * Message makes two passes:
  * <ol>
  *      <li>During first pass, all nodes add their metrics to the message and
  *          update local metrics with metrics currently present in the message.</li>
@@ -31,17 +33,18 @@ import java.util.*;
  * </ol>
  * When message reaches coordinator second time it is discarded (it finishes the
  * second pass).
- * <p>
- * If topology uses metrics store then message makes only one pass and metrics map
- * is always empty. Nodes exchange their metrics using metrics store.
  */
+@GridTcpDiscoveryRedirectToClient
 public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Map to store nodes metrics. */
     @GridToStringExclude
-    private Map<UUID, byte[]> metrics;
+    private Map<UUID, MetricsSet> metrics;
+
+    /** Client node IDs. */
+    private Collection<UUID> clientNodeIds;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -58,7 +61,8 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     public GridTcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
         super(creatorNodeId);
 
-        metrics = new HashMap<>(1, 1.0f);
+        metrics = U.newHashMap(1);
+        clientNodeIds = new HashSet<>();
     }
 
     /**
@@ -70,12 +74,25 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     public void setMetrics(UUID nodeId, GridNodeMetrics metrics) {
         assert nodeId != null;
         assert metrics != null;
+        assert !this.metrics.containsKey(nodeId);
 
-        byte[] buf = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
+        this.metrics.put(nodeId, new MetricsSet(metrics));
+    }
 
-        GridDiscoveryMetricsHelper.serialize(buf, 0, metrics);
+    /**
+     * Sets metrics for a client node.
+     *
+     * @param nodeId Server node ID.
+     * @param clientNodeId Client node ID.
+     * @param metrics Node metrics.
+     */
+    public void setClientMetrics(UUID nodeId, UUID clientNodeId, GridNodeMetrics metrics) {
+        assert nodeId != null;
+        assert clientNodeId != null;
+        assert metrics != null;
+        assert this.metrics.containsKey(nodeId);
 
-        this.metrics.put(nodeId, buf);
+        this.metrics.get(nodeId).addClientMetrics(clientNodeId, metrics);
     }
 
     /**
@@ -94,12 +111,8 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      *
      * @return Metrics map.
      */
-    public Map<UUID, GridNodeMetrics> metrics() {
-        return F.viewReadOnly(metrics, new C1<byte[], GridNodeMetrics>() {
-            @Override public GridNodeMetrics apply(byte[] metricsBytes) {
-                return GridDiscoveryMetricsHelper.deserialize(metricsBytes, 0);
-            }
-        });
+    public Map<UUID, MetricsSet> metrics() {
+        return metrics;
     }
 
     /**
@@ -118,6 +131,24 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         return metrics.get(nodeId) != null;
     }
 
+    /**
+     * Gets client node IDs for  particular node.
+     *
+     * @return Client node IDs.
+     */
+    public Collection<UUID> clientNodeIds() {
+        return clientNodeIds;
+    }
+
+    /**
+     * Adds client node ID.
+     *
+     * @param clientNodeId Client node ID.
+     */
+    public void addClientNodeId(UUID clientNodeId) {
+        clientNodeIds.add(clientNodeId);
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
@@ -125,28 +156,153 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         out.writeInt(metrics.size());
 
         if (!metrics.isEmpty()) {
-            for (Map.Entry<UUID, byte[]> e : metrics.entrySet()) {
+            for (Map.Entry<UUID, MetricsSet> e : metrics.entrySet()) {
                 U.writeUuid(out, e.getKey());
-
-                U.writeByteArray(out, e.getValue());
+                out.writeObject(e.getValue());
             }
         }
+
+        U.writeCollection(out, clientNodeIds);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        int size = in.readInt();
+        int metricsSize = in.readInt();
 
-        metrics = new HashMap<>(size + 1, 1.0f);
+        metrics = U.newHashMap(metricsSize);
 
-        for (int i = 0; i < size; i++)
-            metrics.put(U.readUuid(in), U.readByteArray(in));
+        for (int i = 0; i < metricsSize; i++)
+            metrics.put(U.readUuid(in), (MetricsSet)in.readObject());
+
+        clientNodeIds = U.readCollection(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTcpDiscoveryHeartbeatMessage.class, this, "super", super.toString());
+    }
+
+    /**
+     * @param metrics Metrics.
+     * @return Serialized metrics.
+     */
+    private static byte[] serializeMetrics(GridNodeMetrics metrics) {
+        assert metrics != null;
+
+        byte[] buf = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
+
+        serialize(buf, 0, metrics);
+
+        return buf;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param metrics Metrics.
+     * @return Serialized metrics.
+     */
+    private static byte[] serializeMetrics(UUID nodeId, GridNodeMetrics metrics) {
+        assert nodeId != null;
+        assert metrics != null;
+
+        byte[] buf = new byte[16 + GridDiscoveryMetricsHelper.METRICS_SIZE];
+
+        U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
+        U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
+
+        serialize(buf, 16, metrics);
+
+        return buf;
+    }
+
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class MetricsSet implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Metrics. */
+        private byte[] metrics;
+
+        /** Client metrics. */
+        private Collection<byte[]> clientMetrics;
+
+        /**
+         */
+        public MetricsSet() {
+            // No-op.
+        }
+
+        /**
+         * @param metrics Metrics.
+         */
+        public MetricsSet(GridNodeMetrics metrics) {
+            assert metrics != null;
+
+            this.metrics = serializeMetrics(metrics);
+        }
+
+        /**
+         * @return Deserialized metrics.
+         */
+        public GridNodeMetrics metrics() {
+            return deserialize(metrics, 0);
+        }
+
+        /**
+         * @return Client metrics.
+         */
+        public Collection<T2<UUID, GridNodeMetrics>> clientMetrics() {
+            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, GridNodeMetrics>>() {
+                @Override public T2<UUID, GridNodeMetrics> apply(byte[] bytes) {
+                    UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
+
+                    return new T2<>(nodeId, deserialize(bytes, 16));
+                }
+            });
+        }
+
+        /**
+         * @param nodeId Client node ID.
+         * @param metrics Client metrics.
+         */
+        private void addClientMetrics(UUID nodeId, GridNodeMetrics metrics) {
+            assert nodeId != null;
+            assert metrics != null;
+
+            if (clientMetrics == null)
+                clientMetrics = new ArrayList<>();
+
+            clientMetrics.add(serializeMetrics(nodeId, metrics));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeByteArray(out, metrics);
+
+            out.writeInt(clientMetrics != null ? clientMetrics.size() : -1);
+
+            if (clientMetrics != null) {
+                for (byte[] arr : clientMetrics)
+                    U.writeByteArray(out, arr);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            metrics = U.readByteArray(in);
+
+            int clientMetricsSize = in.readInt();
+
+            if (clientMetricsSize >= 0) {
+                clientMetrics = new ArrayList<>(clientMetricsSize);
+
+                for (int i = 0; i < clientMetricsSize; i++)
+                    clientMetrics.add(U.readByteArray(in));
+            }
+        }
     }
 }

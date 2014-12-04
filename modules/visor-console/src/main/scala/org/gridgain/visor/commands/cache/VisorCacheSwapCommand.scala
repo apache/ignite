@@ -10,11 +10,12 @@
  */
 package org.gridgain.visor.commands.cache
 
-import java.util.{Collections, HashSet => JavaHashSet}
+import org.gridgain.grid.kernal.visor.cache.VisorCacheSwapBackupsTask
+import org.gridgain.grid.kernal.visor.util.VisorTaskUtils._
+
+import java.util.Collections
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCachesSwapBackupsTask
 import org.gridgain.visor.commands.VisorTextTable
 import org.gridgain.visor.visor._
 
@@ -115,7 +116,7 @@ class VisorCacheSwapCommand {
             val r = grid.compute(grid.forNode(node))
                 .withName("visor-cswap-task")
                 .withNoFailover()
-                .execute(classOf[VisorCachesSwapBackupsTask], toTaskArgument(node.id(), cacheSet))
+                .execute(classOf[VisorCacheSwapBackupsTask], toTaskArgument(node.id(), cacheSet))
                 .get(cacheName)
 
             t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())

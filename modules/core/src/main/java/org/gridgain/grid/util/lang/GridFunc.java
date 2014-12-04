@@ -5908,29 +5908,16 @@ public class GridFunc {
     }
 
     /**
-     * Special version of {@code transform} method that works on two types that are in child-parent
-     * relationship. It allows for optimization when the input collection is implementation of {@link List}
-     * interfaces. In such case no new collection will be created and transformation will happen in place.
+     * Upcasts collection type.
      *
-     * @param c Initial collection to transform.
-     * @param f Closure to use for transformation.
-     * @param <X> Type of the free variable for the closure and type of the collection elements.
-     * @param <Y> Type of the closure's return value.
-     * @return Transformed collection. In case of input collection implementing {@link List} interface
-     *      transformation done in place and original collection is returned.
+     * @param c Initial collection.
+     * @return Resulting collection.
      */
-    @SuppressWarnings({"unchecked"})
-    public static <X, Y extends X> Collection<Y> upcast(Collection<? extends X> c, GridClosure<? super X, Y> f) {
-        A.notNull(c, "c", f, "f");
+    @SuppressWarnings("unchecked")
+    public static <T extends R, R> Collection<R> upcast(Collection<T> c) {
+        A.notNull(c, "c");
 
-        if (c instanceof List) {
-            for (ListIterator<X> iter = ((List<X>)c).listIterator(); iter.hasNext();)
-                iter.set(f.apply(iter.next()));
-
-            return (Collection<Y>)c;
-        }
-        else
-            return viewReadOnly(c, f);
+        return viewReadOnly(c, IDENTITY);
     }
 
     /**

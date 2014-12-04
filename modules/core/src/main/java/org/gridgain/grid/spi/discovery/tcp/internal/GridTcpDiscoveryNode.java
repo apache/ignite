@@ -12,16 +12,13 @@ package org.gridgain.grid.spi.discovery.tcp.internal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -74,7 +71,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     private volatile long order;
 
     /** Node order in the topology (internal). */
-    @GridToStringExclude
     private volatile long intOrder;
 
     /** The most recent time when heartbeat message was received from the node. */
@@ -85,14 +81,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     @GridToStringExclude
     private GridDiscoveryMetricsProvider metricsProvider;
 
-    /** Metrics store (transient). */
-    @GridToStringExclude
-    private GridTcpDiscoveryMetricsStore metricsStore;
-
-    /** Grid logger (transient). */
-    @GridToStringExclude
-    private GridLogger log;
-
     /** Visible flag (transient). */
     @GridToStringExclude
     private boolean visible;
@@ -102,6 +90,14 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
     /** Version. */
     private GridProductVersion ver;
+
+    /** Alive check (used by clients). */
+    @GridToStringExclude
+    private transient int aliveCheck;
+
+    /** Client router node ID. */
+    @GridToStringExclude
+    private UUID clientRouterNodeId;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -138,26 +134,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
         metrics = metricsProvider.getMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
-    }
-
-    /**
-     * Sets metrics store.
-     *
-     * @param metricsStore Metrics store.
-     */
-    public void metricsStore(GridTcpDiscoveryMetricsStore metricsStore) {
-        assert metricsStore != null;
-
-        this.metricsStore = metricsStore;
-    }
-
-    /**
-     * Sets log.
-     *
-     * @param log Grid logger.
-     */
-    public void logger(GridLogger log) {
-        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -212,16 +188,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     @Override public GridNodeMetrics metrics() {
         if (metricsProvider != null)
             metrics = metricsProvider.getMetrics();
-        else if (metricsStore != null)
-            try {
-                GridNodeMetrics metrics = metricsStore.metrics(Collections.singletonList(id)).get(id);
-
-                if (metrics != null)
-                    this.metrics = metrics;
-            }
-            catch (GridSpiException e) {
-                LT.error(log, e, "Failed to get metrics from metrics store for node: " + this);
-            }
 
         return metrics;
     }
@@ -248,7 +214,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      * @param intOrder Internal order of the node.
      */
     public void internalOrder(long intOrder) {
-        assert intOrder >= 0;
+        assert intOrder > 0;
 
         this.intOrder = intOrder;
     }
@@ -264,7 +230,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      * @param order Order of the node.
      */
     public void order(long order) {
-        assert order > 0 : "Order is invalid: " + this;
+        assert order >= 0 : "Order is invalid: " + this;
 
         this.order = order;
     }
@@ -362,6 +328,44 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         this.visible = visible;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isClient() {
+        return clientRouterNodeId != null;
+    }
+
+    /**
+     * Decrements alive check value and returns new one.
+     *
+     * @return Alive check value.
+     */
+    public int decrementAliveCheck() {
+        assert isClient();
+
+        return --aliveCheck;
+    }
+
+    /**
+     * @param aliveCheck Alive check value.
+     */
+    public void aliveCheck(int aliveCheck) {
+        assert isClient();
+
+        this.aliveCheck = aliveCheck;
+    }
+
+    /**
+     * @return Client router node ID.
+     */
+    public UUID clientRouterNodeId() {
+        return clientRouterNodeId;
+    }
+
+    /**
+     * @param clientRouterNodeId Client router node ID.
+     */
+    public void clientRouterNodeId(UUID clientRouterNodeId) {
+        this.clientRouterNodeId = clientRouterNodeId;
+    }
 
     /** {@inheritDoc} */
     @Override public int compareTo(@Nullable GridTcpDiscoveryNode node) {
@@ -396,6 +400,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         out.writeLong(order);
         out.writeLong(intOrder);
         out.writeObject(ver);
+        U.writeUuid(out, clientRouterNodeId);
     }
 
     /** {@inheritDoc} */
@@ -419,6 +424,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         order = in.readLong();
         intOrder = in.readLong();
         ver = (GridProductVersion)in.readObject();
+        clientRouterNodeId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */
@@ -433,6 +439,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNode.class, this);
+        return S.toString(GridTcpDiscoveryNode.class, this, "isClient", isClient());
     }
 }

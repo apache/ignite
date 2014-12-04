@@ -713,6 +713,30 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param cancel Cancel flag.
+     */
+    protected void stopAllClients(boolean cancel) {
+        List<Grid> grids = G.allGrids();
+
+        for (Grid g : grids) {
+            if (g.cluster().localNode().isClient())
+                stopGrid(g.name(), cancel);
+        }
+    }
+
+    /**
+     * @param cancel Cancel flag.
+     */
+    protected void stopAllServers(boolean cancel) {
+        List<Grid> grids = G.allGrids();
+
+        for (Grid g : grids) {
+            if (!g.cluster().localNode().isClient())
+                stopGrid(g.name(), cancel);
+        }
+    }
+
+    /**
      * @param grid Grid
      * @param cnt Count
      * @throws GridException If failed.
@@ -745,6 +769,16 @@ public abstract class GridAbstractTest extends TestCase {
 
         for (Grid grid : grids)
             waitForRemoteNodes(grid, grids.length - 1);
+    }
+
+    /**
+     * Gets grid for given name.
+     *
+     * @param name Name.
+     * @return Grid instance.
+     */
+    protected GridEx grid(String name) {
+        return (GridEx)G.grid(name);
     }
 
     /**

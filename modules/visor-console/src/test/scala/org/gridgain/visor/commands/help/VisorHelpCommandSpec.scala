@@ -31,13 +31,11 @@ class VisorHelpCommandSpec extends FlatSpec with Matchers {
     commands.disco.VisorDiscoveryCommand
     commands.cache.VisorCacheCommand
     commands.start.VisorStartCommand
-    commands.license.VisorLicenseCommand
     commands.deploy.VisorDeployCommand
     commands.start.VisorStartCommand
 
     "General help" should "properly execute via alias" in { visor.help() }
     "General help" should "properly execute w/o alias" in { visor.help() }
-    "Help for 'license' command" should "properly execute" in { visor.help("license") }
     "Help for 'start' command" should "properly execute" in { visor.help("start") }
     "Help for 'deploy' command" should "properly execute" in { visor.help("deploy") }
     "Help for 'events' command" should "properly execute" in { visor.help("events") }

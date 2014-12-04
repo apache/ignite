@@ -13,9 +13,9 @@ package org.gridgain.visor.commands.disco
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.visor.cmd.dto.event.VisorGridDiscoveryEvent
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import org.gridgain.grid.kernal.visor.event.VisorGridDiscoveryEvent
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
+import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.lang.{GridFunc => F}
 
@@ -211,8 +211,8 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        var evts = grid.compute(grid.forNode(node)).execute(classOf[VisorEventsCollectTask],
-            toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).toSeq
+        var evts = grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
+            toTaskArgument(node.id(), VisorNodeEventsCollectorTaskArg.createEventsArg(EVTS_DISCOVERY, tmFrame))).toSeq
 
         val nodeStartTime = node.metrics().getStartTime
 

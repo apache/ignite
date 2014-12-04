@@ -11,20 +11,21 @@
 
 package org.gridgain.visor.commands.cache
 
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.visor.cache.{VisorCacheMetricsCollectorTask, VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfiguration}
+import org.gridgain.grid.kernal.visor.node.{VisorNodeConfigurationCollectorTask, VisorGridConfiguration}
+import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.util.typedef._
+
+import org.jetbrains.annotations._
+
 import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
 
-import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.dto.{VisorGridConfig, VisorCacheAggregatedMetrics, VisorCacheMetrics}
-import org.gridgain.grid.kernal.visor.cmd.dto.cache.VisorCacheConfig
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorConfigCollectorTask, VisorCacheCollectMetricsTask}
-import org.gridgain.grid.lang.GridBiTuple
-import org.gridgain.grid.util.typedef._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
-import org.jetbrains.annotations._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -467,7 +468,7 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
-            grid.compute(prj).execute(classOf[VisorCacheCollectMetricsTask], toTaskArgument(nids,
+            grid.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
                 new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
@@ -481,10 +482,10 @@ class VisorCacheCommand {
      * @param node Specified node.
      * @return Grid configuration for specified node.
      */
-    private def config(node: GridNode): VisorGridConfig = {
+    private def config(node: GridNode): VisorGridConfiguration = {
         try
             grid.compute(grid.forNode(node)).withNoFailover()
-                .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
+                .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
         catch {
             case e: GridException =>
                 scold(e.getMessage)
@@ -512,7 +513,7 @@ class VisorCacheCommand {
      * @param reverse Whether to reverse sorting or not.
      * @return Sorted data.
      */
-    private def sortData(data: Iterable[VisorCacheMetrics], arg: String, reverse: Boolean): List[VisorCacheMetrics] = {
+    private def sortData(data: Iterable[VisorCacheMetrics2], arg: String, reverse: Boolean): List[VisorCacheMetrics2] = {
         assert(data != null)
         assert(arg != null)
 
@@ -782,7 +783,16 @@ object VisorCacheCommand {
      * @param title Specified title for table.
      * @param cfg Config to show information.
      */
-    private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfig) {
+    private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
+        val affinityCfg = cfg.affinityConfiguration()
+        val nearCfg = cfg.nearConfiguration()
+        val preloadCfg = cfg.preloadConfiguration()
+        val evictCfg = cfg.evictConfiguration()
+        val defaultCfg = cfg.defaultConfiguration()
+        val dgcCfg = cfg.dgcConfiguration()
+        val storeCfg = cfg.storeConfiguration()
+        val writeBehind = cfg.writeBehind()
+
         val cacheT = VisorTextTable()
 
         cacheT #= ("Name", "Value")
@@ -791,8 +801,10 @@ object VisorCacheCommand {
         cacheT += ("Atomicity Mode", cfg.atomicityMode)
         cacheT += ("Atomic Sequence Reserve Size", cfg.atomicSequenceReserveSize)
         cacheT += ("Atomic Write Ordering Mode", cfg.atomicWriteOrderMode)
-        cacheT += ("Time To Live", cfg.defaultConfig().timeToLive())
+
+        cacheT += ("Time To Live", defaultCfg.timeToLive())
         cacheT += ("Time To Live Eager Flag", cfg.eagerTtl)
+
         cacheT += ("Refresh Ahead Ratio", cfg.refreshAheadRatio)
         cacheT += ("Write Synchronization Mode", cfg.writeSynchronizationMode)
         cacheT += ("Swap Enabled", cfg.swapEnabled())
@@ -800,55 +812,68 @@ object VisorCacheCommand {
         cacheT += ("Start Size", cfg.startSize())
         cacheT += ("Cloner", cfg.cloner())
         cacheT += ("Batch Update", cfg.batchUpdateOnCommit())
+
         cacheT += ("Transaction Manager Lookup", cfg.transactionManagerLookupClassName())
         cacheT += ("Transaction Serializable", cfg.txSerializableEnabled)
-        cacheT += ("Affinity Function", cfg.affinityConfig().function())
-        cacheT += ("Affinity Backups", cfg.affinityConfig().partitionedBackups())
-        cacheT += ("Affinity Partitions", cfg.affinityConfig().partitions())
-        cacheT += ("Affinity Default Replicas", cfg.affinityConfig().defaultReplicas())
-        cacheT += ("Affinity Exclude Neighbors", cfg.affinityConfig().excludeNeighbors())
-        cacheT += ("Affinity Mapper", cfg.affinityConfig().mapper())
-        cacheT += ("Preload Mode", cfg.preloadConfig().mode())
-        cacheT += ("Preload Batch Size", cfg.preloadConfig().batchSize())
-        cacheT += ("Preload Thread Pool size", cfg.preloadConfig().threadPoolSize())
-        cacheT += ("Preload Timeout", cfg.preloadConfig().timeout())
-        cacheT += ("Preloading Delay", cfg.preloadConfig().partitionedDelay())
-        cacheT += ("Time Between Preload Messages", cfg.preloadConfig.throttle())
-        cacheT += ("Eviction Policy Enabled", cfg.evictConfig().policy() != null)
-        cacheT += ("Eviction Policy", cfg.evictConfig().policy())
-        cacheT += ("Eviction Policy Max Size", cfg.evictConfig.policyMaxSize())
-        cacheT += ("Eviction Filter", cfg.evictConfig().filter())
-        cacheT += ("Eviction Key Buffer Size", cfg.evictConfig().synchronizedKeyBufferSize())
-        cacheT += ("Eviction Synchronized", cfg.evictConfig().evictSynchronized())
-        cacheT += ("Eviction Overflow Ratio", cfg.evictConfig().maxOverflowRatio())
-        cacheT += ("Synchronous Eviction Timeout", cfg.evictConfig().synchronizedTimeout())
-        cacheT += ("Synchronous Eviction Concurrency Level", cfg.evictConfig().synchronizedConcurrencyLevel())
+
+        cacheT += ("Affinity Function", affinityCfg.function())
+        cacheT += ("Affinity Backups", affinityCfg.partitionedBackups())
+        cacheT += ("Affinity Partitions", affinityCfg.partitions())
+        cacheT += ("Affinity Default Replicas", affinityCfg.defaultReplicas())
+        cacheT += ("Affinity Exclude Neighbors", affinityCfg.excludeNeighbors())
+        cacheT += ("Affinity Mapper", affinityCfg.mapper())
+
+        cacheT += ("Preload Mode", preloadCfg.mode())
+        cacheT += ("Preload Batch Size", preloadCfg.batchSize())
+        cacheT += ("Preload Thread Pool size", preloadCfg.threadPoolSize())
+        cacheT += ("Preload Timeout", preloadCfg.timeout())
+        cacheT += ("Preloading Delay", preloadCfg.partitionedDelay())
+        cacheT += ("Time Between Preload Messages", preloadCfg.throttle())
+
+        cacheT += ("Eviction Policy Enabled", evictCfg.policy() != null)
+        cacheT += ("Eviction Policy", evictCfg.policy())
+        cacheT += ("Eviction Policy Max Size", evictCfg.policyMaxSize())
+        cacheT += ("Eviction Filter", evictCfg.filter())
+        cacheT += ("Eviction Key Buffer Size", evictCfg.synchronizedKeyBufferSize())
+        cacheT += ("Eviction Synchronized", evictCfg.evictSynchronized())
+        cacheT += ("Eviction Overflow Ratio", evictCfg.maxOverflowRatio())
+        cacheT += ("Synchronous Eviction Timeout", evictCfg.synchronizedTimeout())
+        cacheT += ("Synchronous Eviction Concurrency Level", evictCfg.synchronizedConcurrencyLevel())
+
         cacheT += ("Distribution Mode", cfg.distributionMode())
-        cacheT += ("Near Start Size", cfg.nearConfig().nearStartSize())
-        cacheT += ("Near Eviction Policy", cfg.nearConfig().nearEvictPolicy())
-        cacheT += ("Near Eviction Enabled", cfg.nearConfig().nearEnabled())
-        cacheT += ("Near Eviction Synchronized", cfg.evictConfig().nearSynchronized())
-        cacheT += ("Default Isolation", cfg.defaultConfig().txIsolation())
-        cacheT += ("Default Concurrency", cfg.defaultConfig().txConcurrency())
-        cacheT += ("Default Transaction Timeout", cfg.defaultConfig().txTimeout())
-        cacheT += ("Default Lock Timeout", cfg.defaultConfig().txLockTimeout())
-        cacheT += ("Default Query Timeout", cfg.defaultConfig().queryTimeout())
+
+        cacheT += ("Near Start Size", nearCfg.nearStartSize())
+        cacheT += ("Near Eviction Policy", nearCfg.nearEvictPolicy())
+        cacheT += ("Near Eviction Enabled", nearCfg.nearEnabled())
+        cacheT += ("Near Eviction Synchronized", evictCfg.nearSynchronized())
+        cacheT += ("Near Eviction Policy Max Size", nearCfg.nearEvictMaxSize())
+
+        cacheT += ("Default Isolation", defaultCfg.txIsolation())
+        cacheT += ("Default Concurrency", defaultCfg.txConcurrency())
+        cacheT += ("Default Transaction Timeout", defaultCfg.txTimeout())
+        cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
+        cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
         cacheT += ("Query Indexing Enabled", cfg.queryIndexEnabled())
         cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
         cacheT += ("Indexing SPI Name", cfg.indexingSpiName())
         cacheT += ("Cache Interceptor", cfg.interceptor())
-        cacheT += ("DGC Frequency", cfg.dgcConfig().frequency())
-        cacheT += ("DGC Remove Locks Flag", cfg.dgcConfig().removedLocks())
-        cacheT += ("DGC Suspect Lock Timeout", cfg.dgcConfig().suspectLockTimeout())
-        cacheT += ("Store Enabled", cfg.storeConfig().enabled())
-        cacheT += ("Store", cfg.storeConfig().store())
-        cacheT += ("Store Values In Bytes", cfg.storeConfig().valueBytes())
+
+        cacheT += ("DGC Frequency", dgcCfg.frequency())
+        cacheT += ("DGC Remove Locks Flag", dgcCfg.removedLocks())
+        cacheT += ("DGC Suspect Lock Timeout", dgcCfg.suspectLockTimeout())
+
+        cacheT += ("Store Enabled", storeCfg.enabled())
+        cacheT += ("Store", storeCfg.store())
+        cacheT += ("Store Values In Bytes", storeCfg.valueBytes())
+
         cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory())
-        cacheT += ("Write-Behind Enabled", cfg.writeBehind().enabled())
-        cacheT += ("Write-Behind Flush Size", cfg.writeBehind().flushSize())
-        cacheT += ("Write-Behind Frequency", cfg.writeBehind().flushFrequency())
-        cacheT += ("Write-Behind Flush Threads Count", cfg.writeBehind().flushThreadCount())
-        cacheT += ("Write-Behind Batch Size", cfg.writeBehind().batchSize())
+
+        cacheT += ("Write-Behind Enabled", writeBehind.enabled())
+        cacheT += ("Write-Behind Flush Size", writeBehind.flushSize())
+        cacheT += ("Write-Behind Frequency", writeBehind.flushFrequency())
+        cacheT += ("Write-Behind Flush Threads Count", writeBehind.flushThreadCount())
+        cacheT += ("Write-Behind Batch Size", writeBehind.batchSize())
+
         cacheT += ("Pessimistic Tx Log Size", cfg.pessimisticTxLoggerSize())
         cacheT += ("Pessimistic Tx Log Linger", cfg.pessimisticTxLoggerLinger())
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())

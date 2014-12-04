@@ -12,7 +12,6 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.spi.checkpoint.s3.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.s3.*;
 
 /**
  * S3 integration tests.
@@ -34,9 +33,6 @@ public class GridS3TestSuite extends TestSuite {
 
         // S3 IP finder.
         suite.addTest(new TestSuite(GridTcpDiscoveryS3IpFinderSelfTest.class));
-
-        // S3 metrics store.
-        suite.addTest(new TestSuite(GridTcpDiscoveryS3MetricsStoreSelfTest.class));
 
         return suite;
     }

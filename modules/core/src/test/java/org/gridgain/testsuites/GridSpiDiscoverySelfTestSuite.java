@@ -16,9 +16,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
 
 /**
  * Test suite for all discovery spi implementations.
@@ -36,11 +33,6 @@ public class GridSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpDiscoverySharedFsIpFinderSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryJdbcIpFinderSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryMulticastIpFinderSelfTest.class));
-
-        suite.addTest(new TestSuite(GridTcpDiscoveryVmMetricsStoreSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoverySharedFsMetricsStoreSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoveryJdbcMetricsStoreSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoveryJdbcMetricsStoreInitSchemaSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpDiscoverySelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySpiSelfTest.class));

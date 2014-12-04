@@ -24,6 +24,7 @@ import java.util.*;
  * join process.
  */
 @GridTcpDiscoveryEnsureDelivery
+@GridTcpDiscoveryRedirectToClient
 public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -34,16 +35,15 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     /** Pending messages from previous node. */
     private Collection<GridTcpDiscoveryAbstractMessage> msgs;
 
+    /** Discarded message ID. */
+    private GridUuid discardMsgId;
+
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private Collection<GridTcpDiscoveryNode> top;
 
     /** Topology snapshots history. */
     private Map<Long, Collection<GridNode>> topHist;
-
-    /** If {@code true} messages will be processed, otherwise registered. */
-    @Deprecated
-    private boolean procPendingMsgs; // Not used any more.
 
     /** Discovery data from new node. */
     private List<Object> newNodeDiscoData;
@@ -102,12 +102,23 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     }
 
     /**
+     * Gets discarded message ID.
+     *
+     * @return Discarded message ID.
+     */
+    @Nullable public GridUuid discardedMessageId() {
+        return discardMsgId;
+    }
+
+    /**
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.
+     * @param discardMsgId Discarded message ID.
      */
-    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs) {
+    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardMsgId) {
         this.msgs = msgs;
+        this.discardMsgId = discardMsgId;
     }
 
     /**
@@ -191,12 +202,18 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
 
         out.writeObject(node);
         U.writeCollection(out, msgs);
+        U.writeGridUuid(out, discardMsgId);
         U.writeCollection(out, top);
         U.writeMap(out, topHist);
-        out.writeBoolean(procPendingMsgs);
-        out.writeObject(newNodeDiscoData);
-        U.writeCollection(out, oldNodesDiscoData);
         out.writeLong(gridStartTime);
+        U.writeCollection(out, newNodeDiscoData);
+
+        out.writeInt(oldNodesDiscoData != null ? oldNodesDiscoData.size() : -1);
+
+        if (oldNodesDiscoData != null) {
+            for (List<Object> list : oldNodesDiscoData)
+                U.writeCollection(out, list);
+        }
     }
 
     /** {@inheritDoc} */
@@ -205,12 +222,20 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
 
         node = (GridTcpDiscoveryNode)in.readObject();
         msgs = U.readCollection(in);
+        discardMsgId = U.readGridUuid(in);
         top = U.readCollection(in);
         topHist = U.readTreeMap(in);
-        procPendingMsgs = in.readBoolean();
-        newNodeDiscoData = (List<Object>)in.readObject();
-        oldNodesDiscoData = U.readCollection(in);
         gridStartTime = in.readLong();
+        newNodeDiscoData = U.readList(in);
+
+        int oldNodesDiscoDataSize = in.readInt();
+
+        if (oldNodesDiscoDataSize >= 0) {
+            oldNodesDiscoData = new ArrayList<>(oldNodesDiscoDataSize);
+
+            for (int i = 0; i < oldNodesDiscoDataSize; i++)
+                oldNodesDiscoData.add(U.readList(in));
+        }
     }
 
     /** {@inheritDoc} */

@@ -11,11 +11,14 @@
 
 package org.gridgain.visor
 
+import org.gridgain.grid.kernal.visor.VisorTaskArgument
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
+
 import java.io._
 import java.net._
 import java.text._
 import java.util.concurrent._
-import java.util.{HashSet => JHashSet, Set => JSet, _}
+import java.util.{HashSet => JHashSet, _}
 
 import org.gridgain.grid.GridSystemProperties._
 import org.gridgain.grid.events.GridEventType._
@@ -23,16 +26,15 @@ import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.gridgain.grid.lang.{GridBiTuple, GridPredicate}
+import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
-import org.gridgain.grid.{GridException => GE, GridGain => G, _}
+import org.gridgain.grid.{GridException, GridGain => G, _}
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable
 
@@ -230,12 +232,12 @@ object visor extends VisorTag {
         val g = grid
 
         if (g == null)
-            throw new GE("Visor disconnected")
+            throw new GridException("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new GE("Node is gone: " + nid)
+                throw new GridException("Node is gone: " + nid)
 
             node
         }
@@ -1467,7 +1469,7 @@ object visor extends VisorTag {
                             val url = U.resolveGridGainUrl(path)
 
                             if (url == null)
-                                throw new GE("GridGain configuration path is invalid: " + path, e)
+                                throw new GridException("GridGain configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1492,10 +1494,10 @@ object visor extends VisorTag {
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
-                    throw new GE("Can't find grid configuration in: " + url)
+                    throw new GridException("Can't find grid configuration in: " + url)
 
                 if (cfgs.size > 1)
-                    throw new GE("More than one grid configuration found in: " + url)
+                    throw new GridException("More than one grid configuration found in: " + url)
 
                 val cfg = cfgs.iterator().next()
 
@@ -1554,7 +1556,7 @@ object visor extends VisorTag {
             open(cfg, cfgPath)
         }
         catch {
-            case e: GE =>
+            case e: GridException =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
@@ -1597,7 +1599,7 @@ object visor extends VisorTag {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new GE("Named grid unavailable: " + startedGridName)
+                    throw new GridException("Named grid unavailable: " + startedGridName)
             }
 
         assert(cfgPath != null)
@@ -1802,15 +1804,15 @@ object visor extends VisorTag {
     }
 
     /** Convert to task argument. */
-    def emptyTaskArgument[A](nid: UUID): GridBiTuple[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
+    def emptyTaskArgument[A](nid: UUID): VisorTaskArgument[Void] = new VisorTaskArgument(nid)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): GridBiTuple[JSet[UUID], Void] = new T2(new JHashSet(nids), null)
-
-    /** Convert to task argument. */
-    def toTaskArgument[A](nid: UUID, arg: A): GridBiTuple[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
+    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void] = new VisorTaskArgument(new JHashSet(nids))
 
     /** Convert to task argument. */
-    def toTaskArgument[A](nids: Iterable[UUID], arg: A): GridBiTuple[JSet[UUID], A] = new T2(new JHashSet(nids), arg)
+    def toTaskArgument[A](nid: UUID, arg: A): VisorTaskArgument[A] = new VisorTaskArgument(nid, arg)
+
+    /** Convert to task argument. */
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] = new VisorTaskArgument(new JHashSet(nids), arg)
 
     /**
      * Asks user to select a node from the list.
@@ -2412,15 +2414,15 @@ object visor extends VisorTag {
                     try {
                         // Discovery events collected only locally.
                         val loc = g.compute(g.forLocal()).withName("visor-log-collector").withNoFailover().
-                            execute(classOf[VisorEventsCollectTask], toTaskArgument(g.localNode().id(),
-                            VisorEventsCollectArgs.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).toSeq
+                            execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(g.localNode().id(),
+                            VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).toSeq
 
                         val evts = if (!rmtLogDisabled) {
                             val prj = g.forRemotes()
 
                             loc ++ g.compute(prj).withName("visor-log-collector").withNoFailover().
-                                execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes().map(_.id()),
-                                    VisorEventsCollectArgs.createLogArg(key, LOG_EVTS))).toSeq
+                                execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes().map(_.id()),
+                                    VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS))).toSeq
                         }
                         else
                             loc

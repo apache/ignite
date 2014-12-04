@@ -21,7 +21,7 @@ public class GridTcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest
      */
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "ipFinder", null);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "storesCleanFrequency", 0);
+        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "ipFinderCleanFrequency", 0);
         checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "localPort", 1023);
         checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "localPortRange", 0);
         checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "networkTimeout", 0);

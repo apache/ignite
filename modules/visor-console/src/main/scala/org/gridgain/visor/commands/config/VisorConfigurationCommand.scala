@@ -11,10 +11,11 @@
 
 package org.gridgain.visor.commands.config
 
+import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
+
 import java.lang.System._
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
@@ -201,7 +202,7 @@ class VisorConfigurationCommand {
             val cfg = try
                 grid.compute(grid.forNode(node))
                     .withNoFailover()
-                    .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
+                    .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
                 case e: GridException =>
                     scold(e.getMessage)
@@ -238,38 +239,6 @@ class VisorConfigurationCommand {
             cmnT += ("Include properties", safe(cfg.includeProperties(), DFLT))
 
             cmnT.render()
-
-            println("\nLicense:")
-
-            val licT = VisorTextTable()
-
-            if (cfg.license() != null) {
-                licT += ("Type", "Enterprise")
-                licT += ("ID", safe(cfg.license().id(), DFLT))
-                licT += ("Version", safe(cfg.license().version(), DFLT))
-                licT += ("Version regular expression", safe(cfg.license().versionRegexp(), DFLT))
-                val issueDate = cfg.license().issueDate()
-                licT += ("Issue date", if (issueDate != null) formatDate(issueDate) else DFLT)
-                licT += ("Issue organization", safe(cfg.license().issueOrganization(), DFLT))
-                licT += ("User name", safe(cfg.license().userName(), DFLT))
-                licT += ("User organization", safe(cfg.license().userOrganization(), DFLT))
-                licT += ("User organization URL", safe(cfg.license().userWww(), DFLT))
-                licT += ("User organization e-mail", safe(cfg.license().userEmail(), DFLT))
-                licT += ("License note", safe(cfg.license().note(), DFLT))
-                val expireDate = cfg.license().expireDate()
-                licT += ("Expire date", if (expireDate != null) formatDate(expireDate) else "No restriction")
-                licT += ("Maximum number of nodes", cfg.license().maxNodes())
-                licT += ("Maximum number of computers", cfg.license().maxComputers())
-                licT += ("Maximum number of CPUs", cfg.license().maxCpus())
-                licT += ("Maximum up time", cfg.license().maxUpTime() + " min.")
-                licT += ("Grace/burst period", cfg.license().gracePeriod() + " min.")
-                licT += ("Disabled subsystems", safe(cfg.license().disabledSubsystems(), "No disabled subsystems"))
-            }
-            else {
-                licT += ("Type", "Open source")
-            }
-
-            licT.render()
 
             println("\nMetrics:")
 
@@ -519,5 +488,5 @@ object VisorConfigurationCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromConfig2Visor(vs: VisorTag) = cmd
+    implicit def fromConfig2Visor(vs: VisorTag): VisorConfigurationCommand = cmd
 }

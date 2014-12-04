@@ -126,6 +126,11 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isClient() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<String> hostNames() {
             return null;
         }

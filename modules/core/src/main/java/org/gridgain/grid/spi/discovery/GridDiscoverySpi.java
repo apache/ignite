@@ -109,31 +109,11 @@ public interface GridDiscoverySpi extends GridSpi {
     /**
      * Tells discovery SPI to disconnect from topology. This is very close to calling
      * {@link #spiStop()} with accounting that it is not a full stop,
-     * but disconnect before reconnect (i.e. some internal threads and
-     * resources may be preserved on disconnect and reused on reconnect again).
+     * but disconnect due to segmentation.
      *
      * @throws GridSpiException If any error occurs.
-     * @see #reconnect()
      */
-    @Deprecated
     public void disconnect() throws GridSpiException;
-
-    /**
-     * Tells discovery SPI to reconnect to topology. This is very close to calling
-     * {@link #spiStart(String)} with accounting that it is not a full start,
-     * but reconnect (i.e. some internal threads and resources may be preserved
-     * on disconnect and reused on reconnect again).
-     * <p>
-     * Prior to calling this method manager will ensure, that it is in the correct
-     * network segment.
-     *
-     * @throws GridSpiException If any error occurs.
-     * @see #disconnect()
-     * @deprecated This method is unsupported in current version of GridGain and
-     *      will be removed in the next major release.
-     */
-    @Deprecated
-    public void reconnect() throws GridSpiException;
 
     /**
      * Sets discovery SPI node authenticator. This method is called before SPI start() method.
