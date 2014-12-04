@@ -140,10 +140,10 @@ public class GridSelfTest extends GridProjectionAbstractTest {
      * @throws Exception If failed.
      */
     public void testForOthers() throws Exception {
-        GridNode node0 = grid(0).localNode();
-        GridNode node1 = grid(1).localNode();
-        GridNode node2 = grid(2).localNode();
-        GridNode node3 = grid(3).localNode();
+        ClusterNode node0 = grid(0).localNode();
+        ClusterNode node1 = grid(1).localNode();
+        ClusterNode node2 = grid(2).localNode();
+        ClusterNode node3 = grid(3).localNode();
 
         GridProjection p1 = grid(0).forOthers(node0);
 

@@ -125,15 +125,15 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         private Map<String, Integer> params;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Integer arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg)
             throws GridException {
             assert taskSes != null;
             assert arg != null;
             assert arg > 1;
 
-            Map<SessionLoadTestJob, GridNode> map = new HashMap<>(subgrid.size());
+            Map<SessionLoadTestJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
-            Iterator<GridNode> iter = subgrid.iterator();
+            Iterator<ClusterNode> iter = subgrid.iterator();
 
             Random rnd = new Random();
 

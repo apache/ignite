@@ -30,13 +30,13 @@ public class GridLoadTestTask extends GridComputeTaskAdapter<Integer, Integer> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Integer arg) throws GridException {
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {
         assert arg != null;
         assert arg > 1;
 
-        Map<GridLoadTestJob, GridNode> map = new HashMap<>(subgrid.size());
+        Map<GridLoadTestJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
-        Iterator<GridNode> iter = subgrid.iterator();
+        Iterator<ClusterNode> iter = subgrid.iterator();
 
         Collection<UUID> assigned = new ArrayList<>(subgrid.size());
 
@@ -45,7 +45,7 @@ public class GridLoadTestTask extends GridComputeTaskAdapter<Integer, Integer> {
             if (!iter.hasNext())
                 iter = subgrid.iterator();
 
-            GridNode node = iter.next();
+            ClusterNode node = iter.next();
 
             assigned.add(node.id());
 

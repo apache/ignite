@@ -103,7 +103,7 @@ public class GridCacheDhtTestUtils {
         final GridCacheAffinity<Integer> aff = dht.affinity();
 
         Ignite ignite = dht.context().grid();
-        GridNode locNode = ignite.cluster().localNode();
+        ClusterNode locNode = ignite.cluster().localNode();
 
         GridDhtPartitionTopology<Integer, String> top = dht.topology();
 
@@ -127,7 +127,7 @@ public class GridCacheDhtTestUtils {
         Collections.sort(locals);
 
         for (final GridDhtLocalPartition part : locals) {
-            Collection<GridNode> partNodes = aff.mapKeyToPrimaryAndBackups(part.id());
+            Collection<ClusterNode> partNodes = aff.mapKeyToPrimaryAndBackups(part.id());
 
             String ownStr = !partNodes.contains(dht.context().localNode()) ? "NOT AN OWNER" :
                 F.eqNodes(CU.primary(partNodes), locNode) ? "PRIMARY" : "BACKUP";
@@ -173,7 +173,7 @@ public class GridCacheDhtTestUtils {
         GridCacheAffinity<Integer> aff = dht.affinity();
 
         Ignite ignite = dht.context().grid();
-        GridNode locNode = ignite.cluster().localNode();
+        ClusterNode locNode = ignite.cluster().localNode();
 
         GridDhtPartitionTopology<Integer,String> top = dht.topology();
 
@@ -200,7 +200,7 @@ public class GridCacheDhtTestUtils {
 
             assert p.state() == OWNING : "Invalid partition state [cache=" + idx + ", part=" + p + "]";
 
-            Collection<GridNode> partNodes = aff.mapPartitionToPrimaryAndBackups(p.id());
+            Collection<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackups(p.id());
 
             assert partNodes.contains(locNode) :
                 "Partition affinity nodes does not contain local node: [cache=" + idx + "]";

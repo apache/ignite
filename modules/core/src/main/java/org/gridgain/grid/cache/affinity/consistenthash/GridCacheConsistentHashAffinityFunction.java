@@ -88,7 +88,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * Optional backup filter. First node passed to this filter is primary node,
      * and second node is a node being tested.
      */
-    private GridBiPredicate<GridNode, GridNode> backupFilter;
+    private GridBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
     /** */
     private GridCacheAffinityNodeHashResolver hashIdRslvr = new GridCacheAffinityNodeAddressHashResolver();
@@ -181,7 +181,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
     public GridCacheConsistentHashAffinityFunction(int parts,
-        @Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
+        @Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts != 0, "parts != 0");
 
         this.parts = parts;
@@ -278,7 +278,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      *
      * @return Optional backup filter.
      */
-    @Nullable public GridBiPredicate<GridNode, GridNode> getBackupFilter() {
+    @Nullable public GridBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
         return backupFilter;
     }
 
@@ -291,7 +291,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      *
      * @param backupFilter Optional backup filter.
      */
-    public void setBackupFilter(@Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
+    public void setBackupFilter(@Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
     }
 
@@ -343,11 +343,11 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * @param node Node.
      * @return Neighbors.
      */
-    private Collection<UUID> neighbors(final GridNode node) {
+    private Collection<UUID> neighbors(final ClusterNode node) {
         Collection<UUID> ns = neighbors.get(node.id());
 
         if (ns == null) {
-            Collection<GridNode> nodes = ignite.cluster().forHost(node).nodes();
+            Collection<ClusterNode> nodes = ignite.cluster().forHost(node).nodes();
 
             ns = F.addIfAbsent(neighbors, node.id(), new ArrayList<>(F.nodeIds(nodes)));
         }
@@ -357,14 +357,14 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
-        List<List<GridNode>> res = new ArrayList<>(parts);
+    @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
+        List<List<ClusterNode>> res = new ArrayList<>(parts);
 
-        Collection<GridNode> topSnapshot = ctx.currentTopologySnapshot();
+        Collection<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
 
         for (int part = 0; part < parts; part++) {
             res.add(F.isEmpty(topSnapshot) ?
-                Collections.<GridNode>emptyList() :
+                Collections.<ClusterNode>emptyList() :
                 // Wrap affinity nodes with unmodifiable list since unmodifiable generic collection
                 // doesn't provide equals and hashCode implementations.
                 U.sealList(nodes(part, topSnapshot, ctx.backups())));
@@ -380,7 +380,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * @param nodes Cache topology nodes.
      * @return Assigned nodes, first node is primary, others are backups.
      */
-    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes, int backups) {
+    public Collection<ClusterNode> nodes(int part, Collection<ClusterNode> nodes, int backups) {
         if (nodes == null)
             return Collections.emptyList();
 
@@ -394,10 +394,10 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
         initialize();
 
-        final Map<NodeInfo, GridNode> lookup = new GridLeanMap<>(nodesSize);
+        final Map<NodeInfo, ClusterNode> lookup = new GridLeanMap<>(nodesSize);
 
         // Store nodes in map for fast lookup.
-        for (GridNode n : nodes)
+        for (ClusterNode n : nodes)
             // Add nodes into hash circle, if absent.
             lookup.put(resolveNodeInfo(n), n);
 
@@ -421,7 +421,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
             Collection<NodeInfo> backupIds = nodeHash.nodes(part, backups, p, backupPrimaryIdFilter);
 
             if (F.isEmpty(backupIds) && primaryId != null) {
-                GridNode n = lookup.get(primaryId);
+                ClusterNode n = lookup.get(primaryId);
 
                 assert n != null;
 
@@ -443,7 +443,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
                     assert id != null : "Node ID cannot be null in affinity node ID collection: " + selected;
 
-                    GridNode n = lookup.get(id);
+                    ClusterNode n = lookup.get(id);
 
                     assert n != null;
 
@@ -459,7 +459,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
                 List<NodeInfo> ids = nodeHash.nodes(part, primaryAndBackups, new P1<NodeInfo>() {
                     @Override public boolean apply(NodeInfo id) {
-                        GridNode n = lookup.get(id);
+                        ClusterNode n = lookup.get(id);
 
                         if (n == null)
                             return false;
@@ -467,7 +467,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
                         Collection<UUID> neighbors = neighbors(n);
 
                         for (NodeInfo id0 : selected0) {
-                            GridNode n0 = lookup.get(id0);
+                            ClusterNode n0 = lookup.get(id0);
 
                             if (n0 == null)
                                 return false;
@@ -489,10 +489,10 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
             }
         }
 
-        Collection<GridNode> ret = new ArrayList<>(selected.size());
+        Collection<ClusterNode> ret = new ArrayList<>(selected.size());
 
         for (NodeInfo id : selected) {
-            GridNode n = lookup.get(id);
+            ClusterNode n = lookup.get(id);
 
             assert n != null;
 
@@ -545,7 +545,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * @param n Node to get info for.
      * @return Node info.
      */
-    private NodeInfo resolveNodeInfo(GridNode n) {
+    private NodeInfo resolveNodeInfo(ClusterNode n) {
         UUID nodeId = n.id();
         NodeInfo nodeInfo = addedNodes.get(nodeId);
 
@@ -594,7 +594,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * @param n Node.
      * @return Replicas.
      */
-    private int replicas(GridNode n) {
+    private int replicas(ClusterNode n) {
         Integer nodeReplicas = n.attribute(attrName);
 
         if (nodeReplicas == null)
@@ -619,14 +619,14 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
         private Object hashId;
 
         /** Grid node. */
-        private GridNode node;
+        private ClusterNode node;
 
         /**
          * @param nodeId Node ID.
          * @param hashId Hash ID.
          * @param node Rich node.
          */
-        private NodeInfo(UUID nodeId, Object hashId, GridNode node) {
+        private NodeInfo(UUID nodeId, Object hashId, ClusterNode node) {
             assert nodeId != null;
             assert hashId != null;
 
@@ -652,7 +652,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
         /**
          * @return Node.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return node;
         }
 

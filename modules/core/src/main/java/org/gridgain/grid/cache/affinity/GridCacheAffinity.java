@@ -60,7 +60,7 @@ public interface GridCacheAffinity<K> {
      * @param key Key to check.
      * @return {@code True} if local node is the primary node for given key.
      */
-    public boolean isPrimary(GridNode n, K key);
+    public boolean isPrimary(ClusterNode n, K key);
 
     /**
      * Returns {@code true} if local node is one of the backup nodes for given key.
@@ -71,7 +71,7 @@ public interface GridCacheAffinity<K> {
      * @param key Key to check.
      * @return {@code True} if local node is one of the backup nodes for given key.
      */
-    public boolean isBackup(GridNode n, K key);
+    public boolean isBackup(ClusterNode n, K key);
 
     /**
      * Returns {@code true} if local node is primary or one of the backup nodes
@@ -79,20 +79,20 @@ public interface GridCacheAffinity<K> {
      * {@link org.apache.ignite.Ignite#localNode()} as first parameter.
      * <p>
      * This method is essentially equivalent to calling
-     * <i>"{@link #isPrimary(GridNode, Object)} || {@link #isBackup(GridNode, Object)})"</i>,
+     * <i>"{@link #isPrimary(org.gridgain.grid.ClusterNode, Object)} || {@link #isBackup(org.gridgain.grid.ClusterNode, Object)})"</i>,
      * however it is more efficient as it makes both checks at once.
      *
      * @param n Node to check.
      * @param key Key to check.
      * @return {@code True} if local node is primary or backup for given key.
      */
-    public boolean isPrimaryOrBackup(GridNode n, K key);
+    public boolean isPrimaryOrBackup(ClusterNode n, K key);
 
     /**
      * Gets partition ids for which nodes of the given projection has primary
      * ownership.
      * <p>
-     * Note that since {@link GridNode} implements {@link GridProjection},
+     * Note that since {@link org.gridgain.grid.ClusterNode} implements {@link GridProjection},
      * to find out primary partitions for a single node just pass
      * a single node into this method.
      * <p>
@@ -105,7 +105,7 @@ public interface GridCacheAffinity<K> {
      * @see GridCacheConfiguration#getAffinity()
      * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
-    public int[] primaryPartitions(GridNode n);
+    public int[] primaryPartitions(ClusterNode n);
 
     /**
      * Gets partition ids for which nodes of the given projection has backup
@@ -114,7 +114,7 @@ public interface GridCacheAffinity<K> {
      * {@code 'levels} parameter. If no {@code 'level'} is specified then
      * all backup partitions are returned.
      * <p>
-     * Note that since {@link GridNode} implements {@link GridProjection},
+     * Note that since {@link org.gridgain.grid.ClusterNode} implements {@link GridProjection},
      * to find out backup partitions for a single node, just pass that single
      * node into this method.
      * <p>
@@ -127,13 +127,13 @@ public interface GridCacheAffinity<K> {
      * @see GridCacheConfiguration#getAffinity()
      * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
-    public int[] backupPartitions(GridNode n);
+    public int[] backupPartitions(ClusterNode n);
 
     /**
      * Gets partition ids for which nodes of the given projection has ownership
      * (either primary or backup).
      * <p>
-     * Note that since {@link GridNode} implements {@link GridProjection},
+     * Note that since {@link org.gridgain.grid.ClusterNode} implements {@link GridProjection},
      * to find out all partitions for a single node, just pass that single
      * node into this method.
      * <p>
@@ -146,7 +146,7 @@ public interface GridCacheAffinity<K> {
      * @see GridCacheConfiguration#getAffinity()
      * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
-    public int[] allPartitions(GridNode n);
+    public int[] allPartitions(ClusterNode n);
 
     /**
      * Maps passed in key to a key which will be used for node affinity. The affinity
@@ -178,7 +178,7 @@ public interface GridCacheAffinity<K> {
      * @param keys Keys to map to nodes.
      * @return Map of nodes to keys or empty map if there are no alive nodes for this cache.
      */
-    public Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys);
+    public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys);
 
     /**
      * This method provides ability to detect to which primary node the given key
@@ -198,7 +198,7 @@ public interface GridCacheAffinity<K> {
      * @param key Keys to map to a node.
      * @return Primary node for the key or {@code null} if there are no alive nodes for this cache.
      */
-    @Nullable public GridNode mapKeyToNode(K key);
+    @Nullable public ClusterNode mapKeyToNode(K key);
 
     /**
      * Gets primary and backup nodes for the key. Note that primary node is always
@@ -213,7 +213,7 @@ public interface GridCacheAffinity<K> {
      *      always first, or an empty collection if this projection contains only nodes with
      *      {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
      */
-    public Collection<GridNode> mapKeyToPrimaryAndBackups(K key);
+    public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
 
     /**
      * Gets primary node for the given partition.
@@ -224,7 +224,7 @@ public interface GridCacheAffinity<K> {
      * @see GridCacheConfiguration#getAffinity()
      * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
-    public GridNode mapPartitionToNode(int part);
+    public ClusterNode mapPartitionToNode(int part);
 
     /**
      * Gets primary nodes for the given partitions.
@@ -235,7 +235,7 @@ public interface GridCacheAffinity<K> {
      * @see GridCacheConfiguration#getAffinity()
      * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
-    public Map<Integer, GridNode> mapPartitionsToNodes(Collection<Integer> parts);
+    public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts);
 
     /**
      * Gets primary and backup nodes for partition. Note that primary node is always
@@ -250,5 +250,5 @@ public interface GridCacheAffinity<K> {
      *      always first, or an empty collection if this projection contains only nodes with
      *      {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
      */
-    public Collection<GridNode> mapPartitionToPrimaryAndBackups(int part);
+    public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
 }

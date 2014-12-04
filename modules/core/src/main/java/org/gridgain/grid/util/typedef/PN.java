@@ -17,9 +17,9 @@ import org.gridgain.grid.util.lang.*;
  * Defines {@code alias} for <tt>GridPredicate&lt;GridNode&gt;</tt> by extending
  * {@link GridPredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link GridPredicate} and {@link GridNode}.
+ * readability. For more information see {@link GridPredicate} and {@link org.gridgain.grid.ClusterNode}.
  * @see GridPredicate
- * @see GridNode
+ * @see org.gridgain.grid.ClusterNode
  * @see GridFunc
  */
-public interface PN extends GridPredicate<GridNode> { /* No-op. */ }
+public interface PN extends GridPredicate<ClusterNode> { /* No-op. */ }

@@ -37,13 +37,13 @@ private class Result {
     var fails = 0
 
     /** Failed nodes. */
-    val failedNodes = collection.mutable.Set.empty[GridNode]
+    val failedNodes = collection.mutable.Set.empty[ClusterNode]
 }
 
 /**
  * Thread that pings one node.
  */
-private case class Pinger(n: GridNode, res: Result) extends Runnable {
+private case class Pinger(n: ClusterNode, res: Result) extends Runnable {
     assert(n != null)
     assert(res != null)
 

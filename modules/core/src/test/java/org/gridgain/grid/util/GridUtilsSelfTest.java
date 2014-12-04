@@ -277,7 +277,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
         private Collection<SelfReferencedJob> col;
 
         /** */
-        private GridNode node;
+        private ClusterNode node;
 
         /** */
         private GridProjection subGrid;

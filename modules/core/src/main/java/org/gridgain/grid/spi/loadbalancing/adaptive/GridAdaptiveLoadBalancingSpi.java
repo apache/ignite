@@ -51,7 +51,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <li>{@link GridAdaptiveProcessingTimeLoadProbe}</li>
  * <li>{@link GridAdaptiveJobCountLoadProbe}</li>
  * </ul>
- * Note that if {@link GridAdaptiveLoadProbe#getLoad(GridNode, int)} returns a value of {@code 0},
+ * Note that if {@link GridAdaptiveLoadProbe#getLoad(org.gridgain.grid.ClusterNode, int)} returns a value of {@code 0},
  * then implementation will assume that load value is simply not available and
  * will try to calculate an average of load values for other nodes. If such
  * average cannot be obtained (all node load values are {@code 0}), then a value
@@ -386,7 +386,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
         rwLock.writeLock().lock();
 
         try {
-            for (GridNode node : getSpiContext().nodes())
+            for (ClusterNode node : getSpiContext().nodes())
                 nodeJobs.put(node.id(), new AtomicInteger(0));
         }
         finally {
@@ -405,7 +405,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode getBalancedNode(GridComputeTaskSession ses, List<GridNode> top, GridComputeJob job)
+    @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top, GridComputeJob job)
     throws GridException {
         A.notNull(ses, "ses");
         A.notNull(top, "top");
@@ -435,7 +435,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
      * @throws GridException If returned load is negative.
      */
     @SuppressWarnings({"TooBroadScope"})
-    private double getLoad(Collection<GridNode> top, GridNode node) throws GridException {
+    private double getLoad(Collection<ClusterNode> top, ClusterNode node) throws GridException {
         assert !F.isEmpty(top);
 
         int jobsSentSinceLastUpdate = 0;
@@ -464,13 +464,13 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
      */
     private class WeightedTopology {
         /** Topology sorted by weight. */
-        private final SortedMap<Double, GridNode> circle = new TreeMap<>();
+        private final SortedMap<Double, ClusterNode> circle = new TreeMap<>();
 
         /**
          * @param top Task topology.
          * @throws GridException If any load was negative.
          */
-        WeightedTopology(List<GridNode> top) throws GridException {
+        WeightedTopology(List<ClusterNode> top) throws GridException {
             assert !F.isEmpty(top);
 
             double totalLoad = 0;
@@ -550,12 +550,12 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
          *
          * @return Weighted node.
          */
-        GridNode pickWeightedNode() {
+        ClusterNode pickWeightedNode() {
             double weight = RAND.nextDouble();
 
-            SortedMap<Double, GridNode> pick = circle.tailMap(weight);
+            SortedMap<Double, ClusterNode> pick = circle.tailMap(weight);
 
-            GridNode node = pick.get(pick.firstKey());
+            ClusterNode node = pick.get(pick.firstKey());
 
             rwLock.readLock().lock();
 

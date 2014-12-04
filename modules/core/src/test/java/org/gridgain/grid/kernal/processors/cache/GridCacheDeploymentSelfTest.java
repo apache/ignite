@@ -455,7 +455,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
      * @return Key with described properties.
      * @throws IllegalStateException if such a key could not be found after 10000 iterations.
      */
-    private int getNextKey(int start, Ignite g, GridNode primary, GridNode backup, GridNode near) {
+    private int getNextKey(int start, Ignite g, ClusterNode primary, ClusterNode backup, ClusterNode near) {
         info("Primary: " + primary);
         info("Backup: " + backup);
         info("Near: " + near);

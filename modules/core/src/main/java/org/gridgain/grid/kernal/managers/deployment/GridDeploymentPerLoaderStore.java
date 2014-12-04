@@ -126,7 +126,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
             for (Iterator<IsolatedDeployment> iter = cache.values().iterator(); iter.hasNext();) {
                 IsolatedDeployment dep = iter.next();
 
-                GridNode node = ctx.discovery().node(dep.senderNodeId());
+                ClusterNode node = ctx.discovery().node(dep.senderNodeId());
 
                 if (node == null) {
                     dep.undeploy();
@@ -183,7 +183,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         if (log.isDebugEnabled())
             log.debug("Starting to peer-load class based on deployment metadata: " + meta);
 
-        GridNode snd = ctx.discovery().node(meta.senderNodeId());
+        ClusterNode snd = ctx.discovery().node(meta.senderNodeId());
 
         if (snd == null) {
             U.warn(log, "Failed to create Private or Isolated mode deployment (sender node left grid): " + snd);
@@ -389,7 +389,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         private static final long serialVersionUID = 0L;
 
         /** Sender node ID. */
-        private final GridNode sndNode;
+        private final ClusterNode sndNode;
 
         /**
          * @param depMode Deployment mode.
@@ -400,7 +400,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
          * @param sampleClsName Sample class name.
          */
         IsolatedDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, GridUuid clsLdrId,
-            String userVer, GridNode sndNode, String sampleClsName) {
+            String userVer, ClusterNode sndNode, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
 
             this.sndNode = sndNode;

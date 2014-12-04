@@ -26,6 +26,6 @@ public interface GridHadoopMapReducePlanner {
      * @param oldPlan Old plan in case of partial failure.
      * @return Map reduce plan.
      */
-    public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<GridNode> top,
+    public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
         @Nullable GridHadoopMapReducePlan oldPlan) throws GridException;
 }

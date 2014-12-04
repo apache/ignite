@@ -234,14 +234,14 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         GridCacheAffinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
 
-        Collection<GridNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
+        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
         X.println("*** Affinity nodes [key=" + CNTR_KEY + ", nodes=" + U.nodeIds(affNodes) + ", gridNames=" +
             gridNames(U.nodeIds(affNodes)) + ']');
 
         assertEquals(1 + backups, affNodes.size());
 
-        GridNode first = F.first(affNodes);
+        ClusterNode first = F.first(affNodes);
 
         assert first != null;
 
@@ -536,7 +536,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     private void checkNearAndPrimaryMultiNode(int gridCnt) throws Exception {
         GridCacheAffinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
 
-        Collection<GridNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
+        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
         assertEquals(1 + backups, affNodes.size());
 

@@ -47,7 +47,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
         cfg.setFailoverSpi(new GridAlwaysFailoverSpi() {
             /** {@inheritDoc} */
-            @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> top) {
+            @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
                 failCnt.incrementAndGet();
 
                 return super.failover(ctx, top);
@@ -117,15 +117,15 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         @GridLocalNodeIdResource private UUID locNodeId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             assert locNodeId != null;
 
             if (log.isInfoEnabled())
                 log.info("Mapping jobs [subgrid=" + subgrid + ", arg=" + arg + ']');
 
-            GridNode remoteNode = null;
+            ClusterNode remoteNode = null;
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (!node.id().equals(locNodeId))
                     remoteNode = node;
             }

@@ -45,7 +45,7 @@ public interface PluginContext {
      * @see #localNode()
      * @see GridDiscoverySpi
      */
-    public Collection<GridNode> nodes();
+    public Collection<ClusterNode> nodes();
 
     /**
      * Gets local grid node. Instance of local node is provided by underlying {@link GridDiscoverySpi}
@@ -54,7 +54,7 @@ public interface PluginContext {
      * @return Local grid node.
      * @see GridDiscoverySpi
      */
-    public GridNode localNode();
+    public ClusterNode localNode();
 
     /**
      * Gets logger for given class.

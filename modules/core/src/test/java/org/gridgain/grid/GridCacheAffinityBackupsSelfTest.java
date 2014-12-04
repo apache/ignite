@@ -84,11 +84,11 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
             Collection<UUID> members = new HashSet<>();
 
             for (int i = 0; i < 10000; i++) {
-                Collection<GridNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(i);
+                Collection<ClusterNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(i);
 
                 assertEquals(backups + 1, nodes.size());
 
-                for (GridNode n : nodes)
+                for (ClusterNode n : nodes)
                     members.add(n.id());
             }
 

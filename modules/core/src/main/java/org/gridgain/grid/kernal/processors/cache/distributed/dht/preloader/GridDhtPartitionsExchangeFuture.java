@@ -56,7 +56,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private final Collection<UUID> rcvdIds = new GridConcurrentHashSet<>();
 
     /** Remote nodes. */
-    private volatile Collection<GridNode> rmtNodes;
+    private volatile Collection<ClusterNode> rmtNodes;
 
     /** Remote nodes. */
     @GridToStringInclude
@@ -64,7 +64,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
     /** Oldest node. */
     @GridToStringExclude
-    private final AtomicReference<GridNode> oldestNode = new AtomicReference<>();
+    private final AtomicReference<ClusterNode> oldestNode = new AtomicReference<>();
 
     /** ExchangeFuture id. */
     private final GridDhtPartitionExchangeId exchId;
@@ -288,7 +288,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
             fetchFut.init();
 
-            List<List<GridNode>> affAssignment = fetchFut.get();
+            List<List<ClusterNode>> affAssignment = fetchFut.get();
 
             if (log.isDebugEnabled())
                 log.debug("Fetched affinity from remote node, initializing affinity assignment [locNodeId=" +
@@ -309,7 +309,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             return true;
 
         // If local node did not initiate exchange or local node is the only cache node in grid.
-        Collection<GridNode> affNodes = CU.affinityNodes(cacheCtx, exchId.topologyVersion());
+        Collection<ClusterNode> affNodes = CU.affinityNodes(cacheCtx, exchId.topologyVersion());
 
         return !exchId.nodeId().equals(cctx.localNodeId()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
@@ -353,7 +353,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Oldest node.
      */
-    GridNode oldestNode() {
+    ClusterNode oldestNode() {
         return oldestNode.get();
     }
 
@@ -537,7 +537,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param id ID.
      * @throws GridException If failed.
      */
-    private void sendLocalPartitions(GridNode node, @Nullable GridDhtPartitionExchangeId id) throws GridException {
+    private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) throws GridException {
         GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
@@ -556,7 +556,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param id ID.
      * @throws GridException If failed.
      */
-    private void sendAllPartitions(Collection<? extends GridNode> nodes, GridDhtPartitionExchangeId id)
+    private void sendAllPartitions(Collection<? extends ClusterNode> nodes, GridDhtPartitionExchangeId id)
         throws GridException {
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(id, lastVer.get(),
             id.topologyVersion());
@@ -580,7 +580,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      *
      */
     private void sendPartitions() {
-        GridNode oldestNode = this.oldestNode.get();
+        ClusterNode oldestNode = this.oldestNode.get();
 
         try {
             sendLocalPartitions(oldestNode, exchId);
@@ -704,7 +704,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     ", fut=" + this + ']');
 
             try {
-                GridNode n = cctx.node(nodeId);
+                ClusterNode n = cctx.node(nodeId);
 
                 if (n != null)
                     sendAllPartitions(F.asList(n), exchId);
@@ -723,7 +723,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                         if (!t.get()) // Just to check if there was an error.
                             return;
 
-                        GridNode loc = cctx.localNode();
+                        ClusterNode loc = cctx.localNode();
 
                         singleMsgs.put(nodeId, msg);
 
@@ -784,14 +784,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             return;
         }
 
-        GridNode curOldest = oldestNode.get();
+        ClusterNode curOldest = oldestNode.get();
 
         if (!nodeId.equals(curOldest.id())) {
             if (log.isDebugEnabled())
                 log.debug("Received full partition map from unexpected node [oldest=" + curOldest.id() +
                     ", unexpectedNodeId=" + nodeId + ']');
 
-            GridNode sender = ctx.discovery().node(nodeId);
+            ClusterNode sender = ctx.discovery().node(nodeId);
 
             if (sender == null) {
                 if (log.isDebugEnabled())
@@ -891,7 +891,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                         assert rmtIds != null;
 
-                        GridNode oldest = oldestNode.get();
+                        ClusterNode oldest = oldestNode.get();
 
                         if (oldest.id().equals(nodeId)) {
                             if (log.isDebugEnabled())
@@ -901,7 +901,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                             boolean set = false;
 
-                            GridNode newOldest = CU.oldest(cctx, exchId.topologyVersion());
+                            ClusterNode newOldest = CU.oldest(cctx, exchId.topologyVersion());
 
                             // If local node is now oldest.
                             if (newOldest.id().equals(cctx.localNodeId())) {
@@ -953,7 +953,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                             assert rmtNodes != null;
 
-                            for (Iterator<GridNode> it = rmtNodes.iterator(); it.hasNext();)
+                            for (Iterator<ClusterNode> it = rmtNodes.iterator(); it.hasNext();)
                                 if (it.next().id().equals(nodeId))
                                     it.remove();
 
@@ -1082,7 +1082,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        GridNode oldestNode = this.oldestNode.get();
+        ClusterNode oldestNode = this.oldestNode.get();
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "oldest", oldestNode == null ? "null" : oldestNode.id(),

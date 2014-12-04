@@ -673,8 +673,8 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testRandomRouterWithEmptyTopology() throws Exception {
         atLeastOnce = true;
-        router = new GridStreamerRandomEventRouter(new GridPredicate<GridNode>() {
-            @Override public boolean apply(GridNode node) {
+        router = new GridStreamerRandomEventRouter(new GridPredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
                 return false;
             }
         });

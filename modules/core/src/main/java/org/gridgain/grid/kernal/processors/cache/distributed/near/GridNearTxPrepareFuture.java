@@ -128,10 +128,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     /**
      * @return Involved nodes.
      */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
-                @Nullable @Override public GridNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -520,7 +520,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         assert !m.empty();
 
-        final GridNode n = m.node();
+        final ClusterNode n = m.node();
 
         GridNearTxPrepareRequest<K, V> req = new GridNearTxPrepareRequest<>(
             futId,
@@ -633,11 +633,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         GridDistributedTxMapping<K, V> cur) throws GridException {
         GridCacheContext<K, V> cacheCtx = entry.context();
 
-        List<GridNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
+        List<ClusterNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
 
         txMapping.addMapping(nodes);
 
-        GridNode primary = F.first(nodes);
+        ClusterNode primary = F.first(nodes);
 
         assert primary != null;
 
@@ -741,7 +741,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         /**
          * @return Node ID.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return m.node();
         }
 

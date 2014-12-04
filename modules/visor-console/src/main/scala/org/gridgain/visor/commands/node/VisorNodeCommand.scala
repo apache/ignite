@@ -129,7 +129,7 @@ class VisorNodeCommand {
                     val id = argValue("id", argLst)
                     val all = hasArgFlag("a", argLst)
 
-                    var node: GridNode = null
+                    var node: ClusterNode = null
 
                     if (id8.isDefined) {
                         val ns = nodeById8(id8.get)

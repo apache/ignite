@@ -136,10 +136,10 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     public void testClearWithReaders() throws Exception {
         Integer key = 1;
 
-        GridBiTuple<GridNode, GridNode> t = getNodes(key);
+        GridBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
 
-        GridNode primary = t.get1();
-        GridNode other = t.get2();
+        ClusterNode primary = t.get1();
+        ClusterNode other = t.get2();
 
         GridCacheProjection<Integer, String> near0 = near(grid(primary.id()));
         GridCacheProjection<Integer, String> near1 = near(grid(other.id()));
@@ -181,10 +181,10 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     public void testRemoveWithReaders() throws Exception {
         Integer key = 1;
 
-        GridBiTuple<GridNode, GridNode> t = getNodes(key);
+        GridBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
 
-        GridNode primary = t.get1();
-        GridNode other = t.get2();
+        ClusterNode primary = t.get1();
+        ClusterNode other = t.get2();
 
         GridCacheProjection<Integer, String> near0 = near(grid(primary.id()));
         GridCacheProjection<Integer, String> near1 = near(grid(other.id()));
@@ -227,10 +227,10 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     public void testEvictWithReaders() throws Exception {
         Integer key = 1;
 
-        GridBiTuple<GridNode, GridNode> t = getNodes(key);
+        GridBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
 
-        GridNode primary = t.get1();
-        GridNode other = t.get2();
+        ClusterNode primary = t.get1();
+        ClusterNode other = t.get2();
 
         GridCacheProjection<Integer, String> near0 = near(grid(primary.id()));
         GridCacheProjection<Integer, String> near1 = near(grid(other.id()));
@@ -280,20 +280,20 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return For the given key pair {primary node, some other node}.
      */
-    private GridBiTuple<GridNode, GridNode> getNodes(Integer key) {
+    private GridBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
         GridCacheAffinity<Integer> aff = grid(0).<Integer, Object>cache(null).affinity();
 
         int part = aff.partition(key);
 
-        GridNode primary = aff.mapPartitionToNode(part);
+        ClusterNode primary = aff.mapPartitionToNode(part);
 
         assert primary != null;
 
-        Collection<GridNode> nodes = new ArrayList<>(grid(0).nodes());
+        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).nodes());
 
         nodes.remove(primary);
 
-        GridNode other = F.first(nodes);
+        ClusterNode other = F.first(nodes);
 
         assert other != null;
 

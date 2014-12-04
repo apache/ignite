@@ -68,7 +68,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
 
         assert g.cluster().nodes().size() >= 2;
 
-        GridNode rmt = F.first(g.cluster().forRemotes().nodes());
+        ClusterNode rmt = F.first(g.cluster().forRemotes().nodes());
 
         compute(g.cluster().forNode(rmt)).run(new CA() {
             @Override public void apply() {
@@ -88,8 +88,8 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
 
         assert g.cluster().nodes().size() >= 2;
 
-        GridNode rmt = F.first(g.cluster().forRemotes().nodes());
-        final GridNode loc = g.cluster().localNode();
+        ClusterNode rmt = F.first(g.cluster().forRemotes().nodes());
+        final ClusterNode loc = g.cluster().localNode();
 
         compute(g.cluster().forNode(rmt)).run(new CA() {
             @Override public void apply() {

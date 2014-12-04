@@ -100,7 +100,7 @@ public interface GridEvent extends Comparable<GridEvent>, Serializable {
      *
      * @return node where event occurred and was recorded.
      */
-    public GridNode node();
+    public ClusterNode node();
 
     /**
      * Gets optional message for this event.

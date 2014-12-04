@@ -41,11 +41,11 @@ public abstract class GridAbstractDiscoveryTest<T extends GridDiscoverySpi> exte
 
             while (isCanceled) {
                 try {
-                    Collection<GridNode> nodes = getSpi().getRemoteNodes();
+                    Collection<ClusterNode> nodes = getSpi().getRemoteNodes();
 
                     pingNode(UUID.randomUUID(), false);
 
-                    for (GridNode item : nodes) {
+                    for (ClusterNode item : nodes) {
                         pingNode(item.id(), true);
                     }
 

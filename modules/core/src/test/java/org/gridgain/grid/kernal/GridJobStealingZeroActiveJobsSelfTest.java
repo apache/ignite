@@ -94,10 +94,10 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Object arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             // Put all jobs onto local node.
             for (Iterator iter = subgrid.iterator(); iter.hasNext(); iter.next())

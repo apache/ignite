@@ -53,7 +53,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, byte[] arg) throws GridException {
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) throws GridException {
         assert arg != null;
 
         Map<String, Object> args = MARSHALLER.unmarshal(arg, null);
@@ -69,7 +69,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
         }
 
         if (nodeId != null) {
-            for (GridNode n : subgrid)
+            for (ClusterNode n : subgrid)
                 if (n.id().equals(nodeId))
                     return F.asMap(new JdbcDriverJob(args, first), n);
 
@@ -78,7 +78,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
         else {
             String cache = (String)args.get("cache");
 
-            for (GridNode n : subgrid)
+            for (ClusterNode n : subgrid)
                 if (U.hasCache(n, cache))
                     return F.asMap(new JdbcDriverJob(args, first), n);
 

@@ -17,12 +17,12 @@ import java.util.*;
 /**
  * Node order comparator.
  */
-public class GridNodeOrderComparator implements Comparator<GridNode>, Serializable {
+public class GridNodeOrderComparator implements Comparator<ClusterNode>, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public int compare(GridNode n1, GridNode n2) {
+    @Override public int compare(ClusterNode n1, ClusterNode n2) {
         return n1.order() < n2.order() ? -1 : n1.order() > n2.order() ? 1 : n1.id().compareTo(n2.id());
     }
 }

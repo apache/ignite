@@ -29,10 +29,10 @@ class GridRoundRobinTestUtils {
      * @param ses Task session.
      * @throws GridException If balancer failed.
      */
-    static void checkCyclicBalancing(GridRoundRobinLoadBalancingSpi spi, List<GridNode> allNodes,
+    static void checkCyclicBalancing(GridRoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
         List<UUID> orderedNodes, GridComputeTaskSession ses) throws GridException {
 
-        GridNode firstNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
+        ClusterNode firstNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
 
         int startIdx = firstBalancedNodeIndex(firstNode, orderedNodes);
 
@@ -40,7 +40,7 @@ class GridRoundRobinTestUtils {
         for (int i = 0; i < allNodes.size() * 2; i++) {
             int actualIdx = (startIdx + i + 1) % allNodes.size();
 
-            GridNode nextNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
+            ClusterNode nextNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
 
             assertEquals("Balancer returns node out of order", nextNode.id(), orderedNodes.get(actualIdx));
         }
@@ -57,10 +57,10 @@ class GridRoundRobinTestUtils {
      * @param ses2 Second task session.
      * @throws GridException If balancer failed.
      */
-    static void checkCyclicBalancing(GridRoundRobinLoadBalancingSpi spi, List<GridNode> allNodes,
+    static void checkCyclicBalancing(GridRoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
         List<UUID> orderedNodes, GridComputeTaskSession ses1, GridComputeTaskSession ses2) throws GridException {
 
-        GridNode firstNode = spi.getBalancedNode(ses1, allNodes, new GridTestJob());
+        ClusterNode firstNode = spi.getBalancedNode(ses1, allNodes, new GridTestJob());
 
         int startIdx = firstBalancedNodeIndex(firstNode, orderedNodes);
 
@@ -68,7 +68,7 @@ class GridRoundRobinTestUtils {
         for (int i = 0; i < allNodes.size() * 2; i++) {
             int actualIdx = (startIdx + i + 1) % allNodes.size();
 
-            GridNode nextNode = spi.getBalancedNode(i % 2 == 0 ? ses1 : ses2, allNodes, new GridTestJob());
+            ClusterNode nextNode = spi.getBalancedNode(i % 2 == 0 ? ses1 : ses2, allNodes, new GridTestJob());
 
             assertEquals("Balancer returns node out of order", nextNode.id(), orderedNodes.get(actualIdx));
         }
@@ -79,7 +79,7 @@ class GridRoundRobinTestUtils {
      * @param orderedNodes Balancing nodes.
      * @return Index of first node which was return by balancer.
      */
-    static int firstBalancedNodeIndex(GridNode firstNode, List<UUID> orderedNodes) {
+    static int firstBalancedNodeIndex(ClusterNode firstNode, List<UUID> orderedNodes) {
         int startIdx = -1;
 
         for (int i = 0; i < orderedNodes.size(); i++) {

@@ -72,7 +72,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private GridEventStorageManager evts;
 
     /** Local node. */
-    private GridNode locNode;
+    private ClusterNode locNode;
 
     /** Logger. */
     private GridLogger log;
@@ -208,7 +208,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /**
      * @return Local node.
      */
-    private GridNode localNode() {
+    private ClusterNode localNode() {
         if (locNode == null)
             locNode = ggfsCtx.kernalContext().discovery().localNode();
 
@@ -2054,7 +2054,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
             if (msg instanceof GridGgfsDeleteMessage) {
-                GridNode node = ggfsCtx.kernalContext().discovery().node(nodeId);
+                ClusterNode node = ggfsCtx.kernalContext().discovery().node(nodeId);
 
                 if (node != null) {
                     if (sameGgfs((GridGgfsAttributes[])node.attribute(ATTR_GGFS))) {

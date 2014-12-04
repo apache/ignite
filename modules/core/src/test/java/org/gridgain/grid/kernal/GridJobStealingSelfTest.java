@@ -118,8 +118,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testTwoJobsPartiallyNullPredicate() throws GridException {
-        GridPredicate<GridNode> topPred =  new GridPredicate<GridNode>() {
-                @Override public boolean apply(GridNode e) {
+        GridPredicate<ClusterNode> topPred =  new GridPredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode e) {
                     return ignite2.cluster().localNode().id().equals(e.id()); // Limit projection with only grid2.
                 }
             };
@@ -140,8 +140,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicate() throws Exception {
         final Ignite ignite3 = startGrid(3);
 
-        executeAsync(compute(ignite1.cluster().forPredicate(new P1<GridNode>() {
-            @Override public boolean apply(GridNode e) {
+        executeAsync(compute(ignite1.cluster().forPredicate(new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode e) {
                 return ignite1.cluster().localNode().id().equals(e.id()) ||
                     ignite3.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
             }
@@ -163,8 +163,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicateInternalStealing() throws Exception {
         final Ignite ignite3 = startGrid(3);
 
-        GridPredicate<GridNode> p = new P1<GridNode>() {
-            @Override public boolean apply(GridNode e) {
+        GridPredicate<ClusterNode> p = new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode e) {
                 return ignite1.cluster().localNode().id().equals(e.id()) ||
                     ignite3.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
             }
@@ -184,8 +184,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleNodeTopology() throws Exception {
-        GridPredicate<GridNode> p = new GridPredicate<GridNode>() {
-            @Override public boolean apply(GridNode e) {
+        GridPredicate<ClusterNode> p = new GridPredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode e) {
                 return ignite1.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 node.
             }
         };
@@ -251,7 +251,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         Class taskCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.JobStealingTask");
         Class nodeFilterCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridExcludeNodeFilter");
 
-        GridPredicate<GridNode> nodeFilter = (GridPredicate<GridNode>)nodeFilterCls
+        GridPredicate<ClusterNode> nodeFilter = (GridPredicate<ClusterNode>)nodeFilterCls
             .getConstructor(UUID.class).newInstance(ignite2.cluster().localNode().id());
 
         Map<UUID, Integer> ret = (Map<UUID, Integer>)executeAsync(compute(ignite1.cluster().forPredicate(nodeFilter)),
@@ -313,13 +313,13 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws GridException {
             //assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
-            Iterator<GridNode> subIter = subgrid.iterator();
+            Iterator<ClusterNode> subIter = subgrid.iterator();
 
             // Spread jobs over subgrid.
             for (int i = 0; i < nJobs; i++) {
@@ -363,11 +363,11 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws GridException {
             assert subgrid.size() > 1 : "Invalid subgrid size: " + subgrid.size();
 
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             // Put all jobs onto one node.
             for (int i = 0; i < nJobs; i++)

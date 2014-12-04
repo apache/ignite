@@ -88,23 +88,23 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
 
         int nodesCnt = 50;
 
-        List<GridNode> nodes = new ArrayList<>(nodesCnt);
+        List<ClusterNode> nodes = new ArrayList<>(nodesCnt);
 
-        List<List<GridNode>> prev = null;
+        List<List<ClusterNode>> prev = null;
 
         for (int i = 0; i < nodesCnt; i++) {
             info("======================================");
             info("Assigning partitions: " + i);
             info("======================================");
 
-            GridNode node = new GridTestNode(UUID.randomUUID());
+            ClusterNode node = new GridTestNode(UUID.randomUUID());
 
             nodes.add(node);
 
             GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(node, "", GridEventType.EVT_NODE_JOINED,
                 node);
 
-            List<List<GridNode>> assignment = aff.assignPartitions(
+            List<List<ClusterNode>> assignment = aff.assignPartitions(
                 new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
 
             info("Assigned.");
@@ -123,11 +123,11 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
             info("Assigning partitions: " + i);
             info("======================================");
 
-            GridNode rmv = nodes.remove(nodes.size() - 1);
+            ClusterNode rmv = nodes.remove(nodes.size() - 1);
 
             GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(rmv, "", GridEventType.EVT_NODE_LEFT, rmv);
 
-            List<List<GridNode>> assignment = aff.assignPartitions(
+            List<List<ClusterNode>> assignment = aff.assignPartitions(
                 new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
 
             info("Assigned.");
@@ -148,9 +148,9 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
 
         int maxNodes = 50;
 
-        List<GridNode> nodes = new ArrayList<>(maxNodes);
+        List<ClusterNode> nodes = new ArrayList<>(maxNodes);
 
-        List<List<GridNode>> prev = null;
+        List<List<ClusterNode>> prev = null;
 
         int state = 0;
 
@@ -183,14 +183,14 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
             GridDiscoveryEvent discoEvt;
 
             if (add) {
-                GridNode addedNode = new GridTestNode(UUID.randomUUID());
+                ClusterNode addedNode = new GridTestNode(UUID.randomUUID());
 
                 nodes.add(addedNode);
 
                 discoEvt = new GridDiscoveryEvent(addedNode, "", GridEventType.EVT_NODE_JOINED, addedNode);
             }
             else {
-                GridNode rmvNode = nodes.remove(rnd.nextInt(nodes.size()));
+                ClusterNode rmvNode = nodes.remove(rnd.nextInt(nodes.size()));
 
                 discoEvt = new GridDiscoveryEvent(rmvNode, "", GridEventType.EVT_NODE_LEFT, rmvNode);
             }
@@ -199,7 +199,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
             info("Assigning partitions [iter=" + i + ", discoEvt=" + discoEvt + ", nodesSize=" + nodes.size() + ']');
             info("======================================");
 
-            List<List<GridNode>> assignment = aff.assignPartitions(
+            List<List<ClusterNode>> assignment = aff.assignPartitions(
                 new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
 
             verifyAssignment(assignment, backups, parts, nodes.size());
@@ -213,13 +213,13 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
     /**
      * @param assignment Assignment to verify.
      */
-    private void verifyAssignment(List<List<GridNode>> assignment, int keyBackups, int partsCnt, int topSize) {
+    private void verifyAssignment(List<List<ClusterNode>> assignment, int keyBackups, int partsCnt, int topSize) {
         Map<UUID, Collection<Integer>> mapping = new HashMap<>();
 
         int ideal = Math.round((float)partsCnt / topSize * Math.min(keyBackups + 1, topSize));
 
         for (int part = 0; part < assignment.size(); part++) {
-            for (GridNode node : assignment.get(part)) {
+            for (ClusterNode node : assignment.get(part)) {
                 assert node != null;
 
                 Collection<Integer> parts = mapping.get(node.id());

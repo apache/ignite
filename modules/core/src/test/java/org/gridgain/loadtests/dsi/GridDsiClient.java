@@ -70,9 +70,9 @@ public class GridDsiClient implements Callable {
      *
      * @return {@code true} if node segment is 'server'.
      */
-    public static GridPredicate<GridNode> serverNode() {
-        return new GridPredicate<GridNode>() {
-            @Override public boolean apply(GridNode node) {
+    public static GridPredicate<ClusterNode> serverNode() {
+        return new GridPredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
                 return "server".equals(node.attribute("segment"));
             }
         };
@@ -83,9 +83,9 @@ public class GridDsiClient implements Callable {
      *
      * @return {@code true} if node segment is 'client'.
      */
-    public static GridPredicate<GridNode> clientNode() {
-        return new GridPredicate<GridNode>() {
-            @Override public boolean apply(GridNode node) {
+    public static GridPredicate<ClusterNode> clientNode() {
+        return new GridPredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
                 return "client".equals(node.attribute("segment"));
             }
         };
@@ -204,7 +204,7 @@ public class GridDsiClient implements Callable {
 
                 X.println("Thread count: " + noThreads);
 
-                Collection<GridNode> srvNodes = g.cluster().forPredicate(serverNode()).nodes();
+                Collection<ClusterNode> srvNodes = g.cluster().forPredicate(serverNode()).nodes();
 
                 if (srvNodes.isEmpty()) {
                     X.println("No server nodes available");
@@ -234,7 +234,7 @@ public class GridDsiClient implements Callable {
                     terminals = new HashMap<>(srvNodes.size());
 
                     // Distribute terminals evenly across all servers.
-                    for (GridNode node : srvNodes) {
+                    for (ClusterNode node : srvNodes) {
                         UUID srvrId = node.id();
 
                         X.println(">>> Node ID: " + srvrId);

@@ -123,7 +123,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testCacheUtilsCheckAttributeMismatch() throws Exception {
         Ignite ignite = startGrid(1);
 
-        final GridNode node = ignite.cluster().localNode();
+        final ClusterNode node = ignite.cluster().localNode();
 
         final GridStringLogger strLog = new GridStringLogger(false, log);
 

@@ -57,7 +57,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     private static final Map<UUID, MessageListener> lsnrs = new HashMap<>();
 
     /** Initialized nodes */
-    private static final List<GridNode> nodes = new ArrayList<>();
+    private static final List<ClusterNode> nodes = new ArrayList<>();
 
     /** */
     private static final ObjectName mBeanName;
@@ -181,9 +181,9 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
             @Override public void run() {
                 try {
                     for (int i = 0; i < iterationCnt; i++) {
-                        GridNode from = randomNode(rnd);
+                        ClusterNode from = randomNode(rnd);
 
-                        GridNode to = randomNode(rnd);
+                        ClusterNode to = randomNode(rnd);
 
                         GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
@@ -254,16 +254,16 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         final Random rnd = new Random();
 
-        final GridNode from = randomNode(rnd);
+        final ClusterNode from = randomNode(rnd);
 
-        GridNode tmp;
+        ClusterNode tmp;
 
         do {
             tmp = randomNode(rnd);
         }
         while (tmp.id().equals(from.id()));
 
-        final GridNode to = tmp;
+        final ClusterNode to = tmp;
 
         final int iterationCnt = 1000;
 
@@ -283,7 +283,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                             info(">>> Running iteration " + i);
 
                         try {
-                            for (GridNode node : nodes) {
+                            for (ClusterNode node : nodes) {
                                 GridTcpCommunicationMessageAdapter msg =
                                     new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
@@ -351,9 +351,9 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         GridFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    GridNode from = nodes.get(0);
+                    ClusterNode from = nodes.get(0);
 
-                    GridNode to = nodes.get(1);
+                    ClusterNode to = nodes.get(1);
 
                     GridCommunicationSpi<GridTcpCommunicationMessageAdapter> spi = spis.get(from.id());
 
@@ -384,7 +384,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
      * @param rnd Random to use.
      * @return Node.
      */
-    private GridNode randomNode(Random rnd) {
+    private ClusterNode randomNode(Random rnd) {
         int idx = rnd.nextInt(nodes.size());
 
         return nodes.get(idx);
@@ -419,7 +419,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         spiRsrcs.clear();
         lsnrs.clear();
 
-        Map<GridNode, GridSpiTestContext> ctxs = new HashMap<>();
+        Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
         for (int i = 0; i < getSpiCount(); i++) {
             GridCommunicationSpi<GridTcpCommunicationMessageAdapter> spi = newCommunicationSpi();
@@ -460,8 +460,8 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         }
 
         // For each context set remote nodes.
-        for (Entry<GridNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (GridNode n : nodes) {
+        for (Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
+            for (ClusterNode n : nodes) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }

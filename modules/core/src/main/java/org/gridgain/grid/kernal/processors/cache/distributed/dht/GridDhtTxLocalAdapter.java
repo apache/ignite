@@ -189,8 +189,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 return;
             }
 
-            Map<GridNode, List<GridDhtCacheEntry<K, V>>> dhtEntryMap = null;
-            Map<GridNode, List<GridDhtCacheEntry<K, V>>> nearEntryMap = null;
+            Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtEntryMap = null;
+            Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearEntryMap = null;
 
             for (GridCacheTxEntry<K, V> e : allEntries()) {
                 assert e.cached() != null;
@@ -280,14 +280,14 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
     /**
      * @param mappings Mappings to add.
      */
-    void addDhtMapping(Map<GridNode, List<GridDhtCacheEntry<K, V>>> mappings) {
+    void addDhtMapping(Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> mappings) {
         addMapping(mappings, dhtMap);
     }
 
     /**
      * @param mappings Mappings to add.
      */
-    void addNearMapping(Map<GridNode, List<GridDhtCacheEntry<K, V>>> mappings) {
+    void addNearMapping(Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> mappings) {
         addMapping(mappings, nearMap);
     }
 
@@ -351,10 +351,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param mappings Entry mappings.
      * @param map Transaction mappings.
      */
-    private void addMapping(Map<GridNode, List<GridDhtCacheEntry<K, V>>> mappings,
+    private void addMapping(Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> mappings,
         Map<UUID, GridDistributedTxMapping<K, V>> map) {
-        for (Map.Entry<GridNode, List<GridDhtCacheEntry<K, V>>> mapping : mappings.entrySet()) {
-            GridNode n = mapping.getKey();
+        for (Map.Entry<ClusterNode, List<GridDhtCacheEntry<K, V>>> mapping : mappings.entrySet()) {
+            ClusterNode n = mapping.getKey();
 
             for (GridDhtCacheEntry<K, V> entry : mapping.getValue()) {
                 GridCacheTxEntry<K, V> txEntry = txMap.get(entry.txKey());
@@ -628,7 +628,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         // Add near readers. If near cache is disabled on all nodes, do nothing.
         Collection<UUID> backupIds = dhtMap.keySet();
 
-        Map<GridNode, List<GridDhtCacheEntry<K, V>>> locNearMap = null;
+        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> locNearMap = null;
 
         for (GridCacheTxKey<K> key : keys) {
             GridCacheTxEntry<K, V> txEntry = entry(key);
@@ -645,14 +645,14 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     Collection<UUID> readers = entry.readers();
 
                     if (!F.isEmpty(readers)) {
-                        Collection<GridNode> nearNodes = cctx.discovery().nodes(readers, F0.notEqualTo(nearNodeId()),
+                        Collection<ClusterNode> nearNodes = cctx.discovery().nodes(readers, F0.notEqualTo(nearNodeId()),
                             F.notIn(backupIds));
 
                         if (log.isDebugEnabled())
                             log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" +
                                 entry + ']');
 
-                        for (GridNode n : nearNodes) {
+                        for (ClusterNode n : nearNodes) {
                             if (locNearMap == null)
                                 locNearMap = new HashMap<>();
 

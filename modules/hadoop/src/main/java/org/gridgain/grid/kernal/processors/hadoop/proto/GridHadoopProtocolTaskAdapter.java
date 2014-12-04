@@ -24,7 +24,7 @@ import java.util.*;
  */
 public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTask<GridHadoopProtocolTaskArguments, R> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable GridHadoopProtocolTaskArguments arg) throws GridException {
         return Collections.singletonMap(new Job(arg), subgrid.get(0));
     }

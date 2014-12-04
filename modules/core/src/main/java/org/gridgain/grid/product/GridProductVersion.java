@@ -21,7 +21,7 @@ import java.util.regex.*;
 /**
  * Represents node version.
  * <p>
- * Node version can be acquired via {@link GridNode#version()} method.
+ * Node version can be acquired via {@link org.gridgain.grid.ClusterNode#version()} method.
  * <p>
  * Two versions are compared in the following order: major number,
  * minor number, maintenance number, revision timestamp.

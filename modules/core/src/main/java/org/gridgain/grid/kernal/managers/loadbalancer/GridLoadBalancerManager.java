@@ -57,14 +57,14 @@ public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancin
      * @return Next balanced node.
      * @throws GridException If anything failed.
      */
-    public GridNode getBalancedNode(GridTaskSessionImpl ses, List<GridNode> top, GridComputeJob job)
+    public ClusterNode getBalancedNode(GridTaskSessionImpl ses, List<ClusterNode> top, GridComputeJob job)
         throws GridException {
         assert ses != null;
         assert top != null;
         assert job != null;
 
         // Check cache affinity routing first.
-        GridNode affNode = cacheAffinityNode(ses.deployment(), job, top);
+        ClusterNode affNode = cacheAffinityNode(ses.deployment(), job, top);
 
         if (affNode != null) {
             if (log.isDebugEnabled())
@@ -82,19 +82,19 @@ public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancin
      * @return Load balancer.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public GridComputeLoadBalancer getLoadBalancer(final GridTaskSessionImpl ses, final List<GridNode> top) {
+    public GridComputeLoadBalancer getLoadBalancer(final GridTaskSessionImpl ses, final List<ClusterNode> top) {
         assert ses != null;
 
         // Return value is not intended for sending over network.
         return new GridLoadBalancerAdapter() {
-            @Nullable @Override public GridNode getBalancedNode(GridComputeJob job, @Nullable Collection<GridNode> exclNodes)
+            @Nullable @Override public ClusterNode getBalancedNode(GridComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
                 throws GridException {
                 A.notNull(job, "job");
 
                 if (F.isEmpty(exclNodes))
                     return GridLoadBalancerManager.this.getBalancedNode(ses, top, job);
 
-                List<GridNode> nodes = F.loseList(top, true, exclNodes);
+                List<ClusterNode> nodes = F.loseList(top, true, exclNodes);
 
                 if (nodes.isEmpty())
                     return null;
@@ -112,7 +112,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancin
      * @return Cache affinity node or {@code null} if this job is not routed with cache affinity key.
      * @throws GridException If failed to determine whether to use affinity routing.
      */
-    @Nullable private GridNode cacheAffinityNode(GridDeployment dep, GridComputeJob job, Collection<GridNode> nodes)
+    @Nullable private ClusterNode cacheAffinityNode(GridDeployment dep, GridComputeJob job, Collection<ClusterNode> nodes)
         throws GridException {
         assert dep != null;
         assert job != null;
@@ -132,7 +132,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancin
             log.debug("Affinity properties [key=" + key + ", cacheName=" + cacheName + "]");
 
         try {
-            GridNode node = ctx.affinity().mapKeyToNode(cacheName, key);
+            ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, key);
 
             if (node == null)
                 throw new GridException("Failed to map key to node (is cache with given name started?) [gridName=" +

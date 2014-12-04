@@ -65,7 +65,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
      * @param n Node.
      * @throws GridException If failed.
      */
-    private void sendJob(GridNode n) throws GridException {
+    private void sendJob(ClusterNode n) throws GridException {
         try {
             int jobId = queue.take();
 
@@ -90,7 +90,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Integer arg)
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Integer arg)
         throws GridException {
         maxExecs = arg;
 
@@ -100,7 +100,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
         if (g.cluster().nodes().size() == 1)
             sendJob(g.cluster().localNode());
         else
-            for (GridNode n : g.cluster().forRemotes().nodes())
+            for (ClusterNode n : g.cluster().forRemotes().nodes())
                 sendJob(n);
 
         return null;

@@ -106,7 +106,7 @@ public class GridCacheEvent extends GridEventAdapter {
 
     /** Event node. */
     @GridToStringExclude
-    @Nullable private final GridNode evtNode;
+    @Nullable private final ClusterNode evtNode;
 
     /** Flag indicating whether event happened on {@code near} or {@code partitioned} cache. */
     @GridToStringInclude
@@ -146,7 +146,7 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      */
-    public GridCacheEvent(String cacheName, GridNode node, @Nullable GridNode evtNode, String msg, int type, int part,
+    public GridCacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
@@ -198,7 +198,7 @@ public class GridCacheEvent extends GridEventAdapter {
      *
      * @return Node which initiated cache operation or {@code null} if that node is not available.
      */
-    @Nullable public GridNode eventNode() {
+    @Nullable public ClusterNode eventNode() {
         return evtNode;
     }
 

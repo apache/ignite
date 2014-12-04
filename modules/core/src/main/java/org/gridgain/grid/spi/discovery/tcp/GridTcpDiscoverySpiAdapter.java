@@ -314,7 +314,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode getLocalNode() {
+    @Override public ClusterNode getLocalNode() {
         return locNode;
     }
 

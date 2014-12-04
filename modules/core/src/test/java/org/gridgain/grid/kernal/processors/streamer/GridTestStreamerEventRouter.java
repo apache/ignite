@@ -30,7 +30,7 @@ class GridTestStreamerEventRouter extends GridStreamerEventRouterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
         UUID nodeId = routeTbl.get(stageName);
 
         if (nodeId == null)

@@ -79,11 +79,11 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> affinityNodes() {
+    @Override public Collection<ClusterNode> affinityNodes() {
         info("Near node ID: " + grid(nearIdx).localNode().id());
 
         for (int i = 0; i < gridCount(); i++) {
-            GridNode node = grid(i).localNode();
+            ClusterNode node = grid(i).localNode();
 
             GridCacheAttributes[] nodeAttrs = node.attribute(GridNodeAttributes.ATTR_CACHE);
 
@@ -91,8 +91,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 Arrays.asList(nodeAttrs) + ']');
         }
 
-        return F.view(super.affinityNodes(), new P1<GridNode>() {
-            @Override public boolean apply(GridNode n) {
+        return F.view(super.affinityNodes(), new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode n) {
                 return !F.eq(G.grid(n.id()).name(), grid(nearIdx).name());
             }
         });

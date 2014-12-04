@@ -109,7 +109,7 @@ public class GridHadoopContext {
     /**
      * @return Hadoop-enabled nodes.
      */
-    public Collection<GridNode> nodes() {
+    public Collection<ClusterNode> nodes() {
         return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR, ctx.discovery().topologyVersion());
     }
 
@@ -118,9 +118,9 @@ public class GridHadoopContext {
      */
     public boolean jobUpdateLeader() {
         long minOrder = Long.MAX_VALUE;
-        GridNode minOrderNode = null;
+        ClusterNode minOrderNode = null;
 
-        for (GridNode node : nodes()) {
+        for (ClusterNode node : nodes()) {
             if (node.order() < minOrder) {
                 minOrder = node.order();
                 minOrderNode = node;

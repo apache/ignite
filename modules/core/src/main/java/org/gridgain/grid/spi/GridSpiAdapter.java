@@ -148,7 +148,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
                     assert evt instanceof GridDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
                         ", actual=" + evt.type() + ", evt=" + evt + ']';
 
-                    GridNode node = spiCtx.node(((GridDiscoveryEvent)evt).eventNode().id());
+                    ClusterNode node = spiCtx.node(((GridDiscoveryEvent)evt).eventNode().id());
 
                     if (node != null)
                         try {
@@ -162,9 +162,9 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
                 }
             }, EVT_NODE_JOINED);
 
-            final Collection<GridNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
+            final Collection<ClusterNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
 
-            for (GridNode node : remotes) {
+            for (ClusterNode node : remotes) {
                 checkConfigurationConsistency(spiCtx, node, true, !secSpi);
                 checkConfigurationConsistency0(spiCtx, node, true);
             }
@@ -190,7 +190,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         if (spiCtx != null && paramsLsnr != null)
             spiCtx.removeLocalEventListener(paramsLsnr);
 
-        GridNode locNode = spiCtx == null ? null : spiCtx.localNode();
+        ClusterNode locNode = spiCtx == null ? null : spiCtx.localNode();
 
         // Set dummy no-op context.
         spiCtx = new GridDummySpiContext(locNode);
@@ -384,7 +384,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
      * @param starting If this node is starting or not.
      * @throws GridSpiException in case of errors.
      */
-    protected void checkConfigurationConsistency0(GridSpiContext spiCtx, GridNode node, boolean starting)
+    protected void checkConfigurationConsistency0(GridSpiContext spiCtx, ClusterNode node, boolean starting)
         throws GridSpiException {
         // No-op.
     }
@@ -398,7 +398,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
      * @throws GridSpiException If check fatally failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private void checkConfigurationConsistency(GridSpiContext spiCtx, GridNode node, boolean starting, boolean tip)
+    private void checkConfigurationConsistency(GridSpiContext spiCtx, ClusterNode node, boolean starting, boolean tip)
         throws GridSpiException {
         assert spiCtx != null;
         assert node != null;
@@ -533,14 +533,14 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
      */
     private static class GridDummySpiContext implements GridSpiContext {
         /** */
-        private final GridNode locNode;
+        private final ClusterNode locNode;
 
         /**
          * Create temp SPI context.
          *
          * @param locNode Local node.
          */
-        GridDummySpiContext(GridNode locNode) {
+        GridDummySpiContext(ClusterNode locNode) {
             this.locNode = locNode;
         }
 
@@ -642,28 +642,28 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridNode> nodes() {
-            return  locNode == null  ? Collections.<GridNode>emptyList() : Collections.singletonList(locNode);
+        @Override public Collection<ClusterNode> nodes() {
+            return  locNode == null  ? Collections.<ClusterNode>emptyList() : Collections.singletonList(locNode);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNode localNode() {
+        @Override public ClusterNode localNode() {
             return locNode;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridNode> remoteDaemonNodes() {
+        @Override public Collection<ClusterNode> remoteDaemonNodes() {
             return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
         @Nullable @Override
-        public GridNode node(UUID nodeId) {
+        public ClusterNode node(UUID nodeId) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridNode> remoteNodes() {
+        @Override public Collection<ClusterNode> remoteNodes() {
             return Collections.emptyList();
         }
 
@@ -688,12 +688,12 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         }
 
         /** {@inheritDoc} */
-        @Override public void send(GridNode node, Serializable msg, String topic) {
+        @Override public void send(ClusterNode node, Serializable msg, String topic) {
             /* No-op. */
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+        @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
             return null;
         }
 

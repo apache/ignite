@@ -353,11 +353,11 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Object arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg)
             throws GridException {
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 map.put(new GridComputeJobAdapter() {
                     @Override public Serializable execute() {
                         if (log.isInfoEnabled())
@@ -387,10 +387,10 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Object arg) throws GridException {
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 map.put(new GridComputeJobAdapter() {
                     @Override public Serializable execute() {
                         log.info("Executing grid job: " + this);
@@ -419,10 +419,10 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Object arg) throws GridException {
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 map.put(new GridComputeJobAdapter() {
                     @Override public Serializable execute() {
                         if (log.isInfoEnabled())

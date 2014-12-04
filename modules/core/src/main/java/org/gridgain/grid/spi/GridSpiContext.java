@@ -38,7 +38,7 @@ public interface GridSpiContext {
      * @see #nodes()
      * @see GridDiscoverySpi
      */
-    public Collection<GridNode> remoteNodes();
+    public Collection<ClusterNode> remoteNodes();
 
     /**
      * Gets a collection of all grid nodes. Remote nodes are discovered via underlying
@@ -50,7 +50,7 @@ public interface GridSpiContext {
      * @see #remoteNodes()
      * @see GridDiscoverySpi
      */
-    public Collection<GridNode> nodes();
+    public Collection<ClusterNode> nodes();
 
     /**
      * Gets local grid node. Instance of local node is provided by underlying {@link GridDiscoverySpi}
@@ -59,7 +59,7 @@ public interface GridSpiContext {
      * @return Local grid node.
      * @see GridDiscoverySpi
      */
-    public GridNode localNode();
+    public ClusterNode localNode();
 
     /**
      * Gets a collection of all remote daemon nodes in topology. The daemon nodes are discovered via
@@ -71,7 +71,7 @@ public interface GridSpiContext {
      * @see #nodes()
      * @see GridDiscoverySpi
      */
-    public Collection<GridNode> remoteDaemonNodes();
+    public Collection<ClusterNode> remoteDaemonNodes();
 
     /**
      * Gets a node instance based on its ID.
@@ -80,7 +80,7 @@ public interface GridSpiContext {
      * @return Node for a given ID or {@code null} is such not has not been discovered.
      * @see GridDiscoverySpi
      */
-    @Nullable public GridNode node(UUID nodeId);
+    @Nullable public ClusterNode node(UUID nodeId);
 
     /**
      * Pings a remote node. The underlying communication is provided via
@@ -106,14 +106,14 @@ public interface GridSpiContext {
      * @param topic Topic to send message to.
      * @throws GridSpiException If failed to send a message to remote node.
      */
-    public void send(GridNode node, Serializable msg, String topic) throws GridSpiException;
+    public void send(ClusterNode node, Serializable msg, String topic) throws GridSpiException;
 
     /**
      * Register a message listener to receive messages sent by remote nodes. The underlying
      * communication mechanism is defined by {@link GridCommunicationSpi} implementation used.
      * <p>
      * This method can be used by jobs to communicate with other nodes in the grid. Remote nodes
-     * can send messages by calling {@link #send(GridNode, Serializable, String)} method.
+     * can send messages by calling {@link #send(org.gridgain.grid.ClusterNode, Serializable, String)} method.
      *
      * @param lsnr Message listener to register.
      * @param topic Topic to register listener for.
@@ -338,7 +338,7 @@ public interface GridSpiContext {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public GridNodeValidationResult validateNode(GridNode node);
+    @Nullable public GridNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Writes delta for provided node and message type.

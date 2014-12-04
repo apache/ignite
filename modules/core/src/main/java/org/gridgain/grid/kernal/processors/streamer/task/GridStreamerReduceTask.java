@@ -54,11 +54,11 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
         throws GridException {
-        Map<GridComputeJob, GridNode> res = U.newHashMap(subgrid.size());
+        Map<GridComputeJob, ClusterNode> res = U.newHashMap(subgrid.size());
 
-        for (GridNode node : subgrid)
+        for (ClusterNode node : subgrid)
             res.put(new ReduceJob<>(clos, streamer), node);
 
         return res;

@@ -80,7 +80,7 @@ public class GridGgfsEvent extends GridEventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public GridGgfsEvent(GridGgfsPath path, GridNode node, int type) {
+    public GridGgfsEvent(GridGgfsPath path, ClusterNode node, int type) {
         super(node, "GGFS event.", type);
 
         this.path = path;
@@ -96,7 +96,7 @@ public class GridGgfsEvent extends GridEventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public GridGgfsEvent(GridGgfsPath path, GridGgfsPath newPath, GridNode node, int type) {
+    public GridGgfsEvent(GridGgfsPath path, GridGgfsPath newPath, ClusterNode node, int type) {
         this(path, node, type);
 
         this.newPath = newPath;
@@ -112,7 +112,7 @@ public class GridGgfsEvent extends GridEventAdapter {
      * @param type Event type.
      * @param dataSize Transferred data size in bytes.
      */
-    public GridGgfsEvent(GridGgfsPath path, GridNode node, int type, long dataSize) {
+    public GridGgfsEvent(GridGgfsPath path, ClusterNode node, int type, long dataSize) {
         this(path, node, type);
 
         this.dataSize = dataSize;
@@ -127,7 +127,7 @@ public class GridGgfsEvent extends GridEventAdapter {
      * @param type Event type.
      * @param meta Modified properties.
      */
-    public GridGgfsEvent(GridGgfsPath path, GridNode node, int type, Map<String, String> meta) {
+    public GridGgfsEvent(GridGgfsPath path, ClusterNode node, int type, Map<String, String> meta) {
         this(path, node, type);
 
         this.meta = meta;

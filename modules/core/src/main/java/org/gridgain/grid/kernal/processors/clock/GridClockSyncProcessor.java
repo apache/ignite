@@ -211,14 +211,14 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
             if (timeCoord == null) {
                 long minNodeOrder = Long.MAX_VALUE;
 
-                Collection<GridNode> nodes = discoEvt.topologyNodes();
+                Collection<ClusterNode> nodes = discoEvt.topologyNodes();
 
-                for (GridNode node : nodes) {
+                for (ClusterNode node : nodes) {
                     if (node.order() < minNodeOrder)
                         minNodeOrder = node.order();
                 }
 
-                GridNode locNode = ctx.grid().localNode();
+                ClusterNode locNode = ctx.grid().localNode();
 
                 if (locNode.order() == minNodeOrder) {
                     if (log.isDebugEnabled())
@@ -283,7 +283,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         try {
             timeSyncHist.put(snapshot.version(), snapshot);
 
-            for (GridNode n : top.topologyNodes()) {
+            for (ClusterNode n : top.topologyNodes()) {
                 GridClockDeltaSnapshotMessage msg = new GridClockDeltaSnapshotMessage(
                     snapshot.version(), snapshot.deltas());
 
@@ -414,7 +414,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
          * @param rmtNodeId Remote node ID.
          */
         private void requestTime(UUID rmtNodeId) {
-            GridNode node = ctx.discovery().node(rmtNodeId);
+            ClusterNode node = ctx.discovery().node(rmtNodeId);
 
             if (node != null) {
                 InetAddress addr = node.attribute(ATTR_TIME_SERVER_HOST);

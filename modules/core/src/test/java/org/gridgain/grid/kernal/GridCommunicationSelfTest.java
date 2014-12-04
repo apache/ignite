@@ -39,7 +39,7 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSendMessageToEmptyNodes() throws Exception {
-        Collection<GridNode> empty = Collections.emptyList();
+        Collection<ClusterNode> empty = Collections.emptyList();
 
         try {
             sendMessage(empty, 1);
@@ -53,7 +53,7 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
      * @param nodes Nodes to send message to.
      * @param cntr Counter.
      */
-    private void sendMessage(Collection<GridNode> nodes, int cntr) {
+    private void sendMessage(Collection<ClusterNode> nodes, int cntr) {
         try {
             message(ignite.cluster().forNodes(nodes)).send(null,
                 new GridTestCommunicationMessage(cntr, ignite.cluster().localNode().id()));

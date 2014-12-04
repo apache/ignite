@@ -745,7 +745,7 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"BusyWait"})
     protected void waitForRemoteNodes(Ignite ignite, int cnt) throws GridException {
         while (true) {
-            Collection<GridNode> nodes = ignite.cluster().forRemotes().nodes();
+            Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
             if (nodes != null && nodes.size() >= cnt)
                 return;

@@ -102,7 +102,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /**
      * @return Node filter.
      */
-    public GridPredicate<GridNode> nodeFilter() {
+    public GridPredicate<ClusterNode> nodeFilter() {
         return cfg.getNodeFilter();
     }
 

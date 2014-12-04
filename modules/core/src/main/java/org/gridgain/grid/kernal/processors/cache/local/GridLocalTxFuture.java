@@ -94,7 +94,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return Collections.emptyList();
     }
 

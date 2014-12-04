@@ -53,7 +53,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     public static final int DFLT_PARTITION_COUNT = 10000;
 
     /** Comparator. */
-    private static final Comparator<GridBiTuple<Long, GridNode>> COMPARATOR =
+    private static final Comparator<GridBiTuple<Long, ClusterNode>> COMPARATOR =
         new HashComparator();
 
     /** Thread local message digest. */
@@ -78,7 +78,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     private boolean exclNeighbors;
 
     /** Optional backup filter. First node is primary, second node is a node being tested. */
-    private GridBiPredicate<GridNode, GridNode> backupFilter;
+    private GridBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
     /** Hash ID resolver. */
     private GridCacheAffinityNodeHashResolver hashIdRslvr = new GridCacheAffinityNodeAddressHashResolver();
@@ -133,7 +133,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
     public GridCacheRendezvousAffinityFunction(int parts,
-        @Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
+        @Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this(false, parts, backupFilter);
     }
 
@@ -145,7 +145,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      * @param backupFilter Backup filter.
      */
     private GridCacheRendezvousAffinityFunction(boolean exclNeighbors, int parts,
-        GridBiPredicate<GridNode, GridNode> backupFilter) {
+        GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts != 0, "parts != 0");
 
         this.exclNeighbors = exclNeighbors;
@@ -226,7 +226,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      *
      * @return Optional backup filter.
      */
-    @Nullable public GridBiPredicate<GridNode, GridNode> getBackupFilter() {
+    @Nullable public GridBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
         return backupFilter;
     }
 
@@ -239,7 +239,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      *
      * @param backupFilter Optional backup filter.
      */
-    public void setBackupFilter(@Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
+    public void setBackupFilter(@Nullable GridBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
     }
 
@@ -268,16 +268,16 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     /**
      * Returns collection of nodes (primary first) for specified partition.
      */
-    public List<GridNode> assignPartition(int part, List<GridNode> nodes, int backups,
-        @Nullable Map<UUID, Collection<GridNode>> neighborhoodCache) {
+    public List<ClusterNode> assignPartition(int part, List<ClusterNode> nodes, int backups,
+        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
         if (nodes.size() <= 1)
             return nodes;
 
-        List<GridBiTuple<Long, GridNode>> lst = new ArrayList<>();
+        List<GridBiTuple<Long, ClusterNode>> lst = new ArrayList<>();
 
         MessageDigest d = digest.get();
 
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             Object nodeHash = hashIdRslvr.resolve(node);
 
             try {
@@ -313,7 +313,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
 
         int primaryAndBackups;
 
-        List<GridNode> res;
+        List<ClusterNode> res;
 
         if (backups == Integer.MAX_VALUE) {
             primaryAndBackups = Integer.MAX_VALUE;
@@ -326,19 +326,19 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
             res = new ArrayList<>(primaryAndBackups);
         }
 
-        GridNode primary = lst.get(0).get2();
+        ClusterNode primary = lst.get(0).get2();
 
         res.add(primary);
 
         // Select backups.
         if (backups > 0) {
             for (int i = 1; i < lst.size(); i++) {
-                GridBiTuple<Long, GridNode> next = lst.get(i);
+                GridBiTuple<Long, ClusterNode> next = lst.get(i);
 
-                GridNode node = next.get2();
+                ClusterNode node = next.get2();
 
                 if (exclNeighbors) {
-                    Collection<GridNode> allNeighbors = allNeighbors(neighborhoodCache, res);
+                    Collection<ClusterNode> allNeighbors = allNeighbors(neighborhoodCache, res);
 
                     if (!allNeighbors.contains(node))
                         res.add(node);
@@ -356,9 +356,9 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
             // Need to iterate one more time in case if there are no nodes which pass exclude backups criteria.
             for (int i = 1; i < lst.size(); i++) {
-                GridBiTuple<Long, GridNode> next = lst.get(i);
+                GridBiTuple<Long, ClusterNode> next = lst.get(i);
 
-                GridNode node = next.get2();
+                ClusterNode node = next.get2();
 
                 if (!res.contains(node))
                     res.add(next.get2());
@@ -389,14 +389,14 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     }
 
     /** {@inheritDoc} */
-    @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
-        List<List<GridNode>> assignments = new ArrayList<>(parts);
+    @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+        List<List<ClusterNode>> assignments = new ArrayList<>(parts);
 
-        Map<UUID, Collection<GridNode>> neighborhoodCache = exclNeighbors ?
+        Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
             neighbors(affCtx.currentTopologySnapshot()) : null;
 
         for (int i = 0; i < parts; i++) {
-            List<GridNode> partAssignment = assignPartition(i, affCtx.currentTopologySnapshot(), affCtx.backups(),
+            List<ClusterNode> partAssignment = assignPartition(i, affCtx.currentTopologySnapshot(), affCtx.backups(),
                 neighborhoodCache);
 
             assignments.add(partAssignment);
@@ -423,7 +423,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         parts = in.readInt();
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (GridCacheAffinityNodeHashResolver)in.readObject();
-        backupFilter = (GridBiPredicate<GridNode, GridNode>)in.readObject();
+        backupFilter = (GridBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 
     /**
@@ -432,14 +432,14 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      * @param topSnapshot Topology snapshot.
      * @return Neighbors map.
      */
-    private Map<UUID, Collection<GridNode>> neighbors(Collection<GridNode> topSnapshot) {
-        Map<String, Collection<GridNode>> macMap = new HashMap<>(topSnapshot.size(), 1.0f);
+    private Map<UUID, Collection<ClusterNode>> neighbors(Collection<ClusterNode> topSnapshot) {
+        Map<String, Collection<ClusterNode>> macMap = new HashMap<>(topSnapshot.size(), 1.0f);
 
         // Group by mac addresses.
-        for (GridNode node : topSnapshot) {
+        for (ClusterNode node : topSnapshot) {
             String macs = node.attribute(GridNodeAttributes.ATTR_MACS);
 
-            Collection<GridNode> nodes = macMap.get(macs);
+            Collection<ClusterNode> nodes = macMap.get(macs);
 
             if (nodes == null) {
                 nodes = new HashSet<>();
@@ -450,10 +450,10 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
             nodes.add(node);
         }
 
-        Map<UUID, Collection<GridNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
+        Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
 
-        for (Collection<GridNode> group : macMap.values()) {
-            for (GridNode node : group)
+        for (Collection<ClusterNode> group : macMap.values()) {
+            for (ClusterNode node : group)
                 neighbors.put(node.id(), group);
         }
 
@@ -465,11 +465,11 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      * @param nodes Nodes.
      * @return All neighbors for given nodes.
      */
-    private Collection<GridNode> allNeighbors(Map<UUID, Collection<GridNode>> neighborhoodCache,
-        Iterable<GridNode> nodes) {
-        Collection<GridNode> res = new HashSet<>();
+    private Collection<ClusterNode> allNeighbors(Map<UUID, Collection<ClusterNode>> neighborhoodCache,
+        Iterable<ClusterNode> nodes) {
+        Collection<ClusterNode> res = new HashSet<>();
 
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             if (!res.contains(node))
                 res.addAll(neighborhoodCache.get(node.id()));
         }
@@ -480,12 +480,12 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     /**
      *
      */
-    private static class HashComparator implements Comparator<GridBiTuple<Long, GridNode>>, Serializable {
+    private static class HashComparator implements Comparator<GridBiTuple<Long, ClusterNode>>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public int compare(GridBiTuple<Long, GridNode> o1, GridBiTuple<Long, GridNode> o2) {
+        @Override public int compare(GridBiTuple<Long, ClusterNode> o1, GridBiTuple<Long, ClusterNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
                 o1.get2().id().compareTo(o2.get2().id());
         }

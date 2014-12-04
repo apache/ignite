@@ -207,7 +207,7 @@ class VisorDiscoveryCommand {
      * @param reverse `True` if sort events in reverse order.
      * @return Discovery events.
      */
-    private def events(node: GridNode, tmFrame: Long, reverse: Boolean) = {
+    private def events(node: ClusterNode, tmFrame: Long, reverse: Boolean) = {
         assert(node != null)
         assert(!node.isDaemon)
 

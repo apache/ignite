@@ -296,19 +296,19 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param topVer Topology version.
      * @return Picked owners.
      */
-    private Collection<GridNode> pickedOwners(int p, long topVer) {
-        Collection<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
+    private Collection<ClusterNode> pickedOwners(int p, long topVer) {
+        Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
 
         int affCnt = affNodes.size();
 
-        Collection<GridNode> rmts = remoteOwners(p, topVer);
+        Collection<ClusterNode> rmts = remoteOwners(p, topVer);
 
         int rmtCnt = rmts.size();
 
         if (rmtCnt <= affCnt)
             return rmts;
 
-        List<GridNode> sorted = new ArrayList<>(rmts);
+        List<ClusterNode> sorted = new ArrayList<>(rmts);
 
         // Sort in descending order, so nodes with higher order will be first.
         Collections.sort(sorted, CU.nodeComparator(false));
@@ -322,7 +322,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param topVer Topology version.
      * @return Nodes owning this partition.
      */
-    private Collection<GridNode> remoteOwners(int p, long topVer) {
+    private Collection<ClusterNode> remoteOwners(int p, long topVer) {
         return F.view(top.owners(p, topVer), F.remoteNodes(cctx.nodeId()));
     }
 
@@ -482,7 +482,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @return {@code False} if partition has become invalid during preloading.
          * @throws GridInterruptedException If interrupted.
          */
-        private boolean preloadEntry(GridNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
+        private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
             throws GridException, GridInterruptedException {
             try {
                 GridCacheEntryEx<K, V> cached = null;
@@ -570,7 +570,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws GridTopologyException If node left.
          * @throws GridException If failed to send message.
          */
-        private Set<Integer> demandFromNode(GridNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
+        private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
             GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, GridException {
             cntr++;
 
@@ -880,7 +880,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                             // For.
                             // ===
-                            for (GridNode node : assigns.keySet()) {
+                            for (ClusterNode node : assigns.keySet()) {
                                 if (topologyChanged() || isCancelled())
                                     break; // For.
 
@@ -1005,7 +1005,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     continue; // For.
                 }
 
-                Collection<GridNode> picked = pickedOwners(p, topVer);
+                Collection<ClusterNode> picked = pickedOwners(p, topVer);
 
                 if (picked.isEmpty()) {
                     top.own(part);
@@ -1014,7 +1014,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         log.debug("Owning partition as there are no other owners: " + part);
                 }
                 else {
-                    GridNode n = F.first(picked);
+                    ClusterNode n = F.first(picked);
 
                     GridDhtPartitionDemandMessage<K, V> msg = assigns.get(n);
 

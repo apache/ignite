@@ -186,14 +186,14 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             if (fragmentizerCrd == null) {
                 long minNodeOrder = Long.MAX_VALUE;
 
-                Collection<GridNode> nodes = discoEvt.topologyNodes();
+                Collection<ClusterNode> nodes = discoEvt.topologyNodes();
 
-                for (GridNode node : nodes) {
+                for (ClusterNode node : nodes) {
                     if (node.order() < minNodeOrder && ggfsCtx.ggfsNode(node))
                         minNodeOrder = node.order();
                 }
 
-                GridNode locNode = ggfsCtx.kernalContext().grid().localNode();
+                ClusterNode locNode = ggfsCtx.kernalContext().grid().localNode();
 
                 if (locNode.order() == minNodeOrder) {
                     if (log.isDebugEnabled())
@@ -543,13 +543,13 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                 F.viewReadOnly(
                     ggfsCtx.kernalContext().discovery().allNodes(),
                     F.node2id(),
-                    new P1<GridNode>() {
-                        @Override public boolean apply(GridNode n) {
+                    new P1<ClusterNode>() {
+                        @Override public boolean apply(ClusterNode n) {
                             return ggfsCtx.ggfsNode(n);
                         }
                     }));
 
-            GridNode locNode = ggfsCtx.kernalContext().grid().localNode();
+            ClusterNode locNode = ggfsCtx.kernalContext().grid().localNode();
 
             while (!startSync0.isEmpty()) {
                 for (UUID nodeId : startSync0) {

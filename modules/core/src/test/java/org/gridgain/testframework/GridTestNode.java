@@ -22,7 +22,7 @@ import static org.gridgain.grid.product.GridProductVersion.*;
 /**
  * Test node.
  */
-public class GridTestNode extends GridMetadataAwareAdapter implements GridNode {
+public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNode {
     /** */
     private static final GridProductVersion VERSION = fromString("99.99.99");
 
@@ -216,9 +216,9 @@ public class GridTestNode extends GridMetadataAwareAdapter implements GridNode {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        assert obj instanceof GridNode;
+        assert obj instanceof ClusterNode;
 
-        return ((GridNode) obj).id().equals(id);
+        return ((ClusterNode) obj).id().equals(id);
     }
 
     /** {@inheritDoc} */

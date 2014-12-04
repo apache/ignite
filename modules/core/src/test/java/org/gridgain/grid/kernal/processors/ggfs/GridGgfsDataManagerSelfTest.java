@@ -445,7 +445,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             do {
                 GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(), null, false, block);
 
-                GridNode affNode = grid(0).cachex(DATA_CACHE_NAME).affinity().mapKeyToNode(key);
+                ClusterNode affNode = grid(0).cachex(DATA_CACHE_NAME).affinity().mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
@@ -519,7 +519,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
                 GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(),
                     info.fileMap().affinityKey(block * blockSize, false), false, block);
 
-                GridNode affNode = dataCache.affinity().mapKeyToNode(key);
+                ClusterNode affNode = dataCache.affinity().mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));

@@ -58,9 +58,9 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
         private UUID locId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable String arg) throws GridException {
-            for (GridNode node : subgrid)
+            for (ClusterNode node : subgrid)
                 if (node.id().equals(locId))
                     return Collections.singletonMap(new GridComputeJobAdapter() {
                         @Override public Serializable execute() {

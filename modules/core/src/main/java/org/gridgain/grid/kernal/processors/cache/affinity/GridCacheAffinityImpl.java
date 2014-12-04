@@ -52,28 +52,28 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPrimary(GridNode n, K key) {
+    @Override public boolean isPrimary(ClusterNode n, K key) {
         A.notNull(n, "n", key, "key");
 
         return cctx.affinity().primary(n, key, topologyVersion());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isBackup(GridNode n, K key) {
+    @Override public boolean isBackup(ClusterNode n, K key) {
         A.notNull(n, "n", key, "key");
 
         return cctx.affinity().backups(key, topologyVersion()).contains(n);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPrimaryOrBackup(GridNode n, K key) {
+    @Override public boolean isPrimaryOrBackup(ClusterNode n, K key) {
         A.notNull(n, "n", key, "key");
 
         return cctx.affinity().belongs(n, key, topologyVersion());
     }
 
     /** {@inheritDoc} */
-    @Override public int[] primaryPartitions(GridNode n) {
+    @Override public int[] primaryPartitions(ClusterNode n) {
         A.notNull(n, "n");
 
         long topVer = cctx.discovery().topologyVersion();
@@ -84,7 +84,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public int[] backupPartitions(GridNode n) {
+    @Override public int[] backupPartitions(ClusterNode n) {
         A.notNull(n, "n");
 
         long topVer = cctx.discovery().topologyVersion();
@@ -95,7 +95,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public int[] allPartitions(GridNode n) {
+    @Override public int[] allPartitions(ClusterNode n) {
         A.notNull(n, "p");
 
         Collection<Integer> parts = new HashSet<>();
@@ -103,7 +103,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
         long topVer = cctx.discovery().topologyVersion();
 
         for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
-            for (GridNode affNode : cctx.affinity().nodes(part, topVer)) {
+            for (ClusterNode affNode : cctx.affinity().nodes(part, topVer)) {
                 if (n.id().equals(affNode.id())) {
                     parts.add(part);
 
@@ -116,17 +116,17 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode mapPartitionToNode(int part) {
+    @Override public ClusterNode mapPartitionToNode(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
         return F.first(cctx.affinity().nodes(part, topologyVersion()));
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, GridNode> mapPartitionsToNodes(Collection<Integer> parts) {
+    @Override public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts) {
         A.notNull(parts, "parts");
 
-        Map<Integer, GridNode> map = new HashMap<>();
+        Map<Integer, ClusterNode> map = new HashMap<>();
 
         if (!F.isEmpty(parts)) {
             for (int p : parts)
@@ -153,14 +153,14 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridNode mapKeyToNode(K key) {
+    @Override @Nullable public ClusterNode mapKeyToNode(K key) {
         A.notNull(key, "key");
 
         return F.first(mapKeysToNodes(F.asList(key)).keySet());
     }
 
     /** {@inheritDoc} */
-    @Override public Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
+    @Override public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
         long topVer = topologyVersion();
@@ -168,10 +168,10 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
         int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
 
         // Must return empty map if no alive nodes present or keys is empty.
-        Map<GridNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);
+        Map<ClusterNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);
 
         for (K key : keys) {
-            GridNode primary = cctx.affinity().primary(key, topVer);
+            ClusterNode primary = cctx.affinity().primary(key, topVer);
 
             if (primary != null) {
                 Collection<K> mapped = res.get(primary);
@@ -190,14 +190,14 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> mapKeyToPrimaryAndBackups(K key) {
+    @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
         A.notNull(key, "key");
 
         return cctx.affinity().nodes(partition(key), topologyVersion());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> mapPartitionToPrimaryAndBackups(int part) {
+    @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
         return cctx.affinity().nodes(part, topologyVersion());

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.security;
 
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -17,7 +16,7 @@ import org.jetbrains.annotations.*;
  */
 public enum GridSecuritySubjectType {
     /**
-     * Subject type for a remote {@link GridNode}.
+     * Subject type for a remote {@link org.gridgain.grid.ClusterNode}.
      */
     REMOTE_NODE,
 

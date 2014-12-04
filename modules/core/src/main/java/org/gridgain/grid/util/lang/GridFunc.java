@@ -301,9 +301,9 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<GridProjection, GridPredicate<GridNode>> P2P =
-        new C1<GridProjection, GridPredicate<GridNode>>() {
-            @Override public GridPredicate<GridNode> apply(GridProjection e) {
+    private static final GridClosure<GridProjection, GridPredicate<ClusterNode>> P2P =
+        new C1<GridProjection, GridPredicate<ClusterNode>>() {
+            @Override public GridPredicate<ClusterNode> apply(GridProjection e) {
                 return e.predicate();
             }
 
@@ -457,8 +457,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<GridNode, UUID> NODE2ID = new GridClosure<GridNode, UUID>() {
-        @Override public UUID apply(GridNode n) {
+    private static final GridClosure<ClusterNode, UUID> NODE2ID = new GridClosure<ClusterNode, UUID>() {
+        @Override public UUID apply(ClusterNode n) {
             return n.id();
         }
 
@@ -468,8 +468,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridClosure<GridNode, String> NODE2ID8 = new GridClosure<GridNode, String>() {
-        @Override public String apply(GridNode n) {
+    private static final GridClosure<ClusterNode, String> NODE2ID8 = new GridClosure<ClusterNode, String>() {
+        @Override public String apply(ClusterNode n) {
             return U.id8(n.id());
         }
 
@@ -537,7 +537,7 @@ public class GridFunc {
      *
      * @return Closure transforming a grid projection into its predicate.
      */
-    public static GridClosure<GridProjection, GridPredicate<GridNode>> predicate() {
+    public static GridClosure<GridProjection, GridPredicate<ClusterNode>> predicate() {
         return P2P;
     }
 
@@ -548,7 +548,7 @@ public class GridFunc {
      * @param <T> Type of the node.
      * @return Return {@code true} only for the node with given local node ID.
      */
-    public static <T extends GridNode> GridPredicate<T> localNode(final UUID locNodeId) {
+    public static <T extends ClusterNode> GridPredicate<T> localNode(final UUID locNodeId) {
         return new P1<T>() {
             @Override public boolean apply(T n) {
                 return n.id().equals(locNodeId);
@@ -563,7 +563,7 @@ public class GridFunc {
      * @param <T> Type of the node.
      * @return Return {@code false} for the given local node ID.
      */
-    public static <T extends GridNode> GridPredicate<T> remoteNodes(final UUID locNodeId) {
+    public static <T extends ClusterNode> GridPredicate<T> remoteNodes(final UUID locNodeId) {
         return new P1<T>() {
             @Override public boolean apply(T n) {
                 return !n.id().equals(locNodeId);
@@ -1548,7 +1548,7 @@ public class GridFunc {
      * @param nodes Collection of grid nodes.
      * @return Collection of node IDs for given collection of grid nodes.
      */
-    public static Collection<UUID> nodeIds(@Nullable Collection<? extends GridNode> nodes) {
+    public static Collection<UUID> nodeIds(@Nullable Collection<? extends ClusterNode> nodes) {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
@@ -1566,7 +1566,7 @@ public class GridFunc {
      * @param nodes Collection of grid nodes.
      * @return Collection of node IDs for given collection of grid nodes.
      */
-    public static Collection<String> nodeId8s(@Nullable Collection<? extends GridNode> nodes) {
+    public static Collection<String> nodeId8s(@Nullable Collection<? extends ClusterNode> nodes) {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
@@ -1602,12 +1602,12 @@ public class GridFunc {
      * @param <T> Type of the attribute.
      * @return Collection of node attributes for given collection of grid nodes.
      */
-    public static <T> Collection<T> nodeAttributes(Collection<? extends GridNode> nodes, String attr) {
+    public static <T> Collection<T> nodeAttributes(Collection<? extends ClusterNode> nodes, String attr) {
         A.notNull(nodes, "nodes", attr, "attr");
 
         Collection<T> c = new ArrayList<>(nodes.size());
 
-        for (GridNode n : nodes)
+        for (ClusterNode n : nodes)
             c.add(n.<T>attribute(attr));
 
         return c;
@@ -2398,7 +2398,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID.
      */
-    public static GridClosure<GridNode, UUID> node2id() {
+    public static GridClosure<ClusterNode, UUID> node2id() {
         return NODE2ID;
     }
 
@@ -2407,7 +2407,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID8 representation (shorter and good enough).
      */
-    public static GridClosure<GridNode, String> node2id8() {
+    public static GridClosure<ClusterNode, String> node2id8() {
         return NODE2ID8;
     }
 
@@ -2428,11 +2428,11 @@ public class GridFunc {
      * @see #idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static <T extends GridNode> GridPredicate<T> nodeForNodeId(final UUID nodeId) {
+    public static <T extends ClusterNode> GridPredicate<T> nodeForNodeId(final UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
         return new P1<T>() {
-            @Override public boolean apply(GridNode e) {
+            @Override public boolean apply(ClusterNode e) {
                 return e.id().equals(nodeId);
             }
         };
@@ -2446,7 +2446,7 @@ public class GridFunc {
      * @see #idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static <T extends GridNode> GridPredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
+    public static <T extends ClusterNode> GridPredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
         nodeIds) {
         if (isEmpty(nodeIds))
             return alwaysFalse();
@@ -2454,7 +2454,7 @@ public class GridFunc {
         assert nodeIds != null;
 
         return new P1<T>() {
-            @Override public boolean apply(GridNode e) {
+            @Override public boolean apply(ClusterNode e) {
                 return nodeIds.contains(e.id());
             }
         };
@@ -2468,7 +2468,7 @@ public class GridFunc {
      * @see #idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static <T extends GridNode> GridPredicate<T> nodeForNodeIds(@Nullable final UUID... nodeIds) {
+    public static <T extends ClusterNode> GridPredicate<T> nodeForNodeIds(@Nullable final UUID... nodeIds) {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
@@ -2483,7 +2483,7 @@ public class GridFunc {
                 ids = Arrays.copyOf(nodeIds, nodeIds.length);
             }
 
-            @Override public boolean apply(GridNode e) {
+            @Override public boolean apply(ClusterNode e) {
                 return Arrays.binarySearch(ids, e.id()) >= 0;
             }
         };
@@ -2566,7 +2566,7 @@ public class GridFunc {
      *      return {@code false}.
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
-    public static GridPredicate<GridNode> nodeForNodes(@Nullable Collection<? extends GridNode> nodes) {
+    public static GridPredicate<ClusterNode> nodeForNodes(@Nullable Collection<? extends ClusterNode> nodes) {
         return new GridNodePredicate(nodeIds(nodes));
     }
 
@@ -2579,7 +2579,7 @@ public class GridFunc {
      *      return {@code false}.
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
-    public static GridPredicate<GridNode> nodeForNodes(GridNode... nodes) {
+    public static GridPredicate<ClusterNode> nodeForNodes(ClusterNode... nodes) {
         return new GridNodePredicate(nodes);
     }
 
@@ -7627,15 +7627,15 @@ public class GridFunc {
     }
 
     /**
-     * Compares two {@link GridNode} instances for equality.
+     * Compares two {@link org.gridgain.grid.ClusterNode} instances for equality.
      * <p>
-     * Since introduction of {@link GridNode} in GridGain 3.0 the semantic of equality between
+     * Since introduction of {@link org.gridgain.grid.ClusterNode} in GridGain 3.0 the semantic of equality between
      * grid nodes has changed. Since rich node wraps thin node instance and in the same time
-     * implements {@link GridNode} interface, the proper semantic of comparing two grid node is
+     * implements {@link org.gridgain.grid.ClusterNode} interface, the proper semantic of comparing two grid node is
      * to ignore their runtime types and compare only by their IDs. This method implements this logic.
      * <p>
      * End users rarely, if ever, need to directly compare two grid nodes for equality. This method is
-     * intended primarily for discovery SPI developers that provide implementations of {@link GridNode}
+     * intended primarily for discovery SPI developers that provide implementations of {@link org.gridgain.grid.ClusterNode}
      * interface.
      *
      * @param n1 Grid node 1.
@@ -7644,8 +7644,8 @@ public class GridFunc {
      *      {@code false} otherwise.
      */
     public static boolean eqNodes(Object n1, Object n2) {
-        return n1 == n2 || !(n1 == null || n2 == null) && !(!(n1 instanceof GridNode) || !(n2 instanceof GridNode))
-            && ((GridNode)n1).id().equals(((GridNode)n2).id());
+        return n1 == n2 || !(n1 == null || n2 == null) && !(!(n1 instanceof ClusterNode) || !(n2 instanceof ClusterNode))
+            && ((ClusterNode)n1).id().equals(((ClusterNode)n2).id());
     }
 
     /**
@@ -8387,12 +8387,12 @@ public class GridFunc {
      * @return Predicate which returns {@code true} for all nodes which have given cache names
      *      started.
      */
-    public static GridPredicate<GridNode> cacheNodesForNames(@Nullable final String... cacheNames) {
+    public static GridPredicate<ClusterNode> cacheNodesForNames(@Nullable final String... cacheNames) {
         if (cacheNames == null)
             return alwaysFalse();
 
-        return new P1<GridNode>() {
-            @Override public boolean apply(GridNode n) {
+        return new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode n) {
                 Collection<String> names = U.cacheNames(n);
 
                 for (String name : names) {
@@ -8506,14 +8506,14 @@ public class GridFunc {
      * @return Event predicate.
      */
     public static GridPredicate<GridEvent> eventNode(@Nullable final String gridName,
-        @Nullable final GridPredicate<GridNode>... p) {
+        @Nullable final GridPredicate<ClusterNode>... p) {
         return isEmpty(p) || isAlwaysTrue(p) ? F.<GridEvent>alwaysTrue() : isAlwaysFalse(p) ? F.<GridEvent>alwaysFalse() :
             new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent e) {
                     assert e != null;
 
                     try {
-                        GridNode node = G.grid(gridName).cluster().node(e.node().id());
+                        ClusterNode node = G.grid(gridName).cluster().node(e.node().id());
 
                         return isAll(node, p);
                     }
@@ -8532,7 +8532,7 @@ public class GridFunc {
      * @param nodes Nodes.
      * @return Event predicate.
      */
-    public static GridPredicate<GridEvent> eventNode(@Nullable final Collection<? extends GridNode> nodes) {
+    public static GridPredicate<GridEvent> eventNode(@Nullable final Collection<? extends ClusterNode> nodes) {
         return isEmpty(nodes) ? F.<GridEvent>alwaysFalse() : new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;

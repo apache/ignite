@@ -184,7 +184,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> top) {
+    @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
         assert ctx != null;
         assert top != null;
 
@@ -215,7 +215,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
         }
 
         try {
-            GridNode thief = null;
+            ClusterNode thief = null;
             boolean isNodeFailed = false;
 
             UUID thiefId = ctx.getJobResult().getJobContext().getAttribute(THIEF_NODE_ATTR);
@@ -271,9 +271,9 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
                 ctx.getJobResult().getJobContext().setAttribute(FAILED_NODE_LIST_ATTR, failedNodes);
 
                 // Copy.
-                List<GridNode> newTop = new ArrayList<>(top.size());
+                List<ClusterNode> newTop = new ArrayList<>(top.size());
 
-                for (GridNode n : top) {
+                for (ClusterNode n : top) {
                     // Add non-failed nodes to topology.
                     if (!failedNodes.contains(n.id()))
                         newTop.add(n);

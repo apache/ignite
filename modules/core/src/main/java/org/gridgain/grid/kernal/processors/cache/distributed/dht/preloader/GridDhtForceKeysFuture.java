@@ -192,7 +192,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     public void init() {
         assert cctx.preloader().startFuture().isDone();
 
-        map(keys, Collections.<GridNode>emptyList());
+        map(keys, Collections.<ClusterNode>emptyList());
 
         markInitialized();
     }
@@ -202,10 +202,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param exc Exclude nodes.
      * @return {@code True} if some mapping was added.
      */
-    private boolean map(Iterable<? extends K> keys, Collection<GridNode> exc) {
-        Map<GridNode, Set<K>> mappings = new HashMap<>();
+    private boolean map(Iterable<? extends K> keys, Collection<ClusterNode> exc) {
+        Map<ClusterNode, Set<K>> mappings = new HashMap<>();
 
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         int curTopVer = topCntr.get();
 
@@ -223,8 +223,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             trackable = true;
 
             // Create mini futures.
-            for (Map.Entry<GridNode, Set<K>> mapped : mappings.entrySet()) {
-                GridNode n = mapped.getKey();
+            for (Map.Entry<ClusterNode, Set<K>> mapped : mappings.entrySet()) {
+                ClusterNode n = mapped.getKey();
                 Set<K> mappedKeys = mapped.getValue();
 
                 int cnt = F.size(mappedKeys);
@@ -271,8 +271,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param exc Exclude nodes.
      * @param mappings Mappings.
      */
-    private void map(K key, Map<GridNode, Set<K>> mappings, Collection<GridNode> exc) {
-        GridNode loc = cctx.localNode();
+    private void map(K key, Map<ClusterNode, Set<K>> mappings, Collection<ClusterNode> exc) {
+        ClusterNode loc = cctx.localNode();
 
         int part = cctx.affinity().partition(key);
 
@@ -294,7 +294,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     ", locId=" + cctx.nodeId() + ']');
         }
 
-        List<GridNode> owners = F.isEmpty(exc) ? top.owners(part, topVer) :
+        List<ClusterNode> owners = F.isEmpty(exc) ? top.owners(part, topVer) :
             new ArrayList<>(F.view(top.owners(part, topVer), F.notIn(exc)));
 
         if (owners.isEmpty() || (owners.contains(loc) && cctx.preloadEnabled())) {
@@ -320,7 +320,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             Collections.sort(owners, CU.nodeComparator(false));
 
             // Load from youngest owner.
-            GridNode pick = F.first(owners);
+            ClusterNode pick = F.first(owners);
 
             assert pick != null;
 
@@ -366,7 +366,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         private GridUuid miniId = GridUuid.randomUuid();
 
         /** Node. */
-        private GridNode node;
+        private ClusterNode node;
 
         /** Requested keys. */
         private Collection<K> keys;
@@ -378,7 +378,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         private CountDownLatch pauseLatch = new CountDownLatch(1);
 
         /** Excludes. */
-        private Collection<GridNode> exc;
+        private Collection<ClusterNode> exc;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -393,7 +393,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
          * @param curTopVer Topology version for this mini-future.
          * @param exc Exclude node list.
          */
-        MiniFuture(GridNode node, Collection<K> keys, int curTopVer, Collection<GridNode> exc) {
+        MiniFuture(ClusterNode node, Collection<K> keys, int curTopVer, Collection<ClusterNode> exc) {
             super(cctx.kernalContext());
 
             assert node != null;
@@ -416,7 +416,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         /**
          * @return Node ID.
          */
-        GridNode node() {
+        ClusterNode node() {
             return node;
         }
 
@@ -461,7 +461,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             if (!F.isEmpty(missedKeys)) {
                 if (curTopVer != topCntr.get() || pauseLatch.getCount() == 0)
-                    map(missedKeys, Collections.<GridNode>emptyList());
+                    map(missedKeys, Collections.<ClusterNode>emptyList());
                 else
                     remapMissed = true;
             }
@@ -523,7 +523,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             }
 
             if (remapMissed && pause())
-                map(missedKeys, Collections.<GridNode>emptyList());
+                map(missedKeys, Collections.<ClusterNode>emptyList());
 
             // Finish mini future.
             onDone(true);

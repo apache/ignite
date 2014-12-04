@@ -180,7 +180,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
 
             GridStreamerEventRouter evtRouter = streamer.eventRouter();
 
-            Map<GridNode, Collection<Object>> routeMap = evtRouter.route(streamer.context(), stageName, evts);
+            Map<ClusterNode, Collection<Object>> routeMap = evtRouter.route(streamer.context(), stageName, evts);
 
             if (log.isDebugEnabled())
                 log.debug("Mapped stage to nodes [futId=" + futId + ", stageName=" + stageName +
@@ -199,8 +199,8 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
             else {
                 execNodeIds.addAll(U.nodeIds(routeMap.keySet()));
 
-                for (Map.Entry<GridNode, Collection<Object>> entry : routeMap.entrySet()) {
-                    GridNode node = entry.getKey();
+                for (Map.Entry<ClusterNode, Collection<Object>> entry : routeMap.entrySet()) {
+                    ClusterNode node = entry.getKey();
 
                     childExecs.put(node.id(), new GridStreamerExecutionBatch(
                         execId,

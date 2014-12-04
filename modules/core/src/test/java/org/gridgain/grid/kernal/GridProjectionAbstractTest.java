@@ -170,7 +170,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         Collection<UUID> nodeIds = projectionNodeIds();
 
-        for (GridNode node : prj.nodes())
+        for (ClusterNode node : prj.nodes())
             assert nodeIds.contains(node.id());
     }
 
@@ -193,7 +193,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
             assertEquals(size, prj.forRemotes().nodes().size());
 
-            for (GridNode node : prj.forRemotes().nodes()) {
+            for (ClusterNode node : prj.forRemotes().nodes()) {
                 UUID id = node.id();
 
                 assert !id.equals(locNodeId) && remoteNodeIds.contains(id) && !excludedId.equals(id);
@@ -263,7 +263,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
                 lsnrs.add(F.t(g, lsnr));
             }
 
-            for (GridNode node : prj.nodes()) {
+            for (ClusterNode node : prj.nodes()) {
                 g = G.grid(node.id());
 
                 g.events().localListen(lsnr = new GridPredicate<GridEvent>() {

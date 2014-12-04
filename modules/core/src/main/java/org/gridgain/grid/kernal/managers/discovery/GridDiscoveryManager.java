@@ -80,8 +80,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     protected static final int DISCOVERY_HISTORY_SIZE = 100;
 
     /** Predicate filtering out daemon nodes. */
-    private static final GridPredicate<GridNode> daemonFilter = new P1<GridNode>() {
-        @Override public boolean apply(GridNode n) {
+    private static final GridPredicate<ClusterNode> daemonFilter = new P1<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
             return !n.isDaemon();
         }
     };
@@ -107,7 +107,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     private final AtomicLong lastLoggedTop = new AtomicLong();
 
     /** Local node. */
-    private GridNode locNode;
+    private ClusterNode locNode;
 
     /** Local node daemon flag. */
     private boolean isLocDaemon;
@@ -127,7 +127,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             DISCOVERY_HISTORY_SIZE, 0.7f, 1);
 
     /** Topology snapshots history. */
-    private volatile Map<Long, Collection<GridNode>> topHist = new HashMap<>();
+    private volatile Map<Long, Collection<ClusterNode>> topHist = new HashMap<>();
 
     /** Topology version. */
     private final GridAtomicLong topVer = new GridAtomicLong();
@@ -232,7 +232,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         getSpi().setMetricsProvider(createMetricsProvider());
 
         getSpi().setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
+            @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
                 throws GridException {
                 return ctx.security().authenticateNode(node, cred);
             }
@@ -243,9 +243,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         });
 
         getSpi().setListener(new GridDiscoverySpiListener() {
-            @Override public void onDiscovery(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot,
-                Map<Long, Collection<GridNode>> snapshots) {
-                final GridNode locNode = localNode();
+            @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
+                Map<Long, Collection<ClusterNode>> snapshots) {
+                final ClusterNode locNode = localNode();
 
                 if (snapshots != null)
                     topHist = snapshots;
@@ -279,8 +279,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     discoEvt.type(EVT_NODE_JOINED);
 
                     discoEvt.topologySnapshot(topVer, new ArrayList<>(
-                        F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
-                            @Override public GridNode apply(GridNode e) {
+                        F.viewReadOnly(topSnapshot, new C1<ClusterNode, ClusterNode>() {
+                            @Override public ClusterNode apply(ClusterNode e) {
                                 return e;
                             }
                         }, daemonFilter)));
@@ -615,8 +615,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param nodes List of remote nodes to check attributes on.
      * @throws GridException In case of error.
      */
-    private void checkAttributes(Iterable<GridNode> nodes) throws GridException {
-        GridNode locNode = getSpi().getLocalNode();
+    private void checkAttributes(Iterable<ClusterNode> nodes) throws GridException {
+        ClusterNode locNode = getSpi().getLocalNode();
 
         assert locNode != null;
 
@@ -629,7 +629,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         boolean warned = false;
 
-        for (GridNode n : nodes) {
+        for (ClusterNode n : nodes) {
             String rmtPreferIpV4 = n.attribute("java.net.preferIPv4Stack");
 
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
@@ -674,12 +674,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param nodes Nodes.
      * @return Total CPUs.
      */
-    private static int cpus(Collection<GridNode> nodes) {
+    private static int cpus(Collection<ClusterNode> nodes) {
         Collection<String> macSet = new HashSet<>(nodes.size(), 1.0f);
 
         int cpus = 0;
 
-        for (GridNode n : nodes) {
+        for (ClusterNode n : nodes) {
             String macs = n.attribute(ATTR_MACS);
 
             if (macSet.add(macs))
@@ -707,11 +707,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         DiscoCache discoCache = discoCache();
 
-        Collection<GridNode> rmtNodes = discoCache.remoteNodes();
+        Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
-        GridNode locNode = discoCache.localNode();
+        ClusterNode locNode = discoCache.localNode();
 
-        Collection<GridNode> allNodes = discoCache.allNodes();
+        Collection<ClusterNode> allNodes = discoCache.allNodes();
 
         long hash = topologyHash(allNodes);
 
@@ -750,7 +750,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 locNode.attribute("java.runtime.name") + ' ' +
                 locNode.attribute("java.runtime.version") + U.nl();
 
-            for (GridNode node : rmtNodes)
+            for (ClusterNode node : rmtNodes)
                 dbg += ">>> Remote: " +
                     node.id().toString().toUpperCase() + ", " +
                     U.addressesAsString(node) + ", " +
@@ -864,7 +864,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param node Node.
      * @return {@code True} if node is alive.
      */
-    public boolean alive(GridNode node) {
+    public boolean alive(ClusterNode node) {
         assert node != null;
 
         return alive(node.id());
@@ -884,7 +884,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param nodeId ID of the node.
      * @return Node for ID.
      */
-    @Nullable public GridNode node(UUID nodeId) {
+    @Nullable public ClusterNode node(UUID nodeId) {
         assert nodeId != null;
 
         return discoCache().node(nodeId);
@@ -897,8 +897,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param p Filter for IDs.
      * @return Collection with all alive nodes for given IDs.
      */
-    public Collection<GridNode> nodes(@Nullable Collection<UUID> ids, GridPredicate<UUID>... p) {
-        return F.isEmpty(ids) ? Collections.<GridNode>emptyList() :
+    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids, GridPredicate<UUID>... p) {
+        return F.isEmpty(ids) ? Collections.<ClusterNode>emptyList() :
             F.view(
                 F.viewReadOnly(ids, U.id2Node(ctx), p),
                 F.notNull());
@@ -910,17 +910,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param nodes Subset of grid nodes for hashing.
      * @return Hash for given topology.
      */
-    public long topologyHash(Iterable<? extends GridNode> nodes) {
+    public long topologyHash(Iterable<? extends ClusterNode> nodes) {
         assert nodes != null;
 
-        Iterator<? extends GridNode> iter = nodes.iterator();
+        Iterator<? extends ClusterNode> iter = nodes.iterator();
 
         if (!iter.hasNext())
             return 0; // Special case.
 
         List<String> uids = new ArrayList<>();
 
-        for (GridNode node : nodes)
+        for (ClusterNode node : nodes)
             uids.add(node.id().toString());
 
         Collections.sort(uids);
@@ -969,12 +969,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     }
 
     /** @return All non-daemon remote nodes in topology. */
-    public Collection<GridNode> remoteNodes() {
+    public Collection<ClusterNode> remoteNodes() {
         return discoCache().remoteNodes();
     }
 
     /** @return All non-daemon nodes in topology. */
-    public Collection<GridNode> allNodes() {
+    public Collection<ClusterNode> allNodes() {
         return discoCache().allNodes();
     }
 
@@ -983,7 +983,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      *
      * @return Version to collection of nodes map.
      */
-    public NavigableMap<GridProductVersion, Collection<GridNode>> topologyVersionMap() {
+    public NavigableMap<GridProductVersion, Collection<ClusterNode>> topologyVersionMap() {
         return discoCache().versionsMap();
     }
 
@@ -998,7 +998,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<GridNode> nodes(long topVer) {
+    public Collection<ClusterNode> nodes(long topVer) {
         return resolveDiscoCache(null, topVer).allNodes();
     }
 
@@ -1009,7 +1009,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<GridNode> cacheNodes(@Nullable String cacheName, long topVer) {
+    public Collection<ClusterNode> cacheNodes(@Nullable String cacheName, long topVer) {
         return resolveDiscoCache(cacheName, topVer).cacheNodes(cacheName, topVer);
     }
 
@@ -1019,7 +1019,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<GridNode> cacheNodes(long topVer) {
+    public Collection<ClusterNode> cacheNodes(long topVer) {
         return resolveDiscoCache(null, topVer).allNodesWithCaches(topVer);
     }
 
@@ -1030,7 +1030,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<GridNode> remoteCacheNodes(@Nullable String cacheName, long topVer) {
+    public Collection<ClusterNode> remoteCacheNodes(@Nullable String cacheName, long topVer) {
         return resolveDiscoCache(cacheName, topVer).remoteCacheNodes(cacheName, topVer);
     }
 
@@ -1040,7 +1040,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<GridNode> remoteCacheNodes(long topVer) {
+    public Collection<ClusterNode> remoteCacheNodes(long topVer) {
         return resolveDiscoCache(null, topVer).remoteCacheNodes(topVer);
     }
 
@@ -1051,7 +1051,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<GridNode> aliveCacheNodes(@Nullable String cacheName, long topVer) {
+    public Collection<ClusterNode> aliveCacheNodes(@Nullable String cacheName, long topVer) {
         return resolveDiscoCache(cacheName, topVer).aliveCacheNodes(cacheName, topVer);
     }
 
@@ -1062,7 +1062,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<GridNode> aliveRemoteCacheNodes(@Nullable String cacheName, long topVer) {
+    public Collection<ClusterNode> aliveRemoteCacheNodes(@Nullable String cacheName, long topVer) {
         return resolveDiscoCache(cacheName, topVer).aliveRemoteCacheNodes(cacheName, topVer);
     }
 
@@ -1072,7 +1072,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version (maximum allowed node order).
      * @return Collection of alive cache nodes.
      */
-    public Collection<GridNode> aliveRemoteNodesWithCaches(long topVer) {
+    public Collection<ClusterNode> aliveRemoteNodesWithCaches(long topVer) {
         return resolveDiscoCache(null, topVer).aliveRemoteNodesWithCaches(topVer);
     }
 
@@ -1082,7 +1082,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version (maximum allowed node order).
      * @return Collection of alive cache nodes.
      */
-    public Collection<GridNode> aliveNodesWithCaches(long topVer) {
+    public Collection<ClusterNode> aliveNodesWithCaches(long topVer) {
         return resolveDiscoCache(null, topVer).aliveNodesWithCaches(topVer);
     }
 
@@ -1093,7 +1093,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache affinity nodes.
      */
-    public Collection<GridNode> cacheAffinityNodes(@Nullable String cacheName, long topVer) {
+    public Collection<ClusterNode> cacheAffinityNodes(@Nullable String cacheName, long topVer) {
         return resolveDiscoCache(cacheName, topVer).cacheAffinityNodes(cacheName, topVer);
     }
 
@@ -1141,23 +1141,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param topVer Topology version.
      * @return Topology nodes or {@code null} if there are no nodes for passed in version.
      */
-    @Nullable public Collection<GridNode> topology(long topVer) {
+    @Nullable public Collection<ClusterNode> topology(long topVer) {
         if (!histSupported)
             throw new UnsupportedOperationException("Current discovery SPI does not support " +
                 "topology snapshots history (consider using TCP discovery SPI).");
 
-        Map<Long, Collection<GridNode>> snapshots = topHist;
+        Map<Long, Collection<ClusterNode>> snapshots = topHist;
 
         return snapshots.get(topVer);
     }
 
     /** @return All daemon nodes in topology. */
-    public Collection<GridNode> daemonNodes() {
+    public Collection<ClusterNode> daemonNodes() {
         return discoCache().daemonNodes();
     }
 
     /** @return Local node. */
-    public GridNode localNode() {
+    public ClusterNode localNode() {
         return locNode == null ? getSpi().getLocalNode() : locNode;
     }
 
@@ -1267,7 +1267,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
                     if (!segValid) {
                         discoWrk.addEvent(EVT_NODE_SEGMENTED, 0, getSpi().getLocalNode(),
-                            Collections.<GridNode>emptyList());
+                            Collections.<ClusterNode>emptyList());
 
                         lastSegChkRes.set(false);
                     }
@@ -1287,7 +1287,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** Event queue. */
-        private final BlockingQueue<GridTuple4<Integer, Long, GridNode, Collection<GridNode>>> evts =
+        private final BlockingQueue<GridTuple4<Integer, Long, ClusterNode, Collection<ClusterNode>>> evts =
             new LinkedBlockingQueue<>();
 
         /** Node segmented event fired flag. */
@@ -1308,7 +1308,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param node Remote node this event is connected with.
          * @param topSnapshot Topology snapshot.
          */
-        private void recordEvent(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot) {
+        private void recordEvent(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot) {
             assert node != null;
 
             if (ctx.event().isRecordable(type)) {
@@ -1319,8 +1319,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 evt.type(type);
 
                 evt.topologySnapshot(topVer, new ArrayList<>(
-                    F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
-                        @Override public GridNode apply(GridNode e) {
+                    F.viewReadOnly(topSnapshot, new C1<ClusterNode, ClusterNode>() {
+                        @Override public ClusterNode apply(ClusterNode e) {
                             return e;
                         }
                     }, daemonFilter)));
@@ -1353,7 +1353,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param node Node.
          * @param topSnapshot Topology snapshot.
          */
-        void addEvent(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot) {
+        void addEvent(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot) {
             assert node != null;
 
             evts.add(F.t(type, topVer, node, topSnapshot));
@@ -1363,7 +1363,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param node Node to get a short description for.
          * @return Short description for the node to be used in 'quiet' mode.
          */
-        private String quietNode(GridNode node) {
+        private String quietNode(ClusterNode node) {
             assert node != null;
 
             return "nodeId8=" + node.id().toString().substring(0, 8) + ", " +
@@ -1390,13 +1390,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         /** @throws InterruptedException If interrupted. */
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
-            GridTuple4<Integer, Long, GridNode, Collection<GridNode>> evt = evts.take();
+            GridTuple4<Integer, Long, ClusterNode, Collection<ClusterNode>> evt = evts.take();
 
             int type = evt.get1();
 
             long topVer = evt.get2();
 
-            GridNode node = evt.get3();
+            ClusterNode node = evt.get3();
 
             boolean isDaemon = node.isDaemon();
 
@@ -1715,40 +1715,40 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** Cache for discovery collections. */
     private class DiscoCache {
         /** Remote nodes. */
-        private final List<GridNode> rmtNodes;
+        private final List<ClusterNode> rmtNodes;
 
         /** All nodes. */
-        private final List<GridNode> allNodes;
+        private final List<ClusterNode> allNodes;
 
         /** All nodes with at least one cache configured. */
-        private final Collection<GridNode> allNodesWithCaches;
+        private final Collection<ClusterNode> allNodesWithCaches;
 
         /** All nodes with at least one cache configured. */
-        private final Collection<GridNode> rmtNodesWithCaches;
+        private final Collection<ClusterNode> rmtNodesWithCaches;
 
         /** Cache nodes by cache name. */
-        private final Map<String, Collection<GridNode>> allCacheNodes;
+        private final Map<String, Collection<ClusterNode>> allCacheNodes;
 
         /** Remote cache nodes by cache name. */
-        private final Map<String, Collection<GridNode>> rmtCacheNodes;
+        private final Map<String, Collection<ClusterNode>> rmtCacheNodes;
 
         /** Cache nodes by cache name. */
-        private final Map<String, Collection<GridNode>> affCacheNodes;
+        private final Map<String, Collection<ClusterNode>> affCacheNodes;
 
         /** Caches where at least one node has near cache enabled. */
         private final Set<String> nearEnabledCaches;
 
         /** Nodes grouped by version. */
-        private final NavigableMap<GridProductVersion, Collection<GridNode>> nodesByVer;
+        private final NavigableMap<GridProductVersion, Collection<ClusterNode>> nodesByVer;
 
         /** Daemon nodes. */
-        private final List<GridNode> daemonNodes;
+        private final List<ClusterNode> daemonNodes;
 
         /** Node map. */
-        private final Map<UUID, GridNode> nodeMap;
+        private final Map<UUID, ClusterNode> nodeMap;
 
         /** Local node. */
-        private final GridNode loc;
+        private final ClusterNode loc;
 
         /** Highest node order. */
         private final long maxOrder;
@@ -1757,29 +1757,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * Cached alive nodes list. As long as this collection doesn't accept {@code null}s use {@link
          * #maskNull(String)} before passing raw cache names to it.
          */
-        private final ConcurrentMap<String, Collection<GridNode>> aliveCacheNodes;
+        private final ConcurrentMap<String, Collection<ClusterNode>> aliveCacheNodes;
 
         /**
          * Cached alive remote nodes list. As long as this collection doesn't accept {@code null}s use {@link
          * #maskNull(String)} before passing raw cache names to it.
          */
-        private final ConcurrentMap<String, Collection<GridNode>> aliveRmtCacheNodes;
+        private final ConcurrentMap<String, Collection<ClusterNode>> aliveRmtCacheNodes;
 
         /**
          * Cached alive remote nodes with caches.
          */
-        private final Collection<GridNode> aliveNodesWithCaches;
+        private final Collection<ClusterNode> aliveNodesWithCaches;
 
         /**
          * Cached alive remote nodes with caches.
          */
-        private final Collection<GridNode> aliveRmtNodesWithCaches;
+        private final Collection<ClusterNode> aliveRmtNodesWithCaches;
 
         /**
          * @param loc Local node.
          * @param rmts Remote nodes.
          */
-        private DiscoCache(GridNode loc, Collection<GridNode> rmts) {
+        private DiscoCache(ClusterNode loc, Collection<ClusterNode> rmts) {
             this.loc = loc;
 
             rmtNodes = Collections.unmodifiableList(new ArrayList<>(F.view(rmts, daemonFilter)));
@@ -1787,7 +1787,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             assert !rmtNodes.contains(loc) : "Remote nodes collection shouldn't contain local node" +
                 " [rmtNodes=" + rmtNodes + ", loc=" + loc + ']';
 
-            List<GridNode> all = new ArrayList<>(rmtNodes.size() + 1);
+            List<ClusterNode> all = new ArrayList<>(rmtNodes.size() + 1);
 
             if (!loc.isDaemon())
                 all.add(loc);
@@ -1796,14 +1796,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
             allNodes = Collections.unmodifiableList(all);
 
-            Map<String, Collection<GridNode>> cacheMap =
+            Map<String, Collection<ClusterNode>> cacheMap =
                 new HashMap<>(allNodes.size(), 1.0f);
-            Map<String, Collection<GridNode>> rmtCacheMap =
+            Map<String, Collection<ClusterNode>> rmtCacheMap =
                 new HashMap<>(allNodes.size(), 1.0f);
-            Map<String, Collection<GridNode>> dhtNodesMap =
+            Map<String, Collection<ClusterNode>> dhtNodesMap =
                 new HashMap<>(allNodes.size(), 1.0f);
-            Collection<GridNode> nodesWithCaches = new ArrayList<>(allNodes.size());
-            Collection<GridNode> rmtNodesWithCaches = new ArrayList<>(allNodes.size());
+            Collection<ClusterNode> nodesWithCaches = new ArrayList<>(allNodes.size());
+            Collection<ClusterNode> rmtNodesWithCaches = new ArrayList<>(allNodes.size());
 
             aliveCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
             aliveRmtCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
@@ -1815,7 +1815,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
             Set<String> nearEnabledSet = new HashSet<>();
 
-            for (GridNode node : allNodes) {
+            for (ClusterNode node : allNodes) {
                 assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
 
                 if (node.order() > maxOrder0)
@@ -1860,7 +1860,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 GridProductVersion nodeVer = U.productVersion(node);
 
                 // Create collection for this version if it does not exist.
-                Collection<GridNode> nodes = nodesByVer.get(nodeVer);
+                Collection<ClusterNode> nodes = nodesByVer.get(nodeVer);
 
                 if (nodes == null) {
                     nodes = new ArrayList<>(allNodes.size());
@@ -1872,14 +1872,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             }
 
             // Need second iteration to add this node to all previous node versions.
-            for (GridNode node : allNodes) {
+            for (ClusterNode node : allNodes) {
                 GridProductVersion nodeVer = U.productVersion(node);
 
                 // Get all versions lower or equal node's version.
-                NavigableMap<GridProductVersion, Collection<GridNode>> updateView =
+                NavigableMap<GridProductVersion, Collection<ClusterNode>> updateView =
                     nodesByVer.headMap(nodeVer, false);
 
-                for (Collection<GridNode> prevVersions : updateView.values())
+                for (Collection<ClusterNode> prevVersions : updateView.values())
                     prevVersions.add(node);
             }
 
@@ -1895,9 +1895,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             daemonNodes = Collections.unmodifiableList(new ArrayList<>(
                 F.view(F.concat(false, loc, rmts), F0.not(daemonFilter))));
 
-            Map<UUID, GridNode> nodeMap = new HashMap<>(allNodes().size() + daemonNodes.size(), 1.0f);
+            Map<UUID, ClusterNode> nodeMap = new HashMap<>(allNodes().size() + daemonNodes.size(), 1.0f);
 
-            for (GridNode n : F.concat(false, allNodes(), daemonNodes()))
+            for (ClusterNode n : F.concat(false, allNodes(), daemonNodes()))
                 nodeMap.put(n.id(), n);
 
             this.nodeMap = nodeMap;
@@ -1910,8 +1910,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param cacheName Cache name.
          * @param rich Node to add
          */
-        private void addToMap(Map<String, Collection<GridNode>> cacheMap, String cacheName, GridNode rich) {
-            Collection<GridNode> cacheNodes = cacheMap.get(cacheName);
+        private void addToMap(Map<String, Collection<ClusterNode>> cacheMap, String cacheName, ClusterNode rich) {
+            Collection<ClusterNode> cacheNodes = cacheMap.get(cacheName);
 
             if (cacheNodes == null) {
                 cacheNodes = new ArrayList<>(allNodes.size());
@@ -1923,24 +1923,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
 
         /** @return Local node. */
-        GridNode localNode() {
+        ClusterNode localNode() {
             return loc;
         }
 
         /** @return Remote nodes. */
-        Collection<GridNode> remoteNodes() {
+        Collection<ClusterNode> remoteNodes() {
             return rmtNodes;
         }
 
         /** @return All nodes. */
-        Collection<GridNode> allNodes() {
+        Collection<ClusterNode> allNodes() {
             return allNodes;
         }
 
         /**
          * @return All nodes with at least one cache configured.
          */
-        Collection<GridNode> allNodesWithCaches() {
+        Collection<ClusterNode> allNodesWithCaches() {
             return allNodesWithCaches;
         }
 
@@ -1950,8 +1950,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param ver Version to check.
          * @return Collection of nodes with version equal or greater than {@code ver}.
          */
-        Collection<GridNode> elderNodes(GridProductVersion ver) {
-            Map.Entry<GridProductVersion, Collection<GridNode>> entry = nodesByVer.ceilingEntry(ver);
+        Collection<ClusterNode> elderNodes(GridProductVersion ver) {
+            Map.Entry<GridProductVersion, Collection<ClusterNode>> entry = nodesByVer.ceilingEntry(ver);
 
             if (entry == null)
                 return Collections.emptyList();
@@ -1962,7 +1962,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         /**
          * @return Versions map.
          */
-        NavigableMap<GridProductVersion, Collection<GridNode>> versionsMap() {
+        NavigableMap<GridProductVersion, Collection<ClusterNode>> versionsMap() {
             return nodesByVer;
         }
 
@@ -1972,7 +1972,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version (maximum allowed node order).
          * @return Collection of nodes.
          */
-        Collection<GridNode> allNodesWithCaches(final long topVer) {
+        Collection<ClusterNode> allNodesWithCaches(final long topVer) {
             return filter(topVer, allNodesWithCaches);
         }
 
@@ -1983,7 +1983,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> cacheNodes(@Nullable String cacheName, final long topVer) {
+        Collection<ClusterNode> cacheNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, allCacheNodes.get(cacheName));
         }
 
@@ -1994,7 +1994,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> remoteCacheNodes(@Nullable String cacheName, final long topVer) {
+        Collection<ClusterNode> remoteCacheNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, rmtCacheNodes.get(cacheName));
         }
 
@@ -2004,7 +2004,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> remoteCacheNodes(final long topVer) {
+        Collection<ClusterNode> remoteCacheNodes(final long topVer) {
             return filter(topVer, rmtNodesWithCaches);
         }
 
@@ -2016,7 +2016,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> cacheAffinityNodes(@Nullable String cacheName, final long topVer) {
+        Collection<ClusterNode> cacheAffinityNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, affCacheNodes.get(cacheName));
         }
 
@@ -2027,7 +2027,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> aliveCacheNodes(@Nullable String cacheName, final long topVer) {
+        Collection<ClusterNode> aliveCacheNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, aliveCacheNodes.get(maskNull(cacheName)));
         }
 
@@ -2038,7 +2038,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> aliveRemoteCacheNodes(@Nullable String cacheName, final long topVer) {
+        Collection<ClusterNode> aliveRemoteCacheNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, aliveRmtCacheNodes.get(maskNull(cacheName)));
         }
 
@@ -2048,7 +2048,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> aliveRemoteNodesWithCaches(final long topVer) {
+        Collection<ClusterNode> aliveRemoteNodesWithCaches(final long topVer) {
             return filter(topVer, aliveRmtNodesWithCaches);
         }
 
@@ -2058,7 +2058,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<GridNode> aliveNodesWithCaches(final long topVer) {
+        Collection<ClusterNode> aliveNodesWithCaches(final long topVer) {
             return filter(topVer, aliveNodesWithCaches);
         }
 
@@ -2077,7 +2077,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          *
          * @param leftNode Left node.
          */
-        void updateAlives(GridNode leftNode) {
+        void updateAlives(ClusterNode leftNode) {
             if (leftNode.order() > maxOrder)
                 return;
 
@@ -2095,9 +2095,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param map Map to copy.
          * @param exclNode Node to exclude.
          */
-        private void filterNodeMap(ConcurrentMap<String, Collection<GridNode>> map, final GridNode exclNode) {
-            GridPredicate<GridNode> p = new P1<GridNode>() {
-                @Override public boolean apply(GridNode e) {
+        private void filterNodeMap(ConcurrentMap<String, Collection<ClusterNode>> map, final ClusterNode exclNode) {
+            GridPredicate<ClusterNode> p = new P1<ClusterNode>() {
+                @Override public boolean apply(ClusterNode e) {
                     return exclNode.equals(e);
                 }
             };
@@ -2106,12 +2106,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 String maskedName = maskNull(cacheName);
 
                 while (true) {
-                    Collection<GridNode> oldNodes = map.get(maskedName);
+                    Collection<ClusterNode> oldNodes = map.get(maskedName);
 
                     if (oldNodes == null || oldNodes.isEmpty())
                         break;
 
-                    Collection<GridNode> newNodes = F.lose(oldNodes, true, p);
+                    Collection<ClusterNode> newNodes = F.lose(oldNodes, true, p);
 
                     if (map.replace(maskedName, oldNodes, newNodes))
                         break;
@@ -2134,22 +2134,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param nodes Nodes.
          * @return Filtered collection (potentially empty, but never {@code null}).
          */
-        private Collection<GridNode> filter(final long topVer, @Nullable Collection<GridNode> nodes) {
+        private Collection<ClusterNode> filter(final long topVer, @Nullable Collection<ClusterNode> nodes) {
             if (nodes == null)
                 return Collections.emptyList();
 
             // If no filtering needed, return original collection.
             return nodes.isEmpty() || topVer < 0 || topVer >= maxOrder ?
                 nodes :
-                F.view(nodes, new P1<GridNode>() {
-                    @Override public boolean apply(GridNode node) {
+                F.view(nodes, new P1<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode node) {
                         return node.order() <= topVer;
                     }
                 });
         }
 
         /** @return Daemon nodes. */
-        Collection<GridNode> daemonNodes() {
+        Collection<ClusterNode> daemonNodes() {
             return daemonNodes;
         }
 
@@ -2157,7 +2157,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param id Node ID.
          * @return Node.
          */
-        @Nullable GridNode node(UUID id) {
+        @Nullable
+        ClusterNode node(UUID id) {
             return nodeMap.get(id);
         }
 

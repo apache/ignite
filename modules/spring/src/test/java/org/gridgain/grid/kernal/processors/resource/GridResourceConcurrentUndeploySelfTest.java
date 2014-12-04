@@ -397,10 +397,10 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         @GridUserResource private transient UserResource rsrcTask;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Boolean arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Boolean arg) throws GridException {
             assert rsrcTask != null;
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (node.id().equals(nodeToExec)) {
                     return Collections.singletonMap(new GridComputeJobAdapter(arg) {
                         /** */

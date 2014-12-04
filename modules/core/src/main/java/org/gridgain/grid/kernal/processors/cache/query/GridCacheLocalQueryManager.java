@@ -92,7 +92,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<GridNode> nodes) {
+    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new GridRuntimeException("Distributed queries are not available for local cache " +
@@ -100,7 +100,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<GridNode> nodes, boolean all) {
+    @Override public void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<ClusterNode> nodes, boolean all) {
         // No-op.
     }
 
@@ -127,7 +127,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
-        Collection<GridNode> nodes) {
+        Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new GridRuntimeException("Distributed queries are not available for local cache " +

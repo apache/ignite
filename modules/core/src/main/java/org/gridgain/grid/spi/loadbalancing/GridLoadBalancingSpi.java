@@ -112,5 +112,5 @@ public interface GridLoadBalancingSpi extends GridSpi {
      * @throws GridException If failed to get next balanced node.
      * @return Best balanced node for the given job within given task session.
      */
-    public GridNode getBalancedNode(GridComputeTaskSession ses, List<GridNode> top, GridComputeJob job) throws GridException;
+    public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top, GridComputeJob job) throws GridException;
 }

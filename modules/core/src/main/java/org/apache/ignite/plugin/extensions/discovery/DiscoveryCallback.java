@@ -25,19 +25,19 @@ public interface DiscoveryCallback extends IgniteExtension {
      *
      * @param remoteNodes Remote grid nodes.
      */
-    public void onStart(Collection<GridNode> remoteNodes);
+    public void onStart(Collection<ClusterNode> remoteNodes);
 
     /**
      * Handles node joined event.
      *
      * @param node Joined node.
      */
-    public void beforeNodeJoined(GridNode node);
+    public void beforeNodeJoined(ClusterNode node);
 
     /**
      * Handles node left event.
      *
      * @param node Left node.
      */
-    public void onNodeLeft(GridNode node);
+    public void onNodeLeft(ClusterNode node);
 }

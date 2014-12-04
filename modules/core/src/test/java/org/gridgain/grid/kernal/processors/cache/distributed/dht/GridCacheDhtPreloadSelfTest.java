@@ -271,7 +271,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                     @Override public boolean apply(GridEvent e) {
                         GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 
-                        GridNode node = evt.discoveryNode();
+                        ClusterNode node = evt.discoveryNode();
 
                         return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
                             evt.discoveryEventType() == EVT_NODE_LEFT;
@@ -309,7 +309,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                     GridDhtPartitionTopology<Integer, String> top = dht.topology();
 
                     for (GridDhtLocalPartition<Integer, String> p : top.localPartitions()) {
-                        Collection<GridNode> moving = top.moving(p.id());
+                        Collection<ClusterNode> moving = top.moving(p.id());
 
                         assert moving.isEmpty() : "Nodes with partition in moving state [part=" + p +
                             ", moving=" + moving + ']';
@@ -534,7 +534,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                             @Override public boolean apply(GridEvent e) {
                                 GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 
-                                GridNode node = evt.discoveryNode();
+                                ClusterNode node = evt.discoveryNode();
 
                                 return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
                                     evt.discoveryEventType() == EVT_NODE_LEFT;
@@ -573,7 +573,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                     GridDhtPartitionTopology<Integer, String> top = dht.topology();
 
                     for (GridDhtLocalPartition<Integer, String> p : top.localPartitions()) {
-                        Collection<GridNode> moving = top.moving(p.id());
+                        Collection<ClusterNode> moving = top.moving(p.id());
 
                         assert moving.isEmpty() : "Nodes with partition in moving state [part=" + p +
                             ", moving=" + moving + ']';
@@ -614,21 +614,21 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = cache.gridProjection().grid();
 
-        GridNode loc = ignite.cluster().localNode();
+        ClusterNode loc = ignite.cluster().localNode();
 
         boolean sync = cache.configuration().getPreloadMode() == SYNC;
 
         for (int i = 0; i < cnt; i++) {
-            Collection<GridNode> nodes = ignite.cluster().nodes();
+            Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
-            Collection<GridNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(i));
+            Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(i));
 
             assert !affNodes.isEmpty();
 
             if (affNodes.contains(loc)) {
                 String val = sync ? cache.peek(i) : cache.get(i);
 
-                GridNode primaryNode = F.first(affNodes);
+                ClusterNode primaryNode = F.first(affNodes);
 
                 assert primaryNode != null;
 

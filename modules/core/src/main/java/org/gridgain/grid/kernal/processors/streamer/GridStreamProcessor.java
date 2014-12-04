@@ -57,7 +57,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
         super.onKernalStart();
 
         if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-            for (GridNode n : ctx.discovery().remoteNodes())
+            for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkStreamer(n);
         }
 
@@ -140,7 +140,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
      * @param rmtNode Remote node to check.
      * @throws GridException If configuration mismatch detected.
      */
-    private void checkStreamer(GridNode rmtNode) throws GridException {
+    private void checkStreamer(ClusterNode rmtNode) throws GridException {
         GridStreamerAttributes[] rmtAttrs = rmtNode.attribute(ATTR_STREAMER);
         GridStreamerAttributes[] locAttrs = ctx.discovery().localNode().attribute(ATTR_STREAMER);
 

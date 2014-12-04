@@ -227,7 +227,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return F.view(F.viewReadOnly(mappings.keySet(), U.id2Node(cctx.kernalContext())), F.notNull());
     }
 
@@ -466,7 +466,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         long topVer = topSnapshot.topologyVersion();
 
-        Collection<GridNode> topNodes = CU.affinityNodes(cctx, topVer);
+        Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
             onDone(new GridTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
@@ -537,12 +537,12 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     val = cctx.marshalToPortable(val);
             }
 
-            Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
+            Collection<ClusterNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
             assert primaryNodes.size() == 1 : "Should be mapped to single node: " + primaryNodes;
 
-            GridNode primary = F.first(primaryNodes);
+            ClusterNode primary = F.first(primaryNodes);
 
             GridNearAtomicUpdateRequest<K, V> req = new GridNearAtomicUpdateRequest<>(
                 cctx.cacheId(),
@@ -640,11 +640,11 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     val = cctx.marshalToPortable(val);
                 }
 
-                Collection<GridNode> affNodes = mapKey(key, topVer, fastMap);
+                Collection<ClusterNode> affNodes = mapKey(key, topVer, fastMap);
 
                 int i = 0;
 
-                for (GridNode affNode : affNodes) {
+                for (ClusterNode affNode : affNodes) {
                     UUID nodeId = affNode.id();
 
                     GridNearAtomicUpdateRequest<K, V> mapped = pendingMappings.get(nodeId);
@@ -705,7 +705,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param fastMap Flag indicating whether mapping is performed for fast-circuit update.
      * @return Collection of nodes to which key is mapped.
      */
-    private Collection<GridNode> mapKey(K key, long topVer, boolean fastMap) {
+    private Collection<ClusterNode> mapKey(K key, long topVer, boolean fastMap) {
         GridCacheAffinityManager<K, V> affMgr = cctx.affinity();
 
         // If we can send updates in parallel - do it.

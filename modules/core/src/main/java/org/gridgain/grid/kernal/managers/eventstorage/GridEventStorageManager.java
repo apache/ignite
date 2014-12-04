@@ -752,7 +752,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @return Collection of events.
      */
     public <T extends GridEvent> GridFuture<List<T>> remoteEventsAsync(final GridPredicate<T> p,
-        final Collection<? extends GridNode> nodes, final long timeout) {
+        final Collection<? extends ClusterNode> nodes, final long timeout) {
         assert p != null;
         assert nodes != null;
 
@@ -780,7 +780,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
-    private <T extends GridEvent> List<T> query(GridPredicate<T> p, Collection<? extends GridNode> nodes,
+    private <T extends GridEvent> List<T> query(GridPredicate<T> p, Collection<? extends ClusterNode> nodes,
         long timeout) throws GridException {
         assert p != null;
         assert nodes != null;
@@ -801,7 +801,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         final Object qryMux = new Object();
 
-        for (GridNode node : nodes)
+        for (ClusterNode node : nodes)
             uids.add(node.id());
 
         GridLocalEventListener evtLsnr = new GridLocalEventListener() {
@@ -953,11 +953,11 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param plc Type of processing.
      * @throws GridException If sending failed.
      */
-    private void sendMessage(Collection<? extends GridNode> nodes, GridTopic topic,
+    private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
         GridEventStorageMessage msg, GridIoPolicy plc) throws GridException {
-        GridNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
+        ClusterNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
 
-        Collection<? extends GridNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
 
         if (locNode != null)
             ctx.io().send(locNode, topic, msg, plc);
@@ -1010,7 +1010,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
                 GridEventStorageMessage req = (GridEventStorageMessage)msg;
 
-                GridNode node = ctx.discovery().node(nodeId);
+                ClusterNode node = ctx.discovery().node(nodeId);
 
                 if (node == null) {
                     U.warn(log, "Failed to resolve sender node that does not exist: " + nodeId);

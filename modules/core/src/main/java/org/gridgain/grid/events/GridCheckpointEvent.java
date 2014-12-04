@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
  * Grid checkpoint event.
  * <p>
@@ -73,7 +71,7 @@ public class GridCheckpointEvent extends GridEventAdapter {
      * @param type Event type.
      * @param cpKey Checkpoint key associated with this event.
      */
-    public GridCheckpointEvent(GridNode node, String msg, int type, String cpKey) {
+    public GridCheckpointEvent(ClusterNode node, String msg, int type, String cpKey) {
         super(node, msg, type);
 
         this.cpKey = cpKey;

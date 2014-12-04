@@ -56,8 +56,8 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 }
 
                 /** {@inheritDoc} */
-                @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
-                    List<GridNode> nodes = new ArrayList<>(affCtx.currentTopologySnapshot());
+                @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+                    List<ClusterNode> nodes = new ArrayList<>(affCtx.currentTopologySnapshot());
 
                     return Collections.singletonList(nodes);
                 }
@@ -100,7 +100,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Ignite g2 = startGrid("g2");
 
-        Map<GridNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(keys);
+        Map<ClusterNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(keys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);

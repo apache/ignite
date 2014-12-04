@@ -400,7 +400,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param nodes Nodes.
      * @return Query future.
      */
-    public abstract GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<GridNode> nodes);
+    public abstract GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes);
 
     /**
      * Loads page.
@@ -410,7 +410,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param nodes Nodes.
      * @param all Whether to load all pages.
      */
-    public abstract void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<GridNode> nodes, boolean all);
+    public abstract void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<ClusterNode> nodes, boolean all);
 
     /**
      * Executes distributed fields query.
@@ -427,7 +427,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param nodes Nodes.
      * @return Query future.
      */
-    public abstract GridCacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry, Collection<GridNode> nodes);
+    public abstract GridCacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes);
 
     /**
      * Performs query.
@@ -1687,8 +1687,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             Callable<Collection<CacheSqlMetadata>> job = new MetadataJob(spi);
 
             // Remote nodes that have current cache.
-            Collection<GridNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<GridNode>() {
-                @Override public boolean apply(GridNode n) {
+            Collection<ClusterNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<ClusterNode>() {
+                @Override public boolean apply(ClusterNode n) {
                     return U.hasCache(n, space);
                 }
             });

@@ -460,7 +460,7 @@ class VisorCacheCommand {
      *
      * @return Caches metrics data.
      */
-    private def cacheData(node: Option[GridNode], name: Option[String]): List[VisorCacheAggregatedMetrics] = {
+    private def cacheData(node: Option[ClusterNode], name: Option[String]): List[VisorCacheAggregatedMetrics] = {
         assert(node != null)
 
         try {
@@ -482,7 +482,7 @@ class VisorCacheCommand {
      * @param node Specified node.
      * @return Grid configuration for specified node.
      */
-    private def config(node: GridNode): VisorGridConfiguration = {
+    private def config(node: ClusterNode): VisorGridConfiguration = {
         try
             grid.compute(grid.forNode(node)).withNoFailover()
                 .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
@@ -572,7 +572,7 @@ class VisorCacheCommand {
      * @param title Title displayed before the list of caches.
      * @return `Option` for ID of selected cache.
      */
-    def askForCache(title: String, node: Option[GridNode]): Option[String] = {
+    def askForCache(title: String, node: Option[ClusterNode]): Option[String] = {
         assert(title != null)
         assert(visor.isConnected)
 

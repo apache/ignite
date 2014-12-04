@@ -130,7 +130,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** Continuous mapper. */
     private final GridComputeTaskContinuousMapper mapper = new GridComputeTaskContinuousMapper() {
         /** {@inheritDoc} */
-        @Override public void send(GridComputeJob job, GridNode node) throws GridException {
+        @Override public void send(GridComputeJob job, ClusterNode node) throws GridException {
             A.notNull(job, "job");
             A.notNull(node, "node");
 
@@ -138,7 +138,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(Map<? extends GridComputeJob, GridNode> mappedJobs) throws GridException {
+        @Override public void send(Map<? extends GridComputeJob, ClusterNode> mappedJobs) throws GridException {
             A.notNull(mappedJobs, "mappedJobs");
 
             processMappedJobs(mappedJobs);
@@ -371,7 +371,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             ses.setClassLoader(dep.classLoader());
 
-            final List<GridNode> shuffledNodes = getTaskTopology();
+            final List<ClusterNode> shuffledNodes = getTaskTopology();
 
             // Load balancer.
             GridComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
@@ -384,9 +384,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // Inject resources.
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
-            Map<? extends GridComputeJob, GridNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                new Callable<Map<? extends GridComputeJob, GridNode>>() {
-                    @Override public Map<? extends GridComputeJob, GridNode> call() throws GridException {
+            Map<? extends GridComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
+                new Callable<Map<? extends GridComputeJob, ClusterNode>>() {
+                    @Override public Map<? extends GridComputeJob, ClusterNode> call() throws GridException {
                         return task.map(shuffledNodes, arg);
                     }
                 });
@@ -440,7 +440,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param jobs Map of jobs.
      * @throws GridException Thrown in case of any error.
      */
-    private void processMappedJobs(Map<? extends GridComputeJob, GridNode> jobs) throws GridException {
+    private void processMappedJobs(Map<? extends GridComputeJob, ClusterNode> jobs) throws GridException {
         if (F.isEmpty(jobs))
             return;
 
@@ -449,9 +449,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         Collection<GridComputeJobSibling> sibs = new ArrayList<>(jobs.size());
 
         // Map jobs to nodes for computation.
-        for (Map.Entry<? extends GridComputeJob, GridNode> mappedJob : jobs.entrySet()) {
+        for (Map.Entry<? extends GridComputeJob, ClusterNode> mappedJob : jobs.entrySet()) {
             GridComputeJob job = mappedJob.getKey();
-            GridNode node = mappedJob.getValue();
+            ClusterNode node = mappedJob.getValue();
 
             if (job == null)
                 throw new GridException("Job can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
@@ -524,19 +524,19 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @return Topology for this task.
      * @throws GridException Thrown in case of any error.
      */
-    private List<GridNode> getTaskTopology() throws GridException {
+    private List<ClusterNode> getTaskTopology() throws GridException {
         Collection<UUID> top = ses.getTopology();
 
-        Collection<? extends GridNode> subgrid = top != null ? ctx.discovery().nodes(top) : ctx.discovery().allNodes();
+        Collection<? extends ClusterNode> subgrid = top != null ? ctx.discovery().nodes(top) : ctx.discovery().allNodes();
 
         int size = subgrid.size();
 
         if (size == 0)
             throw new GridEmptyProjectionException("Topology projection is empty.");
 
-        List<GridNode> shuffledNodes = new ArrayList<>(size);
+        List<ClusterNode> shuffledNodes = new ArrayList<>(size);
 
-        for (GridNode node : subgrid)
+        for (ClusterNode node : subgrid)
             shuffledNodes.add(node);
 
         if (shuffledNodes.size() > 1)
@@ -950,14 +950,14 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param top Topology.
      * @return {@code True} if fail-over SPI returned a new node.
      */
-    private boolean failover(GridJobExecuteResponse res, GridJobResultImpl jobRes, Collection<? extends GridNode> top) {
+    private boolean failover(GridJobExecuteResponse res, GridJobResultImpl jobRes, Collection<? extends ClusterNode> top) {
         assert Thread.holdsLock(mux);
 
         try {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), GridComputeJobBeforeFailover.class);
 
             // Map to a new node.
-            GridNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top));
+            ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top));
 
             if (node == null) {
                 String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +
@@ -1047,7 +1047,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 ctx.job().cancelJob(ses.getId(), res.getJobContext().getJobId(), /*courtesy*/true);
             else {
                 try {
-                    GridNode node = ctx.discovery().node(nodeId);
+                    ClusterNode node = ctx.discovery().node(nodeId);
 
                     if (node != null)
                         ctx.io().send(node,
@@ -1073,10 +1073,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         GridJobExecuteRequest req = null;
 
-        GridNode node = res.getNode();
+        ClusterNode node = res.getNode();
 
         try {
-            GridNode curNode = ctx.discovery().node(node.id());
+            ClusterNode curNode = ctx.discovery().node(node.id());
 
             // Check if node exists prior to sending to avoid cases when a discovery
             // listener notified about node leaving after topology resolution. Note
@@ -1276,7 +1276,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param evtNode Event node.
      * @param msg Event message.
      */
-    private void recordJobEvent(int evtType, GridUuid jobId, GridNode evtNode, String msg) {
+    private void recordJobEvent(int evtType, GridUuid jobId, ClusterNode evtNode, String msg) {
         if (ctx.event().isRecordable(evtType)) {
             GridJobEvent evt = new GridJobEvent();
 

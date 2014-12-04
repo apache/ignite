@@ -69,7 +69,7 @@ class ScalarProjectionSpec extends FlatSpec with ShouldMatchers with BeforeAndAf
     }
 
     it should "return shown nodes" in  scalar(gridConfig("node-scalar", true)) {
-        assert(grid$("node-scalar").get.nodes$((node: GridNode) => node.attribute[Boolean]("shown")).size == 2)
+        assert(grid$("node-scalar").get.nodes$((node: ClusterNode) => node.attribute[Boolean]("shown")).size == 2)
     }
 
     it should "return all remote nodes" in scalar(gridConfig("node-scalar", true)) {
@@ -79,7 +79,7 @@ class ScalarProjectionSpec extends FlatSpec with ShouldMatchers with BeforeAndAf
     }
 
     it should "return shown remote nodes" in  scalar(gridConfig("node-scalar", true)) {
-        assert(grid$("node-scalar").get.remoteNodes$((node: GridNode) =>
+        assert(grid$("node-scalar").get.remoteNodes$((node: ClusterNode) =>
             node.attribute[Boolean]("shown")).size == 1)
     }
 

@@ -160,7 +160,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     }
                     else {
                         try {
-                            GridNode node = ctx.discovery().node(nodeId);
+                            ClusterNode node = ctx.discovery().node(nodeId);
 
                             if (ctx.config().isPeerClassLoadingEnabled() && node != null &&
                                 U.hasCache(node, cacheName)) {

@@ -44,7 +44,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     private final GridCacheTxEx<K, V> tx;
 
     /** All involved nodes. */
-    private final Map<UUID, GridNode> nodes;
+    private final Map<UUID, ClusterNode> nodes;
 
     /** ID of failed node started transaction. */
     private final UUID failedNodeId;
@@ -68,7 +68,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
 
         nodes = new GridLeanMap<>();
 
-        for (GridNode node : CU.allNodes(cctx, tx.topologyVersion()))
+        for (ClusterNode node : CU.allNodes(cctx, tx.topologyVersion()))
             nodes.put(node.id(), node);
     }
 
@@ -96,14 +96,14 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
             return;
         }
 
-        Collection<GridNode> checkNodes = CU.remoteNodes(cctx, tx.topologyVersion());
+        Collection<ClusterNode> checkNodes = CU.remoteNodes(cctx, tx.topologyVersion());
 
         if (tx instanceof GridDhtTxRemote) {
             // If we got primary node failure and near node has not failed.
             if (tx.nodeId().equals(failedNodeId) && !tx.eventNodeId().equals(failedNodeId)) {
                 nearCheck = true;
 
-                GridNode nearNode = cctx.discovery().node(tx.eventNodeId());
+                ClusterNode nearNode = cctx.discovery().node(tx.eventNodeId());
 
                 if (nearNode == null) {
                     // Near node failed, separate check prepared future will take care of it.
@@ -117,7 +117,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
             }
         }
 
-        for (GridNode rmtNode : checkNodes) {
+        for (ClusterNode rmtNode : checkNodes) {
             // Skip left nodes and local node.
             if (rmtNode.id().equals(failedNodeId))
                 continue;
@@ -182,7 +182,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return nodes.values();
     }
 

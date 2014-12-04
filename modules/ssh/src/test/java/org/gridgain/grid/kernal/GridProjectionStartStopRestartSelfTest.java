@@ -566,8 +566,8 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         leftLatch = new CountDownLatch(2);
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
-            new GridClosure<GridNode, UUID>() {
-            @Override public UUID apply(GridNode node) {
+            new GridClosure<ClusterNode, UUID>() {
+            @Override public UUID apply(ClusterNode node) {
                 return node.id();
             }
         });
@@ -644,7 +644,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         leftLatch = new CountDownLatch(2);
 
-        Iterator<GridNode> it = ignite.cluster().nodes().iterator();
+        Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
         Collection<UUID> ids = new HashSet<>();
 
@@ -686,7 +686,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         leftLatch = new CountDownLatch(2);
 
-        Iterator<GridNode> it = ignite.cluster().nodes().iterator();
+        Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
         ignite.cluster().stopNodes(F.asList(it.next().id(), it.next().id()));
 
@@ -783,8 +783,8 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         X.println("Restarting nodes with " + CUSTOM_CFG_ATTR_KEY);
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
-            new GridClosure<GridNode, UUID>() {
-                @Override public UUID apply(GridNode node) {
+            new GridClosure<ClusterNode, UUID>() {
+                @Override public UUID apply(ClusterNode node) {
                     return node.id();
                 }
             }
@@ -864,7 +864,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(2);
         leftLatch = new CountDownLatch(2);
 
-        Iterator<GridNode> it = ignite.cluster().nodes().iterator();
+        Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
         ignite.cluster().restartNodes(F.asList(it.next().id(), it.next().id()));
 
@@ -903,7 +903,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(2);
         leftLatch = new CountDownLatch(2);
 
-        Iterator<GridNode> it = ignite.cluster().nodes().iterator();
+        Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
         ignite.cluster().restartNodes(F.asList(it.next().id(), it.next().id()));
 

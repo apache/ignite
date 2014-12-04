@@ -203,9 +203,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             assert part != null;
 
-            Collection<GridNode> nodes = aff.mapPartitionToPrimaryAndBackups(part);
+            Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(part);
 
-            GridNode primary = F.first(nodes);
+            ClusterNode primary = F.first(nodes);
 
             Set<Integer> keys = primary.addMetaIfAbsent("primary", F.<Integer>newSet());
 
@@ -216,7 +216,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             if (mapDebug)
                 info("Mapped key to primary node [key=" + key + ", node=" + U.toShortString(primary));
 
-            for (GridNode n : nodes) {
+            for (ClusterNode n : nodes) {
                 if (n != primary) {
                     keys = n.addMetaIfAbsent("backups", F.<Integer>newSet());
 
@@ -239,7 +239,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         mapKeys(cnt);
 
-        for (GridNode n : grid(0).nodes()) {
+        for (ClusterNode n : grid(0).nodes()) {
             Set<Integer> primary = n.meta("primary");
             Set<Integer> backups = n.meta("backups");
 
@@ -258,7 +258,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Primary node for the key.
      */
-    @Nullable private GridNode primaryNode(Integer key) {
+    @Nullable private ClusterNode primaryNode(Integer key) {
         return affinity(0).mapKeyToNode(key);
     }
 
@@ -267,7 +267,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Primary node for the key.
      */
     @Nullable private Ignite primaryGrid(Integer key) {
-        GridNode n = affinity(0).mapKeyToNode(key);
+        ClusterNode n = affinity(0).mapKeyToNode(key);
 
         assert n != null;
 
@@ -279,13 +279,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Primary node for the key.
      */
     @Nullable private Collection<Ignite> backupGrids(Integer key) {
-        Collection<GridNode> nodes = affinity(0).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> nodes = affinity(0).mapKeyToPrimaryAndBackups(key);
 
-        Collection<GridNode> backups = CU.backups(nodes);
+        Collection<ClusterNode> backups = CU.backups(nodes);
 
         return F.viewReadOnly(backups,
-            new C1<GridNode, Ignite>() {
-                @Override public Ignite apply(GridNode node) {
+            new C1<ClusterNode, Ignite>() {
+                @Override public Ignite apply(ClusterNode node) {
                     return G.grid(node.id());
                 }
             });
@@ -316,7 +316,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testReadThrough() throws Exception {
-        GridNode loc = grid(0).localNode();
+        ClusterNode loc = grid(0).localNode();
 
         info("Local node: " + U.toShortString(loc));
 
@@ -337,7 +337,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         info("Read all keys.");
 
         for (int key = 1; key <= cnt; key++) {
-            GridNode n = primaryNode(key);
+            ClusterNode n = primaryNode(key);
 
             info("Primary node for key [key=" + key + ", node=" + U.toShortString(n) + ']');
 
@@ -636,13 +636,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         String val = Integer.toString(key);
 
-        Collection<GridNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(key);
 
         info("Affinity for key [nodeId=" + U.nodeIds(affNodes) + ", key=" + key + ']');
 
         assertEquals(2, affNodes.size());
 
-        GridNode primary = F.first(affNodes);
+        ClusterNode primary = F.first(affNodes);
 
         assertNotNull(primary);
 

@@ -89,7 +89,7 @@ public class GridTaskEvent extends GridEventAdapter {
      * @param taskName Task name.
      * @param subjId Subject ID.
      */
-    public GridTaskEvent(GridNode node, String msg, int type, GridUuid sesId, String taskName, String taskClsName,
+    public GridTaskEvent(ClusterNode node, String msg, int type, GridUuid sesId, String taskName, String taskClsName,
         boolean internal, @Nullable UUID subjId) {
         super(node, msg, type);
 

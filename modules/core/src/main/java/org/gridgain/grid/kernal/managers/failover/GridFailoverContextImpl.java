@@ -61,7 +61,7 @@ public class GridFailoverContextImpl implements GridFailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode getBalancedNode(List<GridNode> top) throws GridException {
+    @Override public ClusterNode getBalancedNode(List<ClusterNode> top) throws GridException {
         return loadMgr.getBalancedNode(taskSes, top, jobRes.getJob());
     }
 

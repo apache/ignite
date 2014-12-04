@@ -35,7 +35,7 @@ public class GridWeightedRandomLoadBalancingSpiWeightedSelfTest
      * @throws Exception If test failed.
      */
     public void testWeights() throws Exception {
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             GridTestNode node = new GridTestNode(UUID.randomUUID());
@@ -52,7 +52,7 @@ public class GridWeightedRandomLoadBalancingSpiWeightedSelfTest
 
         // Invoke load balancer a large number of times, so statistics won't lie.
         for (int i = 0; i < 100000; i++) {
-            GridNode node = getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()), nodes,
+            ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()), nodes,
                 new GridTestJob());
 
             int weight = (Integer)node.attribute(U.spiAttribute(getSpi(), NODE_WEIGHT_ATTR_NAME));

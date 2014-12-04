@@ -782,7 +782,7 @@ public abstract class GridUtils {
      * @param precision Precision.
      * @return Heap size in GB.
      */
-    public static double heapSize(GridNode node, int precision) {
+    public static double heapSize(ClusterNode node, int precision) {
         return heapSize(Collections.singleton(node), precision);
     }
 
@@ -793,11 +793,11 @@ public abstract class GridUtils {
      * @param precision Precision.
      * @return Total heap size in GB.
      */
-    public static double heapSize(Iterable<GridNode> nodes, int precision) {
+    public static double heapSize(Iterable<ClusterNode> nodes, int precision) {
         // In bytes.
         double heap = 0.0;
 
-        for (GridNode n : nodesPerJvm(nodes)) {
+        for (ClusterNode n : nodesPerJvm(nodes)) {
             GridNodeMetrics m = n.metrics();
 
             heap += Math.max(m.getHeapMemoryInitialized(), m.getHeapMemoryMaximum());
@@ -812,11 +812,11 @@ public abstract class GridUtils {
      * @param nodes Nodes.
      * @return Collection which contains only one representative node for each JVM.
      */
-    private static Iterable<GridNode> nodesPerJvm(Iterable<GridNode> nodes) {
-        Map<String, GridNode> grpMap = new HashMap<>();
+    private static Iterable<ClusterNode> nodesPerJvm(Iterable<ClusterNode> nodes) {
+        Map<String, ClusterNode> grpMap = new HashMap<>();
 
         // Group by mac addresses and pid.
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             String grpId = node.attribute(ATTR_MACS) + "|" + node.attribute(ATTR_JVM_PID);
 
             if (!grpMap.containsKey(grpId))
@@ -827,7 +827,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Returns current JVM maxMemory in the same format as {@link #heapSize(GridNode, int)}.
+     * Returns current JVM maxMemory in the same format as {@link #heapSize(org.gridgain.grid.ClusterNode, int)}.
      *
      * @param precision Precision.
      * @return Maximum memory size in GB.
@@ -1568,7 +1568,7 @@ public abstract class GridUtils {
      * @param rmt Remote node.
      * @return Whether given nodes have the same macs.
      */
-    public static boolean sameMacs(GridNode loc, GridNode rmt) {
+    public static boolean sameMacs(ClusterNode loc, ClusterNode rmt) {
         assert loc != null;
         assert rmt != null;
 
@@ -5995,7 +5995,7 @@ public abstract class GridUtils {
      * @param node Node to get version from.
      * @return Version object.
      */
-    public static GridProductVersion productVersion(GridNode node) {
+    public static GridProductVersion productVersion(ClusterNode node) {
         String verStr = node.attribute(ATTR_BUILD_VER);
         String buildDate = node.attribute(ATTR_BUILD_DATE);
 
@@ -6132,7 +6132,7 @@ public abstract class GridUtils {
      * @param n Grid node.
      * @return Short string representing the node.
      */
-    public static String toShortString(GridNode n) {
+    public static String toShortString(ClusterNode n) {
         return "GridNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
             ", daemon=" + n.isDaemon() + ']';
     }
@@ -6143,10 +6143,10 @@ public abstract class GridUtils {
      * @param ns Grid nodes.
      * @return Short string representing the node.
      */
-    public static String toShortString(Collection<? extends GridNode> ns) {
+    public static String toShortString(Collection<? extends ClusterNode> ns) {
         SB sb = new SB("Grid nodes [cnt=" + ns.size());
 
-        for (GridNode n : ns)
+        for (ClusterNode n : ns)
             sb.a(", ").a(toShortString(n));
 
         return sb.a(']').toString();
@@ -6716,11 +6716,11 @@ public abstract class GridUtils {
      * @param ctx Kernal context.
      * @return Closure that converts node ID to a node.
      */
-    public static GridClosure<UUID, GridNode> id2Node(final GridKernalContext ctx) {
+    public static GridClosure<UUID, ClusterNode> id2Node(final GridKernalContext ctx) {
         assert ctx != null;
 
-        return new C1<UUID, GridNode>() {
-            @Nullable @Override public GridNode apply(UUID id) {
+        return new C1<UUID, ClusterNode>() {
+            @Nullable @Override public ClusterNode apply(UUID id) {
                 return ctx.discovery().node(id);
             }
         };
@@ -7028,7 +7028,7 @@ public abstract class GridUtils {
      * @param n Node to get cache attributes for.
      * @return Array of cache attributes for the node.
      */
-    public static GridCacheAttributes[] cacheAttributes(GridNode n) {
+    public static GridCacheAttributes[] cacheAttributes(ClusterNode n) {
         return n.attribute(ATTR_CACHE);
     }
 
@@ -7039,7 +7039,7 @@ public abstract class GridUtils {
      * @param cacheName Cache name.
      * @return Attributes.
      */
-    @Nullable public static GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
+    @Nullable public static GridCacheAttributes cacheAttributes(ClusterNode n, @Nullable String cacheName) {
         for (GridCacheAttributes a : cacheAttributes(n)) {
             if (F.eq(a.cacheName(), cacheName))
                 return a;
@@ -7055,7 +7055,7 @@ public abstract class GridUtils {
      * @param cacheName Cache name.
      * @return Portable enabled flag.
      */
-    @Nullable public static Boolean portableEnabled(GridNode n, @Nullable String cacheName) {
+    @Nullable public static Boolean portableEnabled(ClusterNode n, @Nullable String cacheName) {
         Map<String, Boolean> map = n.attribute(ATTR_CACHE_PORTABLE);
 
         return map == null ? null : map.get(cacheName);
@@ -7067,7 +7067,7 @@ public abstract class GridUtils {
      * @param n Node to get cache names for.
      * @return Cache names for the node.
      */
-    public static Collection<String> cacheNames(GridNode n) {
+    public static Collection<String> cacheNames(ClusterNode n) {
         return F.viewReadOnly(
             F.asList(n.<GridCacheAttributes[]>attribute(ATTR_CACHE)),
             new C1<GridCacheAttributes, String>() {
@@ -7084,7 +7084,7 @@ public abstract class GridUtils {
      * @param cacheName Cache name to check.
      * @return {@code True} if given node has specified cache started.
      */
-    public static boolean hasCache(GridNode n, @Nullable String cacheName) {
+    public static boolean hasCache(ClusterNode n, @Nullable String cacheName) {
         assert n != null;
 
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
@@ -7103,7 +7103,7 @@ public abstract class GridUtils {
      * @param n Node to check.
      * @return {@code True} if given node has specified cache started.
      */
-    public static boolean hasCaches(GridNode n) {
+    public static boolean hasCaches(ClusterNode n) {
         assert n != null;
 
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
@@ -7118,7 +7118,7 @@ public abstract class GridUtils {
      * @param streamerName Streamer name to check.
      * @return {@code True} if given node has specified streamer started.
      */
-    public static boolean hasStreamer(GridNode n, @Nullable String streamerName) {
+    public static boolean hasStreamer(ClusterNode n, @Nullable String streamerName) {
         assert n != null;
 
         GridStreamerAttributes[] attrs = n.attribute(ATTR_STREAMER);
@@ -7141,7 +7141,7 @@ public abstract class GridUtils {
      * @param cacheName Cache to check.
      * @return Cache mode or {@code null} if cache is not found.
      */
-    @Nullable public static GridCacheMode cacheMode(GridNode n, String cacheName) {
+    @Nullable public static GridCacheMode cacheMode(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
 
         if (caches != null)
@@ -7160,7 +7160,7 @@ public abstract class GridUtils {
      * @param cacheName Cache to check.
      * @return Cache mode or {@code null} if cache is not found.
      */
-    @Nullable public static GridCacheAtomicityMode atomicityMode(GridNode n, String cacheName) {
+    @Nullable public static GridCacheAtomicityMode atomicityMode(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
 
         if (caches != null)
@@ -7180,7 +7180,7 @@ public abstract class GridUtils {
      * @return {@code true} if given node has near cache enabled for the
      *      specified partitioned cache.
      */
-    public static boolean hasNearCache(GridNode n, String cacheName) {
+    public static boolean hasNearCache(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
 
         if (caches != null)
@@ -7217,7 +7217,7 @@ public abstract class GridUtils {
      * @param nodes Nodes.
      * @return Node IDs.
      */
-    public static Collection<UUID> nodeIds(@Nullable Collection<? extends GridNode> nodes) {
+    public static Collection<UUID> nodeIds(@Nullable Collection<? extends ClusterNode> nodes) {
         return F.viewReadOnly(nodes, F.node2id());
     }
 
@@ -7255,9 +7255,9 @@ public abstract class GridUtils {
      * @param nodes Nodes.
      * @return Grid names.
      */
-    public static Collection<String> nodes2names(@Nullable Collection<? extends GridNode> nodes) {
-        return F.viewReadOnly(nodes, new C1<GridNode, String>() {
-            @Override public String apply(GridNode n) {
+    public static Collection<String> nodes2names(@Nullable Collection<? extends ClusterNode> nodes) {
+        return F.viewReadOnly(nodes, new C1<ClusterNode, String>() {
+            @Override public String apply(ClusterNode n) {
                 return G.grid(n.id()).name();
             }
         });
@@ -8058,7 +8058,7 @@ public abstract class GridUtils {
     /**
      * @param addrs Node's addresses.
      * @param port Port discovery number.
-     * @return A string compatible with {@link GridNode#consistentId()} requirements.
+     * @return A string compatible with {@link org.gridgain.grid.ClusterNode#consistentId()} requirements.
      */
     public static String consistentId(Collection<String> addrs, int port) {
         assert !F.isEmpty(addrs);
@@ -8166,15 +8166,15 @@ public abstract class GridUtils {
      * @return Collection of projections where each projection represents all nodes (in this projection)
      *      from a single physical computer. Result collection can be empty if this projection is empty.
      */
-    public static Map<String, Collection<GridNode>> neighborhood(Iterable<GridNode> nodes) {
-        Map<String, Collection<GridNode>> map = new HashMap<>();
+    public static Map<String, Collection<ClusterNode>> neighborhood(Iterable<ClusterNode> nodes) {
+        Map<String, Collection<ClusterNode>> map = new HashMap<>();
 
-        for (GridNode n : nodes) {
+        for (ClusterNode n : nodes) {
             String macs = n.attribute(ATTR_MACS);
 
             assert macs != null : "Missing MACs attribute: " + n;
 
-            Collection<GridNode> neighbors = map.get(macs);
+            Collection<ClusterNode> neighbors = map.get(macs);
 
             if (neighbors == null)
                 map.put(macs, neighbors = new ArrayList<>(2));
@@ -8193,7 +8193,7 @@ public abstract class GridUtils {
      * @return Inet addresses for given addresses and host names.
      * @throws GridException If non of addresses can be resolved.
      */
-    public static Collection<InetAddress> toInetAddresses(GridNode node) throws GridException {
+    public static Collection<InetAddress> toInetAddresses(ClusterNode node) throws GridException {
         return toInetAddresses(node.addresses(), node.hostNames());
     }
 
@@ -8252,7 +8252,7 @@ public abstract class GridUtils {
      * @param port Port.
      * @return Socket addresses for given addresses and host names.
      */
-    public static Collection<InetSocketAddress> toSocketAddresses(GridNode node, int port) {
+    public static Collection<InetSocketAddress> toSocketAddresses(ClusterNode node, int port) {
         return toSocketAddresses(node.addresses(), node.hostNames(), port);
     }
 
@@ -8335,7 +8335,7 @@ public abstract class GridUtils {
      * @param node Grid node.
      * @return String representation of addresses.
      */
-    public static String addressesAsString(GridNode node) {
+    public static String addressesAsString(ClusterNode node) {
         return addressesAsString(node.addresses(), node.hostNames());
     }
 
@@ -8568,12 +8568,12 @@ public abstract class GridUtils {
      * @param c Collection of nodes.
      * @return Oldest node.
      */
-    public static GridNode oldest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
-        GridNode oldest = null;
+    public static ClusterNode oldest(Collection<ClusterNode> c, @Nullable GridPredicate<ClusterNode> p) {
+        ClusterNode oldest = null;
 
         long minOrder = Long.MAX_VALUE;
 
-        for (GridNode n : c) {
+        for (ClusterNode n : c) {
             if ((p == null || p.apply(n)) && n.order() < minOrder) {
                 oldest = n;
 
@@ -8590,12 +8590,12 @@ public abstract class GridUtils {
      * @param c Collection of nodes.
      * @return Youngest node.
      */
-    public static GridNode youngest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
-        GridNode youngest = null;
+    public static ClusterNode youngest(Collection<ClusterNode> c, @Nullable GridPredicate<ClusterNode> p) {
+        ClusterNode youngest = null;
 
         long maxOrder = Long.MIN_VALUE;
 
-        for (GridNode n : c) {
+        for (ClusterNode n : c) {
             if ((p == null || p.apply(n)) && n.order() > maxOrder) {
                 youngest = n;
 

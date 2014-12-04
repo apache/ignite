@@ -160,21 +160,21 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
             GridDiscoveryManager discoMgr = k.context().discovery();
 
-            final Collection<GridNode> currTop = g.cluster().nodes();
+            final Collection<ClusterNode> currTop = g.cluster().nodes();
 
             long currVer = discoMgr.topologyVersion();
 
             for (long v = currVer; v > currVer - GridDiscoveryManager.DISCOVERY_HISTORY_SIZE && v > 0; v--) {
                 F.forAll(discoMgr.aliveCacheNodes(null, v),
-                    new GridPredicate<GridNode>() {
-                        @Override public boolean apply(GridNode e) {
+                    new GridPredicate<ClusterNode>() {
+                        @Override public boolean apply(ClusterNode e) {
                             return currTop.contains(e);
                         }
                     });
 
                 F.forAll(discoMgr.aliveRemoteCacheNodes(null, v),
-                    new GridPredicate<GridNode>() {
-                        @Override public boolean apply(GridNode e) {
+                    new GridPredicate<ClusterNode>() {
+                        @Override public boolean apply(ClusterNode e) {
                             return currTop.contains(e) || g.cluster().localNode().equals(e);
                         }
                     });

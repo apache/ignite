@@ -95,7 +95,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends GridNode> nodes(GridCacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(GridCacheAffinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -119,7 +119,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
                 List<GridTcpDiscoveryNode> top = new ArrayList<>();
 
-                for (GridNode node : g.cluster().nodes())
+                for (ClusterNode node : g.cluster().nodes())
                     top.add((GridTcpDiscoveryNode) node);
 
                 Collections.sort(top);
@@ -128,13 +128,13 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
                 int idx = 1;
 
-                for (GridNode n : top) {
+                for (ClusterNode n : top) {
                     assertEquals(idx, n.order());
 
                     idx++;
                 }
 
-                Collection<? extends GridNode> affNodes = nodes(aff, key);
+                Collection<? extends ClusterNode> affNodes = nodes(aff, key);
 
                 info("Affinity picture for grid [i=" + i + ", aff=" + U.toShortString(affNodes));
 
@@ -142,7 +142,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
                 Set<String> macs = new HashSet<>();
 
-                for (GridNode node : affNodes)
+                for (ClusterNode node : affNodes)
                     macs.add((String)node.attribute(GridNodeAttributes.ATTR_MACS));
 
                 assertEquals(copies, macs.size());
@@ -162,7 +162,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
         try {
             Object key = 12345;
 
-            Collection<? extends GridNode> affNodes = nodes(affinity(g), key);
+            Collection<? extends ClusterNode> affNodes = nodes(affinity(g), key);
 
             info("Affinity picture for grid: " + U.toShortString(affNodes));
 

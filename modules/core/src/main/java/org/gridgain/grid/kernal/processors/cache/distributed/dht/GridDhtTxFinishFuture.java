@@ -109,10 +109,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /**
      * @return Involved nodes.
      */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
-                @Nullable @Override public GridNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -279,7 +279,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         // Create mini futures.
         for (GridDistributedTxMapping<K, V> dhtMapping : dhtMap.values()) {
-            GridNode n = dhtMapping.node();
+            ClusterNode n = dhtMapping.node();
 
             assert !n.isLocal();
 
@@ -455,7 +455,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @return Node ID.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return dhtMapping != null ? dhtMapping.node() : nearMapping.node();
         }
 

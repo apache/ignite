@@ -55,7 +55,7 @@ object ScalarProjectionPimp {
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
  */
-class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Iterable[GridNode]
+class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Iterable[ClusterNode]
     with ScalarTaskThreadContext[A] {
     /** */
     lazy val value: A = impl
@@ -91,7 +91,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     protected type Pred3[E1, E2, E3] = (E1, E2, E3) => Boolean
 
     /** Type alias for node filter predicate. */
-    protected type NF = GridPredicate[GridNode]
+    protected type NF = GridPredicate[ClusterNode]
 
     /**
      * Gets iterator for this projection's nodes.
@@ -113,7 +113,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @param p Optional node filter predicates. It `null` provided - all nodes will be returned.
      * @see `org.gridgain.grid.GridProjection.nodes(...)`
      */
-    def nodes$(@Nullable p: NF): Seq[GridNode] =
+    def nodes$(@Nullable p: NF): Seq[ClusterNode] =
         toScalaSeq(forPredicate(p).nodes())
 
     /**
@@ -122,7 +122,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @param p Optional node filter predicate. It `null` provided - all remote nodes will be returned.
      * @see `org.gridgain.grid.GridProjection.remoteNodes(...)`
      */
-    def remoteNodes$(@Nullable p: NF = null): Seq[GridNode] =
+    def remoteNodes$(@Nullable p: NF = null): Seq[ClusterNode] =
         toScalaSeq(forPredicate(p).forRemotes().nodes())
 
     /**

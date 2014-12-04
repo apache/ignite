@@ -282,7 +282,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param affinityKey Affinity key to map.
      * @return Primary node for this key.
      */
-    public GridNode affinityNode(Object affinityKey) {
+    public ClusterNode affinityNode(Object affinityKey) {
         return dataCache.affinity().mapKeyToNode(affinityKey);
     }
 
@@ -339,11 +339,11 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 GridGgfsBlockKey key = new GridGgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(),
                     fileInfo.evictExclude(), i);
 
-                Collection<GridNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
+                Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
 
                 assert affNodes != null && !affNodes.isEmpty();
 
-                GridNode primaryNode = affNodes.iterator().next();
+                ClusterNode primaryNode = affNodes.iterator().next();
 
                 if (primaryNode.id().equals(ggfsCtx.kernalContext().localNodeId())) {
                     res.add(i);
@@ -808,7 +808,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             if (range.belongs(pos)) {
                 long partEnd = Math.min(range.endOffset() + 1, end);
 
-                Collection<GridNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(
+                Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(
                     range.affinityKey());
 
                 if (log.isDebugEnabled())
@@ -891,7 +891,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(),
                 grpIdx * grpSize);
 
-            Collection<GridNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
+            Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
 
             if (log.isDebugEnabled())
                 log.debug("Mapped key to nodes [key=" + key + ", nodes=" + F.nodeIds(affNodes) +
@@ -926,7 +926,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param res Where to put results.
      */
     private void splitBlocks(long start, long len, long maxLen,
-        Collection<GridNode> nodes, Collection<GridGgfsBlockLocation> res) {
+        Collection<ClusterNode> nodes, Collection<GridGgfsBlockLocation> res) {
         if (maxLen > 0) {
             long end = start + len;
 
@@ -998,7 +998,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param blocks Blocks to put in cache.
      * @throws GridException If batch processing failed.
      */
-    private void processBatch(GridUuid fileId, final GridNode node,
+    private void processBatch(GridUuid fileId, final ClusterNode node,
         final Map<GridGgfsBlockKey, byte[]> blocks) throws GridException {
         final long batchId = reqIdCtr.getAndIncrement();
 
@@ -1419,7 +1419,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             int remainderOff = 0;
 
             Map<GridGgfsBlockKey, byte[]> nodeBlocks = U.newLinkedHashMap((int)(limit - first));
-            GridNode node = null;
+            ClusterNode node = null;
             int off = 0;
 
             for (long block = first; block < limit; block++) {
@@ -1448,7 +1448,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 // Will update range if necessary.
                 GridGgfsBlockKey key = createBlockKey(block, fileInfo, affinityRange);
 
-                GridNode primaryNode = dataCachePrj.cache().affinity().mapKeyToNode(key);
+                ClusterNode primaryNode = dataCachePrj.cache().affinity().mapKeyToNode(key);
 
                 if (block == first) {
                     off = (int)blockStartOff;

@@ -297,7 +297,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
                             int p = e.getKey();
                             GridDhtPartitionState state = e.getValue();
 
-                            Collection<GridNode> nodes = affinityNodes(g, p);
+                            Collection<ClusterNode> nodes = affinityNodes(g, p);
 
                             Collection<UUID> nodeIds = U.nodeIds(nodes);
 
@@ -376,7 +376,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param p Partition.
      * @return Affinity nodes.
      */
-    private Collection<GridNode> affinityNodes(Ignite g, int p) {
+    private Collection<ClusterNode> affinityNodes(Ignite g, int p) {
         return affinity(g).mapPartitionToPrimaryAndBackups(p);
     }
 

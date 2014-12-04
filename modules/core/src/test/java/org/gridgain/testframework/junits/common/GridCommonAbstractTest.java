@@ -238,11 +238,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                         for (int i = 0; ; i++) {
                             // Must map on updated version of topology.
-                            Collection<GridNode> affNodes = c.affinity().mapPartitionToPrimaryAndBackups(p);
+                            Collection<ClusterNode> affNodes = c.affinity().mapPartitionToPrimaryAndBackups(p);
 
                             int exp = affNodes.size();
 
-                            Collection<GridNode> owners = top.nodes(p, -1);
+                            Collection<ClusterNode> owners = top.nodes(p, -1);
 
                             int actual = owners.size();
 
@@ -304,7 +304,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
+        ClusterNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -354,7 +354,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
+        ClusterNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -404,7 +404,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
+        ClusterNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 

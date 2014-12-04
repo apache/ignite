@@ -104,7 +104,7 @@ class VisorGcCommand {
             val id = argValue("id", argLst)
             val dgc = hasArgFlag("c", argLst)
 
-            var node: GridNode = null
+            var node: ClusterNode = null
 
             if (id8.isDefined && id.isDefined)
                 scold("Only one of '-id8' or '-id' is allowed.").^^

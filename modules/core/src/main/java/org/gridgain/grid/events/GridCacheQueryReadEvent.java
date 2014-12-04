@@ -118,7 +118,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
      * @param oldVal Old value.
      */
     public GridCacheQueryReadEvent(
-        GridNode node,
+        ClusterNode node,
         String msg,
         int type,
         GridCacheQueryType qryType,

@@ -133,15 +133,15 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         // Validate affinity functions collection updated on first call.
         //
 
-        Map<GridNode, Collection<Integer>> node1Map = affPrc1.mapKeysToNodes(CACHE_NAME, keys);
-        Map<GridNode, Collection<Integer>> node2Map = affPrc2.mapKeysToNodes(CACHE_NAME, keys);
-        Map<GridNode, Collection<Integer>> cacheMap = cache.affinity().mapKeysToNodes(keys);
+        Map<ClusterNode, Collection<Integer>> node1Map = affPrc1.mapKeysToNodes(CACHE_NAME, keys);
+        Map<ClusterNode, Collection<Integer>> node2Map = affPrc2.mapKeysToNodes(CACHE_NAME, keys);
+        Map<ClusterNode, Collection<Integer>> cacheMap = cache.affinity().mapKeysToNodes(keys);
 
         assertEquals(cacheMap.size(), node1Map.size());
         assertEquals(cacheMap.size(), node2Map.size());
 
-        for (Map.Entry<GridNode, Collection<Integer>> entry : cacheMap.entrySet()) {
-            GridNode node = entry.getKey();
+        for (Map.Entry<ClusterNode, Collection<Integer>> entry : cacheMap.entrySet()) {
+            ClusterNode node = entry.getKey();
 
             Collection<Integer> mappedKeys = entry.getValue();
 

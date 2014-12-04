@@ -100,13 +100,13 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws GridException {
             taskSubjId = ((GridTaskSessionInternal)ses).subjectId();
 
-            GridNode node = null;
+            ClusterNode node = null;
 
-            for (GridNode subgridNode : subgrid) {
+            for (ClusterNode subgridNode : subgrid) {
                 if (F.eq(targetNodeId, subgridNode.id())) {
                     node = subgridNode;
 

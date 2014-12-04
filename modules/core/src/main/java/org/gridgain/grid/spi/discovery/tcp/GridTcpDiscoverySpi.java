@@ -209,7 +209,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     private final GridTcpDiscoveryNodesRing ring = new GridTcpDiscoveryNodesRing();
 
     /** Topology snapshots history. */
-    private final SortedMap<Long, Collection<GridNode>> topHist = new TreeMap<>();
+    private final SortedMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
 
     /** Socket readers. */
     private final Collection<SocketReader> readers = new LinkedList<>();
@@ -609,7 +609,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNode getNode(UUID nodeId) {
+    @Nullable @Override public ClusterNode getNode(UUID nodeId) {
         assert nodeId != null;
 
         UUID locNodeId0 = locNodeId;
@@ -627,8 +627,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> getRemoteNodes() {
-        return F.<GridTcpDiscoveryNode, GridNode>upcast(ring.visibleRemoteNodes());
+    @Override public Collection<ClusterNode> getRemoteNodes() {
+        return F.<GridTcpDiscoveryNode, ClusterNode>upcast(ring.visibleRemoteNodes());
     }
 
     /** {@inheritDoc} */
@@ -1012,18 +1012,18 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             GridDiscoverySpiListener lsnr = this.lsnr;
 
             if (lsnr != null) {
-                Collection<GridNode> processed = new LinkedList<>();
+                Collection<ClusterNode> processed = new LinkedList<>();
 
                 for (GridTcpDiscoveryNode n : rmts) {
                     assert n.visible();
 
                     processed.add(n);
 
-                    Collection<GridNode> top = F.viewReadOnly(rmts, F.<GridNode>identity(), F.notIn(processed));
+                    Collection<ClusterNode> top = F.viewReadOnly(rmts, F.<ClusterNode>identity(), F.notIn(processed));
 
                     topVer++;
 
-                    Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
+                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
                     lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist);
                 }
@@ -1721,9 +1721,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<GridNode> top = F.<GridTcpDiscoveryNode, GridNode>upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = F.<GridTcpDiscoveryNode, ClusterNode>upcast(ring.visibleNodes());
 
-            Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
+            Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
             lsnr.onDiscovery(type, topVer, node, top, hist);
         }
@@ -1739,7 +1739,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private Map<Long, Collection<GridNode>> updateTopologyHistory(long topVer, Collection<GridNode> top) {
+    @Nullable private Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;
@@ -1918,7 +1918,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 nodeAddedMsg.topology(topToSend);
                 nodeAddedMsg.messages(msgs, discardMsgId);
 
-                Map<Long, Collection<GridNode>> hist;
+                Map<Long, Collection<ClusterNode>> hist;
 
                 synchronized (mux) {
                     hist = new TreeMap<>(topHist);

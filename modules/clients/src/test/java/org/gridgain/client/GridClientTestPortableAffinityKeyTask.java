@@ -27,9 +27,9 @@ public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapte
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> gridNodes,
+    @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> clusterNodes,
         @Nullable final Object arg) throws GridException {
-        for (GridNode node : gridNodes) {
+        for (ClusterNode node : clusterNodes) {
             if (node.isLocal())
                 return Collections.singletonMap(new GridComputeJobAdapter() {
                     @Override public Object execute() throws GridException {
@@ -38,7 +38,7 @@ public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapte
                 }, node);
         }
 
-        throw new GridException("Failed to find local node in task topology: " + gridNodes);
+        throw new GridException("Failed to find local node in task topology: " + clusterNodes);
     }
 
     /** {@inheritDoc} */

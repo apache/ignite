@@ -51,7 +51,7 @@ class GridDeploymentMetadata {
     private boolean record;
 
     /** */
-    private GridPredicate<GridNode> nodeFilter;
+    private GridPredicate<ClusterNode> nodeFilter;
 
     /**
      *
@@ -263,14 +263,14 @@ class GridDeploymentMetadata {
     /**
      * @param nodeFilter Node filter.
      */
-    public void nodeFilter(GridPredicate<GridNode> nodeFilter) {
+    public void nodeFilter(GridPredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
     }
 
     /**
      * @return Node filter.
      */
-    public GridPredicate<GridNode> nodeFilter() {
+    public GridPredicate<ClusterNode> nodeFilter() {
         return nodeFilter;
     }
 

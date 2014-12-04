@@ -324,8 +324,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> getRemoteNodes() {
-        return F.view(U.<GridTcpDiscoveryNode, GridNode>arrayList(rmtNodes.values(), new P1<GridTcpDiscoveryNode>() {
+    @Override public Collection<ClusterNode> getRemoteNodes() {
+        return F.view(U.<GridTcpDiscoveryNode, ClusterNode>arrayList(rmtNodes.values(), new P1<GridTcpDiscoveryNode>() {
             @Override public boolean apply(GridTcpDiscoveryNode node) {
                 return node.visible();
             }
@@ -333,7 +333,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNode getNode(UUID nodeId) {
+    @Nullable @Override public ClusterNode getNode(UUID nodeId) {
         if (locNodeId.equals(nodeId))
             return locNode;
 
@@ -798,7 +798,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
      */
     private class MessageWorker extends MessageWorkerAdapter {
         /** Topology history. */
-        private final NavigableMap<Long, Collection<GridNode>> topHist = new TreeMap<>();
+        private final NavigableMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
 
         /** Indicates that reconnection is in progress. */
         private boolean recon;
@@ -950,7 +950,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 if (locNodeVer.equals(node.version()))
                     node.version(locNodeVer);
 
-                Collection<GridNode> top = updateTopologyHistory(topVer);
+                Collection<ClusterNode> top = updateTopologyHistory(topVer);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -992,7 +992,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
-                Collection<GridNode> top = updateTopologyHistory(msg.topologyVersion());
+                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1024,7 +1024,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     return;
                 }
 
-                Collection<GridNode> top = updateTopologyHistory(msg.topologyVersion());
+                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1158,10 +1158,10 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param topVer New topology version.
          * @return Latest topology snapshot.
          */
-        private Collection<GridNode> updateTopologyHistory(long topVer) {
+        private Collection<ClusterNode> updateTopologyHistory(long topVer) {
             GridTcpClientDiscoverySpi.this.topVer = topVer;
 
-            Collection<GridNode> allNodes = allNodes();
+            Collection<ClusterNode> allNodes = allNodes();
 
             if (!topHist.containsKey(topVer)) {
                 assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
@@ -1182,8 +1182,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
         /**
          * @return All nodes.
          */
-        private Collection<GridNode> allNodes() {
-            Collection<GridNode> allNodes = new TreeSet<>();
+        private Collection<ClusterNode> allNodes() {
+            Collection<ClusterNode> allNodes = new TreeSet<>();
 
             for (GridTcpDiscoveryNode node : rmtNodes.values()) {
                 if (node.visible())
@@ -1201,7 +1201,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param node Node.
          * @param top Topology snapshot.
          */
-        private void notifyDiscovery(int type, long topVer, GridNode node, Collection<GridNode> top) {
+        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top) {
             GridDiscoverySpiListener lsnr = GridTcpClientDiscoverySpi.this.lsnr;
 
             if (lsnr != null) {

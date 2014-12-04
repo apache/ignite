@@ -43,7 +43,7 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
     @GridSpiTestConfig
     public GridAdaptiveLoadProbe getLoadProbe() {
         return new GridAdaptiveLoadProbe() {
-            @Override public double getLoad(GridNode node, int jobsSentSinceLastUpdate) {
+            @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
                 boolean isFirstTime = node.attribute("used") == null;
 
                 assert isFirstTime ? jobsSentSinceLastUpdate == 0 : jobsSentSinceLastUpdate > 0;
@@ -57,7 +57,7 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
      */
     public void testWeights() throws Exception {
         // Seal it.
-        List<GridNode> nodes = new ArrayList<>(getSpiContext().remoteNodes());
+        List<ClusterNode> nodes = new ArrayList<>(getSpiContext().remoteNodes());
 
         int[] cnts = new int[RMT_NODE_CNT];
 

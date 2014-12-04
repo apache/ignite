@@ -48,7 +48,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             serviceProxy(name, CounterService.class, false).localIncrements());
 
         // Make sure that remote proxies were not called.
-        for (GridNode n : ignite.cluster().forRemotes().nodes()) {
+        for (ClusterNode n : ignite.cluster().forRemotes().nodes()) {
             CounterService rmtSvc =
                     ignite.services(ignite.cluster().forNode(n)).serviceProxy(name, CounterService.class, false);
 
@@ -122,7 +122,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int total = 0;
 
-        for (GridNode n : ignite.cluster().forRemotes().nodes()) {
+        for (ClusterNode n : ignite.cluster().forRemotes().nodes()) {
             CounterService rmtSvc =
                     ignite.services(ignite.cluster().forNode(n)).serviceProxy(name, CounterService.class, false);
 
@@ -158,7 +158,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int total = 0;
 
-        for (GridNode n : ignite.cluster().forRemotes().nodes()) {
+        for (ClusterNode n : ignite.cluster().forRemotes().nodes()) {
             CounterService rmtSvc =
                     ignite.services(ignite.cluster().forNode(n)).serviceProxy(name, CounterService.class, false);
 
@@ -241,7 +241,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int size = 0;
 
-        for (GridNode n : ignite.cluster().forRemotes().nodes()) {
+        for (ClusterNode n : ignite.cluster().forRemotes().nodes()) {
             MapService<Integer, String> map = ignite.services(ignite.cluster().forNode(n)).
                 serviceProxy(name, MapService.class, false);
 
@@ -276,7 +276,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int size = 0;
 
-        for (GridNode n : ignite.cluster().forRemotes().nodes()) {
+        for (ClusterNode n : ignite.cluster().forRemotes().nodes()) {
             MapService<Integer, String> map = ignite.services(ignite.cluster().forNode(n)).
                 serviceProxy(name, MapService.class, false);
 

@@ -382,7 +382,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param key Key to add.
      * @param node Node this key mapped to.
      */
-    public void addKeyMapping(GridCacheTxKey<K> key, GridNode node) {
+    public void addKeyMapping(GridCacheTxKey<K> key, ClusterNode node) {
         GridDistributedTxMapping<K, V> m = mappings.get(node.id());
 
         if (m == null)
@@ -407,7 +407,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param n Mapped node.
      * @param mappedKeys Mapped keys.
      */
-    private void addKeyMapping(GridNode n, Iterable<GridCacheTxKey<K>> mappedKeys) {
+    private void addKeyMapping(ClusterNode n, Iterable<GridCacheTxKey<K>> mappedKeys) {
         GridDistributedTxMapping<K, V> m = mappings.get(n.id());
 
         if (m == null)
@@ -430,7 +430,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     void addEntryMapping(@Nullable Collection<GridDistributedTxMapping<K, V>> maps) {
         if (!F.isEmpty(maps)) {
             for (GridDistributedTxMapping<K, V> map : maps) {
-                GridNode n = map.node();
+                ClusterNode n = map.node();
 
                 GridDistributedTxMapping<K, V> m = mappings.get(n.id());
 

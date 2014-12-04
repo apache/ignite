@@ -69,7 +69,7 @@ public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externa
      * @param len Length.
      * @param nodes Affinity nodes.
      */
-    public GridGgfsBlockLocationImpl(long start, long len, Collection<GridNode> nodes) {
+    public GridGgfsBlockLocationImpl(long start, long len, Collection<ClusterNode> nodes) {
         assert start >= 0;
         assert len > 0;
         assert nodes != null && !nodes.isEmpty();
@@ -216,12 +216,12 @@ public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externa
      *
      * @param nodes Collection of affinity nodes.
      */
-    private void convertFromNodes(Collection<GridNode> nodes) {
+    private void convertFromNodes(Collection<ClusterNode> nodes) {
         Collection<String> names = new LinkedHashSet<>();
         Collection<String> hosts = new LinkedHashSet<>();
         Collection<UUID> nodeIds = new ArrayList<>(nodes.size());
 
-        for (final GridNode node : nodes) {
+        for (final ClusterNode node : nodes) {
             // Normalize host names into Hadoop-expected format.
             try {
                 Collection<InetAddress> addrs = U.toInetAddresses(node);

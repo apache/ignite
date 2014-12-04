@@ -129,7 +129,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
      * @param node Primary node for keys.
      * @param data Map where keys/values should be put to.
      */
-    private void addKeysForNode(GridCacheAffinity<String> aff, GridNode node, Map<String, Integer> data) {
+    private void addKeysForNode(GridCacheAffinity<String> aff, ClusterNode node, Map<String, Integer> data) {
         int cntr = 0;
 
         for (int i = 0; i < 100_000; i++) {

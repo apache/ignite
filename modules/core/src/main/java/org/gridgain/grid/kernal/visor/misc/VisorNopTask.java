@@ -25,12 +25,12 @@ public class VisorNopTask implements GridComputeTask<Integer, Void> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) throws GridException {
 
-        Map<GridComputeJob, GridNode> map = new GridLeanMap<>(subgrid.size());
+        Map<GridComputeJob, ClusterNode> map = new GridLeanMap<>(subgrid.size());
 
-        for (GridNode node : subgrid)
+        for (ClusterNode node : subgrid)
             map.put(new VisorNopJob(arg), node);
 
         return map;

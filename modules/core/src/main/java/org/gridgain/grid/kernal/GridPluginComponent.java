@@ -69,7 +69,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
         try {
             plugin.validateNewNode(node);
 

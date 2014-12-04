@@ -20,7 +20,7 @@ import java.io.*;
  * in combination with fail-over SPI could check if other nodes don't have
  * any active or waiting jobs and fail-over some jobs to those nodes.
  * <p>
- * Node metrics for any node can be accessed via {@link GridNode#metrics()}
+ * Node metrics for any node can be accessed via {@link ClusterNode#metrics()}
  * method. Keep in mind that there will be a certain network delay (usually
  * equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
  * metrics on local node {@link org.apache.ignite.Ignite#localNode() Grid.localNode().getMetrics()}

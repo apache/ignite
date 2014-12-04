@@ -83,7 +83,7 @@ object ScalarClosureExample extends App {
 
         // Just show that we can create any projections we like...
         // Note that usage of Java-based closure via 'F' typedef.
-        grid$.cluster().forPredicate((n: GridNode) => n.id != me) match {
+        grid$.cluster().forPredicate((n: ClusterNode) => n.id != me) match {
             case p if p.isEmpty => println("No remote nodes!")
             case p => p.bcastRun(() => println("Greetings again from: " + me), null)
         }

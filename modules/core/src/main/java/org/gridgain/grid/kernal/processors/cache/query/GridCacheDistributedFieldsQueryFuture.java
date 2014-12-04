@@ -44,7 +44,7 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param nodes Nodes.
      */
     public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId,
-        GridCacheQueryBean qry, Iterable<GridNode> nodes) {
+        GridCacheQueryBean qry, Iterable<ClusterNode> nodes) {
         super((GridCacheContext<Object, Object>)ctx, reqId, qry, nodes);
 
         metaFut = new GridFutureAdapter<>(ctx.kernalContext());

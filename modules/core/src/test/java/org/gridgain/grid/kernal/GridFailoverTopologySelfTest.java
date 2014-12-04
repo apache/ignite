@@ -45,14 +45,14 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
             @GridLocalNodeIdResource private UUID locNodeId;
 
             /** {@inheritDoc} */
-            @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> grid) {
+            @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> grid) {
                 if (grid.size() != 1) {
                     failed.set(true);
 
                     error("Unexpected grid size [expected=1, grid=" + grid + ']');
                 }
 
-                for (GridNode node : grid) {
+                for (ClusterNode node : grid) {
                     if (node.id().equals(locNodeId)) {
                         failed.set(true);
 
@@ -105,12 +105,12 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         private boolean jobFailedOver;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             assert locNodeId != null;
 
-            GridNode remoteNode = null;
+            ClusterNode remoteNode = null;
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (!node.id().equals(locNodeId))
                     remoteNode = node;
             }

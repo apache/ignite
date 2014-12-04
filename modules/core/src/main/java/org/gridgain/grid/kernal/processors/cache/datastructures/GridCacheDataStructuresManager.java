@@ -1198,7 +1198,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             while (true) {
                 long topVer = cctx.topologyVersionFuture().get();
 
-                Collection<GridNode> nodes = CU.affinityNodes(cctx, topVer);
+                Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,

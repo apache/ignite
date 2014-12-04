@@ -93,8 +93,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final GridKernal sndKernal = (GridKernal)grid(0);
         final GridKernal rcvKernal = (GridKernal)grid(1);
 
-        final GridNode sndNode = sndKernal.localNode();
-        final GridNode rcvNode = rcvKernal.localNode();
+        final ClusterNode sndNode = sndKernal.localNode();
+        final ClusterNode rcvNode = rcvKernal.localNode();
 
         final GridIoManager snd = sndKernal.context().io();
         final GridIoManager rcv = rcvKernal.context().io();
@@ -189,8 +189,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final GridKernal sndKernal = (GridKernal)grid(0);
         final GridKernal rcvKernal = (GridKernal)grid(1);
 
-        final GridNode sndNode = sndKernal.localNode();
-        final GridNode rcvNode = rcvKernal.localNode();
+        final ClusterNode sndNode = sndKernal.localNode();
+        final ClusterNode rcvNode = rcvKernal.localNode();
 
         final GridIoManager snd = sndKernal.context().io();
         final GridIoManager rcv = rcvKernal.context().io();
@@ -285,8 +285,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final GridKernal sndKernal = (GridKernal)grid(0);
         final GridKernal rcvKernal = (GridKernal)grid(1);
 
-        final GridNode sndNode = sndKernal.localNode();
-        final GridNode rcvNode = rcvKernal.localNode();
+        final ClusterNode sndNode = sndKernal.localNode();
+        final ClusterNode rcvNode = rcvKernal.localNode();
 
         final GridIoManager snd = sndKernal.context().io();
         final GridIoManager rcv = rcvKernal.context().io();

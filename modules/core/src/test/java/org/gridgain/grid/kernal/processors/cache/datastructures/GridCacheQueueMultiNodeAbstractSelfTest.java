@@ -521,9 +521,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         assertEquals(GRID_CNT * RETRIES, queue.size());
 
-        Collection<GridNode> nodes = grid(0).nodes();
+        Collection<ClusterNode> nodes = grid(0).nodes();
 
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new GridCallable<Collection<Integer>>() {
                 @GridInstanceResource
                 private Ignite grid;

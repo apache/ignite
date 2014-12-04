@@ -150,7 +150,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             map.put("key" + i, i);
 
         // Put in primary nodes to avoid near readers which will prevent entry from being cleared.
-        Map<GridNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, map.keySet());
+        Map<ClusterNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, map.keySet());
 
         for (int i = 0; i < gridCount(); i++) {
             Collection<String> keys = mapped.get(grid(i).localNode());
@@ -3353,7 +3353,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testLockAsyncWithTimeoutEntry() throws Exception {
         if (lockingEnabled()) {
             // Put only to primary.
-            GridNode node = F.first(cache().affinity().mapKeyToPrimaryAndBackups("key"));
+            ClusterNode node = F.first(cache().affinity().mapKeyToPrimaryAndBackups("key"));
 
             if (node == null)
                 throw new GridException("Failed to map key.");
@@ -5017,7 +5017,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     protected GridCache<String, Integer> primaryCache(String key) throws Exception {
-        GridNode node = cache().affinity().mapKeyToNode(key);
+        ClusterNode node = cache().affinity().mapKeyToNode(key);
 
         if (node == null)
             throw new GridException("Failed to find primary node.");

@@ -130,7 +130,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         // Check for events from empty remote nodes collection.
         try {
-            events(ignite1.cluster().forPredicate(F.<GridNode>alwaysFalse())).remoteQuery(filter, 0);
+            events(ignite1.cluster().forPredicate(F.<ClusterNode>alwaysFalse())).remoteQuery(filter, 0);
         }
         catch (GridEmptyProjectionException ignored) {
             // No-op

@@ -63,9 +63,9 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Filter to include only worker nodes. */
-    private static final GridPredicate<GridNode> workerNodesFilter = new PN() {
+    private static final GridPredicate<ClusterNode> workerNodesFilter = new PN() {
         @SuppressWarnings("unchecked")
-        @Override public boolean apply(GridNode n) {
+        @Override public boolean apply(ClusterNode n) {
             return "worker".equals(n.attribute("segment"));
         }
     };
@@ -177,7 +177,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
             int failoverPushGap = 0;
 
             for (Integer key : testKeys) {
-                GridNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
+                ClusterNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
 
                 UUID nodeId = mappedNode.id();
 
@@ -280,7 +280,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         Map<UUID, Collection<Integer>> dataChunks = new HashMap<>();
 
         for (Integer key : keys) {
-            GridNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
+            ClusterNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
 
             UUID nodeId = mappedNode.id();
 
@@ -464,21 +464,21 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         private Set<GridComputeJobContext> failedOverJobs = new HashSet<>();
 
         /** Node filter. */
-        private GridPredicate<? super GridNode>[] filter;
+        private GridPredicate<? super ClusterNode>[] filter;
 
         /**
          * @param master Master flag.
          * @param filter Filters.
          */
         @SafeVarargs
-        GridTestFailoverSpi(boolean master, GridPredicate<? super GridNode>... filter) {
+        GridTestFailoverSpi(boolean master, GridPredicate<? super ClusterNode>... filter) {
             this.master = master;
             this.filter = filter;
         }
 
         /** {@inheritDoc} */
-        @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> top) {
-            List<GridNode> cp = null;
+        @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
+            List<ClusterNode> cp = null;
             if (master) {
                 failedOverJobs.add(ctx.getJobResult().getJobContext());
 
@@ -505,8 +505,8 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
                 cp = new ArrayList<>(top);
 
                 // Keep collection type.
-                F.retain(cp, false, new GridPredicate<GridNode>() {
-                    @Override public boolean apply(GridNode node) {
+                F.retain(cp, false, new GridPredicate<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode node) {
                         return F.isAll(node, filter);
                     }
                 });

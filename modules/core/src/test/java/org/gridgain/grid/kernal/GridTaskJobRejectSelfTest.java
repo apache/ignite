@@ -104,12 +104,12 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
             }
         }, EVT_TASK_FINISHED, EVT_TASK_FAILED);
 
-        final GridNode node = grid(1).localNode();
+        final ClusterNode node = grid(1).localNode();
 
         GridCompute comp = grid(1).compute().enableAsync();
 
         comp.execute(new GridComputeTaskAdapter<Void, Void>() {
-            @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+            @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
                 @Nullable Void arg) {
                 return F.asMap(new SleepJob(), node, new SleepJob(), node);
             }

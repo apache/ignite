@@ -25,7 +25,7 @@ class GridAffinityAssignment implements Serializable {
     private final long topVer;
 
     /** Collection of calculated affinity nodes. */
-    private List<List<GridNode>> assignment;
+    private List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
     private final Map<UUID, Set<Integer>> primary;
@@ -48,7 +48,7 @@ class GridAffinityAssignment implements Serializable {
      * @param topVer Topology version.
      * @param assignment Assignment.
      */
-    GridAffinityAssignment(long topVer, List<List<GridNode>> assignment) {
+    GridAffinityAssignment(long topVer, List<List<ClusterNode>> assignment) {
         this.topVer = topVer;
         this.assignment = assignment;
 
@@ -61,7 +61,7 @@ class GridAffinityAssignment implements Serializable {
     /**
      * @return Affinity assignment.
      */
-    public List<List<GridNode>> assignment() {
+    public List<List<ClusterNode>> assignment() {
         return assignment;
     }
 
@@ -78,7 +78,7 @@ class GridAffinityAssignment implements Serializable {
      * @param part Partition.
      * @return Affinity nodes.
      */
-    public List<GridNode> get(int part) {
+    public List<ClusterNode> get(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
@@ -122,7 +122,7 @@ class GridAffinityAssignment implements Serializable {
             Map<UUID, Set<Integer>> tmp = tmpPrm;
             Map<UUID, Set<Integer>> map = primary;
 
-            for (GridNode node : assignment.get(p)) {
+            for (ClusterNode node : assignment.get(p)) {
                 UUID id = node.id();
 
                 Set<Integer> set = tmp.get(id);

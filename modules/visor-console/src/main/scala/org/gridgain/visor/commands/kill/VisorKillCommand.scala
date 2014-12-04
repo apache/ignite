@@ -131,7 +131,7 @@ class VisorKillCommand {
             val restart = hasArgFlag("r", argLst)
             val kill = hasArgFlag("k", argLst)
 
-            var node: GridNode = null
+            var node: ClusterNode = null
 
             if (kill && restart)
                 scold("Only one of '-k' or '-r' can be specified.")

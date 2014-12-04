@@ -114,7 +114,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Task execution future.
      */
     public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         return runAsync(mode, jobs, nodes, false);
     }
 
@@ -126,7 +126,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Task execution future.
      */
     public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
-        @Nullable Collection<GridNode> nodes, boolean sys) {
+        @Nullable Collection<ClusterNode> nodes, boolean sys) {
         assert mode != null;
 
         enterBusy();
@@ -154,7 +154,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Task execution future.
      */
     public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Runnable job,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         return runAsync(mode, job, nodes, false);
     }
 
@@ -166,7 +166,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Task execution future.
      */
     public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Runnable job,
-        @Nullable Collection<GridNode> nodes, boolean sys) {
+        @Nullable Collection<ClusterNode> nodes, boolean sys) {
         assert mode != null;
 
         enterBusy();
@@ -197,21 +197,21 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @throws GridException Thrown in case of any errors.
      * @return Mapping.
      */
-    private Map<GridComputeJob, GridNode> absMap(GridClosureCallMode mode, Collection<? extends Runnable> jobs,
-        Collection<GridNode> nodes, GridComputeLoadBalancer lb) throws GridException {
+    private Map<GridComputeJob, ClusterNode> absMap(GridClosureCallMode mode, Collection<? extends Runnable> jobs,
+        Collection<ClusterNode> nodes, GridComputeLoadBalancer lb) throws GridException {
         assert mode != null;
         assert jobs != null;
         assert nodes != null;
         assert lb != null;
 
         if (!F.isEmpty(jobs) && !F.isEmpty(nodes)) {
-            Map<GridComputeJob, GridNode> map = new HashMap<>(jobs.size(), 1);
+            Map<GridComputeJob, ClusterNode> map = new HashMap<>(jobs.size(), 1);
 
             JobMapper mapper = new JobMapper(map);
 
             switch (mode) {
                 case BROADCAST: {
-                    for (GridNode n : nodes)
+                    for (ClusterNode n : nodes)
                         for (Runnable r : jobs)
                             mapper.map(job(r), n);
 
@@ -245,8 +245,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @throws GridException Thrown in case of any errors.
      * @return Mapping.
      */
-    private <R> Map<GridComputeJob, GridNode> outMap(GridClosureCallMode mode,
-        Collection<? extends Callable<R>> jobs, Collection<GridNode> nodes, GridComputeLoadBalancer lb)
+    private <R> Map<GridComputeJob, ClusterNode> outMap(GridClosureCallMode mode,
+        Collection<? extends Callable<R>> jobs, Collection<ClusterNode> nodes, GridComputeLoadBalancer lb)
         throws GridException {
         assert mode != null;
         assert jobs != null;
@@ -254,13 +254,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         assert lb != null;
 
         if (!F.isEmpty(jobs) && !F.isEmpty(nodes)) {
-            Map<GridComputeJob, GridNode> map = new HashMap<>(jobs.size(), 1);
+            Map<GridComputeJob, ClusterNode> map = new HashMap<>(jobs.size(), 1);
 
             JobMapper mapper = new JobMapper(map);
 
             switch (mode) {
                 case BROADCAST: {
-                    for (GridNode n : nodes)
+                    for (ClusterNode n : nodes)
                         for (Callable<R> c : jobs)
                             mapper.map(job(c), n);
 
@@ -295,7 +295,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public <R1, R2> GridFuture<R2> forkjoinAsync(GridClosureCallMode mode,
         @Nullable Collection<? extends Callable<R1>> jobs,
-        @Nullable GridReducer<R1, R2> rdc, @Nullable Collection<GridNode> nodes) {
+        @Nullable GridReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
         assert mode != null;
 
         enterBusy();
@@ -326,7 +326,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <R> GridFuture<Collection<R>> callAsync(
         GridClosureCallMode mode,
         @Nullable Collection<? extends Callable<R>> jobs,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         return callAsync(mode, jobs, nodes, false);
     }
 
@@ -339,7 +339,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for collection of closure results.
      */
     public <R> GridFuture<Collection<R>> callAsync(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes,
+        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<ClusterNode> nodes,
         boolean sys) {
         assert mode != null;
 
@@ -370,7 +370,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for collection of closure results.
      */
     public <R> GridFuture<R> callAsync(GridClosureCallMode mode,
-        @Nullable Callable<R> job, @Nullable Collection<GridNode> nodes) {
+        @Nullable Callable<R> job, @Nullable Collection<ClusterNode> nodes) {
         return callAsync(mode, job, nodes, false);
     }
 
@@ -382,7 +382,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Job future.
      */
     public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -412,7 +412,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Job future.
      */
     public GridFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -443,7 +443,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for collection of closure results.
      */
     public <R> GridFuture<R> callAsyncNoFailover(GridClosureCallMode mode, @Nullable Callable<R> job,
-        @Nullable Collection<GridNode> nodes, boolean sys) {
+        @Nullable Collection<ClusterNode> nodes, boolean sys) {
         assert mode != null;
 
         enterBusy();
@@ -474,7 +474,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for collection of closure results.
      */
     public <R> GridFuture<Collection<R>> callAsyncNoFailover(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes,
+        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<ClusterNode> nodes,
         boolean sys) {
         assert mode != null;
 
@@ -506,7 +506,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for collection of closure results.
      */
     public <R> GridFuture<R> callAsync(GridClosureCallMode mode,
-        @Nullable Callable<R> job, @Nullable Collection<GridNode> nodes, boolean sys) {
+        @Nullable Callable<R> job, @Nullable Collection<ClusterNode> nodes, boolean sys) {
         assert mode != null;
 
         enterBusy();
@@ -534,7 +534,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for execution result.
      */
     public <T, R> GridFuture<R> callAsync(GridClosure<T, R> job, @Nullable T arg,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -557,7 +557,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for execution result.
      */
     public <T, R> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -580,7 +580,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for execution result.
      */
     public <T, R> GridFuture<Collection<R>> broadcastNoFailover(GridClosure<T, R> job, @Nullable T arg,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -604,7 +604,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for execution result.
      */
     public <T, R> GridFuture<Collection<R>> callAsync(GridClosure<T, R> job, @Nullable Collection<? extends T> args,
-        @Nullable Collection<GridNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -628,7 +628,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for execution result.
      */
     public <T, R1, R2> GridFuture<R2> callAsync(GridClosure<T, R1> job,
-        Collection<? extends T> args, GridReducer<R1, R2> rdc, @Nullable Collection<GridNode> nodes) {
+        Collection<? extends T> args, GridReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -1169,7 +1169,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /** */
     private class JobMapper {
         /** */
-        private final Map<GridComputeJob, GridNode> map;
+        private final Map<GridComputeJob, ClusterNode> map;
 
         /** */
         private boolean hadLocNode;
@@ -1177,7 +1177,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param map Jobs map.
          */
-        private JobMapper(Map<GridComputeJob, GridNode> map) {
+        private JobMapper(Map<GridComputeJob, ClusterNode> map) {
             assert map != null;
             assert map.isEmpty();
 
@@ -1189,7 +1189,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param node Node.
          * @throws GridException In case of error.
          */
-        public void map(GridComputeJob job, GridNode node) throws GridException {
+        public void map(GridComputeJob job, ClusterNode node) throws GridException {
             assert job != null;
             assert node != null;
 
@@ -1256,7 +1256,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             return absMap(t.get1(), t.get2(), subgrid, lb);
         }
@@ -1288,7 +1288,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             return absMap(t.get1(), F.asList(t.get2()), subgrid, lb);
         }
@@ -1329,7 +1329,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             return outMap(t.get1(), t.get2(), subgrid, lb);
         }
@@ -1384,7 +1384,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             GridComputeJob job = job(this.job, cacheName, affKey);
 
@@ -1425,7 +1425,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             GridComputeJob job = job(this.job, cacheName, affKey);
 
@@ -1476,7 +1476,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             return outMap(mode, jobs, subgrid, lb);
         }
@@ -1513,7 +1513,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             return outMap(t.get1(), F.asList(t.get2()), subgrid, lb);
         }
@@ -1556,7 +1556,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             GridComputeJob job = job(this.job, this.arg);
 
@@ -1601,9 +1601,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
-            Map<GridComputeJob, GridNode> map = new HashMap<>(args.size(), 1);
+            Map<GridComputeJob, ClusterNode> map = new HashMap<>(args.size(), 1);
 
             JobMapper mapper = new JobMapper(map);
 
@@ -1655,9 +1655,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
-            Map<GridComputeJob, GridNode> map = new HashMap<>(args.size(), 1);
+            Map<GridComputeJob, ClusterNode> map = new HashMap<>(args.size(), 1);
 
             JobMapper mapper = new JobMapper(map);
 
@@ -1704,7 +1704,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param arg Job argument.
          * @param nodes Collection of nodes.
          */
-        private T11(GridClosure<T, R> job, @Nullable T arg, Collection<GridNode> nodes) {
+        private T11(GridClosure<T, R> job, @Nullable T arg, Collection<ClusterNode> nodes) {
             super(U.peerDeployAware(job));
 
             this.job = job;
@@ -1712,16 +1712,16 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
             throws GridException {
             if (F.isEmpty(subgrid))
                 return Collections.emptyMap();
 
-            Map<GridComputeJob, GridNode> map = new HashMap<>(subgrid.size(), 1);
+            Map<GridComputeJob, ClusterNode> map = new HashMap<>(subgrid.size(), 1);
 
             JobMapper mapper = new JobMapper(map);
 
-            for (GridNode n : subgrid)
+            for (ClusterNode n : subgrid)
                 mapper.map(job(job, this.arg), n);
 
             return map;

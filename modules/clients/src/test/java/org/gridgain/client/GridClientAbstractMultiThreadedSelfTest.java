@@ -457,7 +457,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
         for (long i = 0; i < cachePutCount(); i++) {
             String key = String.valueOf(i);
 
-            GridNode node = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
+            ClusterNode node = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
 
             if (!puts.get(key).get2().equals(gridMap.get(node.id()).cache(PARTITIONED_CACHE_NAME).peek(key))) {
                 // printAffinityState(gridMap.values());

@@ -31,7 +31,7 @@ public interface IgniteCluster extends GridProjection, IgniteAsyncSupport {
      *
      * @return Local grid node.
      */
-    public GridNode localNode();
+    public ClusterNode localNode();
 
     /**
      * Gets monadic projection consisting from the local node.
@@ -91,7 +91,7 @@ public interface IgniteCluster extends GridProjection, IgniteAsyncSupport {
      *      topology history. Currently only {@link GridTcpDiscoverySpi}
      *      supports topology history.
      */
-    @Nullable public Collection<GridNode> topology(long topVer) throws UnsupportedOperationException;
+    @Nullable public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
 
     /**
      * This method provides ability to detect which cache keys are mapped to which nodes
@@ -113,7 +113,7 @@ public interface IgniteCluster extends GridProjection, IgniteAsyncSupport {
      * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
      * @throws GridException If failed to map cache keys.
      */
-    public <K> Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
+    public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
         @Nullable Collection<? extends K> keys) throws GridException;
 
     /**
@@ -137,7 +137,7 @@ public interface IgniteCluster extends GridProjection, IgniteAsyncSupport {
      *      is not present in the grid.
      * @throws GridException If failed to map key.
      */
-    @Nullable public <K> GridNode mapKeyToNode(@Nullable String cacheName, K key) throws GridException;
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws GridException;
 
     /**
      * Starts one or more nodes on remote host(s).

@@ -71,7 +71,7 @@ public class GridLicenseEvent extends GridEventAdapter {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridLicenseEvent(GridNode node, String msg, int type) {
+    public GridLicenseEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 

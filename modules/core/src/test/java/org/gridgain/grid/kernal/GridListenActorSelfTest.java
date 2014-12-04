@@ -104,7 +104,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
         startGrid(1);
 
         try {
-            final GridNode rmt = grid(1).localNode();
+            final ClusterNode rmt = grid(1).localNode();
 
             grid().message().localListen(null, new GridMessagingListenActor<String>() {
                 @Override protected void receive(UUID nodeId, String rcvMsg) throws GridException {

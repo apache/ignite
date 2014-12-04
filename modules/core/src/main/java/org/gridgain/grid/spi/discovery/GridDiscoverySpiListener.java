@@ -31,6 +31,6 @@ public interface GridDiscoverySpiListener {
      *      {@code EVT_NODE_JOINED}, then joined node will be in snapshot).
      * @param topHist Topology snapshots history.
      */
-    public void onDiscovery(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot,
-        @Nullable Map<Long, Collection<GridNode>> topHist);
+    public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
+        @Nullable Map<Long, Collection<ClusterNode>> topHist);
 }

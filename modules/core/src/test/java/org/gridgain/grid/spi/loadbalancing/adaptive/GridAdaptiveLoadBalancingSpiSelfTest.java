@@ -36,7 +36,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
     @GridSpiTestConfig
     public GridAdaptiveLoadProbe getLoadProbe() {
         return new GridAdaptiveLoadProbe() {
-            @Override public double getLoad(GridNode node, int jobsSentSinceLastUpdate) {
+            @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
                 boolean isFirstTime = node.attribute("used") == null;
 
                 assert isFirstTime ? jobsSentSinceLastUpdate == 0 : jobsSentSinceLastUpdate > 0;
@@ -55,7 +55,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
 
         node.addAttribute("load", 0d);
 
-        List<GridNode> nodes = Collections.singletonList((GridNode)node);
+        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
 
         GridComputeTaskSession ses = new GridTestTaskSession(GridUuid.randomUuid());
 
@@ -66,7 +66,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
         assert nodes.contains(pick1);
 
         // Verify that same instance is returned every time.
-        GridNode pick2 = getSpi().getBalancedNode(ses, nodes, new GridTestJob());
+        ClusterNode pick2 = getSpi().getBalancedNode(ses, nodes, new GridTestJob());
 
         assert pick1 == pick2;
     }
@@ -80,7 +80,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
 
         node.addAttribute("load", 1d);
 
-        List<GridNode> nodes = Collections.singletonList((GridNode)node);
+        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
 
         GridComputeTaskSession ses = new GridTestTaskSession(GridUuid.randomUuid());
 
@@ -91,7 +91,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
         assert nodes.contains(pick1);
 
         // Verify that same instance is returned every time.
-        GridNode pick2 = getSpi().getBalancedNode(ses, nodes, new GridTestJob());
+        ClusterNode pick2 = getSpi().getBalancedNode(ses, nodes, new GridTestJob());
 
         assert pick1 == pick2;
     }
@@ -105,7 +105,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
 
         node.addAttribute("load", 2d);
 
-        List<GridNode> nodes = Collections.singletonList((GridNode)node);
+        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
 
         GridTestNode pick1 = (GridTestNode)getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()),
             nodes, new GridTestJob());
@@ -115,7 +115,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
         assert nodes.contains(pick1);
 
         // Verify that same instance is returned every time.
-        GridNode pick2 = getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()), nodes,
+        ClusterNode pick2 = getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()), nodes,
             new GridTestJob());
 
         assert pick1 == pick2;

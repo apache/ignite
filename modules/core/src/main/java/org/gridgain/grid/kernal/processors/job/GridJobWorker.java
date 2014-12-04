@@ -69,7 +69,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private byte[] jobBytes;
 
     /** Task originating node. */
-    private final GridNode taskNode;
+    private final ClusterNode taskNode;
 
     /** Flag set when visor or internal task is running. */
     private final boolean internal;
@@ -140,7 +140,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobContextImpl jobCtx,
         byte[] jobBytes,
         GridComputeJob job,
-        GridNode taskNode,
+        ClusterNode taskNode,
         boolean internal,
         GridJobEventListener evtLsnr,
         GridJobHoldListener holdLsnr) {
@@ -262,7 +262,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Parent task node ID.
      */
-    GridNode getTaskNode() {
+    ClusterNode getTaskNode() {
         return taskNode;
     }
 
@@ -649,7 +649,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             sndReply = !sysCancelled;
 
         // We should save message ID here since listener callback will reset sequence.
-        GridNode sndNode = ctx.discovery().node(taskNode.id());
+        ClusterNode sndNode = ctx.discovery().node(taskNode.id());
 
         long msgId = sndNode != null && ses.isFullSupport() ?
             ctx.io().nextMessageId(taskTopic, sndNode.id()) : -1;

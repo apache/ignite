@@ -211,13 +211,13 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
         private UUID destNodeId;
 
         /** {@inheritDoc} */
-        @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
+        @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
             if ("put".equals(stageName))
                 return ctx.projection().node(destNodeId);
 
             // Route to random node different from srcNodeId.
-            Collection<GridNode> nodes = ctx.projection().forPredicate(new P1<GridNode>() {
-                @Override public boolean apply(GridNode n) {
+            Collection<ClusterNode> nodes = ctx.projection().forPredicate(new P1<ClusterNode>() {
+                @Override public boolean apply(ClusterNode n) {
                     return !srcNodeId.equals(n.id()) && !destNodeId.equals(n.id());
                 }
             }).nodes();
@@ -226,13 +226,13 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
             int i = 0;
 
-            Iterator<GridNode> iter = nodes.iterator();
+            Iterator<ClusterNode> iter = nodes.iterator();
 
             while (true) {
                 if (!iter.hasNext())
                     iter = nodes.iterator();
 
-                GridNode node = iter.next();
+                ClusterNode node = iter.next();
 
                 if (idx == i++)
                     return node;

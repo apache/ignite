@@ -118,7 +118,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
-            Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+            Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
             qry.projection(ctx.grid().forNodes(nodes));
 
@@ -336,7 +336,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
-            Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+            Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
             qry.projection(ctx.grid().forNodes(nodes));
 
@@ -405,14 +405,14 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * @throws GridException If all cache nodes left grid.
      */
     @SuppressWarnings("unchecked")
-    private Collection<GridNode> dataNodes(long topVer) throws GridException {
+    private Collection<ClusterNode> dataNodes(long topVer) throws GridException {
         if (ctx.isLocal() || ctx.isReplicated())
             return Collections.singleton(ctx.localNode());
 
-        Collection<GridNode> nodes;
+        Collection<ClusterNode> nodes;
 
         if (collocated) {
-            List<GridNode> nodes0 = ctx.affinity().nodes(hdrPart, topVer);
+            List<ClusterNode> nodes0 = ctx.affinity().nodes(hdrPart, topVer);
 
             nodes = !nodes0.isEmpty() ?
                 Collections.singleton(nodes0.contains(ctx.localNode()) ? ctx.localNode() : F.first(nodes0)) : nodes0;

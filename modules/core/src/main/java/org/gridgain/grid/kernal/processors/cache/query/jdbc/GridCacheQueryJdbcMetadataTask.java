@@ -38,11 +38,11 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
     private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String cacheName) throws GridException {
-        Map<JdbcDriverMetadataJob, GridNode> map = new HashMap<>();
+        Map<JdbcDriverMetadataJob, ClusterNode> map = new HashMap<>();
 
-        for (GridNode n : subgrid)
+        for (ClusterNode n : subgrid)
             if (U.hasCache(n, cacheName)) {
                 map.put(new JdbcDriverMetadataJob(cacheName), n);
 

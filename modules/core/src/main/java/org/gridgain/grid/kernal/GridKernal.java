@@ -242,7 +242,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param rsrcCtx Optional Spring application context.
      */
     public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
-        super(null, null, null, (GridPredicate<GridNode>)null);
+        super(null, null, null, (GridPredicate<ClusterNode>)null);
 
         this.rsrcCtx = rsrcCtx;
 
@@ -1148,7 +1148,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             long totalHeap = 0;
 
-            for (GridNode node : ctx.discovery().allNodes()) {
+            for (ClusterNode node : ctx.discovery().allNodes()) {
                 if (macs.equals(node.attribute(ATTR_MACS))) {
                     long heap = node.metrics().getHeapMemoryMaximum();
 
@@ -2466,7 +2466,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> topology(long topVer) {
+    @Override public Collection<ClusterNode> topology(long topVer) {
         guard();
 
         try {
@@ -2555,7 +2555,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            for (GridNode n : nodes())
+            for (ClusterNode n : nodes())
                 if (n.addresses().contains(host))
                     return ctx.discovery().pingNode(n.id());
 
@@ -2567,11 +2567,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode localNode() {
+    @Override public ClusterNode localNode() {
         guard();
 
         try {
-            GridNode node = ctx.discovery().localNode();
+            ClusterNode node = ctx.discovery().localNode();
 
             assert node != null;
 
@@ -2692,13 +2692,13 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     throw new GridException("Invalid host name: " + host, e);
                 }
 
-                Collection<? extends GridNode> neighbors = null;
+                Collection<? extends ClusterNode> neighbors = null;
 
                 if (addr.isLoopbackAddress())
                     neighbors = neighbors();
                 else {
-                    for (Collection<GridNode> p : U.neighborhood(nodes()).values()) {
-                        GridNode node = F.first(p);
+                    for (Collection<ClusterNode> p : U.neighborhood(nodes()).values()) {
+                        ClusterNode node = F.first(p);
 
                         if (node.<String>attribute(ATTR_IPS).contains(addr.getHostAddress())) {
                             neighbors = p;
@@ -2776,14 +2776,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * physical computer.
      * @return Grid nodes that reside on the same physical computer as local grid node.
      */
-    private Collection<GridNode> neighbors() {
-        Collection<GridNode> neighbors = new ArrayList<>(1);
+    private Collection<ClusterNode> neighbors() {
+        Collection<ClusterNode> neighbors = new ArrayList<>(1);
 
         String macs = localNode().attribute(ATTR_MACS);
 
         assert macs != null;
 
-        for (GridNode n : forOthers(localNode()).nodes()) {
+        for (ClusterNode n : forOthers(localNode()).nodes()) {
             if (macs.equals(n.attribute(ATTR_MACS)))
                 neighbors.add(n);
         }
@@ -3089,7 +3089,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public <K> Map<GridNode, Collection<K>> mapKeysToNodes(String cacheName,
+    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(String cacheName,
         @Nullable Collection<? extends K> keys) throws GridException {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
@@ -3105,7 +3105,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> GridNode mapKeyToNode(String cacheName, K key) throws GridException {
+    @Nullable @Override public <K> ClusterNode mapKeyToNode(String cacheName, K key) throws GridException {
         A.notNull(key, "key");
 
         guard();

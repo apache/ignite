@@ -394,8 +394,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
         private UUID locId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) throws GridException {
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
 
@@ -404,7 +404,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
             else
                 ignoreLocNode = true;
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 // Ignore local node.
                 if (ignoreLocNode && node.id().equals(locId))
                     continue;

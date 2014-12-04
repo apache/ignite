@@ -65,7 +65,7 @@ public interface GridProjection {
      * @param nodes Collection of nodes to create a projection from.
      * @return Projection over provided grid nodes.
      */
-    public GridProjection forNodes(Collection<? extends GridNode> nodes);
+    public GridProjection forNodes(Collection<? extends ClusterNode> nodes);
 
     /**
      * Creates a grid projection for the given node.
@@ -74,7 +74,7 @@ public interface GridProjection {
      * @param nodes Optional additional nodes to include into projection.
      * @return Grid projection for the given node.
      */
-    public GridProjection forNode(GridNode node, GridNode... nodes);
+    public GridProjection forNode(ClusterNode node, ClusterNode... nodes);
 
     /**
      * Creates a grid projection for nodes other than given nodes.
@@ -84,7 +84,7 @@ public interface GridProjection {
      * @return Projection that will contain all nodes that original projection contained excluding
      *      given nodes.
      */
-    public GridProjection forOthers(GridNode node, GridNode... nodes);
+    public GridProjection forOthers(ClusterNode node, ClusterNode... nodes);
 
     /**
      * Creates a grid projection for nodes not included into given projection.
@@ -117,7 +117,7 @@ public interface GridProjection {
      * @param p Predicate filter for nodes to include into this projection.
      * @return Grid projection for nodes that passed the predicate filter.
      */
-    public GridProjection forPredicate(GridPredicate<GridNode> p);
+    public GridProjection forPredicate(GridPredicate<ClusterNode> p);
 
     /**
      * Creates projection for nodes containing given name and value
@@ -165,7 +165,7 @@ public interface GridProjection {
      * @param node Node residing on the host for which projection is created.
      * @return Projection for nodes residing on the same host as passed in node.
      */
-    public GridProjection forHost(GridNode node);
+    public GridProjection forHost(ClusterNode node);
 
     /**
      * Gets projection consisting from the daemon nodes in this projection.
@@ -215,7 +215,7 @@ public interface GridProjection {
      *
      * @return All nodes in this projection.
      */
-    public Collection<GridNode> nodes();
+    public Collection<ClusterNode> nodes();
 
     /**
      * Gets a node for given ID from this grid projection.
@@ -224,7 +224,7 @@ public interface GridProjection {
      * @return Node with given ID from this projection or {@code null} if such node does not exist in this
      *      projection.
      */
-    @Nullable public GridNode node(UUID nid);
+    @Nullable public ClusterNode node(UUID nid);
 
     /**
      * Gets first node from the list of nodes in this projection. This method is specifically
@@ -232,14 +232,14 @@ public interface GridProjection {
      *
      * @return First node from the list of nodes in this projection or {@code null} if projection is empty.
      */
-    @Nullable public GridNode node();
+    @Nullable public ClusterNode node();
 
     /**
      * Gets predicate that defines a subset of nodes for this projection.
      *
      * @return Predicate that defines a subset of nodes for this projection.
      */
-    public GridPredicate<GridNode> predicate();
+    public GridPredicate<ClusterNode> predicate();
 
     /**
      * Gets a metrics snapshot for this projection.

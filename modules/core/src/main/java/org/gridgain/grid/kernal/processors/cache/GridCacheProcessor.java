@@ -20,7 +20,6 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
@@ -32,7 +31,6 @@ import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
-import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.*;
@@ -936,7 +934,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
         return validateHashIdResolvers(node);
     }
 
@@ -944,7 +942,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable private GridNodeValidationResult validateHashIdResolvers(GridNode node) {
+    @Nullable private GridNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
             GridCacheConfiguration cfg = cache.configuration();
 
@@ -957,7 +955,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 Object nodeHashObj = hashIdRslvr.resolve(node);
 
-                for (GridNode topNode : ctx.discovery().allNodes()) {
+                for (ClusterNode topNode : ctx.discovery().allNodes()) {
                     Object topNodeHashObj = hashIdRslvr.resolve(topNode);
 
                     if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
@@ -987,7 +985,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @return Interceptor class name.
      */
-    @Nullable private String interceptor(GridNode node, @Nullable String cacheName) {
+    @Nullable private String interceptor(ClusterNode node, @Nullable String cacheName) {
         Map<String, String> map = node.attribute(ATTR_CACHE_INTERCEPTORS);
 
         return map != null ? map.get(cacheName) : null;
@@ -999,7 +997,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param rmt Node.
      * @throws GridException If check failed.
      */
-    private void checkCache(GridNode rmt) throws GridException {
+    private void checkCache(ClusterNode rmt) throws GridException {
         GridCacheAttributes[] rmtAttrs = U.cacheAttributes(rmt);
         GridCacheAttributes[] locAttrs = U.cacheAttributes(ctx.discovery().localNode());
 
@@ -1237,7 +1235,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-            for (GridNode n : ctx.discovery().remoteNodes())
+            for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkCache(n);
         }
 
@@ -1784,10 +1782,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
-            GridNode locNode = null;
+        @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+            ClusterNode locNode = null;
 
-            for (GridNode n : affCtx.currentTopologySnapshot()) {
+            for (ClusterNode n : affCtx.currentTopologySnapshot()) {
                 if (n.isLocal()) {
                     locNode = n;
 
@@ -1798,7 +1796,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (locNode == null)
                 throw new GridRuntimeException("Local node is not included into affinity nodes for 'LOCAL' cache");
 
-            List<List<GridNode>> res = new ArrayList<>(partitions());
+            List<List<ClusterNode>> res = new ArrayList<>(partitions());
 
             for (int part = 0; part < partitions(); part++)
                 res.add(Collections.singletonList(locNode));

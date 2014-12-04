@@ -64,11 +64,11 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private List<GridDhtCacheEntry<K, V>> entries;
 
     /** Near mappings. */
-    private Map<GridNode, List<GridDhtCacheEntry<K, V>>> nearMap =
+    private Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap =
         new ConcurrentHashMap8<>();
 
     /** DHT mappings. */
-    private Map<GridNode, List<GridDhtCacheEntry<K, V>>> dhtMap =
+    private Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap =
         new ConcurrentHashMap8<>();
 
     /** Future ID. */
@@ -215,9 +215,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /**
      * @return Participating nodes.
      */
-    @Override public Collection<? extends GridNode> nodes() {
-        return F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
-            @Nullable @Override public GridNode apply(GridFuture<?> f) {
+    @Override public Collection<? extends ClusterNode> nodes() {
+        return F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, ClusterNode>() {
+            @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
                 if (isMini(f))
                     return ((MiniFuture)f).node();
 
@@ -790,8 +790,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             }
 
             // Create mini futures.
-            for (Map.Entry<GridNode, List<GridDhtCacheEntry<K, V>>> mapped : dhtMap.entrySet()) {
-                GridNode n = mapped.getKey();
+            for (Map.Entry<ClusterNode, List<GridDhtCacheEntry<K, V>>> mapped : dhtMap.entrySet()) {
+                ClusterNode n = mapped.getKey();
 
                 List<GridDhtCacheEntry<K, V>> dhtMapping = mapped.getValue();
 
@@ -870,8 +870,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 }
             }
 
-            for (Map.Entry<GridNode, List<GridDhtCacheEntry<K, V>>> mapped : nearMap.entrySet()) {
-                GridNode n = mapped.getKey();
+            for (Map.Entry<ClusterNode, List<GridDhtCacheEntry<K, V>>> mapped : nearMap.entrySet()) {
+                ClusterNode n = mapped.getKey();
 
                 List<GridDhtCacheEntry<K, V>> nearMapping = mapped.getValue();
 
@@ -1020,7 +1020,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
         /** Node. */
         @GridToStringExclude
-        private GridNode node;
+        private ClusterNode node;
 
         /** DHT mapping. */
         @GridToStringInclude
@@ -1042,7 +1042,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
-        MiniFuture(GridNode node, List<GridDhtCacheEntry<K, V>> dhtMapping, List<GridDhtCacheEntry<K, V>> nearMapping) {
+        MiniFuture(ClusterNode node, List<GridDhtCacheEntry<K, V>> dhtMapping, List<GridDhtCacheEntry<K, V>> nearMapping) {
             super(cctx.kernalContext());
 
             assert node != null;
@@ -1062,7 +1062,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         /**
          * @return Node ID.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return node;
         }
 

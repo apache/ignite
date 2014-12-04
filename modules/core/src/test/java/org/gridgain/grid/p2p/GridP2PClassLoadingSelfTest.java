@@ -53,9 +53,9 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
 
         GridComputeTask<Object, Integer> res = GridTestIoUtils.deserializeJdk(rawTask, tstClsLdr);
 
-        GridNode fakeNode = new TestGridNode();
+        ClusterNode fakeNode = new TestGridNode();
 
-        List<GridNode> nodes = Collections.singletonList(fakeNode);
+        List<ClusterNode> nodes = Collections.singletonList(fakeNode);
 
         GridComputeJob p2pJob = res.map(nodes, 1).entrySet().iterator().next().getKey();
 
@@ -64,7 +64,7 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestGridNode extends GridMetadataAwareAdapter implements GridNode {
+    private static class TestGridNode extends GridMetadataAwareAdapter implements ClusterNode {
         /** */
         private static AtomicInteger consistentIdCtr = new AtomicInteger();
 

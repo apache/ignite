@@ -33,7 +33,7 @@ class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAnd
         "six", "seven", "eight", "nine", "ten")
 
     /** Node. */
-    private var n: GridNode = null
+    private var n: ClusterNode = null
 
     /** Cache. */
     private var c: GridCache[Int, ObjectValue] = null

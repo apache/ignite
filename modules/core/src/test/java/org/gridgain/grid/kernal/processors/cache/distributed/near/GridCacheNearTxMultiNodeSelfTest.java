@@ -87,10 +87,10 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         try {
             Integer mainKey = 0;
 
-            GridNode priNode = ignite.cluster().mapKeyToNode(null, mainKey);
-            GridNode backupNode = F.first(F.view(ignite.cache(null).affinity().mapKeyToPrimaryAndBackups(mainKey),
+            ClusterNode priNode = ignite.cluster().mapKeyToNode(null, mainKey);
+            ClusterNode backupNode = F.first(F.view(ignite.cache(null).affinity().mapKeyToPrimaryAndBackups(mainKey),
                 F.notIn(F.asList(priNode))));
-            GridNode otherNode = F.first(ignite.cluster().forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
+            ClusterNode otherNode = F.first(ignite.cluster().forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
 
             assert priNode != backupNode;
             assert backupNode != otherNode;

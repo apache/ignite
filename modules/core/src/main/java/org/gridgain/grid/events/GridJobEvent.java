@@ -75,7 +75,7 @@ public class GridJobEvent extends GridEventAdapter {
     private GridUuid jobId;
 
     /** */
-    private GridNode taskNode;
+    private ClusterNode taskNode;
 
     /** */
     private UUID taskSubjId;
@@ -99,7 +99,7 @@ public class GridJobEvent extends GridEventAdapter {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridJobEvent(GridNode node, String msg, int type) {
+    public GridJobEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
@@ -186,7 +186,7 @@ public class GridJobEvent extends GridEventAdapter {
      *
      * @return Node where parent task of the job has originated.
      */
-    public GridNode taskNode() {
+    public ClusterNode taskNode() {
         return taskNode;
     }
 
@@ -195,7 +195,7 @@ public class GridJobEvent extends GridEventAdapter {
      *
      * @param taskNode Node where parent task of the job has originated.
      */
-    public void taskNode(GridNode taskNode) {
+    public void taskNode(ClusterNode taskNode) {
         this.taskNode = taskNode;
     }
 

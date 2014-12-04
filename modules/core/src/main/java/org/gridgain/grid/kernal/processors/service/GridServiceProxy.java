@@ -50,7 +50,7 @@ class GridServiceProxy<T> implements Serializable {
     private final GridKernalContext ctx;
 
     /** Remote node to use for proxy invocation. */
-    private final AtomicReference<GridNode> rmtNode = new AtomicReference<>();
+    private final AtomicReference<ClusterNode> rmtNode = new AtomicReference<>();
 
     /** {@code True} if projection includes local node. */
     private boolean hasLocNode;
@@ -81,7 +81,7 @@ class GridServiceProxy<T> implements Serializable {
      * @return Whether given projection contains any local node.
      */
     private boolean hasLocalNode(GridProjection prj) {
-        for (GridNode n : prj.nodes()) {
+        for (ClusterNode n : prj.nodes()) {
             if (n.isLocal())
                 return true;
         }
@@ -119,7 +119,7 @@ class GridServiceProxy<T> implements Serializable {
         @SuppressWarnings("BusyWait")
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) {
             while (true) {
-                GridNode node = null;
+                ClusterNode node = null;
 
                 try {
                     node = nodeForService(name, sticky);
@@ -177,10 +177,10 @@ class GridServiceProxy<T> implements Serializable {
          * @param name Service name.
          * @return Node with deployed service or {@code null} if there is no such node.
          */
-        private GridNode nodeForService(String name, boolean sticky) {
+        private ClusterNode nodeForService(String name, boolean sticky) {
             do { // Repeat if reference to remote node was changed.
                 if (sticky) {
-                    GridNode curNode = rmtNode.get();
+                    ClusterNode curNode = rmtNode.get();
 
                     if (curNode != null)
                         return curNode;
@@ -204,7 +204,7 @@ class GridServiceProxy<T> implements Serializable {
          * @return Local node if it has a given service deployed or randomly chosen remote node,
          * otherwise ({@code null} if given service is not deployed on any node.
          */
-        private GridNode randomNodeForService(String name) {
+        private ClusterNode randomNodeForService(String name) {
             if (hasLocNode && ctx.service().service(name) != null)
                 return ctx.discovery().localNode();
 
@@ -220,17 +220,17 @@ class GridServiceProxy<T> implements Serializable {
                 return prj.node(nodeId);
             }
 
-            Collection<GridNode> nodes = prj.nodes();
+            Collection<ClusterNode> nodes = prj.nodes();
 
             // Optimization for 1 node in projection.
             if (nodes.size() == 1) {
-                GridNode n = nodes.iterator().next();
+                ClusterNode n = nodes.iterator().next();
 
                 return snapshot.containsKey(n.id()) ? n : null;
             }
 
             // Optimization if projection is the whole grid.
-            if (prj.predicate() == F.<GridNode>alwaysTrue()) {
+            if (prj.predicate() == F.<ClusterNode>alwaysTrue()) {
                 int idx = ThreadLocalRandom8.current().nextInt(snapshot.size());
 
                 int i = 0;
@@ -255,9 +255,9 @@ class GridServiceProxy<T> implements Serializable {
                 }
             }
             else {
-                List<GridNode> nodeList = new ArrayList<>(nodes.size());
+                List<ClusterNode> nodeList = new ArrayList<>(nodes.size());
 
-                for (GridNode n : nodes) {
+                for (ClusterNode n : nodes) {
                     Integer cnt = snapshot.get(n.id());
 
                     if (cnt != null && cnt > 0)

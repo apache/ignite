@@ -124,7 +124,7 @@ public abstract class GridCacheTxReentryAbstractSelfTest extends GridCommonAbstr
         private AtomicInteger dhtLocks = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws GridSpiException {
             countMsg((GridIoMessage)msg);
 

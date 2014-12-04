@@ -244,9 +244,9 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         GridCacheMode mode = ctx.config().getCacheMode();
 
         if (mode == LOCAL || mode == REPLICATED) {
-            Collection<GridNode> nodes = prj.nodes();
+            Collection<ClusterNode> nodes = prj.nodes();
 
-            GridNode node = nodes.contains(ctx.localNode()) ? ctx.localNode() : F.rand(nodes);
+            ClusterNode node = nodes.contains(ctx.localNode()) ? ctx.localNode() : F.rand(nodes);
 
             assert node != null;
 

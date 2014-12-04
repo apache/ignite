@@ -204,7 +204,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 if (msg == null)
                     continue;
 
-                GridNode node = cctx.discovery().node(msg.senderId());
+                ClusterNode node = cctx.discovery().node(msg.senderId());
 
                 if (node == null) {
                     if (log.isDebugEnabled())
@@ -221,7 +221,7 @@ class GridDhtPartitionSupplyPool<K, V> {
          * @param msg Message.
          * @param node Demander.
          */
-        private void processMessage(DemandMessage<K, V> msg, GridNode node) {
+        private void processMessage(DemandMessage<K, V> msg, ClusterNode node) {
             assert msg != null;
             assert node != null;
 
@@ -501,7 +501,7 @@ class GridDhtPartitionSupplyPool<K, V> {
          * @return {@code True} if message was sent, {@code false} if recipient left grid.
          * @throws GridException If failed.
          */
-        private boolean reply(GridNode n, GridDhtPartitionDemandMessage<K, V> d, GridDhtPartitionSupplyMessage<K, V> s)
+        private boolean reply(ClusterNode n, GridDhtPartitionDemandMessage<K, V> d, GridDhtPartitionSupplyMessage<K, V> s)
             throws GridException {
             try {
                 if (log.isDebugEnabled())

@@ -82,10 +82,10 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testInternalKeyReaders() throws Exception {
-        GridBiTuple<GridNode, GridNode> nodes = getNodes(ATOMIC_LONG_NAME);
+        GridBiTuple<ClusterNode, ClusterNode> nodes = getNodes(ATOMIC_LONG_NAME);
 
-        GridNode primary = nodes.get1();
-        GridNode other = nodes.get2();
+        ClusterNode primary = nodes.get1();
+        ClusterNode other = nodes.get2();
 
         // Create on non-primary node.
         GridCacheAtomicLong l = grid(other).cache(null).dataStructures().atomicLong(ATOMIC_LONG_NAME, 1, true);
@@ -125,7 +125,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @param exists Whether entry is expected to exist.
      * @throws Exception In case of error.
      */
-    private void check(GridNode primary, GridNode other, boolean exists) throws Exception {
+    private void check(ClusterNode primary, ClusterNode other, boolean exists) throws Exception {
         if (exists) {
             // Check primary node has entry in DHT cache.
             assert peekNear(primary) == null;
@@ -148,7 +148,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return Atomic long value.
      */
-    private GridCacheAtomicLongValue peekGlobal(GridNode node) {
+    private GridCacheAtomicLongValue peekGlobal(ClusterNode node) {
         return (GridCacheAtomicLongValue)grid(node).cache(null).peek(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
     }
@@ -158,7 +158,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Atomic long value.
      * @throws GridException In case of error.
      */
-    private GridCacheAtomicLongValue peekNear(GridNode node) throws GridException {
+    private GridCacheAtomicLongValue peekNear(ClusterNode node) throws GridException {
         return (GridCacheAtomicLongValue)grid(node).cache(null).peek(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), Collections.singleton(NEAR_ONLY));
     }
@@ -168,7 +168,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Atomic long value.
      * @throws GridException In case of error.
      */
-    private GridCacheAtomicLongValue peekDht(GridNode node) throws GridException {
+    private GridCacheAtomicLongValue peekDht(ClusterNode node) throws GridException {
         return (GridCacheAtomicLongValue)grid(node).cache(null).peek(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), Collections.singleton(PARTITIONED_ONLY));
     }
@@ -177,7 +177,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return DHT entry.
      */
-    private GridDhtCacheEntry<Object, Object> peekDhtEntry(GridNode node) {
+    private GridDhtCacheEntry<Object, Object> peekDhtEntry(ClusterNode node) {
         return (GridDhtCacheEntry<Object, Object>)dht(grid(node).cache(null)).peekEx(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
     }
@@ -186,18 +186,18 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Pair {primary node, some other node}.
      */
-    private GridBiTuple<GridNode, GridNode> getNodes(String key) {
+    private GridBiTuple<ClusterNode, ClusterNode> getNodes(String key) {
         GridCacheAffinity<Object> aff = grid(0).cache(null).affinity();
 
-        GridNode primary = aff.mapKeyToNode(key);
+        ClusterNode primary = aff.mapKeyToNode(key);
 
         assert primary != null;
 
-        Collection<GridNode> nodes = new ArrayList<>(grid(0).nodes());
+        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).nodes());
 
         nodes.remove(primary);
 
-        GridNode other = F.first(nodes);
+        ClusterNode other = F.first(nodes);
 
         assert other != null;
 
@@ -210,7 +210,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return Grid.
      */
-    private Ignite grid(GridNode node) {
+    private Ignite grid(ClusterNode node) {
         return G.grid(node.id());
     }
 }

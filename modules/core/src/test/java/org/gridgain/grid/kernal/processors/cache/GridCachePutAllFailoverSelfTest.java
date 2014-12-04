@@ -60,9 +60,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Filter to include only worker nodes. */
-    private static final GridPredicate<GridNode> workerNodesFilter = new PN() {
+    private static final GridPredicate<ClusterNode> workerNodesFilter = new PN() {
         @SuppressWarnings("unchecked")
-        @Override public boolean apply(GridNode n) {
+        @Override public boolean apply(ClusterNode n) {
              return "worker".equals(n.attribute("segment"));
         }
     };
@@ -388,7 +388,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             GridCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).enableAsync();
 
             for (Integer key : testKeys) {
-                GridNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
+                ClusterNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
 
                 UUID nodeId = mappedNode.id();
 
@@ -633,7 +633,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         private Set<GridComputeJobContext> failedOverJobs = new HashSet<>();
 
         /** Node filter. */
-        private GridPredicate<? super GridNode>[] filter;
+        private GridPredicate<? super ClusterNode>[] filter;
 
         /** */
         @GridLoggerResource
@@ -642,12 +642,12 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         /**
          * @param filter Filter.
          */
-        MasterFailoverSpi(GridPredicate<? super GridNode>... filter) {
+        MasterFailoverSpi(GridPredicate<? super ClusterNode>... filter) {
             this.filter = filter;
         }
 
         /** {@inheritDoc} */
-        @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> top) {
+        @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
             failedOverJobs.add(ctx.getJobResult().getJobContext());
 
             // Clear failed nodes list - allow to failover on the same node.
@@ -670,11 +670,11 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                 ctx.getJobResult().getJobContext().setAttribute(FAILOVER_NUMBER_ATTR, failoverCnt + 1);
             }
 
-            List<GridNode> cp = new ArrayList<>(top);
+            List<ClusterNode> cp = new ArrayList<>(top);
 
             // Keep collection type.
-            F.retain(cp, false, new GridPredicate<GridNode>() {
-                @Override public boolean apply(GridNode node) {
+            F.retain(cp, false, new GridPredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
                     return F.isAll(node, filter);
                 }
             });

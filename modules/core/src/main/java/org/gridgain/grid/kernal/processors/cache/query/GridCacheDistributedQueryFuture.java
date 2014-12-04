@@ -52,7 +52,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      */
     @SuppressWarnings("unchecked")
     protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId, GridCacheQueryBean qry,
-        Iterable<GridNode> nodes) {
+        Iterable<ClusterNode> nodes) {
         super(ctx, qry, false);
 
         assert reqId > 0;
@@ -64,7 +64,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         assert mgr != null;
 
         synchronized (mux) {
-            for (GridNode node : nodes)
+            for (ClusterNode node : nodes)
                 subgrid.add(node.id());
         }
     }
@@ -76,13 +76,13 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         assert qryMgr != null;
 
         try {
-            Collection<GridNode> allNodes = cctx.discovery().allNodes();
-            Collection<GridNode> nodes;
+            Collection<ClusterNode> allNodes = cctx.discovery().allNodes();
+            Collection<ClusterNode> nodes;
 
             synchronized (mux) {
                 nodes = F.retain(allNodes, true,
-                    new P1<GridNode>() {
-                        @Override public boolean apply(GridNode node) {
+                    new P1<ClusterNode>() {
+                        @Override public boolean apply(ClusterNode node) {
                             return !cctx.localNodeId().equals(node.id()) && subgrid.contains(node.id());
                         }
                     }
@@ -104,8 +104,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
             if (!nodes.isEmpty()) {
                 cctx.io().safeSend(nodes, req,
-                    new P1<GridNode>() {
-                        @Override public boolean apply(GridNode node) {
+                    new P1<ClusterNode>() {
+                        @Override public boolean apply(ClusterNode node) {
                             onNodeLeft(node.id());
 
                             return !isDone();
@@ -167,7 +167,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override protected void loadPage() {
         assert !Thread.holdsLock(mux);
 
-        Collection<GridNode> nodes = null;
+        Collection<ClusterNode> nodes = null;
 
         synchronized (mux) {
             if (!isDone() && rcvd.containsAll(subgrid)) {
@@ -188,7 +188,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         U.await(firstPageLatch);
 
-        Collection<GridNode> nodes = null;
+        Collection<ClusterNode> nodes = null;
 
         synchronized (mux) {
             if (!isDone() && !subgrid.isEmpty())
@@ -202,13 +202,13 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     /**
      * @return Nodes to send requests to.
      */
-    private Collection<GridNode> nodes() {
+    private Collection<ClusterNode> nodes() {
         assert Thread.holdsLock(mux);
 
-        Collection<GridNode> nodes = new ArrayList<>(subgrid.size());
+        Collection<ClusterNode> nodes = new ArrayList<>(subgrid.size());
 
         for (UUID nodeId : subgrid) {
-            GridNode node = cctx.discovery().node(nodeId);
+            ClusterNode node = cctx.discovery().node(nodeId);
 
             if (node != null)
                 nodes.add(node);

@@ -252,7 +252,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
         if (getTestData().getDiscoverySpi() != null) {
             spiCtx.setLocalNode(getTestData().getDiscoverySpi().getLocalNode());
 
-            for (GridNode node : getTestData().getDiscoverySpi().getRemoteNodes())
+            for (ClusterNode node : getTestData().getDiscoverySpi().getRemoteNodes())
                 spiCtx.addNode(node);
         }
         else {
@@ -310,7 +310,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
         getTestResources().inject(discoSpi);
 
         discoSpi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+            @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                 GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                     GridSecuritySubjectType.REMOTE_NODE, n.id());
 

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -82,7 +81,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @param node Node.
      * @return Cache.
      */
-    private GridCacheProjection<String, Integer> cache(GridNode node) {
+    private GridCacheProjection<String, Integer> cache(ClusterNode node) {
         return G.grid(node.id()).cache(null);
     }
 

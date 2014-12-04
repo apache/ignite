@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class GridNearLockMapping<K, V> {
     /** Node to which keys are mapped. */
-    private GridNode node;
+    private ClusterNode node;
 
     /** Collection of mapped keys. */
     @GridToStringInclude
@@ -41,7 +41,7 @@ public class GridNearLockMapping<K, V> {
      * @param node Node.
      * @param firstKey First key in mapped keys collection.
      */
-    public GridNearLockMapping(GridNode node, K firstKey) {
+    public GridNearLockMapping(ClusterNode node, K firstKey) {
         assert node != null;
         assert firstKey != null;
 
@@ -53,7 +53,7 @@ public class GridNearLockMapping<K, V> {
     /**
      * @return Node to which keys are mapped.
      */
-    public GridNode node() {
+    public ClusterNode node() {
         return node;
     }
 

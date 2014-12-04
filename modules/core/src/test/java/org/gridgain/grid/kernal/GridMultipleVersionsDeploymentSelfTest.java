@@ -229,8 +229,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         @GridLocalNodeIdResource private UUID locNodeId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Object arg) throws GridException {
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
 
@@ -239,7 +239,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             else
                 ignoreLocNode = true;
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 // Ignore local node.
                 if (ignoreLocNode && node.id().equals(locNodeId))
                     continue;

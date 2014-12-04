@@ -159,7 +159,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         private AtomicInteger msgCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws GridSpiException {
             if (isDeploymentMessage((GridIoMessage)msg))
                 msgCnt.incrementAndGet();

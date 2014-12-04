@@ -45,7 +45,7 @@ public class MessagingPingPongListenActorExample {
             System.out.println(">>> Messaging ping-pong listen actor example started.");
 
             // Pick first remote node as a partner.
-            Collection<GridNode> rmtNodes = g.cluster().forRemotes().nodes();
+            Collection<ClusterNode> rmtNodes = g.cluster().forRemotes().nodes();
 
             GridProjection nodeB = g.cluster().forNode(rmtNodes.iterator().next());
 

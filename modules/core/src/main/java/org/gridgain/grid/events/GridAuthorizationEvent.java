@@ -71,7 +71,7 @@ public class GridAuthorizationEvent extends GridEventAdapter {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridAuthorizationEvent(GridNode node, String msg, int type) {
+    public GridAuthorizationEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
@@ -84,7 +84,7 @@ public class GridAuthorizationEvent extends GridEventAdapter {
      * @param op Requested operation.
      * @param subj Authenticated subject.
      */
-    public GridAuthorizationEvent(GridNode node, String msg, int type, GridSecurityPermission op,
+    public GridAuthorizationEvent(ClusterNode node, String msg, int type, GridSecurityPermission op,
         GridSecuritySubject subj) {
         super(node, msg, type);
 

@@ -353,7 +353,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             int keyCnt = -1;
 
-            Map<GridNode, GridNearUnlockRequest<K, V>> map = null;
+            Map<ClusterNode, GridNearUnlockRequest<K, V>> map = null;
 
             Collection<K> locKeys = new LinkedList<>();
 
@@ -373,7 +373,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     assert topVer > 0;
 
                     if (map == null) {
-                        Collection<GridNode> affNodes = CU.allNodes(ctx, topVer);
+                        Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
 
                         keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
@@ -384,7 +384,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         ver = lock.version();
 
                     // Send request to remove from remote nodes.
-                    GridNode primary = ctx.affinity().primary(key, topVer);
+                    ClusterNode primary = ctx.affinity().primary(key, topVer);
 
                     if (!lock.reentry()) {
                         if (!ver.equals(lock.version()))
@@ -422,8 +422,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (!locKeys.isEmpty())
                 removeLocks(ctx.localNodeId(), ver, locKeys, true);
 
-            for (Map.Entry<GridNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
-                GridNode n = mapping.getKey();
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
+                ClusterNode n = mapping.getKey();
 
                 GridDistributedUnlockRequest<K, V> req = mapping.getValue();
 
@@ -454,7 +454,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         try {
             int keyCnt = -1;
 
-            Map<GridNode, GridNearUnlockRequest<K, V>> map = null;
+            Map<ClusterNode, GridNearUnlockRequest<K, V>> map = null;
 
             Collection<K> locKeys = new LinkedList<>();
 
@@ -465,14 +465,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     long topVer = lock.topologyVersion();
 
                     if (map == null) {
-                        Collection<GridNode> affNodes = CU.allNodes(ctx, topVer);
+                        Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
 
                         keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
                         map = U.newHashMap(affNodes.size());
                     }
 
-                    GridNode primary = ctx.affinity().primary(key, topVer);
+                    ClusterNode primary = ctx.affinity().primary(key, topVer);
 
                     if (!primary.isLocal()) {
                         // Send request to remove from remote nodes.
@@ -504,8 +504,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
             Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
 
-            for (Map.Entry<GridNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
-                GridNode n = mapping.getKey();
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
+                ClusterNode n = mapping.getKey();
 
                 GridDistributedUnlockRequest<K, V> req = mapping.getValue();
 

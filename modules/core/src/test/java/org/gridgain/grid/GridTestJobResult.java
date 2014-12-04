@@ -27,7 +27,7 @@ public class GridTestJobResult implements GridComputeJobResult {
     private final GridComputeJob job;
 
     /** */
-    private final GridNode node;
+    private final ClusterNode node;
 
     /** */
     private final GridComputeJobContext jobCtx;
@@ -48,7 +48,7 @@ public class GridTestJobResult implements GridComputeJobResult {
      * @param node Grid node.
      * @param jobCtx Job context.
      */
-    public GridTestJobResult(Serializable data, GridException e, GridComputeJob job, GridNode node, GridComputeJobContext jobCtx) {
+    public GridTestJobResult(Serializable data, GridException e, GridComputeJob job, ClusterNode node, GridComputeJobContext jobCtx) {
         this.data = data;
         this.e = e;
         this.job = job;
@@ -59,7 +59,7 @@ public class GridTestJobResult implements GridComputeJobResult {
     /**
      * @param node Grid node.
      */
-    public GridTestJobResult(GridNode node) {
+    public GridTestJobResult(ClusterNode node) {
         this.node = node;
 
         e = null;
@@ -76,7 +76,7 @@ public class GridTestJobResult implements GridComputeJobResult {
 
     /** {@inheritDoc} */ @Override public GridComputeJob getJob() { return job; }
 
-    /** {@inheritDoc} */ @Override public GridNode getNode() { return node; }
+    /** {@inheritDoc} */ @Override public ClusterNode getNode() { return node; }
 
     /** {@inheritDoc} */ @Override public GridComputeJobContext getJobContext() { return jobCtx; }
 }

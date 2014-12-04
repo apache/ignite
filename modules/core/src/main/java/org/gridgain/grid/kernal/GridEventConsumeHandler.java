@@ -119,7 +119,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
-                        GridNode node = ctx.discovery().node(nodeId);
+                        ClusterNode node = ctx.discovery().node(nodeId);
 
                         if (node != null) {
                             try {

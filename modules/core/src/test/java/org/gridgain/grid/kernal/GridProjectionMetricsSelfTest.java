@@ -59,7 +59,7 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyProjection() throws Exception {
         try {
-            grid(0).forPredicate(F.<GridNode>alwaysFalse()).metrics();
+            grid(0).forPredicate(F.<ClusterNode>alwaysFalse()).metrics();
 
             assert false;
         }

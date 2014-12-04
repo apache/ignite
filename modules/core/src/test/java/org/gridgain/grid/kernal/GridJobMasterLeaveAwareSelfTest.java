@@ -100,9 +100,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @return Predicate.
      */
-    private GridPredicate<GridNode> excludeLastPredicate() {
-        return new GridPredicate<GridNode>() {
-            @Override public boolean apply(GridNode e) {
+    private GridPredicate<ClusterNode> excludeLastPredicate() {
+        return new GridPredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode e) {
                 return !e.id().equals(grid(GRID_CNT - 1).localNode().id());
             }
         };
@@ -437,7 +437,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 GridCacheAffinity<Object> aff = prj.grid().cache(null).affinity();
 
-                GridNode node = F.first(prj.nodes());
+                ClusterNode node = F.first(prj.nodes());
 
                 comp.affinityRun(null, keyForNode(aff, node), new TestRunnable());
 
@@ -456,7 +456,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 GridCacheAffinity<Object> aff = prj.grid().cache(null).affinity();
 
-                GridNode node = F.first(prj.nodes());
+                ClusterNode node = F.first(prj.nodes());
 
                 comp.affinityCall(null, keyForNode(aff, node), new TestCallable());
 
@@ -470,7 +470,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return Finds some cache key for which given node is primary.
      */
-    private Object keyForNode(GridCacheAffinity<Object> aff, GridNode node) {
+    private Object keyForNode(GridCacheAffinity<Object> aff, ClusterNode node) {
         assertNotNull(node);
 
         Object key = null;
@@ -730,7 +730,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private CountDownLatch waitLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws GridSpiException {
             sendMessage0(node, msg);
         }
@@ -743,7 +743,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          * @param msg Message to be sent.
          * @throws GridSpiException If failed.
          */
-        private void sendMessage0(GridNode node, GridTcpCommunicationMessageAdapter msg) throws GridSpiException {
+        private void sendMessage0(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws GridSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;
 

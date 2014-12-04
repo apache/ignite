@@ -60,7 +60,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
     public void testMultipleTaskSessionsMultithreaded() throws Exception {
         final GridRoundRobinLoadBalancingSpi spi = getSpi();
 
-        final List<GridNode> allNodes = (List<GridNode>)getSpiContext().nodes();
+        final List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -69,7 +69,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
                 Map<UUID, AtomicInteger> nodeCnts = new HashMap<>();
 
                 for (int i = 1; i <= ITER_CNT; i++) {
-                    GridNode node = spi.getBalancedNode(ses, allNodes, new GridTestJob());
+                    ClusterNode node = spi.getBalancedNode(ses, allNodes, new GridTestJob());
 
                     if (!nodeCnts.containsKey(node.id()))
                         nodeCnts.put(node.id(), new AtomicInteger(1));
@@ -84,7 +84,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
 
                 double avgSpread = 0;
 
-                for (GridNode n : allNodes) {
+                for (ClusterNode n : allNodes) {
                     int curCnt = nodeCnts.get(n.id()).intValue();
 
                     avgSpread += Math.abs(predictCnt - curCnt);

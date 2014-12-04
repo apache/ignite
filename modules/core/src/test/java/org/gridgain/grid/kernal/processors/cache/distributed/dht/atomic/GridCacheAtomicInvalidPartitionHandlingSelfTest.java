@@ -218,7 +218,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             fut.get();
 
             for (int k = 0; k < range; k++) {
-                Collection<GridNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(k);
+                Collection<ClusterNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(k);
 
                 // Test is valid with at least one backup.
                 assert affNodes.size() >= 2;
@@ -228,7 +228,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 UUID nodeId = null;
 
                 for (int i = 0; i < gridCnt; i++) {
-                    GridNode locNode = grid(i).localNode();
+                    ClusterNode locNode = grid(i).localNode();
 
                     GridCacheAdapter<Object, Object> c = ((GridKernal)grid(i)).internalCache();
 
@@ -286,7 +286,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      */
     private static class DelayCommunicationSpi extends GridTcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws GridSpiException {
             try {
                 if (delayMessage((GridIoMessage)msg))

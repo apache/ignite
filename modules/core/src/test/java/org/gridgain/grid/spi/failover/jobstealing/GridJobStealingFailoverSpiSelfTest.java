@@ -63,14 +63,14 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If test failed.
      */
     public void testFailover() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
         failed.getJobContext().setAttribute(THIEF_NODE_ATTR,
             getSpiContext().localNode().id());
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             new ArrayList<>(getSpiContext().nodes()));
 
         assert other == getSpiContext().localNode();
@@ -83,7 +83,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If test failed.
      */
     public void testMaxHopsExceeded() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
@@ -92,7 +92,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
         failed.getJobContext().setAttribute(FAILOVER_ATTEMPT_COUNT_ATTR,
             getSpi().getMaximumFailoverAttempts());
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             new ArrayList<>(getSpiContext().nodes()));
 
         assert other == null;
@@ -102,14 +102,14 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If test failed.
      */
     public void testMaxHopsExceededThiefNotSet() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
         failed.getJobContext().setAttribute(FAILOVER_ATTEMPT_COUNT_ATTR,
             getSpi().getMaximumFailoverAttempts());
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             new ArrayList<>(getSpiContext().nodes()));
 
         assert other == null;
@@ -119,14 +119,14 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If test failed.
      */
     public void testNonZeroFailoverCount() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
         failed.getJobContext().setAttribute(FAILOVER_ATTEMPT_COUNT_ATTR,
             getSpi().getMaximumFailoverAttempts() - 1);
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             new ArrayList<>(getSpiContext().nodes()));
 
         assert other != null;
@@ -141,13 +141,13 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If test failed.
      */
     public void testThiefNotInTopology() throws Exception {
-        GridNode rmt = new GridTestNode(UUID.randomUUID());
+        ClusterNode rmt = new GridTestNode(UUID.randomUUID());
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
         failed.getJobContext().setAttribute(THIEF_NODE_ATTR, rmt.id());
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             new ArrayList<>(getSpiContext().nodes()));
 
         assert other != null;
@@ -162,13 +162,13 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If test failed.
      */
     public void testThiefEqualsVictim() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
         failed.getJobContext().setAttribute(THIEF_NODE_ATTR, rmt.id());
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             new ArrayList<>(getSpiContext().nodes()));
 
         assert other != null;
@@ -183,11 +183,11 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If test failed.
      */
     public void testThiefIdNotSet() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             new ArrayList<>(getSpiContext().nodes()));
 
         assert other != null;
@@ -204,7 +204,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @param failCnt Failover count.
      */
     @SuppressWarnings("unchecked")
-    private void checkAttributes(GridComputeJobContext ctx, GridNode failed, int failCnt) {
+    private void checkAttributes(GridComputeJobContext ctx, ClusterNode failed, int failCnt) {
         assert (Integer)ctx.getAttribute(FAILOVER_ATTEMPT_COUNT_ATTR) == failCnt;
 
         if (failed != null) {

@@ -57,7 +57,7 @@ public class GridSwapSpaceEvent extends GridEventAdapter {
      * @param type Event type.
      * @param space Swap space name ({@code null} for default space).
      */
-    public GridSwapSpaceEvent(GridNode node, String msg, int type, @Nullable String space) {
+    public GridSwapSpaceEvent(ClusterNode node, String msg, int type, @Nullable String space) {
         super(node, msg, type);
 
         this.space = space;

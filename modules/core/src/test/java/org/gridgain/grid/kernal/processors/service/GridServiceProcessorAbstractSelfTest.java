@@ -539,7 +539,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         @Override public void init(GridServiceContext ctx) throws Exception {
             X.println("Initializing affinity service for key: " + affKey);
 
-            GridNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
+            ClusterNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
 
             assertNotNull(n);
             assertTrue(n.isLocal());

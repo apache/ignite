@@ -33,7 +33,7 @@ public class GridP2PTestTask extends GridComputeTaskAdapter<Object, Integer> {
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Object arg) throws GridException {
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
@@ -46,9 +46,9 @@ public class GridP2PTestTask extends GridComputeTaskAdapter<Object, Integer> {
         else
             assert false : "Failed to map task (unknown argument type) [type=" + arg.getClass() + ", val=" + arg + ']';
 
-        Map<GridComputeJob, GridNode> map = new HashMap<>(subgrid.size());
+        Map<GridComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
-        for (GridNode node : subgrid)
+        for (ClusterNode node : subgrid)
             if (!node.id().equals(nodeId))
                 map.put(new GridP2PTestJob(arg1), node);
 

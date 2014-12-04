@@ -42,14 +42,14 @@ public interface GridDiscoverySpi extends GridSpi {
      *
      * @return Collection of remote nodes.
      */
-    public Collection<GridNode> getRemoteNodes();
+    public Collection<ClusterNode> getRemoteNodes();
 
     /**
      * Gets local node.
      *
      * @return Local node.
      */
-    public GridNode getLocalNode();
+    public ClusterNode getLocalNode();
 
     /**
      * Gets node by ID.
@@ -57,7 +57,7 @@ public interface GridDiscoverySpi extends GridSpi {
      * @param nodeId Node ID.
      * @return Node with given ID or {@code null} if node is not found.
      */
-    @Nullable public GridNode getNode(UUID nodeId);
+    @Nullable public ClusterNode getNode(UUID nodeId);
 
     /**
      * Pings the remote node to see if it's alive.

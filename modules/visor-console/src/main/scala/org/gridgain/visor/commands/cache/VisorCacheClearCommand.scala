@@ -15,7 +15,7 @@ import org.gridgain.grid.kernal.visor.util.VisorTaskUtils._
 
 import java.util.Collections
 
-import org.gridgain.grid.GridNode
+import org.gridgain.grid.ClusterNode
 import org.gridgain.visor.commands.VisorTextTable
 import org.gridgain.visor.visor._
 
@@ -78,7 +78,7 @@ class VisorCacheClearCommand {
      *
      * @param argLst Command arguments.
      */
-    def clear(argLst: ArgList, node: Option[GridNode]) = breakable {
+    def clear(argLst: ArgList, node: Option[ClusterNode]) = breakable {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {

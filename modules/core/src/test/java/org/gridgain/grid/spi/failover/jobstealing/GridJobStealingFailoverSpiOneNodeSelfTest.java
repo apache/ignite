@@ -42,7 +42,7 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
      * @return Passed in node.
      * @throws Exception If failed.
      */
-    private GridNode addSpiDependency(GridTestNode node) throws Exception {
+    private ClusterNode addSpiDependency(GridTestNode node) throws Exception {
         node.addAttribute(
             U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_CLASS),
             GridJobStealingCollisionSpi.class.getName());
@@ -58,14 +58,14 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
      * @throws Exception If test failed.
      */
     public void testFailover() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
         failed.getJobContext().setAttribute(GridJobStealingCollisionSpi.THIEF_NODE_ATTR,
             getSpiContext().localNode().id());
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             Collections.singletonList(getSpiContext().remoteNodes().iterator().next()));
 
         assert other == rmt : "Invalid failed-over node: " + other;
@@ -75,11 +75,11 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
      * @throws Exception If test failed.
      */
     public void testNoFailover() throws Exception {
-        GridNode rmt = getSpiContext().remoteNodes().iterator().next();
+        ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
-        GridNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
+        ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),
             Collections.singletonList(getSpiContext().remoteNodes().iterator().next()));
 
         assert other == null;

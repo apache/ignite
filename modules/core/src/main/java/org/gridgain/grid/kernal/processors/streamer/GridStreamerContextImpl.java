@@ -103,11 +103,11 @@ public class GridStreamerContextImpl implements GridStreamerContext {
 
     /** {@inheritDoc} */
     @Override public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo) throws GridException {
-        return query(clo, Collections.<GridNode>emptyList());
+        return query(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<GridNode> nodes)
+    @Override public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException {
         ctx.gateway().readLock();
 
@@ -132,11 +132,11 @@ public class GridStreamerContextImpl implements GridStreamerContext {
 
     /** {@inheritDoc} */
     @Override public void broadcast(GridInClosure<GridStreamerContext> clo) throws GridException {
-        broadcast(clo, Collections.<GridNode>emptyList());
+        broadcast(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<GridNode> nodes)
+    @Override public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes)
         throws GridException {
         ctx.gateway().readLock();
 
@@ -156,12 +156,12 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc)
         throws GridException {
-        return reduce(clo, rdc, Collections.<GridNode>emptyList());
+        return reduce(clo, rdc, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
-        Collection<GridNode> nodes) throws GridException {
+        Collection<ClusterNode> nodes) throws GridException {
         ctx.gateway().readLock();
 
         try {

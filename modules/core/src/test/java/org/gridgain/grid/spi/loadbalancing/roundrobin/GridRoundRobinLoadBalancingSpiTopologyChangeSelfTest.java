@@ -47,7 +47,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
         GridComputeTaskSession ses = new GridTestTaskSession(GridUuid.randomUuid());
 
         // Warm up.
-        List<GridNode> allNodes = (List<GridNode>)getSpiContext().nodes();
+        List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
         List<UUID> orderedNodes = getSpi().getNodeIds(ses);
 
@@ -70,7 +70,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
         checkCyclicBalancing(getSpi(), allNodes, orderedNodes, ses);
 
         // Add node.
-        GridNode newNode = new GridTestNode(UUID.randomUUID());
+        ClusterNode newNode = new GridTestNode(UUID.randomUUID());
 
         getSpiContext().addNode(newNode);
 
@@ -80,7 +80,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
         boolean foundNewNode = false;
 
         for (int i = 0; i < allNodes.size(); i++) {
-            GridNode node = getSpi().getBalancedNode(ses, allNodes, new GridTestJob());
+            ClusterNode node = getSpi().getBalancedNode(ses, allNodes, new GridTestJob());
             if (newNode.id().equals(node.id())) {
                 foundNewNode = true;
                 break;

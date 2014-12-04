@@ -522,7 +522,7 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
      * @param type Key type.
      * @return Key.
      */
-    private Integer keyForNode(GridNode node, int type) {
+    private Integer keyForNode(ClusterNode node, int type) {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (cache.configuration().getCacheMode() == LOCAL)

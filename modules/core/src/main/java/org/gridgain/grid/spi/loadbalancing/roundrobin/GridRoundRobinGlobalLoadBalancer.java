@@ -108,7 +108,7 @@ class GridRoundRobinGlobalLoadBalancer {
 
             Collection<UUID> set = oldNodes == null ? new HashSet<UUID>() : new HashSet<>(oldNodes);
 
-            for (GridNode node : ctx.nodes())
+            for (ClusterNode node : ctx.nodes())
                 set.add(node.id());
 
             nodeList = new GridNodeList(0, new ArrayList<>(set));
@@ -130,14 +130,14 @@ class GridRoundRobinGlobalLoadBalancer {
      * @return Best balanced node.
      * @throws GridException Thrown in case of any error.
      */
-    GridNode getBalancedNode(Collection<GridNode> top) throws GridException {
+    ClusterNode getBalancedNode(Collection<ClusterNode> top) throws GridException {
         assert !F.isEmpty(top);
 
         awaitInitializationCompleted();
 
-        Map<UUID, GridNode> topMap = null;
+        Map<UUID, ClusterNode> topMap = null;
 
-        GridNode found;
+        ClusterNode found;
 
         int misses = 0;
 
@@ -175,7 +175,7 @@ class GridRoundRobinGlobalLoadBalancer {
                     if (topMap == null) {
                         topMap = U.newHashMap(top.size());
 
-                        for (GridNode node : top)
+                        for (ClusterNode node : top)
                             topMap.put(node.id(), node);
                     }
 
@@ -201,8 +201,8 @@ class GridRoundRobinGlobalLoadBalancer {
      * @param foundNodeId Node id.
      * @return Found node or null in case of absence of specified id in request topology.
      */
-    private static GridNode findNodeById(Iterable<GridNode> top, UUID foundNodeId) {
-        for (GridNode node : top)
+    private static ClusterNode findNodeById(Iterable<ClusterNode> top, UUID foundNodeId) {
+        for (ClusterNode node : top)
             if (foundNodeId.equals(node.id()))
                 return node;
 
@@ -218,7 +218,7 @@ class GridRoundRobinGlobalLoadBalancer {
      * @param nodes Current balanced nodes.
      * @throws GridException If balancer can not return any node.
      */
-    private static void checkBalancerNodes(Collection<GridNode> top, Map<UUID, GridNode> topMap, Iterable<UUID> nodes)
+    private static void checkBalancerNodes(Collection<ClusterNode> top, Map<UUID, ClusterNode> topMap, Iterable<UUID> nodes)
         throws GridException {
 
         boolean contains = false;

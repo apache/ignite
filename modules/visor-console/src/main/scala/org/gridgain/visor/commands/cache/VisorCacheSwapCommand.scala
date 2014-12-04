@@ -78,7 +78,7 @@ class VisorCacheSwapCommand {
      *
      * @param argLst Command arguments.
      */
-    def swap(argLst: ArgList, node: Option[GridNode]) = breakable {
+    def swap(argLst: ArgList, node: Option[ClusterNode]) = breakable {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {

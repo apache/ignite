@@ -154,7 +154,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 3; i++) {
             GridEx grid = grid(i);
 
-            GridNode node = grid.localNode();
+            ClusterNode node = grid.localNode();
 
             GridCache<Object, Object> cache = grid.cache(null);
 
@@ -174,7 +174,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      * @param cache Cache to get affinity for.
      * @return Collection of keys.
      */
-    private List<Integer> generateKeys(GridNode node, GridCache<Object, Object> cache) {
+    private List<Integer> generateKeys(ClusterNode node, GridCache<Object, Object> cache) {
         List<Integer> keys = new ArrayList<>(3);
 
         GridCacheAffinity<Object> aff = cache.affinity();

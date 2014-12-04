@@ -120,19 +120,19 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      */
     public static class FactorialTask extends GridComputeTaskAdapter<Long, Long> {
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Long arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) throws GridException {
             assert arg > 1;
 
-            Map<FactorialJob, GridNode> map = new HashMap<>();
+            Map<FactorialJob, ClusterNode> map = new HashMap<>();
 
-            Iterator<GridNode> iter = subgrid.iterator();
+            Iterator<ClusterNode> iter = subgrid.iterator();
 
             for (int i = 0; i < arg; i++) {
                 // Recycle iterator.
                 if (iter.hasNext() == false)
                     iter = subgrid.iterator();
 
-                GridNode node = iter.next();
+                ClusterNode node = iter.next();
 
                 map.put(new FactorialJob(arg - 1), node);
             }

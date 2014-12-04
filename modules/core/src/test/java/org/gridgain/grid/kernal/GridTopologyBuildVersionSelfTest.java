@@ -73,7 +73,7 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
             for (int i = 3; i >= 0; i--) {
                 GridKernal g = (GridKernal)grid(i);
 
-                NavigableMap<GridProductVersion, Collection<GridNode>> verMap = g.context().discovery()
+                NavigableMap<GridProductVersion, Collection<ClusterNode>> verMap = g.context().discovery()
                     .topologyVersionMap();
 
                 assertEquals(4, verMap.size());

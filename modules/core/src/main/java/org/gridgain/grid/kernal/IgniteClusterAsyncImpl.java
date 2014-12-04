@@ -35,7 +35,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode localNode() {
+    @Override public ClusterNode localNode() {
         return grid.localNode();
     }
 
@@ -60,18 +60,18 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<GridNode> topology(long topVer) {
+    @Nullable @Override public Collection<ClusterNode> topology(long topVer) {
         return grid.topology(topVer);
     }
 
     /** {@inheritDoc} */
-    @Override public <K> Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
+    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
         @Nullable Collection<? extends K> keys) throws GridException {
         return grid.mapKeysToNodes(cacheName, keys);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> GridNode mapKeyToNode(@Nullable String cacheName, K key) throws GridException {
+    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws GridException {
         return grid.mapKeyToNode(cacheName, key);
     }
 
@@ -124,17 +124,17 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNodes(Collection<? extends GridNode> nodes) {
+    @Override public GridProjection forNodes(Collection<? extends ClusterNode> nodes) {
         return grid.forNodes(nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNode(GridNode node, GridNode... nodes) {
+    @Override public GridProjection forNode(ClusterNode node, ClusterNode... nodes) {
         return grid.forNode(node, nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOthers(GridNode node, GridNode... nodes) {
+    @Override public GridProjection forOthers(ClusterNode node, ClusterNode... nodes) {
         return grid.forOthers(node, nodes);
     }
 
@@ -154,7 +154,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forPredicate(GridPredicate<GridNode> p) {
+    @Override public GridProjection forPredicate(GridPredicate<ClusterNode> p) {
         return grid.forPredicate(p);
     }
 
@@ -179,7 +179,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forHost(GridNode node) {
+    @Override public GridProjection forHost(ClusterNode node) {
         return grid.forHost(node);
     }
 
@@ -204,22 +204,22 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> nodes() {
+    @Override public Collection<ClusterNode> nodes() {
         return grid.nodes();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNode node(UUID id) {
+    @Nullable @Override public ClusterNode node(UUID id) {
         return grid.node(id);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNode node() {
+    @Nullable @Override public ClusterNode node() {
         return grid.node();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPredicate<GridNode> predicate() {
+    @Override public GridPredicate<ClusterNode> predicate() {
         return grid.predicate();
     }
 

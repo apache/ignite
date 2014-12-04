@@ -68,7 +68,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
      */
     public void testDuplicateId() throws Exception {
         rslvr = new GridCacheAffinityNodeHashResolver() {
-            @Override public Object resolve(GridNode node) {
+            @Override public Object resolve(ClusterNode node) {
                 return 1;
             }
         };

@@ -162,10 +162,10 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     /**
      * @return Involved nodes.
      */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
-                @Nullable @Override public GridNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -594,7 +594,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             for (GridDistributedTxMapping<K, V> dhtMapping : futDhtMap.values()) {
                 assert !dhtMapping.empty();
 
-                GridNode n = dhtMapping.node();
+                ClusterNode n = dhtMapping.node();
 
                 assert !n.isLocal();
 
@@ -762,7 +762,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         while (true) {
             try {
-                Collection<GridNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
+                Collection<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
@@ -770,7 +770,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                 Collection<UUID> readers = cached.readers();
 
-                Collection<GridNode> nearNodes = null;
+                Collection<ClusterNode> nearNodes = null;
 
                 if (!F.isEmpty(readers)) {
                     nearNodes = cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
@@ -807,12 +807,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param locMap Exclude map.
      * @return {@code True} if mapped.
      */
-    private boolean map(GridCacheTxEntry<K, V> entry, Iterable<GridNode> nodes,
+    private boolean map(GridCacheTxEntry<K, V> entry, Iterable<ClusterNode> nodes,
         Map<UUID, GridDistributedTxMapping<K, V>> globalMap, Map<UUID, GridDistributedTxMapping<K, V>> locMap) {
         boolean ret = false;
 
         if (nodes != null) {
-            for (GridNode n : nodes) {
+            for (ClusterNode n : nodes) {
                 GridDistributedTxMapping<K, V> global = globalMap.get(n.id());
 
                 if (global == null)
@@ -919,7 +919,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @return Node ID.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return dhtMapping != null ? dhtMapping.node() : nearMapping.node();
         }
 

@@ -155,7 +155,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjections() throws Exception {
-        GridNode locNode = ignite.cluster().localNode();
+        ClusterNode locNode = ignite.cluster().localNode();
         UUID locId = locNode.id();
 
         assertNotNull(locId);
@@ -238,7 +238,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         assertTrue(prj.nodes().containsAll(ignite.cluster().forRemotes().nodes()));
 
         try {
-            ignite.cluster().forOthers((GridNode)null);
+            ignite.cluster().forOthers((ClusterNode)null);
         }
         catch (NullPointerException ignored) {
             // No-op.

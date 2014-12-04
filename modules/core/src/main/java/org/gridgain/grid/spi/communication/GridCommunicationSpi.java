@@ -55,7 +55,7 @@ public interface GridCommunicationSpi<T extends Serializable> extends GridSpi {
      *      Note that this is not guaranteed that failed communication will result
      *      in thrown exception as this is dependant on SPI implementation.
      */
-    public void sendMessage(GridNode destNode, T msg) throws GridSpiException;
+    public void sendMessage(ClusterNode destNode, T msg) throws GridSpiException;
 
     /**
      * Gets sent messages count.

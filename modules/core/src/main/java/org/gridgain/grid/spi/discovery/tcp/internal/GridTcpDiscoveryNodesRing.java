@@ -33,7 +33,7 @@ public class GridTcpDiscoveryNodesRing {
 
     /** Client nodes filter. */
     private static final PN CLIENT_NODES = new PN() {
-        @Override public boolean apply(GridNode node) {
+        @Override public boolean apply(ClusterNode node) {
             return node.isClient();
         }
     };

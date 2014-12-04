@@ -33,10 +33,10 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridSpiTestContext implements GridSpiContext {
     /** */
-    private final Collection<GridNode> rmtNodes = new ConcurrentLinkedQueue<>();
+    private final Collection<ClusterNode> rmtNodes = new ConcurrentLinkedQueue<>();
 
     /** */
-    private GridNode locNode;
+    private ClusterNode locNode;
 
     /** */
     private final Map<GridLocalEventListener, Set<Integer>> evtLsnrs = new HashMap<>();
@@ -46,26 +46,26 @@ public class GridSpiTestContext implements GridSpiContext {
     private final Collection<GridMessageListener> msgLsnrs = new ArrayList<>();
 
     /** */
-    private final Map<GridNode, Serializable> sentMsgs = new HashMap<>();
+    private final Map<ClusterNode, Serializable> sentMsgs = new HashMap<>();
 
     /** */
     private final ConcurrentMap<String, Map> cache = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> remoteNodes() {
+    @Override public Collection<ClusterNode> remoteNodes() {
         return rmtNodes;
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode localNode() {
+    @Override public ClusterNode localNode() {
         return locNode;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> remoteDaemonNodes() {
-        Collection<GridNode> daemons = new ArrayList<>();
+    @Override public Collection<ClusterNode> remoteDaemonNodes() {
+        Collection<ClusterNode> daemons = new ArrayList<>();
 
-        for (GridNode node : rmtNodes) {
+        for (ClusterNode node : rmtNodes) {
             if (node.isDaemon())
                 daemons.add(node);
         }
@@ -74,8 +74,8 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> nodes() {
-        Collection<GridNode> all = new ArrayList<>(rmtNodes);
+    @Override public Collection<ClusterNode> nodes() {
+        Collection<ClusterNode> all = new ArrayList<>(rmtNodes);
 
         if (locNode != null)
             all.add(locNode);
@@ -86,17 +86,17 @@ public class GridSpiTestContext implements GridSpiContext {
     /**
      * @param locNode Local node.
      */
-    public void setLocalNode(@Nullable GridNode locNode) {
+    public void setLocalNode(@Nullable ClusterNode locNode) {
         this.locNode = locNode;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override
-    public GridNode node(UUID nodeId) {
+    public ClusterNode node(UUID nodeId) {
         if (locNode != null && locNode.id().equals(nodeId))
             return locNode;
 
-        for (GridNode node : rmtNodes) {
+        for (ClusterNode node : rmtNodes) {
             if (node.id().equals(nodeId))
                 return node;
         }
@@ -142,8 +142,8 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param nodes Nodes to reset.
      * @param rmv Whether nodes that were not passed in should be removed or not.
      */
-    public void resetNodes(Collection<GridNode> nodes, boolean rmv) {
-        for (GridNode node : nodes) {
+    public void resetNodes(Collection<ClusterNode> nodes, boolean rmv) {
+        for (ClusterNode node : nodes) {
             assert !node.equals(locNode);
 
             if (!rmtNodes.contains(node))
@@ -151,8 +151,8 @@ public class GridSpiTestContext implements GridSpiContext {
         }
 
         if (rmv) {
-            for (Iterator<GridNode> iter = rmtNodes.iterator(); iter.hasNext();) {
-                GridNode node = iter.next();
+            for (Iterator<ClusterNode> iter = rmtNodes.iterator(); iter.hasNext();) {
+                ClusterNode node = iter.next();
 
                 if (!nodes.contains(node)) {
                     iter.remove();
@@ -167,14 +167,14 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param node Node to check.
      * @return {@code True} if the node is local.
      */
-    public boolean isLocalNode(GridNode node) {
+    public boolean isLocalNode(ClusterNode node) {
         return locNode.equals(node);
     }
 
     /**
      * @param node Node to add.
      */
-    public void addNode(GridNode node) {
+    public void addNode(ClusterNode node) {
         rmtNodes.add(node);
 
         notifyListener(new GridDiscoveryEvent(locNode, "Node joined", EVT_NODE_JOINED, node));
@@ -183,7 +183,7 @@ public class GridSpiTestContext implements GridSpiContext {
     /**
      * @param node Node to remove.
      */
-    public void removeNode(GridNode node) {
+    public void removeNode(ClusterNode node) {
         if (rmtNodes.remove(node))
             notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
     }
@@ -192,8 +192,8 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param nodeId Node ID.
      */
     public void removeNode(UUID nodeId) {
-        for (Iterator<GridNode> iter = rmtNodes.iterator(); iter.hasNext();) {
-            GridNode node = iter.next();
+        for (Iterator<ClusterNode> iter = rmtNodes.iterator(); iter.hasNext();) {
+            ClusterNode node = iter.next();
 
             if (node.id().equals(nodeId)) {
                 iter.remove();
@@ -206,7 +206,7 @@ public class GridSpiTestContext implements GridSpiContext {
     /**
      * @param node Node to fail.
      */
-    public void failNode(GridNode node) {
+    public void failNode(ClusterNode node) {
         if (rmtNodes.remove(node))
             notifyListener(new GridDiscoveryEvent(locNode, "Node failed", EVT_NODE_FAILED, node));
     }
@@ -214,7 +214,7 @@ public class GridSpiTestContext implements GridSpiContext {
     /**
      * @param node Node for metrics update.
      */
-    public void updateMetrics(GridNode node) {
+    public void updateMetrics(ClusterNode node) {
         if (locNode.equals(node) || rmtNodes.contains(node))
             notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
     }
@@ -223,7 +223,7 @@ public class GridSpiTestContext implements GridSpiContext {
     public void updateAllMetrics() {
         notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
 
-        for (GridNode node : rmtNodes) {
+        for (ClusterNode node : rmtNodes) {
             notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
         }
     }
@@ -246,7 +246,7 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void send(GridNode node, Serializable msg, String topic)
+    @Override public void send(ClusterNode node, Serializable msg, String topic)
         throws GridSpiException {
         sentMsgs.put(node, msg);
     }
@@ -255,7 +255,7 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param node Node message was sent to.
      * @return Sent message.
      */
-    public Serializable getSentMessage(GridNode node) {
+    public Serializable getSentMessage(ClusterNode node) {
         return sentMsgs.get(node);
     }
 
@@ -263,7 +263,7 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param node Node message was sent to.
      * @return Sent message.
      */
-    public Serializable removeSentMessage(GridNode node) {
+    public Serializable removeSentMessage(ClusterNode node) {
         return sentMsgs.remove(node);
     }
 
@@ -272,7 +272,7 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param msg Message.
      */
     @SuppressWarnings("deprecation")
-    public void triggerMessage(GridNode node, Object msg) {
+    public void triggerMessage(ClusterNode node, Object msg) {
         for (GridMessageListener lsnr : msgLsnrs) {
             lsnr.onMessage(node.id(), msg);
         }
@@ -476,7 +476,7 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

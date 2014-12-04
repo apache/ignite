@@ -105,10 +105,10 @@ public final class CacheAffinityExample {
             keys.add(i);
 
         // Map all keys to nodes.
-        Map<GridNode, Collection<Integer>> mappings = g.cluster().mapKeysToNodes(CACHE_NAME, keys);
+        Map<ClusterNode, Collection<Integer>> mappings = g.cluster().mapKeysToNodes(CACHE_NAME, keys);
 
-        for (Map.Entry<GridNode, Collection<Integer>> mapping : mappings.entrySet()) {
-            GridNode node = mapping.getKey();
+        for (Map.Entry<ClusterNode, Collection<Integer>> mapping : mappings.entrySet()) {
+            ClusterNode node = mapping.getKey();
 
             final Collection<Integer> mappedKeys = mapping.getValue();
 

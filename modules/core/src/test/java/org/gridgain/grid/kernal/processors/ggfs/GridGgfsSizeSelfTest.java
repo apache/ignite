@@ -680,7 +680,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
     private UUID primary(GridGgfsBlockKey key) {
         GridEx grid = grid(0);
 
-        for (GridNode node : grid.nodes()) {
+        for (ClusterNode node : grid.nodes()) {
             if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimary(node, key))
                 return node.id();
         }
@@ -699,7 +699,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         Collection<UUID> ids = new HashSet<>();
 
-        for (GridNode node : grid.nodes()) {
+        for (ClusterNode node : grid.nodes()) {
             if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }

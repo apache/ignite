@@ -316,7 +316,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Local node.
      */
-    public GridNode localNode() {
+    public ClusterNode localNode() {
         return kernalCtx.discovery().localNode();
     }
 
@@ -324,7 +324,7 @@ public class GridCacheSharedContext<K, V> {
      * @param nodeId Node ID.
      * @return Node or {@code null}.
      */
-    public GridNode node(UUID nodeId) {
+    public ClusterNode node(UUID nodeId) {
         return kernalCtx.discovery().node(nodeId);
     }
 

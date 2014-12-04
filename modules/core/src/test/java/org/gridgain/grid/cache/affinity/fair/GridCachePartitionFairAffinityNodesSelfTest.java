@@ -194,10 +194,10 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
                         info("Grid " + i + ": " + grid.localNode().id());
 
                         for (int part = 0; part < parts; part++) {
-                            List<GridNode> firstNodes = (List<GridNode>)grid(0).cache(null).affinity()
+                            List<ClusterNode> firstNodes = (List<ClusterNode>)grid(0).cache(null).affinity()
                                 .mapPartitionToPrimaryAndBackups(part);
 
-                            List<GridNode> secondNodes = (List<GridNode>)grid.cache(null).affinity()
+                            List<ClusterNode> secondNodes = (List<ClusterNode>)grid.cache(null).affinity()
                                 .mapPartitionToPrimaryAndBackups(part);
 
                             assertEquals(firstNodes.size(), secondNodes.size());

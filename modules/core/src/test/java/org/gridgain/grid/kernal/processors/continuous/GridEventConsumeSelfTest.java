@@ -504,7 +504,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyProjection() throws Exception {
         try {
-            events(grid(0).forPredicate(F.<GridNode>alwaysFalse())).remoteListen(
+            events(grid(0).forPredicate(F.<ClusterNode>alwaysFalse())).remoteListen(
                 new P2<UUID, GridEvent>() {
                     @Override public boolean apply(UUID nodeId, GridEvent evt) {
                         return true;
@@ -761,7 +761,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         ClassLoader ldr = getExternalClassLoader();
 
-        GridPredicate<GridNode> prjPred = (GridPredicate<GridNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
+        GridPredicate<ClusterNode> prjPred = (GridPredicate<ClusterNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
         GridPredicate<GridEvent> filter = (GridPredicate<GridEvent>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
 
         UUID consumeId = events(grid(0).forPredicate(prjPred)).remoteListen(new P2<UUID, GridEvent>() {

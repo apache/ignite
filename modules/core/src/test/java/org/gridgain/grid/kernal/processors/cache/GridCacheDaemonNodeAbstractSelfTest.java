@@ -160,7 +160,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             Ignite g2 = startGrid(4);
 
             for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
-                GridNode n;
+                ClusterNode n;
 
                 // Call mapKeyToNode for normal node.
                 assertNotNull(n = g1.cluster().mapKeyToNode(null, i));

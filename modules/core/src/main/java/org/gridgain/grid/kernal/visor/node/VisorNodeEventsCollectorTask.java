@@ -311,7 +311,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                 else if (e instanceof GridDiscoveryEvent) {
                     GridDiscoveryEvent de = (GridDiscoveryEvent)e;
 
-                    GridNode node = de.eventNode();
+                    ClusterNode node = de.eventNode();
 
                     String addr = F.first(node.addresses());
 

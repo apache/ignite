@@ -127,7 +127,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return F.view(F.viewReadOnly(mappings.keySet(), U.id2Node(cctx.kernalContext())), F.notNull());
     }
 
@@ -206,7 +206,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         GridClosure<V, V> transformC, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, long ttl) {
         long topVer = updateReq.topologyVersion();
 
-        Collection<GridNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
+        Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
 
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
@@ -215,7 +215,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
         keys.add(entry.key());
 
-        for (GridNode node : dhtNodes) {
+        for (ClusterNode node : dhtNodes) {
             UUID nodeId = node.id();
 
             if (!nodeId.equals(ctx.localNodeId())) {
@@ -262,7 +262,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
             if (updateReq == null) {
-                GridNode node = ctx.discovery().node(nodeId);
+                ClusterNode node = ctx.discovery().node(nodeId);
 
                 // Node left the grid.
                 if (node == null)

@@ -40,12 +40,12 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     private GridLogger log;
 
     /** {@inheritDoc} */
-    @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<GridNode> top,
+    @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
         @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
         // Convert collection of topology nodes to collection of topology node IDs.
         Collection<UUID> topIds = new HashSet<>(top.size(), 1.0f);
 
-        for (GridNode topNode : top)
+        for (ClusterNode topNode : top)
             topIds.add(topNode.id());
 
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, topIds, job.input());
@@ -69,7 +69,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @return Mappers map.
      * @throws GridException If failed.
      */
-    private Map<UUID, Collection<GridHadoopInputSplit>> mappers(Collection<GridNode> top, Collection<UUID> topIds,
+    private Map<UUID, Collection<GridHadoopInputSplit>> mappers(Collection<ClusterNode> top, Collection<UUID> topIds,
         Iterable<GridHadoopInputSplit> splits) throws GridException {
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = new HashMap<>();
 
@@ -109,10 +109,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @param top Topology to group.
      * @return Map.
      */
-    private static Map<String, Collection<UUID>> hosts(Collection<GridNode> top) {
+    private static Map<String, Collection<UUID>> hosts(Collection<ClusterNode> top) {
         Map<String, Collection<UUID>> grouped = U.newHashMap(top.size());
 
-        for (GridNode node : top) {
+        for (ClusterNode node : top) {
             for (String host : node.hostNames()) {
                 Collection<UUID> nodeIds = grouped.get(host);
 
@@ -280,14 +280,14 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @return Reducers map.
      * @throws GridException If failed.
      */
-    private Map<UUID, int[]> reducers(Collection<GridNode> top,
+    private Map<UUID, int[]> reducers(Collection<ClusterNode> top,
         Map<UUID, Collection<GridHadoopInputSplit>> mappers, int reducerCnt) throws GridException {
         // Determine initial node weights.
         int totalWeight = 0;
 
         List<WeightedNode> nodes = new ArrayList<>(top.size());
 
-        for (GridNode node : top) {
+        for (ClusterNode node : top) {
             Collection<GridHadoopInputSplit> split = mappers.get(node.id());
 
             int weight = reducerNodeWeight(node, split != null ? split.size() : 0);
@@ -372,7 +372,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @return Node weight.
      */
     @SuppressWarnings("UnusedParameters")
-    protected int reducerNodeWeight(GridNode node, int splitCnt) {
+    protected int reducerNodeWeight(ClusterNode node, int splitCnt) {
         return splitCnt;
     }
 

@@ -13,7 +13,6 @@ import mx4j.tools.adaptor.http.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.*;
@@ -42,7 +41,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
     protected static final Map<UUID, GridCommunicationSpi<GridTcpCommunicationMessageAdapter>> spis = new HashMap<>();
 
     /** */
-    protected static final Collection<GridNode> nodes = new ArrayList<>();
+    protected static final Collection<ClusterNode> nodes = new ArrayList<>();
 
     /** */
     private static final Object mux = new Object();
@@ -136,7 +135,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
         msgDestMap.clear();
 
         for (Entry<UUID, GridCommunicationSpi<GridTcpCommunicationMessageAdapter>> entry : spis.entrySet()) {
-            for (GridNode node : nodes) {
+            for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(entry.getKey()))
                         msgDestMap.put(entry.getKey(), new HashSet<UUID>());
@@ -182,7 +181,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
 
             GridCommunicationSpi<GridTcpCommunicationMessageAdapter> commSpi = entry.getValue();
 
-            for (GridNode node : nodes) {
+            for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(sndId))
                         msgDestMap.put(sndId, new HashSet<UUID>());
@@ -241,7 +240,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
         nodes.clear();
         spiRsrcs.clear();
 
-        Map<GridNode, GridSpiTestContext> ctxs = new HashMap<>();
+        Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
         for (int i = 0; i < getSpiCount(); i++) {
             GridCommunicationSpi<GridTcpCommunicationMessageAdapter> spi = getSpi(i);
@@ -276,8 +275,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
         }
 
         // For each context set remote nodes.
-        for (Entry<GridNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (GridNode n : nodes) {
+        for (Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
+            for (ClusterNode n : nodes) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }

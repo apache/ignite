@@ -23,7 +23,7 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
  */
 public class GridJobExecutionLoadTestTask implements GridComputeTask<Object, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Object arg)
+    @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
         throws GridException {
         return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
     }

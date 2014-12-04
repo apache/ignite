@@ -16,6 +16,6 @@ import org.gridgain.grid.lang.*;
 /**
  * Predicate node filter.
  */
-public interface GridifyNodeFilter extends GridBiPredicate<GridNode, GridComputeTaskSession> {
+public interface GridifyNodeFilter extends GridBiPredicate<ClusterNode, GridComputeTaskSession> {
     // No-op.
 }

@@ -266,7 +266,7 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode getBalancedNode(GridComputeTaskSession ses, List<GridNode> top, GridComputeJob job)
+    @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top, GridComputeJob job)
         throws GridException {
         A.notNull(ses, "ses", top, "top");
 
@@ -299,7 +299,7 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
 
             List<UUID> ids = new ArrayList<>();
 
-            for (GridNode node : balancer.getNodes()) {
+            for (ClusterNode node : balancer.getNodes()) {
                 ids.add(node.id());
             }
 

@@ -93,7 +93,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /** */
     private class GridTestFailoverSpi extends GridAlwaysFailoverSpi {
         /** {@inheritDoc} */
-        @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> grid) {
+        @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> grid) {
             isFailoverCalled = true;
 
             return super.failover(ctx, grid);

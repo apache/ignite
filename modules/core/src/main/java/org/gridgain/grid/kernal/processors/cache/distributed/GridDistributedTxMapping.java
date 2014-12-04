@@ -29,7 +29,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
 
     /** Mapped node. */
     @GridToStringExclude
-    private GridNode node;
+    private ClusterNode node;
 
     /** Entries. */
     @GridToStringInclude
@@ -63,7 +63,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @param node Mapped node.
      */
-    public GridDistributedTxMapping(GridNode node) {
+    public GridDistributedTxMapping(ClusterNode node) {
         this.node = node;
 
         entries = new ConcurrentLinkedQueue<>();
@@ -114,7 +114,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @return Node.
      */
-    public GridNode node() {
+    public ClusterNode node() {
         return node;
     }
 
@@ -281,7 +281,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        node = (GridNode)in.readObject();
+        node = (ClusterNode)in.readObject();
 
         entries = U.readCollection(in);
     }

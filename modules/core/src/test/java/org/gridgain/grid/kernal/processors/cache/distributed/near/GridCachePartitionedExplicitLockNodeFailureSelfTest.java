@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -84,7 +83,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
         while (grid(idx).mapKeyToNode(null, key).id().equals(grid(0).localNode().id()))
             key++;
 
-        GridNode node = grid(idx).mapKeyToNode(null, key);
+        ClusterNode node = grid(idx).mapKeyToNode(null, key);
 
         info("Primary node for key [id=" + node.id() + ", order=" + node.order() + ", key=" + key + ']');
 

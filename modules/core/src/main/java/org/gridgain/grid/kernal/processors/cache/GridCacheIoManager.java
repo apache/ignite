@@ -334,7 +334,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws GridException If sending failed.
      * @throws GridTopologyException If receiver left.
      */
-    public void send(GridNode node, GridCacheMessage<K, V> msg) throws GridException {
+    public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws GridException {
         send(node, msg, SYSTEM_POOL);
     }
 
@@ -346,7 +346,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws GridException If sending failed.
      * @throws GridTopologyException If receiver left.
      */
-    public void send(GridNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
+    public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
         assert !node.isLocal();
 
         onSend(msg, node.id());
@@ -403,8 +403,8 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws GridException If send failed.
      */
     @SuppressWarnings( {"BusyWait"})
-    public boolean safeSend(Collection<? extends GridNode> nodes, GridCacheMessage<K, V> msg,
-        @Nullable GridPredicate<GridNode> fallback) throws GridException {
+    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage<K, V> msg,
+        @Nullable GridPredicate<ClusterNode> fallback) throws GridException {
         assert nodes != null;
         assert msg != null;
 
@@ -427,8 +427,8 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
         while (cnt < retryCnt) {
             try {
-                Collection<? extends GridNode> nodesView = F.view(nodes, new P1<GridNode>() {
-                    @Override public boolean apply(GridNode e) {
+                Collection<? extends ClusterNode> nodesView = F.view(nodes, new P1<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode e) {
                         return !leftIds.contains(e.id());
                     }
                 });
@@ -449,7 +449,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                 // Even if there is no exception, we still check here, as node could have
                 // ignored the message during stopping.
-                for (GridNode n : nodes) {
+                for (ClusterNode n : nodes) {
                     if (!leftIds.contains(n.id()) && !cctx.discovery().alive(n.id())) {
                         leftIds.add(n.id());
 
@@ -476,7 +476,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             catch (GridException e) {
                 boolean added = false;
 
-                for (GridNode n : nodes) {
+                for (ClusterNode n : nodes) {
                     if (!leftIds.contains(n.id()) &&
                         (!cctx.discovery().alive(n.id()) || !cctx.discovery().pingNode(n.id()))) {
                         leftIds.add(n.id());
@@ -526,7 +526,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws GridException If sending failed.
      */
     public void send(UUID nodeId, GridCacheMessage<K, V> msg) throws GridException {
-        GridNode n = cctx.discovery().node(nodeId);
+        ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
             throw new GridTopologyException("Failed to send message because node left grid [node=" + n + ", msg=" +
@@ -543,7 +543,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param timeout Timeout to keep a message on receiving queue.
      * @throws GridException Thrown in case of any errors.
      */
-    public void sendOrderedMessage(GridNode node, Object topic, long msgId, GridCacheMessage<K, V> msg,
+    public void sendOrderedMessage(ClusterNode node, Object topic, long msgId, GridCacheMessage<K, V> msg,
         long timeout) throws GridException {
         onSend(msg, node.id());
 

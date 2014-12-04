@@ -21,10 +21,10 @@ import java.util.*;
  */
 public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFunctionContext {
     /** Topology snapshot. */
-    private List<GridNode> topSnapshot;
+    private List<ClusterNode> topSnapshot;
 
     /** Previous affinity assignment. */
-    private List<List<GridNode>> prevAssignment;
+    private List<List<ClusterNode>> prevAssignment;
 
     /** Discovery event that caused this topology change. */
     private GridDiscoveryEvent discoEvt;
@@ -39,7 +39,7 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
      * @param topSnapshot Topology snapshot.
      * @param topVer Topology version.
      */
-    public GridCacheAffinityFunctionContextImpl(List<GridNode> topSnapshot, List<List<GridNode>> prevAssignment,
+    public GridCacheAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
         GridDiscoveryEvent discoEvt, long topVer, int backups) {
         this.topSnapshot = topSnapshot;
         this.prevAssignment = prevAssignment;
@@ -49,12 +49,12 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<GridNode> previousAssignment(int part) {
+    @Nullable @Override public List<ClusterNode> previousAssignment(int part) {
         return prevAssignment.get(part);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridNode> currentTopologySnapshot() {
+    @Override public List<ClusterNode> currentTopologySnapshot() {
         return topSnapshot;
     }
 

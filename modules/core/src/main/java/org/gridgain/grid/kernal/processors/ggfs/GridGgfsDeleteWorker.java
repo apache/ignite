@@ -320,11 +320,11 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
     private void sendDeleteMessage(GridGgfsDeleteMessage msg) {
         assert msg != null;
 
-        Collection<GridNode> nodes = meta.metaCacheNodes();
+        Collection<ClusterNode> nodes = meta.metaCacheNodes();
 
         boolean first = true;
 
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             GridGgfsCommunicationMessage msg0 = first ? msg : (GridGgfsCommunicationMessage)msg.clone();
 
             first = false;

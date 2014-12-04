@@ -29,9 +29,9 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     private static final String NODE3 = "NODE3";
 
     /** Predicate to exclude the second node from topology */
-    private final GridPredicate<GridNode> p = new GridPredicate<GridNode>() {
+    private final GridPredicate<ClusterNode> p = new GridPredicate<ClusterNode>() {
         @Override
-        public boolean apply(GridNode e) {
+        public boolean apply(ClusterNode e) {
             return !NODE2.equals(e.attribute(GridNodeAttributes.ATTR_GRID_NAME));
         }
     };
@@ -48,8 +48,8 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
 
         cfg.setFailoverSpi(new GridAlwaysFailoverSpi() {
             /** {@inheritDoc} */
-            @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> grid) {
-                GridNode failoverNode = super.failover(ctx, grid);
+            @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> grid) {
+                ClusterNode failoverNode = super.failover(ctx, grid);
 
                 if (failoverNode != null)
                     routed.set(true);
@@ -184,7 +184,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             ses.setAttribute("fail", true);
 
             return Collections.singletonMap(new GridComputeJobAdapter(arg) {

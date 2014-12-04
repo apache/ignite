@@ -125,8 +125,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot,
-            Map<Long, Collection<GridNode>> topHist) {
+        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
+            Map<Long, Collection<ClusterNode>> topHist) {
             if (type == EVT_NODE_METRICS_UPDATED)
                 isMetricsUpdate = true;
         }
@@ -197,8 +197,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
             final AtomicInteger spiCnt = new AtomicInteger(0);
 
             GridDiscoverySpiListener locHeartbeatLsnr = new GridDiscoverySpiListener() {
-                @Override public void onDiscovery(int type, long topVer, GridNode node,
-                    Collection<GridNode> topSnapshot, Map<Long, Collection<GridNode>> topHist) {
+                @Override public void onDiscovery(int type, long topVer, ClusterNode node,
+                    Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist) {
                     // If METRICS_UPDATED came from local node
                     if (type == EVT_NODE_METRICS_UPDATED
                         && node.id().equals(spi.getLocalNode().id()))
@@ -226,8 +226,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
      * @param nodeId Node UUID.
      * @return {@code true} if provided iterator contains node with provided UUID.
      */
-    private boolean isContainsNodeId(Iterable<GridNode> nodes, UUID nodeId) {
-        for (GridNode node : nodes) {
+    private boolean isContainsNodeId(Iterable<ClusterNode> nodes, UUID nodeId) {
+        for (ClusterNode node : nodes) {
             assert node.id() != null;
 
             if (node.id().equals(nodeId))
@@ -242,9 +242,9 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
      */
     public void testLocalNode() {
         for (GridDiscoverySpi spi : spis) {
-            GridNode loc = spi.getLocalNode();
+            ClusterNode loc = spi.getLocalNode();
 
-            Collection<GridNode> rmt = spi.getRemoteNodes();
+            Collection<ClusterNode> rmt = spi.getRemoteNodes();
 
             assert !rmt.contains(loc);
         }
@@ -263,7 +263,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                 nodeIds.add(rsrc.getNodeId());
             }
 
-            for (GridNode node : spi.getRemoteNodes()) {
+            for (ClusterNode node : spi.getRemoteNodes()) {
                 if (nodeIds.contains(node.id())) {
                     Serializable attr = node.attribute(TEST_ATTRIBUTE_NAME);
 
@@ -309,7 +309,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
      */
     public void testNodeSerialize() throws Exception {
         for (GridDiscoverySpi spi : spis) {
-            GridNode node = spi.getLocalNode();
+            ClusterNode node = spi.getLocalNode();
 
             assert node != null;
 
@@ -361,8 +361,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
 
                 spi.setListener(new GridDiscoverySpiListener() {
                     @SuppressWarnings({"NakedNotify"})
-                    @Override public void onDiscovery(int type, long topVer, GridNode node,
-                        Collection<GridNode> topSnapshot, Map<Long, Collection<GridNode>> topHist) {
+                    @Override public void onDiscovery(int type, long topVer, ClusterNode node,
+                        Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist) {
                         info("Discovery event [type=" + type + ", node=" + node + ']');
 
                         synchronized (mux) {
@@ -382,7 +382,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                 });
 
                 spi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
-                    @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+                    @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                         GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                             GridSecuritySubjectType.REMOTE_NODE, n.id());
 
@@ -462,7 +462,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
      * @param node Grid node.
      * @throws IOException If write failed.
      */
-    private void writeObject(GridNode node) throws Exception {
+    private void writeObject(ClusterNode node) throws Exception {
 
         GridMarshaller marshaller = getTestResources().getMarshaller();
 

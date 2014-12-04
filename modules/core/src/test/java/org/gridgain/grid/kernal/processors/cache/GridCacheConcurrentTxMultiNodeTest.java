@@ -60,8 +60,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private static final GridAtomicLong lastPrint = new GridAtomicLong();
 
     /** */
-    private static final GridPredicate<GridNode> serverNode = new P1<GridNode>() {
-        @Override public boolean apply(GridNode n) {
+    private static final GridPredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
             String gridName = G.grid(n.id()).name();
 
             return gridName != null && gridName.contains("server");
@@ -69,8 +69,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     };
 
     /** */
-    private static final GridPredicate<GridNode> clientNode = new P1<GridNode>() {
-        @Override public boolean apply(GridNode n) {
+    private static final GridPredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
             String gridName = G.grid(n.id()).name();
 
             return gridName != null && gridName.contains("client");
@@ -148,8 +148,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             for (int i = 1; i <= clientCnt; i++)
                 startGrid("client" + i);
 
-            Collection<GridNode> srvrNodes = srvr1.cluster().forPredicate(serverNode).nodes();
-            Collection<GridNode> clientNodes = srvr1.cluster().forPredicate(clientNode).nodes();
+            Collection<ClusterNode> srvrNodes = srvr1.cluster().forPredicate(serverNode).nodes();
+            Collection<ClusterNode> clientNodes = srvr1.cluster().forPredicate(clientNode).nodes();
 
             assert srvrNodes.size() == 2;
 
@@ -172,7 +172,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             info("Max number of terminals / server: " + srvrMaxNoTerminals);
 
             // Distribute terminals evenly across all servers
-            for (GridNode node : srvrNodes) {
+            for (ClusterNode node : srvrNodes) {
                 UUID srvrId = node.id();
 
                 info(">>> Node ID: " + srvrId);

@@ -20,7 +20,6 @@ import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -860,7 +859,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     // partition exchange will wait for near update future.
                     if (topology().topologyVersion() == req.topologyVersion() ||
                         ctx.config().getAtomicWriteOrderMode() == CLOCK) {
-                        GridNode node = ctx.discovery().node(nodeId);
+                        ClusterNode node = ctx.discovery().node(nodeId);
 
                         if (node == null) {
                             U.warn(log, "Node originated update request left grid: " + nodeId);
@@ -985,7 +984,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private UpdateBatchResult<K, V> updateWithBatch(
-        GridNode node,
+        ClusterNode node,
         boolean hasNear,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
@@ -1257,7 +1256,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @throws GridCacheEntryRemovedException Should be never thrown.
      */
     private UpdateSingleResult<K, V> updateSingle(
-        GridNode node,
+        ClusterNode node,
         boolean hasNear,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
@@ -1463,7 +1462,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         int firstEntryIdx,
         List<GridDhtCacheEntry<K, V>> entries,
         final GridCacheVersion ver,
-        GridNode node,
+        ClusterNode node,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
         @Nullable Map<K, GridClosure<V, V>> transformMap,
@@ -1922,7 +1921,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             long topVer = updateReq.topologyVersion();
 
-            Collection<GridNode> nodes = ctx.kernalContext().discovery().cacheAffinityNodes(name(), topVer);
+            Collection<ClusterNode> nodes = ctx.kernalContext().discovery().cacheAffinityNodes(name(), topVer);
 
             // We are on primary node for some key.
             assert !nodes.isEmpty();

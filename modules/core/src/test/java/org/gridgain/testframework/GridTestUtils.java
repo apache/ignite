@@ -881,7 +881,7 @@ public final class GridTestUtils {
                 boolean wait = false;
 
                 for (int p = 0; p < affinity(cache).partitions(); p++) {
-                    Collection<GridNode> nodes = top.nodes(p, -1);
+                    Collection<ClusterNode> nodes = top.nodes(p, -1);
 
                     if (nodes.size() > backups + 1) {
                         LT.warn(log, null, "Partition map was not updated yet (will wait) [grid=" + g.name() +

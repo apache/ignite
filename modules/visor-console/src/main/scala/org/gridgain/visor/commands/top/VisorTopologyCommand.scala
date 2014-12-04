@@ -163,7 +163,7 @@ class VisorTopologyCommand {
 
                     n match {
                         case "cc" if v != null => f = make(v, f, _.metrics.getTotalCpus)
-                        case "cl" if v != null => f = make(v, f, (n: GridNode) =>
+                        case "cl" if v != null => f = make(v, f, (n: ClusterNode) =>
                             (n.metrics.getCurrentCpuLoad * 100).toLong)
                         case "aj" if v != null => f = make(v, f, _.metrics.getCurrentActiveJobs)
                         case "cj" if v != null => f = make(v, f, _.metrics.getCurrentCancelledJobs)
@@ -193,7 +193,7 @@ class VisorTopologyCommand {
      * @param f Node filter
      * @param v Value generator.
      */
-    private def make(exprStr: String, f: NodeFilter, v: GridNode => Long): NodeFilter = {
+    private def make(exprStr: String, f: NodeFilter, v: ClusterNode => Long): NodeFilter = {
         assert(exprStr != null)
         assert(f != null)
         assert(v != null)
@@ -202,7 +202,7 @@ class VisorTopologyCommand {
 
         // Note that if 'f(n)' is false  - 'value' won't be evaluated.
         if (expr.isDefined)
-            (n: GridNode) => f(n) && expr.get.apply(v(n))
+            (n: ClusterNode) => f(n) && expr.get.apply(v(n))
         else
             throw new GridException("Invalid expression: " + exprStr)
     }
@@ -218,8 +218,8 @@ class VisorTopologyCommand {
         assert(f != null)
         assert(hosts != null)
 
-        var nodes = grid.forPredicate(new GridPredicate[GridNode] {
-            override def apply(e: GridNode) = f(e)
+        var nodes = grid.forPredicate(new GridPredicate[ClusterNode] {
+            override def apply(e: ClusterNode) = f(e)
         }).nodes()
 
         if (hosts.nonEmpty)
@@ -239,7 +239,7 @@ class VisorTopologyCommand {
                 //"Idle Time",
                 "CPUs", "CPU Load", "Free Heap")
 
-            nodes foreach ((n: GridNode) => {
+            nodes foreach ((n: ClusterNode) => {
                 val m = n.metrics
 
                 val usdMem = m.getHeapMemoryUsed

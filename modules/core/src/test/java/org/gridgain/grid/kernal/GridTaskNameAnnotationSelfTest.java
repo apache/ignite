@@ -73,7 +73,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskName(TASK_NAME)
     private static class TestTask implements GridComputeTask<Void, String> {
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) throws GridException {
             return F.asMap(new GridComputeJobAdapter() {
                 @GridTaskSessionResource

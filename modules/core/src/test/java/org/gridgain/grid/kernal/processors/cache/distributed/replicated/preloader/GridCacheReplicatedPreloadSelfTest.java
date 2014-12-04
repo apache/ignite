@@ -531,8 +531,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
-            List<List<GridNode>> res = new ArrayList<>(partitions());
+        @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+            List<List<ClusterNode>> res = new ArrayList<>(partitions());
 
             for (int part = 0; part < partitions(); part++)
                 res.add(nodes(part, affCtx.currentTopologySnapshot()));
@@ -542,14 +542,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"RedundantTypeArguments"})
-        public List<GridNode> nodes(int part, Collection<GridNode> nodes) {
-            Collection<GridNode> col = new HashSet<>(nodes);
+        public List<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
+            Collection<ClusterNode> col = new HashSet<>(nodes);
 
             if (col.size() <= 1)
                 return new ArrayList<>(col);
 
-            for (Iterator<GridNode> iter = col.iterator(); iter.hasNext(); ) {
-                GridNode node = iter.next();
+            for (Iterator<ClusterNode> iter = col.iterator(); iter.hasNext(); ) {
+                ClusterNode node = iter.next();
 
                 boolean even = node.<Boolean>attribute("EVEN");
 

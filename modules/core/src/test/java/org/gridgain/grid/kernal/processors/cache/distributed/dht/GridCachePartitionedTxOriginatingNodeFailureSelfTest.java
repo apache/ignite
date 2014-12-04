@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -57,7 +56,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     public void testTxFromPrimary() throws Exception {
         GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
 
-        GridNode txNode = grid(originatingNode()).localNode();
+        ClusterNode txNode = grid(originatingNode()).localNode();
 
         Integer key = null;
 
@@ -80,7 +79,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     public void testTxFromBackup() throws Exception {
         GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
 
-        GridNode txNode = grid(originatingNode()).localNode();
+        ClusterNode txNode = grid(originatingNode()).localNode();
 
         Integer key = null;
 
@@ -103,7 +102,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     public void testTxFromNotColocated() throws Exception {
         GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
 
-        GridNode txNode = grid(originatingNode()).localNode();
+        ClusterNode txNode = grid(originatingNode()).localNode();
 
         Integer key = null;
 
@@ -126,7 +125,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     public void testTxAllNodes() throws Exception {
         GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
 
-        List<GridNode> allNodes = new ArrayList<>(GRID_CNT);
+        List<ClusterNode> allNodes = new ArrayList<>(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++)
             allNodes.add(grid(i).localNode());
@@ -134,8 +133,8 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
         Collection<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < Integer.MAX_VALUE && !allNodes.isEmpty(); i++) {
-            for (Iterator<GridNode> iter = allNodes.iterator(); iter.hasNext();) {
-                GridNode node = iter.next();
+            for (Iterator<ClusterNode> iter = allNodes.iterator(); iter.hasNext();) {
+                ClusterNode node = iter.next();
 
                 if (cache.affinity().isPrimary(node, i)) {
                     keys.add(i);

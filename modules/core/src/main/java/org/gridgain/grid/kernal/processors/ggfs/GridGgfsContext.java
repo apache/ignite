@@ -154,7 +154,7 @@ public class GridGgfsContext {
      * @param plc Policy.
      * @throws GridException In case of error.
      */
-    public void send(GridNode node, Object topic, GridGgfsCommunicationMessage msg, GridIoPolicy plc)
+    public void send(ClusterNode node, Object topic, GridGgfsCommunicationMessage msg, GridIoPolicy plc)
         throws GridException {
         if (!kernalContext().localNodeId().equals(node.id()))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
@@ -168,7 +168,7 @@ public class GridGgfsContext {
      * @param node Node to check.
      * @return {@code True} if node has GGFS with this name, {@code false} otherwise.
      */
-    public boolean ggfsNode(GridNode node) {
+    public boolean ggfsNode(ClusterNode node) {
         assert node != null;
 
         GridGgfsAttributes[] ggfs = node.attribute(ATTR_GGFS);

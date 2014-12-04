@@ -42,7 +42,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
     public void testSameVmStartup() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        Collection<GridNode> top1 = ignite1.cluster().forRemotes().nodes();
+        Collection<ClusterNode> top1 = ignite1.cluster().forRemotes().nodes();
 
         try {
             assert top1.isEmpty() : "Grid1 topology is not empty: " + top1;
@@ -85,7 +85,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            Collection<GridNode> top2 = ignite2.cluster().forRemotes().nodes();
+            Collection<ClusterNode> top2 = ignite2.cluster().forRemotes().nodes();
 
             assert top2.isEmpty() : "Grid2 topology is not empty: " + top2;
         }

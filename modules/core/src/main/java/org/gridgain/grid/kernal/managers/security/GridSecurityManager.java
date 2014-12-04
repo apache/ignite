@@ -29,7 +29,7 @@ public interface GridSecurityManager extends GridManager {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws GridException If error occurred.
      */
-    public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException;
+    public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws GridException;
 
     /**
      * Gets flag indicating whether all nodes or coordinator only should run the authentication for joining node.

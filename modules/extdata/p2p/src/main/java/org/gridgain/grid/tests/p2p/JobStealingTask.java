@@ -28,11 +28,11 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) throws GridException {
         assert !subgrid.isEmpty();
 
-        Map<GridComputeJobAdapter, GridNode> map = U.newHashMap(subgrid.size());
+        Map<GridComputeJobAdapter, ClusterNode> map = U.newHashMap(subgrid.size());
 
         // Put all jobs onto one node.
         for (int i = 0; i < N_JOBS; i++)

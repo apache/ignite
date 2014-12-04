@@ -110,7 +110,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
     public void testThiefNodeNotInTopology() throws Exception {
         List<GridCollisionJobContext> waitCtxs = new ArrayList<>(2);
 
-        final GridNode node = getSpiContext().nodes().iterator().next();
+        final ClusterNode node = getSpiContext().nodes().iterator().next();
 
         Collections.addAll(waitCtxs,
             new GridTestCollisionJobContext(createTaskSession(node), GridUuid.randomUuid()),
@@ -152,7 +152,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
      * @param node Node.
      * @return Session.
      */
-    private GridTestTaskSession createTaskSession(final GridNode node) {
+    private GridTestTaskSession createTaskSession(final ClusterNode node) {
         return new GridTestTaskSession() {
             @Nullable @Override public Collection<UUID> getTopology() {
                 return Collections.singleton(node.id());

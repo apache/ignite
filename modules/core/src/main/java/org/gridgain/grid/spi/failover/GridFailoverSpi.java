@@ -60,5 +60,5 @@ public interface GridFailoverSpi extends GridSpi {
      * @return New node to route this job to or {@code null} if new node cannot be picked.
      *      If job failover fails (returns {@code null}) the whole task will be failed.
      */
-    public GridNode failover(GridFailoverContext ctx, List<GridNode> top);
+    public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top);
 }

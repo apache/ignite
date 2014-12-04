@@ -240,7 +240,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         GridMarshallerTestBean inBean = newTestBean(new GridClosure() {
             /** */
-            private Iterable<GridNode> nodes = g.cluster().nodes();
+            private Iterable<ClusterNode> nodes = g.cluster().nodes();
 
             /** {@inheritDoc} */
             @Override public Object apply(Object o) {
@@ -469,8 +469,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     public void testSubgridMarshalling() throws Exception {
         final Ignite ignite = grid();
 
-        GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new GridPredicate<GridNode>() {
-            @Override public boolean apply(GridNode n) {
+        GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new GridPredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode n) {
                 return n.id().equals(ignite.cluster().localNode().id());
             }
         }));

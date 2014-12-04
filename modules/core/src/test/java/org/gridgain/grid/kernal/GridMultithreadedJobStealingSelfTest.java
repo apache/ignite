@@ -148,11 +148,11 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-            @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+            @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws GridException {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
-            Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             // Put all jobs onto local node.
             for (int i = 0; i < subgrid.size(); i++)

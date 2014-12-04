@@ -40,7 +40,7 @@ public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapte
             private Ignite ignite;
 
             @Override public Object execute() {
-                for (GridNode n : ignite.cluster().nodes())
+                for (ClusterNode n : ignite.cluster().nodes())
                     if (U.hasCache(n, cacheName))
                         return true;
 

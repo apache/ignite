@@ -46,7 +46,7 @@ import java.util.*;
  * </pre>
  * Here is how a grid instance can be configured from Spring XML configuration file. The
  * example below configures a grid instance with additional user attributes
- * (see {@link GridNode#attributes()}) and specifies a grid name:
+ * (see {@link ClusterNode#attributes()}) and specifies a grid name:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
  *     ...

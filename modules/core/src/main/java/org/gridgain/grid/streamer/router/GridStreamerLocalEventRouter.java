@@ -26,12 +26,12 @@ public class GridStreamerLocalEventRouter implements GridStreamerEventRouter {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
         return ignite.cluster().localNode();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Map<GridNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
+    @Override public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
         Collection<T> evts) {
         return F.asMap(ignite.cluster().localNode(), evts);
     }

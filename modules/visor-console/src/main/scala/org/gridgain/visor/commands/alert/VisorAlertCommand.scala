@@ -203,8 +203,8 @@ class VisorAlertCommand {
      * @param f Node filter
      * @param value Value generator.
      */
-    private def makeNodeFilter(exprStr: String, f: GridNode => Boolean, value: GridNode => Long):
-        GridNode => Boolean = {
+    private def makeNodeFilter(exprStr: String, f: ClusterNode => Boolean, value: ClusterNode => Long):
+        ClusterNode => Boolean = {
         assert(exprStr != null)
         assert(f != null)
         assert(value != null)
@@ -213,7 +213,7 @@ class VisorAlertCommand {
 
         // Note that if 'f(n)' is false - 'value' won't be evaluated.
         if (expr.isDefined)
-            (n: GridNode) => f(n) && expr.get.apply(value(n))
+            (n: ClusterNode) => f(n) && expr.get.apply(value(n))
         else
             throw new GridException("Invalid expression: " + exprStr)
     }
@@ -253,7 +253,7 @@ class VisorAlertCommand {
                 else if (!grid.isSmtpEnabled)
                     warn("SMTP is not configured (ignoring).")
 
-                val dfltNodeF = (_: GridNode) => true
+                val dfltNodeF = (_: ClusterNode) => true
                 val dfltGridF = () => true
 
                 var nf = dfltNodeF
@@ -285,7 +285,7 @@ class VisorAlertCommand {
                             case "hu" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getHeapMemoryUsed)
                             case "hm" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getHeapMemoryMaximum)
                             case "cd" if v != null => nf = makeNodeFilter(v, nf,
-                                (n: GridNode) => (n.metrics().getCurrentCpuLoad * 100).toLong)
+                                (n: ClusterNode) => (n.metrics().getCurrentCpuLoad * 100).toLong)
 
                             // Other tags.
                             case "t" if v != null => freq = v.toLong
@@ -462,7 +462,7 @@ class VisorAlertCommand {
      * @param a Alert to send email about.
      * @param n `Option` for node.
      */
-    private def sendEmail(a: VisorAlert, n: Option[GridNode]) {
+    private def sendEmail(a: VisorAlert, n: Option[ClusterNode]) {
         assert(a != null)
         assert(n != null)
 
@@ -678,7 +678,7 @@ class VisorAlertCommand {
  */
 sealed private case class VisorAlert(
     id: String,
-    nodeFilter: GridNode => Boolean,
+    nodeFilter: ClusterNode => Boolean,
     gridFilter: () => Boolean,
     freq: Long,
     spec: String,

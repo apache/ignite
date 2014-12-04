@@ -119,8 +119,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         startGrids();
 
-        GridNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).nodes()));
-        GridNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).nodes()));
+        ClusterNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).nodes()));
+        ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).nodes()));
 
         assertNotNull(n1);
         assertNotNull(n2);
@@ -192,8 +192,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         startGrids();
 
-        GridNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).nodes()));
-        GridNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).nodes()));
+        ClusterNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).nodes()));
+        ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).nodes()));
 
         assertNotNull(n1);
         assertNotNull(n2);
@@ -365,15 +365,15 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         startGrids();
 
-        Collection<GridNode> nodes = new ArrayList<>(aff.nodes(aff.partition(1), grid(0).nodes()));
+        Collection<ClusterNode> nodes = new ArrayList<>(aff.nodes(aff.partition(1), grid(0).nodes()));
 
-        GridNode primary = F.first(nodes);
+        ClusterNode primary = F.first(nodes);
 
         assert primary != null;
 
         nodes.remove(primary);
 
-        GridNode backup = F.first(nodes);
+        ClusterNode backup = F.first(nodes);
 
         assert backup != null;
 

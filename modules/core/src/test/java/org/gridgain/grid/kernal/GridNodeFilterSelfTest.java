@@ -57,12 +57,12 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
 
         UUID rmtNodeId = rmtIgnite.cluster().localNode().id();
 
-        Collection<GridNode> locNodes = ignite.cluster().forNodeId(nodeId).nodes();
+        Collection<ClusterNode> locNodes = ignite.cluster().forNodeId(nodeId).nodes();
 
         assert locNodes.size() == 1;
         assert locNodes.iterator().next().id().equals(nodeId);
 
-        Collection<GridNode> rmtNodes = ignite.cluster().forNodeId(rmtNodeId).nodes();
+        Collection<ClusterNode> rmtNodes = ignite.cluster().forNodeId(rmtNodeId).nodes();
 
         assert rmtNodes.size() == 1;
         assert rmtNodes.iterator().next().id().equals(rmtNodeId);

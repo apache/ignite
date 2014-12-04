@@ -399,7 +399,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         Collections.addAll(splitList, splits);
 
-        Collection<GridNode> top = new ArrayList<>();
+        Collection<ClusterNode> top = new ArrayList<>();
 
         GridTestNode node1 = new GridTestNode(ID_1);
         GridTestNode node2 = new GridTestNode(ID_2);
@@ -487,7 +487,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static GridGgfsBlockLocation location(long start, long len, UUID... nodeIds) {
         assert nodeIds != null && nodeIds.length > 0;
 
-        Collection<GridNode> nodes = new ArrayList<>(nodeIds.length);
+        Collection<ClusterNode> nodes = new ArrayList<>(nodeIds.length);
 
         for (UUID id : nodeIds)
             nodes.add(new GridTestNode(id));
@@ -1005,7 +1005,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridNode localNode() {
+        @Override public ClusterNode localNode() {
             return null;
         }
 
@@ -1030,18 +1030,18 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<GridNode> topology(long topVer) {
+        @Nullable @Override public Collection<ClusterNode> topology(long topVer) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K> Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
+        @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
             @Nullable Collection<? extends K> keys) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K> GridNode mapKeyToNode(@Nullable String cacheName, K key) {
+        @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) {
             return null;
         }
 
@@ -1089,17 +1089,17 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forNodes(Collection<? extends GridNode> nodes) {
+        @Override public GridProjection forNodes(Collection<? extends ClusterNode> nodes) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forNode(GridNode node, GridNode... nodes) {
+        @Override public GridProjection forNode(ClusterNode node, ClusterNode... nodes) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forOthers(GridNode node, GridNode... nodes) {
+        @Override public GridProjection forOthers(ClusterNode node, ClusterNode... nodes) {
             return null;
         }
 
@@ -1119,7 +1119,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forPredicate(GridPredicate<GridNode> p) {
+        @Override public GridProjection forPredicate(GridPredicate<ClusterNode> p) {
             return null;
         }
 
@@ -1144,7 +1144,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridProjection forHost(GridNode node) {
+        @Override public GridProjection forHost(ClusterNode node) {
             return null;
         }
 
@@ -1169,22 +1169,22 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridNode> nodes() {
+        @Override public Collection<ClusterNode> nodes() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridNode node(UUID nid) {
+        @Nullable @Override public ClusterNode node(UUID nid) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridNode node() {
+        @Nullable @Override public ClusterNode node() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridPredicate<GridNode> predicate() {
+        @Override public GridPredicate<ClusterNode> predicate() {
             return null;
         }
 

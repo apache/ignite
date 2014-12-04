@@ -82,7 +82,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetRemoteNodes() throws Exception {
-        Collection<GridNode> nodes = ignite.cluster().forRemotes().nodes();
+        Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
         printNodes(nodes);
     }
@@ -91,7 +91,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetAllNodes() throws Exception {
-        Collection<GridNode> nodes = ignite.cluster().nodes();
+        Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
         printNodes(nodes);
 
@@ -113,7 +113,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             // Max topology of 10 nodes.
             int size = rand.nextInt(10) + 1;
 
-            Collection<GridNode> nodes = new ArrayList<>(size);
+            Collection<ClusterNode> nodes = new ArrayList<>(size);
 
             for (int j = 0; j < size; j++)
                 nodes.add(new GridDiscoveryTestNode());
@@ -134,11 +134,11 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public void testGetLocalNode() throws Exception {
-        GridNode node = ignite.cluster().localNode();
+        ClusterNode node = ignite.cluster().localNode();
 
         assert node != null;
 
-        Collection<GridNode> nodes = ignite.cluster().nodes();
+        Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
         assert nodes != null;
         assert nodes.contains(node);
@@ -148,7 +148,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPingNode() throws Exception {
-        GridNode node = ignite.cluster().localNode();
+        ClusterNode node = ignite.cluster().localNode();
 
         assert node != null;
 
@@ -161,7 +161,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDiscoveryListener() throws Exception {
-        GridNode node = ignite.cluster().localNode();
+        ClusterNode node = ignite.cluster().localNode();
 
         assert node != null;
 
@@ -230,7 +230,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         // Validate only original node is available.
         GridDiscoveryManager discoMgr = ((GridKernal) ignite).context().discovery();
 
-        Collection<GridNode> nodes = discoMgr.allNodes();
+        Collection<ClusterNode> nodes = discoMgr.allNodes();
 
         assert nodes.size() == 1 : "Expects only original node is available: " + nodes;
 
@@ -276,10 +276,10 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 // 6          +     +
                 // 7          +       - only local node
 
-                Collection<GridNode> cacheNodes = discoMgr.cacheNodes(null, ver);
+                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(null, ver);
 
-                Collection<UUID> act = new ArrayList<>(F.viewReadOnly(cacheNodes, new C1<GridNode, UUID>() {
-                    @Override public UUID apply(GridNode n) {
+                Collection<UUID> act = new ArrayList<>(F.viewReadOnly(cacheNodes, new C1<ClusterNode, UUID>() {
+                    @Override public UUID apply(ClusterNode n) {
                         return n.id();
                     }
                 }));
@@ -296,7 +296,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @param nodes Nodes.
      */
-    private void printNodes(Collection<GridNode> nodes) {
+    private void printNodes(Collection<ClusterNode> nodes) {
         StringBuilder buf = new StringBuilder();
 
         if (nodes != null && !nodes.isEmpty()) {
@@ -304,8 +304,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
             int i = 0;
 
-            for (Iterator<GridNode> iter = nodes.iterator(); iter.hasNext(); i++) {
-                GridNode node = iter.next();
+            for (Iterator<ClusterNode> iter = nodes.iterator(); iter.hasNext(); i++) {
+                ClusterNode node = iter.next();
 
                 buf.append(node.id());
 
@@ -325,7 +325,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class GridDiscoveryTestNode extends GridMetadataAwareAdapter implements GridNode {
+    private static class GridDiscoveryTestNode extends GridMetadataAwareAdapter implements ClusterNode {
         /** */
         private static AtomicInteger consistentIdCtr = new AtomicInteger();
 

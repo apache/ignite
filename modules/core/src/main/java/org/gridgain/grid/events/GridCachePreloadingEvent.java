@@ -61,7 +61,7 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
     private int part;
 
     /** Discovery node. */
-    private GridNode discoNode;
+    private ClusterNode discoNode;
 
     /** Discovery event type. */
     private int discoEvtType;
@@ -81,8 +81,8 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
      * @param discoEvtType Discovery event type that triggered this preloading event.
      * @param discoTs Timestamp of discovery event that triggered this preloading event.
      */
-    public GridCachePreloadingEvent(String cacheName, GridNode node, String msg, int type, int part,
-        GridNode discoNode, int discoEvtType, long discoTs) {
+    public GridCachePreloadingEvent(String cacheName, ClusterNode node, String msg, int type, int part,
+        ClusterNode discoNode, int discoEvtType, long discoTs) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.part = part;
@@ -114,7 +114,7 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
      *
      * @return Shadow of the node that triggered this preloading event.
      */
-    public GridNode discoveryNode() {
+    public ClusterNode discoveryNode() {
         return discoNode;
     }
 

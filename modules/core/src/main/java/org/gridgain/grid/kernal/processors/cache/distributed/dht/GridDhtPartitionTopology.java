@@ -118,26 +118,26 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param topVer Topology version.
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
-    public Collection<GridNode> nodes(int p, long topVer);
+    public Collection<ClusterNode> nodes(int p, long topVer);
 
     /**
      * @param p Partition ID.
      * @return Collection of all nodes who {@code own} this partition.
      */
-    public List<GridNode> owners(int p);
+    public List<ClusterNode> owners(int p);
 
     /**
      * @param p Partition ID.
      * @param topVer Topology version.
      * @return Collection of all nodes who {@code own} this partition.
      */
-    public List<GridNode> owners(int p, long topVer);
+    public List<ClusterNode> owners(int p, long topVer);
 
     /**
      * @param p Partition ID.
      * @return Collection of all nodes who {@code are preloading} this partition.
      */
-    public List<GridNode> moving(int p);
+    public List<ClusterNode> moving(int p);
 
     /**
      * @param onlyActive If {@code true}, then only {@code active} partitions will be returned.

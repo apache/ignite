@@ -164,8 +164,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         GridNodePredicate p1 = new GridNodePredicate(id1, id2);
         GridNodePredicate p2 = new GridNodePredicate(id3, id4);
 
-        GridPredicate<GridNode> and = F.<GridNode>and(p1, p2);
-        GridPredicate<GridNode> or = F.<GridNode>or(p1, p2);
+        GridPredicate<ClusterNode> and = F.<ClusterNode>and(p1, p2);
+        GridPredicate<ClusterNode> or = F.<ClusterNode>or(p1, p2);
 
         assert and instanceof GridNodePredicate;
         assert or instanceof GridNodePredicate;
@@ -2865,7 +2865,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         /**
          * @param node Node.
          */
-        private TestEvent(GridNode node) {
+        private TestEvent(ClusterNode node) {
             super(node, "test message", 1);
         }
     }
@@ -2972,7 +2972,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             GridEvent evt3 = new TestEvent(g1.cluster().localNode());
             GridEvent evt4 = new TestEvent(g2.cluster().localNode());
 
-            Collection<GridNode> nodes = Arrays.asList(g1.cluster().localNode(), g3.cluster().localNode());
+            Collection<ClusterNode> nodes = Arrays.asList(g1.cluster().localNode(), g3.cluster().localNode());
 
             p = F.eventNode(nodes);
 
@@ -3013,8 +3013,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             assert p.apply(evt3);
             assert p.apply(evt4);
 
-            p = F.eventNode(getTestGridName(1), new GridPredicate<GridNode>() {
-                @Override public boolean apply(GridNode n) {
+            p = F.eventNode(getTestGridName(1), new GridPredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode n) {
                     return n != null && n.id().equals(g1.cluster().localNode().id());
                 }
             });
@@ -3024,7 +3024,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             assert p.apply(evt3);
             assert !p.apply(evt4);
 
-            p = F.eventNode(getTestGridName(1), F.<GridNode>alwaysFalse());
+            p = F.eventNode(getTestGridName(1), F.<ClusterNode>alwaysFalse());
 
             assert !p.apply(evt1);
             assert !p.apply(evt2);

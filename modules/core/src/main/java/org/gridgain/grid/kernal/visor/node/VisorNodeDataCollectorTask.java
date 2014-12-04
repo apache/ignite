@@ -28,18 +28,18 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg) throws GridException {
         assert arg != null;
 
         taskArg = arg.argument();
 
-        Collection<GridNode> nodes = g.nodes();
+        Collection<ClusterNode> nodes = g.nodes();
 
-        Map<GridComputeJob, GridNode> map = U.newHashMap(nodes.size());
+        Map<GridComputeJob, ClusterNode> map = U.newHashMap(nodes.size());
 
         // Collect data from ALL nodes.
-        for (GridNode node : nodes)
+        for (ClusterNode node : nodes)
             map.put(job(taskArg), node);
 
         return map;

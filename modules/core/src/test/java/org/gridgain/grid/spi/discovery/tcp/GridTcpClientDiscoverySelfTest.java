@@ -391,7 +391,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < srvCnt; i++) {
             Ignite g = G.grid("server-" + i);
 
-            for (GridNode n : g.cluster().nodes()) {
+            for (ClusterNode n : g.cluster().nodes()) {
                 if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
                     return false;
             }
@@ -400,7 +400,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < clientCnt; i++) {
             Ignite g = G.grid("client-" + i);
 
-            for (GridNode n : g.cluster().nodes()) {
+            for (ClusterNode n : g.cluster().nodes()) {
                 if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
                     return false;
             }
@@ -641,11 +641,11 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private void checkRemoteNodes(Ignite ignite, int expCnt) {
-        Collection<GridNode> nodes = ignite.cluster().forRemotes().nodes();
+        Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
         assertEquals(expCnt, nodes.size());
 
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             UUID id = node.id();
 
             if (clientNodeIds.contains(id))

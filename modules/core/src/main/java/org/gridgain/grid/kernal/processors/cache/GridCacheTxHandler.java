@@ -181,7 +181,7 @@ public class GridCacheTxHandler<K, V> {
      */
     private GridFuture<GridCacheTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
-        GridNode nearNode = ctx.node(nearNodeId);
+        ClusterNode nearNode = ctx.node(nearNodeId);
 
         if (nearNode == null) {
             if (log.isDebugEnabled())

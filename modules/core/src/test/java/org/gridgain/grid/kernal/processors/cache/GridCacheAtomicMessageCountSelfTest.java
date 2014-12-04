@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.spi.*;
@@ -133,7 +132,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             int expDhtCnt = 0;
 
             for (int i = 0; i < putCnt; i++) {
-                GridNode locNode = grid(0).localNode();
+                ClusterNode locNode = grid(0).localNode();
 
                 if (writeOrderMode == CLOCK) {
                     if (cache(0).affinity().isPrimary(locNode, i) || cache(0).affinity().isBackup(locNode, i))
@@ -183,7 +182,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
         private Map<Class<?>, AtomicInteger> cntMap = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws GridSpiException {
             AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
 

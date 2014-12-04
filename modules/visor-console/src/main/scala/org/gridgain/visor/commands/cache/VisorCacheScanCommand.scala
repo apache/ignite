@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.GridNode
+import org.gridgain.grid.ClusterNode
 import org.gridgain.grid.kernal.visor.query.VisorQueryTask.VisorQueryArg
 import org.gridgain.grid.kernal.visor.query.{VisorQueryNextPageTask, VisorQueryResult, VisorQueryTask}
 import org.gridgain.grid.lang.GridBiTuple
@@ -92,7 +92,7 @@ class VisorCacheScanCommand {
      *
      * @param argLst Command arguments.
      */
-    def scan(argLst: ArgList, node: Option[GridNode]) {
+    def scan(argLst: ArgList, node: Option[ClusterNode]) {
         val pageArg = argValue("p", argLst)
         val cacheArg = argValue("c", argLst)
 

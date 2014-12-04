@@ -264,7 +264,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         private boolean skipDhtResponse;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws GridSpiException {
             if (!skipMessage((GridIoMessage)msg))
                 super.sendMessage(node, msg);

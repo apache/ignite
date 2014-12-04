@@ -350,7 +350,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         if (cctx.nodeId().equals(nodeId))
             return null;
 
-        GridNode node = cctx.discovery().node(nodeId);
+        ClusterNode node = cctx.discovery().node(nodeId);
 
         if (node == null) {
             if (log.isDebugEnabled())

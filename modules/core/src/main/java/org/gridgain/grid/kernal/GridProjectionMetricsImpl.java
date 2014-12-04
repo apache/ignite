@@ -247,11 +247,11 @@ class GridProjectionMetricsImpl implements GridProjectionMetrics {
     GridProjectionMetricsImpl(GridProjection p) {
         assert p != null;
 
-        Collection<GridNode> nodes = p.nodes();
+        Collection<ClusterNode> nodes = p.nodes();
 
         int size = nodes.size();
 
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             GridNodeMetrics m = node.metrics();
 
             minActJobs = min(minActJobs, m.getCurrentActiveJobs());
@@ -368,9 +368,9 @@ class GridProjectionMetricsImpl implements GridProjectionMetrics {
             oldestNodeStartTime = oldest(nodes).metrics().getNodeStartTime();
         }
 
-        Map<String, Collection<GridNode>> neighborhood = U.neighborhood(nodes);
+        Map<String, Collection<ClusterNode>> neighborhood = U.neighborhood(nodes);
 
-        for (Collection<GridNode> neighbors : neighborhood.values()) {
+        for (Collection<ClusterNode> neighbors : neighborhood.values()) {
             minNodesPerHost = min(minNodesPerHost, neighbors.size());
             maxNodesPerHost = max(maxNodesPerHost, neighbors.size());
             avgNodesPerHost += neighbors.size();
@@ -750,12 +750,12 @@ class GridProjectionMetricsImpl implements GridProjectionMetrics {
      * @param nodes Nodes.
      * @return Youngest node or {@code null} if collection is empty.
      */
-    @Nullable private static GridNode youngest(Collection<GridNode> nodes) {
+    @Nullable private static ClusterNode youngest(Collection<ClusterNode> nodes) {
         long max = Long.MIN_VALUE;
 
-        GridNode youngest = null;
+        ClusterNode youngest = null;
 
-        for (GridNode n : nodes)
+        for (ClusterNode n : nodes)
             if (n.order() > max) {
                 max = n.order();
                 youngest = n;
@@ -770,12 +770,12 @@ class GridProjectionMetricsImpl implements GridProjectionMetrics {
      * @param nodes Nodes.
      * @return Oldest node or {@code null} if collection is empty.
      */
-    @Nullable private static GridNode oldest(Collection<GridNode> nodes) {
+    @Nullable private static ClusterNode oldest(Collection<ClusterNode> nodes) {
         long min = Long.MAX_VALUE;
 
-        GridNode oldest = null;
+        ClusterNode oldest = null;
 
-        for (GridNode n : nodes)
+        for (ClusterNode n : nodes)
             if (n.order() < min) {
                 min = n.order();
                 oldest = n;
@@ -784,11 +784,11 @@ class GridProjectionMetricsImpl implements GridProjectionMetrics {
         return oldest;
     }
 
-    private static int cpus(Map<String, Collection<GridNode>> neighborhood) {
+    private static int cpus(Map<String, Collection<ClusterNode>> neighborhood) {
         int cpus = 0;
 
-        for (Collection<GridNode> nodes : neighborhood.values()) {
-            GridNode first = F.first(nodes);
+        for (Collection<ClusterNode> nodes : neighborhood.values()) {
+            ClusterNode first = F.first(nodes);
 
             // Projection can be empty if all nodes in it failed.
             if (first != null)

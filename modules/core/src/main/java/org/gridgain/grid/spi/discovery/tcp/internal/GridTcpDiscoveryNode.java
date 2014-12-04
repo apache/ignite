@@ -33,7 +33,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements GridNode,
+public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements ClusterNode,
     Comparable<GridTcpDiscoveryNode>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

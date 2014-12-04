@@ -11,10 +11,8 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -77,14 +75,14 @@ public class GridCacheModuloAffinityFunction implements GridCacheAffinityFunctio
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
-        List<List<GridNode>> res = new ArrayList<>(parts);
+    @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
+        List<List<ClusterNode>> res = new ArrayList<>(parts);
 
-        Collection<GridNode> topSnapshot = ctx.currentTopologySnapshot();
+        Collection<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
 
         for (int part = 0; part < parts; part++) {
             res.add(F.isEmpty(topSnapshot) ?
-                Collections.<GridNode>emptyList() :
+                Collections.<ClusterNode>emptyList() :
                 // Wrap affinity nodes with unmodifiable list since unmodifiable generic collection
                 // doesn't provide equals and hashCode implementations.
                 U.sealList(nodes(part, topSnapshot)));
@@ -94,11 +92,11 @@ public class GridCacheModuloAffinityFunction implements GridCacheAffinityFunctio
     }
 
     /** {@inheritDoc} */
-    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
-        List<GridNode> sorted = new ArrayList<>(nodes);
+    public Collection<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
+        List<ClusterNode> sorted = new ArrayList<>(nodes);
 
-        Collections.sort(sorted, new Comparator<GridNode>() {
-            @Override public int compare(GridNode n1, GridNode n2) {
+        Collections.sort(sorted, new Comparator<ClusterNode>() {
+            @Override public int compare(ClusterNode n1, ClusterNode n2) {
                 int idx1 = n1.<Integer>attribute(IDX_ATTR);
                 int idx2 = n2.<Integer>attribute(IDX_ATTR);
 
@@ -111,12 +109,12 @@ public class GridCacheModuloAffinityFunction implements GridCacheAffinityFunctio
         if (max > nodes.size())
             max = nodes.size();
 
-        Collection<GridNode> ret = new ArrayList<>(max);
+        Collection<ClusterNode> ret = new ArrayList<>(max);
 
-        Iterator<GridNode> it = sorted.iterator();
+        Iterator<ClusterNode> it = sorted.iterator();
 
         for (int i = 0; i < max; i++) {
-            GridNode n = null;
+            ClusterNode n = null;
 
             if (i == 0) {
                 while (it.hasNext()) {

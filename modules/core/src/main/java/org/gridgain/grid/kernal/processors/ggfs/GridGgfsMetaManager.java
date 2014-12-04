@@ -63,7 +63,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private GridEventStorageManager evts;
 
     /** Local node. */
-    private GridNode locNode;
+    private ClusterNode locNode;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -139,7 +139,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @return Nodes where meta cache is defined.
      */
-    Collection<GridNode> metaCacheNodes() {
+    Collection<ClusterNode> metaCacheNodes() {
         if (busyLock.enterBusy()) {
             try {
                 return ggfsCtx.kernalContext().discovery().cacheNodes(metaCache.name(), -1);

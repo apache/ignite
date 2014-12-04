@@ -279,7 +279,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cfg.setService(svc);
         cfg.setTotalCount(totalCnt);
         cfg.setMaxPerNodeCount(maxPerNodeCnt);
-        cfg.setNodeFilter(F.<GridNode>alwaysTrue() == prj.predicate() ? null : prj.predicate());
+        cfg.setNodeFilter(F.<ClusterNode>alwaysTrue() == prj.predicate() ? null : prj.predicate());
 
         return deploy(cfg);
     }
@@ -566,7 +566,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return Whether given projection contains any local node.
      */
     private boolean hasLocalNode(GridProjection prj) {
-        for (GridNode n : prj.nodes()) {
+        for (ClusterNode n : prj.nodes()) {
             if (n.isLocal())
                 return true;
         }
@@ -626,7 +626,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 Map<UUID, Integer> cnts = new HashMap<>();
 
                 if (affKey != null) {
-                    GridNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
+                    ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
 
                     if (n != null) {
                         int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
@@ -635,7 +635,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
                 else {
-                    Collection<GridNode> nodes =
+                    Collection<ClusterNode> nodes =
                         assigns.nodeFilter() == null ?
                             ctx.discovery().nodes(topVer) :
                             F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
@@ -651,7 +651,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             remainder = 0;
                         }
 
-                        for (GridNode n : nodes)
+                        for (ClusterNode n : nodes)
                             cnts.put(n.id(), perNodeCnt);
 
                         assert perNodeCnt >= 0;
@@ -927,7 +927,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             // Ignore other utility cache events.
                             long topVer = ctx.discovery().topologyVersion();
 
-                            GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+                            ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
                             if (oldest.isLocal())
                                 onDeployment(dep, topVer);
@@ -1053,7 +1053,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     @Override public void run0() {
                         long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
 
-                        GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+                        ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
                         if (oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();

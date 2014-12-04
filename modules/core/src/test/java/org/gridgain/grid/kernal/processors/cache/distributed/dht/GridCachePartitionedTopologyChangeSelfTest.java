@@ -552,7 +552,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
         GridCacheAffinity<Object> aff = node.cache(null).affinity();
 
         for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
-            GridNode locNode = node.cluster().localNode();
+            ClusterNode locNode = node.cluster().localNode();
 
             switch (partType) {
                 // Near, partition should not belong to node.

@@ -22,11 +22,11 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
  */
 public class GridJobLoadTestTask extends GridComputeTaskAdapter<GridJobLoadTestParams, Integer> {
     /**{@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable GridJobLoadTestParams arg)
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable GridJobLoadTestParams arg)
         throws GridException {
         assert !subgrid.isEmpty();
 
-        Map<GridComputeJob, GridNode> jobs = new HashMap<>();
+        Map<GridComputeJob, ClusterNode> jobs = new HashMap<>();
 
         for (int i = 0; i < arg.getJobsCount(); i++)
             jobs.put(

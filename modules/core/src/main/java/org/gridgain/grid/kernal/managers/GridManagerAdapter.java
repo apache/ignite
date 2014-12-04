@@ -265,31 +265,31 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
         for (final GridSpi spi : spis) {
             try {
                 spi.onContextInitialized(new GridSpiContext() {
-                    @Override public Collection<GridNode> remoteNodes() {
+                    @Override public Collection<ClusterNode> remoteNodes() {
                         return ctx.discovery().remoteNodes();
                     }
 
-                    @Override public Collection<GridNode> nodes() {
+                    @Override public Collection<ClusterNode> nodes() {
                         return ctx.discovery().allNodes();
                     }
 
-                    @Override public GridNode localNode() {
+                    @Override public ClusterNode localNode() {
                         return ctx.discovery().localNode();
                     }
 
-                    @Override public Collection<GridNode> remoteDaemonNodes() {
-                        final Collection<GridNode> all = ctx.discovery().daemonNodes();
+                    @Override public Collection<ClusterNode> remoteDaemonNodes() {
+                        final Collection<ClusterNode> all = ctx.discovery().daemonNodes();
 
                         return !localNode().isDaemon() ?
                             all :
-                            F.view(all, new GridPredicate<GridNode>() {
-                                @Override public boolean apply(GridNode n) {
+                            F.view(all, new GridPredicate<ClusterNode>() {
+                                @Override public boolean apply(ClusterNode n) {
                                     return n.isDaemon();
                                 }
                             });
                     }
 
-                    @Nullable @Override public GridNode node(UUID nodeId) {
+                    @Nullable @Override public ClusterNode node(UUID nodeId) {
                         A.notNull(nodeId, "nodeId");
 
                         return ctx.discovery().node(nodeId);
@@ -301,7 +301,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.discovery().pingNode(nodeId);
                     }
 
-                    @Override public void send(GridNode node, Serializable msg, String topic)
+                    @Override public void send(ClusterNode node, Serializable msg, String topic)
                         throws GridSpiException {
                         A.notNull(node, "node");
                         A.notNull(msg, "msg");
@@ -450,7 +450,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         ctx.swap().remove(spaceName, key, null, ldr);
                     }
 
-                    @Override public GridNodeValidationResult validateNode(GridNode node) {
+                    @Override public GridNodeValidationResult validateNode(ClusterNode node) {
                         for (GridComponent comp : ctx) {
                             GridNodeValidationResult err = comp.validateNode(node);
 
@@ -587,7 +587,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

@@ -1140,7 +1140,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
                 try {
                     // Remove readers on which the entry was evicted.
-                    for (GridBiTuple<GridNode, Long> r : fut.evictedReaders(entry.key())) {
+                    for (GridBiTuple<ClusterNode, Long> r : fut.evictedReaders(entry.key())) {
                         UUID readerId = r.get1().id();
                         Long msgId = r.get2();
 
@@ -1230,25 +1230,25 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      *      execution.
      */
     @SuppressWarnings( {"IfMayBeConditional"})
-    private GridBiTuple<Collection<GridNode>, Collection<GridNode>> remoteNodes(GridCacheEntryEx<K, V> entry,
+    private GridBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> remoteNodes(GridCacheEntryEx<K, V> entry,
         long topVer)
         throws GridCacheEntryRemovedException {
         assert entry != null;
 
         assert cctx.config().getCacheMode() != LOCAL;
 
-        Collection<GridNode> backups;
+        Collection<ClusterNode> backups;
 
         if (evictSync)
             backups = F.view(cctx.dht().topology().nodes(entry.partition(), topVer), F0.notEqualTo(cctx.localNode()));
         else
             backups = Collections.emptySet();
 
-        Collection<GridNode> readers;
+        Collection<ClusterNode> readers;
 
         if (nearSync) {
-            readers = F.transform(((GridDhtCacheEntry<K, V>)entry).readers(), new C1<UUID, GridNode>() {
-                @Nullable @Override public GridNode apply(UUID nodeId) {
+            readers = F.transform(((GridDhtCacheEntry<K, V>)entry).readers(), new C1<UUID, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(UUID nodeId) {
                     return cctx.node(nodeId);
                 }
             });
@@ -1371,7 +1371,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         @Override protected void body() throws InterruptedException, GridInterruptedException {
             assert !cctx.isNear() && evictSync;
 
-            GridNode loc = cctx.localNode();
+            ClusterNode loc = cctx.localNode();
 
             // Initialize.
             primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(),
@@ -1484,7 +1484,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         private final ConcurrentMap<K, EvictionInfo> entries = new ConcurrentHashMap8<>();
 
         /** */
-        private final ConcurrentMap<K, Collection<GridNode>> readers =
+        private final ConcurrentMap<K, Collection<ClusterNode>> readers =
             new ConcurrentHashMap8<>();
 
         /** */
@@ -1617,7 +1617,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     if (queueNode != null)
                         bufEvictQ.unlinkx(queueNode);
 
-                    GridBiTuple<Collection<GridNode>, Collection<GridNode>> tup;
+                    GridBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> tup;
 
                     try {
                         tup = remoteNodes(info.entry(), topVer);
@@ -1630,21 +1630,21 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         continue;
                     }
 
-                    Collection<GridNode> entryReaders =
-                        F.addIfAbsent(readers, info.entry().key(), new GridConcurrentHashSet<GridNode>());
+                    Collection<ClusterNode> entryReaders =
+                        F.addIfAbsent(readers, info.entry().key(), new GridConcurrentHashSet<ClusterNode>());
 
                     assert entryReaders != null;
 
                     // Add entry readers so that we could remove them right before local eviction.
                     entryReaders.addAll(tup.get2());
 
-                    Collection<GridNode> nodes = F.concat(true, tup.get1(), tup.get2());
+                    Collection<ClusterNode> nodes = F.concat(true, tup.get1(), tup.get2());
 
                     if (!nodes.isEmpty()) {
                         entries.put(info.entry().key(), info);
 
                         // There are remote participants.
-                        for (GridNode node : nodes) {
+                        for (ClusterNode node : nodes) {
                             GridCacheEvictionRequest<K, V> req = F.addIfAbsent(reqMap, node.id(),
                                 new GridCacheEvictionRequest<K, V>(cctx.cacheId(), id, evictInfos.size(), topVer));
 
@@ -1758,7 +1758,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @return Keys to readers mapping.
          */
-        Map<K, Collection<GridNode>> readers() {
+        Map<K, Collection<ClusterNode>> readers() {
             return readers;
         }
 
@@ -1835,7 +1835,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         log.debug("Entered to eviction future onResponse() [fut=" + this + ", node=" + nodeId +
                             ", res=" + res + ']');
 
-                    GridNode node = cctx.node(nodeId);
+                    ClusterNode node = cctx.node(nodeId);
 
                     if (node != null)
                         resMap.put(nodeId, res);
@@ -1960,16 +1960,16 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
          * @param key Key.
          * @return Reader nodes on which given key was evicted.
          */
-        Collection<GridBiTuple<GridNode, Long>> evictedReaders(K key) {
-            Collection<GridNode> mappedReaders = readers.get(key);
+        Collection<GridBiTuple<ClusterNode, Long>> evictedReaders(K key) {
+            Collection<ClusterNode> mappedReaders = readers.get(key);
 
             if (mappedReaders == null)
                 return Collections.emptyList();
 
-            Collection<GridBiTuple<GridNode, Long>> col = new LinkedList<>();
+            Collection<GridBiTuple<ClusterNode, Long>> col = new LinkedList<>();
 
             for (Map.Entry<UUID, GridCacheEvictionResponse<K, V>> e : resMap.entrySet()) {
-                GridNode node = cctx.node(e.getKey());
+                ClusterNode node = cctx.node(e.getKey());
 
                 // If node has left or response did not arrive from near node
                 // then just skip it.

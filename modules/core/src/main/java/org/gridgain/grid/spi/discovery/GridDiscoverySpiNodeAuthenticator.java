@@ -26,7 +26,7 @@ public interface GridDiscoverySpiNodeAuthenticator {
      * @throws GridException If authentication process failed
      *      (invalid credentials should not lead to this exception).
      */
-    public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException;
+    public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws GridException;
 
     /**
      * Gets global node authentication flag.

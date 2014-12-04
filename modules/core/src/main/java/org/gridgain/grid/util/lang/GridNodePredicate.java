@@ -22,7 +22,7 @@ import java.util.*;
  * class's state when predicates are created as anonymous classes in stateful enclosing context.
  * This class is also optimized for evaluation of large number of nodes.
  */
-public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID> {
+public class GridNodePredicate implements GridPredicate<ClusterNode>, Iterable<UUID> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,7 +82,7 @@ public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID
      * @param nodes Optional grid nodes. If none provided - predicate
      *      will always return {@code false}.
      */
-    public GridNodePredicate(@Nullable GridNode... nodes) {
+    public GridNodePredicate(@Nullable ClusterNode... nodes) {
         if (F.isEmpty(nodes))
             ids = Collections.emptySet();
         else if (nodes.length == 1)
@@ -90,7 +90,7 @@ public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID
         else {
             ids = U.newHashSet(nodes.length);
 
-            for (GridNode n : nodes)
+            for (ClusterNode n : nodes)
                 ids.add(n.id());
         }
     }
@@ -112,7 +112,7 @@ public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(GridNode n) {
+    @Override public boolean apply(ClusterNode n) {
         assert n != null;
 
         return ids.contains(n.id());

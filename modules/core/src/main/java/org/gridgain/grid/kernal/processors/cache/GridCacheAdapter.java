@@ -1228,7 +1228,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public void globalClearAll(long timeout) throws GridException {
         try {
             // Send job to remote nodes only.
-            Collection<GridNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
 
             GridFuture<Object> fut = null;
 
@@ -3667,7 +3667,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     private int globalSize(boolean primaryOnly) throws GridException {
         try {
             // Send job to remote nodes only.
-            Collection<GridNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
 
             GridFuture<Collection<Integer>> fut = null;
 

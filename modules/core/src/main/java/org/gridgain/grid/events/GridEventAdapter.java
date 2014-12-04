@@ -28,7 +28,7 @@ public class GridEventAdapter implements GridEvent {
     private final long tstamp = U.currentTimeMillis();
 
     /** */
-    private GridNode node;
+    private ClusterNode node;
 
     /** */
     private String msg;
@@ -52,7 +52,7 @@ public class GridEventAdapter implements GridEvent {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridEventAdapter(GridNode node, String msg, int type) {
+    public GridEventAdapter(ClusterNode node, String msg, int type) {
         assert tstamp > 0;
 
         A.ensure(type > 0, "Event type ID must be greater than zero.");
@@ -96,7 +96,7 @@ public class GridEventAdapter implements GridEvent {
      *
      * @param node Node.
      */
-    public void node(GridNode node) {
+    public void node(ClusterNode node) {
         this.node = node;
     }
 
@@ -119,7 +119,7 @@ public class GridEventAdapter implements GridEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode node() {
+    @Override public ClusterNode node() {
         return node;
     }
 

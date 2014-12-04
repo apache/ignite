@@ -25,37 +25,37 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 /**
  * Future that fetches affinity assignment from remote cache nodes.
  */
-public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<List<GridNode>>> {
+public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<List<ClusterNode>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Nodes order comparator. */
-    private static final Comparator<GridNode> CMP = new GridNodeOrderComparator();
+    private static final Comparator<ClusterNode> CMP = new GridNodeOrderComparator();
 
     /** Cache context. */
     private final GridCacheContext<K, V> ctx;
 
     /** List of available nodes this future can fetch data from. */
-    private Queue<GridNode> availableNodes;
+    private Queue<ClusterNode> availableNodes;
 
     /** Topology version. */
     private final long topVer;
 
     /** Pending node from which response is being awaited. */
-    private GridNode pendingNode;
+    private ClusterNode pendingNode;
 
     /**
      * @param ctx Cache context.
      * @param availableNodes Available nodes.
      */
-    public GridDhtAssignmentFetchFuture(GridCacheContext<K, V> ctx, long topVer, Collection<GridNode> availableNodes) {
+    public GridDhtAssignmentFetchFuture(GridCacheContext<K, V> ctx, long topVer, Collection<ClusterNode> availableNodes) {
         super(ctx.kernalContext());
 
         this.ctx = ctx;
 
         this.topVer = topVer;
 
-        LinkedList<GridNode> tmp = new LinkedList<>();
+        LinkedList<ClusterNode> tmp = new LinkedList<>();
         tmp.addAll(availableNodes);
         Collections.sort(tmp, CMP);
 
@@ -75,7 +75,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * @param node Node.
      * @param res Reponse.
      */
-    public void onResponse(GridNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
+    public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
         if (res.topologyVersion() != topVer) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topolgy version (will ignore) " +
@@ -84,7 +84,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
             return;
         }
 
-        List<List<GridNode>> assignment = null;
+        List<List<ClusterNode>> assignment = null;
 
         synchronized (this) {
             if (pendingNode != null && pendingNode.equals(node))
@@ -111,7 +111,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable List<List<GridNode>> res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable List<List<ClusterNode>> res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
             ((GridDhtPreloader<K, V>)ctx.preloader()).removeDhtAssignmentFetchFuture(topVer, this);
 
@@ -132,7 +132,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
 
         synchronized (this) {
             while (!availableNodes.isEmpty()) {
-                GridNode node = availableNodes.poll();
+                ClusterNode node = availableNodes.poll();
 
                 try {
                     if (log0.isDebugEnabled())
@@ -170,6 +170,6 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
         // No more nodes left, complete future with null outside of synchronization.
         // Affinity should be calculated from scratch.
         if (complete)
-            onDone((List<List<GridNode>>)null);
+            onDone((List<List<ClusterNode>>)null);
     }
 }

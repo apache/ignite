@@ -71,11 +71,11 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             GridDiscoveryEvent e = (GridDiscoveryEvent)evt;
 
             try {
-                GridNode loc = cctx.localNode();
+                ClusterNode loc = cctx.localNode();
 
                 assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED;
 
-                final GridNode n = e.eventNode();
+                final ClusterNode n = e.eventNode();
 
                 assert !loc.id().equals(n.id());
 
@@ -119,28 +119,28 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest<K, V>>() {
-                @Override public void onMessage(GridNode node, GridDhtForceKeysRequest<K, V> msg) {
+                @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest<K, V> msg) {
                     processForceKeysRequest(node, msg);
                 }
             });
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysResponse.class,
             new MessageHandler<GridDhtForceKeysResponse<K, V>>() {
-                @Override public void onMessage(GridNode node, GridDhtForceKeysResponse<K, V> msg) {
+                @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse<K, V> msg) {
                     processForceKeyResponse(node, msg);
                 }
             });
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
             new MessageHandler<GridDhtAffinityAssignmentRequest<K, V>>() {
-                @Override protected void onMessage(GridNode node, GridDhtAffinityAssignmentRequest<K, V> msg) {
+                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest<K, V> msg) {
                     processAffinityAssignmentRequest(node, msg);
                 }
             });
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentResponse.class,
             new MessageHandler<GridDhtAffinityAssignmentResponse<K, V>>() {
-                @Override protected void onMessage(GridNode node, GridDhtAffinityAssignmentResponse<K, V> msg) {
+                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> msg) {
                     processAffinityAssignmentResponse(node, msg);
                 }
             });
@@ -156,7 +156,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("DHT preloader onKernalStart callback.");
 
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         long startTime = loc.metrics().getStartTime();
 
@@ -305,7 +305,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node originated request.
      * @param msg Force keys message.
      */
-    private void processForceKeysRequest(final GridNode node, final GridDhtForceKeysRequest<K, V> msg) {
+    private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest<K, V> msg) {
         GridFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
 
         if (fut.isDone())
@@ -322,12 +322,12 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node originated request.
      * @param msg Force keys message.
      */
-    private void processForceKeysRequest0(GridNode node, GridDhtForceKeysRequest<K, V> msg) {
+    private void processForceKeysRequest0(ClusterNode node, GridDhtForceKeysRequest<K, V> msg) {
         if (!enterBusy())
             return;
 
         try {
-            GridNode loc = cctx.localNode();
+            ClusterNode loc = cctx.localNode();
 
             GridDhtForceKeysResponse<K, V> res = new GridDhtForceKeysResponse<>(
                 cctx.cacheId(),
@@ -380,7 +380,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node.
      * @param msg Message.
      */
-    private void processForceKeyResponse(GridNode node, GridDhtForceKeysResponse<K, V> msg) {
+    private void processForceKeyResponse(ClusterNode node, GridDhtForceKeysResponse<K, V> msg) {
         if (!enterBusy())
             return;
 
@@ -402,7 +402,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node.
      * @param req Request.
      */
-    private void processAffinityAssignmentRequest(final GridNode node,
+    private void processAffinityAssignmentRequest(final ClusterNode node,
         final GridDhtAffinityAssignmentRequest<K, V> req) {
         final long topVer = req.topologyVersion();
 
@@ -415,7 +415,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                         ", node=" + node + ']');
 
-                List<List<GridNode>> assignment = cctx.affinity().assignments(topVer);
+                List<List<ClusterNode>> assignment = cctx.affinity().assignments(topVer);
 
                 try {
                     cctx.io().send(node,
@@ -432,7 +432,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node.
      * @param res Response.
      */
-    private void processAffinityAssignmentResponse(GridNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
+    private void processAffinityAssignmentResponse(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment response [node=" + node + ", res=" + res + ']');
 
@@ -531,7 +531,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public void apply(UUID nodeId, M msg) {
-            GridNode node = cctx.node(nodeId);
+            ClusterNode node = cctx.node(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())
@@ -550,6 +550,6 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
          * @param node Node.
          * @param msg Message.
          */
-        protected abstract void onMessage(GridNode node, M msg);
+        protected abstract void onMessage(ClusterNode node, M msg);
     }
 }

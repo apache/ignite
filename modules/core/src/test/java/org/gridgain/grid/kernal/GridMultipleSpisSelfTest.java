@@ -140,7 +140,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> grid) {
+        @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> grid) {
             if (getName().equals(expName))
                 isTaskFailoverCalled = true;
             else
@@ -165,7 +165,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNode getBalancedNode(GridComputeTaskSession ses, List<GridNode> top,
+        @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top,
             GridComputeJob job) throws GridException {
             if (getName().equals(expName))
                 isTaskLoadBalancingCalled = true;
@@ -226,7 +226,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         @GridInstanceResource private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, UUID arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
             assert subgrid.size() == 2;
             assert taskSes != null;
             assert ignite != null;

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -107,7 +106,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (GridNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).nodes()) {
                 if (cache.affinity().isPrimary(n, key)) {
                     found = true;
 
@@ -140,7 +139,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (GridNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).nodes()) {
                 if (cache.affinity().isBackup(n, key)) {
                     found = true;
 
@@ -173,7 +172,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (GridNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).nodes()) {
                 if (!cache.affinity().isPrimaryOrBackup(n, key)) {
                     found = true;
 
@@ -206,7 +205,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (GridNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).nodes()) {
                 if (cache.affinity().isPrimary(n, key)) {
                     found = true;
 
@@ -239,7 +238,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (GridNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).nodes()) {
                 if (cache.affinity().isBackup(n, key)) {
                     found = true;
 
@@ -272,7 +271,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (GridNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).nodes()) {
                 if (!cache.affinity().isPrimaryOrBackup(n, key)) {
                     found = true;
 

@@ -103,7 +103,7 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, GridifyRangeArgument arg)
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyRangeArgument arg)
         throws GridException {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
@@ -115,11 +115,11 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
                 ", threshold=" + threshold + ']');
         }
 
-        Collection<GridNode> exclNodes = new LinkedList<>();
+        Collection<ClusterNode> exclNodes = new LinkedList<>();
 
         // Filter nodes.
         if (nodeFilter != null) {
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (!nodeFilter.apply(node, ses))
                     exclNodes.add(node);
             }

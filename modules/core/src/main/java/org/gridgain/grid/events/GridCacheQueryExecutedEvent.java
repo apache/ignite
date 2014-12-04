@@ -100,7 +100,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
      * @param subjId Security subject ID.
      */
     public GridCacheQueryExecutedEvent(
-        GridNode node,
+        ClusterNode node,
         String msg,
         int type,
         GridCacheQueryType qryType,

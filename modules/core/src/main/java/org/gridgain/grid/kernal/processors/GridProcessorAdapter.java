@@ -105,7 +105,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

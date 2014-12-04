@@ -75,7 +75,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPrimary(GridNode n, K key) {
+    @Override public boolean isPrimary(ClusterNode n, K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -87,7 +87,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isBackup(GridNode n, K key) {
+    @Override public boolean isBackup(ClusterNode n, K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -99,7 +99,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPrimaryOrBackup(GridNode n, K key) {
+    @Override public boolean isPrimaryOrBackup(ClusterNode n, K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -111,7 +111,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public int[] primaryPartitions(GridNode n) {
+    @Override public int[] primaryPartitions(ClusterNode n) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -123,7 +123,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public int[] backupPartitions(GridNode n) {
+    @Override public int[] backupPartitions(ClusterNode n) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -135,7 +135,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public int[] allPartitions(GridNode n) {
+    @Override public int[] allPartitions(ClusterNode n) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -147,7 +147,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode mapPartitionToNode(int part) {
+    @Override public ClusterNode mapPartitionToNode(int part) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -159,7 +159,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, GridNode> mapPartitionsToNodes(Collection<Integer> parts) {
+    @Override public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -184,7 +184,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
 
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridNode mapKeyToNode(K key) {
+    @Override @Nullable public ClusterNode mapKeyToNode(K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -196,7 +196,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
+    @Override public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -208,7 +208,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> mapKeyToPrimaryAndBackups(K key) {
+    @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -220,7 +220,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> mapPartitionToPrimaryAndBackups(int part) {
+    @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {

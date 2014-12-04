@@ -38,16 +38,16 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<Vis
     protected abstract VisorJob<A, J> job(A arg);
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Nullable @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable VisorTaskArgument<A> arg) throws GridException {
         assert arg != null;
 
         Collection<UUID> nodeIds = arg.nodes();
         taskArg = arg.argument();
 
-        Map<GridComputeJob, GridNode> map = new GridLeanMap<>(nodeIds.size());
+        Map<GridComputeJob, ClusterNode> map = new GridLeanMap<>(nodeIds.size());
 
-        for (GridNode node : subgrid)
+        for (ClusterNode node : subgrid)
             if (nodeIds.contains(node.id()))
                 map.put(job(taskArg), node);
 

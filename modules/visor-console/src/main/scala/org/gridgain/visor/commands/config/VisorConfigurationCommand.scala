@@ -150,7 +150,7 @@ class VisorConfigurationCommand {
             val id8 = argValue("id8", argLst)
             val id = argValue("id", argLst)
 
-            var node: GridNode = null
+            var node: ClusterNode = null
 
             if (id8.isEmpty && id.isEmpty) {
                 scold("One of -id8 or -id is required.")

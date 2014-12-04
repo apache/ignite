@@ -11,10 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.*;
-import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
@@ -1203,12 +1200,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         int part = cached != null ? cached.partition() : cacheCtx.affinity().partition(e.key());
 
-        List<GridNode> affNodes = cacheCtx.affinity().nodes(part, topologyVersion());
+        List<ClusterNode> affNodes = cacheCtx.affinity().nodes(part, topologyVersion());
 
         e.locallyMapped(F.contains(affNodes, cctx.localNode()));
 
         if (primaryOnly) {
-            GridNode primary = F.first(affNodes);
+            ClusterNode primary = F.first(affNodes);
 
             if (primary == null && !isAffinityNode(cacheCtx.config()))
                 return false;

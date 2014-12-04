@@ -31,5 +31,5 @@ public interface GridCacheAffinityNodeHashResolver extends Serializable {
      * @param node Grid node.
      * @return Resolved hash ID.
      */
-    public Object resolve(GridNode node);
+    public Object resolve(ClusterNode node);
 }

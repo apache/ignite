@@ -17,7 +17,7 @@ import org.gridgain.grid.util.typedef.*;
  */
 public class GridEventConsumeProjectionPredicate implements PN {
     /** {@inheritDoc} */
-    @Override public boolean apply(GridNode n) {
+    @Override public boolean apply(ClusterNode n) {
         return true;
     }
 }

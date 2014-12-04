@@ -45,9 +45,9 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
     private String splitAttrVal;
 
     /** Test backup filter. */
-    private static final GridBiPredicate<GridNode, GridNode> backupFilter =
-        new GridBiPredicate<GridNode, GridNode>() {
-            @Override public boolean apply(GridNode primary, GridNode backup) {
+    private static final GridBiPredicate<ClusterNode, ClusterNode> backupFilter =
+        new GridBiPredicate<ClusterNode, ClusterNode>() {
+            @Override public boolean apply(ClusterNode primary, ClusterNode backup) {
                 assert primary != null : "primary is null";
                 assert backup != null : "backup is null";
 
@@ -122,12 +122,12 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
         for (int i = 0; i < partCnt; i++) {
             assertEquals(i, aff.partition(i));
 
-            Collection<GridNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(i);
+            Collection<ClusterNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(i);
 
             assertEquals(2, nodes.size());
 
-            GridNode primary = F.first(nodes);
-            GridNode backup = F.last(nodes);
+            ClusterNode primary = F.first(nodes);
+            ClusterNode backup = F.last(nodes);
 
             assertFalse(F.eq(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME)));
         }

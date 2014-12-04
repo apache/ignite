@@ -37,7 +37,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Node filter. */
-    private GridPredicate<GridNode> nodeFilter;
+    private GridPredicate<ClusterNode> nodeFilter;
 
     /** Cache class loader */
     private volatile ClassLoader globalLdr;
@@ -75,8 +75,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     @Override public void start0() throws GridException {
         globalLdr = new CacheClassLoader();
 
-        nodeFilter = new P1<GridNode>() {
-            @Override public boolean apply(GridNode node) {
+        nodeFilter = new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
                 return U.hasCaches(node);
             }
         };
@@ -318,7 +318,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         assert depEnabled;
 
         if (mode == PRIVATE || mode == ISOLATED) {
-            GridNode node = cctx.discovery().node(sndId);
+            ClusterNode node = cctx.discovery().node(sndId);
 
             if (node == null) {
                 if (log.isDebugEnabled())

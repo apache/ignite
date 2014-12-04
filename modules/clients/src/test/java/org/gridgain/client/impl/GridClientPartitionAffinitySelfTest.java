@@ -268,7 +268,7 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
     public void testReplicas() throws Exception {
         // Emulate nodes in topology.
         Collection<GridClientNode> nodes = new ArrayList<>();
-        Collection<GridNode> srvNodes = new ArrayList<>();
+        Collection<ClusterNode> srvNodes = new ArrayList<>();
 
         // Define affinities to test.
         GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
@@ -306,7 +306,7 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
      * @param nodes Client topology.
      * @param srvNodes Server topology.
      */
-    private void addNodes(int cnt, Collection<GridClientNode> nodes, Collection<GridNode> srvNodes) {
+    private void addNodes(int cnt, Collection<GridClientNode> nodes, Collection<ClusterNode> srvNodes) {
         while (cnt-- > 0) {
             UUID nodeId = UUID.randomUUID();
             int replicaCnt = (int)Math.round(Math.random() * 500) + 1;
@@ -316,7 +316,7 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
                 .replicaCount(replicaCnt)
                 .build());
 
-            GridNode srvNode = new TestRichNode(nodeId, replicaCnt);
+            ClusterNode srvNode = new TestRichNode(nodeId, replicaCnt);
 
             srvNodes.add(srvNode);
         }
@@ -332,14 +332,14 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
      * @param srvNodes Server topology.
      */
     private void assertSameAffinity(Object key, GridClientDataAffinity aff, GridCacheAffinityFunction srvAff,
-        Collection<? extends GridClientNode> nodes, Collection<GridNode> srvNodes) {
+        Collection<? extends GridClientNode> nodes, Collection<ClusterNode> srvNodes) {
         GridClientNode node = aff.node(key, nodes);
         int part = srvAff.partition(key);
 
         GridCacheAffinityFunctionContext ctx = new GridCacheAffinityFunctionContextImpl(new ArrayList<>(srvNodes),
             null, null, 1, 0);
 
-        GridNode srvNode = F.first(srvAff.assignPartitions(ctx).get(part));
+        ClusterNode srvNode = F.first(srvAff.assignPartitions(ctx).get(part));
 
         if (node == null)
             assertNull(srvNode);

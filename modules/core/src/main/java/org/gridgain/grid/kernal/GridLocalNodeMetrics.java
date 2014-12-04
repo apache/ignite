@@ -20,12 +20,12 @@ public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
     private static final long serialVersionUID = 0L;
 
     /** Grid node. */
-    private final GridNode node;
+    private final ClusterNode node;
 
     /**
      * @param node Node to manage.
      */
-    public GridLocalNodeMetrics(GridNode node) {
+    public GridLocalNodeMetrics(ClusterNode node) {
         assert node != null;
 
         this.node = node;

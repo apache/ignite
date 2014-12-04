@@ -100,7 +100,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends GridNode> nodes(GridCacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(GridCacheAffinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -113,7 +113,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         aff.setHashIdResolver(new GridCacheAffinityNodeIdHashResolver());
 
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
         nodes.add(createNode("000ea4cd-f449-4dcb-869a-5317c63bd619", 50));
         nodes.add(createNode("010ea4cd-f449-4dcb-869a-5317c63bd62a", 60));
@@ -188,8 +188,8 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         for (Map.Entry<Object, Integer> entry : data.entrySet()) {
             int part = aff.partition(entry.getKey());
-            Collection<GridNode> affNodes = aff.nodes(part, nodes, 1);
-            UUID act = F.<GridNode>first(affNodes).id();
+            Collection<ClusterNode> affNodes = aff.nodes(part, nodes, 1);
+            UUID act = F.<ClusterNode>first(affNodes).id();
             UUID exp = nodes.get(entry.getValue()).id();
 
             if (!exp.equals(act)) {
@@ -215,12 +215,12 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         getTestResources().inject(aff);
 
         aff.setHashIdResolver(new GridCacheAffinityNodeHashResolver() {
-            @Override public Object resolve(GridNode node) {
+            @Override public Object resolve(ClusterNode node) {
                 return node.attribute(DFLT_REPLICA_COUNT_ATTR_NAME);
             }
         });
 
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
         nodes.add(createNode("000ea4cd-f449-4dcb-869a-5317c63bd619", 50));
         nodes.add(createNode("010ea4cd-f449-4dcb-869a-5317c63bd62a", 60));
@@ -320,7 +320,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param replicaCnt Node partitioned affinity replica count.
      * @return New node with specified node id and replica count.
      */
-    private GridNode createNode(String nodeId, int replicaCnt) {
+    private ClusterNode createNode(String nodeId, int replicaCnt) {
         GridTestNode node = new GridTestNode(UUID.fromString(nodeId));
 
         node.setAttribute(DFLT_REPLICA_COUNT_ATTR_NAME, replicaCnt);
@@ -334,10 +334,10 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Object key = 12345;
 
-        Collection<? extends GridNode> nodes = null;
+        Collection<? extends ClusterNode> nodes = null;
 
         for (int i = 0; i < GRIDS; i++) {
-            Collection<? extends GridNode> affNodes = nodes(affinity(grid(i)), key);
+            Collection<? extends ClusterNode> affNodes = nodes(affinity(grid(i)), key);
 
             info("Affinity picture for grid [i=" + i + ", aff=" + U.toShortString(affNodes));
 
@@ -359,7 +359,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         GridCacheAffinity<Object> aff = affinity(g);
 
         for (int i = 0; i < keyCnt; i++) {
-            Collection<? extends GridNode> affNodes = nodes(aff, i);
+            Collection<? extends ClusterNode> affNodes = nodes(aff, i);
 
             X.println(">>> Affinity nodes [key=" + i + ", partition=" + aff.partition(i) +
                 ", nodes=" + U.nodes2names(affNodes) + ", ids=" + U.nodeIds(affNodes) + ']');
@@ -478,7 +478,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
                                     ignite.name() + ']');
                             }
 
-                            Collection<? extends GridNode> affNodes = nodes(affinity(ignite), e.<Object>key());
+                            Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.<Object>key());
 
                             if (!affNodes.contains(ignite.cluster().localNode())) {
                                 failFlag.set(true);

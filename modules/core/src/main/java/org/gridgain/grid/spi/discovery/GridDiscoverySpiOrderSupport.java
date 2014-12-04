@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.discovery;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 
 import java.lang.annotation.*;
@@ -19,7 +18,7 @@ import java.lang.annotation.*;
  * proper node ordering. This includes:
  * <ul>
  * <li>
- * Every node gets an order number assigned to it which is provided via {@link GridNode#order()}
+ * Every node gets an order number assigned to it which is provided via {@link org.gridgain.grid.ClusterNode#order()}
  * method. There is no requirement about order value other than that nodes that join grid
  * at later point of time have order values greater than previous nodes.
  * </li>

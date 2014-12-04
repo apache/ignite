@@ -38,7 +38,7 @@ public class GridCacheTxReentryNearSelfTest extends GridCacheTxReentryAbstractSe
         GridCache<Object, Object> cache = grid(0).cache(null);
 
         while (true) {
-            Collection<GridNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(key);
+            Collection<ClusterNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(key);
 
             if (nodes.contains(grid(0).localNode()))
                 key++;

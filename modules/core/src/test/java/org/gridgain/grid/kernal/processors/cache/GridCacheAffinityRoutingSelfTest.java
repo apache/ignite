@@ -566,7 +566,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
                 @Override public Object execute() {
                     GridCacheAffinity<Object> aff = ignite.cache(null).affinity();
 
-                    GridNode primary = aff.mapKeyToNode(affKey);
+                    ClusterNode primary = aff.mapKeyToNode(affKey);
 
                     if (log.isInfoEnabled())
                         log.info("Primary node for the job key [affKey=" + affKey + ", primary=" + primary.id() + "]");

@@ -46,7 +46,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private final GridCacheTxEx<K, V> tx;
 
     /** All involved nodes. */
-    private final Map<UUID, GridNode> nodes;
+    private final Map<UUID, ClusterNode> nodes;
 
     /** ID of failed node started transaction. */
     private final UUID failedNodeId;
@@ -81,7 +81,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
         for (Map.Entry<UUID, Collection<UUID>> e : tx.transactionNodes().entrySet()) {
             if (!locNodeId.equals(e.getKey()) && !failedNodeId.equals(e.getKey()) && !nodes.containsKey(e.getKey())) {
-                GridNode node = cctx.discovery().node(e.getKey());
+                ClusterNode node = cctx.discovery().node(e.getKey());
 
                 if (node != null)
                     nodes.put(node.id(), node);
@@ -91,7 +91,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
             for (UUID nodeId : e.getValue()) {
                 if (!locNodeId.equals(nodeId) && !failedNodeId.equals(nodeId) && !nodes.containsKey(nodeId)) {
-                    GridNode node = cctx.discovery().node(nodeId);
+                    ClusterNode node = cctx.discovery().node(nodeId);
 
                     if (node != null)
                         nodes.put(node.id(), node);
@@ -235,7 +235,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return nodes.values();
     }
 

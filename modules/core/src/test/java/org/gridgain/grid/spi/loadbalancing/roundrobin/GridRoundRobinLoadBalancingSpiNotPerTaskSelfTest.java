@@ -53,7 +53,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
      * @throws Exception If test failed.
      */
     public void testMultipleNodes() throws Exception {
-        List<GridNode> allNodes = (List<GridNode>)getSpiContext().nodes();
+        List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
         GridComputeTaskSession ses = new GridTestTaskSession();
 
@@ -71,7 +71,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
         GridComputeTaskSession ses1 = new GridTestTaskSession(GridUuid.randomUuid());
         GridComputeTaskSession ses2 = new GridTestTaskSession(GridUuid.randomUuid());
 
-        List<GridNode> allNodes = (List<GridNode>)getSpiContext().nodes();
+        List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
         List<UUID> orderedNodes = getSpi().getNodeIds(ses1);
 
@@ -91,12 +91,12 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     public void testBalancingOneNode() throws Exception {
         GridComputeTaskSession ses = new GridTestTaskSession();
 
-        List<GridNode> allNodes = (List<GridNode>)getSpiContext().nodes();
+        List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
-        List<GridNode> balancedNode = Arrays.asList(allNodes.get(0));
+        List<ClusterNode> balancedNode = Arrays.asList(allNodes.get(0));
 
-        GridNode firstNode = getSpi().getBalancedNode(ses, balancedNode, new GridTestJob());
-        GridNode secondNode = getSpi().getBalancedNode(ses, balancedNode, new GridTestJob());
+        ClusterNode firstNode = getSpi().getBalancedNode(ses, balancedNode, new GridTestJob());
+        ClusterNode secondNode = getSpi().getBalancedNode(ses, balancedNode, new GridTestJob());
 
         assertEquals(firstNode, secondNode);
     }
@@ -105,9 +105,9 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     public void testNodeNotInTopology() {
         GridComputeTaskSession ses = new GridTestTaskSession();
 
-        GridNode node = new GridTestNode(UUID.randomUUID());
+        ClusterNode node = new GridTestNode(UUID.randomUUID());
 
-        List<GridNode> notInTop = Arrays.asList(node);
+        List<ClusterNode> notInTop = Arrays.asList(node);
 
         try {
             getSpi().getBalancedNode(ses, notInTop, new GridTestJob());

@@ -307,7 +307,7 @@ object scalar extends ScalarConversions {
     /**
      * Gets node ID as ID8 string.
      */
-    def nid8$(node: GridNode) = node.id().toString.take(8).toUpperCase
+    def nid8$(node: ClusterNode) = node.id().toString.take(8).toUpperCase
 
     /**
      * Gets named grid.

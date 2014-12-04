@@ -66,13 +66,13 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         switch (req.command()) {
             case TOPOLOGY: {
-                Collection<GridNode> allNodes = F.concat(false,
+                Collection<ClusterNode> allNodes = F.concat(false,
                     ctx.discovery().allNodes(), ctx.discovery().daemonNodes());
 
                 Collection<GridClientNodeBean> top =
                     new ArrayList<>(allNodes.size());
 
-                for (GridNode node : allNodes)
+                for (ClusterNode node : allNodes)
                     top.add(createNodeBean(node, mtr, attr));
 
                 res.setResponse(top);
@@ -89,7 +89,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     return new GridFinishedFuture<>(ctx, new GridException(
                         "Failed to handle request (either id or ip should be specified)."));
 
-                GridNode node;
+                ClusterNode node;
 
                 if (id != null) {
                     // Always refresh topology so client see most up-to-date view.
@@ -101,9 +101,9 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                         node = null;
                 }
                 else
-                    node = F.find(ctx.discovery().allNodes(), null, new P1<GridNode>() {
+                    node = F.find(ctx.discovery().allNodes(), null, new P1<ClusterNode>() {
                         @Override
-                        public boolean apply(GridNode n) {
+                        public boolean apply(ClusterNode n) {
                             return containsIp(n.addresses(), ip);
                         }
                     });
@@ -153,7 +153,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
      * @param attr {@code true} to add attributes.
      * @return Grid Node bean.
      */
-    private GridClientNodeBean createNodeBean(GridNode node, boolean mtr, boolean attr) {
+    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr) {
         assert node != null;
 
         GridClientNodeBean nodeBean = new GridClientNodeBean();
@@ -295,7 +295,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
      * @param dfltVal Default result for case when node attribute resolved into {@code null}.
      * @return Attribute value or default result if requested attribute resolved into {@code null}.
      */
-    private <T> T attribute(GridNode node, String attrName, T dfltVal) {
+    private <T> T attribute(ClusterNode node, String attrName, T dfltVal) {
         T attr = node.attribute(attrName);
 
         return attr == null ? dfltVal : attr;

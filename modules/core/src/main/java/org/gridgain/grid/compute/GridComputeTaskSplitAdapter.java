@@ -89,7 +89,7 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
     protected abstract Collection<? extends GridComputeJob> split(int gridSize, T arg) throws GridException;
 
     /** {@inheritDoc} */
-    @Override public final Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, T arg)
+    @Override public final Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg)
         throws GridException {
         assert subgrid != null;
         assert !subgrid.isEmpty();
@@ -99,10 +99,10 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
         if (F.isEmpty(jobs))
             throw new GridException("Split returned no jobs.");
 
-        Map<GridComputeJob, GridNode> map = U.newHashMap(jobs.size());
+        Map<GridComputeJob, ClusterNode> map = U.newHashMap(jobs.size());
 
         for (GridComputeJob job : jobs) {
-            GridNode old = map.put(job, balancer.getBalancedNode(job, null));
+            ClusterNode old = map.put(job, balancer.getBalancedNode(job, null));
 
             if (old != null)
                 throw new GridException("Failed to map task (same job instance is being mapped more than once) " +

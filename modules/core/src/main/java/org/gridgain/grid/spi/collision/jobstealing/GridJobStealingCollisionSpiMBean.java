@@ -175,7 +175,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
 
     /**
      * Configuration parameter to enable stealing to/from only nodes that
-     * have these attributes set (see {@link GridNode#attribute(String)} and
+     * have these attributes set (see {@link org.gridgain.grid.ClusterNode#attribute(String)} and
      * {@link GridConfiguration#getUserAttributes()} methods).
      *
      * @return Node attributes to enable job stealing for.

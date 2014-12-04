@@ -217,14 +217,14 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         @GridUserResource private transient UserResource rsrc;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(final List<GridNode> subgrid, UUID arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
             throws GridException {
 
             taskRsrc = rsrc;
 
             taskLdr = getClass().getClassLoader();
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg))
                     return Collections.singletonMap(new TestJob(arg), node);
             }

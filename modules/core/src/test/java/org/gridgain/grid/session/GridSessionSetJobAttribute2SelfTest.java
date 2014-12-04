@@ -64,13 +64,13 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
         private UUID attrVal;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, UUID arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
             assert subgrid.size() == 2;
             assert arg != null;
 
             attrVal = UUID.randomUUID();
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg))
                     return Collections.singletonMap(new SessionTestJob(attrVal), node);
             }

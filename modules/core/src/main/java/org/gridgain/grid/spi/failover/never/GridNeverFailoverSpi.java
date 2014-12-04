@@ -78,7 +78,7 @@ public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailover
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> top) {
+    @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
         U.warn(log, "Returning 'null' node for failed job (failover will not happen) [job=" +
             ctx.getJobResult().getJob() + ", task=" +  ctx.getTaskSession().getTaskName() +
             ", sessionId=" + ctx.getTaskSession().getId() + ']');

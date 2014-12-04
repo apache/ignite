@@ -425,7 +425,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started (including nodes
      *      that may have already left).
      */
-    public static Collection<GridNode> allNodes(GridCacheContext ctx) {
+    public static Collection<ClusterNode> allNodes(GridCacheContext ctx) {
         return allNodes(ctx, -1);
     }
 
@@ -437,7 +437,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started (including nodes
      *      that may have already left).
      */
-    public static Collection<GridNode> allNodes(GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> allNodes(GridCacheContext ctx, long topOrder) {
         return ctx.discovery().cacheNodes(ctx.namex(), topOrder);
     }
 
@@ -449,7 +449,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started (including nodes
      *      that may have already left).
      */
-    public static Collection<GridNode> allNodes(GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> allNodes(GridCacheSharedContext ctx, long topOrder) {
         return ctx.discovery().cacheNodes(topOrder);
     }
 
@@ -460,7 +460,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<GridNode> aliveNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveNodes(final GridCacheContext ctx, long topOrder) {
         return ctx.discovery().aliveCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -470,7 +470,7 @@ public class GridCacheUtils {
      * @param ctx Cache context.
      * @return Remote nodes on which cache with the same name is started.
      */
-    public static Collection<GridNode> remoteNodes(final GridCacheContext ctx) {
+    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx) {
         return remoteNodes(ctx, -1);
     }
 
@@ -480,7 +480,7 @@ public class GridCacheUtils {
      * @param ctx Shared cache context.
      * @return Collection of nodes with at least one cache configured.
      */
-    public static Collection<GridNode> remoteNodes(GridCacheSharedContext ctx) {
+    public static Collection<ClusterNode> remoteNodes(GridCacheSharedContext ctx) {
         return remoteNodes(ctx, -1);
     }
 
@@ -491,7 +491,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Remote nodes on which cache with the same name is started.
      */
-    public static Collection<GridNode> remoteNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx, long topOrder) {
         return ctx.discovery().remoteCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -502,7 +502,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<GridNode> aliveRemoteNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveRemoteNodes(final GridCacheContext ctx, long topOrder) {
         return ctx.discovery().aliveRemoteCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -513,7 +513,7 @@ public class GridCacheUtils {
      * @param topVer Topology version.
      * @return Collection of remote nodes with at least one cache configured.
      */
-    public static Collection<GridNode> remoteNodes(final GridCacheSharedContext ctx, long topVer) {
+    public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, long topVer) {
         return ctx.discovery().remoteCacheNodes(topVer);
     }
 
@@ -524,7 +524,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<GridNode> aliveCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
         return ctx.discovery().aliveNodesWithCaches(topOrder);
     }
 
@@ -535,7 +535,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<GridNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
         return ctx.discovery().aliveRemoteNodesWithCaches(topOrder);
     }
 
@@ -545,7 +545,7 @@ public class GridCacheUtils {
      * @param ctx Cache context.
      * @return All nodes on which cache with the same name is started.
      */
-    public static Collection<GridNode> affinityNodes(final GridCacheContext ctx) {
+    public static Collection<ClusterNode> affinityNodes(final GridCacheContext ctx) {
         return ctx.discovery().cacheAffinityNodes(ctx.namex(), -1);
     }
 
@@ -575,7 +575,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<GridNode> affinityNodes(GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, long topOrder) {
         return ctx.discovery().cacheAffinityNodes(ctx.namex(), topOrder);
     }
 
@@ -586,7 +586,7 @@ public class GridCacheUtils {
      * @param s Node shadow to check.
      * @return {@code True} if given node has specified cache started.
      */
-    public static boolean affinityNode(GridCacheContext ctx, GridNode s) {
+    public static boolean affinityNode(GridCacheContext ctx, ClusterNode s) {
         assert ctx != null;
         assert s != null;
 
@@ -608,7 +608,7 @@ public class GridCacheUtils {
      * @param node Node to check.
      * @return {@code true} if node contains required cache.
      */
-    public static boolean cacheNode(GridCacheContext ctx, GridNode node) {
+    public static boolean cacheNode(GridCacheContext ctx, ClusterNode node) {
         assert ctx != null;
         assert node != null;
 
@@ -658,7 +658,7 @@ public class GridCacheUtils {
      * @param node Node to check.
      * @return {@code True} if given node has specified cache started.
      */
-    public static boolean cacheNode(String cacheName, GridNode node) {
+    public static boolean cacheNode(String cacheName, ClusterNode node) {
         return cacheNode(cacheName, (GridCacheAttributes[])node.attribute(ATTR_CACHE));
     }
 
@@ -684,7 +684,7 @@ public class GridCacheUtils {
      * @param cctx Cache context.
      * @return Oldest node for the current topology version.
      */
-    public static GridNode oldest(GridCacheContext cctx) {
+    public static ClusterNode oldest(GridCacheContext cctx) {
         return oldest(cctx, -1);
     }
 
@@ -694,7 +694,7 @@ public class GridCacheUtils {
      * @param ctx Cache context.
      * @return Oldest node.
      */
-    public static GridNode oldest(GridCacheSharedContext ctx) {
+    public static ClusterNode oldest(GridCacheSharedContext ctx) {
         return oldest(ctx, -1);
     }
 
@@ -705,10 +705,10 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Oldest node for the given topology version.
      */
-    public static GridNode oldest(GridCacheContext cctx, long topOrder) {
-        GridNode oldest = null;
+    public static ClusterNode oldest(GridCacheContext cctx, long topOrder) {
+        ClusterNode oldest = null;
 
-        for (GridNode n : aliveNodes(cctx, topOrder))
+        for (ClusterNode n : aliveNodes(cctx, topOrder))
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
 
@@ -725,10 +725,10 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Oldest node for the given topology version.
      */
-    public static GridNode oldest(GridCacheSharedContext cctx, long topOrder) {
-        GridNode oldest = null;
+    public static ClusterNode oldest(GridCacheSharedContext cctx, long topOrder) {
+        ClusterNode oldest = null;
 
-        for (GridNode n : aliveCacheNodes(cctx, topOrder))
+        for (ClusterNode n : aliveCacheNodes(cctx, topOrder))
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
 
@@ -972,8 +972,8 @@ public class GridCacheUtils {
      * @param nodes Set of nodes.
      * @return Primary node.
      */
-    public static GridNode primary(Iterable<? extends GridNode> nodes) {
-        GridNode n = F.first(nodes);
+    public static ClusterNode primary(Iterable<? extends ClusterNode> nodes) {
+        ClusterNode n = F.first(nodes);
 
         assert n != null;
 
@@ -985,10 +985,10 @@ public class GridCacheUtils {
      * @param locId Local node ID.
      * @return Local node if it is in the list of nodes, or primary node.
      */
-    public static GridNode localOrPrimary(Iterable<GridNode> nodes, UUID locId) {
+    public static ClusterNode localOrPrimary(Iterable<ClusterNode> nodes, UUID locId) {
         assert !F.isEmpty(nodes);
 
-        for (GridNode n : nodes)
+        for (ClusterNode n : nodes)
             if (n.id().equals(locId))
                 return n;
 
@@ -999,7 +999,7 @@ public class GridCacheUtils {
      * @param nodes Nodes.
      * @return Backup nodes.
      */
-    public static Collection<GridNode> backups(Collection<GridNode> nodes) {
+    public static Collection<ClusterNode> backups(Collection<ClusterNode> nodes) {
         if (nodes == null || nodes.size() <= 1)
             return Collections.emptyList();
 
@@ -1079,7 +1079,7 @@ public class GridCacheUtils {
      * @return Mapped keys.
      */
     @SuppressWarnings( {"unchecked", "MismatchedQueryAndUpdateOfCollection"})
-    public static <K> Map<GridNode, Collection<K>> mapKeysToNodes(GridCacheContext<K, ?> ctx,
+    public static <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(GridCacheContext<K, ?> ctx,
         Collection<? extends K> keys) {
         if (keys == null || keys.isEmpty())
             return Collections.emptyMap();
@@ -1096,10 +1096,10 @@ public class GridCacheUtils {
         if (keys.size() == 1)
             return Collections.singletonMap(ctx.affinity().primary(F.first(keys), topVer), (Collection<K>)keys);
 
-        Map<GridNode, Collection<K>> map = new GridLeanMap<>(5);
+        Map<ClusterNode, Collection<K>> map = new GridLeanMap<>(5);
 
         for (K k : keys) {
-            GridNode primary = ctx.affinity().primary(k, topVer);
+            ClusterNode primary = ctx.affinity().primary(k, topVer);
 
             Collection<K> mapped = map.get(primary);
 
@@ -1266,7 +1266,7 @@ public class GridCacheUtils {
      * @return Primary node for the key.
      */
     @SuppressWarnings( {"unchecked"})
-    public static GridNode primaryNode(GridCacheContext ctx, Object key) {
+    public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
         assert ctx != null;
         assert key != null;
 
@@ -1275,7 +1275,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() != PARTITIONED)
             return ctx.localNode();
 
-        GridNode primary = ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
+        ClusterNode primary = ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
 
         assert primary != null;
 
@@ -1286,9 +1286,9 @@ public class GridCacheUtils {
      * @param asc {@code True} for ascending.
      * @return Descending order comparator.
      */
-    public static Comparator<GridNode> nodeComparator(final boolean asc) {
-        return new Comparator<GridNode>() {
-            @Override public int compare(GridNode n1, GridNode n2) {
+    public static Comparator<ClusterNode> nodeComparator(final boolean asc) {
+        return new Comparator<ClusterNode>() {
+            @Override public int compare(ClusterNode n1, ClusterNode n2) {
                 long o1 = n1.order();
                 long o2 = n2.order();
 
@@ -1379,7 +1379,7 @@ public class GridCacheUtils {
      * @throws GridException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(GridLogger log, GridCacheConfiguration locCfg,
-        GridCacheConfiguration rmtCfg, GridNode rmt, T2<String, String> attr, boolean fail) throws GridException {
+        GridCacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws GridException {
         assert rmt != null;
         assert attr != null;
         assert attr.get1() != null;
@@ -1405,7 +1405,7 @@ public class GridCacheUtils {
      * @param fail If true throws GridException in case of attribute values mismatch, otherwise logs warning.
      * @throws GridException If attribute values are different and fail flag is true.
      */
-    public static void checkAttributeMismatch(GridLogger log, String cfgName, GridNode rmt, String attrName,
+    public static void checkAttributeMismatch(GridLogger log, String cfgName, ClusterNode rmt, String attrName,
         String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws GridException {
         assert rmt != null;
         assert attrName != null;

@@ -392,7 +392,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
             locIgnite.events().localListen(new TestEventListener(locDepCnt), EVT_TASK_DEPLOYED, EVT_CLASS_DEPLOYED);
             rmtIgnite.events().localListen(new TestEventListener(rmtDepCnt), EVT_TASK_DEPLOYED, EVT_CLASS_DEPLOYED);
 
-            assertEquals(2, locIgnite.cluster().forPredicate(F.<GridNode>alwaysTrue()).nodes().size());
+            assertEquals(2, locIgnite.cluster().forPredicate(F.<ClusterNode>alwaysTrue()).nodes().size());
 
             Object targetObj = targetWithUserClassLoader();
 

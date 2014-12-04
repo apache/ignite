@@ -55,7 +55,7 @@ public class GridFailoverTestContext implements GridFailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode getBalancedNode(List<GridNode> grid) throws GridException {
+    @Override public ClusterNode getBalancedNode(List<ClusterNode> grid) throws GridException {
         return grid.get(RAND.nextInt(grid.size()));
     }
 }

@@ -423,7 +423,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
             int keyCnt = -1;
 
-            Map<GridNode, GridNearUnlockRequest<K, V>> map = null;
+            Map<ClusterNode, GridNearUnlockRequest<K, V>> map = null;
 
             Collection<K> locKeys = new LinkedList<>();
 
@@ -445,7 +445,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             ver = cand.version();
 
                             if (map == null) {
-                                Collection<GridNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
 
                                 if (F.isEmpty(affNodes))
                                     return;
@@ -458,7 +458,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             topVer = cand.topologyVersion();
 
                             // Send request to remove from remote nodes.
-                            GridNode primary = ctx.affinity().primary(key, topVer);
+                            ClusterNode primary = ctx.affinity().primary(key, topVer);
 
                             GridNearUnlockRequest<K, V> req = map.get(primary);
 
@@ -516,8 +516,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (ver == null)
                 return;
 
-            for (Map.Entry<GridNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
-                GridNode n = mapping.getKey();
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
+                ClusterNode n = mapping.getKey();
 
                 GridDistributedUnlockRequest<K, V> req = mapping.getValue();
 
@@ -548,7 +548,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         try {
             int keyCnt = -1;
 
-            Map<GridNode, GridNearUnlockRequest<K, V>> map = null;
+            Map<ClusterNode, GridNearUnlockRequest<K, V>> map = null;
 
             for (K key : keys) {
                 // Send request to remove from remote nodes.
@@ -563,7 +563,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             if (cand != null) {
                                 if (map == null) {
-                                    Collection<GridNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                    Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
 
                                     if (F.isEmpty(affNodes))
                                         return;
@@ -573,7 +573,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     map = U.newHashMap(affNodes.size());
                                 }
 
-                                GridNode primary = ctx.affinity().primary(key, cand.topologyVersion());
+                                ClusterNode primary = ctx.affinity().primary(key, cand.topologyVersion());
 
                                 if (!primary.isLocal()) {
                                     req = map.get(primary);
@@ -619,8 +619,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
             Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
 
-            for (Map.Entry<GridNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
-                GridNode n = mapping.getKey();
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
+                ClusterNode n = mapping.getKey();
 
                 GridDistributedUnlockRequest<K, V> req = mapping.getValue();
 

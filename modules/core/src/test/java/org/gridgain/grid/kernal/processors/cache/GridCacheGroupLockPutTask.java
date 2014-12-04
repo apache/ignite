@@ -63,13 +63,13 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
      * @throws GridException If mapping could not complete successfully. This exception will be thrown out of {@link
      *                       GridComputeTaskFuture#get()} method.
      */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable final Collection<Integer> data) throws GridException {
         assert !subgrid.isEmpty();
 
         // Give preference to wanted node. Otherwise, take the first one.
-        GridNode targetNode = F.find(subgrid, subgrid.get(0), new GridPredicate<GridNode>() {
-            @Override public boolean apply(GridNode e) {
+        ClusterNode targetNode = F.find(subgrid, subgrid.get(0), new GridPredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode e) {
                 return preferredNode.equals(e.id());
             }
         });

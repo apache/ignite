@@ -19,7 +19,7 @@ import java.util.*;
  */
 class GridRoundRobinPerTaskLoadBalancer {
     /** Balancing nodes. */
-    private ArrayDeque<GridNode> nodeQueue;
+    private ArrayDeque<ClusterNode> nodeQueue;
 
     /** Jobs mapped flag. */
     private volatile boolean isMapped;
@@ -42,7 +42,7 @@ class GridRoundRobinPerTaskLoadBalancer {
      * @param top Topology to pick from.
      * @return Best balanced node.
      */
-    GridNode getBalancedNode(List<GridNode> top) {
+    ClusterNode getBalancedNode(List<ClusterNode> top) {
         assert top != null;
         assert !top.isEmpty();
 
@@ -59,11 +59,11 @@ class GridRoundRobinPerTaskLoadBalancer {
             // and we need to readjust with every apply.
             if (readjust)
                 // Add missing nodes.
-                for (GridNode node : top)
+                for (ClusterNode node : top)
                     if (!nodeQueue.contains(node))
                         nodeQueue.offer(node);
 
-            GridNode next = nodeQueue.poll();
+            ClusterNode next = nodeQueue.poll();
 
             // If jobs have been mapped, we need to make sure
             // that queued node is still in topology.
@@ -89,7 +89,7 @@ class GridRoundRobinPerTaskLoadBalancer {
      *
      * @return Internal list of nodes.
      */
-    List<GridNode> getNodes() {
+    List<ClusterNode> getNodes() {
         synchronized (mux) {
             return Collections.unmodifiableList(new ArrayList<>(nodeQueue));
         }

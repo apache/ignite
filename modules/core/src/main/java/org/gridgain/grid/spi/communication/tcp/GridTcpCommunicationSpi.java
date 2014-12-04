@@ -49,7 +49,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * TCP/IP protocol and Java NIO to communicate with other nodes.
  * <p>
  * To enable communication with other nodes, this SPI adds {@link #ATTR_ADDRS}
- * and {@link #ATTR_PORT} local node attributes (see {@link GridNode#attributes()}.
+ * and {@link #ATTR_PORT} local node attributes (see {@link org.gridgain.grid.ClusterNode#attributes()}.
  * <p>
  * At startup, this SPI tries to start listening to local port specified by
  * {@link #setLocalPort(int)} method. If local port is occupied, then SPI will
@@ -270,7 +270,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                     GridProductVersion locVer = getSpiContext().localNode().version();
 
-                    GridNode rmtNode = getSpiContext().node(sndId);
+                    ClusterNode rmtNode = getSpiContext().node(sndId);
 
                     if (rmtNode == null) {
                         ses.close();
@@ -1391,7 +1391,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkConfigurationConsistency0(GridSpiContext spiCtx, GridNode node, boolean starting)
+    @Override protected void checkConfigurationConsistency0(GridSpiContext spiCtx, ClusterNode node, boolean starting)
         throws GridSpiException {
         // These attributes are set on node startup in any case, so we MUST receive them.
         checkAttributePresence(node, createSpiAttributeName(ATTR_ADDRS));
@@ -1405,7 +1405,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @param node Node to check.
      * @param attrName Name of the attribute.
      */
-    private void checkAttributePresence(GridNode node, String attrName) {
+    private void checkAttributePresence(ClusterNode node, String attrName) {
         if (node.attribute(attrName) == null)
             U.warn(log, "Remote node has inconsistent configuration (required attribute was not found) " +
                 "[attrName=" + attrName + ", nodeId=" + node.id() +
@@ -1413,7 +1413,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg) throws GridSpiException {
+    @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws GridSpiException {
         assert node != null;
         assert msg != null;
 
@@ -1458,7 +1458,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @return The existing or just created client.
      * @throws GridException Thrown if any exception occurs.
      */
-    private GridCommunicationClient reserveClient(GridNode node) throws GridException {
+    private GridCommunicationClient reserveClient(ClusterNode node) throws GridException {
         assert node != null;
 
         UUID nodeId = node.id();
@@ -1506,12 +1506,12 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @return Client.
      * @throws GridException If failed.
      */
-    @Nullable protected GridCommunicationClient createNioClient(GridNode node) throws GridException {
+    @Nullable protected GridCommunicationClient createNioClient(ClusterNode node) throws GridException {
         assert node != null;
 
         Integer shmemPort = node.attribute(createSpiAttributeName(ATTR_SHMEM_PORT));
 
-        GridNode locNode = getSpiContext().localNode();
+        ClusterNode locNode = getSpiContext().localNode();
 
         if (locNode == null)
             throw new GridException("Failed to create NIO client (local node is stopping)");
@@ -1543,7 +1543,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @return Client.
      * @throws GridException If failed.
      */
-    @Nullable protected GridCommunicationClient createShmemClient(GridNode node, Integer port) throws GridException {
+    @Nullable protected GridCommunicationClient createShmemClient(ClusterNode node, Integer port) throws GridException {
         int attempt = 1;
 
         int connectAttempts = 1;
@@ -1615,7 +1615,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @return Client.
      * @throws GridException If failed.
      */
-    protected GridCommunicationClient createTcpClient(GridNode node) throws GridException {
+    protected GridCommunicationClient createTcpClient(ClusterNode node) throws GridException {
         Collection<String> rmtAddrs0 = node.attribute(createSpiAttributeName(ATTR_ADDRS));
         Collection<String> rmtHostNames0 = node.attribute(createSpiAttributeName(ATTR_HOST_NAMES));
         Integer boundPort = node.attribute(createSpiAttributeName(ATTR_PORT));

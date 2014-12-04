@@ -30,7 +30,7 @@ public interface GridCacheFuture<R> extends GridFuture<R> {
     /**
      * @return Involved nodes.
      */
-    public Collection<? extends GridNode> nodes();
+    public Collection<? extends ClusterNode> nodes();
 
     /**
      * Callback for when node left.

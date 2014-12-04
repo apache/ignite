@@ -67,7 +67,7 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<GridNode> nodes)
+    @Override public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException {
         return delegate.query(clo, nodes);
     }
@@ -78,7 +78,7 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<GridNode> nodes)
+    @Override public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes)
         throws GridException {
         delegate.broadcast(clo, nodes);
     }
@@ -91,7 +91,7 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
 
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
-        Collection<GridNode> nodes) throws GridException {
+        Collection<ClusterNode> nodes) throws GridException {
         return delegate.reduce(clo, rdc, nodes);
     }
 }

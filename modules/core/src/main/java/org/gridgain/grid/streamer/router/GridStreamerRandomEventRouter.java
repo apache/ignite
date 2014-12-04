@@ -23,13 +23,13 @@ import java.util.*;
  */
 public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapter {
     /** Optional predicates to exclude nodes from routing. */
-    private GridPredicate<GridNode>[] predicates;
+    private GridPredicate<ClusterNode>[] predicates;
 
     /**
      * Empty constructor for spring.
      */
     public GridStreamerRandomEventRouter() {
-        this((GridPredicate<GridNode>[])null);
+        this((GridPredicate<ClusterNode>[])null);
     }
 
     /**
@@ -37,7 +37,7 @@ public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapte
      *
      * @param predicates Node predicates.
      */
-    public GridStreamerRandomEventRouter(@Nullable GridPredicate<GridNode>... predicates) {
+    public GridStreamerRandomEventRouter(@Nullable GridPredicate<ClusterNode>... predicates) {
         this.predicates = predicates;
     }
 
@@ -47,7 +47,7 @@ public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapte
      * @param predicates Node predicates.
      */
     @SuppressWarnings("unchecked")
-    public GridStreamerRandomEventRouter(Collection<GridPredicate<GridNode>> predicates) {
+    public GridStreamerRandomEventRouter(Collection<GridPredicate<ClusterNode>> predicates) {
         if (!F.isEmpty(predicates)) {
             this.predicates = new GridPredicate[predicates.size()];
 
@@ -56,8 +56,8 @@ public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode route(GridStreamerContext ctx, String stageName, Object evt) {
-        Collection<GridNode> nodes = F.view(ctx.projection().nodes(), predicates);
+    @Override public ClusterNode route(GridStreamerContext ctx, String stageName, Object evt) {
+        Collection<ClusterNode> nodes = F.view(ctx.projection().nodes(), predicates);
 
         if (F.isEmpty(nodes))
             return null;
@@ -66,13 +66,13 @@ public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapte
 
         int i = 0;
 
-        Iterator<GridNode> iter = nodes.iterator();
+        Iterator<ClusterNode> iter = nodes.iterator();
 
         while (true) {
             if (!iter.hasNext())
                 iter = nodes.iterator();
 
-            GridNode node = iter.next();
+            ClusterNode node = iter.next();
 
             if (idx == i++)
                 return node;

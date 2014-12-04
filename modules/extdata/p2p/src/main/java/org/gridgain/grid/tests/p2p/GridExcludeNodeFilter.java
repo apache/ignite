@@ -10,7 +10,7 @@ import java.util.*;
  * This node filter excludes the node with the given UUID
  * from the topology.
  */
-public class GridExcludeNodeFilter implements GridPredicate<GridNode> {
+public class GridExcludeNodeFilter implements GridPredicate<ClusterNode> {
     /** Node ID to exclude. */
     private final UUID excludeId;
 
@@ -24,7 +24,7 @@ public class GridExcludeNodeFilter implements GridPredicate<GridNode> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(GridNode e) {
+    @Override public boolean apply(ClusterNode e) {
         return !excludeId.equals(e.id());
     }
 

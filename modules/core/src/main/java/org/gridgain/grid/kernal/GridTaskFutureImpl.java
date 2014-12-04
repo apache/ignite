@@ -92,7 +92,7 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridC
 
         if (onCancelled()) {
             // Invoke master-leave callback on spawned jobs on local node and then cancel them.
-            for (GridNode node : ctx.discovery().nodes(ses.getTopology())) {
+            for (ClusterNode node : ctx.discovery().nodes(ses.getTopology())) {
                 if (ctx.localNodeId().equals(node.id())) {
                     ctx.job().masterLeaveLocal(ses.getId());
 

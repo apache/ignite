@@ -30,9 +30,9 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
     public void testSingleNode() throws Exception {
         GridAlwaysFailoverSpi spi = getSpi();
 
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
-        GridNode node = new GridTestNode(UUID.randomUUID());
+        ClusterNode node = new GridTestNode(UUID.randomUUID());
 
         nodes.add(node);
 
@@ -48,14 +48,14 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
     public void testTwoNodes() throws Exception {
         GridAlwaysFailoverSpi spi = getSpi();
 
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
         nodes.add(new GridTestNode(UUID.randomUUID()));
         nodes.add(new GridTestNode(UUID.randomUUID()));
 
         GridComputeJobResult jobRes = new GridTestJobResult(nodes.get(0));
 
-        GridNode node = spi.failover(new GridFailoverTestContext(new GridTestTaskSession(), jobRes), nodes);
+        ClusterNode node = spi.failover(new GridFailoverTestContext(new GridTestTaskSession(), jobRes), nodes);
 
         assert node != null;
         assert node.equals(nodes.get(1));
@@ -71,7 +71,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
 
         spi.setMaximumFailoverAttempts(1);
 
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
         nodes.add(new GridTestNode(UUID.randomUUID()));
         nodes.add(new GridTestNode(UUID.randomUUID()));
@@ -79,7 +79,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
         GridComputeJobResult jobRes = new GridTestJobResult(nodes.get(0));
 
         // First attempt.
-        GridNode node = spi.failover(new GridFailoverTestContext(new GridTestTaskSession(), jobRes), nodes);
+        ClusterNode node = spi.failover(new GridFailoverTestContext(new GridTestTaskSession(), jobRes), nodes);
 
         assert node != null;
         assert node.equals(nodes.get(1));

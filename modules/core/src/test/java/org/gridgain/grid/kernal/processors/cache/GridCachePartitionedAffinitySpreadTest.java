@@ -34,7 +34,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
 
         for (int i = 5; i < NODES_CNT; i = i * 3 / 2) {
             for (int replicas = 128; replicas <= 4096; replicas*=2) {
-                Collection<GridNode> nodes = createNodes(i, replicas);
+                Collection<ClusterNode> nodes = createNodes(i, replicas);
 
                 GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction(false, 10000);
 
@@ -50,8 +50,8 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
      * @param replicas Value of
      * @return Collection of test nodes.
      */
-    private Collection<GridNode> createNodes(int nodesCnt, int replicas) {
-        Collection<GridNode> nodes = new ArrayList<>(nodesCnt);
+    private Collection<ClusterNode> createNodes(int nodesCnt, int replicas) {
+        Collection<ClusterNode> nodes = new ArrayList<>(nodesCnt);
 
         for (int i = 0; i < nodesCnt; i++)
             nodes.add(new TestRichNode(replicas));
@@ -63,15 +63,15 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
      * @param aff Affinity to check.
      * @param nodes Collection of nodes to test on.
      */
-    private void checkDistribution(GridCacheConsistentHashAffinityFunction aff, Collection<GridNode> nodes) {
-        Map<GridNode, Integer> parts = new HashMap<>(nodes.size());
+    private void checkDistribution(GridCacheConsistentHashAffinityFunction aff, Collection<ClusterNode> nodes) {
+        Map<ClusterNode, Integer> parts = new HashMap<>(nodes.size());
 
         for (int part = 0; part < aff.getPartitions(); part++) {
-            Collection<GridNode> affNodes = aff.nodes(part, nodes, 0);
+            Collection<ClusterNode> affNodes = aff.nodes(part, nodes, 0);
 
             assertEquals(1, affNodes.size());
 
-            GridNode node = F.first(affNodes);
+            ClusterNode node = F.first(affNodes);
 
             parts.put(node, parts.get(node) != null ? parts.get(node) + 1 : 1);
         }
@@ -84,7 +84,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
         float m2 = 0;
         int n = 0;
 
-        for (GridNode node : nodes) {
+        for (ClusterNode node : nodes) {
             int partsCnt = parts.get(node) != null ? parts.get(node) : 0;
 
             total += partsCnt;

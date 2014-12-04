@@ -110,7 +110,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
         for (int g = 0; g < gridCount(); g++) {
             GridCache<String, Integer> cache0 = cache(g);
-            GridNode locNode = grid(g).localNode();
+            ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
@@ -170,7 +170,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
         for (int g = 0; g < gridCount(); g++) {
             GridCache<String, Integer> cache0 = cache(g);
-            GridNode locNode = grid(g).localNode();
+            ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridFailoverSelfTest extends GridCommonAbstractTest {
     /** Initial node that job has been mapped to. */
-    private static final AtomicReference<GridNode> nodeRef = new AtomicReference<>(null);
+    private static final AtomicReference<ClusterNode> nodeRef = new AtomicReference<>(null);
 
     /** */
     public GridFailoverSelfTest() {
@@ -74,7 +74,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             ses.setAttribute("fail", true);
 
             nodeRef.set(subgrid.get(0));

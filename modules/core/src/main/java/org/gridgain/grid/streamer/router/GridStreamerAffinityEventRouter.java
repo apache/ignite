@@ -56,7 +56,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
     private Collection<UUID> addedNodes = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
-    @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
         return node(evt instanceof AffinityEvent ? ((AffinityEvent) evt).affinityKey() :
             evt, ctx);
     }
@@ -66,9 +66,9 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
      * @param ctx Context.
      * @return Rich node.
      */
-    private GridNode node(Object obj, GridStreamerContext ctx) {
+    private ClusterNode node(Object obj, GridStreamerContext ctx) {
         while (true) {
-            Collection<GridNode> nodes = ctx.projection().nodes();
+            Collection<ClusterNode> nodes = ctx.projection().nodes();
 
             assert nodes != null;
             assert !nodes.isEmpty();
@@ -76,7 +76,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
             int nodesSize = nodes.size();
 
             if (nodesSize == 1) { // Minor optimization.
-                GridNode ret = F.first(nodes);
+                ClusterNode ret = F.first(nodes);
 
                 assert ret != null;
 
@@ -86,7 +86,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
             final Collection<UUID> lookup = U.newHashSet(nodesSize);
 
             // Store nodes in map for fast lookup.
-            for (GridNode n : nodes)
+            for (ClusterNode n : nodes)
                 // Add nodes into hash circle, if absent.
                 lookup.add(resolveNode(n));
 
@@ -115,7 +115,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
 
             assert nodeId != null;
 
-            GridNode node = ctx.projection().node(nodeId);
+            ClusterNode node = ctx.projection().node(nodeId);
 
             if (node != null)
                 return node;
@@ -128,7 +128,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
      * @param n Node to get info for.
      * @return Node ID.
      */
-    private UUID resolveNode(GridNode n) {
+    private UUID resolveNode(ClusterNode n) {
         UUID nodeId = n.id();
 
         if (!addedNodes.contains(nodeId)) {

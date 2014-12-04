@@ -151,7 +151,7 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> top) {
+    @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
         assert ctx != null;
         assert top != null;
 
@@ -182,9 +182,9 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
         failedNodes.add(ctx.getJobResult().getNode().id());
 
         // Copy.
-        List<GridNode> newTop = new ArrayList<>(top.size());
+        List<ClusterNode> newTop = new ArrayList<>(top.size());
 
-        for (GridNode node : top)
+        for (ClusterNode node : top)
             if (!failedNodes.contains(node.id()))
                 newTop.add(node);
 
@@ -197,7 +197,7 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
         }
 
         try {
-            GridNode node = ctx.getBalancedNode(newTop);
+            ClusterNode node = ctx.getBalancedNode(newTop);
 
             if (node == null)
                 U.warn(log, "Load balancer returned null node for topology: " + newTop);

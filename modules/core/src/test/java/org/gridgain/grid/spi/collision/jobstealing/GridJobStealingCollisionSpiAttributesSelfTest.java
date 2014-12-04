@@ -153,7 +153,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
 
@@ -250,7 +250,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
 
@@ -277,7 +277,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpi().setStealingEnabled(false);
 
@@ -305,7 +305,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpi().setStealingEnabled(true);
 

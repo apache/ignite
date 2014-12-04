@@ -101,9 +101,9 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     private static UUID primaryId(Ignite ignite, Object key) {
         GridCacheAffinity aff = ignite.cache(null).cache().affinity();
 
-        Collection<GridNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(key));
+        Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(key));
 
-        GridNode first = F.first(affNodes);
+        ClusterNode first = F.first(affNodes);
 
         assert first != null;
 

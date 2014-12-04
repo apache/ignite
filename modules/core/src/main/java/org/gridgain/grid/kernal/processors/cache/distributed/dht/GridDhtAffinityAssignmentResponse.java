@@ -32,7 +32,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     /** Affinity assignment. */
     @GridDirectTransient
     @GridToStringInclude
-    private List<List<GridNode>> affAssignment;
+    private List<List<ClusterNode>> affAssignment;
 
     /** Affinity assignment bytes. */
     private byte[] affAssignmentBytes;
@@ -49,7 +49,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment.
      */
-    public GridDhtAffinityAssignmentResponse(int cacheId, long topVer, List<List<GridNode>> affAssignment) {
+    public GridDhtAffinityAssignmentResponse(int cacheId, long topVer, List<List<ClusterNode>> affAssignment) {
         this.cacheId = cacheId;
         this.topVer = topVer;
         this.affAssignment = affAssignment;
@@ -70,7 +70,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     /**
      * @return Affinity assignment.
      */
-    public List<List<GridNode>> affinityAssignment() {
+    public List<List<ClusterNode>> affinityAssignment() {
         return affAssignment;
     }
 

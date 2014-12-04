@@ -23,20 +23,20 @@ public class GridStreamerRoundRobinEventRouter extends GridStreamerEventRouterAd
     private final AtomicLong lastOrder = new AtomicLong();
 
     /** {@inheritDoc} */
-    @Override public GridNode route(GridStreamerContext ctx, String stageName, Object evt) {
-        Collection<GridNode> nodes = ctx.projection().nodes();
+    @Override public ClusterNode route(GridStreamerContext ctx, String stageName, Object evt) {
+        Collection<ClusterNode> nodes = ctx.projection().nodes();
 
         int idx = (int)(lastOrder.getAndIncrement() % nodes.size());
 
         int i = 0;
 
-        Iterator<GridNode> iter = nodes.iterator();
+        Iterator<ClusterNode> iter = nodes.iterator();
 
         while (true) {
             if (!iter.hasNext())
                 iter = nodes.iterator();
 
-            GridNode node = iter.next();
+            ClusterNode node = iter.next();
 
             if (idx == i++)
                 return node;

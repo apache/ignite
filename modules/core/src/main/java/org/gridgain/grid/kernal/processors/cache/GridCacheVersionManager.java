@@ -59,7 +59,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
 
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-            GridNode node = cctx.discovery().node(discoEvt.node().id());
+            ClusterNode node = cctx.discovery().node(discoEvt.node().id());
 
             if (node != null && !node.id().equals(cctx.localNodeId()))
                 onReceived(discoEvt.eventNode().id(), node.metrics().getLastDataVersion());
@@ -86,7 +86,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws GridException {
-        for (GridNode n : cctx.discovery().remoteNodes())
+        for (ClusterNode n : cctx.discovery().remoteNodes())
             onReceived(n.id(), n.metrics().getLastDataVersion());
     }
 

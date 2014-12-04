@@ -92,7 +92,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         }
 
         // Make sure that primary node is alive before returning this value.
-        GridNode primary = cctx.affinity().primary(key(), topVer);
+        ClusterNode primary = cctx.affinity().primary(key(), topVer);
 
         if (primary != null && primary.id().equals(primaryNodeId))
             return true;

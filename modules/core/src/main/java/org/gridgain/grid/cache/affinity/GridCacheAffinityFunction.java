@@ -91,7 +91,7 @@ public interface GridCacheAffinityFunction extends Serializable {
      * @return Unmodifiable list indexed by partition number. Each element of array is a collection in which
      *      first node is a primary node and other nodes are backup nodes.
      */
-    public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx);
+    public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx);
 
     /**
      * Removes node from affinity. This method is called when it is safe to remove left node from

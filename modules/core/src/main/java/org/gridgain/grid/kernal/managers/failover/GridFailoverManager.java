@@ -49,7 +49,7 @@ public class GridFailoverManager extends GridManagerAdapter<GridFailoverSpi> {
      * @param top Collection of all top nodes that does not include the failed node.
      * @return New node to route this job to.
      */
-    public GridNode failover(GridTaskSessionImpl taskSes, GridComputeJobResult jobRes, List<GridNode> top) {
+    public ClusterNode failover(GridTaskSessionImpl taskSes, GridComputeJobResult jobRes, List<ClusterNode> top) {
         return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes, jobRes,
             ctx.loadBalancing()), top);
     }

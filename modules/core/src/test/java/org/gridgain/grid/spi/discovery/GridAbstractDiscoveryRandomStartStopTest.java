@@ -49,9 +49,9 @@ public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends GridDis
             while (!canceled) {
                 try {
                     if (getSpi() != null) {
-                        Collection<GridNode> nodes = getSpi().getRemoteNodes();
+                        Collection<ClusterNode> nodes = getSpi().getRemoteNodes();
 
-                        for (GridNode item : nodes) {
+                        for (ClusterNode item : nodes) {
                             boolean flag = getSpi().pingNode(item.id());
 
                             if (flag) {

@@ -144,11 +144,11 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         int key = 0;
 
         while (true) {
-            Collection<GridNode> affNodes = cache1.affinity().mapKeyToPrimaryAndBackups(key);
+            Collection<ClusterNode> affNodes = cache1.affinity().mapKeyToPrimaryAndBackups(key);
 
             assert !F.isEmpty(affNodes);
 
-            GridNode primaryNode = F.first(affNodes);
+            ClusterNode primaryNode = F.first(affNodes);
 
             if (F.eq(primaryNode, cache1.gridProjection().grid().cluster().localNode()) &&
                 affNodes.contains(cache3.gridProjection().grid().cluster().localNode()))

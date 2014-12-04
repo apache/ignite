@@ -75,7 +75,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public final Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+    @Nullable @Override public final Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable GridGgfsTaskArgs<T> args) throws GridException {
         assert ignite != null;
         assert args != null;
@@ -83,9 +83,9 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
         GridGgfs ggfs = ignite.ggfs(args.ggfsName());
         GridGgfsProcessorAdapter ggfsProc = ((GridKernal) ignite).context().ggfs();
 
-        Map<GridComputeJob, GridNode> splitMap = new HashMap<>();
+        Map<GridComputeJob, ClusterNode> splitMap = new HashMap<>();
 
-        Map<UUID, GridNode> nodes = mapSubgrid(subgrid);
+        Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
         for (GridGgfsPath path : args.paths()) {
             GridGgfsFile file = ggfs.info(path);
@@ -102,7 +102,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
             long totalLen = 0;
 
             for (GridGgfsBlockLocation loc : aff) {
-                GridNode node = null;
+                ClusterNode node = null;
 
                 for (UUID nodeId : loc.nodeIds()) {
                     node = nodes.get(nodeId);
@@ -153,10 +153,10 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
      * @param subgrid Subgrid.
      * @return Map.
      */
-    private Map<UUID, GridNode> mapSubgrid(Collection<GridNode> subgrid) {
-        Map<UUID, GridNode> res = U.newHashMap(subgrid.size());
+    private Map<UUID, ClusterNode> mapSubgrid(Collection<ClusterNode> subgrid) {
+        Map<UUID, ClusterNode> res = U.newHashMap(subgrid.size());
 
-        for (GridNode node : subgrid)
+        for (ClusterNode node : subgrid)
             res.put(node.id(), node);
 
         return res;

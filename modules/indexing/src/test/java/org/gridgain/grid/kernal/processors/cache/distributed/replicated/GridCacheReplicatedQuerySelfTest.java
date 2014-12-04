@@ -471,7 +471,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         assert entry.getKey().equals(new CacheKey(2)) || entry.getKey().equals(new CacheKey(3));
         assert !iter.hasNext();
 
-        for (GridNode node : ignite.cluster().forRemotes().nodes()) {
+        for (ClusterNode node : ignite.cluster().forRemotes().nodes()) {
             q = qry.projection(ignite1.cluster().forNode(node));
 
             iter = q.execute().get().iterator();

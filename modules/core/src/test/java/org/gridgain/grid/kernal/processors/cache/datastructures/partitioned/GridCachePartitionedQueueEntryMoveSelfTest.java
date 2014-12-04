@@ -190,15 +190,15 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
         int part = aff.partition(mapper.affinityKey(queueName));
 
-        Collection<GridNode> nodes = grid(0).nodes();
+        Collection<ClusterNode> nodes = grid(0).nodes();
 
-        Collection<GridNode> aff0 = cache(0).affinity().mapKeyToPrimaryAndBackups(queueName);
-        Collection<GridNode> aff1 = nodes(aff, part, nodes);
+        Collection<ClusterNode> aff0 = cache(0).affinity().mapKeyToPrimaryAndBackups(queueName);
+        Collection<ClusterNode> aff1 = nodes(aff, part, nodes);
 
         assertEquals(new ArrayList<>(aff0), new ArrayList<>(aff1));
 
-        Collection<GridNode> aff2;
-        Collection<GridNode> tmpNodes;
+        Collection<ClusterNode> aff2;
+        Collection<ClusterNode> tmpNodes;
 
         int retries = 10000;
 
@@ -235,8 +235,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
      * @param nodes Topology nodes.
      * @return Affinity nodes for partition.
      */
-    private Collection<GridNode> nodes(GridCacheAffinityFunction aff, int part, Collection<GridNode> nodes) {
-        List<List<GridNode>> assignment = aff.assignPartitions(
+    private Collection<ClusterNode> nodes(GridCacheAffinityFunction aff, int part, Collection<ClusterNode> nodes) {
+        List<List<ClusterNode>> assignment = aff.assignPartitions(
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, 1, BACKUP_CNT));
 
         return assignment.get(part);

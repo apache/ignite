@@ -30,7 +30,7 @@ public class GridP2PTestTaskExternalPath2 extends GridComputeTaskAdapter<Object,
      * {@inheritDoc}
      */
     @SuppressWarnings({"unchecked"})
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Object arg) throws GridException {
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
         if (log.isInfoEnabled()) {
             log.info("Mapping [task=" + this + ", subgrid=" + F.viewReadOnly(subgrid, F.node2id()) +
                 ", arg=" + arg + ']');
@@ -56,9 +56,9 @@ public class GridP2PTestTaskExternalPath2 extends GridComputeTaskAdapter<Object,
             sleep = false;
         }
 
-        Map<TestJob, GridNode> jobs = U.newHashMap(subgrid.size());
+        Map<TestJob, ClusterNode> jobs = U.newHashMap(subgrid.size());
 
-        for (GridNode node : subgrid) {
+        for (ClusterNode node : subgrid) {
             if (nodeIds.contains(node.id()))
                 jobs.put(new TestJob(node.id(), sleep), node);
         }

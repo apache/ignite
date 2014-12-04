@@ -64,7 +64,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
         guard();
 
         try {
-            Collection<GridNode> snapshot = prj.nodes();
+            Collection<ClusterNode> snapshot = prj.nodes();
 
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();
@@ -83,7 +83,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
         guard();
 
         try {
-            Collection<GridNode> snapshot = prj.nodes();
+            Collection<ClusterNode> snapshot = prj.nodes();
 
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();
@@ -106,7 +106,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
         guard();
 
         try {
-            Collection<GridNode> snapshot = prj.nodes();
+            Collection<ClusterNode> snapshot = prj.nodes();
 
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();

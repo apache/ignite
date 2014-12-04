@@ -50,7 +50,7 @@ public class GridClockDeltaSnapshot {
 
         pendingDeltas = new HashMap<>(discoSnap.topologyNodes().size(), 1.0f);
 
-        for (GridNode n : discoSnap.topologyNodes()) {
+        for (ClusterNode n : discoSnap.topologyNodes()) {
             if (!locNodeId.equals(n.id()))
                 pendingDeltas.put(n.id(), new DeltaAverage(avgSize));
         }

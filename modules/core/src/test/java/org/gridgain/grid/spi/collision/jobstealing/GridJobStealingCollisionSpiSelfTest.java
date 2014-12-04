@@ -109,7 +109,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @param ctx Collision job context.
      * @param rmtNode Remote node.
      */
-    private void checkRejected(GridTestCollisionJobContext ctx, GridNode rmtNode) {
+    private void checkRejected(GridTestCollisionJobContext ctx, ClusterNode rmtNode) {
         assert ctx.isCanceled();
         assert !ctx.isActivated();
         assert ctx.getJobContext().getAttribute(THIEF_NODE_ATTR).equals(rmtNode.id());
@@ -142,7 +142,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
             new GridTestCollisionJobContext(createTaskSession(), 1, lsnr),
             new GridTestCollisionJobContext(createTaskSession(), 2, lsnr));
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
 
@@ -175,7 +175,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
             GridUuid.randomUuid()));
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
 
@@ -210,7 +210,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
             GridUuid.randomUuid()));
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         // Emulate message to steal 2 jobs.
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(2));
@@ -249,7 +249,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
             new GridTestCollisionJobContext(createTaskSession(), 2, lsnr),
             new GridTestCollisionJobContext(createTaskSession(), 3, lsnr));
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         // Emulate message to steal 2 jobs.
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(2));
@@ -296,7 +296,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
 
@@ -323,7 +323,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
             GridUuid.randomUuid()));
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
 
@@ -346,7 +346,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         getSpi().onCollision(new GridCollisionTestContext(empty, empty));
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         GridJobStealingRequest sentMsg = (GridJobStealingRequest)getSpiContext().getSentMessage(rmtNode);
 
@@ -381,7 +381,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
             GridUuid.randomUuid()));
 
-        GridNode rmtNode = F.first(getSpiContext().remoteNodes());
+        ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         // Exceed hops.
         excluded.getJobContext().setAttribute(STEALING_ATTEMPT_COUNT_ATTR, 1);

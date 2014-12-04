@@ -76,7 +76,7 @@ public interface GridComputeJobResult {
      *
      * @return Node this job executed on.
      */
-    public GridNode getNode();
+    public ClusterNode getNode();
 
     /**
      * Gets job cancellation status. Returns {@code true} if job received cancellation

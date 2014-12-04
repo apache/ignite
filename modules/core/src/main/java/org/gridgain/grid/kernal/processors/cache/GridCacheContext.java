@@ -12,8 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.cloner.*;
-import org.gridgain.grid.dr.*;
-import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -30,7 +28,6 @@ import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
@@ -56,7 +53,6 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
 
 /**
  * Cache context.
@@ -149,7 +145,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridPredicate<GridCacheEntry<K, V>>[] trueArr;
 
     /** Cached local rich node. */
-    private GridNode locNode;
+    private ClusterNode locNode;
 
     /**
      * Thread local projection. If it's set it means that method call was initiated
@@ -571,7 +567,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Local node.
      */
-    public GridNode localNode() {
+    public ClusterNode localNode() {
         if (locNode == null)
             locNode = ctx.discovery().localNode();
 
@@ -589,7 +585,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param n Node to check.
      * @return {@code True} if node is local.
      */
-    public boolean isLocalNode(GridNode n) {
+    public boolean isLocalNode(ClusterNode n) {
         assert n != null;
 
         return localNode().id().equals(n.id());
@@ -609,7 +605,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param nodeId Node id.
      * @return Node.
      */
-    @Nullable public GridNode node(UUID nodeId) {
+    @Nullable public ClusterNode node(UUID nodeId) {
         assert nodeId != null;
 
         return ctx.discovery().node(nodeId);
@@ -1398,18 +1394,18 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws GridCacheEntryRemovedException If reader for entry is removed.
      */
     public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry<K, V> entry, GridLogger log,
-        Map<GridNode, List<GridDhtCacheEntry<K, V>>> dhtMap,
-        Map<GridNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
+        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap,
+        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
         assert topVer != -1;
 
-        Collection<GridNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
+        Collection<ClusterNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
 
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
         Collection<UUID> readers = entry.readers();
 
-        Collection<GridNode> nearNodes = null;
+        Collection<ClusterNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
             nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
@@ -1420,7 +1416,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         else if (log.isDebugEnabled())
             log.debug("Entry has no near readers: " + entry);
 
-        Collection<GridNode> dhtRemoteNodes = F.view(dhtNodes, F.remoteNodes(nodeId())); // Exclude local node.
+        Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, F.remoteNodes(nodeId())); // Exclude local node.
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
@@ -1436,12 +1432,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param map Map.
      * @return {@code True} if mapped.
      */
-    private boolean map(GridDhtCacheEntry<K, V> entry, Iterable<GridNode> nodes,
-        Map<GridNode, List<GridDhtCacheEntry<K, V>>> map) {
+    private boolean map(GridDhtCacheEntry<K, V> entry, Iterable<ClusterNode> nodes,
+        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> map) {
         boolean ret = false;
 
         if (nodes != null) {
-            for (GridNode n : nodes) {
+            for (ClusterNode n : nodes) {
                 List<GridDhtCacheEntry<K, V>> entries = map.get(n);
 
                 if (entries == null)

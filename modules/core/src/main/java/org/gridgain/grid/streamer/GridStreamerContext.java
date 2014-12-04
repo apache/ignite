@@ -81,7 +81,7 @@ public interface GridStreamerContext {
      * @return Result received from all streamers.
      * @throws GridException If query execution failed.
      */
-    public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<GridNode> nodes)
+    public <R> Collection<R> query(GridClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException;
 
     /**
@@ -102,7 +102,7 @@ public interface GridStreamerContext {
      *      which this streamer is running will be queried.
      * @throws GridException If closure execution failed.
      */
-    public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<GridNode> nodes) throws GridException;
+    public void broadcast(GridInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes) throws GridException;
 
     /**
      * Queries all streamer nodes deployed within grid. Given closure will be executed on each streamer node in
@@ -129,5 +129,5 @@ public interface GridStreamerContext {
      * @throws GridException If query execution failed.
      */
     public <R1, R2> R2 reduce(GridClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
-        Collection<GridNode> nodes) throws GridException;
+        Collection<ClusterNode> nodes) throws GridException;
 }

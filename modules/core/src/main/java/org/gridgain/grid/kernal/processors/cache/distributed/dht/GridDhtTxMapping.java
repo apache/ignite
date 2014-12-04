@@ -36,10 +36,10 @@ public class GridDhtTxMapping<K, V> {
      * @param nodes Nodes.
      */
     @SuppressWarnings("ConstantConditions")
-    public void addMapping(List<GridNode> nodes) {
-        GridNode primary = F.first(nodes);
+    public void addMapping(List<ClusterNode> nodes) {
+        ClusterNode primary = F.first(nodes);
 
-        Collection<GridNode> backups = F.view(nodes, F.notEqualTo(primary));
+        Collection<ClusterNode> backups = F.view(nodes, F.notEqualTo(primary));
 
         if (last == null || !last.primary.equals(primary.id())) {
             last = new TxMapping(primary, backups);
@@ -142,7 +142,7 @@ public class GridDhtTxMapping<K, V> {
          * @param primary Primary node.
          * @param backups Backup nodes.
          */
-        private TxMapping(GridNode primary, Iterable<GridNode> backups) {
+        private TxMapping(ClusterNode primary, Iterable<ClusterNode> backups) {
             this.primary = primary.id();
 
             this.backups = new HashSet<>();
@@ -153,8 +153,8 @@ public class GridDhtTxMapping<K, V> {
         /**
          * @param backups Backup nodes.
          */
-        private void add(Iterable<GridNode> backups) {
-            for (GridNode n : backups)
+        private void add(Iterable<ClusterNode> backups) {
+            for (ClusterNode n : backups)
                 this.backups.add(n.id());
         }
     }

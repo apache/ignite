@@ -154,10 +154,10 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /**
      * @return Participating nodes.
      */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
-                @Nullable @Override public GridNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -638,7 +638,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             for (Iterator<GridNearLockMapping<K, V>> iter = mappings.iterator(); iter.hasNext(); ) {
                 GridNearLockMapping<K, V> mapping = iter.next();
 
-                GridNode node = mapping.node();
+                ClusterNode node = mapping.node();
                 Collection<K> mappedKeys = mapping.mappedKeys();
 
                 boolean loc = node.equals(cctx.localNode());
@@ -807,7 +807,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         final GridNearLockRequest<K, V> req = map.request();
         final Collection<K> mappedKeys = map.distributedKeys();
-        final GridNode node = map.node();
+        final ClusterNode node = map.node();
 
         if (filter != null && filter.length != 0)
             req.filter(filter, cctx);
@@ -1019,7 +1019,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         long topVer) throws GridException {
         assert mapping == null || mapping.node() != null;
 
-        GridNode primary = cctx.affinity().primary(key, topVer);
+        ClusterNode primary = cctx.affinity().primary(key, topVer);
 
         if (cctx.discovery().node(primary.id()) == null)
             // If primary node left the grid before lock acquisition, fail the whole future.
@@ -1087,7 +1087,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         /** Node ID. */
         @GridToStringExclude
-        private GridNode node;
+        private ClusterNode node;
 
         /** Keys. */
         @GridToStringInclude
@@ -1112,7 +1112,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
          * @param keys Keys.
          * @param mappings Mappings to proceed.
          */
-        MiniFuture(GridNode node, Collection<K> keys,
+        MiniFuture(ClusterNode node, Collection<K> keys,
             Deque<GridNearLockMapping<K, V>> mappings) {
             super(cctx.kernalContext());
 
@@ -1131,7 +1131,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         /**
          * @return Node ID.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return node;
         }
 

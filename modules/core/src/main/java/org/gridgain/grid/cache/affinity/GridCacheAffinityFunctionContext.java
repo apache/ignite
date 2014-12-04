@@ -28,7 +28,7 @@ public interface GridCacheAffinityFunctionContext {
      * @return List of nodes assigned to given partition on previous topology version or {@code null}
      *      if this information is not available.
      */
-    @Nullable public List<GridNode> previousAssignment(int part);
+    @Nullable public List<ClusterNode> previousAssignment(int part);
 
     /**
      * Gets number of backups for new assignment.
@@ -44,7 +44,7 @@ public interface GridCacheAffinityFunctionContext {
      *
      * @return Cache topology snapshot.
      */
-    public List<GridNode> currentTopologySnapshot();
+    public List<ClusterNode> currentTopologySnapshot();
 
     /**
      * Gets current topology version number.

@@ -46,7 +46,7 @@ public class GridStreamerCacheAffinityEventRouter extends GridStreamerEventRoute
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
         if (evt instanceof CacheAffinityEvent) {
             CacheAffinityEvent e = (CacheAffinityEvent)evt;
 

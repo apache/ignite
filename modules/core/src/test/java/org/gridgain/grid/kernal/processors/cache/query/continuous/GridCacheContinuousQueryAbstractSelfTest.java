@@ -249,7 +249,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    q.execute(grid(0).forPredicate(F.<GridNode>alwaysFalse()));
+                    q.execute(grid(0).forPredicate(F.<ClusterNode>alwaysFalse()));
 
                     return null;
                 }
@@ -547,7 +547,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                GridNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -626,7 +626,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                GridNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -773,7 +773,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         qry.bufferSize(5);
 
         try {
-            GridNode node = F.first(grid(0).forRemotes().nodes());
+            ClusterNode node = F.first(grid(0).forRemotes().nodes());
 
             qry.execute(grid(0).forNode(node));
 
@@ -782,7 +782,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                GridNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -867,14 +867,14 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         qry.timeInterval(3000);
 
         try {
-            GridNode node = F.first(grid(0).forRemotes().nodes());
+            ClusterNode node = F.first(grid(0).forRemotes().nodes());
 
             Collection<Integer> keys = new HashSet<>();
 
             int key = 0;
 
             while (true) {
-                GridNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).mapKeyToNode(null, key);
 
                 assert n != null;
 

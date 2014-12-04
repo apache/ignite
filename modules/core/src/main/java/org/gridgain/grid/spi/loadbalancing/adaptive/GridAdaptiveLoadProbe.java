@@ -17,7 +17,7 @@ import org.gridgain.grid.*;
  * by setting {@link GridAdaptiveLoadBalancingSpi#setLoadProbe(GridAdaptiveLoadProbe)}
  * configuration parameter.
  * <p>
- * Note that if {@link #getLoad(GridNode, int)} returns a value of {@code 0},
+ * Note that if {@link #getLoad(org.gridgain.grid.ClusterNode, int)} returns a value of {@code 0},
  * then implementation will assume that load value is simply not available and
  * will try to calculate an average of load values for other nodes. If such
  * average cannot be obtained (all node load values are {@code 0}), then a value
@@ -71,7 +71,7 @@ public interface GridAdaptiveLoadProbe {
     /**
      * Calculates load value for a given node. Specific implementations would
      * usually take into account some of the values provided by
-     * {@link GridNode#metrics()} method. For example, load can be calculated
+     * {@link org.gridgain.grid.ClusterNode#metrics()} method. For example, load can be calculated
      * based on job execution time or number of active jobs, or CPU/Heap utilization.
      * <p>
      * Note that if this method returns a value of {@code 0},
@@ -86,5 +86,5 @@ public interface GridAdaptiveLoadProbe {
      *      implementation takes into account the current job count on a node.
      * @return Non-negative load value for the node (zero and above).
      */
-    public double getLoad(GridNode node, int jobsSentSinceLastUpdate);
+    public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate);
 }

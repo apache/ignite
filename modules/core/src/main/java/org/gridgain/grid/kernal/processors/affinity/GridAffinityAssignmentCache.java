@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
  */
 public class GridAffinityAssignmentCache {
     /** Node order comparator. */
-    private static final Comparator<GridNode> nodeCmp = new GridNodeOrderComparator();
+    private static final Comparator<ClusterNode> nodeCmp = new GridNodeOrderComparator();
 
     /** Cache name. */
     private final String cacheName;
@@ -95,7 +95,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment for topology version.
      */
-    public void initialize(long topVer, List<List<GridNode>> affAssignment) {
+    public void initialize(long topVer, List<List<ClusterNode>> affAssignment) {
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment);
 
         affCache.put(topVer, assignment);
@@ -113,28 +113,28 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to calculate affinity cache for.
      * @param discoEvt Discovery event that caused this topology version change.
      */
-    public List<List<GridNode>> calculate(long topVer, GridDiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculate(long topVer, GridDiscoveryEvent discoEvt) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
 
         GridAffinityAssignment prev = affCache.get(topVer - 1);
 
-        List<GridNode> sorted;
+        List<ClusterNode> sorted;
 
         if (ctx.isLocal())
             // For local cache always use local node.
             sorted = Collections.singletonList(ctx.localNode());
         else {
             // Resolve nodes snapshot for specified topology version.
-            Collection<GridNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
+            Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
             sorted = sort(nodes);
         }
 
-        List<List<GridNode>> prevAssignment = prev == null ? null : prev.assignment();
+        List<List<ClusterNode>> prevAssignment = prev == null ? null : prev.assignment();
 
-        List<List<GridNode>> assignment = aff.assignPartitions(
+        List<List<ClusterNode>> assignment = aff.assignPartitions(
             new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt, topVer, backups));
 
         GridAffinityAssignment updated = new GridAffinityAssignment(topVer, assignment);
@@ -191,7 +191,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @return Affinity assignment.
      */
-    public List<List<GridNode>> assignments(long topVer) {
+    public List<List<ClusterNode>> assignments(long topVer) {
         GridAffinityAssignment aff = cachedAffinity(topVer);
 
         return aff.assignment();
@@ -265,7 +265,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public List<GridNode> nodes(int part, long topVer) {
+    public List<ClusterNode> nodes(int part, long topVer) {
         // Resolve cached affinity nodes.
         return cachedAffinity(topVer).get(part);
     }
@@ -354,8 +354,8 @@ public class GridAffinityAssignmentCache {
      * @param nodes Nodes to sort.
      * @return Sorted list of nodes.
      */
-    private List<GridNode> sort(Collection<GridNode> nodes) {
-        List<GridNode> sorted = new ArrayList<>(nodes.size());
+    private List<ClusterNode> sort(Collection<ClusterNode> nodes) {
+        List<ClusterNode> sorted = new ArrayList<>(nodes.size());
 
         sorted.addAll(nodes);
 

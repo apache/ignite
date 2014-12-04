@@ -152,7 +152,7 @@ public class VisorCache implements Serializable {
             }
             else {
                 // Old way of collecting partitions info.
-                GridNode node = g.cluster().localNode();
+                ClusterNode node = g.cluster().localNode();
 
                 int[] pp = ca.affinity().primaryPartitions(node);
 

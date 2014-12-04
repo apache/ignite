@@ -259,7 +259,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
     private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap8<>();
 
     /** */
-    private final Queue<GridNode> nodeQueue = new ConcurrentLinkedDeque8<>();
+    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque8<>();
 
     /** */
     private GridCollisionExternalListener extLsnr;
@@ -341,7 +341,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
 
     /**
      * Configuration parameter to enable stealing to/from only nodes that
-     * have these attributes set (see {@link GridNode#attribute(String)} and
+     * have these attributes set (see {@link org.gridgain.grid.ClusterNode#attribute(String)} and
      * {@link GridConfiguration#getUserAttributes()} methods).
      *
      * @param stealAttrs Node attributes to enable job stealing for.
@@ -448,7 +448,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
 
                     switch (discoEvt.type()) {
                         case EVT_NODE_JOINED:
-                            GridNode node = getSpiContext().node(evtNodeId);
+                            ClusterNode node = getSpiContext().node(evtNodeId);
 
                             if (node != null) {
                                 nodeQueue.offer(node);
@@ -461,10 +461,10 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
 
                         case EVT_NODE_LEFT:
                         case EVT_NODE_FAILED:
-                            Iterator<GridNode> iter = nodeQueue.iterator();
+                            Iterator<ClusterNode> iter = nodeQueue.iterator();
 
                             while (iter.hasNext()) {
-                                GridNode nextNode = iter.next();
+                                ClusterNode nextNode = iter.next();
 
                                 if (nextNode.id().equals(evtNodeId))
                                     iter.remove();
@@ -485,9 +485,9 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
             EVT_NODE_LEFT
         );
 
-        Collection<GridNode> rmtNodes = spiCtx.remoteNodes();
+        Collection<ClusterNode> rmtNodes = spiCtx.remoteNodes();
 
-        for (GridNode node : rmtNodes) {
+        for (ClusterNode node : rmtNodes) {
             UUID id = node.id();
 
             if (spiCtx.node(id) != null) {
@@ -504,10 +504,10 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
 
         nodeQueue.addAll(rmtNodes);
 
-        Iterator<GridNode> iter = nodeQueue.iterator();
+        Iterator<ClusterNode> iter = nodeQueue.iterator();
 
         while (iter.hasNext()) {
-            GridNode nextNode = iter.next();
+            ClusterNode nextNode = iter.next();
 
             if (spiCtx.node(nextNode.id()) == null)
                 iter.remove();
@@ -867,7 +867,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
         if (jobsToSteal > 0) {
             int jobsLeft = jobsToSteal;
 
-            GridNode next;
+            ClusterNode next;
 
             int nodeCnt = getSpiContext().remoteNodes().size();
 

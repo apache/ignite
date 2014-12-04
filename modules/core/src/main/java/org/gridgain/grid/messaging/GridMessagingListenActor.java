@@ -204,7 +204,7 @@ public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUI
         assert nodeId != null;
 
         if (respMsg != null) {
-            GridNode node = ignite.cluster().node(nodeId);
+            ClusterNode node = ignite.cluster().node(nodeId);
 
             if (node != null)
                 ignite.message(ignite.cluster().forNode(node)).send(null, respMsg); // Can still fail.

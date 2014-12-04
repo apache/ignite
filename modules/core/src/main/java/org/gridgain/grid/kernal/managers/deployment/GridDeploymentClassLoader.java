@@ -568,7 +568,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
             GridUuid ldrId = nodeLdrMapCp.get(nodeId);
 
-            GridNode node = ctx.discovery().node(nodeId);
+            ClusterNode node = ctx.discovery().node(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())
@@ -708,7 +708,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
             GridUuid ldrId = nodeLdrMapCp.get(nodeId);
 
-            GridNode node = ctx.discovery().node(nodeId);
+            ClusterNode node = ctx.discovery().node(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())

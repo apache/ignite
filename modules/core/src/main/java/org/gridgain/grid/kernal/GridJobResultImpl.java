@@ -29,7 +29,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
     private final GridJobContextImpl jobCtx;
 
     /** */
-    private GridNode node;
+    private ClusterNode node;
 
     /** */
     private Object data;
@@ -52,7 +52,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
      * @param node Node from where this result was received.
      * @param sib Sibling associated with this result.
      */
-    public GridJobResultImpl(GridComputeJob job, GridUuid jobId, GridNode node, GridJobSiblingImpl sib) {
+    public GridJobResultImpl(GridComputeJob job, GridUuid jobId, ClusterNode node, GridJobSiblingImpl sib) {
         assert jobId != null;
         assert node != null;
         assert sib != null;
@@ -83,7 +83,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized GridNode getNode() {
+    @Override public synchronized ClusterNode getNode() {
         return node;
     }
 
@@ -106,7 +106,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
     /**
      * @param node Node from where this result was received.
      */
-    public synchronized void setNode(GridNode node) {
+    public synchronized void setNode(ClusterNode node) {
         this.node = node;
     }
 

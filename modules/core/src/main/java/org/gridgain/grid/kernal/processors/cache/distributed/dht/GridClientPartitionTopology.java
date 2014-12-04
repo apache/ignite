@@ -165,7 +165,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
 
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionExchangeId exchId) {
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         lock.writeLock().lock();
 
@@ -177,7 +177,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
                 removeNode(exchId.nodeId());
 
             // In case if node joins, get topology at the time of joining node.
-            GridNode oldest = CU.oldest(cctx, topVer);
+            ClusterNode oldest = CU.oldest(cctx, topVer);
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -296,20 +296,20 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> nodes(int p, long topVer) {
+    @Override public Collection<ClusterNode> nodes(int p, long topVer) {
         lock.readLock().lock();
 
         try {
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
                 ", node2part=" + node2part + ']';
 
-            Collection<GridNode> nodes = null;
+            Collection<ClusterNode> nodes = null;
 
             Collection<UUID> nodeIds = part2node.get(p);
 
             if (!F.isEmpty(nodeIds)) {
                 for (UUID nodeId : nodeIds) {
-                    GridNode n = cctx.discovery().node(nodeId);
+                    ClusterNode n = cctx.discovery().node(nodeId);
 
                     if (n != null && (topVer < 0 || n.order() <= topVer)) {
                         if (nodes == null)
@@ -334,7 +334,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<GridNode> nodes(int p, long topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
+    private List<ClusterNode> nodes(int p, long topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
@@ -351,14 +351,14 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
             if (size == 0)
                 return Collections.emptyList();
 
-            List<GridNode> nodes = new ArrayList<>(size);
+            List<ClusterNode> nodes = new ArrayList<>(size);
 
             for (UUID id : nodeIds) {
                 if (topVer > 0 && !allIds.contains(id))
                     continue;
 
                 if (hasState(p, id, state, states)) {
-                    GridNode n = cctx.discovery().node(id);
+                    ClusterNode n = cctx.discovery().node(id);
 
                     if (n != null && (topVer < 0 || n.order() <= topVer))
                         nodes.add(n);
@@ -373,17 +373,17 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridNode> owners(int p, long topVer) {
+    @Override public List<ClusterNode> owners(int p, long topVer) {
         return nodes(p, topVer, OWNING);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridNode> owners(int p) {
+    @Override public List<ClusterNode> owners(int p) {
         return owners(p, -1);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridNode> moving(int p) {
+    @Override public List<ClusterNode> moving(int p) {
         return nodes(p, -1, MOVING);
     }
 
@@ -392,7 +392,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
      * @param topVer Topology version.
      * @return List of nodes in state OWNING or MOVING.
      */
-    private List<GridNode> ownersAndMoving(int p, long topVer) {
+    private List<ClusterNode> ownersAndMoving(int p, long topVer) {
         return nodes(p, topVer, OWNING, MOVING);
     }
 
@@ -615,7 +615,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
         assert nodeId.equals(cctx.localNodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        GridNode oldest = CU.oldest(cctx, topVer);
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
         // If this node became the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
@@ -665,9 +665,9 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
         assert nodeId != null;
         assert lock.writeLock().isHeldByCurrentThread();
 
-        GridNode oldest = CU.oldest(cctx, topVer);
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         if (node2part != null) {
             if (oldest.equals(loc) && !node2part.nodeId().equals(loc.id())) {

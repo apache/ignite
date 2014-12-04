@@ -73,7 +73,7 @@ public class GridNoopManagerAdapter implements GridManager {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 }

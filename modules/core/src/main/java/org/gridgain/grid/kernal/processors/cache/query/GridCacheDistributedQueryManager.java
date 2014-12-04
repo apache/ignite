@@ -193,7 +193,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         GridReducer<Object, Object> rdc = req.reducer();
         GridClosure<Object, Object> trans = req.transformer();
 
-        GridNode sndNode = cctx.node(sndId);
+        ClusterNode sndNode = cctx.node(sndId);
 
         if (sndNode == null)
             return null;
@@ -243,7 +243,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @return {@code true} if response was sent, {@code false} otherwise.
      */
     private boolean sendQueryResponse(UUID nodeId, GridCacheQueryResponse<K, V> res, long timeout) {
-        GridNode node = cctx.node(nodeId);
+        ClusterNode node = cctx.node(nodeId);
 
         if (node == null)
             return false;
@@ -493,7 +493,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<GridNode> nodes) {
+    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -551,7 +551,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override public void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<GridNode> nodes, boolean all) {
+    @Override public void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<ClusterNode> nodes, boolean all) {
         assert cctx.config().getCacheMode() != LOCAL;
         assert qry != null;
         assert nodes != null;
@@ -604,7 +604,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridCacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
-        Collection<GridNode> nodes) {
+        Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -673,7 +673,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
         final GridCacheQueryRequest<K, V> req,
-        Collection<GridNode> nodes
+        Collection<ClusterNode> nodes
     ) throws GridException {
         assert fut != null;
         assert req != null;
@@ -681,11 +681,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         final UUID locNodeId = cctx.localNodeId();
 
-        GridNode locNode = null;
+        ClusterNode locNode = null;
 
-        Collection<GridNode> rmtNodes = null;
+        Collection<ClusterNode> rmtNodes = null;
 
-        for (GridNode n : nodes) {
+        for (ClusterNode n : nodes) {
             if (n.id().equals(locNodeId))
                 locNode = n;
             else {
@@ -700,8 +700,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         // For example, a remote reducer has a state, we should not serialize and then send
         // the reducer changed by the local node.
         if (!F.isEmpty(rmtNodes)) {
-            cctx.io().safeSend(rmtNodes, req, new P1<GridNode>() {
-                @Override public boolean apply(GridNode node) {
+            cctx.io().safeSend(rmtNodes, req, new P1<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
                     fut.onNodeLeft(node.id());
 
                     return !fut.isDone();

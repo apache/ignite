@@ -70,7 +70,7 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
     public void testCleanup() throws Exception {
         GridCacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME1, 0, false, true);
 
-        GridNode node = grid(0).cache(null).affinity().mapKeyToNode(new GridCacheQueueHeaderKey(QUEUE_NAME1));
+        ClusterNode node = grid(0).cache(null).affinity().mapKeyToNode(new GridCacheQueueHeaderKey(QUEUE_NAME1));
 
         final Ignite ignite = grid(0).localNode().equals(node) ? grid(1) : grid(0);
 

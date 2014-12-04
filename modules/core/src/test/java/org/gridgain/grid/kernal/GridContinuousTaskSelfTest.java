@@ -142,7 +142,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Boolean arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) throws GridException {
             assert mapper != null;
             assert arg != null;
 
@@ -318,7 +318,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             mapper.send(new TestJob(++cnt));
 
             try {

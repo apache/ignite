@@ -25,14 +25,14 @@ public class GridWeightedRandomLoadBalancingSpiSelfTest extends
      */
     @SuppressWarnings({"ObjectEquality"})
     public void testSingleNode() throws Exception {
-        List<GridNode> nodes = Collections.singletonList((GridNode)new GridTestNode(UUID.randomUUID()));
+        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)new GridTestNode(UUID.randomUUID()));
 
-        GridNode node = getSpi().getBalancedNode(new GridTestTaskSession(), nodes, new GridTestJob());
+        ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(), nodes, new GridTestJob());
 
         assert nodes.contains(node);
 
         // Verify that same instance is returned every time.
-        GridNode balancedNode = getSpi().getBalancedNode(new GridTestTaskSession(), nodes, new GridTestJob());
+        ClusterNode balancedNode = getSpi().getBalancedNode(new GridTestTaskSession(), nodes, new GridTestJob());
 
         assert node == balancedNode;
     }
@@ -41,7 +41,7 @@ public class GridWeightedRandomLoadBalancingSpiSelfTest extends
      * @throws Exception If failed.
      */
     public void testMultipleNodes() throws Exception {
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
         for (int i = 0; i < 10; i++)
             nodes.add(new GridTestNode(UUID.randomUUID()));
@@ -49,7 +49,7 @@ public class GridWeightedRandomLoadBalancingSpiSelfTest extends
         // Seal it.
         nodes = Collections.unmodifiableList(nodes);
 
-        GridNode node = getSpi().getBalancedNode(new GridTestTaskSession(), nodes, new GridTestJob());
+        ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(), nodes, new GridTestJob());
 
         assert node != null;
         assert nodes.contains(node);

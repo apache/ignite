@@ -116,8 +116,8 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
-            List<List<GridNode>> res = new ArrayList<>();
+        @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+            List<List<ClusterNode>> res = new ArrayList<>();
 
             res.add(nodes(0, affCtx.currentTopologySnapshot()));
 
@@ -125,7 +125,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        public List<GridNode> nodes(int part, Collection<GridNode> nodes) {
+        public List<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
             return new ArrayList<>(nodes);
         }
 

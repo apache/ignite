@@ -26,9 +26,9 @@ public class GridRoundRobinLoadBalancingSpiLocalNodeSelfTest extends
     public void testLocalNode() throws Exception {
         assert getDiscoverySpi().getRemoteNodes().isEmpty();
 
-        GridNode locNode = getDiscoverySpi().getLocalNode();
+        ClusterNode locNode = getDiscoverySpi().getLocalNode();
 
-        GridNode node = getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()),
+        ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()),
             Collections.singletonList(locNode), new GridTestJob());
 
         assert  node == locNode;

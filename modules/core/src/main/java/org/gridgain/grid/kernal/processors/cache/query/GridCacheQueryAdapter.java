@@ -406,7 +406,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     @SuppressWarnings("IfMayBeConditional")
     private <R> GridCacheQueryFuture<R> execute(@Nullable GridReducer<T, R> rmtReducer,
         @Nullable GridClosure<T, R> rmtTransform, @Nullable Object... args) {
-        Collection<GridNode> nodes = nodes();
+        Collection<ClusterNode> nodes = nodes();
 
         cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
@@ -445,8 +445,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @return Nodes to execute on.
      */
-    private Collection<GridNode> nodes() {
-        Collection<GridNode> nodes = CU.allNodes(cctx);
+    private Collection<ClusterNode> nodes() {
+        Collection<ClusterNode> nodes = CU.allNodes(cctx);
 
         if (prj == null) {
             if (cctx.isReplicated())
@@ -455,8 +455,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
             return nodes;
         }
 
-        return F.view(nodes, new P1<GridNode>() {
-            @Override public boolean apply(GridNode e) {
+        return F.view(nodes, new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode e) {
                 return prj.node(e.id()) != null;
             }
         });

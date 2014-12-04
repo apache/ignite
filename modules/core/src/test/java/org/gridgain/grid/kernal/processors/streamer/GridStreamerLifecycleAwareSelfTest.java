@@ -32,12 +32,12 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
+        @Nullable @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> Map<GridNode, Collection<T>> route(GridStreamerContext ctx,
+        @Nullable @Override public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx,
             String stageName, Collection<T> evts) {
             return null;
         }

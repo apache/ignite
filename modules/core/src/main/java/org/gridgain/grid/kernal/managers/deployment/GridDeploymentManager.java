@@ -192,7 +192,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @param locUndeploy Local undeploy flag.
      * @param rmtNodes Nodes to send request to.
      */
-    public void undeployTask(String taskName, boolean locUndeploy, Collection<GridNode> rmtNodes) {
+    public void undeployTask(String taskName, boolean locUndeploy, Collection<ClusterNode> rmtNodes) {
         assert taskName != null;
         assert !rmtNodes.contains(ctx.discovery().localNode());
 
@@ -387,7 +387,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         UUID sndNodeId,
         GridUuid clsLdrId,
         Map<UUID, GridUuid> participants,
-        @Nullable GridPredicate<GridNode> nodeFilter) {
+        @Nullable GridPredicate<ClusterNode> nodeFilter) {
         if (locDep != null)
             return locDep;
 

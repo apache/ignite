@@ -13,14 +13,14 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Node hash resolver which uses {@link GridNode#consistentId()} as alternate hash value.
+ * Node hash resolver which uses {@link org.gridgain.grid.ClusterNode#consistentId()} as alternate hash value.
  */
 public class GridCacheAffinityNodeAddressHashResolver implements GridCacheAffinityNodeHashResolver {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public Object resolve(GridNode node) {
+    @Override public Object resolve(ClusterNode node) {
         return node.consistentId();
     }
 

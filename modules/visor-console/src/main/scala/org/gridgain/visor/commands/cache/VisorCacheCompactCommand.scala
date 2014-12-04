@@ -79,7 +79,7 @@ class VisorCacheCompactCommand {
      *
      * @param argLst Command arguments.
      */
-    def compact(argLst: ArgList, node: Option[GridNode]) = breakable {
+    def compact(argLst: ArgList, node: Option[ClusterNode]) = breakable {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {

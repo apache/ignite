@@ -217,7 +217,7 @@ public class GridIoManagerBenchmark {
         final GridIoManager io = g.context().io();
 
         GridMessageListener lsnr = new GridMessageListener() {
-            private GridNode node;
+            private ClusterNode node;
 
             @Override public void onMessage(UUID nodeId, Object msg) {
                 if (node == null)
@@ -256,7 +256,7 @@ public class GridIoManagerBenchmark {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridNode dst = awaitOther(g.context().discovery());
+                ClusterNode dst = awaitOther(g.context().discovery());
 
                 GridIoManager io = g.context().io();
 
@@ -296,11 +296,11 @@ public class GridIoManagerBenchmark {
          * @throws InterruptedException If interrupted.
          */
         @SuppressWarnings("BusyWait")
-        private GridNode awaitOther(final GridDiscoveryManager disc) throws InterruptedException {
+        private ClusterNode awaitOther(final GridDiscoveryManager disc) throws InterruptedException {
             while (disc.allNodes().size() < 2)
                 Thread.sleep(1000);
 
-            for (GridNode node : disc.allNodes())
+            for (ClusterNode node : disc.allNodes())
                 if (!F.eqNodes(node, disc.localNode()))
                     return node;
 

@@ -41,7 +41,7 @@ public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<Str
         if ("null".equals(cacheName))
             cacheName = null;
 
-        GridNode node = ignite.cluster().mapKeyToNode(cacheName, affKey);
+        ClusterNode node = ignite.cluster().mapKeyToNode(cacheName, affKey);
 
         return node.id().toString();
     }

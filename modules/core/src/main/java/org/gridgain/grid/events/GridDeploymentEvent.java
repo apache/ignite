@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
  * Grid deployment event.
  * <p>
@@ -80,7 +78,7 @@ public class GridDeploymentEvent extends GridEventAdapter {
      * @param msg Optional event message.
      * @param type Event type.
      */
-    public GridDeploymentEvent(GridNode node, String msg, int type) {
+    public GridDeploymentEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 

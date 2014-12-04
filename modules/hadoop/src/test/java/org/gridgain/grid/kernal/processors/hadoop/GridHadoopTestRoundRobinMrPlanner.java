@@ -21,18 +21,18 @@ import java.util.*;
  */
 public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePlanner {
     /** {@inheritDoc} */
-    @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<GridNode> top,
+    @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
         @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
         if (top.isEmpty())
             throw new IllegalArgumentException("Topology is empty");
 
         // Has at least one element.
-        Iterator<GridNode> it = top.iterator();
+        Iterator<ClusterNode> it = top.iterator();
 
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = new HashMap<>();
 
         for (GridHadoopInputSplit block : job.input()) {
-            GridNode node = it.next();
+            ClusterNode node = it.next();
 
             Collection<GridHadoopInputSplit> nodeBlocks = mappers.get(node.id());
 

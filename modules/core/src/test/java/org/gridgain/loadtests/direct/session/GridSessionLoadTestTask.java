@@ -32,14 +32,14 @@ public class GridSessionLoadTestTask extends GridComputeTaskAdapter<Integer, Boo
     private Map<String, Integer> params;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Integer arg) throws GridException {
+    @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {
         assert taskSes != null;
         assert arg != null;
         assert arg > 0;
 
-        Map<GridSessionLoadTestJob, GridNode> map = new HashMap<>(subgrid.size());
+        Map<GridSessionLoadTestJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
-        Iterator<GridNode> iter = subgrid.iterator();
+        Iterator<ClusterNode> iter = subgrid.iterator();
 
         Random rnd = new Random();
 
@@ -58,7 +58,7 @@ public class GridSessionLoadTestTask extends GridComputeTaskAdapter<Integer, Boo
 
             taskSes.setAttribute(paramName, paramVal);
 
-            GridNode node = iter.next();
+            ClusterNode node = iter.next();
 
             assigned.add(node.id());
 

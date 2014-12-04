@@ -341,7 +341,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Setting session attribute(s) from job: " + ses);
 
-        GridNode taskNode = ctx.discovery().node(ses.getTaskNodeId());
+        ClusterNode taskNode = ctx.discovery().node(ses.getTaskNodeId());
 
         if (taskNode == null)
             throw new GridException("Node that originated task execution has left grid: " +
@@ -375,7 +375,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         final UUID taskNodeId = ses.getTaskNodeId();
 
-        GridNode taskNode = ctx.discovery().node(taskNodeId);
+        ClusterNode taskNode = ctx.discovery().node(taskNodeId);
 
         if (taskNode == null)
             throw new GridException("Node that originated task execution has left grid: " + taskNodeId);
@@ -895,7 +895,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param req Request.
      */
     @SuppressWarnings("TooBroadScope")
-    public void processJobExecuteRequest(GridNode node, final GridJobExecuteRequest req) {
+    public void processJobExecuteRequest(ClusterNode node, final GridJobExecuteRequest req) {
         if (log.isDebugEnabled())
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
@@ -1241,10 +1241,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param ex Exception that happened.
      * @param endTime Job end time.
      */
-    private void handleException(GridNode node, GridJobExecuteRequest req, GridException ex, long endTime) {
+    private void handleException(ClusterNode node, GridJobExecuteRequest req, GridException ex, long endTime) {
         UUID locNodeId = ctx.localNodeId();
 
-        GridNode sndNode = ctx.discovery().node(node.id());
+        ClusterNode sndNode = ctx.discovery().node(node.id());
 
         if (sndNode == null) {
             U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
@@ -1704,7 +1704,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             assert nodeId != null;
             assert msg != null;
 
-            GridNode node = ctx.discovery().node(nodeId);
+            ClusterNode node = ctx.discovery().node(nodeId);
 
             if (!ctx.discovery().alive(nodeId)) {
                 U.warn(log, "Received job request message from unknown node (ignoring) " +

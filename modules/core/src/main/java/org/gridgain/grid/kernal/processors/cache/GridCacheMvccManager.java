@@ -397,7 +397,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         // Close window in case of node is gone before the future got added to
         // the map of futures.
-        for (GridNode n : fut.nodes())
+        for (ClusterNode n : fut.nodes())
             if (cctx.discovery().node(n.id()) == null)
                 fut.onNodeLeft(n.id());
 

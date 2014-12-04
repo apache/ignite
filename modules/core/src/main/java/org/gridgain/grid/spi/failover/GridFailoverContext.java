@@ -42,5 +42,5 @@ public interface GridFailoverContext {
      * @return The next balanced node.
      * @throws GridException If anything failed.
      */
-    public GridNode getBalancedNode(List<GridNode> top) throws GridException;
+    public ClusterNode getBalancedNode(List<ClusterNode> top) throws GridException;
 }

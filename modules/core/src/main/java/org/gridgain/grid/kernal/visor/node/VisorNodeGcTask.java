@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.visor.node;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
@@ -60,7 +59,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridB
 
         /** {@inheritDoc} */
         @Override protected GridBiTuple<Long, Long> run(Boolean arg) throws GridException {
-            GridNode locNode = g.localNode();
+            ClusterNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
 
@@ -73,7 +72,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridB
          * @param node Node.
          * @return Current free heap.
          */
-        private long freeHeap(GridNode node) {
+        private long freeHeap(ClusterNode node) {
             final GridNodeMetrics m = node.metrics();
 
             return m.getHeapMemoryMaximum() - m.getHeapMemoryUsed();

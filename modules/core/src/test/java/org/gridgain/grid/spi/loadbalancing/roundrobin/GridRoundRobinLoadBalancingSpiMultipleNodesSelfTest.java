@@ -47,7 +47,7 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
      */
     @SuppressWarnings({"ObjectEquality"})
     public void testMultipleNodes() throws Exception {
-        List<GridNode> allNodes = (List<GridNode>)getSpiContext().nodes();
+        List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
         GridComputeTaskSession ses = new GridTestTaskSession(GridUuid.randomUuid());
 
@@ -58,14 +58,14 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
 
         // Check the round-robin actually did circle.
         for (int i = 0; i < allNodes.size(); i++) {
-            GridNode node = getSpi().getBalancedNode(ses, allNodes, new GridTestJob());
+            ClusterNode node = getSpi().getBalancedNode(ses, allNodes, new GridTestJob());
 
             assert orderedNodes.get(i) == node.id();
         }
 
         // Double-check.
         for (int i = 0; i < allNodes.size(); i++) {
-            GridNode node = getSpi().getBalancedNode(ses, allNodes, new GridTestJob());
+            ClusterNode node = getSpi().getBalancedNode(ses, allNodes, new GridTestJob());
 
             assert orderedNodes.get(i) == node.id();
         }
@@ -79,7 +79,7 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
         GridComputeTaskSession ses1 = new GridTestTaskSession(GridUuid.randomUuid());
         GridComputeTaskSession ses2 = new GridTestTaskSession(GridUuid.randomUuid());
 
-        List<GridNode> allNodes = (List<GridNode>)getSpiContext().nodes();
+        List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
         // Initialize.
         getSpi().getBalancedNode(ses1, allNodes, new GridTestJob());
@@ -92,11 +92,11 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
 
         // Check the round-robin actually did circle.
         for (int i = 0; i < allNodes.size(); i++) {
-            GridNode node1 = getSpi().getBalancedNode(ses1, allNodes, new GridTestJob());
+            ClusterNode node1 = getSpi().getBalancedNode(ses1, allNodes, new GridTestJob());
 
             assert orderedNodes1.get(i) == node1.id();
 
-            GridNode node2 = getSpi().getBalancedNode(ses2, allNodes, new GridTestJob());
+            ClusterNode node2 = getSpi().getBalancedNode(ses2, allNodes, new GridTestJob());
 
             assert orderedNodes2.get(i) == node2.id();
 
@@ -105,11 +105,11 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
 
         // Double-check.
         for (int i = 0; i < allNodes.size(); i++) {
-            GridNode node1 = getSpi().getBalancedNode(ses1, allNodes, new GridTestJob());
+            ClusterNode node1 = getSpi().getBalancedNode(ses1, allNodes, new GridTestJob());
 
             assert orderedNodes1.get(i) == node1.id();
 
-            GridNode node2 = getSpi().getBalancedNode(ses2, allNodes, new GridTestJob());
+            ClusterNode node2 = getSpi().getBalancedNode(ses2, allNodes, new GridTestJob());
 
             assert orderedNodes2.get(i) == node2.id();
 

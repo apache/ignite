@@ -755,7 +755,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         private UUID nodeId;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws GridSpiException {
             checkSyncFlags((GridIoMessage)msg);
 

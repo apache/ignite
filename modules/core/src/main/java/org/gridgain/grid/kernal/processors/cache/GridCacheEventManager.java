@@ -155,7 +155,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         // Events are not fired for internal entry.
         if (!(key instanceof GridCacheInternal)) {
-            GridNode evtNode = cctx.discovery().node(evtNodeId);
+            ClusterNode evtNode = cctx.discovery().node(evtNodeId);
 
             if (evtNode == null)
                 evtNode = findNodeInHistory(evtNodeId);
@@ -177,14 +177,14 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param nodeId Node ID.
      * @return Found node or {@code null} if history doesn't contain this node.
      */
-    @Nullable private GridNode findNodeInHistory(UUID nodeId) {
+    @Nullable private ClusterNode findNodeInHistory(UUID nodeId) {
         for (long topVer = cctx.discovery().topologyVersion() - 1; topVer > 0; topVer--) {
-            Collection<GridNode> top = cctx.discovery().topology(topVer);
+            Collection<ClusterNode> top = cctx.discovery().topology(topVer);
 
             if (top == null)
                 break;
 
-            for (GridNode node : top)
+            for (ClusterNode node : top)
                 if (F.eq(node.id(), nodeId))
                     return node;
         }
@@ -201,7 +201,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param discoType Discovery event type.
      * @param discoTs Discovery event timestamp.
      */
-    public void addPreloadEvent(int part, int type, GridNode discoNode, int discoType, long discoTs) {
+    public void addPreloadEvent(int part, int type, ClusterNode discoNode, int discoType, long discoTs) {
         assert discoNode != null;
         assert type > 0;
         assert discoType > 0;

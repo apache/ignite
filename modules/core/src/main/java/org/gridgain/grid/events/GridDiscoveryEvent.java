@@ -60,13 +60,13 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridNode evtNode;
+    private ClusterNode evtNode;
 
     /** Topology version. */
     private long topVer;
 
     /** Collection of nodes corresponding to topology version. */
-    private Collection<GridNode> topSnapshot;
+    private Collection<ClusterNode> topSnapshot;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -88,7 +88,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      * @param type Event type.
      * @param evtNode Node that caused this event to be generated.
      */
-    public GridDiscoveryEvent(GridNode node, String msg, int type, GridNode evtNode) {
+    public GridDiscoveryEvent(ClusterNode node, String msg, int type, ClusterNode evtNode) {
         super(node, msg, type);
 
         this.evtNode = evtNode;
@@ -99,7 +99,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      *
      * @param evtNode Event node.
      */
-    public void eventNode(GridNode evtNode) {
+    public void eventNode(ClusterNode evtNode) {
         this.evtNode = evtNode;
     }
 
@@ -110,7 +110,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      *
      * @return Event node ID.
      */
-    public GridNode eventNode() {
+    public ClusterNode eventNode() {
         return evtNode;
     }
 
@@ -132,7 +132,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      *
      * @return Topology snapshot.
      */
-    public Collection<GridNode> topologyNodes() {
+    public Collection<ClusterNode> topologyNodes() {
         return topSnapshot;
     }
 
@@ -142,7 +142,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      * @param topVer Topology version.
      * @param topSnapshot Topology snapshot.
      */
-    public void topologySnapshot(long topVer, Collection<GridNode> topSnapshot) {
+    public void topologySnapshot(long topVer, Collection<ClusterNode> topSnapshot) {
         this.topVer = topVer;
         this.topSnapshot = topSnapshot;
     }

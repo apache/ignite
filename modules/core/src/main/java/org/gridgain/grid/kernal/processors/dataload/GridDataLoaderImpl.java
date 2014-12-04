@@ -162,7 +162,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
         log = U.logger(ctx, logRef, GridDataLoaderImpl.class);
 
-        GridNode node = F.first(ctx.grid().forCache(cacheName).nodes());
+        ClusterNode node = F.first(ctx.grid().forCache(cacheName).nodes());
 
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
@@ -273,7 +273,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         if (isolated())
             return;
 
-        GridNode node = F.first(ctx.grid().forCache(cacheName).nodes());
+        ClusterNode node = F.first(ctx.grid().forCache(cacheName).nodes());
 
         if (node == null)
             throw new GridException("Failed to get node for cache: " + cacheName);
@@ -411,12 +411,12 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             return;
         }
 
-        Map<GridNode, Collection<Map.Entry<K, V>>> mappings = new HashMap<>();
+        Map<ClusterNode, Collection<Map.Entry<K, V>>> mappings = new HashMap<>();
 
         boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
         for (Map.Entry<K, V> entry : entries) {
-            GridNode node;
+            ClusterNode node;
 
             try {
                 K key = entry.getKey();
@@ -453,7 +453,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             col.add(entry);
         }
 
-        for (final Map.Entry<GridNode, Collection<Map.Entry<K, V>>> e : mappings.entrySet()) {
+        for (final Map.Entry<ClusterNode, Collection<Map.Entry<K, V>>> e : mappings.entrySet()) {
             final UUID nodeId = e.getKey().id();
 
             Buffer buf = bufMappings.get(nodeId);
@@ -716,7 +716,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      */
     private class Buffer {
         /** Node. */
-        private final GridNode node;
+        private final ClusterNode node;
 
         /** Active futures. */
         private final Collection<GridFuture<Object>> locFuts;
@@ -751,7 +751,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         /**
          * @param node Node.
          */
-        Buffer(GridNode node) {
+        Buffer(ClusterNode node) {
             assert node != null;
 
             this.node = node;

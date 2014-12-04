@@ -69,7 +69,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
                 int parts = aff.partitions();
 
                 for (int p = 0; p < parts; p++) {
-                    Collection<GridNode> nodes = aff.mapPartitionToPrimaryAndBackups(p);
+                    Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(p);
 
                     assertEquals(2, nodes.size());
 

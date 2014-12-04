@@ -57,7 +57,7 @@ public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstra
     @GridSpiTestConfig
     public GridDiscoverySpiNodeAuthenticator getAuthenticator() {
         return new GridDiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+            @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                 GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                     GridSecuritySubjectType.REMOTE_NODE, n.id());
 

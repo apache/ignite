@@ -20,10 +20,10 @@ import java.util.*;
  */
 public abstract class GridStreamerEventRouterAdapter implements GridStreamerEventRouter {
     /** {@inheritDoc} */
-    @Override public <T> Map<GridNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
+    @Override public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
         Collection<T> evts) {
         if (evts.size() == 1) {
-            GridNode route = route(ctx, stageName, F.first(evts));
+            ClusterNode route = route(ctx, stageName, F.first(evts));
 
             if (route == null)
                 return null;
@@ -31,10 +31,10 @@ public abstract class GridStreamerEventRouterAdapter implements GridStreamerEven
             return Collections.singletonMap(route, evts);
         }
 
-        Map<GridNode, Collection<T>> map = new GridLeanMap<>();
+        Map<ClusterNode, Collection<T>> map = new GridLeanMap<>();
 
         for (T e : evts) {
-            GridNode n = route(ctx, stageName, e);
+            ClusterNode n = route(ctx, stageName, e);
 
             if (n == null)
                 return null;

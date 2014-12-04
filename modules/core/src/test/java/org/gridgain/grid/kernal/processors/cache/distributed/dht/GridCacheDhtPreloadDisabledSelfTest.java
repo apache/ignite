@@ -120,11 +120,11 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
         try {
             for (int p = 0; p < partitions; p++) {
-                List<Collection<GridNode>> mappings = new ArrayList<>(nodeCnt);
+                List<Collection<ClusterNode>> mappings = new ArrayList<>(nodeCnt);
 
                 for (int i = 0; i < nodeCnt; i++) {
-                    Collection<GridNode> nodes = topology(i).nodes(p, -1);
-                    List<GridNode> owners = topology(i).owners(p);
+                    Collection<ClusterNode> nodes = topology(i).nodes(p, -1);
+                    List<ClusterNode> owners = topology(i).owners(p);
 
                     int size = backups + 1;
 
@@ -140,10 +140,10 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 }
 
                 for (int i = 0; i < mappings.size(); i++) {
-                    Collection<GridNode> m1 = mappings.get(i);
+                    Collection<ClusterNode> m1 = mappings.get(i);
 
                     for (int j = 0; j != i && j < mappings.size(); j++) {
-                        Collection<GridNode> m2 = mappings.get(j);
+                        Collection<ClusterNode> m2 = mappings.get(j);
 
                         assert F.eqNotOrdered(m1, m2) : "Mappings are not equal [m1=" + F.nodeIds(m1) + ", m2=" +
                             F.nodeIds(m2) + ']';

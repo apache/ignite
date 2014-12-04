@@ -106,10 +106,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /**
      * @return Involved nodes.
      */
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
-                @Nullable @Override public GridNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -327,7 +327,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param m Mapping.
      */
     private void finish(GridDistributedTxMapping<K, V> m) {
-        GridNode n = m.node();
+        ClusterNode n = m.node();
 
         assert !m.empty();
 
@@ -437,7 +437,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @return Node ID.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return m.node();
         }
 

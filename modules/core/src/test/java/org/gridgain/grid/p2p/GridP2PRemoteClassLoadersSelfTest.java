@@ -235,11 +235,11 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         @GridLocalNodeIdResource private UUID nodeId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Serializable arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)
             throws GridException {
-            Map<GridComputeJob, GridNode> map = new HashMap<>(subgrid.size());
+            Map<GridComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (!node.id().equals(nodeId))
                     map.put(new GridP2PTestJob(null) , node);
             }

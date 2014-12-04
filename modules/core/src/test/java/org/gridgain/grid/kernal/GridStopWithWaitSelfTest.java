@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     /** Initial node that job has been mapped to. */
-    private static final AtomicReference<GridNode> nodeRef = new AtomicReference<>(null);
+    private static final AtomicReference<ClusterNode> nodeRef = new AtomicReference<>(null);
 
     /** */
     private static CountDownLatch jobStarted;
@@ -124,10 +124,10 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskSessionFullSupport
     private static class GridWaitTask extends GridComputeTaskAdapter<UUID, Integer> {
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, UUID arg) throws GridException {
-            GridNode mappedNode = null;
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
+            ClusterNode mappedNode = null;
 
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg)) {
                     mappedNode = node;
 
@@ -166,10 +166,10 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         private UUID locId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
             ses.setAttribute("fail", true);
 
-            GridNode node = F.view(subgrid, F.<GridNode>remoteNodes(locId)).iterator().next();
+            ClusterNode node = F.view(subgrid, F.<ClusterNode>remoteNodes(locId)).iterator().next();
 
             nodeRef.set(node);
 

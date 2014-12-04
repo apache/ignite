@@ -24,9 +24,9 @@ public class GridNeverFailoverSpiSelfTest extends GridSpiAbstractTest<GridNeverF
      * @throws Exception If failed.
      */
     public void testAlwaysNull() throws Exception {
-        List<GridNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
-        GridNode node = new GridTestNode(UUID.randomUUID());
+        ClusterNode node = new GridTestNode(UUID.randomUUID());
 
         nodes.add(node);
 

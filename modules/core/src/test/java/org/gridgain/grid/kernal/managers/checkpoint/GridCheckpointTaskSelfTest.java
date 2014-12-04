@@ -130,11 +130,11 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) throws GridException {
             assert ignite.cluster().nodes().size() == 2;
 
-            GridNode rmt = F.first(ignite.cluster().forRemotes().nodes());
+            ClusterNode rmt = F.first(ignite.cluster().forRemotes().nodes());
 
             ses.saveCheckpoint(CP_KEY, true);
 
@@ -186,11 +186,11 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private GridComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) throws GridException {
             assert ignite.cluster().nodes().size() == 2;
 
-            GridNode rmt = F.first(ignite.cluster().forRemotes().nodes());
+            ClusterNode rmt = F.first(ignite.cluster().forRemotes().nodes());
 
             return F.asMap(
                 new GridComputeJobAdapter() {

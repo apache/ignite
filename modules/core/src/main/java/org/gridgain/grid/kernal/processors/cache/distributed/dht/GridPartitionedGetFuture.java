@@ -144,7 +144,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     public void init() {
         long topVer = this.topVer > 0 ? this.topVer : cctx.affinity().affinityTopologyVersion();
 
-        map(keys, Collections.<GridNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
+        map(keys, Collections.<ClusterNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
 
         markInitialized();
     }
@@ -178,10 +178,10 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Collection<? extends GridNode> nodes() {
+    @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new GridClosure<GridFuture<Map<K, V>>, GridNode>() {
-                @Nullable @Override public GridNode apply(GridFuture<Map<K, V>> f) {
+            F.viewReadOnly(futures(), new GridClosure<GridFuture<Map<K, V>>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(GridFuture<Map<K, V>> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -249,14 +249,14 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version on which keys should be mapped.
      */
-    private void map(Collection<? extends K> keys, Map<GridNode, LinkedHashMap<K, Boolean>> mapped, long topVer) {
+    private void map(Collection<? extends K> keys, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, long topVer) {
         if (CU.affinityNodes(cctx, topVer).isEmpty()) {
             onDone(new GridTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
 
             return;
         }
 
-        Map<GridNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(CU.affinityNodes(cctx, topVer).size());
+        Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(CU.affinityNodes(cctx, topVer).size());
 
         final int keysSize = keys.size();
 
@@ -283,8 +283,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         }
 
         // Create mini futures.
-        for (Map.Entry<GridNode, LinkedHashMap<K, Boolean>> entry : mappings.entrySet()) {
-            final GridNode n = entry.getKey();
+        for (Map.Entry<ClusterNode, LinkedHashMap<K, Boolean>> entry : mappings.entrySet()) {
+            final ClusterNode n = entry.getKey();
 
             final LinkedHashMap<K, Boolean> mappedKeys = entry.getValue();
 
@@ -372,8 +372,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @return {@code True} if has remote nodes.
      */
     @SuppressWarnings("ConstantConditions")
-    private boolean map(K key, Map<GridNode, LinkedHashMap<K, Boolean>> mappings, Map<K, V> locVals,
-        long topVer, Map<GridNode, LinkedHashMap<K, Boolean>> mapped) {
+    private boolean map(K key, Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings, Map<K, V> locVals,
+        long topVer, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped) {
         GridDhtCacheAdapter<K, V> colocated = cache();
 
         boolean remote = false;
@@ -429,7 +429,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     }
                 }
 
-                GridNode node = cctx.affinity().primary(key, topVer);
+                ClusterNode node = cctx.affinity().primary(key, topVer);
 
                 remote = !node.isLocal();
 
@@ -532,7 +532,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         private final GridUuid futId = GridUuid.randomUuid();
 
         /** Node ID. */
-        private GridNode node;
+        private ClusterNode node;
 
         /** Keys. */
         @GridToStringInclude
@@ -553,7 +553,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param keys Keys.
          * @param topVer Topology version.
          */
-        MiniFuture(GridNode node, LinkedHashMap<K, Boolean> keys, long topVer) {
+        MiniFuture(ClusterNode node, LinkedHashMap<K, Boolean> keys, long topVer) {
             super(cctx.kernalContext());
 
             this.node = node;
@@ -571,7 +571,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         /**
          * @return Node ID.
          */
-        public GridNode node() {
+        public ClusterNode node() {
             return node;
         }
 

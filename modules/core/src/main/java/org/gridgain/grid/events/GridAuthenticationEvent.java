@@ -78,7 +78,7 @@ public class GridAuthenticationEvent extends GridEventAdapter {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridAuthenticationEvent(GridNode node, String msg, int type) {
+    public GridAuthenticationEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
@@ -91,7 +91,7 @@ public class GridAuthenticationEvent extends GridEventAdapter {
      * @param subjType Subject type.
      * @param subjId Subject ID.
      */
-    public GridAuthenticationEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
+    public GridAuthenticationEvent(ClusterNode node, String msg, int type, GridSecuritySubjectType subjType,
         UUID subjId, Object login) {
         super(node, msg, type);
 

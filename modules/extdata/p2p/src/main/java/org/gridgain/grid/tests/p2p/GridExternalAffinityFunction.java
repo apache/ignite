@@ -49,14 +49,14 @@ public class GridExternalAffinityFunction implements GridCacheAffinityFunction {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
-        List<List<GridNode>> res = new ArrayList<>(partitions());
+    @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
+        List<List<ClusterNode>> res = new ArrayList<>(partitions());
 
-        List<GridNode> topSnapshot = ctx.currentTopologySnapshot();
+        List<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
 
         for (int part = 0; part < parts; part++) {
             res.add(F.isEmpty(topSnapshot) ?
-                Collections.<GridNode>emptyList() :
+                Collections.<ClusterNode>emptyList() :
                 // Wrap affinity nodes with unmodifiable list since unmodifiable generic collection
                 // doesn't provide equals and hashCode implementations.
                 U.sealList(nodes(part, topSnapshot)));
@@ -66,11 +66,11 @@ public class GridExternalAffinityFunction implements GridCacheAffinityFunction {
     }
 
     /** {@inheritDoc} */
-    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
-        List<GridNode> sorted = new ArrayList<>(nodes);
+    public Collection<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
+        List<ClusterNode> sorted = new ArrayList<>(nodes);
 
-        Collections.sort(sorted, new Comparator<GridNode>() {
-            @Override public int compare(GridNode n1, GridNode n2) {
+        Collections.sort(sorted, new Comparator<ClusterNode>() {
+            @Override public int compare(ClusterNode n1, ClusterNode n2) {
                 int idx1 = n1.<Integer>attribute(IDX_ATTR);
                 int idx2 = n2.<Integer>attribute(IDX_ATTR);
 
@@ -83,12 +83,12 @@ public class GridExternalAffinityFunction implements GridCacheAffinityFunction {
         if (max > nodes.size())
             max = nodes.size();
 
-        Collection<GridNode> ret = new ArrayList<>(max);
+        Collection<ClusterNode> ret = new ArrayList<>(max);
 
-        Iterator<GridNode> it = sorted.iterator();
+        Iterator<ClusterNode> it = sorted.iterator();
 
         for (int i = 0; i < max; i++) {
-            GridNode n = null;
+            ClusterNode n = null;
 
             if (i == 0) {
                 while (it.hasNext()) {

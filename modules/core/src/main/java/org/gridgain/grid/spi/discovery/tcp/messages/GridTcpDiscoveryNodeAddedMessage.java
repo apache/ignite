@@ -43,7 +43,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private Collection<GridTcpDiscoveryNode> top;
 
     /** Topology snapshots history. */
-    private Map<Long, Collection<GridNode>> topHist;
+    private Map<Long, Collection<ClusterNode>> topHist;
 
     /** Discovery data from new node. */
     private List<Object> newNodeDiscoData;
@@ -144,7 +144,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      *
      * @return Map with topology snapshots history.
      */
-    @Nullable public Map<Long, Collection<GridNode>> topologyHistory() {
+    @Nullable public Map<Long, Collection<ClusterNode>> topologyHistory() {
         return topHist;
     }
 
@@ -153,7 +153,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      *
      * @param topHist Map with topology snapshots history.
      */
-    public void topologyHistory(@Nullable Map<Long, Collection<GridNode>> topHist) {
+    public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
         this.topHist = topHist;
     }
 

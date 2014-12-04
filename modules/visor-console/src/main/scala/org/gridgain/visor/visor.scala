@@ -120,7 +120,7 @@ object visor extends VisorTag {
     type ArgList = Seq[Arg]
 
     /** Type alias for general node filter. */
-    type NodeFilter = GridNode => Boolean
+    type NodeFilter = ClusterNode => Boolean
 
     /** Type alias for general event filter. */
     type EventFilter = GridEvent => Boolean
@@ -129,7 +129,7 @@ object visor extends VisorTag {
     val Til: Arg = (null, null)
 
     /** Node filter that includes any node. */
-    final val ALL_NODES_FILTER = (_: GridNode) => true
+    final val ALL_NODES_FILTER = (_: ClusterNode) => true
 
     /** System line separator. */
     final val NL = System getProperty "line.separator"
@@ -228,7 +228,7 @@ object visor extends VisorTag {
      * @return GridNode instance.
      * @throws GridException if Visor is disconnected or node not found.
      */
-    def node(nid: UUID): GridNode = {
+    def node(nid: UUID): ClusterNode = {
         val g = grid
 
         if (g == null)
@@ -2593,7 +2593,7 @@ object visor extends VisorTag {
      * @param node Node to take ID from.
      * @return Node ID in ID8 format.
      */
-    def nid8(node: GridNode): String = {
+    def nid8(node: ClusterNode): String = {
         nid8(node.id())
     }
 

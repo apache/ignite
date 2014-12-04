@@ -495,7 +495,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             log.debug("Processing near lock request [locNodeId=" + locNodeId + ", nodeId=" + nodeId + ", req=" + req +
                 ']');
 
-        GridNode nearNode = ctx.discovery().node(nodeId);
+        ClusterNode nearNode = ctx.discovery().node(nodeId);
 
         if (nearNode == null) {
             U.warn(log, "Received lock request from unknown node (will ignore): " + nodeId);
@@ -637,7 +637,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     public GridFuture<GridNearLockResponse<K, V>> lockAllAsync(
         final GridCacheContext<K, V> cacheCtx,
-        final GridNode nearNode,
+        final ClusterNode nearNode,
         final GridNearLockRequest<K, V> req,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter0) {
         final List<K> keys = req.keys();
@@ -903,7 +903,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @return Response.
      */
     private GridNearLockResponse<K, V> createLockReply(
-        GridNode nearNode,
+        ClusterNode nearNode,
         List<GridCacheEntryEx<K, V>> entries,
         GridNearLockRequest<K, V> req,
         @Nullable GridDhtTxLocalAdapter<K,V> tx,
@@ -1039,7 +1039,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param res Lock response.
      */
     private void sendLockReply(
-        GridNode nearNode,
+        ClusterNode nearNode,
         @Nullable GridCacheTxEx<K,V> tx,
         GridNearLockRequest<K, V> req,
         GridNearLockResponse<K, V> res
@@ -1188,12 +1188,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long topVer,
         GridCacheEntryEx<K,V> cached,
         Collection<UUID> readers,
-        Map<GridNode, List<T2<K, byte[]>>> dhtMap,
-        Map<GridNode, List<T2<K, byte[]>>> nearMap)
+        Map<ClusterNode, List<T2<K, byte[]>>> dhtMap,
+        Map<ClusterNode, List<T2<K, byte[]>>> nearMap)
         throws GridException {
-        Collection<GridNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
+        Collection<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
-        GridNode primary = F.first(dhtNodes);
+        ClusterNode primary = F.first(dhtNodes);
 
         assert primary != null;
 
@@ -1208,7 +1208,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) + ", entry=" + cached + ']');
 
-        Collection<GridNode> nearNodes = null;
+        Collection<ClusterNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
             nearNodes = ctx.discovery().nodes(readers, F0.not(F.idForNodeId(nodeId)));
@@ -1234,10 +1234,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     @SuppressWarnings( {"MismatchedQueryAndUpdateOfCollection"})
     private void map(GridCacheEntryEx<K, V> entry,
-        @Nullable Iterable<? extends GridNode> nodes,
-        Map<GridNode, List<T2<K, byte[]>>> map) throws GridException {
+        @Nullable Iterable<? extends ClusterNode> nodes,
+        Map<ClusterNode, List<T2<K, byte[]>>> map) throws GridException {
         if (nodes != null) {
-            for (GridNode n : nodes) {
+            for (ClusterNode n : nodes) {
                 List<T2<K, byte[]>> keys = map.get(n);
 
                 if (keys == null)
@@ -1264,8 +1264,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Remove mapped versions.
         GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
 
-        Map<GridNode, List<T2<K, byte[]>>> dhtMap = new HashMap<>();
-        Map<GridNode, List<T2<K, byte[]>>> nearMap = new HashMap<>();
+        Map<ClusterNode, List<T2<K, byte[]>>> dhtMap = new HashMap<>();
+        Map<ClusterNode, List<T2<K, byte[]>>> nearMap = new HashMap<>();
 
         GridCacheVersion obsoleteVer = null;
 
@@ -1353,8 +1353,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
 
         // Backups.
-        for (Map.Entry<GridNode, List<T2<K, byte[]>>> entry : dhtMap.entrySet()) {
-            GridNode n = entry.getKey();
+        for (Map.Entry<ClusterNode, List<T2<K, byte[]>>> entry : dhtMap.entrySet()) {
+            ClusterNode n = entry.getKey();
 
             List<T2<K, byte[]>> keyBytes = entry.getValue();
 
@@ -1386,8 +1386,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         // Readers.
-        for (Map.Entry<GridNode, List<T2<K, byte[]>>> entry : nearMap.entrySet()) {
-            GridNode n = entry.getKey();
+        for (Map.Entry<ClusterNode, List<T2<K, byte[]>>> entry : nearMap.entrySet()) {
+            ClusterNode n = entry.getKey();
 
             if (!dhtMap.containsKey(n)) {
                 List<T2<K, byte[]>> keyBytes = entry.getValue();

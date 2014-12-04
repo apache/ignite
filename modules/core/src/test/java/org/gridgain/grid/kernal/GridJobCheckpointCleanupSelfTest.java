@@ -114,11 +114,11 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
      *
      */
     @GridComputeTaskSessionFullSupport
-    private static class CheckpointCountingTestTask extends GridComputeTaskAdapter<GridNode, Object> {
+    private static class CheckpointCountingTestTask extends GridComputeTaskAdapter<ClusterNode, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable GridNode arg)
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable ClusterNode arg)
             throws GridException {
-            for (GridNode node : subgrid) {
+            for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg.id()))
                     return Collections.singletonMap(new GridComputeJobAdapter() {
                         @GridTaskSessionResource

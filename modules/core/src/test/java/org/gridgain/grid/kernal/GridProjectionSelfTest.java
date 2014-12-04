@@ -55,7 +55,7 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected GridProjection projection() {
-        return grid(0).forPredicate(F.<GridNode>nodeForNodeIds(ids));
+        return grid(0).forPredicate(F.<ClusterNode>nodeForNodeIds(ids));
     }
 
     /** {@inheritDoc} */
@@ -76,11 +76,11 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
     public void testOldest() throws Exception {
         GridProjection oldest = ignite.cluster().forOldest();
 
-        GridNode node = null;
+        ClusterNode node = null;
 
         long minOrder = Long.MAX_VALUE;
 
-        for (GridNode n : ignite.cluster().nodes()) {
+        for (ClusterNode n : ignite.cluster().nodes()) {
             if (n.order() < minOrder) {
                 node = n;
 
@@ -97,11 +97,11 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
     public void testYoungest() throws Exception {
         GridProjection youngest = ignite.cluster().forYoungest();
 
-        GridNode node = null;
+        ClusterNode node = null;
 
         long maxOrder = Long.MIN_VALUE;
 
-        for (GridNode n : ignite.cluster().nodes()) {
+        for (ClusterNode n : ignite.cluster().nodes()) {
             if (n.order() > maxOrder) {
                 node = n;
 
@@ -119,15 +119,15 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
         GridProjection youngest = ignite.cluster().forYoungest();
         GridProjection oldest = ignite.cluster().forOldest();
 
-        GridNode old = oldest.node();
-        GridNode last = youngest.node();
+        ClusterNode old = oldest.node();
+        ClusterNode last = youngest.node();
 
         assertNotNull(last);
 
         try (Ignite g = startGrid(NODES_CNT)) {
-            GridNode n = g.cluster().localNode();
+            ClusterNode n = g.cluster().localNode();
 
-            GridNode latest = youngest.node();
+            ClusterNode latest = youngest.node();
 
             assertNotNull(latest);
             assertEquals(latest.id(), n.id());

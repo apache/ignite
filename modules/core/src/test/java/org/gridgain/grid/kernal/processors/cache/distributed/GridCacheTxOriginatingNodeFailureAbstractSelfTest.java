@@ -101,7 +101,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
 
         final Collection<GridKernal> grids = new ArrayList<>();
 
-        GridNode txNode = grid(originatingNode()).localNode();
+        ClusterNode txNode = grid(originatingNode()).localNode();
 
         for (int i = 1; i < gridCount(); i++)
             grids.add((GridKernal)grid(i));
@@ -116,14 +116,14 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
             map.put(key, String.valueOf(key));
         }
 
-        Map<Integer, Collection<GridNode>> nodeMap = new HashMap<>();
+        Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
         GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(1)).internalCache();
 
         info("Node being checked: " + grid(1).localNode().id());
 
         for (Integer key : keys) {
-            Collection<GridNode> nodes = new ArrayList<>();
+            Collection<ClusterNode> nodes = new ArrayList<>();
 
             nodes.addAll(cache.affinity().mapKeyToPrimaryAndBackups(key));
 
@@ -189,14 +189,14 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
 
         info("Transactions finished.");
 
-        for (Map.Entry<Integer, Collection<GridNode>> e : nodeMap.entrySet()) {
+        for (Map.Entry<Integer, Collection<ClusterNode>> e : nodeMap.entrySet()) {
             final Integer key = e.getKey();
 
             final String val = map.get(key);
 
             assertFalse(e.getValue().isEmpty());
 
-            for (GridNode node : e.getValue()) {
+            for (ClusterNode node : e.getValue()) {
                 compute(G.grid(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @GridInstanceResource
@@ -230,7 +230,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new GridTcpCommunicationSpi() {
-            @Override public void sendMessage(GridNode node, GridTcpCommunicationMessageAdapter msg)
+            @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
                 throws GridSpiException {
                 if (!F.eq(ignoreMsgNodeId, node.id()) || !ignoredMessage((GridIoMessage)msg))
                     super.sendMessage(node, msg);

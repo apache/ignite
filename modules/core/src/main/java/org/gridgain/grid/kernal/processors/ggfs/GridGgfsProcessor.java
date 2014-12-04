@@ -139,7 +139,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
             return;
 
         if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-            for (GridNode n : ctx.discovery().remoteNodes())
+            for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkGgfsOnRemoteNode(n);
         }
 
@@ -379,7 +379,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
      * @param rmtNode Remote node.
      * @throws GridException If check failed.
      */
-    private void checkGgfsOnRemoteNode(GridNode rmtNode) throws GridException {
+    private void checkGgfsOnRemoteNode(ClusterNode rmtNode) throws GridException {
         GridGgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(GridNodeAttributes.ATTR_GGFS);
         GridGgfsAttributes[] rmtAttrs = rmtNode.attribute(GridNodeAttributes.ATTR_GGFS);
 

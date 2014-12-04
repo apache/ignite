@@ -48,7 +48,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @return Affinity nodes for this cache.
      */
-    public Collection<GridNode> affinityNodes() {
+    public Collection<ClusterNode> affinityNodes() {
         return grid(0).nodes();
     }
 
@@ -141,7 +141,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
             assertEquals(0, context(i).tm().idMapSize());
 
             GridCache<Object, Object> cache = grid(i).cache(null);
-            GridNode node = grid(i).localNode();
+            ClusterNode node = grid(i).localNode();
 
             for (int k = 0; k < size; k++) {
                 if (cache.affinity().isPrimaryOrBackup(node, k))
@@ -352,7 +352,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (!lockingEnabled())
             return;
 
-        GridNode node = CU.primary(cache().affinity().mapKeyToPrimaryAndBackups("key"));
+        ClusterNode node = CU.primary(cache().affinity().mapKeyToPrimaryAndBackups("key"));
 
         assert node != null;
 
@@ -370,7 +370,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (!lockingEnabled())
             return;
 
-        GridNode node = F.first(CU.backups(cache().affinity().mapKeyToPrimaryAndBackups("key")));
+        ClusterNode node = F.first(CU.backups(cache().affinity().mapKeyToPrimaryAndBackups("key")));
 
         assert node != null;
 
@@ -388,11 +388,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (!lockingEnabled())
             return;
 
-        Collection<GridNode> affNodes = cache().affinity().mapKeyToPrimaryAndBackups("key");
+        Collection<ClusterNode> affNodes = cache().affinity().mapKeyToPrimaryAndBackups("key");
 
-        GridNode node = null;
+        ClusterNode node = null;
 
-        for (GridNode n : grid(0).nodes()) {
+        for (ClusterNode n : grid(0).nodes()) {
             if (!affNodes.contains(n)) {
                 node = n;
 
@@ -540,21 +540,21 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         GridCacheAffinity<Object> aff = cache.affinity();
 
-        Collection<GridNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
         info("Got nodes from affinity: " + nodes);
 
         assertEquals(cacheMode() == PARTITIONED ? 2 : affinityNodes().size(), nodes.size());
 
-        GridNode primary = F.first(nodes);
-        GridNode backup = F.last(nodes);
+        ClusterNode primary = F.first(nodes);
+        ClusterNode backup = F.last(nodes);
 
         assertNotSame(primary, backup);
 
-        GridNode other = null;
+        ClusterNode other = null;
 
         for (int i = 0; i < gridCount(); i++) {
-            GridNode node = grid(i).localNode();
+            ClusterNode node = grid(i).localNode();
 
             if (!node.equals(primary) && !node.equals(backup)) {
                 other = node;

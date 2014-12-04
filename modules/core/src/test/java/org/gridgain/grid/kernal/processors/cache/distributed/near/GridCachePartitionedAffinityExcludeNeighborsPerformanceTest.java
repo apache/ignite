@@ -90,7 +90,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends GridNode> nodes(GridCacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(GridCacheAffinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -165,7 +165,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         for (int i = 0; i < cnt; i++) {
             Object key = RAND.nextInt(Integer.MAX_VALUE);
 
-            Collection<? extends GridNode> affNodes = nodes(aff, key);
+            Collection<? extends ClusterNode> affNodes = nodes(aff, key);
 
             assert excNeighbores ? affNodes.size() == 1 : affNodes.size() == GRIDS;
         }
@@ -221,7 +221,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
             for (long t = System.currentTimeMillis(); cnt % 1000 != 0 || System.currentTimeMillis() - t < dur;) {
                 Object key = RAND.nextInt(Integer.MAX_VALUE);
 
-                Collection<? extends GridNode> affNodes = nodes(aff, key);
+                Collection<? extends ClusterNode> affNodes = nodes(aff, key);
 
                 assert excNeighbores ? affNodes.size() == 1 : affNodes.size() == GRIDS;
 

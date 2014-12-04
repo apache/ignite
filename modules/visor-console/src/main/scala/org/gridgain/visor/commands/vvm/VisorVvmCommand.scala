@@ -152,7 +152,7 @@ class VisorVvmCommand {
                         "Visual VM installation folder."
                 ).^^
 
-            var nodes: scala.collection.Seq[GridNode] = null
+            var nodes: scala.collection.Seq[ClusterNode] = null
 
             if (id8 != null && id != null)
                 scold("Only one of '-id8' or '-id' is allowed.").^^

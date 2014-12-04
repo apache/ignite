@@ -79,7 +79,7 @@ public class GridSecureSessionEvent extends GridEventAdapter {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridSecureSessionEvent(GridNode node, String msg, int type) {
+    public GridSecureSessionEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
@@ -92,7 +92,7 @@ public class GridSecureSessionEvent extends GridEventAdapter {
      * @param subjType Subject type.
      * @param subjId Subject ID.
      */
-    public GridSecureSessionEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
+    public GridSecureSessionEvent(ClusterNode node, String msg, int type, GridSecuritySubjectType subjType,
         UUID subjId) {
         super(node, msg, type);
 

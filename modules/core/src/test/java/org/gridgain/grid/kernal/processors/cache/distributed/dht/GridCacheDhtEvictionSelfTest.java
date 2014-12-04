@@ -126,7 +126,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return Grid for the given node.
      */
-    private Ignite grid(GridNode node) {
+    private Ignite grid(ClusterNode node) {
         return G.grid(node.id());
     }
 
@@ -160,7 +160,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Primary node for the given key.
      */
-    private Collection<GridNode> keyNodes(Object key) {
+    private Collection<ClusterNode> keyNodes(Object key) {
         GridCacheConsistentHashAffinityFunction aff = affinity(0);
 
         return aff.nodes(aff.partition(key), grid(0).nodes(), 1);
@@ -191,15 +191,15 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     public void testSingleKey() throws Exception {
         Integer key = 1;
 
-        Collection<GridNode> nodes = new ArrayList<>(keyNodes(key));
+        Collection<ClusterNode> nodes = new ArrayList<>(keyNodes(key));
 
-        GridNode primary = F.first(nodes);
+        ClusterNode primary = F.first(nodes);
 
         assert primary != null;
 
         nodes.remove(primary);
 
-        GridNode backup = F.first(nodes);
+        ClusterNode backup = F.first(nodes);
 
         assert backup != null;
 

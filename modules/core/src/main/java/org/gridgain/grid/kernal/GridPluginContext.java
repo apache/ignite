@@ -57,12 +57,12 @@ public class GridPluginContext implements PluginContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> nodes() {
+    @Override public Collection<ClusterNode> nodes() {
         return ctx.discovery().allNodes();
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode localNode() {
+    @Override public ClusterNode localNode() {
         return ctx.discovery().localNode();
     }
 

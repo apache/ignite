@@ -192,7 +192,7 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
                     if (keys != null) {
                         // Notify master node.
                         if (ses.getJobId() != null) {
-                            GridNode node = ctx.discovery().node(ses.getTaskNodeId());
+                            ClusterNode node = ctx.discovery().node(ses.getTaskNodeId());
 
                             if (node != null)
                                 ctx.io().send(

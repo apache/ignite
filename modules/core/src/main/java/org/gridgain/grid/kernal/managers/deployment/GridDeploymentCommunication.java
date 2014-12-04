@@ -274,7 +274,7 @@ class GridDeploymentCommunication {
      * @param res Response.
      */
     private void sendResponse(UUID nodeId, Object topic, GridTcpCommunicationMessageAdapter res) {
-        GridNode node = ctx.discovery().node(nodeId);
+        ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node != null) {
             try {
@@ -302,7 +302,7 @@ class GridDeploymentCommunication {
      * @param rmtNodes Nodes to send request to.
      * @throws GridException If request could not be sent.
      */
-    void sendUndeployRequest(String rsrcName, Collection<GridNode> rmtNodes) throws GridException {
+    void sendUndeployRequest(String rsrcName, Collection<ClusterNode> rmtNodes) throws GridException {
         assert !rmtNodes.contains(ctx.discovery().localNode());
 
         GridTcpCommunicationMessageAdapter req = new GridDeploymentRequest(null, null, rsrcName, true);
@@ -331,7 +331,7 @@ class GridDeploymentCommunication {
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, GridUuid clsLdrId,
-        final GridNode dstNode, long threshold) throws GridException {
+        final ClusterNode dstNode, long threshold) throws GridException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;

@@ -244,7 +244,7 @@ public interface GridComputeTask<T, R> extends Serializable {
      * @throws GridException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link GridComputeTaskFuture#get()} method.
      */
-    @Nullable public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable T arg) throws GridException;
+    @Nullable public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws GridException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is

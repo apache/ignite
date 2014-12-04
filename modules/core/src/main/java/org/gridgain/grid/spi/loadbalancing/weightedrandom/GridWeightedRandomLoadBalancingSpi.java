@@ -160,7 +160,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
      * Name of node attribute used to indicate load weight of a node
      * (value is {@code "gridgain.node.weight.attr.name"}).
      *
-     * @see GridNode#attributes()
+     * @see org.gridgain.grid.ClusterNode#attributes()
      */
     public static final String NODE_WEIGHT_ATTR_NAME = "gridgain.node.weight.attr.name";
 
@@ -298,7 +298,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode getBalancedNode(GridComputeTaskSession ses, List<GridNode> top, GridComputeJob job) {
+    @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top, GridComputeJob job) {
         A.notNull(ses, "ses");
         A.notNull(top, "top");
         A.notNull(job, "job");
@@ -328,7 +328,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
      * @param node Node to get weight for.
      * @return Node weight
      */
-    private int getWeight(GridNode node) {
+    private int getWeight(ClusterNode node) {
         Integer weight = (Integer)node.attribute(createSpiAttributeName(NODE_WEIGHT_ATTR_NAME));
 
         if (weight != null && weight == 0)
@@ -345,17 +345,17 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
         private final int totalWeight;
 
         /** Topology sorted by weight. */
-        private final SortedMap<Integer, GridNode> circle = new TreeMap<>();
+        private final SortedMap<Integer, ClusterNode> circle = new TreeMap<>();
 
         /**
          * @param top Topology.
          */
-        WeightedTopology(Collection<GridNode> top) {
+        WeightedTopology(Collection<ClusterNode> top) {
             assert !F.isEmpty(top);
 
             int totalWeight = 0;
 
-            for (GridNode node : top) {
+            for (ClusterNode node : top) {
                 totalWeight += getWeight(node);
 
                 // Complexity of this put is O(logN).
@@ -370,10 +370,10 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
          *
          * @return Weighted node.
          */
-        GridNode pickWeightedNode() {
+        ClusterNode pickWeightedNode() {
             int weight = RAND.nextInt(totalWeight) + 1;
 
-            SortedMap<Integer, GridNode> pick = circle.tailMap(weight);
+            SortedMap<Integer, ClusterNode> pick = circle.tailMap(weight);
 
             assert !pick.isEmpty();
 

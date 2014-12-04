@@ -58,13 +58,13 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
     }
 
     /** {@inheritDoc} */
-    @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
-        List<GridNode> topSnapshot = ctx.currentTopologySnapshot();
+    @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
+        List<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
 
         if (topSnapshot.size() == 1) {
-            GridNode primary = topSnapshot.get(0);
+            ClusterNode primary = topSnapshot.get(0);
 
-            List<List<GridNode>> assignments = new ArrayList<>(parts);
+            List<List<ClusterNode>> assignments = new ArrayList<>(parts);
 
             for (int i = 0; i < parts; i++)
                 assignments.add(Collections.singletonList(primary));
@@ -72,9 +72,9 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
             return assignments;
         }
 
-        GridBiTuple<List<List<GridNode>>, Map<UUID, PartitionSet>> cp = createCopy(ctx, topSnapshot);
+        GridBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> cp = createCopy(ctx, topSnapshot);
 
-        List<List<GridNode>> assignment = cp.get1();
+        List<List<ClusterNode>> assignment = cp.get1();
 
         int tiers = Math.min(ctx.backups() + 1, topSnapshot.size());
 
@@ -140,7 +140,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      * @param topSnapshot Topology snapshot.
      */
     private void assignPending(int tier, Map<Integer, Queue<Integer>> pendingMap, FullAssignmentMap fullMap,
-        List<GridNode> topSnapshot) {
+        List<ClusterNode> topSnapshot) {
         Queue<Integer> pending = pendingMap.get(tier);
 
         if (F.isEmpty(pending))
@@ -183,7 +183,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
         Map<Integer, Queue<Integer>> pendingMap,
         FullAssignmentMap fullMap,
         PrioritizedPartitionMap underloadedNodes,
-        Collection<GridNode> topSnapshot,
+        Collection<ClusterNode> topSnapshot,
         boolean force) {
         Iterator<Integer> it = pendingMap.get(tier).iterator();
 
@@ -193,7 +193,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
             int part = it.next();
 
             for (PartitionSet set : underloadedNodes.assignments()) {
-                GridNode node = set.node();
+                ClusterNode node = set.node();
 
                 assert node != null;
 
@@ -224,7 +224,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      * @param topSnapshot Topology snapshot.
      */
     private void assignPendingToNodes(int tier, Map<Integer, Queue<Integer>> pendingMap,
-        FullAssignmentMap fullMap, List<GridNode> topSnapshot) {
+        FullAssignmentMap fullMap, List<ClusterNode> topSnapshot) {
         Iterator<Integer> it = pendingMap.get(tier).iterator();
 
         int idx = 0;
@@ -237,7 +237,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
             boolean assigned = false;
 
             do {
-                GridNode node = topSnapshot.get(i);
+                ClusterNode node = topSnapshot.get(i);
 
                 if (fullMap.assign(part, tier, node, false, pendingMap)) {
                     it.remove();
@@ -253,7 +253,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
 
             if (!assigned) {
                 do {
-                    GridNode node = topSnapshot.get(i);
+                    ClusterNode node = topSnapshot.get(i);
 
                     if (fullMap.assign(part, tier, node, true, pendingMap)) {
                         it.remove();
@@ -282,7 +282,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      * @param topSnapshot Topology snapshot.
      */
     private void balance(int tier, Map<Integer, Queue<Integer>> pendingParts, FullAssignmentMap fullMap,
-        Collection<GridNode> topSnapshot) {
+        Collection<ClusterNode> topSnapshot) {
         int idealPartCnt = parts / topSnapshot.size();
 
         Map<UUID, PartitionSet> mapping = fullMap.tierMapping(tier);
@@ -381,22 +381,22 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      * @param topSnapshot Topology snapshot.
      * @return Assignment copy and per node partition map.
      */
-    private GridBiTuple<List<List<GridNode>>, Map<UUID, PartitionSet>> createCopy(
-        GridCacheAffinityFunctionContext ctx, Iterable<GridNode> topSnapshot) {
+    private GridBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> createCopy(
+        GridCacheAffinityFunctionContext ctx, Iterable<ClusterNode> topSnapshot) {
         GridDiscoveryEvent discoEvt = ctx.discoveryEvent();
 
         UUID leftNodeId = discoEvt.type() == GridEventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
 
-        List<List<GridNode>> cp = new ArrayList<>(parts);
+        List<List<ClusterNode>> cp = new ArrayList<>(parts);
 
         Map<UUID, PartitionSet> parts = new HashMap<>();
 
         for (int part = 0; part < this.parts; part++) {
-            List<GridNode> partNodes = ctx.previousAssignment(part);
+            List<ClusterNode> partNodes = ctx.previousAssignment(part);
 
-            List<GridNode> partNodesCp = new ArrayList<>(partNodes.size());
+            List<ClusterNode> partNodesCp = new ArrayList<>(partNodes.size());
 
-            for (GridNode affNode : partNodes) {
+            for (ClusterNode affNode : partNodes) {
                 if (!affNode.id().equals(leftNodeId)) {
                     partNodesCp.add(affNode);
 
@@ -417,9 +417,9 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
 
         if (leftNodeId == null) {
             // Node joined, find it and add empty set to mapping.
-            GridNode joinedNode = null;
+            ClusterNode joinedNode = null;
 
-            for (GridNode node : topSnapshot) {
+            for (ClusterNode node : topSnapshot) {
                 if (node.id().equals(discoEvt.eventNode().id())) {
                     joinedNode = node;
 
@@ -527,12 +527,12 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      * @param topSnapshot Topology snapshot.
      * @return Assignment map.
      */
-    private static Map<UUID, PartitionSet> assignments(int tier, List<List<GridNode>> assignment,
-        Collection<GridNode> topSnapshot) {
+    private static Map<UUID, PartitionSet> assignments(int tier, List<List<ClusterNode>> assignment,
+        Collection<ClusterNode> topSnapshot) {
         Map<UUID, PartitionSet> tmp = new LinkedHashMap<>();
 
         for (int part = 0; part < assignment.size(); part++) {
-            List<GridNode> nodes = assignment.get(part);
+            List<ClusterNode> nodes = assignment.get(part);
 
             assert nodes instanceof RandomAccess;
 
@@ -543,7 +543,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
             int end = tier < 0 ? nodes.size() : tier + 1;
 
             for (int i = start; i < end; i++) {
-                GridNode n = nodes.get(i);
+                ClusterNode n = nodes.get(i);
 
                 PartitionSet set = tmp.get(n.id());
 
@@ -558,7 +558,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
         }
 
         if (tmp.size() < topSnapshot.size()) {
-            for (GridNode node : topSnapshot) {
+            for (ClusterNode node : topSnapshot) {
                 if (!tmp.containsKey(node.id()))
                     tmp.put(node.id(), new PartitionSet(node));
             }
@@ -580,14 +580,14 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
         private Map<UUID, PartitionSet> fullMap;
 
         /** Resulting assignment. */
-        private List<List<GridNode>> assignments;
+        private List<List<ClusterNode>> assignments;
 
         /**
          * @param tiers Number of tiers.
          * @param assignments Assignments to modify.
          * @param topSnapshot Topology snapshot.
          */
-        private FullAssignmentMap(int tiers, List<List<GridNode>> assignments, Collection<GridNode> topSnapshot) {
+        private FullAssignmentMap(int tiers, List<List<ClusterNode>> assignments, Collection<ClusterNode> topSnapshot) {
             this.assignments = assignments;
 
             tierMaps = new Map[tiers];
@@ -611,7 +611,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
          * @param pendingParts per tier pending partitions map.
          * @return {@code True} if assignment succeeded.
          */
-        boolean assign(int part, int tier, GridNode node, boolean force, Map<Integer, Queue<Integer>> pendingParts) {
+        boolean assign(int part, int tier, ClusterNode node, boolean force, Map<Integer, Queue<Integer>> pendingParts) {
             UUID nodeId = node.id();
 
             if (!fullMap.get(nodeId).contains(part)) {
@@ -619,12 +619,12 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
 
                 fullMap.get(nodeId).add(part);
 
-                List<GridNode> assignment = assignments.get(part);
+                List<ClusterNode> assignment = assignments.get(part);
 
                 if (assignment.size() <= tier)
                     assignment.add(node);
                 else {
-                    GridNode oldNode = assignment.set(tier, node);
+                    ClusterNode oldNode = assignment.set(tier, node);
 
                     if (oldNode != null) {
                         UUID oldNodeId = oldNode.id();
@@ -648,7 +648,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
                 // Partition is on some lower tier, switch it.
                 for (int t = tier + 1; t < tierMaps.length; t++) {
                     if (tierMaps[t].get(nodeId).contains(part)) {
-                        GridNode oldNode = assignments.get(part).get(tier);
+                        ClusterNode oldNode = assignments.get(part).get(tier);
 
                         // Move partition from level t to tier.
                         assignments.get(part).set(tier, node);
@@ -715,7 +715,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
     @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
     private static class PartitionSet {
         /** */
-        private GridNode node;
+        private ClusterNode node;
 
         /** Partitions. */
         private Collection<Integer> parts = new LinkedList<>();
@@ -723,14 +723,14 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
         /**
          * @param node Node.
          */
-        private PartitionSet(GridNode node) {
+        private PartitionSet(ClusterNode node) {
             this.node = node;
         }
 
         /**
          * @return Node.
          */
-        private GridNode node() {
+        private ClusterNode node() {
             return node;
         }
 

@@ -190,7 +190,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     @Override public void beforeExchange(GridDhtPartitionExchangeId exchId) throws GridException {
         waitForRent();
 
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         int num = cctx.affinity().partitions();
 
@@ -204,7 +204,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                 removeNode(exchId.nodeId());
 
             // In case if node joins, get topology at the time of joining node.
-            GridNode oldest = CU.oldest(cctx, topVer);
+            ClusterNode oldest = CU.oldest(cctx, topVer);
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -354,7 +354,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     @Override public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws GridException {
         boolean changed = waitForRent();
 
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         int num = cctx.affinity().partitions();
 
@@ -389,7 +389,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
                     if (state == MOVING) {
                         if (cctx.preloadEnabled()) {
-                            Collection<GridNode> owners = owners(p);
+                            Collection<ClusterNode> owners = owners(p);
 
                             // If there are no other owners, then become an owner.
                             if (F.isEmpty(owners)) {
@@ -564,8 +564,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> nodes(int p, long topVer) {
-        Collection<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
+    @Override public Collection<ClusterNode> nodes(int p, long topVer) {
+        Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
 
         lock.readLock().lock();
 
@@ -573,7 +573,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
                 ", node2part=" + node2part + ']';
 
-            Collection<GridNode> nodes = null;
+            Collection<ClusterNode> nodes = null;
 
             Collection<UUID> nodeIds = part2node.get(p);
 
@@ -582,7 +582,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
                 for (UUID nodeId : nodeIds) {
                     if (!affIds.contains(nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
-                        GridNode n = cctx.discovery().node(nodeId);
+                        ClusterNode n = cctx.discovery().node(nodeId);
 
                         if (n != null && (topVer < 0 || n.order() <= topVer)) {
                             if (nodes == null) {
@@ -611,7 +611,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<GridNode> nodes(int p, long topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
+    private List<ClusterNode> nodes(int p, long topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
@@ -628,14 +628,14 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             if (size == 0)
                 return Collections.emptyList();
 
-            List<GridNode> nodes = new ArrayList<>(size);
+            List<ClusterNode> nodes = new ArrayList<>(size);
 
             for (UUID id : nodeIds) {
                 if (topVer > 0 && !allIds.contains(id))
                     continue;
 
                 if (hasState(p, id, state, states)) {
-                    GridNode n = cctx.discovery().node(id);
+                    ClusterNode n = cctx.discovery().node(id);
 
                     if (n != null && (topVer < 0 || n.order() <= topVer))
                         nodes.add(n);
@@ -650,7 +650,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridNode> owners(int p, long topVer) {
+    @Override public List<ClusterNode> owners(int p, long topVer) {
         if (!cctx.preloadEnabled())
             return ownersAndMoving(p, topVer);
 
@@ -658,12 +658,12 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridNode> owners(int p) {
+    @Override public List<ClusterNode> owners(int p) {
         return owners(p, -1);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridNode> moving(int p) {
+    @Override public List<ClusterNode> moving(int p) {
         if (!cctx.preloadEnabled())
             return ownersAndMoving(p, -1);
 
@@ -675,7 +675,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
      * @param topVer Topology version.
      * @return List of nodes in state OWNING or MOVING.
      */
-    private List<GridNode> ownersAndMoving(int p, long topVer) {
+    private List<ClusterNode> ownersAndMoving(int p, long topVer) {
         return nodes(p, topVer, OWNING, MOVING);
     }
 
@@ -902,7 +902,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             if (state.active()) {
                 int p = part.id();
 
-                List<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
+                List<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
 
                 if (!affNodes.contains(cctx.localNode())) {
                     Collection<UUID> nodeIds = F.nodeIds(nodes(p, topVer, OWNING));
@@ -923,7 +923,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                         int affCnt = affNodes.size();
 
                         if (ownerCnt > affCnt) {
-                            List<GridNode> sorted = new ArrayList<>(cctx.discovery().nodes(nodeIds));
+                            List<ClusterNode> sorted = new ArrayList<>(cctx.discovery().nodes(nodeIds));
 
                             // Sort by node orders in ascending order.
                             Collections.sort(sorted, CU.nodeComparator(true));
@@ -931,7 +931,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                             int diff = sorted.size() - affCnt;
 
                             for (int i = 0; i < diff; i++) {
-                                GridNode n = sorted.get(i);
+                                ClusterNode n = sorted.get(i);
 
                                 if (locId.equals(n.id())) {
                                     part.rent(false);
@@ -970,7 +970,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
         assert nodeId.equals(cctx.nodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        GridNode oldest = CU.oldest(cctx, topVer);
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
         // If this node became the oldest node.
         if (oldest.id().equals(cctx.nodeId())) {
@@ -1020,9 +1020,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
         assert nodeId != null;
         assert lock.writeLock().isHeldByCurrentThread();
 
-        GridNode oldest = CU.oldest(cctx, topVer);
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         if (node2part != null) {
             if (oldest.equals(loc) && !node2part.nodeId().equals(loc.id())) {
@@ -1057,7 +1057,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
     /** {@inheritDoc} */
     @Override public boolean own(GridDhtLocalPartition<K, V> part) {
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         lock.writeLock().lock();
 

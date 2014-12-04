@@ -134,7 +134,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     }
                 }
                 else {
-                    for (GridNode node : ctx.discovery().nodes(task.getSession().getTopology())) {
+                    for (ClusterNode node : ctx.discovery().nodes(task.getSession().getTopology())) {
                         if (ctx.localNodeId().equals(node.id()))
                             ctx.job().masterLeaveLocal(task.getSession().getId());
                     }
@@ -501,7 +501,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         boolean fullSup = dep != null && taskCls!= null &&
             dep.annotation(taskCls, GridComputeTaskSessionFullSupport.class) != null;
 
-        Collection<? extends GridNode> nodes = (Collection<? extends GridNode>)map.get(TC_SUBGRID);
+        Collection<? extends ClusterNode> nodes = (Collection<? extends ClusterNode>)map.get(TC_SUBGRID);
 
         Collection<UUID> top = nodes != null ? F.nodeIds(nodes) : null;
 
@@ -816,7 +816,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (msgId != null) {
                 assert msgId > 0;
 
-                GridNode node = ctx.discovery().node(nodeId);
+                ClusterNode node = ctx.discovery().node(nodeId);
 
                 // Check that node didn't change (it could happen in case of failover).
                 if (node != null) {

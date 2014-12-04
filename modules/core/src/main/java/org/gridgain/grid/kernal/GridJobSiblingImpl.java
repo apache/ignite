@@ -131,7 +131,7 @@ public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements Grid
         GridTaskSessionImpl ses = ctx.session().getSession(sesId);
 
         if (ses == null) {
-            Collection<GridNode> nodes = ctx.discovery().remoteNodes();
+            Collection<ClusterNode> nodes = ctx.discovery().remoteNodes();
 
             if (!nodes.isEmpty())
                 ctx.io().send(nodes, TOPIC_JOB_CANCEL, new GridJobCancelRequest(sesId, jobId), SYSTEM_POOL);
@@ -142,7 +142,7 @@ public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements Grid
             return;
         }
 
-        for (GridNode node : ctx.discovery().nodes(ses.getTopology())) {
+        for (ClusterNode node : ctx.discovery().nodes(ses.getTopology())) {
             if (ctx.localNodeId().equals(node.id()))
                 // Cancel local jobs directly.
                 ctx.job().cancelJob(ses.getId(), jobId, false);

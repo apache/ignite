@@ -55,19 +55,19 @@ public class ComputeTaskMapExample {
          * @param arg String to split into words for processing.
          * @return Map of jobs to nodes.
          */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) {
+        @Override public Map<? extends GridComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             String[] words = arg.split(" ");
 
-            Map<GridComputeJob, GridNode> map = new HashMap<>();
+            Map<GridComputeJob, ClusterNode> map = new HashMap<>();
 
-            Iterator<GridNode> it = subgrid.iterator();
+            Iterator<ClusterNode> it = subgrid.iterator();
 
             for (final String word : arg.split(" ")) {
                 // If we used all nodes, restart the iterator.
                 if (!it.hasNext())
                     it = subgrid.iterator();
 
-                GridNode node = it.next();
+                ClusterNode node = it.next();
 
                 map.put(new GridComputeJobAdapter() {
                     @Nullable @Override public Object execute() {

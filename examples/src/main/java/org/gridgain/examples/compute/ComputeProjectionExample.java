@@ -57,8 +57,8 @@ public class ComputeProjectionExample {
             sayHello(ignite, cluster.forHost(randomNode.node()));
 
             // Say hello to all nodes that have current CPU load less than 50%.
-            sayHello(ignite, cluster.forPredicate(new GridPredicate<GridNode>() {
-                @Override public boolean apply(GridNode n) {
+            sayHello(ignite, cluster.forPredicate(new GridPredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode n) {
                     return n.metrics().getCurrentCpuLoad() < 0.5;
                 }
             }));

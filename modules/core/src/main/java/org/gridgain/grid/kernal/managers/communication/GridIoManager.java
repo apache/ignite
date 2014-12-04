@@ -417,7 +417,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
         try {
             // Check discovery.
-            GridNode node = ctx.discovery().node(nodeId);
+            ClusterNode node = ctx.discovery().node(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())
@@ -550,7 +550,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param msgC Closure to call when message processing finished.
      */
     @SuppressWarnings("deprecation")
-    private void processP2PMessage(final GridNode node, final GridIoMessage msg, final GridRunnable msgC) {
+    private void processP2PMessage(final ClusterNode node, final GridIoMessage msg, final GridRunnable msgC) {
         workersCnt.increment();
 
         Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
@@ -597,7 +597,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param plc Execution policy.
      * @param msgC Closure to call when message processing finished.
      */
-    private void processRegularMessage(final GridNode node, final GridIoMessage msg, GridIoPolicy plc,
+    private void processRegularMessage(final ClusterNode node, final GridIoMessage msg, GridIoPolicy plc,
         final GridRunnable msgC) {
         workersCnt.increment();
 
@@ -655,7 +655,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param msgC Closure to call when message processing finished.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    private void processOrderedMessage(final GridNode node, final GridIoMessage msg, final GridIoPolicy plc,
+    private void processOrderedMessage(final ClusterNode node, final GridIoMessage msg, final GridIoPolicy plc,
         final GridRunnable msgC) {
         assert msg != null;
 
@@ -867,7 +867,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param skipOnTimeout Whether message can be skipped on timeout.
      * @throws GridException Thrown in case of any errors.
      */
-    private void send(GridNode node, Object topic, int topicOrd, GridTcpCommunicationMessageAdapter msg,
+    private void send(ClusterNode node, Object topic, int topicOrd, GridTcpCommunicationMessageAdapter msg,
         GridIoPolicy plc, long msgId, long timeout, boolean skipOnTimeout) throws GridException {
         assert node != null;
         assert topic != null;
@@ -914,7 +914,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      */
     public void send(UUID nodeId, Object topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
         throws GridException {
-        GridNode node = ctx.discovery().node(nodeId);
+        ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
             throw new GridException("Failed to send message to node (has node left grid?): " + nodeId);
@@ -932,7 +932,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     @SuppressWarnings("TypeMayBeWeakened")
     public void send(UUID nodeId, GridTopic topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
         throws GridException {
-        GridNode node = ctx.discovery().node(nodeId);
+        ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
             throw new GridException("Failed to send message to node (has node left grid?): " + nodeId);
@@ -947,7 +947,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param plc Type of processing.
      * @throws GridException Thrown in case of any errors.
      */
-    public void send(GridNode node, Object topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
+    public void send(ClusterNode node, Object topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
         throws GridException {
         send(node, topic, -1, msg, plc, -1, 0, false);
     }
@@ -959,7 +959,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param plc Type of processing.
      * @throws GridException Thrown in case of any errors.
      */
-    public void send(GridNode node, GridTopic topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
+    public void send(ClusterNode node, GridTopic topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
         throws GridException {
         send(node, topic, topic.ordinal(), msg, plc, -1, 0, false);
     }
@@ -1017,7 +1017,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param skipOnTimeout Whether message can be skipped on timeout.
      * @throws GridException Thrown in case of any errors.
      */
-    public void sendOrderedMessage(GridNode node, Object topic, long msgId, GridTcpCommunicationMessageAdapter msg,
+    public void sendOrderedMessage(ClusterNode node, Object topic, long msgId, GridTcpCommunicationMessageAdapter msg,
         GridIoPolicy plc, long timeout, boolean skipOnTimeout) throws GridException {
         assert timeout > 0 || skipOnTimeout;
 
@@ -1038,7 +1038,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         GridIoPolicy plc, long timeout, boolean skipOnTimeout) throws GridException {
         assert timeout > 0 || skipOnTimeout;
 
-        GridNode node = ctx.discovery().node(nodeId);
+        ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
             throw new GridException("Failed to send message to node (has node left grid?): " + nodeId);
@@ -1056,7 +1056,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param skipOnTimeout Whether message can be skipped on timeout.
      * @throws GridException Thrown in case of any errors.
      */
-    public void sendOrderedMessage(Collection<? extends GridNode> nodes, Object topic, long msgId,
+    public void sendOrderedMessage(Collection<? extends ClusterNode> nodes, Object topic, long msgId,
         GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc, long timeout, boolean skipOnTimeout)
         throws GridException {
         assert timeout > 0 || skipOnTimeout;
@@ -1071,7 +1071,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param plc Type of processing.
      * @throws GridException Thrown in case of any errors.
      */
-    public void send(Collection<? extends GridNode> nodes, Object topic, GridTcpCommunicationMessageAdapter msg,
+    public void send(Collection<? extends ClusterNode> nodes, Object topic, GridTcpCommunicationMessageAdapter msg,
         GridIoPolicy plc) throws GridException {
         send(nodes, topic, -1, msg, plc, -1, 0, false);
     }
@@ -1083,7 +1083,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param plc Type of processing.
      * @throws GridException Thrown in case of any errors.
      */
-    public void send(Collection<? extends GridNode> nodes, GridTopic topic, GridTcpCommunicationMessageAdapter msg,
+    public void send(Collection<? extends ClusterNode> nodes, GridTopic topic, GridTcpCommunicationMessageAdapter msg,
         GridIoPolicy plc) throws GridException {
         send(nodes, topic, topic.ordinal(), msg, plc, -1, 0, false);
     }
@@ -1095,7 +1095,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param msg Message to send.
      * @throws GridException Thrown in case of any errors.
      */
-    public void sendUserMessage(Collection<? extends GridNode> nodes, Object msg) throws GridException {
+    public void sendUserMessage(Collection<? extends ClusterNode> nodes, Object msg) throws GridException {
         sendUserMessage(nodes, msg, null, false, 0);
     }
 
@@ -1110,7 +1110,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings("ConstantConditions")
-    public void sendUserMessage(Collection<? extends GridNode> nodes, Object msg,
+    public void sendUserMessage(Collection<? extends ClusterNode> nodes, Object msg,
         @Nullable Object topic, boolean ordered, long timeout) throws GridException {
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(locNodeId);
 
@@ -1161,9 +1161,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         else if (loc)
             send(F.first(nodes), TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
         else {
-            GridNode locNode = F.find(nodes, null, F.localNode(locNodeId));
+            ClusterNode locNode = F.find(nodes, null, F.localNode(locNodeId));
 
-            Collection<? extends GridNode> rmtNodes = F.view(nodes, F.remoteNodes(locNodeId));
+            Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(locNodeId));
 
             if (locNode != null)
                 send(locNode, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
@@ -1214,7 +1214,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param skipOnTimeout Whether message can be skipped in timeout.
      * @throws GridException Thrown in case of any errors.
      */
-    private void send(Collection<? extends GridNode> nodes, Object topic, int topicOrd,
+    private void send(Collection<? extends ClusterNode> nodes, Object topic, int topicOrd,
         GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc, long msgId, long timeout, boolean skipOnTimeout)
         throws GridException {
         assert nodes != null;
@@ -1232,7 +1232,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
             if (!nodes.isEmpty()) {
                 boolean first = true;
 
-                for (GridNode node : nodes) {
+                for (ClusterNode node : nodes) {
                     GridTcpCommunicationMessageAdapter msg0 = first ? msg : msg.clone();
 
                     first = false;
@@ -1669,7 +1669,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 
-            GridNode node = ctx.discovery().node(nodeId);
+            ClusterNode node = ctx.discovery().node(nodeId);
 
             if (node == null) {
                 U.warn(log, "Failed to resolve sender node (did the node left grid?): " + nodeId);

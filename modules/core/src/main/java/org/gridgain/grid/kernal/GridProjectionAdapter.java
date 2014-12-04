@@ -59,7 +59,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     private UUID subjId;
 
     /** Projection predicate. */
-    protected GridPredicate<GridNode> p;
+    protected GridPredicate<ClusterNode> p;
 
     /** Node IDs. */
     private Set<UUID> ids;
@@ -77,7 +77,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * @param p Predicate.
      */
     protected GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
-        @Nullable UUID subjId, @Nullable GridPredicate<GridNode> p) {
+        @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p) {
         this.parent = parent;
 
         if (ctx != null)
@@ -116,7 +116,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * @param ids Node IDs.
      */
     private GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
-        @Nullable UUID subjId, @Nullable GridPredicate<GridNode> p, Set<UUID> ids) {
+        @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p, Set<UUID> ids) {
         this.parent = parent;
 
         if (ctx != null)
@@ -265,7 +265,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> nodes() {
+    @Override public Collection<ClusterNode> nodes() {
         guard();
 
         try {
@@ -273,15 +273,15 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                 if (ids.isEmpty())
                     return Collections.emptyList();
                 else if (ids.size() == 1) {
-                    GridNode node = ctx.discovery().node(F.first(ids));
+                    ClusterNode node = ctx.discovery().node(F.first(ids));
 
-                    return node != null ? Collections.singleton(node) : Collections.<GridNode>emptyList();
+                    return node != null ? Collections.singleton(node) : Collections.<ClusterNode>emptyList();
                 }
                 else {
-                    Collection<GridNode> nodes = new ArrayList<>(ids.size());
+                    Collection<ClusterNode> nodes = new ArrayList<>(ids.size());
 
                     for (UUID id : ids) {
-                        GridNode node = ctx.discovery().node(id);
+                        ClusterNode node = ctx.discovery().node(id);
 
                         if (node != null)
                             nodes.add(node);
@@ -291,7 +291,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                 }
             }
             else {
-                Collection<GridNode> all = ctx.discovery().allNodes();
+                Collection<ClusterNode> all = ctx.discovery().allNodes();
 
                 return p != null ? F.view(all, p) : all;
             }
@@ -302,7 +302,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridNode node(UUID id) {
+    @Override public final ClusterNode node(UUID id) {
         A.notNull(id, "id");
 
         guard();
@@ -311,7 +311,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             if (ids != null)
                 return ids.contains(id) ? ctx.discovery().node(id) : null;
             else {
-                GridNode node = ctx.discovery().node(id);
+                ClusterNode node = ctx.discovery().node(id);
 
                 return node != null && (p == null || p.apply(node)) ? node : null;
             }
@@ -322,17 +322,17 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode node() {
+    @Override public ClusterNode node() {
         return F.first(nodes());
     }
 
     /** {@inheritDoc} */
-    @Override public final GridPredicate<GridNode> predicate() {
-        return p != null ? p : F.<GridNode>alwaysTrue();
+    @Override public final GridPredicate<ClusterNode> predicate() {
+        return p != null ? p : F.<ClusterNode>alwaysTrue();
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forPredicate(GridPredicate<GridNode> p) {
+    @Override public final GridProjection forPredicate(GridPredicate<ClusterNode> p) {
         A.notNull(p, "p");
 
         guard();
@@ -353,7 +353,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forNode(GridNode node, GridNode... nodes) {
+    @Override public final GridProjection forNode(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
         guard();
@@ -366,7 +366,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             else {
                 nodeIds = U.newHashSet(nodes.length + 1);
 
-                for (GridNode n : nodes)
+                for (ClusterNode n : nodes)
                     if (contains(n))
                         nodeIds.add(n.id());
 
@@ -382,7 +382,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forNodes(Collection<? extends GridNode> nodes) {
+    @Override public final GridProjection forNodes(Collection<? extends ClusterNode> nodes) {
         A.notEmpty(nodes, "nodes");
 
         guard();
@@ -390,7 +390,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         try {
             Set<UUID> nodeIds = U.newHashSet(nodes.size());
 
-            for (GridNode n : nodes)
+            for (ClusterNode n : nodes)
                 if (contains(n))
                     nodeIds.add(n.id());
 
@@ -453,7 +453,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forOthers(GridNode node, GridNode... nodes) {
+    @Override public final GridProjection forOthers(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
         return forOthers(F.concat(false, node.id(), F.nodeIds(Arrays.asList(nodes))));
@@ -470,7 +470,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
                 Set<UUID> nodeIds = U.newHashSet(ids.size());
 
                 for (UUID id : ids) {
-                    GridNode n = node(id);
+                    ClusterNode n = node(id);
 
                     if (n != null && !prj.predicate().apply(n))
                         nodeIds.add(id);
@@ -530,7 +530,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forHost(GridNode node) {
+    @Override public final GridProjection forHost(ClusterNode node) {
         A.notNull(node, "node");
 
         String macs = node.attribute(ATTR_MACS);
@@ -580,7 +580,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * @param n Node.
      * @return Whether node belongs to this projection.
      */
-    private boolean contains(GridNode n) {
+    private boolean contains(ClusterNode n) {
         assert n != null;
 
         return ids != null ? ids.contains(n.id()) : p == null || p.apply(n);
@@ -596,7 +596,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         if (ids != null)
             return ids.contains(id);
         else {
-            GridNode n = ctx.discovery().node(id);
+            ClusterNode n = ctx.discovery().node(id);
 
             return n != null && (p == null || p.apply(n));
         }
@@ -623,7 +623,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         if (in.readBoolean())
             ids = (Set<UUID>)in.readObject();
         else
-            p = (GridPredicate<GridNode>)in.readObject();
+            p = (GridPredicate<ClusterNode>)in.readObject();
     }
 
     /**
@@ -646,7 +646,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
 
     /**
      */
-    private static class CachesFilter implements GridPredicate<GridNode> {
+    private static class CachesFilter implements GridPredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -666,7 +666,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridNode n) {
+        @Override public boolean apply(ClusterNode n) {
             if (!U.hasCache(n, cacheName))
                 return false;
 
@@ -681,7 +681,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
 
     /**
      */
-    private static class StreamersFilter implements GridPredicate<GridNode> {
+    private static class StreamersFilter implements GridPredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -701,7 +701,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridNode n) {
+        @Override public boolean apply(ClusterNode n) {
             if (!U.hasStreamer(n, streamerName))
                  return false;
 
@@ -716,7 +716,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
 
     /**
      */
-    private static class AttributeFilter implements GridPredicate<GridNode> {
+    private static class AttributeFilter implements GridPredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -736,26 +736,26 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridNode n) {
+        @Override public boolean apply(ClusterNode n) {
             return val == null ? n.attributes().containsKey(name) : val.equals(n.attribute(name));
         }
     }
 
     /**
      */
-    private static class DaemonFilter implements GridPredicate<GridNode> {
+    private static class DaemonFilter implements GridPredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridNode n) {
+        @Override public boolean apply(ClusterNode n) {
             return n.isDaemon();
         }
     }
 
     /**
      */
-    private static class OthersFilter implements GridPredicate<GridNode> {
+    private static class OthersFilter implements GridPredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -770,7 +770,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridNode n) {
+        @Override public boolean apply(ClusterNode n) {
             return !nodeIds.contains(n.id());
         }
     }
@@ -786,7 +786,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         private boolean isOldest;
 
         /** Selected node. */
-        private volatile GridNode node;
+        private volatile ClusterNode node;
 
         /** Last topology version. */
         private volatile long lastTopVer;
@@ -827,7 +827,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNode node() {
+        @Override public ClusterNode node() {
             if (ctx.discovery().topologyVersion() != lastTopVer)
                 reset();
 
@@ -835,13 +835,13 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridNode> nodes() {
+        @Override public Collection<ClusterNode> nodes() {
             if (ctx.discovery().topologyVersion() != lastTopVer)
                 reset();
 
-            GridNode node = this.node;
+            ClusterNode node = this.node;
 
-            return node == null ? Collections.<GridNode>emptyList() : Collections.singletonList(node);
+            return node == null ? Collections.<ClusterNode>emptyList() : Collections.singletonList(node);
         }
     }
 }

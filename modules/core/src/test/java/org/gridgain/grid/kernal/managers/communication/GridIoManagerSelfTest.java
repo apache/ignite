@@ -58,7 +58,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         GridDiscoveryManager mockedDiscoveryMgr = Mockito.mock(GridDiscoveryManager.class);
 
         when(mockedDiscoveryMgr.localNode()).thenReturn(locNode);
-        when(mockedDiscoveryMgr.remoteNodes()).thenReturn(F.<GridNode>asList(rmtNode));
+        when(mockedDiscoveryMgr.remoteNodes()).thenReturn(F.<ClusterNode>asList(rmtNode));
 
         ctx.add(mockedDiscoveryMgr);
     }
@@ -109,7 +109,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         verify(ioMgr).send(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
             eq(GridIoPolicy.PUBLIC_POOL));
 
-        Collection<? extends GridNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
 
         verify(ioMgr).send(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class), eq(GridIoPolicy.PUBLIC_POOL));
@@ -133,7 +133,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         verify(ioMgr).send(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
             eq(GridIoPolicy.PUBLIC_POOL));
 
-        Collection<? extends GridNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
 
         verify(ioMgr).send(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class), eq(GridIoPolicy.PUBLIC_POOL));
@@ -175,7 +175,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(GridNode node, GridTopic topic, GridTcpCommunicationMessageAdapter msg,
+        @Override public void send(ClusterNode node, GridTopic topic, GridTcpCommunicationMessageAdapter msg,
             GridIoPolicy plc) throws GridException {
             // No-op.
         }
@@ -184,16 +184,16 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /**
      * Mockito argument matcher to compare collections produced by {@code F.view()} methods.
      */
-    private static class IsEqualCollection extends ArgumentMatcher<Collection<? extends GridNode>> {
+    private static class IsEqualCollection extends ArgumentMatcher<Collection<? extends ClusterNode>> {
         /** Expected collection. */
-        private final Collection<? extends GridNode> expCol;
+        private final Collection<? extends ClusterNode> expCol;
 
         /**
          * Default constructor.
          *
          * @param expCol Expected collection.
          */
-        IsEqualCollection(Collection<? extends GridNode> expCol) {
+        IsEqualCollection(Collection<? extends ClusterNode> expCol) {
             this.expCol = expCol;
         }
 

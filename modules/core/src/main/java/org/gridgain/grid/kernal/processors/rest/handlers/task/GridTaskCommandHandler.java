@@ -375,7 +375,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Response from task holder.
      */
     private GridBiTuple<String, GridTaskResultResponse> requestTaskResult(final UUID resHolderId, GridUuid taskId) {
-        GridNode taskNode = ctx.discovery().node(resHolderId);
+        ClusterNode taskNode = ctx.discovery().node(resHolderId);
 
         if (taskNode == null)
             return F.t("Task result holder has left grid: " + resHolderId, null);

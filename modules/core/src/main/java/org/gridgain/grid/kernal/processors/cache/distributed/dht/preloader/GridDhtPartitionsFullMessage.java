@@ -40,7 +40,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     private long topVer;
 
     @GridDirectTransient
-    private List<List<GridNode>> affAssignment;
+    private List<List<ClusterNode>> affAssignment;
 
     /** */
     private byte[] affAssignmentBytes;
@@ -110,14 +110,14 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /**
      * @return Affinity assignment for topology version.
      */
-    public List<List<GridNode>> affinityAssignment() {
+    public List<List<ClusterNode>> affinityAssignment() {
         return affAssignment;
     }
 
     /**
      * @param affAssignment Affinity assignment for topology version.
      */
-    public void affinityAssignment(List<List<GridNode>> affAssignment) {
+    public void affinityAssignment(List<List<ClusterNode>> affAssignment) {
         this.affAssignment = affAssignment;
     }
 

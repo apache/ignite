@@ -111,5 +111,5 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param node Joining node.
      * @throws PluginValidationException If cluster-wide plugin validation failed.
      */
-    public void validateNewNode(GridNode node) throws PluginValidationException;
+    public void validateNewNode(ClusterNode node) throws PluginValidationException;
 }

@@ -30,7 +30,7 @@ public interface GridStreamerEventRouter {
      *      will be terminated. All running and ongoing stages for pipeline execution will be
      *      cancelled.
      */
-    @Nullable public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt);
+    @Nullable public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt);
 
     /**
      * Selects a node for given events that should be processed by a stage with given name.
@@ -42,6 +42,6 @@ public interface GridStreamerEventRouter {
      *      will be terminated. All running and ongoing stages for pipeline execution will be
      *      cancelled.
      */
-    @Nullable public <T> Map<GridNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
+    @Nullable public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
         Collection<T> evts);
 }

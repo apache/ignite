@@ -90,11 +90,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             GridDiscoveryEvent e = (GridDiscoveryEvent)evt;
 
             try {
-                GridNode loc = cctx.localNode();
+                ClusterNode loc = cctx.localNode();
 
                 assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED;
 
-                final GridNode n = e.eventNode();
+                final ClusterNode n = e.eventNode();
 
                 assert !loc.id().equals(n.id());
 
@@ -156,21 +156,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage<K, V>>() {
-                @Override public void onMessage(GridNode node, GridDhtPartitionsSingleMessage<K, V> msg) {
+                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleMessage<K, V> msg) {
                     processSinglePartitionUpdate(node, msg);
                 }
             });
 
         cctx.io().addHandler(0, GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage<K, V>>() {
-                @Override public void onMessage(GridNode node, GridDhtPartitionsFullMessage<K, V> msg) {
+                @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage<K, V> msg) {
                     processFullPartitionUpdate(node, msg);
                 }
             });
 
         cctx.io().addHandler(0, GridDhtPartitionsSingleRequest.class,
             new MessageHandler<GridDhtPartitionsSingleRequest<K, V>>() {
-                @Override public void onMessage(GridNode node, GridDhtPartitionsSingleRequest<K, V> msg) {
+                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest<K, V> msg) {
                     processSinglePartitionRequest(node, msg);
                 }
             });
@@ -180,7 +180,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void onKernalStart0() throws GridException {
         super.onKernalStart0();
 
-        GridNode loc = cctx.localNode();
+        ClusterNode loc = cctx.localNode();
 
         long startTime = loc.metrics().getStartTime();
 
@@ -401,12 +401,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Partition refresh callback.
      */
     void refreshPartitions() {
-        GridNode oldest = CU.oldest(cctx);
+        ClusterNode oldest = CU.oldest(cctx);
 
         if (log.isDebugEnabled())
             log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() + ']');
 
-        Collection<GridNode> rmts = null;
+        Collection<ClusterNode> rmts = null;
 
         try {
             // If this is the oldest node.
@@ -459,7 +459,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} if message was sent, {@code false} if node left grid.
      * @throws GridException If failed.
      */
-    private boolean sendAllPartitions(Collection<? extends GridNode> nodes)
+    private boolean sendAllPartitions(Collection<? extends ClusterNode> nodes)
         throws GridException {
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, null, -1);
 
@@ -482,7 +482,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} if message was sent, {@code false} if node left grid.
      * @throws GridException If failed.
      */
-    private boolean sendLocalPartitions(GridNode node, @Nullable GridDhtPartitionExchangeId id)
+    private boolean sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id)
         throws GridException {
         GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
 
@@ -570,7 +570,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Node.
      * @param msg Message.
      */
-    private void processFullPartitionUpdate(GridNode node, GridDhtPartitionsFullMessage<K, V> msg) {
+    private void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage<K, V> msg) {
         if (!enterBusy())
             return;
 
@@ -604,7 +604,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Node ID.
      * @param msg Message.
      */
-    private void processSinglePartitionUpdate(GridNode node, GridDhtPartitionsSingleMessage<K, V> msg) {
+    private void processSinglePartitionUpdate(ClusterNode node, GridDhtPartitionsSingleMessage<K, V> msg) {
         if (!enterBusy())
             return;
 
@@ -642,7 +642,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Node ID.
      * @param msg Message.
      */
-    private void processSinglePartitionRequest(GridNode node, GridDhtPartitionsSingleRequest<K, V> msg) {
+    private void processSinglePartitionRequest(ClusterNode node, GridDhtPartitionsSingleRequest<K, V> msg) {
         if (!enterBusy())
             return;
 
@@ -984,7 +984,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Override public void apply(UUID nodeId, M msg) {
-            GridNode node = cctx.node(nodeId);
+            ClusterNode node = cctx.node(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())
@@ -1003,6 +1003,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param node Node.
          * @param msg Message.
          */
-        protected abstract void onMessage(GridNode node, M msg);
+        protected abstract void onMessage(ClusterNode node, M msg);
     }
 }
