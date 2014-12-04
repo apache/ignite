@@ -9,7 +9,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;

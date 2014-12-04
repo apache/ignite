@@ -11,6 +11,7 @@ package org.gridgain.grid.util;
 
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;

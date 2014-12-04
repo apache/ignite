@@ -11,6 +11,7 @@ package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -1377,7 +1378,7 @@ public abstract class GridUtils {
 
     /**
      * Tries to resolve host by name, returning local host if input is empty.
-     * This method reflects how {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()} should
+     * This method reflects how {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} should
      * be handled in most places.
      *
      * @param hostName Hostname or {@code null} if local host should be returned.

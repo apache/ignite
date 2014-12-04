@@ -18,7 +18,7 @@ import java.lang.annotation.*;
  * Annotates a field or a setter method for injection of {@link GridComputeLoadBalancer}.
  * Specific implementation for grid load balancer is defined by
  * {@link GridLoadBalancingSpi}
- * which is provided to grid via {@link org.gridgain.grid.IgniteConfiguration}..
+ * which is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}..
  * <p>
  * Load balancer can be injected into instances of following classes:
  * <ul>
@@ -46,7 +46,7 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See {@link org.gridgain.grid.IgniteConfiguration#getLoadBalancingSpi()} for Grid configuration details.
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getLoadBalancingSpi()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

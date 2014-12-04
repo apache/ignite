@@ -11,6 +11,7 @@ package org.gridgain.client.integration;
 
 import junit.framework.*;
 import net.sf.json.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.client.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;

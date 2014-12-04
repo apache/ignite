@@ -10,6 +10,7 @@
 package org.gridgain.examples.misc.lifecycle;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 

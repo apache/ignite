@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.plugin;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.typedef.*;

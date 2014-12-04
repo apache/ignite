@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.messaging;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.config.*;
 

@@ -14,6 +14,7 @@ package org.gridgain.scalar
 import java.net.URL
 import org.apache.ignite.Ignite
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.jetbrains.annotations.Nullable
 import java.util.UUID
 import org.gridgain.grid._

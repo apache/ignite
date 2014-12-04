@@ -9,7 +9,7 @@
 
 package org.gridgain.client.router;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

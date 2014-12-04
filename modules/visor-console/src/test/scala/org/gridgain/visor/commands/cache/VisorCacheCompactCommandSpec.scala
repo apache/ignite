@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.GridCacheMode._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Tests for fields queries.

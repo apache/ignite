@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.client.ssl.*;
 import org.jetbrains.annotations.*;
 

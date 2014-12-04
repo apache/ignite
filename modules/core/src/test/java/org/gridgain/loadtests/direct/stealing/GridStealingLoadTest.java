@@ -10,7 +10,7 @@
 package org.gridgain.loadtests.direct.stealing;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.loadtest.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;

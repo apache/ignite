@@ -8,6 +8,7 @@
  */
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 

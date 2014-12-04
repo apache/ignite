@@ -27,11 +27,11 @@ import java.io.*;
  * mark the topology as segmented in case it is not available. In other words
  * you can equate the service outage with network outage via segmentation resolution
  * and employ the unified approach in dealing with these types of problems.
- * @see org.gridgain.grid.IgniteConfiguration#getSegmentationResolvers()
- * @see org.gridgain.grid.IgniteConfiguration#getSegmentationPolicy()
- * @see org.gridgain.grid.IgniteConfiguration#getSegmentCheckFrequency()
- * @see org.gridgain.grid.IgniteConfiguration#isAllSegmentationResolversPassRequired()
- * @see org.gridgain.grid.IgniteConfiguration#isWaitForSegmentOnStart()
+ * @see org.apache.ignite.configuration.IgniteConfiguration#getSegmentationResolvers()
+ * @see org.apache.ignite.configuration.IgniteConfiguration#getSegmentationPolicy()
+ * @see org.apache.ignite.configuration.IgniteConfiguration#getSegmentCheckFrequency()
+ * @see org.apache.ignite.configuration.IgniteConfiguration#isAllSegmentationResolversPassRequired()
+ * @see org.apache.ignite.configuration.IgniteConfiguration#isWaitForSegmentOnStart()
  * @see GridSegmentationPolicy
  */
 public interface GridSegmentationResolver extends Serializable {

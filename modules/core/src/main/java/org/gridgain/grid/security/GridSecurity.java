@@ -22,7 +22,7 @@ import java.util.*;
  * <h1 class="header">Grid Nodes vs Remote Clients</h1>
  * When security is enabled, both grid nodes and remote clients must be authenticated.
  * For grid nodes, authentication parameters are specified in grid configuration via
- * {@link org.gridgain.grid.IgniteConfiguration#getSecurityCredentialsProvider()} provider. Here is an example
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#getSecurityCredentialsProvider()} provider. Here is an example
  * of how a simple user name and password may be provided:
  * <pre class="brush: java">
  *     GridConfiguration cfg = new GridConfiguration();

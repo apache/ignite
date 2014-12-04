@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.session;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;

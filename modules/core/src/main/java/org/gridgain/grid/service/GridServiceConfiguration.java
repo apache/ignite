@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Managed service configuration. In addition to deploying managed services by
  * calling any of the provided {@code deploy(...)} methods, managed services
- * can also be automatically deployed on startup by specifying them in {@link org.gridgain.grid.IgniteConfiguration}
+ * can also be automatically deployed on startup by specifying them in {@link org.apache.ignite.configuration.IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
  * GridConfiguration gridCfg = new GridConfiguration();

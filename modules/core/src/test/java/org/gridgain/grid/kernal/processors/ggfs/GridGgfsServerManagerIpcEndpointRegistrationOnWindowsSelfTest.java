@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.loopback.*;

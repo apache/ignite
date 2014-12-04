@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -2230,18 +2231,18 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
 
     /**
      * Whether or not SMTP is configured. Note that SMTP is considered configured if
-     * SMTP host is provided in configuration (see {@link org.gridgain.grid.IgniteConfiguration#getSmtpHost()}.
+     * SMTP host is provided in configuration (see {@link org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()}.
      * <p>
      * If SMTP is not configured all emails notifications will be disabled.
      *
      * @return {@code True} if SMTP is configured - {@code false} otherwise.
-     * @see org.gridgain.grid.IgniteConfiguration#getSmtpFromEmail()
-     * @see org.gridgain.grid.IgniteConfiguration#getSmtpHost()
-     * @see org.gridgain.grid.IgniteConfiguration#getSmtpPassword()
-     * @see org.gridgain.grid.IgniteConfiguration#getSmtpPort()
-     * @see org.gridgain.grid.IgniteConfiguration#getSmtpUsername()
-     * @see org.gridgain.grid.IgniteConfiguration#isSmtpSsl()
-     * @see org.gridgain.grid.IgniteConfiguration#isSmtpStartTls()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpFromEmail()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPassword()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPort()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpUsername()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpSsl()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpStartTls()
      * @see #sendAdminEmailAsync(String, String, boolean)
      */
     @Override public boolean isSmtpEnabled() {
@@ -2531,7 +2532,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      *      completes ok and its result value is {@code true} email was successfully sent. In all
      *      other cases - sending process has failed.
      * @see #isSmtpEnabled()
-     * @see org.gridgain.grid.IgniteConfiguration#getAdminEmails()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getAdminEmails()
      */
     @Override public GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
         A.notNull(subj, "subj");

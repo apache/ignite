@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.checkpoint.s3;
 
 import com.amazonaws.auth.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.testsuites.bamboo.*;
 

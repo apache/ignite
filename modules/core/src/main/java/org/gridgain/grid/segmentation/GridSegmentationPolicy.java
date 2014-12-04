@@ -15,7 +15,7 @@ import org.gridgain.grid.startup.cmdline.*;
 
 /**
  * Policy that defines how node will react on topology segmentation. Note that default
- * segmentation policy is defined by {@link org.gridgain.grid.IgniteConfiguration#DFLT_SEG_PLC} property.
+ * segmentation policy is defined by {@link org.apache.ignite.configuration.IgniteConfiguration#DFLT_SEG_PLC} property.
  * @see GridSegmentationResolver
  */
 public enum GridSegmentationPolicy {

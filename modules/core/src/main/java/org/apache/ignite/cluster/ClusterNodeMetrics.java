@@ -50,8 +50,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum number of jobs that ever ran concurrently on this node.
@@ -74,8 +74,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of active jobs.
@@ -90,8 +90,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum number of waiting jobs.
@@ -114,8 +114,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of waiting jobs.
@@ -131,8 +131,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum number of jobs rejected at once.
@@ -155,8 +155,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of grid configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of jobs this node rejects during collision resolution operations.
@@ -204,8 +204,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of cancelled jobs.
@@ -242,8 +242,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum waiting time.
@@ -266,8 +266,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average job wait time.
@@ -282,8 +282,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Time it took to execute the longest job on the node.
@@ -306,8 +306,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average job execution time.
@@ -322,8 +322,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Total number of jobs handled by the node.
@@ -410,8 +410,8 @@ public interface ClusterNodeMetrics extends Serializable {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average of CPU load value in {@code [0, 1]} range over all metrics kept

@@ -10,6 +10,7 @@
  */
 package org.gridgain.visor
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.{GridGain => G, _}
 import org.scalatest._
 

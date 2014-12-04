@@ -17,7 +17,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of GridGain grid name.
- * GridGain name is provided to grid via {@link org.gridgain.grid.IgniteConfiguration#getGridName()} method.
+ * GridGain name is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration#getGridName()} method.
  * <p>
  * Grid name can be injected into instances of following classes:
  * <ul>
@@ -51,7 +51,7 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See {@link org.gridgain.grid.IgniteConfiguration#getGridName()} for Grid configuration details.
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridName()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

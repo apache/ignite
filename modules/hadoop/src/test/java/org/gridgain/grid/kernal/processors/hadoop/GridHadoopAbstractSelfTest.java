@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;

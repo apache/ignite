@@ -10,6 +10,7 @@
 package org.gridgain.client.router;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.grid.*;

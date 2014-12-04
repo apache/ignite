@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.hibernate;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

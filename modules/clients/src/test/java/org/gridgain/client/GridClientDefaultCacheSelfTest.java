@@ -9,6 +9,7 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.spring;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.lang.*;
@@ -209,7 +210,7 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
 
     /**
      * Creates Spring application context. Optionally excluded properties can be specified,
-     * it means that if such a property is found in {@link org.gridgain.grid.IgniteConfiguration}
+     * it means that if such a property is found in {@link org.apache.ignite.configuration.IgniteConfiguration}
      * then it is removed before the bean is instantiated.
      * For example, {@code streamerConfiguration} can be excluded from the configs that Visor uses.
      *

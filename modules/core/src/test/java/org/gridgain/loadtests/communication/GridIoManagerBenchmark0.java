@@ -10,6 +10,7 @@
 package org.gridgain.loadtests.communication;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;

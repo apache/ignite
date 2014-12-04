@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Tests for partitioned cache queries.

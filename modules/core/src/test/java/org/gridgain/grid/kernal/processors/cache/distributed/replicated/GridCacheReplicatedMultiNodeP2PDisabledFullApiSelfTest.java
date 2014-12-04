@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Multi-node tests for replicated cache.

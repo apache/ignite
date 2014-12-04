@@ -13,10 +13,11 @@ package org.gridgain.visor.commands.alert
 
 import java.util.regex.Pattern
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.GridDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{IgniteConfiguration, GridGain => G}
+import org.gridgain.grid.{GridGain => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.alert.VisorAlertCommand._
 

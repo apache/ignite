@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;

@@ -18,7 +18,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of {@link GridLogger}. Grid logger is provided to grid
- * via {@link org.gridgain.grid.IgniteConfiguration}.
+ * via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
  * Logger can be injected into instances of following classes:
  * <ul>
@@ -52,7 +52,7 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See {@link org.gridgain.grid.IgniteConfiguration#getGridLogger()} for Grid configuration details.
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridLogger()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

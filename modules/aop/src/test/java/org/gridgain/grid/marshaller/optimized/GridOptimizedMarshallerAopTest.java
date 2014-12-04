@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.marshaller.optimized;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;

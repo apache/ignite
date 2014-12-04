@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.IgniteConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 

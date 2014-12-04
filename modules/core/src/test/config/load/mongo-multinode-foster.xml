@@ -29,7 +29,7 @@
         GridGain Mongo configuration for multinode benchmark.
     </description>
 
-    <bean class="org.gridgain.grid.IgniteConfiguration">
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
             Mongo configuration.
         -->

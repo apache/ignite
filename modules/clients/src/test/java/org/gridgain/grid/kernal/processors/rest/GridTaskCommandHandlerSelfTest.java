@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.client.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;

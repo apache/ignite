@@ -34,7 +34,7 @@ import java.util.*;
  * You can use grid node attributes to provide static information about a node.
  * This information is initialized once within grid, during node startup, and
  * remains the same throughout the lifetime of a node. Use
- * {@link org.gridgain.grid.IgniteConfiguration#getUserAttributes()} method to initialize your custom
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
@@ -120,7 +120,7 @@ public interface ClusterNode extends GridMetadataAware {
 
     /**
      * Gets a node attribute. Attributes are assigned to nodes at startup
-     * via {@link org.gridgain.grid.IgniteConfiguration#getUserAttributes()} method.
+     * via {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>
@@ -155,7 +155,7 @@ public interface ClusterNode extends GridMetadataAware {
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup
-     * via {@link org.gridgain.grid.IgniteConfiguration#getUserAttributes()} method.
+     * via {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>
@@ -173,7 +173,7 @@ public interface ClusterNode extends GridMetadataAware {
     /**
      * Gets collection of addresses this node is known by.
      * <p>
-     * If {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
+     * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
      * address for all communications and returned collection will contain only that address.
      * If it is {@code null} then local wildcard address will be used, and GridGain
      * will make the best effort to supply all addresses of that node in returned collection.
@@ -185,12 +185,12 @@ public interface ClusterNode extends GridMetadataAware {
     /**
      * Gets collection of host names this node is known by.
      * <p>
-     * If {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use
+     * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use
      * the host name of that resolved address for all communications and
      * returned collection will contain only that host name.
      * If that host name can not be resolved then ip address returned by method {@link #addresses()} is used.
      * <p>
-     * If {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()} value is {@code null} then local wildcard address will be used,
+     * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value is {@code null} then local wildcard address will be used,
      * and this method returns host names of all addresses of that node.
      *
      * @return Collection of host names.

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.communication;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

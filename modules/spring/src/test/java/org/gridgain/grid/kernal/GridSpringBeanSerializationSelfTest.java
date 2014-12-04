@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;

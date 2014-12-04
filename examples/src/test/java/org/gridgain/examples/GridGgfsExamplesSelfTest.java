@@ -9,8 +9,8 @@
 
 package org.gridgain.examples;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.examples.ggfs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;

@@ -10,7 +10,7 @@
 package org.gridgain.grid.cache.affinity.fair;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

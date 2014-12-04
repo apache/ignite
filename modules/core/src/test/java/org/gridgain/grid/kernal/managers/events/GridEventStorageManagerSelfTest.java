@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.events;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;

@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.config
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
 import org.gridgain.visor._

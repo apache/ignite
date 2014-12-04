@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

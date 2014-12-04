@@ -11,10 +11,11 @@
 
 package org.gridgain.visor.commands.cswap
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{IgniteConfiguration, GridGain => G}
+import org.gridgain.grid.{GridGain => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.jetbrains.annotations.Nullable

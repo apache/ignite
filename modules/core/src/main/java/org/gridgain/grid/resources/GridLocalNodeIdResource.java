@@ -18,7 +18,7 @@ import java.util.*;
 
 /**
  * Annotates a field or a setter method for injection of local node {@link UUID} resource. {@code Node UUID}
- * is a globally unique node identifier and is provided to grid via {@link org.gridgain.grid.IgniteConfiguration}.
+ * is a globally unique node identifier and is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
  * Local node ID can be injected into instances of following classes:
  * <ul>
@@ -52,7 +52,7 @@ import java.util.*;
  * }
  * </pre>
  * <p>
- * See {@link org.gridgain.grid.IgniteConfiguration#getNodeId()} for Grid configuration details.
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getNodeId()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

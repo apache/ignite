@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.node;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 
 import java.io.*;
 

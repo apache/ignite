@@ -10,6 +10,7 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.startup.cmdline.*;
@@ -31,7 +32,7 @@ import java.util.*;
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
- * {@link IgniteConfiguration} to override some default configuration. Below is an
+ * {@link org.apache.ignite.configuration.IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with custom configuration for <strong>URI deployment</strong>.
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
@@ -107,7 +108,7 @@ public class GridGain {
      * <p>
      * If daemon flag is set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @param daemon Daemon flag to set.
@@ -121,7 +122,7 @@ public class GridGain {
      * <p>
      * If daemon flag it set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @return Daemon flag.

@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.direct.newnodes;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.common.*;

@@ -13,9 +13,10 @@ package org.gridgain.visor.commands.tasks
 
 import java.util
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeJobResult, GridComputeTaskSplitAdapter}
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.{IgniteConfiguration, GridGain => G}
+import org.gridgain.grid.{GridGain => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.tasks.VisorTasksCommand._
 import org.scalatest._

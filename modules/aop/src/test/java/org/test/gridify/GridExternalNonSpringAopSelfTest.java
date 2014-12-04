@@ -9,6 +9,7 @@
 
 package org.test.gridify;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.gridify.*;
 import org.gridgain.grid.spi.deployment.local.*;

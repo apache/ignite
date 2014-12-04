@@ -16,7 +16,7 @@ import org.gridgain.grid.*;
  * Security credentials used for client or node authentication.
  * <p>
  * For grid node, security credentials provider is specified in
- * {@link org.gridgain.grid.IgniteConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
  * configuration property. For Java clients, you can provide credentials in
  * {@code GridClientConfiguration.setSecurityCredentialsProvider(...)} method.
  * <p>

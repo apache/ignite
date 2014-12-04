@@ -34,7 +34,7 @@
     <!--
         Configuration below demonstrates how to setup caches within grid nodes.
     -->
-    <bean id="base.grid.cfg" class="org.gridgain.grid.IgniteConfiguration" abstract="true">
+    <bean id="base.grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
         <property name="deploymentMode" value="SHARED"/>
 
         <property name="restEnabled" value="false"/>

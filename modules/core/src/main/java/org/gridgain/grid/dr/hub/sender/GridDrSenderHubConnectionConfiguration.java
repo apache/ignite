@@ -103,7 +103,7 @@ public class GridDrSenderHubConnectionConfiguration {
      * Gets local network interface name form with remote data center is reachable.
      * <p>
      * By default is set to {@code null} meaning that sender hub will be bound to the same interface as the grid itself
-     * (see {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()})
+     * (see {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()})
      *
      * @return Local network interface name form with remote data center is reachable.
      */

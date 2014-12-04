@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.testframework.junits.common.*;

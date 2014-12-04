@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.IgniteConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
 import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;

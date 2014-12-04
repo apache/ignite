@@ -10,6 +10,7 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.resources.*;

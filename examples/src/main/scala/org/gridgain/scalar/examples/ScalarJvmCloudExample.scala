@@ -3,7 +3,7 @@ package org.gridgain.scalar.examples
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit._
 import javax.swing.{JComponent, JLabel, JOptionPane}
-import org.gridgain.grid.IgniteConfiguration
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
 import org.gridgain.grid.util.scala.impl

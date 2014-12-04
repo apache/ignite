@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.local;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;

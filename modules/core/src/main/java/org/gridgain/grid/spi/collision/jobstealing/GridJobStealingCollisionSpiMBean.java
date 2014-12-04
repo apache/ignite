@@ -175,7 +175,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
     /**
      * Configuration parameter to enable stealing to/from only nodes that
      * have these attributes set (see {@link org.apache.ignite.cluster.ClusterNode#attribute(String)} and
-     * {@link org.gridgain.grid.IgniteConfiguration#getUserAttributes()} methods).
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} methods).
      *
      * @return Node attributes to enable job stealing for.
      */

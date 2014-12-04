@@ -41,7 +41,7 @@ import java.io.*;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using either {@link org.gridgain.grid.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
+ * by using either {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  * <h1 class="header">Internal and Hidden Events</h1>

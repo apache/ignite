@@ -7,7 +7,7 @@
 
     <import resource="jobs-load-base.xml"/>
 
-    <bean class="org.gridgain.grid.IgniteConfiguration" parent="grid.cfg">
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration" parent="grid.cfg">
         <property name="userAttributes">
             <util:map>
                 <entry key="segment" value="server"/>

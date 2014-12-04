@@ -10,7 +10,7 @@
 package org.gridgain.grid.util.ipc.shmem;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

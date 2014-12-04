@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
@@ -71,7 +72,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
-import static org.gridgain.grid.IgniteConfiguration.*;
+import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -95,7 +96,7 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
- * {@link org.gridgain.grid.IgniteConfiguration} to override some default configuration. Below is an
+ * {@link org.apache.ignite.configuration.IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with <strong>URI deployment</strong>.
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
@@ -156,7 +157,7 @@ public class GridGainEx {
      * <p>
      * If daemon flag is set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link org.gridgain.grid.IgniteConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @param daemon Daemon flag to set.
@@ -170,7 +171,7 @@ public class GridGainEx {
      * <p>
      * If daemon flag it set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link org.gridgain.grid.IgniteConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @return Daemon flag.

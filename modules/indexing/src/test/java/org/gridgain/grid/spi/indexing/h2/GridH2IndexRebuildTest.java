@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.indexing.h2;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.compute.failover;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

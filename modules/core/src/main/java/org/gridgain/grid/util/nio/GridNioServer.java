@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
@@ -436,7 +437,7 @@ public class GridNioServer<T> {
 
     /**
      * Gets configurable idle timeout for this session. If not set, default value is
-     * {@link org.gridgain.grid.IgniteConfiguration#DFLT_REST_IDLE_TIMEOUT}.
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#DFLT_REST_IDLE_TIMEOUT}.
      *
      * @return Idle timeout in milliseconds.
      */

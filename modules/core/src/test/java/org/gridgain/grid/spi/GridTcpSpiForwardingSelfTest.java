@@ -11,6 +11,7 @@ package org.gridgain.grid.spi;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.communication.tcp.*;

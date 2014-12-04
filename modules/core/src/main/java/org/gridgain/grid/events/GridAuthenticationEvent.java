@@ -40,7 +40,7 @@ import java.util.*;
  * User can also wait for events using method {@link GridEvents#waitForLocal(GridPredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.gridgain.grid.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  * @see GridEventType#EVT_AUTHENTICATION_FAILED

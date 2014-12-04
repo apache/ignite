@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * no configuration.
  * <p>
  * Note that if peer class loading is enabled (which is default behavior,
- * see {@link org.gridgain.grid.IgniteConfiguration#isPeerClassLoadingEnabled()}), then it is
+ * see {@link org.apache.ignite.configuration.IgniteConfiguration#isPeerClassLoadingEnabled()}), then it is
  * enough to deploy a task only on one node and all other nodes will load
  * required classes from the node that initiated task execution.
  * <p>
@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * This SPI requires no configuration.
  * <h2 class="header">Example</h2>
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
- * with {@link org.gridgain.grid.IgniteConfiguration} as it is used by default and has no
+ * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
  * configuration parameters.
  * @see GridDeploymentSpi
  */

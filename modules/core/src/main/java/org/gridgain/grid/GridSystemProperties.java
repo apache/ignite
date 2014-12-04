@@ -35,7 +35,7 @@ public final class GridSystemProperties {
     /**
      * Presence of this system property with value {@code true} will make the grid
      * node start as a daemon node. Node that this system property will override
-     * {@link IgniteConfiguration#isDaemon()} configuration.
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()} configuration.
      */
     public static final String GG_DAEMON = "GRIDGAIN_DAEMON";
 
@@ -142,7 +142,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#getSmtpHost()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()
      */
     public static final String GG_SMTP_HOST = "GRIDGAIN_SMTP_HOST";
 
@@ -155,8 +155,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#getSmtpPort()
-     * @see IgniteConfiguration#DFLT_SMTP_PORT
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPort()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_PORT
      */
     public static final String GG_SMTP_PORT = "GRIDGAIN_SMTP_PORT";
 
@@ -169,7 +169,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#getSmtpUsername()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpUsername()
      */
     public static final String GG_SMTP_USERNAME = "GRIDGAIN_SMTP_USERNAME";
 
@@ -182,7 +182,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#getSmtpPassword()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPassword()
      */
     public static final String GG_SMTP_PWD = "GRIDGAIN_SMTP_PASSWORD";
 
@@ -195,8 +195,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#getSmtpFromEmail()
-     * @see IgniteConfiguration#DFLT_SMTP_FROM_EMAIL
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpFromEmail()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_FROM_EMAIL
      */
     public static final String GG_SMTP_FROM = "GRIDGAIN_SMTP_FROM";
 
@@ -210,7 +210,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#getAdminEmails()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getAdminEmails()
      */
     public static final String GG_ADMIN_EMAILS = "GRIDGAIN_ADMIN_EMAILS";
 
@@ -224,8 +224,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#isSmtpSsl()
-     * @see IgniteConfiguration#DFLT_SMTP_SSL
+     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpSsl()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_SSL
      */
     public static final String GG_SMTP_SSL = "GRIDGAIN_SMTP_SSL";
 
@@ -234,7 +234,7 @@ public final class GridSystemProperties {
      * whether or not to enable email notifications for node lifecycle. If provided -
      * it will override the property in grid configuration.
      *
-     * @see IgniteConfiguration#isLifeCycleEmailNotification()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#isLifeCycleEmailNotification()
      */
     public static final String GG_LIFECYCLE_EMAIL_NOTIFY = "GRIDGAIN_LIFECYCLE_EMAIL_NOTIFY";
 
@@ -248,8 +248,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see IgniteConfiguration#isSmtpStartTls()
-     * @see IgniteConfiguration#DFLT_SMTP_STARTTLS
+     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpStartTls()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_STARTTLS
      */
     public static final String GG_SMTP_STARTTLS = "GRIDGAIN_SMTP_STARTTLS";
 
@@ -257,9 +257,9 @@ public final class GridSystemProperties {
      * Name of system property to set system-wide local IP address or host. If provided it will
      * override all default local bind settings within GridGain or any of its SPIs.
      * <p>
-     * Note that system-wide local bind address can also be set via {@link IgniteConfiguration#getLocalHost()}
+     * Note that system-wide local bind address can also be set via {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()}
      * method. However, system properties have priority over configuration properties specified in
-     * {@link IgniteConfiguration}.
+     * {@link org.apache.ignite.configuration.IgniteConfiguration}.
      */
     public static final String GG_LOCAL_HOST = "GRIDGAIN_LOCAL_HOST";
 
@@ -288,7 +288,7 @@ public final class GridSystemProperties {
      * Valid values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS.
      *
      * @see GridDeploymentMode
-     * @see IgniteConfiguration#getDeploymentMode()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getDeploymentMode()
      */
     public static final String GG_DEP_MODE_OVERRIDE = "GRIDGAIN_DEPLOYMENT_MODE_OVERRIDE";
 
@@ -445,7 +445,7 @@ public final class GridSystemProperties {
     public static final String GG_LOG_DIR = "GRIDGAIN_LOG_DIR";
 
     /**
-     * Environment variable to set work directory. The property {@link IgniteConfiguration#setWorkDirectory} has higher
+     * Environment variable to set work directory. The property {@link org.apache.ignite.configuration.IgniteConfiguration#setWorkDirectory} has higher
      * priority.
      */
     public static final String GG_WORK_DIR = "GRIDGAIN_WORK_DIR";

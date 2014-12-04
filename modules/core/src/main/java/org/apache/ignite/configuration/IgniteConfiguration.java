@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.configuration;
 
 import org.apache.ignite.plugin.*;
 import org.gridgain.client.ssl.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dotnet.*;
@@ -66,15 +67,15 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
- * {@link GridGain#start(IgniteConfiguration)} method. It defines all configuration
+ * {@link org.gridgain.grid.GridGain#start(IgniteConfiguration)} method. It defines all configuration
  * parameters required to start a grid instance. Usually, a special
  * class called "loader" will create an instance of this interface and apply
- * {@link GridGain#start(IgniteConfiguration)} method to initialize GridGain instance.
+ * {@link org.gridgain.grid.GridGain#start(IgniteConfiguration)} method to initialize GridGain instance.
  * <p>
  * Note that you should only set values that differ from defaults, as grid
  * will automatically pick default values for all values that are not set.
  * <p>
- * For more information about grid configuration and startup refer to {@link GridGain}
+ * For more information about grid configuration and startup refer to {@link org.gridgain.grid.GridGain}
  * documentation.
  */
 public class IgniteConfiguration {
@@ -117,7 +118,7 @@ public class IgniteConfiguration {
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
-    /** Default deployment mode (value is {@link GridDeploymentMode#SHARED}). */
+    /** Default deployment mode (value is {@link org.gridgain.grid.GridDeploymentMode#SHARED}). */
     public static final GridDeploymentMode DFLT_DEPLOYMENT_MODE = GridDeploymentMode.SHARED;
 
     /** Default cache size for missed resources. */

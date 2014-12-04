@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.disco
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.{GridGain => G, _}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.disco.VisorDiscoveryCommand._

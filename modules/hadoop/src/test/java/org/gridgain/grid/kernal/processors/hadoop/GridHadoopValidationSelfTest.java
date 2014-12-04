@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Configuration validation tests.

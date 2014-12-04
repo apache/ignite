@@ -32,7 +32,7 @@ import java.util.*;
  * The default indexing SPI implementation is
  * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} which uses H2 database engine
  * for data indexing and querying. User can implement his own indexing SPI and use his own data structures
- * and query language instead of SQL. SPI can be configured for grid using {@link org.gridgain.grid.IgniteConfiguration#getIndexingSpi()}.
+ * and query language instead of SQL. SPI can be configured for grid using {@link org.apache.ignite.configuration.IgniteConfiguration#getIndexingSpi()}.
  * <p>
  * GridGain comes with following built-in indexing SPI implementations:
  * <ul>

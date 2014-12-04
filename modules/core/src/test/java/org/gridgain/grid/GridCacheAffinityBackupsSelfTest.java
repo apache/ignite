@@ -10,6 +10,7 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;

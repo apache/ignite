@@ -100,7 +100,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
      * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
      * {@code work} folder under system {@code java.io.tmpdir} folder.
      *
-     * @see org.gridgain.grid.IgniteConfiguration#getWorkDirectory()
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
      */
     public static final String DFLT_DIR_PATH = "cp/sharedfs";
 

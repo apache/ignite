@@ -83,7 +83,7 @@
     <!--
         Configuration of GridGain node.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
             Apache Hadoop Accelerator configuration.
         -->

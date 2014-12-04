@@ -16,7 +16,7 @@ import java.lang.annotation.*;
  * If SPIs are not consistent, then warning will be printed out to the log.
  * <p>
  * Note that SPI consistency courtesy log can also be disabled by disabling
- * {@link org.gridgain.grid.IgniteConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

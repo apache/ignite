@@ -20,7 +20,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
  * {@code GGFS} configuration. More than one file system can be configured within grid.
- * {@code GGFS} configuration is provided via {@link org.gridgain.grid.IgniteConfiguration#getGgfsConfiguration()}
+ * {@code GGFS} configuration is provided via {@link org.apache.ignite.configuration.IgniteConfiguration#getGgfsConfiguration()}
  * method.
  * <p>
  * Refer to {@code config/hadoop/default-config.xml} or {@code config/hadoop/default-config-client.xml}

@@ -36,7 +36,7 @@ import java.util.*;
  * </ul>
  * <h1 class="header">Deployment From Configuration</h1>
  * In addition to deploying managed services by calling any of the provided {@code deploy(...)} methods,
- * you can also automatically deploy services on startup by specifying them in {@link org.gridgain.grid.IgniteConfiguration}
+ * you can also automatically deploy services on startup by specifying them in {@link org.apache.ignite.configuration.IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
  * GridConfiguration gridCfg = new GridConfiguration();

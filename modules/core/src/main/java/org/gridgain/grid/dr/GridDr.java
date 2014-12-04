@@ -39,9 +39,9 @@ import java.util.*;
  * Cache is considered as sender in case it has {@link GridCacheConfiguration#getDrSenderConfiguration()}, and it is
  * considered as receiver cache in case it has {@link GridCacheConfiguration#getDrReceiverConfiguration()}.
  * <p>
- * Node is considered as sender hub in case it has {@link org.gridgain.grid.IgniteConfiguration#getDrSenderHubConfiguration()},
+ * Node is considered as sender hub in case it has {@link org.apache.ignite.configuration.IgniteConfiguration#getDrSenderHubConfiguration()},
  * and it is considered as receiver hub in case it has
- * {@link org.gridgain.grid.IgniteConfiguration#getDrReceiverHubConfiguration()}.
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#getDrReceiverHubConfiguration()}.
  * <p>
  * Particular cache can be both sender and receiver at the same time. Particular node can be both sender and receiver
  * hub and host sender/receiver caches at the same time.

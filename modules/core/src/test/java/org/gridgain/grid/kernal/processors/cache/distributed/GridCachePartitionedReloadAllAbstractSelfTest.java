@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;

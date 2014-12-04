@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.apache.ignite.configuration.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import sun.misc.*;
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
