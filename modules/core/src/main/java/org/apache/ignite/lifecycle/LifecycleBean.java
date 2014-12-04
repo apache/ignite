@@ -13,33 +13,33 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 
 /**
- * A bean that reacts to grid lifecycle events defined in {@link org.gridgain.grid.LifecycleEventType}.
+ * A bean that reacts to grid lifecycle events defined in {@link LifecycleEventType}.
  * Use this bean whenever you need to plug some custom logic before or after
  * grid startup and stopping routines.
  * <p>
  * There are four events you can react to:
  * <ul>
  * <li>
- *   {@link org.gridgain.grid.LifecycleEventType#BEFORE_GRID_START} invoked before grid startup
+ *   {@link LifecycleEventType#BEFORE_GRID_START} invoked before grid startup
  *   routine is initiated. Note that grid is not available during this event,
  *   therefore if you injected a grid instance via {@link GridInstanceResource}
  *   annotation, you cannot use it yet.
  * </li>
  * <li>
- *   {@link org.gridgain.grid.LifecycleEventType#AFTER_GRID_START} invoked right after grid
+ *   {@link LifecycleEventType#AFTER_GRID_START} invoked right after grid
  *   has started. At this point, if you injected a grid instance via
  *   {@link GridInstanceResource} annotation, you can start using it. Note that
  *   you should not be using {@link org.gridgain.grid.GridGain} to get grid instance from
  *   lifecycle bean.
  * </li>
  * <li>
- *   {@link org.gridgain.grid.LifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
+ *   {@link LifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
  *   stop routine is initiated. Grid is still available at this stage, so
  *   if you injected a grid instance via  {@link GridInstanceResource} annotation,
  *   you can use it.
  * </li>
  * <li>
- *   {@link org.gridgain.grid.LifecycleEventType#AFTER_GRID_STOP} invoked right after grid
+ *   {@link LifecycleEventType#AFTER_GRID_STOP} invoked right after grid
  *   has stopped. Note that grid is not available during this event.
  * </li>
  * </ul>

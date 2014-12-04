@@ -15,7 +15,7 @@ import org.apache.ignite.lifecycle.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 
-import static org.gridgain.grid.LifecycleEventType.*;
+import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
  * This example shows how to provide your own {@link org.apache.ignite.lifecycle.LifecycleBean} implementation
