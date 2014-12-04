@@ -44,7 +44,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     private final ClassLoader clsLdr;
 
     /** Class loader ID. */
-    private final GridUuid clsLdrId;
+    private final IgniteUuid clsLdrId;
 
     /** User version. */
     private final String userVer;
@@ -99,7 +99,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param sampleClsName Sample class name.
      * @param loc {@code True} if local deployment.
      */
-    GridDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, GridUuid clsLdrId, String userVer,
+    GridDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
         String sampleClsName, boolean loc) {
         assert depMode != null;
         assert clsLdr != null;
@@ -162,7 +162,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      *
      * @return Property clsLdrId.
      */
-    @Override public GridUuid classLoaderId() {
+    @Override public IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -296,7 +296,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     /**
      * @return Node participant map.
      */
-    @Nullable @Override public Map<UUID, GridUuid> participants() {
+    @Nullable @Override public Map<UUID, IgniteUuid> participants() {
         if (clsLdr instanceof GridDeploymentClassLoader)
             return ((GridDeploymentInfo)clsLdr).participants();
 

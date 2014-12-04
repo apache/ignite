@@ -984,13 +984,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
             // Event notification.
-            ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (GridUuid)null, null,
+            ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (IgniteUuid)null, null,
                 EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null);
 
         if (created != null) {
             // Event notification.
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
-                ctx.events().addEvent(created.partition(), created.key(), locNodeId, (GridUuid)null, null,
+                ctx.events().addEvent(created.partition(), created.key(), locNodeId, (IgniteUuid)null, null,
                     EVT_CACHE_ENTRY_CREATED, null, false, null, false, null, null, null);
 
             if (touch)
@@ -1092,7 +1092,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                 // Event notification.
-                ctx.events().addEvent(entry.partition(), entry.key(), locNodeId, (GridUuid)null, null,
+                ctx.events().addEvent(entry.partition(), entry.key(), locNodeId, (IgniteUuid)null, null,
                     EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null);
         }
         else if (log.isDebugEnabled())

@@ -827,7 +827,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
-            @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
+            @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
             throws GridException {
             return null;
         }
@@ -896,7 +896,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridUuid nextAffinityKey() {
+        @Override public IgniteUuid nextAffinityKey() {
             return null;
         }
 

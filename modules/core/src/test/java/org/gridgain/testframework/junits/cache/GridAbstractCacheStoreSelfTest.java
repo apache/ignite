@@ -404,10 +404,10 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
      */
     public static class DummyTx extends GridMetadataAwareAdapter implements GridCacheTx {
         /** */
-        private final GridUuid xid = GridUuid.randomUuid();
+        private final IgniteUuid xid = IgniteUuid.randomUuid();
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridUuid xid() {
+        @Nullable @Override public IgniteUuid xid() {
             return xid;
         }
 

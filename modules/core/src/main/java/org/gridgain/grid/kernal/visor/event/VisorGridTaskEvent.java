@@ -30,7 +30,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
     private final String taskClassName;
 
     /** Task session ID. */
-    private final GridUuid taskSessionId;
+    private final IgniteUuid taskSessionId;
 
     /** Whether task was created for system needs. */
     private final boolean internal;
@@ -52,7 +52,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
      */
     public VisorGridTaskEvent(
         int typeId,
-        GridUuid id,
+        IgniteUuid id,
         String name,
         UUID nid,
         long timestamp,
@@ -60,7 +60,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
         String shortDisplay,
         String taskName,
         String taskClassName,
-        GridUuid taskSessionId,
+        IgniteUuid taskSessionId,
         boolean internal
     ) {
         super(typeId, id, name, nid, timestamp, message, shortDisplay);
@@ -88,7 +88,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
     /**
      * @return Task session ID.
      */
-    public GridUuid taskSessionId() {
+    public IgniteUuid taskSessionId() {
         return taskSessionId;
     }
 

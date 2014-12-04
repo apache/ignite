@@ -28,7 +28,7 @@ public class VisorGridEvent implements Serializable {
     private final int typeId;
 
     /** Globally unique ID of this event. */
-    private final GridUuid id;
+    private final IgniteUuid id;
 
     /** Name of this event. */
     private final String name;
@@ -56,7 +56,7 @@ public class VisorGridEvent implements Serializable {
      * @param message Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      */
-    public VisorGridEvent(int typeId, GridUuid id, String name, UUID nid, long timestamp, @Nullable String message,
+    public VisorGridEvent(int typeId, IgniteUuid id, String name, UUID nid, long timestamp, @Nullable String message,
         String shortDisplay) {
         this.typeId = typeId;
         this.id = id;
@@ -77,7 +77,7 @@ public class VisorGridEvent implements Serializable {
     /**
      * @return Globally unique ID of this event.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

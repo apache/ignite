@@ -35,16 +35,16 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
     private GridLogger log;
 
     /** Execution ID. */
-    private final GridUuid execId;
+    private final IgniteUuid execId;
 
     /** Execution start timestamp. */
     private final long execStartTs;
 
     /** Future ID. */
-    private final GridUuid futId;
+    private final IgniteUuid futId;
 
     /** Parent future ID. By the contract, global ID is sender node ID. */
-    private final GridUuid parentFutId;
+    private final IgniteUuid parentFutId;
 
     /** Stage name. */
     private final String stageName;
@@ -97,10 +97,10 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
     */
     public GridStreamerStageExecutionFuture(
         GridStreamerEx streamer,
-        @Nullable GridUuid execId,
+        @Nullable IgniteUuid execId,
         int failoverAttemptCnt,
         long execStartTs,
-        @Nullable GridUuid parentFutId,
+        @Nullable IgniteUuid parentFutId,
         @Nullable Collection<UUID> prevExecNodes,
         String stageName,
         Collection<?> evts
@@ -114,7 +114,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
         assert (execId == null && parentFutId == null) || (execId != null && parentFutId != null);
 
         this.streamer = streamer;
-        futId = GridUuid.fromUuid(streamer.kernalContext().localNodeId());
+        futId = IgniteUuid.fromUuid(streamer.kernalContext().localNodeId());
         this.parentFutId = parentFutId;
 
         this.execId = parentFutId == null ? futId : execId;
@@ -133,7 +133,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
     /**
      * @return Future ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return futId;
     }
 
@@ -242,7 +242,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
      *
      * @return Parent future ID.
      */
-    public GridUuid parentFutureId() {
+    public IgniteUuid parentFutureId() {
         return parentFutId;
     }
 

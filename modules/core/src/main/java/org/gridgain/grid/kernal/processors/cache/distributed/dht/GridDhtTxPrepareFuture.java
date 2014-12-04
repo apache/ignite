@@ -46,7 +46,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringExclude
@@ -83,7 +83,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private boolean trackable = true;
 
     /** Near mini future id. */
-    private GridUuid nearMiniId;
+    private IgniteUuid nearMiniId;
 
     /** DHT versions map. */
     private Map<GridCacheTxKey<K>, GridCacheVersion> dhtVerMap;
@@ -110,7 +110,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
     public GridDhtTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridDhtTxLocalAdapter<K, V> tx,
-        GridUuid nearMiniId, Map<GridCacheTxKey<K>, GridCacheVersion> dhtVerMap, boolean last, Collection<UUID> lastBackups) {
+        IgniteUuid nearMiniId, Map<GridCacheTxKey<K>, GridCacheVersion> dhtVerMap, boolean last, Collection<UUID> lastBackups) {
         super(cctx.kernalContext(), new IgniteReducer<GridCacheTxEx<K, V>, GridCacheTxEx<K, V>>() {
             @Override public boolean collect(GridCacheTxEx<K, V> e) {
                 return true;
@@ -130,7 +130,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         this.last = last;
         this.lastBackups = lastBackups;
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         this.nearMiniId = nearMiniId;
 
@@ -144,14 +144,14 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Near mini future id.
      */
-    public GridUuid nearMiniId() {
+    public IgniteUuid nearMiniId() {
         return nearMiniId;
     }
 
@@ -875,7 +875,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
         private UUID nodeId;
@@ -913,7 +913,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @return Future ID.
          */
-        GridUuid futureId() {
+        IgniteUuid futureId() {
             return futId;
         }
 
@@ -1023,7 +1023,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                 info.ttl(), info.expireTime(), true, topVer, drType)) {
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                        (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                        (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null);
                             }
 

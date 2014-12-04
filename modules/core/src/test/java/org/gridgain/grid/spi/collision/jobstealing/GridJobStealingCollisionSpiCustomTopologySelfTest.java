@@ -114,16 +114,16 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
         final ClusterNode node = getSpiContext().nodes().iterator().next();
 
         Collections.addAll(waitCtxs,
-            new GridTestCollisionJobContext(createTaskSession(node), GridUuid.randomUuid()),
-            new GridTestCollisionJobContext(createTaskSession(node), GridUuid.randomUuid()),
-            new GridTestCollisionJobContext(createTaskSession(node), GridUuid.randomUuid()));
+            new GridTestCollisionJobContext(createTaskSession(node), IgniteUuid.randomUuid()),
+            new GridTestCollisionJobContext(createTaskSession(node), IgniteUuid.randomUuid()),
+            new GridTestCollisionJobContext(createTaskSession(node), IgniteUuid.randomUuid()));
 
         Collection<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         // Add active.
         Collections.addAll(
             activeCtxs,
-            new GridTestCollisionJobContext(createTaskSession(node), GridUuid.randomUuid()));
+            new GridTestCollisionJobContext(createTaskSession(node), IgniteUuid.randomUuid()));
 
         // Emulate message to steal 2 jobs.
         getSpiContext().triggerMessage(rmtNode2, new GridJobStealingRequest(2));

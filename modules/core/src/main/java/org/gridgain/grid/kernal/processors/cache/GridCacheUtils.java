@@ -158,8 +158,8 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID. */
-    private static final IgniteClosure<GridCacheTx, GridUuid> tx2xid = new C1<GridCacheTx, GridUuid>() {
-        @Override public GridUuid apply(GridCacheTx tx) {
+    private static final IgniteClosure<GridCacheTx, IgniteUuid> tx2xid = new C1<GridCacheTx, IgniteUuid>() {
+        @Override public IgniteUuid apply(GridCacheTx tx) {
             return tx.xid();
         }
 
@@ -799,7 +799,7 @@ public class GridCacheUtils {
     /**
      * @return Closure which converts transaction to xid.
      */
-    public static IgniteClosure<GridCacheTx, GridUuid> tx2xid() {
+    public static IgniteClosure<GridCacheTx, IgniteUuid> tx2xid() {
         return tx2xid;
     }
 

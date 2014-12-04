@@ -481,11 +481,11 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         os.write(chunk((int)ggfsMaxData));
         os.close();
 
-        final GridCache<GridUuid, GridGgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
+        final GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
             ggfs.configuration().getMetaCacheName());
 
         // Start a transaction in a separate thread which will lock file ID.
-        final GridUuid id = ggfs.context().meta().fileId(path);
+        final IgniteUuid id = ggfs.context().meta().fileId(path);
         final GridGgfsFileInfo info = ggfs.context().meta().info(id);
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
@@ -668,7 +668,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
     private GridGgfsBlockKey blockKey(GridGgfsPath path, long blockId) throws Exception {
         GridGgfsEx ggfs0 = (GridGgfsEx)grid(0).ggfs(GGFS_NAME);
 
-        GridUuid fileId = ggfs0.context().meta().fileId(path);
+        IgniteUuid fileId = ggfs0.context().meta().fileId(path);
 
         return new GridGgfsBlockKey(fileId, null, true, blockId);
     }
@@ -761,7 +761,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
             GridGgfsMetaManager meta = ggfs(0).context().meta();
 
-            GridUuid fileId = meta.fileId(path);
+            IgniteUuid fileId = meta.fileId(path);
 
             // Calculate file blocks.
             int fileSize = rand.nextInt(MAX_FILE_SIZE);

@@ -109,7 +109,7 @@ public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
      *
      * @return Transaction UID.
      */
-    public GridUuid xid();
+    public IgniteUuid xid();
 
     /**
      * ID of the node on which this transaction started.

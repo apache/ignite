@@ -2374,7 +2374,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private final UUID nodeId;
 
         /** Timeout ID. */
-        private final GridUuid timeoutId;
+        private final IgniteUuid timeoutId;
 
         /** End time. */
         private final long endTime;
@@ -2385,13 +2385,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private DeferredResponseBuffer(UUID nodeId) {
             this.nodeId = nodeId;
 
-            timeoutId = GridUuid.fromUuid(nodeId);
+            timeoutId = IgniteUuid.fromUuid(nodeId);
 
             endTime = U.currentTimeMillis() + DEFERRED_UPDATE_RESPONSE_TIMEOUT;
         }
 
         /** {@inheritDoc} */
-        @Override public GridUuid timeoutId() {
+        @Override public IgniteUuid timeoutId() {
             return timeoutId;
         }
 

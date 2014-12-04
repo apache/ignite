@@ -55,11 +55,11 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = GridUuid.class)
-    private Map<UUID, GridUuid> ldrParticipants;
+    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    private Map<UUID, IgniteUuid> ldrParticipants;
 
     /** */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /** */
     private boolean forceLocDep;
@@ -94,8 +94,8 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
         GridDeploymentMode depMode,
         String sampleClsName,
         String userVer,
-        Map<UUID, GridUuid> ldrParticipants,
-        GridUuid clsLdrId,
+        Map<UUID, IgniteUuid> ldrParticipants,
+        IgniteUuid clsLdrId,
         boolean forceLocDep) {
         this.reqId = reqId;
         this.resTopicBytes = resTopicBytes;
@@ -177,14 +177,14 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
     /**
      * @return Participants.
      */
-    public Map<UUID, GridUuid> participants() {
+    public Map<UUID, IgniteUuid> participants() {
         return ldrParticipants;
     }
 
     /**
      * @return Class loader ID.
      */
-    public GridUuid classLoaderId() {
+    public IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -261,7 +261,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        Map.Entry<UUID, GridUuid> e = (Map.Entry<UUID, GridUuid>)commState.cur;
+                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
                             if (!commState.putUuid(e.getKey()))
@@ -337,7 +337,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 1:
-                GridUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid();
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -405,7 +405,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                             commState.keyDone = true;
                         }
 
-                        GridUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid();
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;

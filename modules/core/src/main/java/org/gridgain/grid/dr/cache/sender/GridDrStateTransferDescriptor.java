@@ -24,7 +24,7 @@ public class GridDrStateTransferDescriptor implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Unique state transfer ID. */
-    private GridUuid id;
+    private IgniteUuid id;
 
     /** Target data center IDs. */
     private Collection<Byte> dataCenterIds;
@@ -42,7 +42,7 @@ public class GridDrStateTransferDescriptor implements Externalizable {
      * @param id Unique state transfer ID.
      * @param dataCenterIds Target data center IDs.
      */
-    public GridDrStateTransferDescriptor(GridUuid id, Collection<Byte> dataCenterIds) {
+    public GridDrStateTransferDescriptor(IgniteUuid id, Collection<Byte> dataCenterIds) {
         this.id = id;
         this.dataCenterIds = dataCenterIds;
     }
@@ -52,7 +52,7 @@ public class GridDrStateTransferDescriptor implements Externalizable {
      *
      * @return Unique state transfer ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

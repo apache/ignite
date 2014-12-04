@@ -59,7 +59,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected final GridCacheQueueHeaderKey queueKey;
 
     /** Queue unique ID. */
-    protected final GridUuid id;
+    protected final IgniteUuid id;
 
     /** Queue capacity. */
     private final int cap;
@@ -385,7 +385,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    static void removeKeys(GridCacheProjection cache, GridUuid id, String name, boolean collocated, long startIdx,
+    static void removeKeys(GridCacheProjection cache, IgniteUuid id, String name, boolean collocated, long startIdx,
         long endIdx, int batchSize) throws GridException {
         Collection<GridCacheQueueItemKey> keys = new ArrayList<>(batchSize > 0 ? batchSize : 10);
 
@@ -486,7 +486,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * @return Queue unique ID.
      */
-    GridUuid id() {
+    IgniteUuid id() {
         return id;
     }
 
@@ -514,7 +514,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param idx Item index.
      * @return Item key.
      */
-    private static GridCacheQueueItemKey itemKey(GridUuid id, String queueName, boolean collocated, long idx) {
+    private static GridCacheQueueItemKey itemKey(IgniteUuid id, String queueName, boolean collocated, long idx) {
         return collocated ? new CollocatedItemKey(id, queueName, idx) :
             new GridCacheQueueItemKey(id, queueName, idx);
     }
@@ -524,7 +524,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param id Expected queue unique ID.
      * @return {@code True} if queue was removed.
      */
-    private static boolean queueRemoved(@Nullable GridCacheQueueHeader hdr, GridUuid id) {
+    private static boolean queueRemoved(@Nullable GridCacheQueueHeader hdr, IgniteUuid id) {
         return hdr == null || !id.equals(hdr.id());
     }
 
@@ -631,7 +631,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
          * @param queueName Queue name.
          * @param idx Item index.
          */
-        private CollocatedItemKey(GridUuid id, String queueName, long idx) {
+        private CollocatedItemKey(IgniteUuid id, String queueName, long idx) {
             super(id, queueName, idx);
         }
 
@@ -653,7 +653,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridUuid id;
+        private IgniteUuid id;
 
         /**
          * Required by {@link Externalizable}.
@@ -665,7 +665,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * @param id Queue unique ID.
          */
-        public ClearClosure(GridUuid id) {
+        public ClearClosure(IgniteUuid id) {
             this.id = id;
         }
 
@@ -703,7 +703,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridUuid id;
+        private IgniteUuid id;
 
         /**
          * Required by {@link Externalizable}.
@@ -715,7 +715,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * @param id Queue unique ID.
          */
-        public PollClosure(GridUuid id) {
+        public PollClosure(IgniteUuid id) {
             this.id = id;
         }
 
@@ -775,7 +775,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridUuid id;
+        private IgniteUuid id;
 
         /** */
         private int size;
@@ -791,7 +791,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
          * @param id Queue unique ID.
          * @param size Number of elements to add.
          */
-        public AddClosure(GridUuid id, int size) {
+        public AddClosure(IgniteUuid id, int size) {
             this.id = id;
             this.size = size;
         }
@@ -839,7 +839,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridUuid id;
+        private IgniteUuid id;
 
         /** */
         private Long idx;
@@ -855,7 +855,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
          * @param id Queue UUID.
          * @param idx Index of item to be removed.
          */
-        public RemoveClosure(GridUuid id, Long idx) {
+        public RemoveClosure(IgniteUuid id, Long idx) {
             this.id = id;
             this.idx = idx;
         }

@@ -53,7 +53,7 @@ public class GridJobResultImpl implements GridComputeJobResult {
      * @param node Node from where this result was received.
      * @param sib Sibling associated with this result.
      */
-    public GridJobResultImpl(GridComputeJob job, GridUuid jobId, ClusterNode node, GridJobSiblingImpl sib) {
+    public GridJobResultImpl(GridComputeJob job, IgniteUuid jobId, ClusterNode node, GridJobSiblingImpl sib) {
         assert jobId != null;
         assert node != null;
         assert sib != null;

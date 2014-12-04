@@ -17,10 +17,10 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Tests for {@link GridUuid}.
+ * Tests for {@link org.gridgain.grid.IgniteUuid}.
  */
 @GridCommonTest(group = "Lang")
-public class GridUuidSelfTest extends GridCommonAbstractTest {
+public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /** Sample size. */
     private static final int NUM = 100000;
 
@@ -28,7 +28,7 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testToString() {
-        GridUuid id1 = GridUuid.randomUuid();
+        IgniteUuid id1 = IgniteUuid.randomUuid();
 
         String id8_1 = U.id8(id1);
 
@@ -37,7 +37,7 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
 
         String s = id1.toString();
 
-        GridUuid id2 = GridUuid.fromString(s);
+        IgniteUuid id2 = IgniteUuid.fromString(s);
 
         String id8_2 = U.id8(id2);
 
@@ -59,8 +59,8 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testGridUuid() {
-        GridUuid id1 = GridUuid.randomUuid();
-        GridUuid id2 = GridUuid.randomUuid();
+        IgniteUuid id1 = IgniteUuid.randomUuid();
+        IgniteUuid id2 = IgniteUuid.randomUuid();
 
         assert id1.compareTo(id2) == -1;
         assert id2.compareTo(id1) == 1;
@@ -91,7 +91,7 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
         start = System.currentTimeMillis();
 
         for (int i = 0; i < NUM; i++)
-            GridUuid.randomUuid();
+            IgniteUuid.randomUuid();
 
         long dur2 = System.currentTimeMillis() - start;
 
@@ -114,7 +114,7 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
 
         // Populate.
         for (int i = 0; i < guids.length; i++)
-            guids[i] = new GridUuidBean(GridUuid.randomUuid());
+            guids[i] = new GridUuidBean(IgniteUuid.randomUuid());
 
         // Warm up.
         testArray(uids, NUM);
@@ -222,7 +222,7 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
      */
     private static class GridUuidBean implements Externalizable {
         /** */
-        private GridUuid uid;
+        private IgniteUuid uid;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -234,7 +234,7 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
         /**
          * @param uid Grid UUID.
          */
-        private GridUuidBean(GridUuid uid) {
+        private GridUuidBean(IgniteUuid uid) {
             this.uid = uid;
         }
 

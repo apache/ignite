@@ -69,10 +69,10 @@ public class GridJobEvent extends GridEventAdapter {
     private String taskClsName;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
-    private GridUuid jobId;
+    private IgniteUuid jobId;
 
     /** */
     private ClusterNode taskNode;
@@ -126,7 +126,7 @@ public class GridJobEvent extends GridEventAdapter {
      *
      * @return Task session ID of the task that triggered the event.
      */
-    public GridUuid taskSessionId() {
+    public IgniteUuid taskSessionId() {
         return sesId;
     }
 
@@ -135,7 +135,7 @@ public class GridJobEvent extends GridEventAdapter {
      *
      * @return Job ID.
      */
-    public GridUuid jobId() {
+    public IgniteUuid jobId() {
         return jobId;
     }
 
@@ -164,7 +164,7 @@ public class GridJobEvent extends GridEventAdapter {
      *
      * @param sesId Task session ID to set.
      */
-    public void taskSessionId(GridUuid sesId) {
+    public void taskSessionId(IgniteUuid sesId) {
         assert sesId != null;
 
         this.sesId = sesId;
@@ -175,7 +175,7 @@ public class GridJobEvent extends GridEventAdapter {
      *
      * @param jobId Job ID to set.
      */
-    public void jobId(GridUuid jobId) {
+    public void jobId(IgniteUuid jobId) {
         assert jobId != null;
 
         this.jobId = jobId;

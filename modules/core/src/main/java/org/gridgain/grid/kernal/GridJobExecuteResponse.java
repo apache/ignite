@@ -30,10 +30,10 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     private UUID nodeId;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
-    private GridUuid jobId;
+    private IgniteUuid jobId;
 
     /** */
     private byte[] gridExBytes;
@@ -84,7 +84,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      */
-    public GridJobExecuteResponse(UUID nodeId, GridUuid sesId, GridUuid jobId, byte[] gridExBytes,
+    public GridJobExecuteResponse(UUID nodeId, IgniteUuid sesId, IgniteUuid jobId, byte[] gridExBytes,
         GridException gridEx, byte[] resBytes, Object res, byte[] jobAttrsBytes,
         Map<Object, Object> jobAttrs, boolean isCancelled) {
         assert nodeId != null;
@@ -106,14 +106,14 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /**
      * @return Task session ID.
      */
-    @Override public GridUuid getSessionId() {
+    @Override public IgniteUuid getSessionId() {
         return sesId;
     }
 
     /**
      * @return Job ID.
      */
-    public GridUuid getJobId() {
+    public IgniteUuid getJobId() {
         return jobId;
     }
 
@@ -309,7 +309,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 3:
-                GridUuid jobId0 = commState.getGridUuid();
+                IgniteUuid jobId0 = commState.getGridUuid();
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -339,7 +339,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 6:
-                GridUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid();
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

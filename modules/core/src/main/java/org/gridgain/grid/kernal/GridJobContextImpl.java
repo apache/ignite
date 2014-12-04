@@ -41,7 +41,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
     private GridKernalContext ctx;
 
     /** */
-    private GridUuid jobId;
+    private IgniteUuid jobId;
 
     /** Job worker. */
     private GridJobWorker job;
@@ -68,7 +68,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
      * @param ctx Kernal context.
      * @param jobId Job ID.
      */
-    public GridJobContextImpl(@Nullable GridKernalContext ctx, GridUuid jobId) {
+    public GridJobContextImpl(@Nullable GridKernalContext ctx, IgniteUuid jobId) {
         assert jobId != null;
 
         this.ctx = ctx;
@@ -81,7 +81,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
      * @param jobId Job ID.
      * @param attrs Job attributes.
      */
-    public GridJobContextImpl(GridKernalContext ctx, GridUuid jobId,
+    public GridJobContextImpl(GridKernalContext ctx, IgniteUuid jobId,
         Map<? extends Serializable, ? extends Serializable> attrs) {
         this(ctx, jobId);
 
@@ -100,7 +100,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getJobId() {
+    @Override public IgniteUuid getJobId() {
         return jobId;
     }
 
@@ -172,9 +172,9 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
                     // Overflow.
                     if (endTime > 0) {
                         ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                            private final GridUuid id = GridUuid.randomUuid();
+                            private final IgniteUuid id = IgniteUuid.randomUuid();
 
-                            @Override public GridUuid timeoutId() {
+                            @Override public IgniteUuid timeoutId() {
                                 return id;
                             }
 

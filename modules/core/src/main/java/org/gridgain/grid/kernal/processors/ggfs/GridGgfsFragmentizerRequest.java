@@ -28,7 +28,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
     private static final long serialVersionUID = 0L;
 
     /** File id. */
-    private GridUuid fileId;
+    private IgniteUuid fileId;
 
     /** Ranges to fragment. */
     @GridToStringInclude
@@ -46,7 +46,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
      * @param fileId File id to fragment.
      * @param fragmentRanges Ranges to fragment.
      */
-    public GridGgfsFragmentizerRequest(GridUuid fileId, Collection<GridGgfsFileAffinityRange> fragmentRanges) {
+    public GridGgfsFragmentizerRequest(IgniteUuid fileId, Collection<GridGgfsFileAffinityRange> fragmentRanges) {
         this.fileId = fileId;
         this.fragmentRanges = fragmentRanges;
     }
@@ -54,7 +54,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
     /**
      * @return File ID.
      */
-    public GridUuid fileId() {
+    public IgniteUuid fileId() {
         return fileId;
     }
 
@@ -154,7 +154,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                GridUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid();
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

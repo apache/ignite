@@ -68,7 +68,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected final Object mux = new Object();
 
     /** */
-    private GridUuid timeoutId = GridUuid.randomUuid();
+    private IgniteUuid timeoutId = IgniteUuid.randomUuid();
 
     /** */
     private long startTime;
@@ -513,7 +513,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected abstract void cancelQuery() throws GridException;
 
     /** {@inheritDoc} */
-    @Override public GridUuid timeoutId() {
+    @Override public IgniteUuid timeoutId() {
         return timeoutId;
     }
 

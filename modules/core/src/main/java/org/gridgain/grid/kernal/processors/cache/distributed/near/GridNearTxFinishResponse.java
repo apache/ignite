@@ -35,7 +35,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     private byte[] errBytes;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Near tx thread ID. */
     private long nearThreadId;
@@ -54,7 +54,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
      * @param miniId Mini future Id.
      * @param err Error.
      */
-    public GridNearTxFinishResponse(GridCacheVersion xid, long nearThreadId, GridUuid futId, GridUuid miniId,
+    public GridNearTxFinishResponse(GridCacheVersion xid, long nearThreadId, IgniteUuid futId, IgniteUuid miniId,
         @Nullable Throwable err) {
         super(xid, futId);
 
@@ -75,7 +75,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -184,7 +184,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 commState.idx++;
 
             case 6:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

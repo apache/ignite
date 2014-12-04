@@ -64,7 +64,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private boolean forcePrimary;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Version. */
     private GridCacheVersion ver;
@@ -132,7 +132,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.deserializePortable = deserializePortable;
         this.taskName = taskName;
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         ver = cctx.versions().next();
 
@@ -168,7 +168,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
@@ -530,7 +530,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
         private ClusterNode node;
@@ -565,7 +565,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         /**
          * @return Future ID.
          */
-        GridUuid futureId() {
+        IgniteUuid futureId() {
             return futId;
         }
 

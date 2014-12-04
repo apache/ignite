@@ -870,7 +870,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private class ResendTimeoutObject implements GridTimeoutObject {
         /** Timeout ID. */
-        private final GridUuid timeoutId = GridUuid.randomUuid();
+        private final IgniteUuid timeoutId = IgniteUuid.randomUuid();
 
         /** Timeout start time. */
         private final long createTime = U.currentTimeMillis();
@@ -879,7 +879,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         private AtomicBoolean started = new AtomicBoolean();
 
         /** {@inheritDoc} */
-        @Override public GridUuid timeoutId() {
+        @Override public IgniteUuid timeoutId() {
             return timeoutId;
         }
 

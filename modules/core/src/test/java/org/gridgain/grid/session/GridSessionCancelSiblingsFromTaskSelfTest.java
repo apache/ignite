@@ -263,7 +263,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
             if (received.size() == 1) {
                 Collection<GridComputeJobSibling> jobSiblings = taskSes.getJobSiblings();
 
-                GridUuid jobId = received.get(0).getJobContext().getJobId();
+                IgniteUuid jobId = received.get(0).getJobContext().getJobId();
 
                 assert jobId != null;
 

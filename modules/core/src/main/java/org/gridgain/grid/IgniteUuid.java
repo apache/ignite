@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.*;
  * 10x time faster for ID creation. It uses extra memory for 8-byte counter additionally to
  * internal UUID.
  */
-public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>, Cloneable, Externalizable,
+public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<IgniteUuid>, Cloneable, Externalizable,
     GridOptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -47,7 +47,7 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridUuid() {
+    public IgniteUuid() {
         // No-op.
     }
 
@@ -57,7 +57,7 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
      * @param gid UUID.
      * @param locId Counter.
      */
-    public GridUuid(UUID gid, long locId) {
+    public IgniteUuid(UUID gid, long locId) {
         assert gid != null;
 
         this.gid = gid;
@@ -87,8 +87,8 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
      *
      * @return Newly created pseudo-random ID.
      */
-    public static GridUuid randomUuid() {
-        return new GridUuid(VM_ID, cntGen.incrementAndGet());
+    public static IgniteUuid randomUuid() {
+        return new IgniteUuid(VM_ID, cntGen.incrementAndGet());
     }
 
     /**
@@ -97,10 +97,10 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
      * @param id UUID instance.
      * @return Newly created pseudo-random ID.
      */
-    public static GridUuid fromUuid(UUID id) {
+    public static IgniteUuid fromUuid(UUID id) {
         A.notNull(id, "id");
 
-        return new GridUuid(id, cntGen.getAndIncrement());
+        return new IgniteUuid(id, cntGen.getAndIncrement());
     }
 
     /**
@@ -110,10 +110,10 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
      * @param s String to convert to {@code GridUuid}.
      * @return {@code GridUuid} instance representing given string.
      */
-    public static GridUuid fromString(String s) {
+    public static IgniteUuid fromString(String s) {
         int firstDash = s.indexOf('-');
 
-        return new GridUuid(
+        return new IgniteUuid(
                 UUID.fromString(s.substring(firstDash + 1)),
                 Long.valueOf(new StringBuilder(s.substring(0, firstDash)).reverse().toString(), 16)
         );
@@ -168,7 +168,7 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(GridUuid o) {
+    @Override public int compareTo(IgniteUuid o) {
         if (o == this)
             return 0;
 
@@ -179,8 +179,8 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<GridUuid> iterator() {
-        return F.iterator(Collections.singleton(this), F.<GridUuid>identity(), true);
+    @Override public GridIterator<IgniteUuid> iterator() {
+        return F.iterator(Collections.singleton(this), F.<IgniteUuid>identity(), true);
     }
 
     /** {@inheritDoc} */
@@ -188,10 +188,10 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
         if (obj == this)
             return true;
 
-        if (!(obj instanceof GridUuid))
+        if (!(obj instanceof IgniteUuid))
             return false;
 
-        GridUuid that = (GridUuid)obj;
+        IgniteUuid that = (IgniteUuid)obj;
 
         return that.locId == locId && that.gid.equals(gid);
     }

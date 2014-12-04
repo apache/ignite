@@ -59,7 +59,7 @@ public class GridGgfsFileMap implements Externalizable {
      *      Otherwise will return null for such ranges.
      * @return Affinity key.
      */
-    public GridUuid affinityKey(long blockOff, boolean includeMoved) {
+    public IgniteUuid affinityKey(long blockOff, boolean includeMoved) {
         if (ranges == null)
             return null;
 

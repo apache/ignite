@@ -64,7 +64,7 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
 
         // Invoke load balancer a large number of times, so statistics won't lie.
         for (int i = 0; i < 50000; i++) {
-            GridTestNode node = (GridTestNode)getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()),
+            GridTestNode node = (GridTestNode)getSpi().getBalancedNode(new GridTestTaskSession(IgniteUuid.randomUuid()),
                 nodes, new GridTestJob());
 
             int idx = ((Double)node.attribute("load")).intValue() - 1;

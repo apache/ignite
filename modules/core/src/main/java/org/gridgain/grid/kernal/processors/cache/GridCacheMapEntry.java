@@ -553,7 +553,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             boolean plain = val instanceof byte[];
 
-            GridUuid valClsLdrId = null;
+            IgniteUuid valClsLdrId = null;
 
             if (val != null)
                 valClsLdrId = cctx.deploy().getClassLoaderId(val.getClass().getClassLoader());
@@ -3540,7 +3540,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (!isStartVersion()) {
                     boolean plain = val instanceof byte[];
 
-                    GridUuid valClsLdrId = null;
+                    IgniteUuid valClsLdrId = null;
 
                     if (val != null)
                         valClsLdrId = cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(val));
@@ -4089,7 +4089,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (plainByteArr)
             return (V)res;
 
-        GridUuid valClsLdrId = U.readGridUuid(ptr + 4 + size);
+        IgniteUuid valClsLdrId = U.readGridUuid(ptr + 4 + size);
 
         ClassLoader ldr = valClsLdrId != null ? cctx.deploy().getClassLoader(valClsLdrId) :
             cctx.deploy().localLoader();

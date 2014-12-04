@@ -39,7 +39,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     private final GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
-    private final GridUuid futId = GridUuid.randomUuid();
+    private final IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Transaction. */
     private final GridCacheTxEx<K, V> tx;
@@ -173,7 +173,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
@@ -263,7 +263,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
         private static final long serialVersionUID = 0L;
 
         /** Mini future ID. */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
         private UUID nodeId;
@@ -294,7 +294,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
         /**
          * @return Future ID.
          */
-        private GridUuid futureId() {
+        private IgniteUuid futureId() {
             return futId;
         }
 

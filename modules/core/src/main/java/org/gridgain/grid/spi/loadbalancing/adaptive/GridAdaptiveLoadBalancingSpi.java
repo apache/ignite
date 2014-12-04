@@ -238,7 +238,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
     private GridLocalEventListener evtLsnr;
 
     /** Task topologies. First pair value indicates whether or not jobs have been mapped. */
-    private ConcurrentMap<GridUuid, IgniteBiTuple<Boolean, WeightedTopology>> taskTops =
+    private ConcurrentMap<IgniteUuid, IgniteBiTuple<Boolean, WeightedTopology>> taskTops =
         new ConcurrentHashMap8<>();
 
     /** */

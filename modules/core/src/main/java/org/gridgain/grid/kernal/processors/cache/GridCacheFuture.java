@@ -21,7 +21,7 @@ public interface GridCacheFuture<R> extends GridFuture<R> {
     /**
      * @return Unique identifier for this future.
      */
-    public GridUuid futureId();
+    public IgniteUuid futureId();
 
     /**
      * @return Future version.

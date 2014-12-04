@@ -81,7 +81,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
             info("Got expected grid exception: " + e);
         }
 
-        GridUuid sesId = fut.getTaskSession().getId();
+        IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
         List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
@@ -111,7 +111,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
             info("Got expected grid exception: " + e);
         }
 
-        GridUuid sesId = fut.getTaskSession().getId();
+        IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
         List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
@@ -141,7 +141,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
             info("Got expected grid exception: " + e);
         }
 
-        GridUuid sesId = fut.getTaskSession().getId();
+        IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
         List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
@@ -171,7 +171,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
             info("Got expected grid exception: " + e);
         }
 
-        GridUuid sesId = fut.getTaskSession().getId();
+        IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
         List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
@@ -184,12 +184,12 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TaskFailedEventFilter implements IgnitePredicate<GridEvent> {
         /** */
-        private GridUuid sesId;
+        private IgniteUuid sesId;
 
         /**
          * @param sesId Session ID.
          */
-        TaskFailedEventFilter(GridUuid sesId) {
+        TaskFailedEventFilter(IgniteUuid sesId) {
             this.sesId = sesId;
         }
 

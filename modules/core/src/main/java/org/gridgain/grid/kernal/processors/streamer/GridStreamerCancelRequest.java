@@ -23,7 +23,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
     private static final long serialVersionUID = 0L;
 
     /** Cancelled future ID. */
-    private GridUuid cancelledFutId;
+    private IgniteUuid cancelledFutId;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -35,14 +35,14 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
     /**
      * @param cancelledFutId Cancelled future ID.
      */
-    public GridStreamerCancelRequest(GridUuid cancelledFutId) {
+    public GridStreamerCancelRequest(IgniteUuid cancelledFutId) {
         this.cancelledFutId = cancelledFutId;
     }
 
     /**
      * @return Cancelled future ID.
      */
-    public GridUuid cancelledFutureId() {
+    public IgniteUuid cancelledFutureId() {
         return cancelledFutId;
     }
 
@@ -94,7 +94,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                GridUuid cancelledFutId0 = commState.getGridUuid();
+                IgniteUuid cancelledFutId0 = commState.getGridUuid();
 
                 if (cancelledFutId0 == GRID_UUID_NOT_READ)
                     return false;

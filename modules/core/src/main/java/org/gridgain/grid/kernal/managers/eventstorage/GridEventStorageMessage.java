@@ -52,7 +52,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     private byte[] exBytes;
 
     /** */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /** */
     private GridDeploymentMode depMode;
@@ -65,8 +65,8 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = GridUuid.class)
-    private Map<UUID, GridUuid> ldrParties;
+    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    private Map<UUID, IgniteUuid> ldrParties;
 
     /** */
     public GridEventStorageMessage() {
@@ -86,10 +86,10 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
         Object resTopic,
         byte[] filter,
         String filterClsName,
-        GridUuid clsLdrId,
+        IgniteUuid clsLdrId,
         GridDeploymentMode depMode,
         String userVer,
-        Map<UUID, GridUuid> ldrParties) {
+        Map<UUID, IgniteUuid> ldrParties) {
         this.resTopic = resTopic;
         this.filter = filter;
         this.filterClsName = filterClsName;
@@ -184,7 +184,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     /**
      * @return the Class loader ID.
      */
-    GridUuid classLoaderId() {
+    IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -212,14 +212,14 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     /**
      * @return Node class loader participant map.
      */
-    @Nullable Map<UUID, GridUuid> loaderParticipants() {
+    @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 
     /**
      * @param ldrParties Node class loader participant map.
      */
-    void loaderParticipants(Map<UUID, GridUuid> ldrParties) {
+    void loaderParticipants(Map<UUID, IgniteUuid> ldrParties) {
         this.ldrParties = ldrParties;
     }
 
@@ -341,7 +341,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        Map.Entry<UUID, GridUuid> e = (Map.Entry<UUID, GridUuid>)commState.cur;
+                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
                             if (!commState.putUuid(e.getKey()))
@@ -390,7 +390,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
         switch (commState.idx) {
             case 0:
-                GridUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid();
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -472,7 +472,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                             commState.keyDone = true;
                         }
 
-                        GridUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid();
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;

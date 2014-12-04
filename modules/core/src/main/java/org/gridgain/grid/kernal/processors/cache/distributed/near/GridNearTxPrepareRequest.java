@@ -30,10 +30,10 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Near mapping flag. */
     private boolean near;
@@ -77,7 +77,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
     public GridNearTxPrepareRequest(
-        GridUuid futId,
+        IgniteUuid futId,
         long topVer,
         GridCacheTxEx<K, V> tx,
         Collection<GridCacheTxEntry<K, V>> reads,
@@ -128,21 +128,21 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future ID.
      */
-    public void miniId(GridUuid miniId) {
+    public void miniId(IgniteUuid miniId) {
         this.miniId = miniId;
     }
 
@@ -326,7 +326,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         switch (commState.idx) {
             case 21:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -373,7 +373,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 commState.idx++;
 
             case 24:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

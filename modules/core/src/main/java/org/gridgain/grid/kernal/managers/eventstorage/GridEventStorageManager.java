@@ -863,7 +863,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
             }
         };
 
-        Object resTopic = TOPIC_EVENT.topic(GridUuid.fromUuid(ctx.localNodeId()));
+        Object resTopic = TOPIC_EVENT.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
         try {
             addLocalEventListener(evtLsnr, new int[] {

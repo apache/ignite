@@ -53,7 +53,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private final String name;
 
     /** Set unique ID. */
-    private final GridUuid id;
+    private final IgniteUuid id;
 
     /** Collocation flag. */
     private final boolean collocated;
@@ -489,7 +489,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /**
      * @return Set ID.
      */
-    GridUuid id() {
+    IgniteUuid id() {
         return id;
     }
 
@@ -685,7 +685,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
          * @param setId Set unique ID.
          * @param item Set item.
          */
-        private CollocatedItemKey(String setName, GridUuid setId, Object item) {
+        private CollocatedItemKey(String setName, IgniteUuid setId, Object item) {
             super(setId, item);
 
             this.setName = setName;

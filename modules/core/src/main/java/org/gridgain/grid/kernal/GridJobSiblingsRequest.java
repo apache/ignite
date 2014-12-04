@@ -24,7 +24,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
     @GridDirectTransient
@@ -45,7 +45,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
      * @param topic Topic.
      * @param topicBytes Serialized topic.
      */
-    public GridJobSiblingsRequest(GridUuid sesId, Object topic, byte[] topicBytes) {
+    public GridJobSiblingsRequest(IgniteUuid sesId, Object topic, byte[] topicBytes) {
         assert sesId != null;
         assert topic != null || topicBytes != null;
 
@@ -57,7 +57,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Session ID.
      */
-    public GridUuid sessionId() {
+    public IgniteUuid sessionId() {
         return sesId;
     }
 
@@ -131,7 +131,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                GridUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid();
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

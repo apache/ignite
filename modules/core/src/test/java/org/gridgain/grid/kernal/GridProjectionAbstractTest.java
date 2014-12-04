@@ -651,7 +651,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
             assertFalse(fut.isDone());
 
-            Map<GridUuid, GridComputeTaskFuture<Object>> futs = comp.activeTaskFutures();
+            Map<IgniteUuid, GridComputeTaskFuture<Object>> futs = comp.activeTaskFutures();
 
             assertEquals(i + 1, futs.size());
 

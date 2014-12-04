@@ -672,9 +672,9 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
             out.write(new byte[10 * 1024 * 1024]);
         }
 
-        GridUuid fileId = U.field(ggfs.info(path), "fileId");
+        IgniteUuid fileId = U.field(ggfs.info(path), "fileId");
 
-        GridCache<GridUuid, GridGgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
+        GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
         GridCache<GridGgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
         GridGgfsFileInfo info = metaCache.get(fileId);

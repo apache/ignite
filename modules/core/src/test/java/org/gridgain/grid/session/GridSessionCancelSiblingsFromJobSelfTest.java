@@ -218,7 +218,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
                                 fail();
 
                             if (this.<Integer>argument(0) == 1) {
-                                GridUuid jobId = jobCtx.getJobId();
+                                IgniteUuid jobId = jobCtx.getJobId();
 
                                 if (log.isInfoEnabled())
                                     log.info("Job one is proceeding [jobId=" + jobId + ']');

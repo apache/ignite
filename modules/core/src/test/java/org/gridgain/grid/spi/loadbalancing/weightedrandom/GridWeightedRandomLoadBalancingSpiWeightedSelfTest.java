@@ -53,7 +53,7 @@ public class GridWeightedRandomLoadBalancingSpiWeightedSelfTest
 
         // Invoke load balancer a large number of times, so statistics won't lie.
         for (int i = 0; i < 100000; i++) {
-            ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(GridUuid.randomUuid()), nodes,
+            ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(IgniteUuid.randomUuid()), nodes,
                 new GridTestJob());
 
             int weight = (Integer)node.attribute(U.spiAttribute(getSpi(), NODE_WEIGHT_ATTR_NAME));

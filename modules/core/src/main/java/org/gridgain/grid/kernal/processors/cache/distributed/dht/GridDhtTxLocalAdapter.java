@@ -114,12 +114,12 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
     /**
      * @return Near future ID.
      */
-    protected abstract GridUuid nearFutureId();
+    protected abstract IgniteUuid nearFutureId();
 
     /**
      * @return Near future mini ID.
      */
-    protected abstract GridUuid nearMiniId();
+    protected abstract IgniteUuid nearMiniId();
 
     /**
      * Adds reader to cached entry.

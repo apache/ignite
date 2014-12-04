@@ -150,7 +150,7 @@ class GridOptimizedClassResolver {
             BigInteger.class,
 
             // GridGain types.
-            GridUuid.class,
+            IgniteUuid.class,
             GridBoundedConcurrentOrderedSet.class,
             GridBoundedLinkedHashSet.class,
             GridConcurrentHashSet.class,

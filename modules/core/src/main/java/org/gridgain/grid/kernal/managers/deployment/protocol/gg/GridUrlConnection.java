@@ -44,7 +44,7 @@ public class GridUrlConnection extends URLConnection {
         URL url = getURL();
 
         // Gets class loader UUID.
-        GridUuid ldrId = GridUuid.fromString(url.getHost());
+        IgniteUuid ldrId = IgniteUuid.fromString(url.getHost());
 
         // Gets resource name.
         String name = url.getPath();

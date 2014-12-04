@@ -23,7 +23,7 @@ public class GridEventAdapter implements GridEvent {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridUuid id = GridUuid.randomUuid();
+    private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
     private final long tstamp = U.currentTimeMillis();
@@ -69,7 +69,7 @@ public class GridEventAdapter implements GridEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid id() {
+    @Override public IgniteUuid id() {
         return id;
     }
 

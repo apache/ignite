@@ -26,10 +26,10 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
@@ -50,7 +50,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(GridCacheTxEx<K, V> tx, int txNum, GridUuid futId, GridUuid miniId) {
+    public GridCacheOptimisticCheckPreparedTxRequest(GridCacheTxEx<K, V> tx, int txNum, IgniteUuid futId, IgniteUuid miniId) {
         super(tx.xidVersion(), 0);
 
         nearXidVer = tx.nearXidVersion();
@@ -69,14 +69,14 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -164,7 +164,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
         switch (commState.idx) {
             case 8:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -174,7 +174,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 commState.idx++;
 
             case 9:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

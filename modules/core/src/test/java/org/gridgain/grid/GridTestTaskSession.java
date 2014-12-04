@@ -25,7 +25,7 @@ public class GridTestTaskSession implements GridComputeTaskSession {
     private String jobTypeId;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
     private UUID taskNodeId = UUID.randomUUID();
@@ -47,7 +47,7 @@ public class GridTestTaskSession implements GridComputeTaskSession {
     /**
      * @param sesId Session ID.
      */
-    public GridTestTaskSession(GridUuid sesId) {
+    public GridTestTaskSession(IgniteUuid sesId) {
         this.sesId = sesId;
     }
 
@@ -56,7 +56,7 @@ public class GridTestTaskSession implements GridComputeTaskSession {
      * @param jobTypeId Job type ID.
      * @param sesId Session ID.
      */
-    public GridTestTaskSession(String taskName, String jobTypeId, GridUuid sesId) {
+    public GridTestTaskSession(String taskName, String jobTypeId, IgniteUuid sesId) {
         this.taskName = taskName;
         this.jobTypeId = jobTypeId;
         this.sesId = sesId;
@@ -101,7 +101,7 @@ public class GridTestTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getId() {
+    @Override public IgniteUuid getId() {
         return sesId;
     }
 
@@ -126,7 +126,7 @@ public class GridTestTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(GridUuid jobId) {
+    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) {
         return null;
     }
 

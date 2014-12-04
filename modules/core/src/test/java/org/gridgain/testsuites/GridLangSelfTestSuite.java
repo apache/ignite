@@ -37,7 +37,7 @@ public class GridLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridConcurrentWeakHashSetSelfTest.class));
         suite.addTest(new TestSuite(GridMetadataAwareAdapterSelfTest.class));
         suite.addTest(new TestSuite(GridSetWrapperSelfTest.class));
-        suite.addTest(new TestSuite(GridUuidSelfTest.class));
+        suite.addTest(new TestSuite(IgniteUuidSelfTest.class));
         suite.addTest(new TestSuite(GridXSelfTest.class));
         suite.addTest(new TestSuite(GridBoundedConcurrentOrderedMapSelfTest.class));
         suite.addTest(new TestSuite(GridBoundedConcurrentLinkedHashMapSelfTest.class));

@@ -49,7 +49,7 @@ import org.gridgain.visor.commands.tasks.State._
  * Task execution data.
  */
 private case class VisorExecution(
-    id: GridUuid,
+    id: IgniteUuid,
     taskName: String,
     var evts: List[_ <: VisorGridEvent] = Nil,
     var nodeIds: Set[UUID] = Set.empty[UUID],
@@ -499,13 +499,13 @@ class VisorTasksCommand {
      * @param evts Collected events.
      */
     private def mkData(evts: java.lang.Iterable[_ <: VisorGridEvent]): (List[VisorTask], List[VisorExecution]) = {
-        var sMap = Map.empty[GridUuid, VisorExecution] // Execution map.
+        var sMap = Map.empty[IgniteUuid, VisorExecution] // Execution map.
         var tMap = Map.empty[String, VisorTask] // Task map.
 
         if (evts == null)
             return tMap.values.toList -> sMap.values.toList
 
-        def getSession(id: GridUuid, taskName: String): VisorExecution = {
+        def getSession(id: IgniteUuid, taskName: String): VisorExecution = {
             assert(id != null)
             assert(taskName != null)
 
@@ -986,10 +986,10 @@ class VisorTasksCommand {
         breakable {
             assert(sesId != null)
 
-            var uuid: GridUuid = null
+            var uuid: IgniteUuid = null
 
             try
-                uuid = GridUuid.fromString(sesId)
+                uuid = IgniteUuid.fromString(sesId)
             catch {
                 case e: Exception =>
                     scold("Invalid execution ID: " + sesId)

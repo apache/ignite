@@ -58,7 +58,7 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
     public static final UUID UUID_NOT_READ = new UUID(0, 0);
 
     /** */
-    public static final GridUuid GRID_UUID_NOT_READ = new GridUuid(new UUID(0, 0), 0);
+    public static final IgniteUuid GRID_UUID_NOT_READ = new IgniteUuid(new UUID(0, 0), 0);
 
     /** */
     public static final GridClockDeltaVersion CLOCK_DELTA_VER_NOT_READ = new GridClockDeltaVersion(0, 0);

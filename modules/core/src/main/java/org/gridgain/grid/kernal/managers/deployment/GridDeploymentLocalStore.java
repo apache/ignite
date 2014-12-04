@@ -93,7 +93,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeployment getDeployment(GridUuid ldrId) {
+    @Nullable @Override public GridDeployment getDeployment(IgniteUuid ldrId) {
         synchronized (mux) {
             for (ConcurrentLinkedDeque8<GridDeployment> deps : cache.values())
                 for (GridDeployment dep : deps)
@@ -266,7 +266,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     return dep;
                 }
 
-                GridUuid ldrId = GridUuid.fromUuid(ctx.localNodeId());
+                IgniteUuid ldrId = IgniteUuid.fromUuid(ctx.localNodeId());
 
                 String userVer = userVersion(ldr);
 
@@ -353,8 +353,8 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addParticipants(Map<UUID, GridUuid> allParticipants,
-        Map<UUID, GridUuid> addedParticipants) {
+    @Override public void addParticipants(Map<UUID, IgniteUuid> allParticipants,
+        Map<UUID, IgniteUuid> addedParticipants) {
         assert false;
     }
 

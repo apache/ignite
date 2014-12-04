@@ -46,7 +46,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     private Collection<byte[]> nearWritesBytes;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** System invalidation flag. */
     private boolean sysInvalidate;
@@ -105,8 +105,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
-        GridUuid futId,
-        GridUuid miniId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
         long topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
@@ -164,7 +164,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /**
      * @return Mini ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -454,7 +454,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 commState.idx++;
 
             case 21:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

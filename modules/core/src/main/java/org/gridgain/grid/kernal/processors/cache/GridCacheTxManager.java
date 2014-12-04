@@ -1950,7 +1950,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
          * @param evtNodeId Event node ID.
          */
         private NodeFailureTimeoutObject(UUID evtNodeId) {
-            super(GridUuid.fromUuid(cctx.localNodeId()), TX_SALVAGE_TIMEOUT);
+            super(IgniteUuid.fromUuid(cctx.localNodeId()), TX_SALVAGE_TIMEOUT);
 
             this.evtNodeId = evtNodeId;
         }

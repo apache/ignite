@@ -35,7 +35,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     private long topVer;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Filter. */
     private byte[][] filterBytes;
@@ -99,7 +99,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         long topVer,
         UUID nodeId,
         long threadId,
-        GridUuid futId,
+        IgniteUuid futId,
         GridCacheVersion lockVer,
         boolean isInTx,
         boolean implicitTx,
@@ -212,14 +212,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future Id.
      */
-    public void miniId(GridUuid miniId) {
+    public void miniId(IgniteUuid miniId) {
         this.miniId = miniId;
     }
 
@@ -525,7 +525,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 commState.idx++;
 
             case 28:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

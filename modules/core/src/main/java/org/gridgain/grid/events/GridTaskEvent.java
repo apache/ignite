@@ -66,7 +66,7 @@ public class GridTaskEvent extends GridEventAdapter {
     private final String taskClsName;
 
     /** */
-    private final GridUuid sesId;
+    private final IgniteUuid sesId;
 
     /** */
     private final boolean internal;
@@ -89,7 +89,7 @@ public class GridTaskEvent extends GridEventAdapter {
      * @param taskName Task name.
      * @param subjId Subject ID.
      */
-    public GridTaskEvent(ClusterNode node, String msg, int type, GridUuid sesId, String taskName, String taskClsName,
+    public GridTaskEvent(ClusterNode node, String msg, int type, IgniteUuid sesId, String taskName, String taskClsName,
         boolean internal, @Nullable UUID subjId) {
         super(node, msg, type);
 
@@ -123,7 +123,7 @@ public class GridTaskEvent extends GridEventAdapter {
      *
      * @return Session ID of the task that triggered the event.
      */
-    public GridUuid taskSessionId() {
+    public IgniteUuid taskSessionId() {
         return sesId;
     }
 

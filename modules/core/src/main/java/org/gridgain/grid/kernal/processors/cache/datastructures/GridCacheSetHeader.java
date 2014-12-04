@@ -23,7 +23,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid id;
+    private IgniteUuid id;
 
     /** */
     private boolean collocated;
@@ -39,7 +39,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
      * @param id Set UUID.
      * @param collocated Collocation flag.
      */
-    public GridCacheSetHeader(GridUuid id, boolean collocated) {
+    public GridCacheSetHeader(IgniteUuid id, boolean collocated) {
         this.id = id;
         this.collocated = collocated;
     }
@@ -47,7 +47,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /**
      * @return Set unique ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

@@ -81,7 +81,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private DataInputBlocksWriter dataInputWriter = new DataInputBlocksWriter();
 
     /** Pending writes future. */
-    private ConcurrentMap<GridUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap8<>();
+    private ConcurrentMap<IgniteUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap8<>();
 
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
@@ -259,7 +259,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param prevAffKey Affinity key of previous block.
      * @return Affinity key.
      */
-    public GridUuid nextAffinityKey(@Nullable GridUuid prevAffKey) {
+    public IgniteUuid nextAffinityKey(@Nullable IgniteUuid prevAffKey) {
         // Do not generate affinity key for non-affinity nodes.
         if (!isAffinityNode(dataCache.configuration()))
             return null;
@@ -270,7 +270,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             return prevAffKey;
 
         while (true) {
-            GridUuid key = new GridUuid(nodeId, affKeyGen.getAndIncrement());
+            IgniteUuid key = new IgniteUuid(nodeId, affKeyGen.getAndIncrement());
 
             if (dataCache.affinity().mapKeyToNode(key).isLocal())
                 return key;
@@ -609,7 +609,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             return new GridGgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), blockIdx);
 
         if (fileInfo.fileMap() != null) {
-            GridUuid affKey = fileInfo.fileMap().affinityKey(blockIdx * fileInfo.blockSize(), false);
+            IgniteUuid affKey = fileInfo.fileMap().affinityKey(blockIdx * fileInfo.blockSize(), false);
 
             return new GridGgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), blockIdx);
         }
@@ -999,7 +999,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param blocks Blocks to put in cache.
      * @throws GridException If batch processing failed.
      */
-    private void processBatch(GridUuid fileId, final ClusterNode node,
+    private void processBatch(IgniteUuid fileId, final ClusterNode node,
         final Map<GridGgfsBlockKey, byte[]> blocks) throws GridException {
         final long batchId = reqIdCtr.getAndIncrement();
 
@@ -1069,7 +1069,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param data Data to write.
      * @throws GridException If update failed.
      */
-    private void processPartialBlockWrite(GridUuid fileId, GridGgfsBlockKey colocatedKey, int startOff,
+    private void processPartialBlockWrite(IgniteUuid fileId, GridGgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws GridException {
         if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
             try {
@@ -1311,7 +1311,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             return;
         }
 
-        GridUuid fileId = ackMsg.fileId();
+        IgniteUuid fileId = ackMsg.fileId();
 
         WriteCompletionFuture fut = pendingWrites.get(fileId);
 
@@ -1353,7 +1353,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         // If block does not belong to new range, return old affinity key.
         if (locRange.less(blockStart)) {
-            GridUuid affKey = fileInfo.fileMap().affinityKey(blockStart, false);
+            IgniteUuid affKey = fileInfo.fileMap().affinityKey(blockStart, false);
 
             return new GridGgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), block);
         }
@@ -1403,7 +1403,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             GridGgfsFileAffinityRange affinityRange,
             @Nullable GridGgfsFileWorkerBatch batch
         ) throws GridException {
-            GridUuid id = fileInfo.id();
+            IgniteUuid id = fileInfo.id();
             int blockSize = fileInfo.blockSize();
 
             int len = remainderLen + srcLen;
@@ -1703,7 +1703,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         GridGgfsFileMap map = fileInfo.fileMap();
 
                         for (long block = 0, size = fileInfo.blocksCount(); block < size; block++) {
-                            GridUuid affKey = map == null ? null : map.affinityKey(block * fileInfo.blockSize(), true);
+                            IgniteUuid affKey = map == null ? null : map.affinityKey(block * fileInfo.blockSize(), true);
 
                             ldr.removeData(new GridGgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(),
                                 block));
@@ -1721,7 +1721,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     }
                     finally {
                         try {
-                            GridUuid fileId = fileInfo.id();
+                            IgniteUuid fileId = fileInfo.id();
 
                             for (long block = 0, size = fileInfo.blocksCount(); block < size; block++)
                                 ldr.removeData(new GridGgfsBlockKey(fileId, fileInfo.affinityKey(),
@@ -1767,7 +1767,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         private static final long serialVersionUID = 0L;
 
         /** File id to remove future from map. */
-        private GridUuid fileId;
+        private IgniteUuid fileId;
 
         /** Pending acks. */
         private ConcurrentMap<UUID, Set<Long>> pendingAcks = new ConcurrentHashMap8<>();
@@ -1786,7 +1786,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param ctx Kernal context.
          * @param fileId File id.
          */
-        private WriteCompletionFuture(GridKernalContext ctx, GridUuid fileId) {
+        private WriteCompletionFuture(GridKernalContext ctx, IgniteUuid fileId) {
             super(ctx);
 
             assert fileId != null;

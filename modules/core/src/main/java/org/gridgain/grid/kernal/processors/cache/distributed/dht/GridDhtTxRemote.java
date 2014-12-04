@@ -34,7 +34,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     private UUID nearNodeId;
 
     /** Remote future ID. */
-    private GridUuid rmtFutId;
+    private IgniteUuid rmtFutId;
 
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
@@ -71,7 +71,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      */
     public GridDhtTxRemote(
         UUID nearNodeId,
-        GridUuid rmtFutId,
+        IgniteUuid rmtFutId,
         UUID nodeId,
         long rmtThreadId,
         long topVer,
@@ -128,7 +128,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      */
     public GridDhtTxRemote(
         UUID nearNodeId,
-        GridUuid rmtFutId,
+        IgniteUuid rmtFutId,
         UUID nodeId,
         GridCacheVersion nearXidVer,
         long rmtThreadId,
@@ -206,7 +206,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     /**
      * @return Remote future ID.
      */
-    GridUuid remoteFutureId() {
+    IgniteUuid remoteFutureId() {
         return rmtFutId;
     }
 

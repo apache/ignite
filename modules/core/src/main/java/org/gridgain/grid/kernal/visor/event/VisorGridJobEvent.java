@@ -30,10 +30,10 @@ public class VisorGridJobEvent extends VisorGridEvent {
     private final String taskClassName;
 
     /** Task session ID of the task that triggered the event. */
-    private final GridUuid taskSessionId;
+    private final IgniteUuid taskSessionId;
 
     /** Job ID. */
-    private final GridUuid jobId;
+    private final IgniteUuid jobId;
 
     /**
      * Create event with given parameters.
@@ -52,7 +52,7 @@ public class VisorGridJobEvent extends VisorGridEvent {
      */
     public VisorGridJobEvent(
         int typeId,
-        GridUuid id,
+        IgniteUuid id,
         String name,
         UUID nid,
         long timestamp,
@@ -60,8 +60,8 @@ public class VisorGridJobEvent extends VisorGridEvent {
         String shortDisplay,
         String taskName,
         String taskClassName,
-        GridUuid taskSessionId,
-        GridUuid jobId
+        IgniteUuid taskSessionId,
+        IgniteUuid jobId
     ) {
         super(typeId, id, name, nid, timestamp, message, shortDisplay);
 
@@ -88,14 +88,14 @@ public class VisorGridJobEvent extends VisorGridEvent {
     /**
      * @return Task session ID of the task that triggered the event.
      */
-    public GridUuid taskSessionId() {
+    public IgniteUuid taskSessionId() {
         return taskSessionId;
     }
 
     /**
      * @return Job ID.
      */
-    public GridUuid jobId() {
+    public IgniteUuid jobId() {
         return jobId;
     }
 

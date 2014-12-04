@@ -1080,7 +1080,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Gets 8-character substring of {@link GridUuid} (for terse logging).
+     * Gets 8-character substring of {@link org.gridgain.grid.IgniteUuid} (for terse logging).
      * The ID8 will be constructed as follows:
      * <ul>
      * <li>Take first 4 digits for global ID, i.e. {@code GridUuid.globalId()}.</li>
@@ -1090,7 +1090,7 @@ public abstract class GridUtils {
      * @param id Input ID.
      * @return 8-character representation of {@code GridUuid}.
      */
-    public static String id8(GridUuid id) {
+    public static String id8(IgniteUuid id) {
         String s = id.toString();
 
         return s.substring(0, 4) + s.substring(s.length() - 4);
@@ -4165,13 +4165,13 @@ public abstract class GridUtils {
      * @param col Grid UUIDs to write.
      * @throws IOException If write failed.
      */
-    public static void writeGridUuids(DataOutput out, @Nullable Collection<GridUuid> col) throws IOException {
+    public static void writeGridUuids(DataOutput out, @Nullable Collection<IgniteUuid> col) throws IOException {
         if (col != null) {
             out.writeBoolean(true);
 
             out.writeInt(col.size());
 
-            for (GridUuid id : col)
+            for (IgniteUuid id : col)
                 writeGridUuid(out, id);
         }
         else
@@ -4186,8 +4186,8 @@ public abstract class GridUtils {
      * @return Read Grid UUIDs.
      * @throws IOException If read failed.
      */
-    @Nullable public static List<GridUuid> readGridUuids(DataInput in) throws IOException {
-        List<GridUuid> col = null;
+    @Nullable public static List<IgniteUuid> readGridUuids(DataInput in) throws IOException {
+        List<IgniteUuid> col = null;
 
         // Check null flag.
         if (in.readBoolean()) {
@@ -4241,14 +4241,14 @@ public abstract class GridUtils {
     }
 
     /**
-     * Writes {@link GridUuid} to output stream. This method is meant to be used by
+     * Writes {@link org.gridgain.grid.IgniteUuid} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param out Output stream.
      * @param uid UUID to write.
      * @throws IOException If write failed.
      */
-    public static void writeGridUuid(DataOutput out, GridUuid uid) throws IOException {
+    public static void writeGridUuid(DataOutput out, IgniteUuid uid) throws IOException {
         // Write null flag.
         out.writeBoolean(uid == null);
 
@@ -4261,14 +4261,14 @@ public abstract class GridUtils {
     }
 
     /**
-     * Reads {@link GridUuid} from input stream. This method is meant to be used by
+     * Reads {@link org.gridgain.grid.IgniteUuid} from input stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param in Input stream.
      * @return Read UUID.
      * @throws IOException If read failed.
      */
-    @Nullable public static GridUuid readGridUuid(DataInput in) throws IOException {
+    @Nullable public static IgniteUuid readGridUuid(DataInput in) throws IOException {
         // If UUID is not null.
         if (!in.readBoolean()) {
             long most = in.readLong();
@@ -4278,7 +4278,7 @@ public abstract class GridUtils {
 
             long locId = in.readLong();
 
-            return new GridUuid(globalId, locId);
+            return new IgniteUuid(globalId, locId);
         }
 
         return null;
@@ -4291,7 +4291,7 @@ public abstract class GridUtils {
      * @param out Output array to write to.
      * @param off Offset from which to write.
      */
-    public static void gridUuidToBytes(GridUuid uuid, byte[] out, int off) {
+    public static void gridUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
         assert uuid != null;
 
         U.longToBytes(uuid.globalId().getMostSignificantBits(), out, off);
@@ -4306,12 +4306,12 @@ public abstract class GridUtils {
      * @param off Offset from which start reading.
      * @return GridUuid instance.
      */
-    public static GridUuid bytesToGridUuid(byte[] in, int off) {
+    public static IgniteUuid bytesToGridUuid(byte[] in, int off) {
         long most = U.bytesToLong(in, off);
         long least = U.bytesToLong(in, off + 8);
         long locId = U.bytesToLong(in, off + 16);
 
-        return new GridUuid(GridUuidCache.onGridUuidRead(new UUID(most, least)), locId);
+        return new IgniteUuid(GridUuidCache.onGridUuidRead(new UUID(most, least)), locId);
     }
 
     /**
@@ -8644,7 +8644,7 @@ public abstract class GridUtils {
      * @param uid UUID.
      * @return Offset.
      */
-    public static long writeGridUuid(byte[] arr, long off, @Nullable GridUuid uid) {
+    public static long writeGridUuid(byte[] arr, long off, @Nullable IgniteUuid uid) {
         UNSAFE.putBoolean(arr, off++, uid != null);
 
         if (uid != null) {
@@ -8669,7 +8669,7 @@ public abstract class GridUtils {
      * @param off Offset.
      * @return UUID.
      */
-    @Nullable public static GridUuid readGridUuid(byte[] arr, long off) {
+    @Nullable public static IgniteUuid readGridUuid(byte[] arr, long off) {
         if (UNSAFE.getBoolean(arr, off++)) {
             long most = UNSAFE.getLong(arr, off);
 
@@ -8683,7 +8683,7 @@ public abstract class GridUtils {
 
             long locId = UNSAFE.getLong(arr, off);
 
-            return new GridUuid(globalId, locId);
+            return new IgniteUuid(globalId, locId);
         }
 
         return null;
@@ -8693,7 +8693,7 @@ public abstract class GridUtils {
      * @param ptr Offheap address.
      * @return UUID.
      */
-    @Nullable public static GridUuid readGridUuid(long ptr) {
+    @Nullable public static IgniteUuid readGridUuid(long ptr) {
         if (UNSAFE.getBoolean(null, ptr++)) {
             long most = UNSAFE.getLong(ptr);
 
@@ -8707,7 +8707,7 @@ public abstract class GridUtils {
 
             long locId = UNSAFE.getLong(ptr);
 
-            return new GridUuid(globalId, locId);
+            return new IgniteUuid(globalId, locId);
         }
 
         return null;

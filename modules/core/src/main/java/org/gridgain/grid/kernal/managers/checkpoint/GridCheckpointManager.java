@@ -46,10 +46,10 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
     private final GridMessageListener lsnr = new CheckpointRequestListener();
 
     /** */
-    private final ConcurrentMap<GridUuid, CheckpointSet> keyMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<IgniteUuid, CheckpointSet> keyMap = new ConcurrentHashMap8<>();
 
     /** */
-    private final Collection<GridUuid> closedSess = new GridBoundedConcurrentLinkedHashSet<>(
+    private final Collection<IgniteUuid> closedSess = new GridBoundedConcurrentLinkedHashSet<>(
         MAX_CLOSED_SESS, MAX_CLOSED_SESS, 0.75f, 256, PER_SEGMENT_Q);
 
     /** Grid marshaller. */
@@ -104,7 +104,7 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
     /**
      * @return Session IDs.
      */
-    public Collection<GridUuid> sessionIds() {
+    public Collection<IgniteUuid> sessionIds() {
         return new ArrayList<>(keyMap.keySet());
     }
 
@@ -400,7 +400,7 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
             if (log.isDebugEnabled())
                 log.debug("Received checkpoint request: " + req);
 
-            GridUuid sesId = req.getSessionId();
+            IgniteUuid sesId = req.getSessionId();
 
             if (closedSess.contains(sesId)) {
                 getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());

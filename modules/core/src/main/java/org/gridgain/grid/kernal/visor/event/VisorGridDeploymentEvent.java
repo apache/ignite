@@ -40,7 +40,7 @@ public class VisorGridDeploymentEvent extends VisorGridEvent {
      */
     public VisorGridDeploymentEvent(
         int typeId,
-        GridUuid id,
+        IgniteUuid id,
         String name,
         UUID nid,
         long timestamp,

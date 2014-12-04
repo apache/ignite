@@ -36,7 +36,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Future ID. */
-    private GridUuid futId = GridUuid.randomUuid();
+    private IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Cache. */
     @GridToStringExclude
@@ -85,7 +85,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 

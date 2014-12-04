@@ -112,7 +112,7 @@ public class GridTestCollisionTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getId() {
+    @Override public IgniteUuid getId() {
         assert false : "Not implemented";
 
         return null;
@@ -143,7 +143,7 @@ public class GridTestCollisionTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(GridUuid jobId) {
+    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) {
         assert false : "Not implemented";
 
         return null;

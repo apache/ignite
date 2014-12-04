@@ -332,7 +332,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Map<GridUuid, GridComputeTaskFuture<R>> activeTaskFutures() {
+    @Override public <R> Map<IgniteUuid, GridComputeTaskFuture<R>> activeTaskFutures() {
         guard();
 
         try {

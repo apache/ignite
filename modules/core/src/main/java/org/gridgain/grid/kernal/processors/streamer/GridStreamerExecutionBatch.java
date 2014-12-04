@@ -31,13 +31,13 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
     private static Object GG_CLASS_ID;
 
     /** Execution ID (ID of root future). */
-    private GridUuid execId;
+    private IgniteUuid execId;
 
     /** Execution start timestamp. */
     private long execStartTs;
 
     /** Originating future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Nodes participated in this execution. */
     @GridToStringInclude
@@ -70,9 +70,9 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
      * @param evts Events to process.
      */
     public GridStreamerExecutionBatch(
-        GridUuid execId,
+        IgniteUuid execId,
         long execStartTs,
-        GridUuid futId,
+        IgniteUuid futId,
         Collection<UUID> execNodeIds,
         String stageName,
         Collection<Object> evts
@@ -106,7 +106,7 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
     /**
      * @return Execution ID.
      */
-    public GridUuid executionId() {
+    public IgniteUuid executionId() {
         return execId;
     }
 
@@ -120,7 +120,7 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
     /**
      * @return Batch future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 

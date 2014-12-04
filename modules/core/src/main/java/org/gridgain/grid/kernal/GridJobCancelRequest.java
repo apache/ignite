@@ -25,10 +25,10 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
-    private GridUuid jobId;
+    private IgniteUuid jobId;
 
     /** */
     private boolean sys;
@@ -44,7 +44,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * @param sesId Task session ID.
      */
-    public GridJobCancelRequest(GridUuid sesId) {
+    public GridJobCancelRequest(IgniteUuid sesId) {
         assert sesId != null;
 
         this.sesId = sesId;
@@ -54,7 +54,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
      * @param sesId Task session ID.
      * @param jobId Job ID.
      */
-    public GridJobCancelRequest(@Nullable GridUuid sesId, @Nullable GridUuid jobId) {
+    public GridJobCancelRequest(@Nullable IgniteUuid sesId, @Nullable IgniteUuid jobId) {
         assert sesId != null || jobId != null;
 
         this.sesId = sesId;
@@ -66,7 +66,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
      * @param jobId Job ID.
      * @param sys System flag.
      */
-    public GridJobCancelRequest(@Nullable GridUuid sesId, @Nullable GridUuid jobId, boolean sys) {
+    public GridJobCancelRequest(@Nullable IgniteUuid sesId, @Nullable IgniteUuid jobId, boolean sys) {
         assert sesId != null || jobId != null;
 
         this.sesId = sesId;
@@ -79,7 +79,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
      *
      * @return Execution ID of task to be cancelled.
      */
-    @Nullable public GridUuid sessionId() {
+    @Nullable public IgniteUuid sessionId() {
         return sesId;
     }
 
@@ -89,7 +89,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
      *
      * @return Execution ID of job to be cancelled.
      */
-    @Nullable public GridUuid jobId() {
+    @Nullable public IgniteUuid jobId() {
         return jobId;
     }
 
@@ -163,7 +163,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                GridUuid jobId0 = commState.getGridUuid();
+                IgniteUuid jobId0 = commState.getGridUuid();
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -173,7 +173,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                GridUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid();
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

@@ -18,7 +18,7 @@ import java.io.*;
  */
 public class GridGgfsSecondaryOutputStreamDescriptor {
     /** Parent ID in the primary file system. */
-    private final GridUuid parentId;
+    private final IgniteUuid parentId;
 
     /** File info in the primary file system. */
     private final GridGgfsFileInfo info;
@@ -33,7 +33,7 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param out Output stream to the secondary file system.
      */
-    GridGgfsSecondaryOutputStreamDescriptor(GridUuid parentId, GridGgfsFileInfo info, OutputStream out) {
+    GridGgfsSecondaryOutputStreamDescriptor(IgniteUuid parentId, GridGgfsFileInfo info, OutputStream out) {
         assert parentId != null;
         assert info != null;
         assert out != null;
@@ -46,7 +46,7 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
     /**
      * @return Parent ID in the primary file system.
      */
-    GridUuid parentId() {
+    IgniteUuid parentId() {
         return parentId;
     }
 

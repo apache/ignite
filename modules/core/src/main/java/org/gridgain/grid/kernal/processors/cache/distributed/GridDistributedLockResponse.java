@@ -30,7 +30,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Error. */
     @GridDirectTransient
@@ -60,7 +60,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param futId Future ID.
      * @param cnt Key count.
      */
-    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, int cnt) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, int cnt) {
         super(lockVer, cnt);
 
         assert futId != null;
@@ -77,7 +77,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param futId Future ID.
      * @param err Error.
      */
-    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, Throwable err) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, Throwable err) {
         super(lockVer, 0);
 
         assert futId != null;
@@ -93,7 +93,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param cnt Count.
      * @param err Error.
      */
-    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, int cnt, Throwable err) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, int cnt, Throwable err) {
         super(lockVer, cnt);
 
         assert futId != null;
@@ -110,7 +110,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      *
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
@@ -357,7 +357,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                 commState.idx++;
 
             case 9:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;

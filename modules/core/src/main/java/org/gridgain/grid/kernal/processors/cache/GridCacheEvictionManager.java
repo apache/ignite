@@ -654,7 +654,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             cache.removeEntry(entry);
 
             if (recordable)
-                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (GridUuid)null, null,
+                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
                     EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null);
 
             if (log.isDebugEnabled())
@@ -948,7 +948,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         notifyPolicy(entry);
 
                     if (recordable)
-                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (GridUuid)null, null,
+                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
                             EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null);
                 }
             }

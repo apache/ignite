@@ -63,7 +63,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private boolean forcePrimary;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Version. */
     private GridCacheVersion ver;
@@ -134,7 +134,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.taskName = taskName;
         this.deserializePortable = deserializePortable;
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
 
@@ -170,7 +170,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
@@ -617,7 +617,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
         private ClusterNode node;
@@ -657,7 +657,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /**
          * @return Future ID.
          */
-        GridUuid futureId() {
+        IgniteUuid futureId() {
             return futId;
         }
 

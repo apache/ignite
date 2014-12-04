@@ -331,7 +331,7 @@ class GridDeploymentCommunication {
      * @throws GridException Thrown if there is no connection with remote node.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
-    GridDeploymentResponse sendResourceRequest(final String rsrcName, GridUuid clsLdrId,
+    GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
         final ClusterNode dstNode, long threshold) throws GridException {
         assert rsrcName != null;
         assert dstNode != null;
@@ -355,7 +355,7 @@ class GridDeploymentCommunication {
             return fake;
         }
 
-        Object resTopic = TOPIC_CLASSLOAD.topic(GridUuid.fromUuid(ctx.localNodeId()));
+        Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
         GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName, false);
 

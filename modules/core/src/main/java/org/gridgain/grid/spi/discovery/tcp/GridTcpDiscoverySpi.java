@@ -1893,7 +1893,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @param discardMsgId Discarded message ID.
      */
     private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg, UUID destNodeId,
-        @Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardMsgId) {
+        @Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
         assert destNodeId != null;
 
         if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
@@ -2402,7 +2402,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private final Queue<GridTcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
 
         /** Discarded message ID. */
-        private GridUuid discardId;
+        private IgniteUuid discardId;
 
         /**
          * Adds pending message and shrinks queue if it exceeds limit
@@ -2431,7 +2431,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          * @param lastMsgId Last message ID.
          * @return Collection of messages.
          */
-        @Nullable Collection<GridTcpDiscoveryAbstractMessage> messages(GridUuid lastMsgId) {
+        @Nullable Collection<GridTcpDiscoveryAbstractMessage> messages(IgniteUuid lastMsgId) {
             assert lastMsgId != null;
 
             Collection<GridTcpDiscoveryAbstractMessage> copy = new ArrayList<>(msgs.size());
@@ -2456,7 +2456,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          * @param msgs Message.
          * @param discardId Discarded message ID.
          */
-        void reset(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardId) {
+        void reset(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardId) {
             this.msgs.clear();
 
             if (msgs != null)
@@ -2479,7 +2479,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          *
          * @param id Discarded message ID.
          */
-        void discard(GridUuid id) {
+        void discard(IgniteUuid id) {
             discardId = id;
         }
     }
@@ -4392,7 +4392,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         private void processDiscardMessage(GridTcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
-            GridUuid msgId = msg.msgId();
+            IgniteUuid msgId = msg.msgId();
 
             assert msgId != null;
 

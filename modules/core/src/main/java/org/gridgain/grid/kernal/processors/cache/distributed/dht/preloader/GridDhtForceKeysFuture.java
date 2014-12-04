@@ -67,7 +67,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private long topVer;
 
     /** Future ID. */
-    private GridUuid futId = GridUuid.randomUuid();
+    private IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Preloader. */
     private GridDhtPreloader<K, V> preloader;
@@ -110,7 +110,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
@@ -364,7 +364,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         private static final long serialVersionUID = 0L;
 
         /** Mini-future ID. */
-        private GridUuid miniId = GridUuid.randomUuid();
+        private IgniteUuid miniId = IgniteUuid.randomUuid();
 
         /** Node. */
         private ClusterNode node;
@@ -410,7 +410,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         /**
          * @return Mini-future ID.
          */
-        GridUuid miniId() {
+        IgniteUuid miniId() {
             return miniId;
         }
 
@@ -503,7 +503,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         )) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                    (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null);
                         }
                     }

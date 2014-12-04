@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 @SuppressWarnings({"CustomClassloader"})
 class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInfo {
     /** Class loader ID. */
-    private final GridUuid id;
+    private final IgniteUuid id;
 
     /** {@code True} for single node deployment. */
     private final boolean singleNode;
@@ -52,7 +52,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
     /** Node ID -> Loader ID. */
     @GridToStringInclude
-    private Map<UUID, GridUuid> nodeLdrMap;
+    private Map<UUID, IgniteUuid> nodeLdrMap;
 
     /** */
     @GridToStringExclude
@@ -111,13 +111,13 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      *      of a new class loader.
      */
     GridDeploymentClassLoader(
-        GridUuid id,
+        IgniteUuid id,
         String usrVer,
         GridDeploymentMode depMode,
         boolean singleNode,
         GridKernalContext ctx,
         ClassLoader parent,
-        GridUuid clsLdrId,
+        IgniteUuid clsLdrId,
         UUID nodeId,
         GridDeploymentCommunication comm,
         long p2pTimeout,
@@ -151,7 +151,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         nodeList.add(nodeId);
 
-        Map<UUID, GridUuid> map = U.newHashMap(1);
+        Map<UUID, IgniteUuid> map = U.newHashMap(1);
 
         map.put(nodeId, clsLdrId);
 
@@ -191,13 +191,13 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      *      of a new class loader.
      */
     GridDeploymentClassLoader(
-        GridUuid id,
+        IgniteUuid id,
         String usrVer,
         GridDeploymentMode depMode,
         boolean singleNode,
         GridKernalContext ctx,
         ClassLoader parent,
-        Map<UUID, GridUuid> participants,
+        Map<UUID, IgniteUuid> participants,
         GridDeploymentCommunication comm,
         long p2pTimeout,
         GridLogger log,
@@ -238,7 +238,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid classLoaderId() {
+    @Override public IgniteUuid classLoaderId() {
         return id;
     }
 
@@ -263,7 +263,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /** {@inheritDoc} */
-    @Override public Map<UUID, GridUuid> participants() {
+    @Override public Map<UUID, IgniteUuid> participants() {
         synchronized (mux) {
             return new HashMap<>(nodeLdrMap);
         }
@@ -277,7 +277,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param nodeId Participating node ID.
      * @param ldrId Participating class loader id.
      */
-    void register(UUID nodeId, GridUuid ldrId) {
+    void register(UUID nodeId, IgniteUuid ldrId) {
         assert nodeId != null;
         assert ldrId != null;
         assert nodeId.equals(ldrId.globalId());
@@ -310,7 +310,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param nodeId Participating node ID.
      * @return Removed class loader ID.
      */
-    @Nullable GridUuid unregister(UUID nodeId) {
+    @Nullable
+    IgniteUuid unregister(UUID nodeId) {
         assert nodeId != null;
 
         synchronized (mux) {
@@ -332,11 +333,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     /**
      * @return Registered class loader IDs.
      */
-    Collection<GridUuid> registeredClassLoaderIds() {
-        Collection<GridUuid> ldrIds = new LinkedList<>();
+    Collection<IgniteUuid> registeredClassLoaderIds() {
+        Collection<IgniteUuid> ldrIds = new LinkedList<>();
 
         synchronized (mux) {
-            for (GridUuid ldrId : nodeLdrMap.values())
+            for (IgniteUuid ldrId : nodeLdrMap.values())
                 ldrIds.add(ldrId);
         }
 
@@ -347,7 +348,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param nodeId Node ID.
      * @return Class loader ID for node ID.
      */
-    GridUuid registeredClassLoaderId(UUID nodeId) {
+    IgniteUuid registeredClassLoaderId(UUID nodeId) {
         synchronized (mux) {
             return nodeLdrMap.get(nodeId);
         }
@@ -360,11 +361,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param ldrId Class loader ID.
      * @return {@code True} if node is participating in deployment.
      */
-    boolean hasRegisteredNode(UUID nodeId, GridUuid ldrId) {
+    boolean hasRegisteredNode(UUID nodeId, IgniteUuid ldrId) {
         assert nodeId != null;
         assert ldrId != null;
 
-        GridUuid ldrId0;
+        IgniteUuid ldrId0;
 
         synchronized (mux) {
             ldrId0 = nodeLdrMap.get(nodeId);
@@ -546,7 +547,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         long endTime = computeEndTime(p2pTimeout);
 
         Collection<UUID> nodeListCp;
-        Map<UUID, GridUuid> nodeLdrMapCp;
+        Map<UUID, IgniteUuid> nodeLdrMapCp;
 
         synchronized (mux) {
             // Skip requests for the previously missed classes.
@@ -567,7 +568,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 // Skip local node as it is already used as parent class loader.
                 continue;
 
-            GridUuid ldrId = nodeLdrMapCp.get(nodeId);
+            IgniteUuid ldrId = nodeLdrMapCp.get(nodeId);
 
             ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -689,7 +690,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         long endTime = computeEndTime(p2pTimeout);
 
         Collection<UUID> nodeListCp;
-        Map<UUID, GridUuid> nodeLdrMapCp;
+        Map<UUID, IgniteUuid> nodeLdrMapCp;
 
         synchronized (mux) {
             // Skip requests for the previously missed classes.
@@ -707,7 +708,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 // Skip local node as it is already used as parent class loader.
                 continue;
 
-            GridUuid ldrId = nodeLdrMapCp.get(nodeId);
+            IgniteUuid ldrId = nodeLdrMapCp.get(nodeId);
 
             ClusterNode node = ctx.discovery().node(nodeId);
 

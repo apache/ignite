@@ -47,11 +47,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private final ConcurrentLinkedQueue<CA> undeploys = new ConcurrentLinkedQueue<>();
 
     /** Per-thread deployment context. */
-    private ConcurrentMap<GridUuid, CachedDeploymentInfo<K, V>> deps =
+    private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps =
         new ConcurrentHashMap8<>();
 
     /** Collection of all known participants (Node ID -> Loader ID). */
-    private Map<UUID, GridUuid> allParticipants = new ConcurrentHashMap8<>();
+    private Map<UUID, IgniteUuid> allParticipants = new ConcurrentHashMap8<>();
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -94,7 +94,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     if (log.isDebugEnabled())
                         log.debug("Processing node departure: " + id);
 
-                    for (Map.Entry<GridUuid, CachedDeploymentInfo<K, V>> entry : deps.entrySet()) {
+                    for (Map.Entry<IgniteUuid, CachedDeploymentInfo<K, V>> entry : deps.entrySet()) {
                         CachedDeploymentInfo<K, V> d = entry.getValue();
 
                         if (log.isDebugEnabled())
@@ -133,7 +133,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * Gets distributed class loader. Note that
-     * {@link #p2pContext(UUID, GridUuid, String, GridDeploymentMode, Map, boolean)} must be
+     * {@link #p2pContext(UUID, org.gridgain.grid.IgniteUuid, String, GridDeploymentMode, Map, boolean)} must be
      * called from the same thread prior to using this class loader, or the
      * loading may happen for the wrong node or context.
      *
@@ -314,8 +314,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param participants Node participants.
      * @param locDepOwner {@code True} if local deployment owner.
      */
-    public void p2pContext(UUID sndId, GridUuid ldrId, String userVer, GridDeploymentMode mode,
-        Map<UUID, GridUuid> participants, boolean locDepOwner) {
+    public void p2pContext(UUID sndId, IgniteUuid ldrId, String userVer, GridDeploymentMode mode,
+        Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
         assert depEnabled;
 
         if (mode == PRIVATE || mode == ISOLATED) {
@@ -386,7 +386,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             break;
         }
 
-        Map<UUID, GridUuid> added = null;
+        Map<UUID, IgniteUuid> added = null;
 
         if (locDepOwner)
             added = addGlobalParticipants(sndId, ldrId, participants, locDepOwner);
@@ -425,7 +425,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param info Info to add.
      */
     public void addDeploymentContext(GridDeploymentInfo info) {
-        GridUuid ldrId = info.classLoaderId();
+        IgniteUuid ldrId = info.classLoaderId();
 
         while (true) {
             CachedDeploymentInfo<K, V> depInfo = deps.get(ldrId);
@@ -442,7 +442,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     break;
             }
 
-            Map<UUID, GridUuid> participants = info.participants();
+            Map<UUID, IgniteUuid> participants = info.participants();
 
             if (participants != null) {
                 if (!depInfo.addParticipants(participants, cctx)) {
@@ -463,14 +463,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param locDepOwner {@code True} if local deployment owner.
      * @return Added participants.
      */
-    @Nullable private Map<UUID, GridUuid> addGlobalParticipants(UUID sndNodeId, GridUuid sndLdrId,
-        Map<UUID, GridUuid> participants, boolean locDepOwner) {
-        Map<UUID, GridUuid> added = null;
+    @Nullable private Map<UUID, IgniteUuid> addGlobalParticipants(UUID sndNodeId, IgniteUuid sndLdrId,
+        Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
+        Map<UUID, IgniteUuid> added = null;
 
         if (participants != null) {
-            for (Map.Entry<UUID, GridUuid> entry : participants.entrySet()) {
+            for (Map.Entry<UUID, IgniteUuid> entry : participants.entrySet()) {
                 UUID nodeId = entry.getKey();
-                GridUuid ldrVer = entry.getValue();
+                IgniteUuid ldrVer = entry.getValue();
 
                 if (!ldrVer.equals(allParticipants.get(nodeId))) {
                     allParticipants.put(nodeId, ldrVer);
@@ -666,7 +666,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 continue;
 
             // Participants map.
-            Map<UUID, GridUuid> participants = d.participants();
+            Map<UUID, IgniteUuid> participants = d.participants();
 
             if (participants != null) {
                 for (UUID id : participants.keySet()) {
@@ -696,7 +696,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @return ID for given class loader or {@code null} if given loader is not
      *      grid deployment class loader.
      */
-    @Nullable public GridUuid getClassLoaderId(@Nullable ClassLoader ldr) {
+    @Nullable public IgniteUuid getClassLoaderId(@Nullable ClassLoader ldr) {
         if (ldr == null)
             return null;
 
@@ -707,7 +707,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param ldrId Class loader ID.
      * @return Class loader ID or {@code null} if loader not found.
      */
-    @Nullable public ClassLoader getClassLoader(GridUuid ldrId) {
+    @Nullable public ClassLoader getClassLoader(IgniteUuid ldrId) {
         assert ldrId != null;
 
         GridDeployment dep = cctx.gridDeploy().getDeployment(ldrId);
@@ -761,10 +761,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
             for (CachedDeploymentInfo<K, V> t : deps.values()) {
                 UUID sndId = t.senderId();
-                GridUuid ldrId = t.loaderId();
+                IgniteUuid ldrId = t.loaderId();
                 String userVer = t.userVersion();
                 GridDeploymentMode mode = t.mode();
-                Map<UUID, GridUuid> participants = t.participants();
+                Map<UUID, IgniteUuid> participants = t.participants();
 
                 GridDeployment d = cctx.gridDeploy().getGlobalDeployment(
                     mode,
@@ -815,7 +815,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         private final UUID sndId;
 
         /** */
-        private final GridUuid ldrId;
+        private final IgniteUuid ldrId;
 
         /** */
         private final String userVer;
@@ -825,7 +825,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         /** */
         @GridToStringInclude
-        private Map<UUID, GridUuid> participants;
+        private Map<UUID, IgniteUuid> participants;
 
         /** Read write lock for adding and removing participants. */
         private final ReadWriteLock participantsLock = new ReentrantReadWriteLock();
@@ -837,8 +837,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * @param depMode Deployment mode.
          * @param participants Participants.
          */
-        private CachedDeploymentInfo(UUID sndId, GridUuid ldrId, String userVer, GridDeploymentMode depMode,
-            Map<UUID, GridUuid> participants) {
+        private CachedDeploymentInfo(UUID sndId, IgniteUuid ldrId, String userVer, GridDeploymentMode depMode,
+            Map<UUID, IgniteUuid> participants) {
             assert sndId.equals(ldrId.globalId()) || participants != null;
 
             this.sndId = sndId;
@@ -854,14 +854,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * @param cctx Cache context.
          * @return {@code True} if cached info is valid.
          */
-        boolean addParticipants(Map<UUID, GridUuid> newParticipants, GridCacheSharedContext<K, V> cctx) {
+        boolean addParticipants(Map<UUID, IgniteUuid> newParticipants, GridCacheSharedContext<K, V> cctx) {
             participantsLock.readLock().lock();
 
             try {
                 if (participants != null && participants.isEmpty())
                     return false;
 
-                for (Map.Entry<UUID, GridUuid> e : newParticipants.entrySet()) {
+                for (Map.Entry<UUID, IgniteUuid> e : newParticipants.entrySet()) {
                     assert e.getKey().equals(e.getValue().globalId());
 
                     if (cctx.discovery().node(e.getKey()) != null)
@@ -902,7 +902,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         /**
          * @return Participants.
          */
-        Map<UUID, GridUuid> participants() {
+        Map<UUID, IgniteUuid> participants() {
             return participants;
         }
 
@@ -916,7 +916,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         /**
          * @return Class loader ID.
          */
-        GridUuid loaderId() {
+        IgniteUuid loaderId() {
             return ldrId;
         }
 

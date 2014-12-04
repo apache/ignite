@@ -46,7 +46,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     private BitSet invalidateEntries;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Owner mapped version, if any. */
     @GridToStringInclude
@@ -102,8 +102,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         UUID nodeId,
         GridCacheVersion nearXidVer,
         long threadId,
-        GridUuid futId,
-        GridUuid miniId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
         GridCacheVersion lockVer,
         long topVer,
         boolean isInTx,
@@ -276,7 +276,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /**
      * @return Mini ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -440,7 +440,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 commState.idx++;
 
             case 25:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

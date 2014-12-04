@@ -29,7 +29,7 @@ public class VisorGridEventsLost extends VisorGridEvent {
      * @param nid Node where events were lost.
      */
     public VisorGridEventsLost(UUID nid) {
-        super(EVT_VISOR_EVENTS_LOST, GridUuid.randomUuid(), "EVT_VISOR_EVENTS_LOST", nid, U.currentTimeMillis(),
+        super(EVT_VISOR_EVENTS_LOST, IgniteUuid.randomUuid(), "EVT_VISOR_EVENTS_LOST", nid, U.currentTimeMillis(),
             "Some Visor events were lost and Visor may show inconsistent results. " +
             "Configure your grid to disable not important events.",
             "");

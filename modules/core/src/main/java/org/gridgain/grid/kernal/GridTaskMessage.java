@@ -18,5 +18,5 @@ public interface GridTaskMessage {
     /**
      * @return Session ID.
      */
-    public GridUuid getSessionId();
+    public IgniteUuid getSessionId();
 }

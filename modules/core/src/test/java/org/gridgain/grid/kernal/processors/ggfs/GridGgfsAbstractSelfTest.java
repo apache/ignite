@@ -1009,7 +1009,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                 try {
                     os = ggfs.create(FILE, true);
 
-                    GridUuid id = ggfs.context().meta().fileId(FILE);
+                    IgniteUuid id = ggfs.context().meta().fileId(FILE);
 
                     ggfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
 
@@ -1315,7 +1315,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                 GridGgfsOutputStream os = null;
 
                 try {
-                    GridUuid id = ggfs.context().meta().fileId(FILE);
+                    IgniteUuid id = ggfs.context().meta().fileId(FILE);
 
                     os = ggfs.append(FILE, false);
 

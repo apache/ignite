@@ -48,7 +48,7 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
      */
     public VisorGridDiscoveryEvent(
         int typeId,
-        GridUuid id,
+        IgniteUuid id,
         String name,
         UUID nid,
         long timestamp,

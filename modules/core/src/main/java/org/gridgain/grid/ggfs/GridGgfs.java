@@ -152,7 +152,7 @@ public interface GridGgfs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      */
     public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
-        @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
+        @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException;
 
     /**

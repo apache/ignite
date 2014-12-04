@@ -138,7 +138,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         int part,
         K key,
         UUID evtNodeId,
-        @Nullable GridUuid xid,
+        @Nullable IgniteUuid xid,
         @Nullable Object lockId,
         int type,
         @Nullable V newVal,

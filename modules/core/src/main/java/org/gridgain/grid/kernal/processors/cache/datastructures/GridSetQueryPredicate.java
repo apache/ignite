@@ -25,7 +25,7 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid setId;
+    private IgniteUuid setId;
 
     /** */
     private boolean collocated;
@@ -47,7 +47,7 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
      * @param setId Set ID.
      * @param collocated Collocation flag.
      */
-    public GridSetQueryPredicate(GridUuid setId, boolean collocated) {
+    public GridSetQueryPredicate(IgniteUuid setId, boolean collocated) {
         this.setId = setId;
         this.collocated = collocated;
     }
@@ -72,7 +72,7 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
     /**
      * @return Set ID.
      */
-    public GridUuid setId() {
+    public IgniteUuid setId() {
         return setId;
     }
 

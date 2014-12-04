@@ -29,13 +29,13 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     private static final long serialVersionUID = 0L;
 
     /** File system file ID. */
-    private GridUuid fileId;
+    private IgniteUuid fileId;
 
     /** Block ID. */
     private long blockId;
 
     /** Block affinity key. */
-    private GridUuid affKey;
+    private IgniteUuid affKey;
 
     /** Eviction exclude flag. */
     private boolean evictExclude;
@@ -48,7 +48,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
      * @param evictExclude Evict exclude flag.
      * @param blockId Block ID.
      */
-    public GridGgfsBlockKey(GridUuid fileId, @Nullable GridUuid affKey, boolean evictExclude, long blockId) {
+    public GridGgfsBlockKey(IgniteUuid fileId, @Nullable IgniteUuid affKey, boolean evictExclude, long blockId) {
         assert fileId != null;
         assert blockId >= 0;
 
@@ -68,14 +68,14 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     /**
      * @return File ID.
      */
-    public GridUuid getFileId() {
+    public IgniteUuid getFileId() {
         return fileId;
     }
 
     /**
      * @return Block affinity key.
      */
-    public GridUuid affinityKey() {
+    public IgniteUuid affinityKey() {
         return affKey;
     }
 
@@ -219,7 +219,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                GridUuid affKey0 = commState.getGridUuid();
+                IgniteUuid affKey0 = commState.getGridUuid();
 
                 if (affKey0 == GRID_UUID_NOT_READ)
                     return false;
@@ -245,7 +245,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
                 commState.idx++;
 
             case 3:
-                GridUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid();
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

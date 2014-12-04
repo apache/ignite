@@ -69,8 +69,8 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
      * @throws Exception If test failed.
      */
     public void testMultipleTaskSessions() throws Exception {
-        GridComputeTaskSession ses1 = new GridTestTaskSession(GridUuid.randomUuid());
-        GridComputeTaskSession ses2 = new GridTestTaskSession(GridUuid.randomUuid());
+        GridComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
+        GridComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());
 
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 

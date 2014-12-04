@@ -46,7 +46,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
      * @param partCnt Total partitions count.
      * @return Partition index.
      */
-    private int partition(GridGgfsGroupDataBlocksKeyMapper mapper, GridUuid fileId, long blockId, int partCnt) {
+    private int partition(GridGgfsGroupDataBlocksKeyMapper mapper, IgniteUuid fileId, long blockId, int partCnt) {
         return U.safeAbs((Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false, blockId)) % partCnt);
     }
 
@@ -56,7 +56,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
      * @throws Exception If failed.
      */
     public void checkDistribution(int grpSize, int partCnt) throws Exception {
-        GridUuid fileId = GridUuid.randomUuid();
+        IgniteUuid fileId = IgniteUuid.randomUuid();
 
         GridGgfsGroupDataBlocksKeyMapper mapper = new GridGgfsGroupDataBlocksKeyMapper(grpSize);
 
@@ -96,7 +96,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
      */
     @SuppressWarnings("NumericOverflow")
     public void checkIntOverflowDistribution(int partCnt) throws Exception {
-        GridUuid fileId = GridUuid.randomUuid();
+        IgniteUuid fileId = IgniteUuid.randomUuid();
 
         GridGgfsGroupDataBlocksKeyMapper mapper = new GridGgfsGroupDataBlocksKeyMapper(1);
 

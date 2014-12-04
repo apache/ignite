@@ -56,7 +56,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private Collection<? extends K> keys;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Lock version. */
     private GridCacheVersion lockVer;
@@ -149,7 +149,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         entries = new ArrayList<>(keys.size());
 
@@ -196,7 +196,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /**
      * @return Future ID.
      */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
@@ -944,7 +944,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             req.filter(filter, cctx);
 
         if (node.isLocal()) {
-            req.miniId(GridUuid.randomUuid());
+            req.miniId(IgniteUuid.randomUuid());
 
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
@@ -1215,7 +1215,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
         @GridToStringExclude
@@ -1256,7 +1256,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         /**
          * @return Future ID.
          */
-        GridUuid futureId() {
+        IgniteUuid futureId() {
             return futId;
         }
 

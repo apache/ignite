@@ -18,7 +18,7 @@ public interface GridTimeoutObject {
     /**
      * @return ID of the object.
      */
-    public GridUuid timeoutId();
+    public IgniteUuid timeoutId();
 
     /**
      * @return End time.

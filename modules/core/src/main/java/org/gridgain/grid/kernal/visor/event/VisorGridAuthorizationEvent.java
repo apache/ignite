@@ -42,7 +42,7 @@ public class VisorGridAuthorizationEvent extends VisorGridEvent {
      */
     public VisorGridAuthorizationEvent(
         int typeId,
-        GridUuid id,
+        IgniteUuid id,
         String name,
         UUID nid,
         long timestamp,

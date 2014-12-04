@@ -49,7 +49,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private GridFuture<?> metaCacheStartFut;
 
     /** File ID to file info projection. */
-    private GridCacheProjectionEx<GridUuid, GridGgfsFileInfo> id2InfoPrj;
+    private GridCacheProjectionEx<IgniteUuid, GridGgfsFileInfo> id2InfoPrj;
 
     /** Predefined key for sampling mode value. */
     private GridCacheInternal sampling;
@@ -101,7 +101,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         assert metaCache != null;
 
-        id2InfoPrj = (GridCacheProjectionEx<GridUuid, GridGgfsFileInfo>)metaCache.<GridUuid, GridGgfsFileInfo>cache();
+        id2InfoPrj = (GridCacheProjectionEx<IgniteUuid, GridGgfsFileInfo>)metaCache.<IgniteUuid, GridGgfsFileInfo>cache();
 
         log = ggfsCtx.kernalContext().log(GridGgfsMetaManager.class);
     }
@@ -160,7 +160,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File ID for specified path or {@code null} if such file doesn't exist.
      * @throws GridException If failed.
      */
-    @Nullable public GridUuid fileId(GridGgfsPath path) throws GridException {
+    @Nullable public IgniteUuid fileId(GridGgfsPath path) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -183,8 +183,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File ID for specified path or {@code null} if such file doesn't exist.
      * @throws GridException If failed.
      */
-    @Nullable private GridUuid fileId(GridGgfsPath path, boolean skipTx) throws GridException {
-        List<GridUuid> ids = fileIds(path, skipTx);
+    @Nullable private IgniteUuid fileId(GridGgfsPath path, boolean skipTx) throws GridException {
+        List<IgniteUuid> ids = fileIds(path, skipTx);
 
         assert ids != null && !ids.isEmpty() : "Invalid file IDs [path=" + path + ", ids=" + ids + ']';
 
@@ -199,7 +199,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File ID.
      * @throws GridException If failed.
      */
-    @Nullable public GridUuid fileId(GridUuid parentId, String fileName) throws GridException {
+    @Nullable public IgniteUuid fileId(IgniteUuid parentId, String fileName) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 return fileId(parentId, fileName, false);
@@ -222,7 +222,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File ID.
      * @throws GridException If failed.
      */
-    @Nullable private GridUuid fileId(GridUuid parentId, String fileName, boolean skipTx) throws GridException {
+    @Nullable private IgniteUuid fileId(IgniteUuid parentId, String fileName, boolean skipTx) throws GridException {
         GridGgfsListingEntry entry = directoryListing(parentId, skipTx).get(fileName);
 
         if (entry == null) {
@@ -243,7 +243,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Collection of file IDs for components of specified path.
      * @throws GridException If failed.
      */
-    public List<GridUuid> fileIds(GridGgfsPath path) throws GridException {
+    public List<IgniteUuid> fileIds(GridGgfsPath path) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -268,18 +268,18 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Collection of file IDs for components of specified path.
      * @throws GridException If failed.
      */
-    private List<GridUuid> fileIds(GridGgfsPath path, boolean skipTx) throws GridException {
+    private List<IgniteUuid> fileIds(GridGgfsPath path, boolean skipTx) throws GridException {
         assert path != null;
 
         // Path components.
         Collection<String> components = path.components();
 
         // Collection of file IDs for components of specified path.
-        List<GridUuid> ids = new ArrayList<>(components.size() + 1);
+        List<IgniteUuid> ids = new ArrayList<>(components.size() + 1);
 
         ids.add(ROOT_ID); // Always add root ID.
 
-        GridUuid fileId = ROOT_ID;
+        IgniteUuid fileId = ROOT_ID;
 
         for (String s : components) {
             assert !s.isEmpty();
@@ -300,7 +300,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return {@code True} in case such entry exists.
      * @throws GridException IF failed.
      */
-    public boolean exists(GridUuid fileId) throws GridException{
+    public boolean exists(IgniteUuid fileId) throws GridException{
         if (busyLock.enterBusy()) {
             try {
                 assert fileId != null;
@@ -324,7 +324,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File info.
      * @throws GridException If failed.
      */
-    @Nullable public GridGgfsFileInfo info(@Nullable GridUuid fileId) throws GridException {
+    @Nullable public GridGgfsFileInfo info(@Nullable IgniteUuid fileId) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 if (fileId == null)
@@ -353,7 +353,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Files details.
      * @throws GridException If failed.
      */
-    public Map<GridUuid, GridGgfsFileInfo> infos(Collection<GridUuid> fileIds) throws GridException {
+    public Map<IgniteUuid, GridGgfsFileInfo> infos(Collection<IgniteUuid> fileIds) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -362,7 +362,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 if (F.isEmpty(fileIds))
                     return Collections.emptyMap();
 
-                Map<GridUuid, GridGgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
+                Map<IgniteUuid, GridGgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
 
                 // Force root ID always exist in cache.
                 if (fileIds.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
@@ -392,7 +392,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
      * @throws GridException If failed.
      */
-    public GridGgfsFileInfo lock(GridUuid fileId) throws GridException {
+    public GridGgfsFileInfo lock(IgniteUuid fileId) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -448,7 +448,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     throw new GridException("Failed to lock file (file is being concurrently written) [fileId=" +
                         info.id() + ", lockId=" + info.lockId() + ']');
 
-                return new GridGgfsFileInfo(info, GridUuid.randomUuid(), info.modificationTime());
+                return new GridGgfsFileInfo(info, IgniteUuid.randomUuid(), info.modificationTime());
             }
             finally {
                 busyLock.leaveBusy();
@@ -471,7 +471,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         if (busyLock.enterBusy()) {
             try {
-                GridUuid lockId = info.lockId();
+                IgniteUuid lockId = info.lockId();
 
                 if (lockId == null)
                     return;
@@ -479,7 +479,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 // Temporary clear interrupted state for unlocking.
                 boolean interrupted = Thread.interrupted();
 
-                GridUuid fileId = info.id();
+                IgniteUuid fileId = info.id();
 
                 GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -529,7 +529,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Locked file details. Resulting map doesn't contain details for not-existent files.
      * @throws GridException If failed.
      */
-    private Map<GridUuid, GridGgfsFileInfo> lockIds(GridUuid... fileIds) throws GridException {
+    private Map<IgniteUuid, GridGgfsFileInfo> lockIds(IgniteUuid... fileIds) throws GridException {
         assert validTxState(true);
         assert fileIds != null && fileIds.length > 0;
 
@@ -537,13 +537,13 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         Arrays.sort(fileIds);
 
         // Wrap array as collection (1) to escape superfluous check in projection and (2) to check assertions.
-        Collection<GridUuid> keys = Arrays.asList(fileIds);
+        Collection<IgniteUuid> keys = Arrays.asList(fileIds);
 
         if (log.isDebugEnabled())
             log.debug("Locking file ids: " + keys);
 
         // Lock files and get their infos.
-        Map<GridUuid, GridGgfsFileInfo> map = id2InfoPrj.getAll(keys);
+        Map<IgniteUuid, GridGgfsFileInfo> map = id2InfoPrj.getAll(keys);
 
         if (log.isDebugEnabled())
             log.debug("Locked file ids: " + keys);
@@ -570,7 +570,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Directory listing for the specified file.
      * @throws GridException If failed.
      */
-    public Map<String, GridGgfsListingEntry> directoryListing(GridUuid fileId) throws GridException {
+    public Map<String, GridGgfsListingEntry> directoryListing(IgniteUuid fileId) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 return directoryListing(fileId, false);
@@ -590,7 +590,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return First qualified file info.
      * @throws GridException If failed to get file for fragmentizer.
      */
-    public GridGgfsFileInfo fileForFragmentizer(Collection<GridUuid> exclude) throws GridException {
+    public GridGgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 return fileForFragmentizer0(ROOT_ID, exclude);
@@ -611,7 +611,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return First qualified file info.
      * @throws GridException If failed to get file for fragmentizer.
      */
-    private GridGgfsFileInfo fileForFragmentizer0(GridUuid parentId, Collection<GridUuid> exclude)
+    private GridGgfsFileInfo fileForFragmentizer0(IgniteUuid parentId, Collection<IgniteUuid> exclude)
         throws GridException {
         GridGgfsFileInfo info = info(parentId);
 
@@ -653,7 +653,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Directory listing for the specified file.*
      * @throws GridException If failed.
      */
-    private Map<String, GridGgfsListingEntry> directoryListing(GridUuid fileId, boolean skipTx) throws GridException {
+    private Map<String, GridGgfsListingEntry> directoryListing(IgniteUuid fileId, boolean skipTx) throws GridException {
         assert fileId != null;
 
         GridGgfsFileInfo info = skipTx ? id2InfoPrj.getAllOutTx(Collections.singletonList(fileId)).get(fileId) :
@@ -671,7 +671,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
-    public GridUuid putIfAbsent(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
+    public IgniteUuid putIfAbsent(IgniteUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -680,7 +680,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert fileName != null;
                 assert newFileInfo != null;
 
-                GridUuid res = null;
+                IgniteUuid res = null;
 
                 GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -713,7 +713,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
-    private GridUuid putIfAbsentNonTx(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
+    private IgniteUuid putIfAbsentNonTx(IgniteUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
         throws GridException {
         if (log.isDebugEnabled())
             log.debug("Locking parent id [parentId=" + parentId + ", fileName=" + fileName + ", newFileInfo=" +
@@ -743,7 +743,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         if (entry != null)
             return entry.fileId();
 
-        GridUuid fileId = newFileInfo.id();
+        IgniteUuid fileId = newFileInfo.id();
 
         if (!id2InfoPrj.putxIfAbsent(fileId, newFileInfo))
             throw new GridGgfsException("Failed to add file details into cache: " + newFileInfo);
@@ -765,8 +765,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param destParentId New parent directory ID.
      * @throws GridException If failed.
      */
-    public void move(GridUuid fileId, String srcFileName, GridUuid srcParentId, String destFileName,
-        GridUuid destParentId) throws GridException {
+    public void move(IgniteUuid fileId, String srcFileName, IgniteUuid srcParentId, String destFileName,
+        IgniteUuid destParentId) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -802,8 +802,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param destParentId New parent directory ID.
      * @throws GridException If failed.
      */
-    private void moveNonTx(GridUuid fileId, @Nullable String srcFileName, GridUuid srcParentId, String destFileName,
-        GridUuid destParentId) throws GridException {
+    private void moveNonTx(IgniteUuid fileId, @Nullable String srcFileName, IgniteUuid srcParentId, String destFileName,
+        IgniteUuid destParentId) throws GridException {
         assert validTxState(true);
         assert fileId != null;
         assert srcFileName != null;
@@ -820,7 +820,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         }
 
         // Lock file ID and parent IDs for this transaction.
-        Map<GridUuid, GridGgfsFileInfo> infoMap = lockIds(srcParentId, fileId, destParentId);
+        Map<IgniteUuid, GridGgfsFileInfo> infoMap = lockIds(srcParentId, fileId, destParentId);
 
         validTxState(true);
 
@@ -884,7 +884,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return The last actual file info or {@code null} if such file no more exist.
      * @throws GridException If failed.
      */
-    @Nullable public GridGgfsFileInfo removeIfEmpty(GridUuid parentId, String fileName, GridUuid fileId,
+    @Nullable public GridGgfsFileInfo removeIfEmpty(IgniteUuid parentId, String fileName, IgniteUuid fileId,
         GridGgfsPath path, boolean rmvLocked)
         throws GridException {
         if (busyLock.enterBusy()) {
@@ -931,7 +931,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return The last actual file info or {@code null} if such file no more exist.
      * @throws GridException If failed.
      */
-    @Nullable private GridGgfsFileInfo removeIfEmptyNonTx(@Nullable GridUuid parentId, String fileName, GridUuid fileId,
+    @Nullable private GridGgfsFileInfo removeIfEmptyNonTx(@Nullable IgniteUuid parentId, String fileName, IgniteUuid fileId,
         GridGgfsPath path, boolean rmvLocked)
         throws GridException {
         assert validTxState(true);
@@ -1000,7 +1000,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return ID of an entry located directly under the trash directory.
      * @throws GridException If failed.
      */
-    GridUuid softDelete(@Nullable GridUuid parentId, @Nullable String pathName, GridUuid pathId) throws GridException {
+    IgniteUuid softDelete(@Nullable IgniteUuid parentId, @Nullable String pathName, IgniteUuid pathId) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -1013,7 +1013,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     else
                         lockIds(parentId, pathId, TRASH_ID);
 
-                    GridUuid resId = softDeleteNonTx(parentId, pathName, pathId);
+                    IgniteUuid resId = softDeleteNonTx(parentId, pathName, pathId);
 
                     tx.commit();
 
@@ -1043,11 +1043,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return ID of an entry located directly under the trash directory.
      * @throws GridException If failed.
      */
-    @Nullable private GridUuid softDeleteNonTx(@Nullable GridUuid parentId, @Nullable String name, GridUuid id)
+    @Nullable private IgniteUuid softDeleteNonTx(@Nullable IgniteUuid parentId, @Nullable String name, IgniteUuid id)
         throws GridException {
         assert validTxState(true);
 
-        GridUuid resId;
+        IgniteUuid resId;
 
         if (parentId == null) {
             // Handle special case when we deleting root directory.
@@ -1065,7 +1065,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             Map<String, GridGgfsListingEntry> rootListing = rootInfo.listing();
 
             if (!rootListing.isEmpty()) {
-                GridUuid[] lockIds = new GridUuid[rootInfo.listing().size()];
+                IgniteUuid[] lockIds = new IgniteUuid[rootInfo.listing().size()];
 
                 int i = 0;
 
@@ -1118,7 +1118,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Collection of really deleted entries.
      * @throws GridException If failed.
      */
-    Collection<GridUuid> delete(GridUuid parentId, Map<String, GridGgfsListingEntry> listing)
+    Collection<IgniteUuid> delete(IgniteUuid parentId, Map<String, GridGgfsListingEntry> listing)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -1129,10 +1129,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    Collection<GridUuid> res = new HashSet<>();
+                    Collection<IgniteUuid> res = new HashSet<>();
 
                     // Obtain all necessary locks in one hop.
-                    GridUuid[] allIds = new GridUuid[listing.size() + 1];
+                    IgniteUuid[] allIds = new IgniteUuid[listing.size() + 1];
 
                     allIds[0] = parentId;
 
@@ -1141,7 +1141,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     for (GridGgfsListingEntry entry : listing.values())
                         allIds[i++] = entry.fileId();
 
-                    Map<GridUuid, GridGgfsFileInfo> locks = lockIds(allIds);
+                    Map<IgniteUuid, GridGgfsFileInfo> locks = lockIds(allIds);
 
                     GridGgfsFileInfo parentInfo = locks.get(parentId);
 
@@ -1154,7 +1154,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                         // Remove child entries if possible.
                         for (Map.Entry<String, GridGgfsListingEntry> entry : listing.entrySet()) {
-                            GridUuid entryId = entry.getValue().fileId();
+                            IgniteUuid entryId = entry.getValue().fileId();
 
                             GridGgfsFileInfo entryInfo = locks.get(entryId);
 
@@ -1206,7 +1206,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return {@code True} in case the entry really was removed from the cache by this call.
      * @throws GridException If failed.
      */
-    boolean delete(GridUuid parentId, String name, GridUuid id) throws GridException {
+    boolean delete(IgniteUuid parentId, String name, IgniteUuid id) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -1216,7 +1216,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 try {
                     boolean res = false;
 
-                    Map<GridUuid, GridGgfsFileInfo> infos = lockIds(parentId, id);
+                    Map<IgniteUuid, GridGgfsFileInfo> infos = lockIds(parentId, id);
 
                     // Proceed only in case both parent and child exist.
                     if (infos.containsKey(parentId) && infos.containsKey(id)) {
@@ -1257,7 +1257,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Collection of entry IDs to be deleted.
      * @throws GridException If operation failed.
      */
-    public Collection<GridUuid> pendingDeletes() throws GridException {
+    public Collection<IgniteUuid> pendingDeletes() throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 GridGgfsFileInfo trashInfo = id2InfoPrj.get(TRASH_ID);
@@ -1266,8 +1266,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     Map<String, GridGgfsListingEntry> listing = trashInfo.listing();
 
                     if (listing != null && !listing.isEmpty()) {
-                        return F.viewReadOnly(listing.values(), new IgniteClosure<GridGgfsListingEntry, GridUuid>() {
-                            @Override public GridUuid apply(GridGgfsListingEntry e) {
+                        return F.viewReadOnly(listing.values(), new IgniteClosure<GridGgfsListingEntry, IgniteUuid>() {
+                            @Override public IgniteUuid apply(GridGgfsListingEntry e) {
                                 return e.fileId();
                             }
                         });
@@ -1294,7 +1294,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws GridException If operation failed.
      */
-    @Nullable private GridGgfsFileInfo updatePropertiesNonTx(@Nullable GridUuid parentId, GridUuid fileId,
+    @Nullable private GridGgfsFileInfo updatePropertiesNonTx(@Nullable IgniteUuid parentId, IgniteUuid fileId,
         String fileName, Map<String, String> props) throws GridException {
         assert fileId != null;
         assert !F.isEmpty(props) : "Expects not-empty file's properties";
@@ -1313,7 +1313,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 parentInfo = null;
             }
             else {
-                Map<GridUuid, GridGgfsFileInfo> locked = lockIds(parentId, fileId);
+                Map<IgniteUuid, GridGgfsFileInfo> locked = lockIds(parentId, fileId);
 
                 oldInfo = locked.get(fileId);
                 parentInfo = locked.get(parentId);
@@ -1378,7 +1378,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws GridException If operation failed.
      */
-    @Nullable public GridGgfsFileInfo updateProperties(@Nullable GridUuid parentId, GridUuid fileId, String fileName,
+    @Nullable public GridGgfsFileInfo updateProperties(@Nullable IgniteUuid parentId, IgniteUuid fileId, String fileName,
         Map<String, String> props) throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -1415,7 +1415,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param lenDelta Length delta.
      * @param modificationTime Last modification time.
      */
-    public void updateParentListingAsync(GridUuid parentId, GridUuid fileId, String fileName, long lenDelta,
+    public void updateParentListingAsync(IgniteUuid parentId, IgniteUuid fileId, String fileName, long lenDelta,
         long modificationTime) {
         if (busyLock.enterBusy()) {
             try {
@@ -1443,7 +1443,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws GridException If failed.
      */
-    @Nullable public GridGgfsFileInfo updateInfo(GridUuid fileId, IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> c)
+    @Nullable public GridGgfsFileInfo updateInfo(IgniteUuid fileId, IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> c)
         throws GridException {
         assert validTxState(false);
         assert fileId != null;
@@ -1579,7 +1579,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public GridGgfsSecondaryOutputStreamDescriptor createDual(final GridGgfsFileSystem fs, final GridGgfsPath path,
         final boolean simpleCreate, @Nullable final Map<String, String> props, final boolean overwrite, final int bufSize,
-        final short replication, final long blockSize, final GridUuid affKey)
+        final short replication, final long blockSize, final IgniteUuid affKey)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -1647,10 +1647,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                     "the secondary file system because the path points to a directory: " + path);
 
                             GridGgfsFileInfo newInfo = new GridGgfsFileInfo(status.blockSize(), status.length(), affKey,
-                                GridUuid.randomUuid(), ggfsCtx.ggfs().evictExclude(path, false), status.properties());
+                                IgniteUuid.randomUuid(), ggfsCtx.ggfs().evictExclude(path, false), status.properties());
 
                             // Add new file info to the listing optionally removing the previous one.
-                            GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
+                            IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
 
                             if (oldId != null) {
                                 GridGgfsFileInfo oldInfo = info(oldId);
@@ -2285,7 +2285,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     new GridGgfsFileInfo(ggfsCtx.configuration().getBlockSize(), status.length(),
                         ggfsCtx.ggfs().evictExclude(curPath, false), status.properties());
 
-                GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
+                IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 
                 if (oldId != null)
                     curInfo = info(oldId);
@@ -2330,7 +2330,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     private <T> T synchronizeAndExecute(SynchronizationTask<T> task, GridGgfsFileSystem fs, boolean strict,
-        @Nullable Collection<GridUuid> extraLockIds, GridGgfsPath... paths) throws GridException {
+        @Nullable Collection<IgniteUuid> extraLockIds, GridGgfsPath... paths) throws GridException {
         assert task != null;
         assert fs != null;
         assert paths != null && paths.length > 0;
@@ -2345,7 +2345,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         while (!finished) {
             // Obtain existing IDs outside the transaction.
-            List<List<GridUuid>> pathIds = new ArrayList<>(paths.length);
+            List<List<IgniteUuid>> pathIds = new ArrayList<>(paths.length);
 
             for (GridGgfsPath path : paths)
                 pathIds.add(fileIds(path));
@@ -2357,18 +2357,18 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 // Lock the very first existing parents and possibly the leaf as well.
                 Map<GridGgfsPath, GridGgfsPath> pathToParent = new HashMap<>();
 
-                Map<GridGgfsPath, GridUuid> pathToId = new HashMap<>();
+                Map<GridGgfsPath, IgniteUuid> pathToId = new HashMap<>();
 
                 for (int i = 0; i < paths.length; i++) {
                     GridGgfsPath path = paths[i];
 
                     // Determine the very first existing parent
-                    List<GridUuid> ids = pathIds.get(i);
+                    List<IgniteUuid> ids = pathIds.get(i);
 
                     if (ids.size() > 1) {
                         // The path is not root.
                         GridGgfsPath parentPath = path.parent();
-                        GridUuid parentId = ids.get(ids.size() - 2);
+                        IgniteUuid parentId = ids.get(ids.size() - 2);
 
                         for (int j = ids.size() - 3; j >= 0; j--) {
                             if (parentId != null)
@@ -2386,36 +2386,36 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         pathToId.put(parentPath, parentId);
                     }
 
-                    GridUuid pathId = ids.get(ids.size() - 1);
+                    IgniteUuid pathId = ids.get(ids.size() - 1);
 
                     if (pathId != null)
                         pathToId.put(path, pathId);
                 }
 
-                GridUuid[] lockArr = new GridUuid[extraLockIds == null ? pathToId.size() : pathToId.size() +
+                IgniteUuid[] lockArr = new IgniteUuid[extraLockIds == null ? pathToId.size() : pathToId.size() +
                     extraLockIds.size()];
 
                 int idx = 0;
 
-                for (GridUuid id : pathToId.values())
+                for (IgniteUuid id : pathToId.values())
                     lockArr[idx++] = id;
 
                 if (extraLockIds != null) {
-                    for (GridUuid id : extraLockIds)
+                    for (IgniteUuid id : extraLockIds)
                         lockArr[idx++] = id;
                 }
 
-                Map<GridUuid, GridGgfsFileInfo> idToInfo = lockIds(lockArr);
+                Map<IgniteUuid, GridGgfsFileInfo> idToInfo = lockIds(lockArr);
 
                 if (extraLockIds != null) {
-                    for (GridUuid id : extraLockIds)
+                    for (IgniteUuid id : extraLockIds)
                         idToInfo.remove(id);
                 }
 
                 // Ensure that locked IDs still point to expected paths.
                 GridGgfsPath changed = null;
 
-                for (Map.Entry<GridGgfsPath, GridUuid> entry : pathToId.entrySet()) {
+                for (Map.Entry<GridGgfsPath, IgniteUuid> entry : pathToId.entrySet()) {
                     if (!idToInfo.containsKey(entry.getValue()) ||
                         !F.eq(entry.getValue(), fileId(entry.getKey(), true))) {
                         changed = entry.getKey();
@@ -2434,7 +2434,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                     // Check whether any new parents appeared before we have obtained the locks.
                     for (int i = 0; i < paths.length; i++) {
-                        List<GridUuid> newIds = fileIds(paths[i], true);
+                        List<IgniteUuid> newIds = fileIds(paths[i], true);
 
                         if (!pathIds.get(i).equals(newIds)) {
                             newParents = true;
@@ -2566,7 +2566,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param modificationTime Modification time to set. If {@code -1}, will not be updated.
      * @throws GridException If update failed.
      */
-    public void updateTimes(GridUuid parentId, GridUuid fileId, String fileName, long accessTime,
+    public void updateTimes(IgniteUuid parentId, IgniteUuid fileId, String fileName, long accessTime,
         long modificationTime) throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -2576,7 +2576,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    Map<GridUuid, GridGgfsFileInfo> infoMap = lockIds(fileId, parentId);
+                    Map<IgniteUuid, GridGgfsFileInfo> infoMap = lockIds(fileId, parentId);
 
                     GridGgfsFileInfo fileInfo = infoMap.get(fileId);
 
@@ -2654,7 +2654,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         private final GridGgfsPath path;
 
         /** Resolved IDs. */
-        private final List<GridUuid> ids;
+        private final List<IgniteUuid> ids;
 
         /** Parent path. */
         private GridGgfsPath parentPath;
@@ -2670,7 +2670,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
          * @param parentPath Parent path.
          * @param parentInfo Parent info.
          */
-        PathDescriptor(GridGgfsPath path, List<GridUuid> ids, GridGgfsPath parentPath, GridGgfsFileInfo parentInfo) {
+        PathDescriptor(GridGgfsPath path, List<IgniteUuid> ids, GridGgfsPath parentPath, GridGgfsFileInfo parentInfo) {
             assert path != null;
             assert ids != null && !ids.isEmpty();
             assert parentPath == null && parentInfo == null || parentPath != null && parentInfo != null;
@@ -2687,7 +2687,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
          *
          * @return Path ids.
          */
-        private Collection<GridUuid> ids() {
+        private Collection<IgniteUuid> ids() {
             return ids;
         }
 
@@ -2697,7 +2697,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
          *
          * @return Path ID from the end.
          */
-        private GridUuid endId(int i) {
+        private IgniteUuid endId(int i) {
             return ids.get(ids.size() - i);
         }
 
@@ -2749,7 +2749,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         private String fileName;
 
         /** File id. */
-        private GridUuid fileId;
+        private IgniteUuid fileId;
 
         /** Length delta. */
         private long lenDelta;
@@ -2774,7 +2774,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
          * @param accessTime Last access time.
          * @param modificationTime Last modification time.
          */
-        private UpdateListingEntry(GridUuid fileId, String fileName, long lenDelta,
+        private UpdateListingEntry(IgniteUuid fileId, String fileName, long lenDelta,
             long accessTime, long modificationTime) {
             this.fileId = fileId;
             this.fileName = fileName;

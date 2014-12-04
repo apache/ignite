@@ -67,7 +67,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     private volatile DisconnectHandler disconnectHnd;
 
     /** Last message ID. */
-    private volatile GridUuid lastMsgId;
+    private volatile IgniteUuid lastMsgId;
 
     /** Current topology version. */
     private volatile long topVer;

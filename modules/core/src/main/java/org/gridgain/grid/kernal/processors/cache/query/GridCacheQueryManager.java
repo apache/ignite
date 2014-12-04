@@ -648,7 +648,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         filter.init(cctx);
 
-        GridUuid id = filter.setId();
+        IgniteUuid id = filter.setId();
 
         Collection<GridCacheSetItemKey> data = cctx.dataStructures().setData(id);
 

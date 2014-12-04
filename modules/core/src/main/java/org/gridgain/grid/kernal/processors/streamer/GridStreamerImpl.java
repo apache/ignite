@@ -101,10 +101,10 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
     private Object topic;
 
     /** Stage execution futures. */
-    private ConcurrentMap<GridUuid, GridStreamerStageExecutionFuture> stageFuts;
+    private ConcurrentMap<IgniteUuid, GridStreamerStageExecutionFuture> stageFuts;
 
     /** Batch execution futures. */
-    private ConcurrentMap<GridUuid, BatchExecutionFuture> batchFuts;
+    private ConcurrentMap<IgniteUuid, BatchExecutionFuture> batchFuts;
 
     /** Streamer executor service. */
     private ExecutorService execSvc;
@@ -116,7 +116,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
     private Collection<GridStreamerFailureListener> failureLsnrs = new ConcurrentLinkedQueue<>();
 
     /** Cancelled  */
-    private Collection<GridUuid> cancelledFutIds =
+    private Collection<IgniteUuid> cancelledFutIds =
         new GridBoundedConcurrentLinkedHashSet<>(CANCELLED_FUTS_HISTORY_SIZE);
 
     /** Load control semaphore. */
@@ -563,10 +563,10 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @throws GridInterruptedException If failed.
      */
     private GridStreamerStageExecutionFuture addEvents0(
-        @Nullable GridUuid execId,
+        @Nullable IgniteUuid execId,
         int failoverAttempt,
         long execStartTs,
-        @Nullable GridUuid parentFutId,
+        @Nullable IgniteUuid parentFutId,
         @Nullable Collection<UUID> execNodeIds,
         String stageName,
         Collection<?> evts
@@ -699,7 +699,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @throws GridException If schedule was attempted on stopping grid.
      */
     private void scheduleLocal(final GridStreamerExecutionBatch batch) throws GridException {
-        final GridUuid futId = batch.futureId();
+        final IgniteUuid futId = batch.futureId();
 
         lock.readLock();
 
@@ -768,7 +768,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @param futId Future ID to complete.
      * @param err Error, if any.
      */
-    private void completeParentStage(UUID completeNodeId, GridUuid futId, @Nullable Throwable err) {
+    private void completeParentStage(UUID completeNodeId, IgniteUuid futId, @Nullable Throwable err) {
         lock.readLock();
 
         try {
@@ -827,16 +827,16 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @param nodeId Node ID to cancel future on.
      * @param cancelledFutId Future ID to cancel.
      */
-    private void cancelChildStage(UUID nodeId, GridUuid cancelledFutId) {
+    private void cancelChildStage(UUID nodeId, IgniteUuid cancelledFutId) {
         assert atLeastOnce;
 
         if (nodeId.equals(ctx.localNodeId())) {
             cancelledFutIds.add(cancelledFutId);
 
-            Iterator<Map.Entry<GridUuid, BatchExecutionFuture>> it = batchFuts.entrySet().iterator();
+            Iterator<Map.Entry<IgniteUuid, BatchExecutionFuture>> it = batchFuts.entrySet().iterator();
 
             while (it.hasNext()) {
-                Map.Entry<GridUuid, BatchExecutionFuture> entry = it.next();
+                Map.Entry<IgniteUuid, BatchExecutionFuture> entry = it.next();
 
                 if (entry.getKey().equals(cancelledFutId)) {
                     BatchExecutionFuture batchFut = entry.getValue();
@@ -912,7 +912,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @param futId Future ID.
      * @return {@code True} if future was cancelled, {@code false} otherwise.
      */
-    public boolean cancelled(GridUuid futId) {
+    public boolean cancelled(IgniteUuid futId) {
         return cancelledFutIds.contains(futId);
     }
 

@@ -17,7 +17,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 public abstract class GridTimeoutObjectAdapter implements GridTimeoutObject {
     /** Timeout ID. */
-    private final GridUuid id;
+    private final IgniteUuid id;
 
     /** End time. */
     private final long endTime;
@@ -26,14 +26,14 @@ public abstract class GridTimeoutObjectAdapter implements GridTimeoutObject {
      * @param timeout Timeout for this object.
      */
     protected GridTimeoutObjectAdapter(long timeout) {
-        this(GridUuid.randomUuid(), timeout);
+        this(IgniteUuid.randomUuid(), timeout);
     }
 
     /**
      * @param id Timeout ID.
      * @param timeout Timeout for this object.
      */
-    protected GridTimeoutObjectAdapter(GridUuid id, long timeout) {
+    protected GridTimeoutObjectAdapter(IgniteUuid id, long timeout) {
         this.id = id;
 
         long endTime = timeout >= 0 ? U.currentTimeMillis() + timeout : Long.MAX_VALUE;
@@ -42,7 +42,7 @@ public abstract class GridTimeoutObjectAdapter implements GridTimeoutObject {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid timeoutId() {
+    @Override public IgniteUuid timeoutId() {
         return id;
     }
 

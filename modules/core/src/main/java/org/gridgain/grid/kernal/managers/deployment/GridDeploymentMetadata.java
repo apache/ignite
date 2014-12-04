@@ -36,14 +36,14 @@ class GridDeploymentMetadata {
     private UUID sndNodeId;
 
     /** */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /** Class loader. */
     private ClassLoader clsLdr;
 
     /** Master node participants. */
     @GridToStringInclude
-    private Map<UUID, GridUuid> participants;
+    private Map<UUID, IgniteUuid> participants;
 
     /** */
     private ClassLoader parentLdr;
@@ -184,7 +184,7 @@ class GridDeploymentMetadata {
      *
      * @return Property clsLdrId.
      */
-    GridUuid classLoaderId() {
+    IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -193,7 +193,7 @@ class GridDeploymentMetadata {
      *
      * @param clsLdrId Property clsLdrId.
      */
-    void classLoaderId(GridUuid clsLdrId) {
+    void classLoaderId(IgniteUuid clsLdrId) {
         this.clsLdrId = clsLdrId;
     }
 
@@ -236,14 +236,14 @@ class GridDeploymentMetadata {
     /**
      * @return Node participants.
      */
-    public Map<UUID, GridUuid> participants() {
+    public Map<UUID, IgniteUuid> participants() {
         return participants;
     }
 
     /**
      * @param participants Node participants.
      */
-    public void participants(Map<UUID, GridUuid> participants) {
+    public void participants(Map<UUID, IgniteUuid> participants) {
         this.participants = participants;
     }
 

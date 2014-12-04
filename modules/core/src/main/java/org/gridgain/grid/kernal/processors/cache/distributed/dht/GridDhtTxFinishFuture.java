@@ -43,7 +43,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringExclude
@@ -92,13 +92,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         dhtMap = tx.dhtMap();
         nearMap = tx.nearMap();
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         log = U.logger(ctx, logRef, GridDhtTxFinishFuture.class);
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
@@ -416,7 +416,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** DHT mapping. */
         @GridToStringInclude
@@ -449,7 +449,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @return Future ID.
          */
-        GridUuid futureId() {
+        IgniteUuid futureId() {
             return futId;
         }
 

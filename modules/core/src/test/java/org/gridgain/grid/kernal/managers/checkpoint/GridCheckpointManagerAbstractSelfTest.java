@@ -269,7 +269,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         int i = 0;
 
         while (true) {
-            Collection<GridUuid> sesIds = checkpoints(g).sessionIds();
+            Collection<IgniteUuid> sesIds = checkpoints(g).sessionIds();
 
             if (sesIds.isEmpty())
                 return true;

@@ -38,7 +38,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     private long threadId;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Max wait timeout. */
     private long timeout;
@@ -125,7 +125,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         UUID nodeId,
         @Nullable GridCacheVersion nearXidVer,
         long threadId,
-        GridUuid futId,
+        IgniteUuid futId,
         GridCacheVersion lockVer,
         boolean isInTx,
         boolean isRead,
@@ -186,7 +186,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
@@ -651,7 +651,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 9:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;

@@ -55,7 +55,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private Collection<GridDhtLocalPartition> parts = new GridLeanSet<>(5);
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Version. */
     private GridCacheVersion ver;
@@ -130,7 +130,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.deserializePortable = deserializePortable;
         this.taskNameHash = taskNameHash;
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
 
@@ -163,7 +163,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 

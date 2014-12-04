@@ -122,7 +122,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
 
         GridGgfsMetaManager meta = ggfs.context().meta();
 
-        GridUuid fileId = meta.fileId(path);
+        IgniteUuid fileId = meta.fileId(path);
 
         if (fileId == null)
             throw new GridGgfsFileNotFoundException("File not found: " + path);

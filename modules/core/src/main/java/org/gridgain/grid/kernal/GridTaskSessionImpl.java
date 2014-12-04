@@ -34,7 +34,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final String taskClsName;
 
     /** */
-    private final GridUuid sesId;
+    private final IgniteUuid sesId;
 
     /** */
     private final long startTime;
@@ -110,7 +110,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         String taskName,
         @Nullable GridDeployment dep,
         String taskClsName,
-        GridUuid sesId,
+        IgniteUuid sesId,
         @Nullable Collection<UUID> top,
         long startTime,
         long endTime,
@@ -206,7 +206,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridUuid getJobId() {
+    @Nullable @Override public IgniteUuid getJobId() {
         return null;
     }
 
@@ -409,7 +409,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getId() {
+    @Override public IgniteUuid getId() {
         return sesId;
     }
 
@@ -485,7 +485,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(GridUuid jobId) throws GridException {
+    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
         A.notNull(jobId, "jobId");
 
         Collection<GridComputeJobSibling> tmp = getJobSiblings();

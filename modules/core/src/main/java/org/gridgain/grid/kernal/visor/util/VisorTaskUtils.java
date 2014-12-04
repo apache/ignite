@@ -378,7 +378,7 @@ public class VisorTaskUtils {
 
         for (GridEvent e : evts) {
             int tid = e.type();
-            GridUuid id = e.id();
+            IgniteUuid id = e.id();
             String name = e.name();
             UUID nid = e.node().id();
             long t = e.timestamp();

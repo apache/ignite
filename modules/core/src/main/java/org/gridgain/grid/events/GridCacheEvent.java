@@ -76,7 +76,7 @@ public class GridCacheEvent extends GridEventAdapter {
 
     /** Event ID. */
     @GridToStringInclude
-    private final GridUuid xid;
+    private final IgniteUuid xid;
 
     /** Lock ID. */
     @GridToStringInclude
@@ -147,7 +147,7 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param cloClsName Closure class name.
      */
     public GridCacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
-        boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
+        boolean near, Object key, IgniteUuid xid, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
         this.cacheName = cacheName;
@@ -218,7 +218,7 @@ public class GridCacheEvent extends GridEventAdapter {
      *
      * @return ID of surrounding cache transaction.
      */
-    @Nullable public GridUuid xid() {
+    @Nullable public IgniteUuid xid() {
         return xid;
     }
 

@@ -152,7 +152,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
 
         if (info != null) {
             for (Map.Entry<String, GridGgfsListingEntry> entry : info.listing().entrySet()) {
-                GridUuid fileId = entry.getValue().fileId();
+                IgniteUuid fileId = entry.getValue().fileId();
 
                 if (log.isDebugEnabled())
                     log.debug("Deleting GGFS trash entry [name=" + entry.getKey() + ", fileId=" + fileId + ']');
@@ -190,7 +190,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
      * @return {@code True} in case the entry really was deleted form the file system by this call.
      * @throws GridException If failed.
      */
-    private boolean delete(String name, GridUuid id) throws GridException {
+    private boolean delete(String name, IgniteUuid id) throws GridException {
         assert name != null;
         assert id != null;
 
@@ -236,7 +236,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
      * @param id Entry id.
      * @throws GridException If delete failed for some reason.
      */
-    private void deleteDirectory(GridUuid parentId, GridUuid id) throws GridException {
+    private void deleteDirectory(IgniteUuid parentId, IgniteUuid id) throws GridException {
         assert parentId != null;
         assert id != null;
 
@@ -303,7 +303,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                 }
 
                 // Actual delete of folder content.
-                Collection<GridUuid> delIds = meta.delete(id, delListing);
+                Collection<IgniteUuid> delIds = meta.delete(id, delListing);
 
                 if (delListing == listing && delListing.size() == delIds.size())
                     break; // All entries were deleted.

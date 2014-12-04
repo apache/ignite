@@ -24,7 +24,7 @@ public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid setId;
+    private IgniteUuid setId;
 
     /** */
     @GridToStringInclude
@@ -41,7 +41,7 @@ public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
      * @param setId Set unique ID.
      * @param item Set item.
      */
-    GridCacheSetItemKey(GridUuid setId, Object item) {
+    GridCacheSetItemKey(IgniteUuid setId, Object item) {
         this.setId = setId;
         this.item = item;
     }
@@ -49,7 +49,7 @@ public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     /**
      * @return Set UUID.
      */
-    public GridUuid setId() {
+    public IgniteUuid setId() {
         return setId;
     }
 

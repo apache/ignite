@@ -121,7 +121,7 @@ public interface GridGgfsEx extends GridGgfs {
      *
      * @return Next affinity key.
      */
-    public GridUuid nextAffinityKey();
+    public IgniteUuid nextAffinityKey();
 
     /**
      * Check whether the given path is proxy path.

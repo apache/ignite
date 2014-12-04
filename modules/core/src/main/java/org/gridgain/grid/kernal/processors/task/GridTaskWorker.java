@@ -90,7 +90,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final GridTaskEventListener evtLsnr;
 
     /** */
-    private Map<GridUuid, GridJobResultImpl> jobRes;
+    private Map<IgniteUuid, GridJobResultImpl> jobRes;
 
     /** */
     private State state = State.WAITING;
@@ -236,7 +236,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @return Task session ID.
      */
-    GridUuid getTaskSessionId() {
+    IgniteUuid getTaskSessionId() {
         return ses.getId();
     }
 
@@ -285,7 +285,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid timeoutId() {
+    @Override public IgniteUuid timeoutId() {
         return ses.getId();
     }
 
@@ -460,7 +460,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (node == null)
                 throw new GridException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
-            GridUuid jobId = GridUuid.fromUuid(node.id());
+            IgniteUuid jobId = IgniteUuid.fromUuid(node.id());
 
             GridJobSiblingImpl sib = new GridJobSiblingImpl(ses.getId(), jobId, node.id(), ctx);
 
@@ -1277,7 +1277,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param evtNode Event node.
      * @param msg Event message.
      */
-    private void recordJobEvent(int evtType, GridUuid jobId, ClusterNode evtNode, String msg) {
+    private void recordJobEvent(int evtType, IgniteUuid jobId, ClusterNode evtNode, String msg) {
         if (ctx.event().isRecordable(evtType)) {
             GridJobEvent evt = new GridJobEvent();
 

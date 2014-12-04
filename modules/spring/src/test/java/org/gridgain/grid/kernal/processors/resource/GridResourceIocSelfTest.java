@@ -333,7 +333,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         UserResourceTask task = new UserResourceTask();
 
         GridDeployment dep = new GridTestDeployment(GridDeploymentMode.PRIVATE, task.getClass().getClassLoader(),
-            GridUuid.randomUuid(), "", task.getClass().getName(), false);
+            IgniteUuid.randomUuid(), "", task.getClass().getName(), false);
 
         dep.addDeployedClass(task.getClass());
 

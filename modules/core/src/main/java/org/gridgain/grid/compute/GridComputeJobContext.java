@@ -77,7 +77,7 @@ public interface GridComputeJobContext extends GridComputeJobContinuation {
      *
      * @return ID of the job this context belongs to.
      */
-    public GridUuid getJobId();
+    public IgniteUuid getJobId();
 
     /**
      * Sets an attribute into this job context.

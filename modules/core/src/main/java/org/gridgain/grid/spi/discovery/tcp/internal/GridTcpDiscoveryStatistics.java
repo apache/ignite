@@ -70,13 +70,13 @@ public class GridTcpDiscoveryStatistics {
     private final Map<String, Integer> sentMsgs = new HashMap<>();
 
     /** Messages receive timestamps. */
-    private final Map<GridUuid, Long> msgsRcvTs = new GridBoundedLinkedHashMap<>(1024);
+    private final Map<IgniteUuid, Long> msgsRcvTs = new GridBoundedLinkedHashMap<>(1024);
 
     /** Messages processing start timestamps. */
-    private final Map<GridUuid, Long> msgsProcStartTs = new GridBoundedLinkedHashMap<>(1024);
+    private final Map<IgniteUuid, Long> msgsProcStartTs = new GridBoundedLinkedHashMap<>(1024);
 
     /** Ring messages sent timestamps. */
-    private final Map<GridUuid, Long> ringMsgsSndTs = new GridBoundedLinkedHashMap<>(1024);
+    private final Map<IgniteUuid, Long> ringMsgsSndTs = new GridBoundedLinkedHashMap<>(1024);
 
     /** Average time messages is in queue. */
     private long avgMsgQueueTime;

@@ -82,7 +82,7 @@ public interface GridEvent extends Comparable<GridEvent>, Serializable {
      * @return Globally unique ID of this event.
      * @see #localOrder()
      */
-    public GridUuid id();
+    public IgniteUuid id();
 
     /**
      * Gets locally unique ID that is atomically incremented for each event. Unlike

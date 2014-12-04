@@ -81,7 +81,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 }
 
                 ctx.timeout().addTimeoutObject(new GridTimeoutObjectAdapter(
-                    GridUuid.fromUuid(ctx.localNodeId()), AFFINITY_MAP_CLEAN_UP_DELAY) {
+                    IgniteUuid.fromUuid(ctx.localNodeId()), AFFINITY_MAP_CLEAN_UP_DELAY) {
                     @Override public void onTimeout() {
                         affMap.keySet().removeAll(rmv);
                     }

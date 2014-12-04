@@ -520,7 +520,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                             if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED) && !cached.isInternal())
                                 cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                    (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, entry.value(), true, null,
+                                    (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, entry.value(), true, null,
                                     false, null, null, null);
                         }
                         else if (log.isDebugEnabled())

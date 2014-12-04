@@ -170,7 +170,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
         if (false) { // TODO GG-8962: enable check when fixed.
             int cnt = 0;
 
-            Set<GridUuid> setIds = new HashSet<>();
+            Set<IgniteUuid> setIds = new HashSet<>();
 
             for (int i = 0; i < gridCount(); i++) {
                 Iterator<GridCacheEntryEx<Object, Object>> entries =

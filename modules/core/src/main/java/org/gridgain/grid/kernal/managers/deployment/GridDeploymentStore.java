@@ -55,7 +55,7 @@ public interface GridDeploymentStore {
      * @param ldrId Class loader ID.
      * @return Class loader of {@code null} if not found.
      */
-    @Nullable public GridDeployment getDeployment(GridUuid ldrId);
+    @Nullable public GridDeployment getDeployment(IgniteUuid ldrId);
 
     /**
      * @return All current deployments.
@@ -84,6 +84,6 @@ public interface GridDeploymentStore {
      * @param allParticipants All participants to determine which deployments to add to.
      * @param addedParticipants Participants to add.
      */
-    public void addParticipants(Map<UUID, GridUuid> allParticipants,
-        Map<UUID, GridUuid> addedParticipants);
+    public void addParticipants(Map<UUID, IgniteUuid> allParticipants,
+        Map<UUID, IgniteUuid> addedParticipants);
 }

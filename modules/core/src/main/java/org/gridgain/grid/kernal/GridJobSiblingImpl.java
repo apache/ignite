@@ -29,11 +29,11 @@ public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements Grid
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private GridUuid jobId;
+    private IgniteUuid jobId;
 
     /** */
     private Object taskTopic;
@@ -61,7 +61,7 @@ public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements Grid
      * @param nodeId ID of the node where this sibling was sent for execution.
      * @param ctx Managers registry.
      */
-    public GridJobSiblingImpl(GridUuid sesId, GridUuid jobId, UUID nodeId, GridKernalContext ctx) {
+    public GridJobSiblingImpl(IgniteUuid sesId, IgniteUuid jobId, UUID nodeId, GridKernalContext ctx) {
         assert sesId != null;
         assert jobId != null;
         assert nodeId != null;
@@ -74,7 +74,7 @@ public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getJobId() {
+    @Override public IgniteUuid getJobId() {
         return jobId;
     }
 

@@ -297,7 +297,7 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param taskSesId Session ID.
      * @param msg Event message.
      */
-    public void triggerTaskEvent(int type, String taskName, GridUuid taskSesId, String msg) {
+    public void triggerTaskEvent(int type, String taskName, IgniteUuid taskSesId, String msg) {
         assert type > 0;
 
         triggerEvent(new GridTaskEvent(locNode, msg, type, taskSesId, taskName, null, false, null));

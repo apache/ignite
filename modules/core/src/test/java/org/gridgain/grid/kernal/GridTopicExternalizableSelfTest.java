@@ -20,7 +20,7 @@ import java.util.*;
  */
 public class GridTopicExternalizableSelfTest extends GridExternalizableAbstractTest {
     /** */
-    private static final GridUuid A_GRID_UUID = GridUuid.randomUuid();
+    private static final IgniteUuid A_GRID_UUID = IgniteUuid.randomUuid();
 
     /** */
     private static final UUID AN_UUID = UUID.randomUUID();

@@ -38,10 +38,10 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     private Collection<byte[]> nearEvictedBytes;
 
     /** Future ID.  */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
@@ -69,7 +69,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, GridUuid futId, GridUuid miniId) {
+    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId) {
         super(xid);
 
         assert futId != null;
@@ -85,7 +85,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
      * @param miniId Mini future ID.
      * @param err Error.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, GridUuid futId, GridUuid miniId, Throwable err) {
+    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, Throwable err) {
         super(xid, err);
 
         assert futId != null;
@@ -119,14 +119,14 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -343,7 +343,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
         switch (commState.idx) {
             case 10:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -382,7 +382,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 commState.idx++;
 
             case 12:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

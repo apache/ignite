@@ -25,7 +25,7 @@ public interface GridComputeJobSibling extends GridMetadataAware {
      *
      * @return Job ID.
      */
-    public GridUuid getJobId();
+    public IgniteUuid getJobId();
 
     /**
      * Sends a request to cancel this sibling.

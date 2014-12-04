@@ -59,12 +59,12 @@ public interface GridCacheSwapEntry<V> {
     /**
      * @return Class loader ID for entry key ({@code null} for local class loader).
      */
-    @Nullable public GridUuid keyClassLoaderId();
+    @Nullable public IgniteUuid keyClassLoaderId();
 
     /**
      * @return Class loader ID for entry value ({@code null} for local class loader).
      */
-    @Nullable public GridUuid valueClassLoaderId();
+    @Nullable public IgniteUuid valueClassLoaderId();
 
     /**
      * @return If entry is offheap based returns offheap address, otherwise 0.

@@ -52,7 +52,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Timers. */
-    private static final ConcurrentMap<Thread, ConcurrentMap<String, T5<Long, Long, Long, GridUuid, Object>>> timers =
+    private static final ConcurrentMap<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> timers =
         new ConcurrentHashMap<>();
 
     /** */
@@ -459,11 +459,11 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param key Key.
          * @param termId Terminal ID.
          */
-        private void startTimer(String name, @Nullable GridUuid xid, @Nullable String key, String termId) {
-            ConcurrentMap<String, T5<Long, Long, Long, GridUuid, Object>> m = timers.get(Thread.currentThread());
+        private void startTimer(String name, @Nullable IgniteUuid xid, @Nullable String key, String termId) {
+            ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> m = timers.get(Thread.currentThread());
 
             if (m == null) {
-                ConcurrentMap<String, T5<Long, Long, Long, GridUuid, Object>> old =
+                ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> old =
                     timers.putIfAbsent(Thread.currentThread(),
                         m = new ConcurrentHashMap<>());
 
@@ -471,10 +471,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     m = old;
             }
 
-            T5<Long, Long, Long, GridUuid, Object> t = m.get(name);
+            T5<Long, Long, Long, IgniteUuid, Object> t = m.get(name);
 
             if (t == null) {
-                T5<Long, Long, Long, GridUuid, Object> old = m.putIfAbsent(name,
+                T5<Long, Long, Long, IgniteUuid, Object> old = m.putIfAbsent(name,
                     t = new T5<>());
 
                 if (old != null)
@@ -491,9 +491,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param name Timer name.
          */
         private void stopTimer(String name) {
-            ConcurrentMap<String, T5<Long, Long, Long, GridUuid, Object>> m = timers.get(Thread.currentThread());
+            ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> m = timers.get(Thread.currentThread());
 
-            T5<Long, Long, Long, GridUuid, Object> t = m.get(name);
+            T5<Long, Long, Long, IgniteUuid, Object> t = m.get(name);
 
             assert t != null;
 
@@ -518,14 +518,14 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                 Set<GridCacheAffinityKey<String>> keys = null;
 
-                for (Map.Entry<Thread, ConcurrentMap<String, T5<Long, Long, Long, GridUuid, Object>>> e1 : timers.entrySet()) {
-                    for (Map.Entry<String, T5<Long, Long, Long, GridUuid, Object>> e2 : e1.getValue().entrySet()) {
-                        T5<Long, Long, Long, GridUuid, Object> t = e2.getValue();
+                for (Map.Entry<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> e1 : timers.entrySet()) {
+                    for (Map.Entry<String, T5<Long, Long, Long, IgniteUuid, Object>> e2 : e1.getValue().entrySet()) {
+                        T5<Long, Long, Long, IgniteUuid, Object> t = e2.getValue();
 
                         long start = t.get1();
                         long end = t.get2();
 
-                        GridUuid xid = t.get4();
+                        IgniteUuid xid = t.get4();
 
                         long duration = end == 0 ? now - start : end - start;
 

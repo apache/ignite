@@ -24,7 +24,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Task ID. */
-    private GridUuid taskId;
+    private IgniteUuid taskId;
 
     /** Topic. */
     @GridDirectTransient
@@ -45,7 +45,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
      * @param topic Topic.
      * @param topicBytes Serialized topic.
      */
-    GridTaskResultRequest(GridUuid taskId, Object topic, byte[] topicBytes) {
+    GridTaskResultRequest(IgniteUuid taskId, Object topic, byte[] topicBytes) {
         this.taskId = taskId;
         this.topic = topic;
         this.topicBytes = topicBytes;
@@ -54,14 +54,14 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Task ID.
      */
-    public GridUuid taskId() {
+    public IgniteUuid taskId() {
         return taskId;
     }
 
     /**
      * @param taskId Task ID.
      */
-    public void taskId(GridUuid taskId) {
+    public void taskId(IgniteUuid taskId) {
         assert taskId != null;
 
         this.taskId = taskId;
@@ -146,7 +146,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                GridUuid taskId0 = commState.getGridUuid();
+                IgniteUuid taskId0 = commState.getGridUuid();
 
                 if (taskId0 == GRID_UUID_NOT_READ)
                     return false;

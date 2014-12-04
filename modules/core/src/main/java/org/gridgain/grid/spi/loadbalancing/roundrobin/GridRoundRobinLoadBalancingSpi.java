@@ -164,7 +164,7 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
     private boolean isPerTask;
 
     /** */
-    private final Map<GridUuid, GridRoundRobinPerTaskLoadBalancer> perTaskBalancers =
+    private final Map<IgniteUuid, GridRoundRobinPerTaskLoadBalancer> perTaskBalancers =
         new ConcurrentHashMap8<>();
 
     /** Event listener. */

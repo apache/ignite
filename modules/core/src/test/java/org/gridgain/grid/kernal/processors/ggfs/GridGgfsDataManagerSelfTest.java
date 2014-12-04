@@ -466,7 +466,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
         GridGgfsFileInfo info = new GridGgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
-        GridUuid affKey = GridUuid.randomUuid();
+        IgniteUuid affKey = IgniteUuid.randomUuid();
 
         GridGgfsFileMap map = new GridGgfsFileMap();
 

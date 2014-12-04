@@ -20,7 +20,7 @@ public interface GridDeploymentInfo {
     /**
      * @return Class loader ID.
      */
-    public GridUuid classLoaderId();
+    public IgniteUuid classLoaderId();
 
     /**
      * @return User version.
@@ -45,5 +45,5 @@ public interface GridDeploymentInfo {
     /**
      * @return Participant map for SHARED mode.
      */
-    public Map<UUID, GridUuid> participants();
+    public Map<UUID, IgniteUuid> participants();
 }

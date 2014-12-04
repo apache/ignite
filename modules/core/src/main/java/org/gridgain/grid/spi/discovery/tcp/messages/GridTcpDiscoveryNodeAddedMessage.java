@@ -37,7 +37,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private Collection<GridTcpDiscoveryAbstractMessage> msgs;
 
     /** Discarded message ID. */
-    private GridUuid discardMsgId;
+    private IgniteUuid discardMsgId;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
@@ -107,7 +107,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      *
      * @return Discarded message ID.
      */
-    @Nullable public GridUuid discardedMessageId() {
+    @Nullable public IgniteUuid discardedMessageId() {
         return discardMsgId;
     }
 
@@ -117,7 +117,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      * @param msgs Pending messages to send to new node.
      * @param discardMsgId Discarded message ID.
      */
-    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable GridUuid discardMsgId) {
+    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
         this.msgs = msgs;
         this.discardMsgId = discardMsgId;
     }

@@ -35,7 +35,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     private Collection<GridCacheVersion> pending;
 
     /** */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** DHT versions. */
     @GridToStringInclude
@@ -66,8 +66,8 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     public GridNearLockResponse(
         int cacheId,
         GridCacheVersion lockVer,
-        GridUuid futId,
-        GridUuid miniId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
         boolean filterRes,
         int cnt,
         Throwable err
@@ -106,7 +106,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -384,7 +384,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 14:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

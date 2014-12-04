@@ -800,10 +800,10 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @param uuid {@link GridUuid}.
+     * @param uuid {@link org.gridgain.grid.IgniteUuid}.
      * @return Whether value was fully written.
      */
-    public final boolean putGridUuid(@Nullable GridUuid uuid) {
+    public final boolean putGridUuid(@Nullable IgniteUuid uuid) {
         byte[] arr = null;
 
         if (uuid != null) {
@@ -818,11 +818,11 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @return {@link GridUuid} or special
+     * @return {@link org.gridgain.grid.IgniteUuid} or special
      *      {@link GridTcpCommunicationMessageAdapter#GRID_UUID_NOT_READ}
      *      value if it was not fully read.
      */
-    public final GridUuid getGridUuid() {
+    public final IgniteUuid getGridUuid() {
         byte[] arr = getByteArray();
 
         if (arr == BYTE_ARR_NOT_READ)
@@ -834,7 +834,7 @@ public class GridTcpCommunicationMessageState {
             long least = UNSAFE.getLong(arr, BYTE_ARR_OFF + 8);
             long loc = UNSAFE.getLong(arr, BYTE_ARR_OFF + 16);
 
-            return new GridUuid(new UUID(most, least), loc);
+            return new IgniteUuid(new UUID(most, least), loc);
         }
     }
 

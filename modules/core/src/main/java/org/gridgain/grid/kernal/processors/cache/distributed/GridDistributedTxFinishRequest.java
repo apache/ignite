@@ -30,7 +30,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Thread ID. */
     private long threadId;
@@ -106,7 +106,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      */
     public GridDistributedTxFinishRequest(
         GridCacheVersion xidVer,
-        GridUuid futId,
+        IgniteUuid futId,
         @Nullable GridCacheVersion commitVer,
         long threadId,
         boolean commit,
@@ -165,7 +165,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
@@ -524,7 +524,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 commState.idx++;
 
             case 11:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;

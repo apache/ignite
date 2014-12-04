@@ -28,10 +28,10 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini-future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -62,7 +62,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
      * @param futId Request id.
      * @param miniId Mini-future ID.
      */
-    public GridDhtForceKeysResponse(int cacheId, GridUuid futId, GridUuid miniId) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId) {
         assert futId != null;
         assert miniId != null;
 
@@ -93,14 +93,14 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini-future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -255,7 +255,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -275,7 +275,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 commState.idx++;
 
             case 5:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

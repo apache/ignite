@@ -141,8 +141,8 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(dir, mgr.info(dir.id()));
         assertEquals(file, mgr.info(file.id()));
 
-        for (IgniteBiTuple<GridUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
-            GridUuid fileId = tup.get1();
+        for (IgniteBiTuple<IgniteUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
+            IgniteUuid fileId = tup.get1();
             String fileName = tup.get2();
 
             for (Map<String, String> props : Arrays.asList(null, Collections.<String, String>emptyMap()))
@@ -262,7 +262,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(Arrays.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new GridGgfsPath("/f7/a/b/f6")));
 
         // Validate 'rename' operation.
-        final GridUuid rndId = GridUuid.randomUuid();
+        final IgniteUuid rndId = IgniteUuid.randomUuid();
 
         // One of participated files does not exist in cache.
         expectsRenameFail(ROOT_ID, "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
@@ -310,9 +310,9 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         // Validate 'remove' operation.
         for (int i = 0; i < 100; i++) {
             // One of participants doesn't exist.
-            assertNull(mgr.removeIfEmpty(ROOT_ID, "a", GridUuid.randomUuid(), new GridGgfsPath("/a"), true));
-            assertNull(mgr.removeIfEmpty(GridUuid.randomUuid(), "a", GridUuid.randomUuid(),
-                new GridGgfsPath("/" + GridUuid.randomUuid() + "/a"), true));
+            assertNull(mgr.removeIfEmpty(ROOT_ID, "a", IgniteUuid.randomUuid(), new GridGgfsPath("/a"), true));
+            assertNull(mgr.removeIfEmpty(IgniteUuid.randomUuid(), "a", IgniteUuid.randomUuid(),
+                new GridGgfsPath("/" + IgniteUuid.randomUuid() + "/a"), true));
         }
 
         expectsRemoveFail(ROOT_ID, "a", a.id(), new GridGgfsPath("/a"),
@@ -390,7 +390,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param props File properties to set.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsUpdatePropertiesFail(@Nullable final GridUuid fileId, @Nullable final Map<String, String> props,
+    private void expectsUpdatePropertiesFail(@Nullable final IgniteUuid fileId, @Nullable final Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
@@ -407,7 +407,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param fileInfo New file initial details.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsPutIfAbsentFail(final GridUuid parentId, final String fileName, final GridGgfsFileInfo fileInfo,
+    private void expectsPutIfAbsentFail(final IgniteUuid parentId, final String fileName, final GridGgfsFileInfo fileInfo,
         @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
@@ -426,8 +426,8 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param destParentId Destination parent directory ID.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsRenameFail(final GridUuid fileId, final String srcFileName, final GridUuid srcParentId,
-        final String destFileName, final GridUuid destParentId, @Nullable String msg) {
+    private void expectsRenameFail(final IgniteUuid fileId, final String srcFileName, final IgniteUuid srcParentId,
+        final String destFileName, final IgniteUuid destParentId, @Nullable String msg) {
         GridTestUtils.assertThrowsInherited(log, new Callable() {
             @Override public Object call() throws Exception {
                 mgr.move(fileId, srcFileName, srcParentId, destFileName, destParentId);
@@ -446,7 +446,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param path Removed file path.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsRemoveFail(final GridUuid parentId, final String fileName, final GridUuid fileId,
+    private void expectsRemoveFail(final IgniteUuid parentId, final String fileName, final IgniteUuid fileId,
         final GridGgfsPath path, @Nullable String msg) {
         assertThrows(log, new Callable() {
             @Nullable @Override public Object call() throws Exception {

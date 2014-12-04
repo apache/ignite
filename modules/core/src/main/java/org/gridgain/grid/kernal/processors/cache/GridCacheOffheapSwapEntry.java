@@ -166,7 +166,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridUuid keyClassLoaderId() {
+    @Nullable @Override public IgniteUuid keyClassLoaderId() {
         throw new UnsupportedOperationException();
     }
 
@@ -176,7 +176,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridUuid valueClassLoaderId() {
+    @Nullable @Override public IgniteUuid valueClassLoaderId() {
         throw new UnsupportedOperationException();
     }
 

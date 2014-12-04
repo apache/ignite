@@ -599,7 +599,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid xid() {
+    @Override public IgniteUuid xid() {
         return xidVer.asGridUuid();
     }
 
@@ -1059,7 +1059,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid timeoutId() {
+    @Override public IgniteUuid timeoutId() {
         return xidVer.asGridUuid();
     }
 
@@ -1325,7 +1325,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         private static final long serialVersionUID = 0L;
 
         /** Xid. */
-        private final GridUuid xid;
+        private final IgniteUuid xid;
 
         /** Node ID. */
         private final UUID nodeId;
@@ -1370,7 +1370,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
          * @param state Transaction state.
          * @param rollbackOnly Rollback-only flag.
          */
-        TxShadow(GridUuid xid, UUID nodeId, long threadId, long startTime, GridCacheTxIsolation isolation,
+        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, GridCacheTxIsolation isolation,
             GridCacheTxConcurrency concurrency, boolean invalidate, boolean implicit, long timeout,
             GridCacheTxState state, boolean rollbackOnly) {
             this.xid = xid;
@@ -1387,7 +1387,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public GridUuid xid() {
+        @Override public IgniteUuid xid() {
             return xid;
         }
 

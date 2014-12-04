@@ -23,7 +23,7 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid queueId;
+    private IgniteUuid queueId;
 
     /** */
     private String queueName;
@@ -43,7 +43,7 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
      * @param queueName Queue name.
      * @param idx Item index.
      */
-    GridCacheQueueItemKey(GridUuid queueId, String queueName, long idx) {
+    GridCacheQueueItemKey(IgniteUuid queueId, String queueName, long idx) {
         this.queueId = queueId;
         this.queueName = queueName;
         this.idx = idx;
@@ -59,7 +59,7 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
     /**
      * @return Queue UUID.
      */
-    public GridUuid queueId() {
+    public IgniteUuid queueId() {
         return queueId;
     }
 

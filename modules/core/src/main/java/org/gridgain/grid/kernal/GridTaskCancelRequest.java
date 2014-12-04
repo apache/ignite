@@ -24,7 +24,7 @@ public class GridTaskCancelRequest extends GridTcpCommunicationMessageAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -37,7 +37,7 @@ public class GridTaskCancelRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * @param sesId Task session ID.
      */
-    public GridTaskCancelRequest(GridUuid sesId) {
+    public GridTaskCancelRequest(IgniteUuid sesId) {
         assert sesId != null;
 
         this.sesId = sesId;
@@ -48,7 +48,7 @@ public class GridTaskCancelRequest extends GridTcpCommunicationMessageAdapter {
      *
      * @return Execution ID of task to be cancelled.
      */
-    public GridUuid sessionId() {
+    public IgniteUuid sessionId() {
         return sesId;
     }
 
@@ -100,7 +100,7 @@ public class GridTaskCancelRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                GridUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid();
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

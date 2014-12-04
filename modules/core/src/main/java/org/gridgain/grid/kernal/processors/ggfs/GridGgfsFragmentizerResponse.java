@@ -23,7 +23,7 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     private static final long serialVersionUID = 0L;
 
     /** File ID. */
-    private GridUuid fileId;
+    private IgniteUuid fileId;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -35,14 +35,14 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     /**
      * @param fileId File ID.
      */
-    public GridGgfsFragmentizerResponse(GridUuid fileId) {
+    public GridGgfsFragmentizerResponse(IgniteUuid fileId) {
         this.fileId = fileId;
     }
 
     /**
      * @return File ID.
      */
-    public GridUuid fileId() {
+    public IgniteUuid fileId() {
         return fileId;
     }
 
@@ -102,7 +102,7 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                GridUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid();
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

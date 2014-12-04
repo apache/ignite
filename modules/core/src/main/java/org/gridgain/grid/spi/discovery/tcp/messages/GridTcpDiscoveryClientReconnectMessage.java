@@ -27,7 +27,7 @@ public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbst
     private UUID routerNodeId;
 
     /** Last message ID. */
-    private GridUuid lastMsgId;
+    private IgniteUuid lastMsgId;
 
     /** Pending messages. */
     @GridToStringExclude
@@ -45,7 +45,7 @@ public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbst
      * @param routerNodeId New router node ID.
      * @param lastMsgId Last message ID.
      */
-    public GridTcpDiscoveryClientReconnectMessage(UUID creatorNodeId, UUID routerNodeId, GridUuid lastMsgId) {
+    public GridTcpDiscoveryClientReconnectMessage(UUID creatorNodeId, UUID routerNodeId, IgniteUuid lastMsgId) {
         super(creatorNodeId);
 
         this.routerNodeId = routerNodeId;
@@ -62,7 +62,7 @@ public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbst
     /**
      * @return Last message ID.
      */
-    public GridUuid lastMessageId() {
+    public IgniteUuid lastMessageId() {
         return lastMsgId;
     }
 

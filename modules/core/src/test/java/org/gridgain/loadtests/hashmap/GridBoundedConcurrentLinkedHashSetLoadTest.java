@@ -41,7 +41,7 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
         ExecutorService pool = Executors.newFixedThreadPool(threadCnt);
 
-        final Collection<GridUuid> set =
+        final Collection<IgniteUuid> set =
             new GridBoundedConcurrentLinkedHashSet<>(10240, 32, 0.75f, 128, qPlc);
 
         X.println("Set: " + set);
@@ -87,7 +87,7 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
                     try {
                     while (!finish.get()) {
-                        set.add(GridUuid.fromUuid(id));
+                        set.add(IgniteUuid.fromUuid(id));
 
                         execCnt.increment();
                     }

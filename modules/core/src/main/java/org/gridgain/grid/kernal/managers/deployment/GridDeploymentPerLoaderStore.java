@@ -31,7 +31,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     /** Cache keyed by class loader ID. */
-    private Map<GridUuid, IsolatedDeployment> cache = new HashMap<>();
+    private Map<IgniteUuid, IsolatedDeployment> cache = new HashMap<>();
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -164,7 +164,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDeployment getDeployment(GridUuid ldrId) {
+    @Override public GridDeployment getDeployment(IgniteUuid ldrId) {
         synchronized (mux) {
             return cache.get(ldrId);
         }
@@ -308,8 +308,8 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addParticipants(Map<UUID, GridUuid> allParticipants,
-        Map<UUID, GridUuid> addedParticipants) {
+    @Override public void addParticipants(Map<UUID, IgniteUuid> allParticipants,
+        Map<UUID, IgniteUuid> addedParticipants) {
         assert false;
     }
 
@@ -400,7 +400,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
          * @param sndNode Sender node.
          * @param sampleClsName Sample class name.
          */
-        IsolatedDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, GridUuid clsLdrId,
+        IsolatedDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, ClusterNode sndNode, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
 

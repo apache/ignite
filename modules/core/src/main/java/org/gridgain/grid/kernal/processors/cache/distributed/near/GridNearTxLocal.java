@@ -145,14 +145,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridUuid nearFutureId() {
+    @Override protected IgniteUuid nearFutureId() {
         assert false : "nearFutureId should not be called for colocated transactions.";
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridUuid nearMiniId() {
+    @Override protected IgniteUuid nearMiniId() {
         assert false : "nearMiniId should not be called for colocated transactions.";
 
         return null;
@@ -868,7 +868,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         init();
 
-        GridDhtTxPrepareFuture<K, V> fut = new GridDhtTxPrepareFuture<>(cctx, this, GridUuid.randomUuid(),
+        GridDhtTxPrepareFuture<K, V> fut = new GridDhtTxPrepareFuture<>(cctx, this, IgniteUuid.randomUuid(),
             Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap(), last, lastBackups);
 
         try {

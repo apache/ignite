@@ -39,7 +39,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     private Collection<byte[]> nearEvictedBytes;
 
     /** Mini ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
@@ -68,7 +68,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      * @param miniId Mini future ID.
      * @param cnt Key count.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, int cnt) {
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt) {
         super(cacheId, lockVer, futId, cnt);
 
         assert miniId != null;
@@ -82,7 +82,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      * @param miniId Mini future ID.
      * @param err Error.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, Throwable err) {
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, Throwable err) {
         super(cacheId, lockVer, futId, err);
 
         assert miniId != null;
@@ -114,7 +114,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -347,7 +347,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                 commState.idx++;
 
             case 12:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

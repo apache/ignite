@@ -25,10 +25,10 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Flag indicating if all remote transactions were prepared. */
     private boolean success;
@@ -46,7 +46,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
      * @param miniId Mini future ID.
      * @param success {@code True} if all remote transactions were prepared, {@code false} otherwise.
      */
-    public GridCacheOptimisticCheckPreparedTxResponse(GridCacheVersion txId, GridUuid futId, GridUuid miniId,
+    public GridCacheOptimisticCheckPreparedTxResponse(GridCacheVersion txId, IgniteUuid futId, IgniteUuid miniId,
         boolean success) {
         super(txId, 0);
 
@@ -58,14 +58,14 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -146,7 +146,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
         switch (commState.idx) {
             case 8:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -156,7 +156,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 commState.idx++;
 
             case 9:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

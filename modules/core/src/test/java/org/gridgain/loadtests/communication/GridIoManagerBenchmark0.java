@@ -153,7 +153,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         GridFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try {
-                    GridUuid msgId = GridUuid.randomUuid();
+                    IgniteUuid msgId = IgniteUuid.randomUuid();
 
                     while (!finish.get()) {
                         sem.acquire();
@@ -201,7 +201,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final Integer topic = 1;
 
-        final Map<GridUuid, CountDownLatch> map = new ConcurrentHashMap8<>();
+        final Map<IgniteUuid, CountDownLatch> map = new ConcurrentHashMap8<>();
 
         rcv.addMessageListener(
             topic,
@@ -245,7 +245,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         GridFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try {
-                    GridUuid msgId = GridUuid.randomUuid();
+                    IgniteUuid msgId = IgniteUuid.randomUuid();
 
                     while (!finish.get()) {
                         CountDownLatch latch = new CountDownLatch(1);
@@ -301,7 +301,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final String topic = "test-topic";
 
-        final Map<GridUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
+        final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
 
         rcv.addMessageListener(
             topic,
@@ -340,7 +340,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                     if (latch != null)
                         U.await(latch);
 
-                    GridUuid msgId = GridUuid.randomUuid();
+                    IgniteUuid msgId = IgniteUuid.randomUuid();
 
                     sem.acquire();
 
@@ -409,7 +409,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                 while (!finish.get()) {
                     U.sleep(1000);
 
-                    GridUuid msgId = GridUuid.randomUuid();
+                    IgniteUuid msgId = IgniteUuid.randomUuid();
                     CountDownLatch latch = new CountDownLatch(1);
 
                     latches.put(msgId, latch);

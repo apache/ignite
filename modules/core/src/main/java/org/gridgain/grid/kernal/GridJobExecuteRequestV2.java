@@ -63,8 +63,8 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
      * @param subjId Subject ID.
      */
     public GridJobExecuteRequestV2(
-        GridUuid sesId,
-        GridUuid jobId,
+        IgniteUuid sesId,
+        IgniteUuid jobId,
         String taskName,
         String userVer,
         String taskClsName,
@@ -80,10 +80,10 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
         byte[] jobAttrsBytes,
         Map<? extends Serializable, ? extends Serializable> jobAttrs,
         String cpSpi,
-        GridUuid clsLdrId,
+        IgniteUuid clsLdrId,
         GridDeploymentMode depMode,
         boolean dynamicSiblings,
-        Map<UUID, GridUuid> ldrParticipants,
+        Map<UUID, IgniteUuid> ldrParticipants,
         boolean forceLocDep,
         boolean sesFullSup,
         boolean internal,

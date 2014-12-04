@@ -53,7 +53,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private List<GridLocalCacheEntry<K, V>> entries;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Lock version. */
     private GridCacheVersion lockVer;
@@ -118,7 +118,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         entries = new ArrayList<>(keys.size());
 
@@ -132,7 +132,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 

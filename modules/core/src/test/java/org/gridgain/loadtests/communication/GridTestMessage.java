@@ -21,7 +21,7 @@ import java.nio.*;
  */
 class GridTestMessage extends GridTcpCommunicationMessageAdapter implements Externalizable {
     /** */
-    private GridUuid id;
+    private IgniteUuid id;
 
     /** */
     private long field1;
@@ -39,7 +39,7 @@ class GridTestMessage extends GridTcpCommunicationMessageAdapter implements Exte
      * @param id Message ID.
      * @param str String.
      */
-    GridTestMessage(GridUuid id, String str) {
+    GridTestMessage(IgniteUuid id, String str) {
         this.id = id;
         this.str = str;
     }
@@ -48,7 +48,7 @@ class GridTestMessage extends GridTcpCommunicationMessageAdapter implements Exte
      * @param id Message ID.
      * @param bytes Bytes.
      */
-    GridTestMessage(GridUuid id, byte[] bytes) {
+    GridTestMessage(IgniteUuid id, byte[] bytes) {
         this.id = id;
         this.bytes = bytes;
     }
@@ -63,7 +63,7 @@ class GridTestMessage extends GridTcpCommunicationMessageAdapter implements Exte
     /**
      * @return Message ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

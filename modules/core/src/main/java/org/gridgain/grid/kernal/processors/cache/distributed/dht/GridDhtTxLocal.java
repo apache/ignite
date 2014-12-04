@@ -37,16 +37,16 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     private UUID nearNodeId;
 
     /** Near future ID. */
-    private GridUuid nearFutId;
+    private IgniteUuid nearFutId;
 
     /** Near future ID. */
-    private GridUuid nearMiniId;
+    private IgniteUuid nearMiniId;
 
     /** Near future ID. */
-    private GridUuid nearFinFutId;
+    private IgniteUuid nearFinFutId;
 
     /** Near future ID. */
-    private GridUuid nearFinMiniId;
+    private IgniteUuid nearFinMiniId;
 
     /** Near XID. */
     private GridCacheVersion nearXidVer;
@@ -87,8 +87,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     public GridDhtTxLocal(
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
-        GridUuid nearFutId,
-        GridUuid nearMiniId,
+        IgniteUuid nearFutId,
+        IgniteUuid nearMiniId,
         long nearThreadId,
         boolean implicit,
         boolean implicitSingle,
@@ -181,12 +181,12 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override protected GridUuid nearFutureId() {
+    @Override protected IgniteUuid nearFutureId() {
         return nearFutId;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridUuid nearMiniId() {
+    @Override protected IgniteUuid nearMiniId() {
         return nearMiniId;
     }
 
@@ -209,21 +209,21 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /**
      * @return Near future ID.
      */
-    public GridUuid nearFinishFutureId() {
+    public IgniteUuid nearFinishFutureId() {
         return nearFinFutId;
     }
 
     /**
      * @param nearFinFutId Near future ID.
      */
-    public void nearFinishFutureId(GridUuid nearFinFutId) {
+    public void nearFinishFutureId(IgniteUuid nearFinFutId) {
         this.nearFinFutId = nearFinFutId;
     }
 
     /**
      * @return Near future mini ID.
      */
-    public GridUuid nearFinishMiniId() {
+    public IgniteUuid nearFinishMiniId() {
         return nearFinMiniId;
     }
 
@@ -235,7 +235,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /**
      * @param nearFinMiniId Near future mini ID.
      */
-    public void nearFinishMiniId(GridUuid nearFinMiniId) {
+    public void nearFinishMiniId(IgniteUuid nearFinMiniId) {
         this.nearFinMiniId = nearFinMiniId;
     }
 
@@ -344,7 +344,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      */
     public GridFuture<GridCacheTxEx<K, V>> prepareAsync(@Nullable Iterable<GridCacheTxEntry<K, V>> reads,
         @Nullable Iterable<GridCacheTxEntry<K, V>> writes, Map<GridCacheTxKey<K>, GridCacheVersion> verMap, long msgId,
-        GridUuid nearMiniId, Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
+        IgniteUuid nearMiniId, Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
         assert optimistic();
 
         // In optimistic mode prepare still can be called explicitly from salvageTx.

@@ -234,7 +234,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         req.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
 
         Collection<GridGgfsFileAffinityRange> ranges = req.fragmentRanges();
-        GridUuid fileId = req.fileId();
+        IgniteUuid fileId = req.fileId();
 
         GridGgfsFileInfo fileInfo = ggfsCtx.meta().info(fileId);
 
@@ -361,7 +361,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      */
     private class FragmentizerCoordinator extends GridWorker implements GridLocalEventListener, GridMessageListener {
         /** Files being fragmented. */
-        private ConcurrentMap<GridUuid, Collection<UUID>> fragmentingFiles = new ConcurrentHashMap<>();
+        private ConcurrentMap<IgniteUuid, Collection<UUID>> fragmentingFiles = new ConcurrentHashMap<>();
 
         /** Node IDs captured on start. */
         private volatile Collection<UUID> startSync;
@@ -447,10 +447,10 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             }
 
             if (!signal) {
-                Iterator<Map.Entry<GridUuid, Collection<UUID>>> it = fragmentingFiles.entrySet().iterator();
+                Iterator<Map.Entry<IgniteUuid, Collection<UUID>>> it = fragmentingFiles.entrySet().iterator();
 
                 while (it.hasNext()) {
-                    Map.Entry<GridUuid, Collection<UUID>> entry = it.next();
+                    Map.Entry<IgniteUuid, Collection<UUID>> entry = it.next();
 
                     Collection<UUID> nodeIds = entry.getValue();
 
@@ -477,7 +477,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             if (msg instanceof GridGgfsFragmentizerResponse) {
                 GridGgfsFragmentizerResponse res = (GridGgfsFragmentizerResponse)msg;
 
-                GridUuid fileId = res.fileId();
+                IgniteUuid fileId = res.fileId();
 
                 Collection<UUID> nodeIds = fragmentingFiles.get(fileId);
 
@@ -673,7 +673,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @return File ID to process or {@code null} if there are no such files.
      * @throws GridException In case of error.
      */
-    @Nullable private GridGgfsFileInfo fileForFragmentizer(Collection<GridUuid> exclude) throws GridException {
+    @Nullable private GridGgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws GridException {
         return fragmentizerEnabled ? ggfsCtx.meta().fileForFragmentizer(exclude) : null;
     }
 

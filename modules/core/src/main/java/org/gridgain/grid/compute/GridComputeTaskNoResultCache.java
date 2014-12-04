@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.compute;
 
-import org.gridgain.grid.*;
-
 import java.lang.annotation.*;
 import java.util.*;
 
@@ -28,7 +26,7 @@ import java.util.*;
  * on {@link GridComputeTaskSession}:
  * <ul>
  * <li>{@link GridComputeTaskSession#getJobSiblings()}</li>
- * <li>{@link GridComputeTaskSession#getJobSibling(GridUuid)}</li>
+ * <li>{@link GridComputeTaskSession#getJobSibling(org.gridgain.grid.IgniteUuid)}</li>
  * <li>{@link GridComputeTaskSession#refreshJobSiblings()}</li>
  * </ul>
  *

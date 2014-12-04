@@ -32,10 +32,10 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Sub ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Version. */
     private GridCacheVersion ver;
@@ -90,8 +90,8 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      */
     public GridNearGetRequest(
         int cacheId,
-        GridUuid futId,
-        GridUuid miniId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
         GridCacheVersion ver,
         LinkedHashMap<K, Boolean> keys,
         boolean reload,
@@ -120,14 +120,14 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Sub ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -408,7 +408,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 commState.idx++;
 
             case 4:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -460,7 +460,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 commState.idx++;
 
             case 6:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

@@ -32,7 +32,7 @@ class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
     private byte[] src;
 
     /** */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /** */
     private GridDeploymentMode depMode;
@@ -45,7 +45,7 @@ class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
 
     /** Node class loader participants. */
     @GridToStringInclude
-    private Map<UUID, GridUuid> ldrParties;
+    private Map<UUID, IgniteUuid> ldrParties;
 
     /**
      * @param src Source object.
@@ -58,10 +58,10 @@ class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
     GridAffinityMessage(
         byte[] src,
         String srcClsName,
-        GridUuid clsLdrId,
+        IgniteUuid clsLdrId,
         GridDeploymentMode depMode,
         String userVer,
-        Map<UUID, GridUuid> ldrParties) {
+        Map<UUID, IgniteUuid> ldrParties) {
         this.src = src;
         this.srcClsName = srcClsName;
         this.depMode = depMode;
@@ -87,7 +87,7 @@ class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
     /**
      * @return the Class loader ID.
      */
-    public GridUuid classLoaderId() {
+    public IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -115,7 +115,7 @@ class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
     /**
      * @return Node class loader participant map.
      */
-    public Map<UUID, GridUuid> loaderParticipants() {
+    public Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 

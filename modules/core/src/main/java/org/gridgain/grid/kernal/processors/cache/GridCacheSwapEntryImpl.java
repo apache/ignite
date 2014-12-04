@@ -52,10 +52,10 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     private boolean valIsByteArr;
 
     /** Class loader ID. */
-    private GridUuid keyClsLdrId;
+    private IgniteUuid keyClsLdrId;
 
     /** Class loader ID. */
-    private GridUuid valClsLdrId;
+    private IgniteUuid valClsLdrId;
 
     /** Version. */
     private GridCacheVersion ver;
@@ -81,8 +81,8 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
         GridCacheVersion ver,
         long ttl,
         long expireTime,
-        @Nullable GridUuid keyClsLdrId,
-        @Nullable GridUuid valClsLdrId) {
+        @Nullable IgniteUuid keyClsLdrId,
+        @Nullable IgniteUuid valClsLdrId) {
         assert ver != null;
 
         this.valBytes = valBytes;
@@ -219,12 +219,12 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridUuid keyClassLoaderId() {
+    @Nullable @Override public IgniteUuid keyClassLoaderId() {
         return keyClsLdrId;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridUuid valueClassLoaderId() {
+    @Nullable @Override public IgniteUuid valueClassLoaderId() {
         return valClsLdrId;
     }
 
@@ -314,11 +314,11 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         off += arrLen;
 
-        GridUuid valClsLdrId = U.readGridUuid(arr, off);
+        IgniteUuid valClsLdrId = U.readGridUuid(arr, off);
 
         off += valClsLdrId == null ? 1 : (1 + GUID_SIZE);
 
-        GridUuid keyClsLdrId = U.readGridUuid(arr, off);
+        IgniteUuid keyClsLdrId = U.readGridUuid(arr, off);
 
         return new GridCacheSwapEntryImpl<T>(ByteBuffer.wrap(valBytes),
             valIsByteArr,

@@ -34,10 +34,10 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     private UUID nearNodeId;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Topology version. */
     private long topVer;
@@ -101,8 +101,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param last {@code True} if this is last prepare request for node.
      */
     public GridDhtTxPrepareRequest(
-        GridUuid futId,
-        GridUuid miniId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
         long topVer,
         GridDhtTxLocalAdapter<K, V> tx,
         Collection<GridCacheTxEntry<K, V>> dhtWrites,
@@ -219,14 +219,14 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -459,7 +459,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
         switch (commState.idx) {
             case 21:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -487,7 +487,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
                 commState.idx++;
 
             case 24:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

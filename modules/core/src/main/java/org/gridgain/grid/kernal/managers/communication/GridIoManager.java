@@ -1782,7 +1782,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         private long endTime;
 
         /** */
-        private final GridUuid timeoutId;
+        private final IgniteUuid timeoutId;
 
         /** */
         private final Object topic;
@@ -1835,7 +1835,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
             endTime = endTime(timeout);
 
-            timeoutId = GridUuid.randomUuid();
+            timeoutId = IgniteUuid.randomUuid();
 
             lastTs = U.currentTimeMillis();
 
@@ -1843,7 +1843,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         }
 
         /** {@inheritDoc} */
-        @Override public GridUuid timeoutId() {
+        @Override public IgniteUuid timeoutId() {
             return timeoutId;
         }
 

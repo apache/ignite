@@ -1012,11 +1012,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 }
 
                 ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                    private GridUuid id = GridUuid.randomUuid();
+                    private IgniteUuid id = IgniteUuid.randomUuid();
 
                     private long start = System.currentTimeMillis();
 
-                    @Override public GridUuid timeoutId() {
+                    @Override public IgniteUuid timeoutId() {
                         return id;
                     }
 
@@ -1157,11 +1157,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 if (!retries.isEmpty()) {
                     ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                        private GridUuid id = GridUuid.randomUuid();
+                        private IgniteUuid id = IgniteUuid.randomUuid();
 
                         private long start = System.currentTimeMillis();
 
-                        @Override public GridUuid timeoutId() {
+                        @Override public IgniteUuid timeoutId() {
                             return id;
                         }
 

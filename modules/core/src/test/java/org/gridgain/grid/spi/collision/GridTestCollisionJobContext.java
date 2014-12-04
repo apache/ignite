@@ -78,7 +78,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
      * @param ses Task session.
      * @param jobId Job ID.
      */
-    public GridTestCollisionJobContext(GridComputeTaskSession ses, GridUuid jobId) {
+    public GridTestCollisionJobContext(GridComputeTaskSession ses, IgniteUuid jobId) {
         this.ses = ses;
 
         ctx = new GridTestJobContext(jobId);

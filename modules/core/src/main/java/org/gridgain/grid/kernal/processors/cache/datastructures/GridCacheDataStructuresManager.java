@@ -59,7 +59,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
 
     /** Queues map. */
-    private final ConcurrentMap<GridUuid, GridCacheQueueProxy> queuesMap;
+    private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
 
     /** Query notifying about queue update. */
     private GridCacheContinuousQueryAdapter queueQry;
@@ -95,10 +95,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     private boolean initFlag;
 
     /** Set keys used for set iteration. */
-    private ConcurrentMap<GridUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap = new ConcurrentHashMap8<>();
+    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap = new ConcurrentHashMap8<>();
 
     /** Sets map. */
-    private final ConcurrentMap<GridUuid, GridCacheSetProxy> setsMap;
+    private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
     /**
      * Default constructor.
@@ -618,7 +618,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         GridCacheQueueHeader header;
 
         if (create) {
-            header = new GridCacheQueueHeader(GridUuid.randomUuid(), cap, colloc, 0, 0, null);
+            header = new GridCacheQueueHeader(IgniteUuid.randomUuid(), cap, colloc, 0, 0, null);
 
             GridCacheQueueHeader old = queueHdrView.putIfAbsent(key, header);
 
@@ -1108,7 +1108,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param id Set ID.
      * @return Data for given set.
      */
-    @Nullable public GridConcurrentHashSet<GridCacheSetItemKey> setData(GridUuid id) {
+    @Nullable public GridConcurrentHashSet<GridCacheSetItemKey> setData(IgniteUuid id) {
         return setDataMap.get(id);
     }
 
@@ -1153,7 +1153,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         GridCacheAdapter cache = cctx.cache();
 
         if (create) {
-            hdr = new GridCacheSetHeader(GridUuid.randomUuid(), collocated);
+            hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
 
             GridCacheSetHeader old = retryPutIfAbsent(cache, key, hdr);
 
@@ -1244,7 +1244,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param setId Set ID.
      */
     @SuppressWarnings("unchecked")
-    private void blockSet(GridUuid setId) {
+    private void blockSet(IgniteUuid setId) {
         GridCacheSetProxy set = setsMap.remove(setId);
 
         if (set != null)
@@ -1257,7 +1257,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSetData(GridUuid setId, long topVer) throws GridException {
+    private void removeSetData(IgniteUuid setId, long topVer) throws GridException {
         boolean local = cctx.isLocal();
 
         GridCacheAffinityManager aff = cctx.affinity();
@@ -1455,7 +1455,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         private String cacheName;
 
         /** */
-        private GridUuid setId;
+        private IgniteUuid setId;
 
         /**
          * Required by {@link Externalizable}.
@@ -1468,7 +1468,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
          * @param cacheName Cache name.
          * @param setId Set ID.
          */
-        private BlockSetCallable(String cacheName, GridUuid setId) {
+        private BlockSetCallable(String cacheName, IgniteUuid setId) {
             this.cacheName = cacheName;
             this.setId = setId;
         }
@@ -1518,7 +1518,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         private String cacheName;
 
         /** */
-        private GridUuid setId;
+        private IgniteUuid setId;
 
         /** */
         private long topVer;
@@ -1535,7 +1535,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
          * @param setId Set ID.
          * @param topVer Topology version.
          */
-        private RemoveSetDataCallable(String cacheName, GridUuid setId, long topVer) {
+        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, long topVer) {
             this.cacheName = cacheName;
             this.setId = setId;
             this.topVer = topVer;

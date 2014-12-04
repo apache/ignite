@@ -29,7 +29,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     private static final long serialVersionUID = 0L;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Explicit lock flag. */
     private boolean explicitLock;
@@ -68,7 +68,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      * @param recoverEntries Recover entries.
      */
     public GridNearTxFinishRequest(
-        GridUuid futId,
+        IgniteUuid futId,
         GridCacheVersion xidVer,
         long threadId,
         boolean commit,
@@ -104,14 +104,14 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future ID.
      */
-    public void miniId(GridUuid miniId) {
+    public void miniId(IgniteUuid miniId) {
         this.miniId = miniId;
     }
 
@@ -228,7 +228,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 commState.idx++;
 
             case 21:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

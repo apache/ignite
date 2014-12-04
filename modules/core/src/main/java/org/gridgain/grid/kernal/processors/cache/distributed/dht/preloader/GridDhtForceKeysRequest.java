@@ -30,10 +30,10 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini-future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Serialized keys. */
     @GridDirectCollection(byte[].class)
@@ -56,8 +56,8 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
      */
     GridDhtForceKeysRequest(
         int cacheId,
-        GridUuid futId,
-        GridUuid miniId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
         Collection<K> keys,
         long topVer
     ) {
@@ -96,14 +96,14 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini-future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -251,7 +251,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
         switch (commState.idx) {
             case 3:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -290,7 +290,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 commState.idx++;
 
             case 5:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

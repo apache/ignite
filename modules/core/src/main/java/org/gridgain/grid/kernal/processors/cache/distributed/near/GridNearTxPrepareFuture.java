@@ -48,7 +48,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringExclude
@@ -96,13 +96,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         this.cctx = cctx;
         this.tx = tx;
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         log = U.logger(ctx, logRef, GridNearTxPrepareFuture.class);
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
@@ -557,7 +557,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            req.miniId(GridUuid.randomUuid());
+            req.miniId(IgniteUuid.randomUuid());
 
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
@@ -701,7 +701,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Keys. */
         @GridToStringInclude
@@ -735,7 +735,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         /**
          * @return Future ID.
          */
-        GridUuid futureId() {
+        IgniteUuid futureId() {
             return futId;
         }
 

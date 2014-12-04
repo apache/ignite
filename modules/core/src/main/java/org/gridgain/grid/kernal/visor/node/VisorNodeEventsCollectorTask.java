@@ -76,7 +76,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         private final String taskName;
 
         /** Task or job events with session. */
-        private final GridUuid taskSessionId;
+        private final IgniteUuid taskSessionId;
 
         /**
          * @param keyOrder Arguments for node local storage key.
@@ -87,7 +87,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          */
         public VisorNodeEventsCollectorTaskArg(@Nullable String keyOrder, @Nullable int[] typeArg,
             @Nullable Long timeArg,
-            @Nullable String taskName, @Nullable GridUuid taskSessionId) {
+            @Nullable String taskName, @Nullable IgniteUuid taskSessionId) {
             this.keyOrder = keyOrder;
             this.typeArg = typeArg;
             this.timeArg = timeArg;
@@ -109,7 +109,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param taskSessionId Arguments for task session filter.
          */
         public static VisorNodeEventsCollectorTaskArg createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
-            @Nullable GridUuid taskSessionId) {
+            @Nullable IgniteUuid taskSessionId) {
             return new VisorNodeEventsCollectorTaskArg(null,
                 VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHENTICATION, EVTS_AUTHORIZATION,
                     EVTS_SECURE_SESSION),
@@ -155,7 +155,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         /**
          * @return Task or job events with session.
          */
-        public GridUuid taskSessionId() {
+        public IgniteUuid taskSessionId() {
             return taskSessionId;
         }
 
@@ -236,7 +236,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param e Event
          * @return {@code true} if not contains {@code visor} in task name.
          */
-        private boolean filterByTaskSessionId(GridEvent e, GridUuid taskSessionId) {
+        private boolean filterByTaskSessionId(GridEvent e, IgniteUuid taskSessionId) {
             if (e.getClass().equals(GridTaskEvent.class)) {
                 GridTaskEvent te = (GridTaskEvent)e;
 
@@ -278,7 +278,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
             for (GridEvent e : evts) {
                 int tid = e.type();
-                GridUuid id = e.id();
+                IgniteUuid id = e.id();
                 String name = e.name();
                 UUID nid = e.node().id();
                 long t = e.timestamp();

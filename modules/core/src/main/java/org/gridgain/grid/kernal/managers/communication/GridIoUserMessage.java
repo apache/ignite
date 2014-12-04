@@ -36,7 +36,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
     private byte[] bodyBytes;
 
     /** Class loader ID. */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /** Message topic. */
     @GridDirectTransient
@@ -56,8 +56,8 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = GridUuid.class)
-    private Map<UUID, GridUuid> ldrParties;
+    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    private Map<UUID, IgniteUuid> ldrParties;
 
     /** Message deployment. */
     @GridDirectTransient
@@ -80,10 +80,10 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
         @Nullable String depClsName,
         @Nullable Object topic,
         @Nullable byte[] topicBytes,
-        @Nullable GridUuid clsLdrId,
+        @Nullable IgniteUuid clsLdrId,
         @Nullable GridDeploymentMode depMode,
         @Nullable String userVer,
-        @Nullable Map<UUID, GridUuid> ldrParties) {
+        @Nullable Map<UUID, IgniteUuid> ldrParties) {
         this.body = body;
         this.bodyBytes = bodyBytes;
         this.depClsName = depClsName;
@@ -112,7 +112,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
     /**
      * @return the Class loader ID.
      */
-    @Nullable public GridUuid classLoaderId() {
+    @Nullable public IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -140,7 +140,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Node class loader participant map.
      */
-    @Nullable public Map<UUID, GridUuid> loaderParticipants() {
+    @Nullable public Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 
@@ -269,7 +269,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        Map.Entry<UUID, GridUuid> e = (Map.Entry<UUID, GridUuid>)commState.cur;
+                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
                             if (!commState.putUuid(e.getKey()))
@@ -328,7 +328,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                GridUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid();
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -380,7 +380,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                             commState.keyDone = true;
                         }
 
-                        GridUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid();
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;

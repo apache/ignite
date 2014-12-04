@@ -181,7 +181,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     private int nodeWeight = DFLT_NODE_WEIGHT;
 
     /** Task topologies. First pair value indicates whether or not jobs have been mapped. */
-    private ConcurrentMap<GridUuid, IgniteBiTuple<Boolean, WeightedTopology>> taskTops =
+    private ConcurrentMap<IgniteUuid, IgniteBiTuple<Boolean, WeightedTopology>> taskTops =
         new ConcurrentHashMap8<>();
 
     /**
@@ -259,7 +259,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
 
                 if (evt.type() == EVT_TASK_FINISHED ||
                     evt.type() == EVT_TASK_FAILED) {
-                    GridUuid sesId = ((GridTaskEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((GridTaskEvent)evt).taskSessionId();
 
                     taskTops.remove(sesId);
 
@@ -270,7 +270,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
                 // avoid O(n*n/2) complexity, after that we can drop caches.
                 // Here we set mapped property and later cache will be ignored
                 else if (evt.type() == EVT_JOB_MAPPED) {
-                    GridUuid sesId = ((GridJobEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((GridJobEvent)evt).taskSessionId();
 
                     IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(sesId);
 

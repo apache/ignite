@@ -22,12 +22,12 @@ import java.util.*;
  * Cancels given tasks sessions.
  */
 @GridInternal
-public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID, Set<GridUuid>>, Void, Void> {
+public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID, Set<IgniteUuid>>, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorComputeCancelSessionsJob job(Map<UUID, Set<GridUuid>> arg) {
+    @Override protected VisorComputeCancelSessionsJob job(Map<UUID, Set<IgniteUuid>> arg) {
         return new VisorComputeCancelSessionsJob(arg);
     }
 
@@ -40,27 +40,27 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
     /**
      * Job that cancel tasks.
      */
-    private static class VisorComputeCancelSessionsJob extends VisorJob<Map<UUID, Set<GridUuid>>, Void> {
+    private static class VisorComputeCancelSessionsJob extends VisorJob<Map<UUID, Set<IgniteUuid>>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param arg Map with task sessions IDs to cancel.
          */
-        private VisorComputeCancelSessionsJob(Map<UUID, Set<GridUuid>> arg) {
+        private VisorComputeCancelSessionsJob(Map<UUID, Set<IgniteUuid>> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Map<UUID, Set<GridUuid>> arg) throws GridException {
-            Set<GridUuid> sesIds = arg.get(g.localNode().id());
+        @Override protected Void run(Map<UUID, Set<IgniteUuid>> arg) throws GridException {
+            Set<IgniteUuid> sesIds = arg.get(g.localNode().id());
 
             if (sesIds != null && !sesIds.isEmpty()) {
                 GridCompute compute = g.compute(g.forLocal());
 
-                Map<GridUuid, GridComputeTaskFuture<Object>> futs = compute.activeTaskFutures();
+                Map<IgniteUuid, GridComputeTaskFuture<Object>> futs = compute.activeTaskFutures();
 
-                for (GridUuid sesId : sesIds) {
+                for (IgniteUuid sesId : sesIds) {
                     GridComputeTaskFuture<Object> fut = futs.get(sesId);
 
                     if (fut != null)

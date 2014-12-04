@@ -49,8 +49,8 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
         GridCacheVersion ver,
         long ttl,
         long expireTime,
-        GridUuid keyClsLdrId,
-        @Nullable GridUuid valClsLdrId) {
+        IgniteUuid keyClsLdrId,
+        @Nullable IgniteUuid valClsLdrId) {
         super(valBytes, valIsByteArr, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
 
         this.key = key;

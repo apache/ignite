@@ -28,7 +28,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /** */
     private GridDeploymentMode depMode;
@@ -41,8 +41,8 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
     /** Node class loader participant map. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = GridUuid.class)
-    private Map<UUID, GridUuid> participants;
+    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    private Map<UUID, IgniteUuid> participants;
 
     /**
      * Required by {@link Externalizable}.
@@ -58,8 +58,8 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
      * @param participants Participants.
      * @param locDepOwner Local deployment owner flag.
      */
-    public GridDeploymentInfoBean(GridUuid clsLdrId, String userVer, GridDeploymentMode depMode,
-        Map<UUID, GridUuid> participants, boolean locDepOwner) {
+    public GridDeploymentInfoBean(IgniteUuid clsLdrId, String userVer, GridDeploymentMode depMode,
+        Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
         this.clsLdrId = clsLdrId;
         this.depMode = depMode;
         this.userVer = userVer;
@@ -79,7 +79,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid classLoaderId() {
+    @Override public IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -104,7 +104,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override public Map<UUID, GridUuid> participants() {
+    @Override public Map<UUID, IgniteUuid> participants() {
         return participants;
     }
 
@@ -193,7 +193,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        Map.Entry<UUID, GridUuid> e = (Map.Entry<UUID, GridUuid>)commState.cur;
+                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
                             if (!commState.putUuid(e.getKey()))
@@ -236,7 +236,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                GridUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid();
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -286,7 +286,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                             commState.keyDone = true;
                         }
 
-                        GridUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid();
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;

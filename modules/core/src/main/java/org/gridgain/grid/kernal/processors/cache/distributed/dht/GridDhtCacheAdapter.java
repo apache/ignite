@@ -47,10 +47,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected GridCachePreloader<K, V> preldr;
 
     /** Multi tx future holder. */
-    private ThreadLocal<IgniteBiTuple<GridUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
+    private ThreadLocal<IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
 
     /** Multi tx futures. */
-    private ConcurrentMap<GridUuid, MultiUpdateFuture> multiTxFuts = new ConcurrentHashMap8<>();
+    private ConcurrentMap<IgniteUuid, MultiUpdateFuture> multiTxFuts = new ConcurrentHashMap8<>();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -155,7 +155,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Topology version future registered for multi-update.
      */
     @Nullable public GridDhtTopologyFuture multiUpdateTopologyFuture() {
-        IgniteBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
+        IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         return tup == null ? null : tup.get2();
     }
@@ -167,7 +167,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridException If failed.
      */
     public long beginMultiUpdate() throws GridException {
-        IgniteBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
+        IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         if (tup != null)
             throw new GridException("Nested multi-update locks are not supported");
@@ -180,7 +180,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         try {
             // While we are holding read lock, register lock future for partition release future.
-            GridUuid lockId = GridUuid.fromUuid(ctx.localNodeId());
+            IgniteUuid lockId = IgniteUuid.fromUuid(ctx.localNodeId());
 
             topVer = top.topologyVersion();
 
@@ -209,7 +209,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridException If failed.
      */
     public void endMultiUpdate() throws GridException {
-        IgniteBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
+        IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         if (tup == null)
             throw new GridException("Multi-update was not started or released twice.");
@@ -217,7 +217,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         top.readLock();
 
         try {
-            GridUuid lockId = tup.get1();
+            IgniteUuid lockId = tup.get1();
 
             MultiUpdateFuture multiFut = multiTxFuts.remove(lockId);
 
@@ -238,7 +238,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Finish future.
      */
     @Nullable public GridFuture<?> multiUpdateFinishFuture(long topVer) {
-        GridCompoundFuture<GridUuid, Object> fut = null;
+        GridCompoundFuture<IgniteUuid, Object> fut = null;
 
         for (MultiUpdateFuture multiFut : multiTxFuts.values()) {
             if (multiFut.topologyVersion() <= topVer) {
@@ -720,7 +720,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * Multi update future.
      */
-    private static class MultiUpdateFuture extends GridFutureAdapter<GridUuid> {
+    private static class MultiUpdateFuture extends GridFutureAdapter<IgniteUuid> {
         /** */
         private static final long serialVersionUID = 0L;
 

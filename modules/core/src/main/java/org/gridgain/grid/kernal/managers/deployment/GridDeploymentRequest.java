@@ -37,7 +37,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
     private String rsrcName;
 
     /** Class loader ID. */
-    private GridUuid ldrId;
+    private IgniteUuid ldrId;
 
     /** Undeploy flag. */
     private boolean isUndeploy;
@@ -63,7 +63,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
      * @param rsrcName Resource name that should be found and sent back.
      * @param isUndeploy Undeploy property.
      */
-    GridDeploymentRequest(Object resTopic, GridUuid ldrId, String rsrcName, boolean isUndeploy) {
+    GridDeploymentRequest(Object resTopic, IgniteUuid ldrId, String rsrcName, boolean isUndeploy) {
         assert isUndeploy || resTopic != null;
         assert isUndeploy || ldrId != null;
         assert rsrcName != null;
@@ -118,7 +118,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
      *
      * @return Property ldrId.
      */
-    GridUuid classLoaderId() {
+    IgniteUuid classLoaderId() {
         return ldrId;
     }
 
@@ -253,7 +253,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                GridUuid ldrId0 = commState.getGridUuid();
+                IgniteUuid ldrId0 = commState.getGridUuid();
 
                 if (ldrId0 == GRID_UUID_NOT_READ)
                     return false;

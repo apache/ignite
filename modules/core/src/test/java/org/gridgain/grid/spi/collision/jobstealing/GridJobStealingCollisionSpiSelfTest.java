@@ -168,13 +168,13 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         List<GridCollisionJobContext> waitCtxs = new ArrayList<>(1);
 
         // Add passive.
-        Collections.addAll(waitCtxs, new GridTestCollisionJobContext(createTaskSession(), GridUuid.randomUuid()));
+        Collections.addAll(waitCtxs, new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()));
 
         List<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
-            GridUuid.randomUuid()));
+            IgniteUuid.randomUuid()));
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
@@ -201,15 +201,15 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         List<GridCollisionJobContext> waitCtxs = new ArrayList<>(2);
 
         Collections.addAll(waitCtxs,
-            new GridTestCollisionJobContext(createTaskSession(), GridUuid.randomUuid()),
-            new GridTestCollisionJobContext(createTaskSession(), GridUuid.randomUuid()),
-            new GridTestCollisionJobContext(createTaskSession(), GridUuid.randomUuid()));
+            new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()),
+            new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()),
+            new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()));
 
         Collection<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
-            GridUuid.randomUuid()));
+            IgniteUuid.randomUuid()));
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
@@ -293,7 +293,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         List<GridCollisionJobContext> waitCtxs = new ArrayList<>(1);
 
         // Add passive.
-        Collections.addAll(waitCtxs, new GridTestCollisionJobContext(createTaskSession(), GridUuid.randomUuid()));
+        Collections.addAll(waitCtxs, new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()));
 
         Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
 
@@ -322,7 +322,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
-            GridUuid.randomUuid()));
+            IgniteUuid.randomUuid()));
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
@@ -367,12 +367,12 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         Collection<GridCollisionJobContext> waitCtxs = new ArrayList<>(2);
 
         GridTestCollisionJobContext excluded = new GridTestCollisionJobContext(createTaskSession(),
-            GridUuid.randomUuid());
+            IgniteUuid.randomUuid());
 
         GridTestCollisionJobContext ctx1 = new GridTestCollisionJobContext(createTaskSession(),
-            GridUuid.randomUuid());
+            IgniteUuid.randomUuid());
         GridTestCollisionJobContext ctx2 = new GridTestCollisionJobContext(createTaskSession(),
-            GridUuid.randomUuid());
+            IgniteUuid.randomUuid());
 
         Collections.addAll(waitCtxs, ctx1, excluded, ctx2);
 
@@ -380,7 +380,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
-            GridUuid.randomUuid()));
+            IgniteUuid.randomUuid()));
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 

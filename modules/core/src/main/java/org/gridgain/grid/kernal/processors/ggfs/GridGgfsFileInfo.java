@@ -28,13 +28,13 @@ public final class GridGgfsFileInfo implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** ID for the root directory. */
-    public static final GridUuid ROOT_ID = new GridUuid(new UUID(0, 0), 0);
+    public static final IgniteUuid ROOT_ID = new IgniteUuid(new UUID(0, 0), 0);
 
     /** ID of the trash directory. */
-    public static final GridUuid TRASH_ID = new GridUuid(new UUID(0, 1), 0);
+    public static final IgniteUuid TRASH_ID = new IgniteUuid(new UUID(0, 1), 0);
 
     /** Info ID. */
-    private GridUuid id;
+    private IgniteUuid id;
 
     /** File length in bytes. */
     private long len;
@@ -46,10 +46,10 @@ public final class GridGgfsFileInfo implements Externalizable {
     private Map<String, String> props;
 
     /** File lock ID. */
-    private GridUuid lockId;
+    private IgniteUuid lockId;
 
     /** Affinity key used for single-node file collocation. */
-    private GridUuid affKey;
+    private IgniteUuid affKey;
 
     /** File affinity map. */
     private GridGgfsFileMap fileMap;
@@ -85,7 +85,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      *
      * @param id ID.
      */
-    GridGgfsFileInfo(GridUuid id) {
+    GridGgfsFileInfo(IgniteUuid id) {
         this(true, id, 0, 0, null, null, null, null, false, System.currentTimeMillis(), false);
     }
 
@@ -117,7 +117,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param evictExclude Eviction exclude flag.
      * @param props File properties.
      */
-    GridGgfsFileInfo(int blockSize, @Nullable GridUuid affKey, boolean evictExclude,
+    GridGgfsFileInfo(int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude,
         @Nullable Map<String, String> props) {
         this(false, null, blockSize, 0, affKey, null, props, null, true, System.currentTimeMillis(), evictExclude);
     }
@@ -132,7 +132,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param props Properties.
      * @param evictExclude Evict exclude flag.
      */
-    public GridGgfsFileInfo(int blockSize, long len, @Nullable GridUuid affKey, @Nullable GridUuid lockId,
+    public GridGgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
         boolean evictExclude, @Nullable Map<String, String> props) {
         this(false, null, blockSize, len, affKey, null, props, lockId, true, System.currentTimeMillis(), evictExclude);
     }
@@ -190,7 +190,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param lockId Lock ID.
      * @param modificationTime Last modification time.
      */
-    GridGgfsFileInfo(GridGgfsFileInfo info, @Nullable GridUuid lockId, long modificationTime) {
+    GridGgfsFileInfo(GridGgfsFileInfo info, @Nullable IgniteUuid lockId, long modificationTime) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), lockId, true, info.accessTime, modificationTime, info.evictExclude());
     }
@@ -221,9 +221,9 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
-    private GridGgfsFileInfo(boolean isDir, @Nullable GridUuid id, int blockSize, long len, @Nullable GridUuid affKey,
+    private GridGgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
         @Nullable Map<String, GridGgfsListingEntry> listing, @Nullable Map<String, String> props,
-        @Nullable GridUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
+        @Nullable IgniteUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
         this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, modificationTime,
             modificationTime, evictExclude);
     }
@@ -245,9 +245,9 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
-    private GridGgfsFileInfo(boolean isDir, @Nullable GridUuid id, int blockSize, long len, @Nullable GridUuid affKey,
+    private GridGgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
         @Nullable Map<String, GridGgfsListingEntry> listing, @Nullable Map<String, String> props,
-        @Nullable GridGgfsFileMap fileMap, @Nullable GridUuid lockId, boolean cpProps, long accessTime,
+        @Nullable GridGgfsFileMap fileMap, @Nullable IgniteUuid lockId, boolean cpProps, long accessTime,
         long modificationTime, boolean evictExclude) {
         assert F.isEmpty(listing) || isDir;
 
@@ -260,7 +260,7 @@ public final class GridGgfsFileInfo implements Externalizable {
             assert blockSize > 0 : "File block size should be positive: " + blockSize;
         }
 
-        this.id = id == null ? GridUuid.randomUuid() : id;
+        this.id = id == null ? IgniteUuid.randomUuid() : id;
         this.len = isDir ? 0 : len;
         this.blockSize = isDir ? 0 : blockSize;
         this.affKey = affKey;
@@ -323,7 +323,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      *
      * @return This item ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 
@@ -403,14 +403,14 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @return Affinity key used for single-node file collocation. If {@code null}, usual
      *      mapper procedure is used for block affinity detection.
      */
-    @Nullable public GridUuid affinityKey() {
+    @Nullable public IgniteUuid affinityKey() {
         return affKey;
     }
 
     /**
      * @param affKey Affinity key used for single-node file collocation.
      */
-    public void affinityKey(GridUuid affKey) {
+    public void affinityKey(IgniteUuid affKey) {
         this.affKey = affKey;
     }
 
@@ -443,7 +443,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      *
      * @return Lock ID if file is locked or {@code null} if file is free of locks.
      */
-    @Nullable public GridUuid lockId() {
+    @Nullable public IgniteUuid lockId() {
         return lockId;
     }
 

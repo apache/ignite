@@ -26,7 +26,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
     private static final long serialVersionUID = 0L;
 
     /** File id. */
-    private GridUuid fileId;
+    private IgniteUuid fileId;
 
     /** Request ID to ack. */
     private long id;
@@ -50,7 +50,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
      * @param id Request ID.
      * @param err Error.
      */
-    public GridGgfsAckMessage(GridUuid fileId, long id, @Nullable GridException err) {
+    public GridGgfsAckMessage(IgniteUuid fileId, long id, @Nullable GridException err) {
         this.fileId = fileId;
         this.id = id;
         this.err = err;
@@ -59,7 +59,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
     /**
      * @return File ID.
      */
-    public GridUuid fileId() {
+    public IgniteUuid fileId() {
         return fileId;
     }
 
@@ -174,7 +174,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                GridUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid();
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

@@ -99,7 +99,7 @@ public enum GridTopic {
      * @param id Topic ID.
      * @return Grid message topic with specified ID.
      */
-    public Object topic(GridUuid id) {
+    public Object topic(IgniteUuid id) {
         return new T1(this, id);
     }
 
@@ -108,7 +108,7 @@ public enum GridTopic {
      * @param id2 ID2.
      * @return Grid message topic with specified IDs.
      */
-    public Object topic(GridUuid id1, UUID id2) {
+    public Object topic(IgniteUuid id1, UUID id2) {
         return new T2(this, id1, id2);
     }
 
@@ -117,7 +117,7 @@ public enum GridTopic {
      * @param id2 ID2.
      * @return Grid message topic with specified IDs.
      */
-    public Object topic(GridUuid id1, long id2) {
+    public Object topic(IgniteUuid id1, long id2) {
         return new T8(this, id1, id2);
     }
 
@@ -187,7 +187,7 @@ public enum GridTopic {
         private GridTopic topic;
 
         /** */
-        private GridUuid id;
+        private IgniteUuid id;
 
         /**
          * No-arg constructor needed for {@link Serializable}.
@@ -200,7 +200,7 @@ public enum GridTopic {
          * @param topic Topic.
          * @param id ID.
          */
-        private T1(GridTopic topic, GridUuid id) {
+        private T1(GridTopic topic, IgniteUuid id) {
             this.topic = topic;
             this.id = id;
         }
@@ -259,7 +259,7 @@ public enum GridTopic {
         private GridTopic topic;
 
         /** */
-        private GridUuid id1;
+        private IgniteUuid id1;
 
         /** */
         private UUID id2;
@@ -276,7 +276,7 @@ public enum GridTopic {
          * @param id1 ID1.
          * @param id2 ID2.
          */
-        private T2(GridTopic topic, GridUuid id1, UUID id2) {
+        private T2(GridTopic topic, IgniteUuid id1, UUID id2) {
             this.topic = topic;
             this.id1 = id1;
             this.id2 = id2;
@@ -755,7 +755,7 @@ public enum GridTopic {
         private GridTopic topic;
 
         /** */
-        private GridUuid id1;
+        private IgniteUuid id1;
 
         /** */
         private long id2;
@@ -772,7 +772,7 @@ public enum GridTopic {
          * @param id1 ID1.
          * @param id2 ID2.
          */
-        private T8(GridTopic topic, GridUuid id1, long id2) {
+        private T8(GridTopic topic, IgniteUuid id1, long id2) {
             this.topic = topic;
             this.id1 = id1;
             this.id2 = id2;

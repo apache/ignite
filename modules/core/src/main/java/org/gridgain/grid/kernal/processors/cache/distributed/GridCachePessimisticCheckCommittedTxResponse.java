@@ -27,10 +27,10 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** Committed transaction info. */
     @GridDirectTransient
@@ -52,7 +52,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
      * @param miniId Mini future ID.
      * @param committedTxInfo Committed transaction info.
      */
-    public GridCachePessimisticCheckCommittedTxResponse(GridCacheVersion txId, GridUuid futId, GridUuid miniId,
+    public GridCachePessimisticCheckCommittedTxResponse(GridCacheVersion txId, IgniteUuid futId, IgniteUuid miniId,
         @Nullable GridCacheCommittedTxInfo<K, V> committedTxInfo) {
         super(txId, 0);
 
@@ -64,14 +64,14 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -186,7 +186,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 commState.idx++;
 
             case 9:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -196,7 +196,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 commState.idx++;
 
             case 10:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

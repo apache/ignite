@@ -20,25 +20,25 @@ import java.util.*;
  */
 public class GridTestJobContext extends GridMetadataAwareAdapter implements GridComputeJobContext {
     /** */
-    private final GridUuid jobId;
+    private final IgniteUuid jobId;
 
     /** */
     private final Map<Object, Object> attrs = new HashMap<>();
 
     /** */
     public GridTestJobContext() {
-        jobId = GridUuid.randomUuid();
+        jobId = IgniteUuid.randomUuid();
     }
 
     /**
      * @param jobId Job ID.
      */
-    public GridTestJobContext(GridUuid jobId) {
+    public GridTestJobContext(IgniteUuid jobId) {
         this.jobId = jobId;
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getJobId() {
+    @Override public IgniteUuid getJobId() {
         return jobId;
     }
 

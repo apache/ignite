@@ -24,7 +24,7 @@ public class GridTcpDiscoveryDiscardMessage extends GridTcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** ID of the message to discard (this and all preceding). */
-    private GridUuid msgId;
+    private IgniteUuid msgId;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -39,7 +39,7 @@ public class GridTcpDiscoveryDiscardMessage extends GridTcpDiscoveryAbstractMess
      * @param creatorNodeId Creator node ID.
      * @param msgId Message ID.
      */
-    public GridTcpDiscoveryDiscardMessage(UUID creatorNodeId, GridUuid msgId) {
+    public GridTcpDiscoveryDiscardMessage(UUID creatorNodeId, IgniteUuid msgId) {
         super(creatorNodeId);
 
         this.msgId = msgId;
@@ -50,7 +50,7 @@ public class GridTcpDiscoveryDiscardMessage extends GridTcpDiscoveryAbstractMess
      *
      * @return Message ID.
      */
-    public GridUuid msgId() {
+    public IgniteUuid msgId() {
         return msgId;
     }
 

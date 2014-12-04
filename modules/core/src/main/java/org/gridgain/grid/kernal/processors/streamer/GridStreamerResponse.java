@@ -24,7 +24,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** */
     private byte[] errBytes;
@@ -40,7 +40,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
      * @param futId Future ID.
      * @param errBytes Serialized error, if any.
      */
-    public GridStreamerResponse(GridUuid futId, @Nullable byte[] errBytes) {
+    public GridStreamerResponse(IgniteUuid futId, @Nullable byte[] errBytes) {
         assert futId != null;
 
         this.futId = futId;
@@ -50,7 +50,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
@@ -131,7 +131,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;

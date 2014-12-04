@@ -44,7 +44,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
     private GridGgfsFileInfo fileInfo;
 
     /** Parent ID. */
-    private final GridUuid parentId;
+    private final IgniteUuid parentId;
 
     /** File name. */
     private final String fileName;
@@ -89,7 +89,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
      * @param metrics Local GGFs metrics.
      * @throws GridException If stream creation failed.
      */
-    GridGgfsOutputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, GridUuid parentId,
+    GridGgfsOutputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
         int bufSize, GridGgfsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
         throws GridException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
@@ -414,9 +414,9 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
 
         GridGgfsFileMap map = fileInfo.fileMap();
 
-        GridUuid prevAffKey = map == null ? null : map.affinityKey(lastBlockOff, false);
+        IgniteUuid prevAffKey = map == null ? null : map.affinityKey(lastBlockOff, false);
 
-        GridUuid affKey = data.nextAffinityKey(prevAffKey);
+        IgniteUuid affKey = data.nextAffinityKey(prevAffKey);
 
         return affKey == null ? null : new GridGgfsFileAffinityRange(off, off, affKey);
     }

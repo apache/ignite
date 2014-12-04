@@ -27,7 +27,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid id;
+    private IgniteUuid id;
 
     /** */
     private long head;
@@ -60,7 +60,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
      * @param tail Queue tail index.
      * @param rmvIdxs Indexes of removed items.
      */
-    public GridCacheQueueHeader(GridUuid id, int cap, boolean collocated, long head, long tail,
+    public GridCacheQueueHeader(IgniteUuid id, int cap, boolean collocated, long head, long tail,
         @Nullable Set<Long> rmvIdxs) {
         assert id != null;
         assert head <= tail;
@@ -76,7 +76,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     /**
      * @return Queue unique ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

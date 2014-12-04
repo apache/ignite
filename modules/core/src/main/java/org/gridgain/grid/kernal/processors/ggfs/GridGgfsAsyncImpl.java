@@ -147,7 +147,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid nextAffinityKey() {
+    @Override public IgniteUuid nextAffinityKey() {
         return ggfs.nextAffinityKey();
     }
 
@@ -184,7 +184,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
-        @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
+        @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException {
         return ggfs.create(path, bufSize, overwrite, affKey, replication, blockSize, props);
     }

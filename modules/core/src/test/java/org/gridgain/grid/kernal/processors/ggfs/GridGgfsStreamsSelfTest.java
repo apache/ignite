@@ -179,12 +179,12 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
         UUID uuid = UUID.randomUUID();
 
-        GridUuid affKey;
+        IgniteUuid affKey;
 
         long idx = 0;
 
         while (true) {
-            affKey = new GridUuid(uuid, idx);
+            affKey = new IgniteUuid(uuid, idx);
 
             if (grid(0).mapKeyToNode(DATA_CACHE_NAME, affKey).id().equals(grid(0).localNode().id()))
                 break;

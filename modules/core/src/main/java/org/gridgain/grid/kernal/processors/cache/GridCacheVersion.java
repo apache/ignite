@@ -184,8 +184,8 @@ public class GridCacheVersion implements Comparable<GridCacheVersion>, Externali
     /**
      * @return Version represented as {@code GridUuid}
      */
-    public GridUuid asGridUuid() {
-        return new GridUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
+    public IgniteUuid asGridUuid() {
+        return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
     }
 
     /** {@inheritDoc} */

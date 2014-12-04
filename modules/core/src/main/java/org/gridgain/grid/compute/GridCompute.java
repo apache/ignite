@@ -327,7 +327,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      *
      * @return Map of active tasks keyed by their task task session ID.
      */
-    public <R> Map<GridUuid, GridComputeTaskFuture<R>> activeTaskFutures();
+    public <R> Map<IgniteUuid, GridComputeTaskFuture<R>> activeTaskFutures();
 
     /**
      * Sets task name for the next executed task on this projection in the <b>current thread</b>.

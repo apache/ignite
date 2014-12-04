@@ -27,7 +27,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     private static final long serialVersionUID = 0L;
 
     /** Deleted entry ID. */
-    private GridUuid id;
+    private IgniteUuid id;
 
     /** Optional error. */
     @GridDirectTransient
@@ -48,7 +48,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
      *
      * @param id Deleted entry ID.
      */
-    public GridGgfsDeleteMessage(GridUuid id) {
+    public GridGgfsDeleteMessage(IgniteUuid id) {
         assert id != null;
 
         this.id = id;
@@ -60,7 +60,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
      * @param id Entry ID.
      * @param err Error.
      */
-    public GridGgfsDeleteMessage(GridUuid id, GridException err) {
+    public GridGgfsDeleteMessage(IgniteUuid id, GridException err) {
         assert err != null;
 
         this.id = id;
@@ -70,7 +70,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     /**
      * @return Deleted entry ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 
@@ -171,7 +171,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                GridUuid id0 = commState.getGridUuid();
+                IgniteUuid id0 = commState.getGridUuid();
 
                 if (id0 == GRID_UUID_NOT_READ)
                     return false;

@@ -36,7 +36,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
     public static final int RANGE_STATUS_MOVED = 2;
 
     /** Range affinity key. */
-    private GridUuid affKey;
+    private IgniteUuid affKey;
 
     /** {@code True} if currently being moved by fragmentizer. */
     @SuppressWarnings("RedundantFieldInitialization")
@@ -63,7 +63,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
      * @param endOff End offset.
      * @param affKey Affinity key.
      */
-    GridGgfsFileAffinityRange(long startOff, long endOff, GridUuid affKey) {
+    GridGgfsFileAffinityRange(long startOff, long endOff, IgniteUuid affKey) {
         this.startOff = startOff;
         this.endOff = endOff;
         this.affKey = affKey;
@@ -86,7 +86,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
     /**
      * @return Affinity key for this range.
      */
-    public GridUuid affinityKey() {
+    public IgniteUuid affinityKey() {
         return affKey;
     }
 
@@ -330,7 +330,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                GridUuid affKey0 = commState.getGridUuid();
+                IgniteUuid affKey0 = commState.getGridUuid();
 
                 if (affKey0 == GRID_UUID_NOT_READ)
                     return false;

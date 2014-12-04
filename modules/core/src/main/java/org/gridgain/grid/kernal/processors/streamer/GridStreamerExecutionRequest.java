@@ -44,11 +44,11 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = GridUuid.class)
-    private Map<UUID, GridUuid> ldrParticipants;
+    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    private Map<UUID, IgniteUuid> ldrParticipants;
 
     /** Class loader ID. */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /**
      *
@@ -72,8 +72,8 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
         @Nullable GridDeploymentMode depMode,
         @Nullable String sampleClsName,
         @Nullable String userVer,
-        @Nullable Map<UUID, GridUuid> ldrParticipants,
-        @Nullable GridUuid clsLdrId
+        @Nullable Map<UUID, IgniteUuid> ldrParticipants,
+        @Nullable IgniteUuid clsLdrId
     ) {
         assert batchBytes != null;
 
@@ -117,14 +117,14 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
     /**
      * @return Node class loader participants.
      */
-    public Map<UUID, GridUuid> loaderParticipants() {
+    public Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParticipants;
     }
 
     /**
      * @return Class loader ID.
      */
-    public GridUuid classLoaderId() {
+    public IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
@@ -213,7 +213,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        Map.Entry<UUID, GridUuid> e = (Map.Entry<UUID, GridUuid>)commState.cur;
+                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
                             if (!commState.putUuid(e.getKey()))
@@ -272,7 +272,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 commState.idx++;
 
             case 1:
-                GridUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid();
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -322,7 +322,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                             commState.keyDone = true;
                         }
 
-                        GridUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid();
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;

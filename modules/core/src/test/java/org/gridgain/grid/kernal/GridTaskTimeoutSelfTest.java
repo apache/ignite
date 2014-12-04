@@ -49,7 +49,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @param execId Execution ID.
      */
-    private void checkTimedOutEvents(final GridUuid execId) {
+    private void checkTimedOutEvents(final IgniteUuid execId) {
         Ignite ignite = G.grid(getTestGridName());
 
         Collection<GridEvent> evts = ignite.events().localQuery(new PE() {

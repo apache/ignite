@@ -57,7 +57,7 @@ public class GridIoManagerBenchmark {
     private static final LongAdder msgCntr = new LongAdder();
 
     /** */
-    private static final Map<GridUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
+    private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
 
     /** */
     private static final byte[][] arrs;
@@ -263,7 +263,7 @@ public class GridIoManagerBenchmark {
 
                 Random rnd = ThreadLocalRandom8.current();
 
-                GridUuid msgId = GridUuid.randomUuid();
+                IgniteUuid msgId = IgniteUuid.randomUuid();
 
                 while (!Thread.interrupted()) {
                     CountDownLatch latch = null;

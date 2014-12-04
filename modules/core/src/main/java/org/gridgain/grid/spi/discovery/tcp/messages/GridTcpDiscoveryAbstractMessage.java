@@ -36,7 +36,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     private UUID senderNodeId;
 
     /** Message ID. */
-    private GridUuid id;
+    private IgniteUuid id;
 
     /** Verifier node ID. */
     private UUID verifierNodeId;
@@ -67,7 +67,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
      * @param creatorNodeId Creator node ID.
      */
     protected GridTcpDiscoveryAbstractMessage(UUID creatorNodeId) {
-        id = GridUuid.fromUuid(creatorNodeId);
+        id = IgniteUuid.fromUuid(creatorNodeId);
     }
 
     /**
@@ -84,7 +84,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
      *
      * @return Message ID.
      */
-    public GridUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

@@ -25,7 +25,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     private final GridTaskSessionImpl ses;
 
     /** Job ID. */
-    private final GridUuid jobId;
+    private final IgniteUuid jobId;
 
     /** Processor registry. */
     private final GridKernalContext ctx;
@@ -35,7 +35,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
      * @param ses Task session.
      * @param jobId Job ID.
      */
-    public GridJobSessionImpl(GridKernalContext ctx, GridTaskSessionImpl ses, GridUuid jobId) {
+    public GridJobSessionImpl(GridKernalContext ctx, GridTaskSessionImpl ses, IgniteUuid jobId) {
         assert ctx != null;
         assert ses != null;
         assert jobId != null;
@@ -53,7 +53,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getJobId() {
+    @Override public IgniteUuid getJobId() {
         return jobId;
     }
 
@@ -107,7 +107,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getId() {
+    @Override public IgniteUuid getId() {
         return ses.getId();
     }
 
@@ -159,7 +159,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(GridUuid jobId) throws GridException {
+    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
         for (GridComputeJobSibling sib : getJobSiblings())
             if (sib.getJobId().equals(jobId))
                 return sib;

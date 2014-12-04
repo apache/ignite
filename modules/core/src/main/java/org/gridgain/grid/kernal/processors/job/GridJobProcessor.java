@@ -60,26 +60,26 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final boolean jobAlwaysActivate;
 
     /** */
-    private final ConcurrentMap<GridUuid, GridJobWorker> activeJobs;
+    private final ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
 
     /** */
-    private final ConcurrentMap<GridUuid, GridJobWorker> passiveJobs;
+    private final ConcurrentMap<IgniteUuid, GridJobWorker> passiveJobs;
 
     /** */
-    private final ConcurrentMap<GridUuid, GridJobWorker> cancelledJobs =
+    private final ConcurrentMap<IgniteUuid, GridJobWorker> cancelledJobs =
         new ConcurrentHashMap8<>();
 
     /** */
-    private final Collection<GridUuid> heldJobs = new GridConcurrentHashSet<>();
+    private final Collection<IgniteUuid> heldJobs = new GridConcurrentHashSet<>();
 
     /** If value is {@code true}, job was cancelled from future. */
-    private final GridBoundedConcurrentLinkedHashMap<GridUuid, Boolean> cancelReqs =
+    private final GridBoundedConcurrentLinkedHashMap<IgniteUuid, Boolean> cancelReqs =
         new GridBoundedConcurrentLinkedHashMap<>(FINISHED_JOBS_COUNT,
             FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,
             0.75f, 16);
 
     /** */
-    private final GridBoundedConcurrentLinkedHashSet<GridUuid> finishedJobs =
+    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> finishedJobs =
         new GridBoundedConcurrentLinkedHashSet<>(FINISHED_JOBS_COUNT,
             FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,
             0.75f, 256, PER_SEGMENT_Q);
@@ -165,7 +165,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap8<GridUuid, GridJobWorker>() :
+        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap8<IgniteUuid, GridJobWorker>() :
             new JobsMap(1024, 0.75f, 256);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
@@ -265,7 +265,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param jobId Job ID.
      * @return Active job.
      */
-    @Nullable public GridJobWorker activeJob(GridUuid jobId) {
+    @Nullable public GridJobWorker activeJob(IgniteUuid jobId) {
         assert jobId != null;
 
         return activeJobs.get(jobId);
@@ -514,7 +514,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      * @param sesId Session ID.
      */
-    public void masterLeaveLocal(GridUuid sesId) {
+    public void masterLeaveLocal(IgniteUuid sesId) {
         assert sesId != null;
 
         for (GridJobWorker job : activeJobs.values())
@@ -527,7 +527,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param jobId Job ID.
      * @param sys System flag.
      */
-    public void cancelJob(@Nullable final GridUuid sesId, @Nullable final GridUuid jobId, final boolean sys) {
+    public void cancelJob(@Nullable final IgniteUuid sesId, @Nullable final IgniteUuid jobId, final boolean sys) {
         assert sesId != null || jobId != null;
 
         rwLock.readLock();
@@ -1819,7 +1819,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class JobsMap extends ConcurrentLinkedHashMap<GridUuid, GridJobWorker> {
+    private class JobsMap extends ConcurrentLinkedHashMap<IgniteUuid, GridJobWorker> {
         /**
          * @param initCap Initial capacity.
          * @param loadFactor Load factor.
@@ -1830,7 +1830,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridJobWorker put(GridUuid key, GridJobWorker val) {
+        @Override public GridJobWorker put(IgniteUuid key, GridJobWorker val) {
             assert !val.isInternal();
 
             GridJobWorker old = super.put(key, val);
@@ -1843,7 +1843,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridJobWorker putIfAbsent(GridUuid key, GridJobWorker val) {
+        @Override public GridJobWorker putIfAbsent(IgniteUuid key, GridJobWorker val) {
             assert !val.isInternal();
 
             GridJobWorker old = super.putIfAbsent(key, val);

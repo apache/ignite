@@ -25,7 +25,7 @@ import java.util.concurrent.*;
  */
 public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /** Sessions (initialized to 2K number of concurrent sessions). */
-    private final ConcurrentMap<GridUuid, GridTaskSessionImpl> sesMap =
+    private final ConcurrentMap<IgniteUuid, GridTaskSessionImpl> sesMap =
         new ConcurrentHashMap8<>(2048);
 
     /**
@@ -68,7 +68,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @return New session if one did not exist, or existing one.
      */
     public GridTaskSessionImpl createTaskSession(
-        GridUuid sesId,
+        IgniteUuid sesId,
         UUID taskNodeId,
         String taskName,
         @Nullable GridDeployment dep,
@@ -136,7 +136,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param sesId Session ID.
      * @return Session for a given session ID.
      */
-    @Nullable public GridTaskSessionImpl getSession(GridUuid sesId) {
+    @Nullable public GridTaskSessionImpl getSession(IgniteUuid sesId) {
         return sesMap.get(sesId);
     }
 
@@ -146,7 +146,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param sesId ID of session to remove.
      * @return {@code True} if session was removed.
      */
-    public boolean removeSession(GridUuid sesId) {
+    public boolean removeSession(IgniteUuid sesId) {
         GridTaskSessionImpl ses = sesMap.get(sesId);
 
         assert ses == null || ses.isFullSupport();

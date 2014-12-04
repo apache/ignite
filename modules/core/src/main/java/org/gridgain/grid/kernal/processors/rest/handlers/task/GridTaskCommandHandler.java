@@ -58,7 +58,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     private final int maxTaskResults = getInteger(GG_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
 
     /** Task results. */
-    private final Map<GridUuid, TaskDescriptor> taskDescs =
+    private final Map<IgniteUuid, TaskDescriptor> taskDescs =
         new GridBoundedConcurrentLinkedHashMap<>(maxTaskResults, 16, 0.75f, 4, PER_SEGMENT_Q);
 
     /** Topic ID generator. */
@@ -83,7 +83,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                     GridTaskResultResponse res = new GridTaskResultResponse();
 
-                    GridUuid taskId = req.taskId();
+                    IgniteUuid taskId = req.taskId();
 
                     TaskDescriptor desc = taskDescs.get(taskId);
 
@@ -204,7 +204,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 if (async) {
                     if (locExec) {
-                        GridUuid tid = taskFut.getTaskSession().getId();
+                        IgniteUuid tid = taskFut.getTaskSession().getId();
 
                         taskDescs.put(tid, new TaskDescriptor(false, null, null));
 
@@ -241,7 +241,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             if (async && locExec) {
                                 assert taskFut instanceof GridComputeTaskFuture;
 
-                                GridUuid tid = ((GridComputeTaskFuture)taskFut).getTaskSession().getId();
+                                IgniteUuid tid = ((GridComputeTaskFuture)taskFut).getTaskSession().getId();
 
                                 taskDescs.put(tid, desc);
                             }
@@ -292,7 +292,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 taskRestRes.setId(id);
 
                 try {
-                    GridUuid tid = !F.isEmpty(tidParam) ? GridUuid.fromString(tidParam) : null;
+                    IgniteUuid tid = !F.isEmpty(tidParam) ? IgniteUuid.fromString(tidParam) : null;
 
                     UUID resHolderId = !F.isEmpty(resHolderIdParam) ? UUID.fromString(resHolderIdParam) : null;
 
@@ -375,7 +375,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      * @param taskId Task ID.
      * @return Response from task holder.
      */
-    private IgniteBiTuple<String, GridTaskResultResponse> requestTaskResult(final UUID resHolderId, GridUuid taskId) {
+    private IgniteBiTuple<String, GridTaskResultResponse> requestTaskResult(final UUID resHolderId, IgniteUuid taskId) {
         ClusterNode taskNode = ctx.discovery().node(resHolderId);
 
         if (taskNode == null)

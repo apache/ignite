@@ -57,7 +57,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     private Collection<? extends K> keys;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Lock version. */
     private GridCacheVersion lockVer;
@@ -139,7 +139,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
-        futId = GridUuid.randomUuid();
+        futId = IgniteUuid.randomUuid();
 
         log = U.logger(ctx, logRef, GridDhtColocatedLockFuture.class);
 
@@ -175,7 +175,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /**
      * @return Future ID.
      */
-    @Override public GridUuid futureId() {
+    @Override public IgniteUuid futureId() {
         return futId;
     }
 
@@ -1084,7 +1084,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridUuid futId = GridUuid.randomUuid();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
         @GridToStringExclude
@@ -1125,7 +1125,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         /**
          * @return Future ID.
          */
-        GridUuid futureId() {
+        IgniteUuid futureId() {
             return futId;
         }
 

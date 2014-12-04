@@ -26,7 +26,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     private static final long serialVersionUID = 0L;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -40,7 +40,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridDhtTxFinishResponse(GridCacheVersion xid, GridUuid futId, GridUuid miniId) {
+    public GridDhtTxFinishResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId) {
         super(xid, futId);
 
         assert miniId != null;
@@ -51,7 +51,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
@@ -116,7 +116,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (commState.idx) {
             case 5:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

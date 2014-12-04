@@ -38,7 +38,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     private final Map<String, List<SharedDeployment>> cache = new HashMap<>();
 
     /** Set of obsolete class loaders. */
-    private final Collection<GridUuid> deadClsLdrs = new GridBoundedConcurrentLinkedHashSet<>(1024, 64);
+    private final Collection<IgniteUuid> deadClsLdrs = new GridBoundedConcurrentLinkedHashSet<>(1024, 64);
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -47,7 +47,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
      * Resources hits/misses cache (by loader ID). If missed resources cache is turned off,
      * only hits are cached.
      */
-    private final ConcurrentMap<GridUuid, Map<String, Boolean>> rsrcCache;
+    private final ConcurrentMap<IgniteUuid, Map<String, Boolean>> rsrcCache;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -232,7 +232,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDeployment getDeployment(final GridUuid ldrId) {
+    @Override public GridDeployment getDeployment(final IgniteUuid ldrId) {
         synchronized (mux) {
             return F.find(F.flat(cache.values()), null, new P1<SharedDeployment>() {
                 @Override public boolean apply(SharedDeployment d) {
@@ -275,9 +275,9 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
 
                 if (meta.participants() != null && !meta.participants().isEmpty()) {
-                    Map<UUID, GridUuid> participants = new LinkedHashMap<>();
+                    Map<UUID, IgniteUuid> participants = new LinkedHashMap<>();
 
-                    for (Map.Entry<UUID, GridUuid> e : meta.participants().entrySet()) {
+                    for (Map.Entry<UUID, IgniteUuid> e : meta.participants().entrySet()) {
                         // Warn if local node is in participants.
                         if (ctx.localNodeId().equals(e.getKey())) {
                             // Warn only if mode is not CONTINUOUS.
@@ -342,10 +342,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         // whether they should be reused for this request.
                         for (SharedDeployment d : deps) {
                             if (!d.pendingUndeploy() && !d.undeployed()) {
-                                Map<UUID, GridUuid> parties = d.participants();
+                                Map<UUID, IgniteUuid> parties = d.participants();
 
                                 if (parties != null) {
-                                    GridUuid ldrId = parties.get(meta.senderNodeId());
+                                    IgniteUuid ldrId = parties.get(meta.senderNodeId());
 
                                     if (ldrId != null) {
                                         assert !ldrId.equals(meta.classLoaderId());
@@ -555,8 +555,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addParticipants(Map<UUID, GridUuid> allParticipants,
-        Map<UUID, GridUuid> addedParticipants) {
+    @Override public void addParticipants(Map<UUID, IgniteUuid> allParticipants,
+        Map<UUID, IgniteUuid> addedParticipants) {
         synchronized (mux) {
             for (List<SharedDeployment> deps : cache.values()) {
                 for (SharedDeployment dep : deps) {
@@ -564,7 +564,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         continue;
 
                     if (hasAnyParticipant(dep, allParticipants)) {
-                        for (Map.Entry<UUID, GridUuid> added : addedParticipants.entrySet()) {
+                        for (Map.Entry<UUID, IgniteUuid> added : addedParticipants.entrySet()) {
                             UUID nodeId = added.getKey();
 
                             if (ctx.discovery().node(nodeId) == null)
@@ -590,10 +590,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
      * @param participants Participants to check.
      * @return {@code True} if deployment contains any of given participants.
      */
-    private boolean hasAnyParticipant(SharedDeployment dep, Map<UUID, GridUuid> participants) {
+    private boolean hasAnyParticipant(SharedDeployment dep, Map<UUID, IgniteUuid> participants) {
         assert Thread.holdsLock(mux);
 
-        for (Map.Entry<UUID, GridUuid> entry : participants.entrySet()) {
+        for (Map.Entry<UUID, IgniteUuid> entry : participants.entrySet()) {
             if (dep.hasParticipant(entry.getKey(), entry.getValue()))
                 return true;
         }
@@ -648,7 +648,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
             // Temporary class loader.
             ClassLoader temp = new GridDeploymentClassLoader(
-                GridUuid.fromUuid(ctx.localNodeId()),
+                IgniteUuid.fromUuid(ctx.localNodeId()),
                 meta.userVersion(),
                 meta.deploymentMode(),
                 true,
@@ -753,7 +753,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             return false;
 
         if (meta.participants() != null) {
-            for (Map.Entry<UUID, GridUuid> e : meta.participants().entrySet()) {
+            for (Map.Entry<UUID, IgniteUuid> e : meta.participants().entrySet()) {
                 if (ctx.discovery().node(e.getKey()) != null) {
                     dep.addParticipant(e.getKey(), e.getValue());
 
@@ -839,7 +839,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         if (endTime > 0) {
                             ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                                @Override public GridUuid timeoutId() {
+                                @Override public IgniteUuid timeoutId() {
                                     return undep.classLoaderId();
                                 }
 
@@ -941,7 +941,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
         assert meta.parentLoader() == null;
 
-        GridUuid ldrId = GridUuid.fromUuid(ctx.localNodeId());
+        IgniteUuid ldrId = IgniteUuid.fromUuid(ctx.localNodeId());
 
         GridDeploymentClassLoader clsLdr;
 
@@ -967,7 +967,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 false);
 
             if (meta.participants() != null)
-                for (Map.Entry<UUID, GridUuid> e : meta.participants().entrySet())
+                for (Map.Entry<UUID, IgniteUuid> e : meta.participants().entrySet())
                     clsLdr.register(e.getKey(), e.getValue());
 
             if (log.isDebugEnabled())
@@ -1048,7 +1048,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          */
         @SuppressWarnings({"TypeMayBeWeakened"})
         SharedDeployment(GridDeploymentMode depMode,
-            GridDeploymentClassLoader clsLdr, GridUuid clsLdrId,
+            GridDeploymentClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
         }
@@ -1063,7 +1063,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param ldrId Class loader ID.
          * @return Whether actually added or not.
          */
-        boolean addParticipant(UUID nodeId, GridUuid ldrId) {
+        boolean addParticipant(UUID nodeId, IgniteUuid ldrId) {
             assert nodeId != null;
             assert ldrId != null;
 
@@ -1086,7 +1086,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
             assert Thread.holdsLock(mux);
 
-            GridUuid ldrId = classLoader().unregister(nodeId);
+            IgniteUuid ldrId = classLoader().unregister(nodeId);
 
             if (log.isDebugEnabled())
                 log.debug("Registering dead class loader ID: " + ldrId);
@@ -1113,7 +1113,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param nodeId Node ID.
          * @return Class loader ID for node ID.
          */
-        GridUuid getClassLoaderId(UUID nodeId) {
+        IgniteUuid getClassLoaderId(UUID nodeId) {
             assert nodeId != null;
 
             assert Thread.holdsLock(mux);
@@ -1124,7 +1124,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         /**
          * @return Registered class loader IDs.
          */
-        Collection<GridUuid> getClassLoaderIds() {
+        Collection<IgniteUuid> getClassLoaderIds() {
             assert Thread.holdsLock(mux);
 
             return classLoader().registeredClassLoaderIds();
@@ -1147,7 +1147,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param ldrId Class loader ID.
          * @return {@code True} if node is participating in deployment.
          */
-        boolean hasParticipant(UUID nodeId, GridUuid ldrId) {
+        boolean hasParticipant(UUID nodeId, IgniteUuid ldrId) {
             assert nodeId != null;
             assert ldrId != null;
 
@@ -1175,7 +1175,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
             rmv = true;
 
-            Collection<GridUuid> deadIds = classLoader().registeredClassLoaderIds();
+            Collection<IgniteUuid> deadIds = classLoader().registeredClassLoaderIds();
 
             if (log.isDebugEnabled())
                 log.debug("Registering dead class loader IDs: " + deadIds);
@@ -1183,7 +1183,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             deadClsLdrs.addAll(deadIds);
 
             // Remove hits/misses from resource cache as well.
-            for (GridUuid clsLdrId : deadIds)
+            for (IgniteUuid clsLdrId : deadIds)
                 rsrcCache.remove(clsLdrId);
         }
 

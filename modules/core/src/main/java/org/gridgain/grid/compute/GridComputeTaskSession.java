@@ -128,7 +128,7 @@ public interface GridComputeTaskSession {
      *
      * @return Session ID of the task being executed.
      */
-    public GridUuid getId();
+    public IgniteUuid getId();
 
     /**
      * Gets class loader responsible for loading all classes within task.
@@ -178,7 +178,7 @@ public interface GridComputeTaskSession {
      * @return Grid job sibling for a given ID.
      * @throws GridException If job sibling can not be received from task node.
      */
-    @Nullable public GridComputeJobSibling getJobSibling(GridUuid jobId) throws GridException;
+    @Nullable public GridComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException;
 
     /**
      * Sets session attributed. Note that task session is distributed and

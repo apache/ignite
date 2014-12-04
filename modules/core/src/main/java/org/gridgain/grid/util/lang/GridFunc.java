@@ -8442,7 +8442,7 @@ public class GridFunc {
      * @param ids Event ids.
      * @return Event predicate.
      */
-    public static IgnitePredicate<GridEvent> eventId(@Nullable final GridUuid... ids) {
+    public static IgnitePredicate<GridEvent> eventId(@Nullable final IgniteUuid... ids) {
         return isEmpty(ids) ? F.<GridEvent>alwaysFalse() :
             new IgnitePredicate<GridEvent>() {
                 // Don't set peer deploy aware as UUID is loaded by

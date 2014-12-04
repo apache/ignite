@@ -496,7 +496,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         part,
                         key,
                         cctx.nodeId(),
-                        (GridUuid)null,
+                        (IgniteUuid)null,
                         null,
                         EVT_CACHE_OBJECT_FROM_OFFHEAP,
                         null,
@@ -550,7 +550,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                         // Event notification.
                         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_UNSWAPPED))
-                            cctx.events().addEvent(part, key, cctx.nodeId(), (GridUuid)null, null,
+                            cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
                                 EVT_CACHE_OBJECT_UNSWAPPED, null, false, v, true, null, null, null);
 
                         // Always fire this event, since preloading depends on it.
@@ -679,7 +679,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     onOffHeaped(part, key, keyBytes, entry);
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
-                        cctx.events().addEvent(part, key, cctx.nodeId(), (GridUuid)null, null,
+                        cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
                             EVT_CACHE_OBJECT_FROM_OFFHEAP, null, false, null, true, null, null, null);
 
                     if (qryMgr != null)
@@ -750,7 +750,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             // Event notification.
                             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_UNSWAPPED))
                                 cctx.events().addEvent(swapKey.partition(), key, cctx.nodeId(),
-                                    (GridUuid)null, null, EVT_CACHE_OBJECT_UNSWAPPED, null, false, entry.value(),
+                                    (IgniteUuid)null, null, EVT_CACHE_OBJECT_UNSWAPPED, null, false, entry.value(),
                                     true, null, null, null);
 
                             // Always fire this event, since preloading depends on it.
@@ -898,8 +898,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         GridCacheVersion ver,
         long ttl,
         long expireTime,
-        @Nullable GridUuid keyClsLdrId,
-        @Nullable GridUuid valClsLdrId)
+        @Nullable IgniteUuid keyClsLdrId,
+        @Nullable IgniteUuid valClsLdrId)
         throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return;
@@ -915,7 +915,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             offheap.put(spaceName, part, key, keyBytes, entry.marshal());
 
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_TO_OFFHEAP))
-                cctx.events().addEvent(part, key, cctx.nodeId(), (GridUuid)null, null,
+                cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
                     EVT_CACHE_OBJECT_TO_OFFHEAP, null, false, null, true, null, null, null);
         }
         else if (swapEnabled)
@@ -950,7 +950,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 if (cctx.events().isRecordable(EVT_CACHE_OBJECT_TO_OFFHEAP))
                     cctx.events().addEvent(swapEntry.partition(), swapEntry.key(), cctx.nodeId(),
-                        (GridUuid)null, null, EVT_CACHE_OBJECT_TO_OFFHEAP, null, false, null, true, null, null, null);
+                        (IgniteUuid)null, null, EVT_CACHE_OBJECT_TO_OFFHEAP, null, false, null, true, null, null, null);
 
                 if (qryMgr != null)
                     qryMgr.onSwap(spaceName, swapEntry.key());
@@ -967,7 +967,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_SWAPPED)) {
                 for (GridCacheBatchSwapEntry<K, V> batchSwapEntry : swapped) {
                     cctx.events().addEvent(batchSwapEntry.partition(), batchSwapEntry.key(), cctx.nodeId(),
-                        (GridUuid)null, null, EVT_CACHE_OBJECT_SWAPPED, null, false, null, true, null, null, null);
+                        (IgniteUuid)null, null, EVT_CACHE_OBJECT_SWAPPED, null, false, null, true, null, null, null);
 
                     if (qryMgr != null)
                         qryMgr.onSwap(spaceName, batchSwapEntry.key());
@@ -994,7 +994,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         swapMgr.write(spaceName, new GridSwapKey(key, part, keyBytes), entry, cctx.deploy().globalLoader());
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_SWAPPED))
-            cctx.events().addEvent(part, key, cctx.nodeId(), (GridUuid)null, null,
+            cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
                 EVT_CACHE_OBJECT_SWAPPED, null, false, null, true, null, null, null);
     }
 
@@ -1438,7 +1438,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (cctx.portableEnabled())
             return 0;
 
-        GridUuid ldrId = cctx.deploy().getClassLoaderId(ldr);
+        IgniteUuid ldrId = cctx.deploy().getClassLoaderId(ldr);
 
         assert ldrId != null;
 
@@ -1455,7 +1455,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         try {
                             GridCacheSwapEntry<V> swapEntry = unmarshalSwapEntry(e.getValue());
 
-                            GridUuid valLdrId = swapEntry.valueClassLoaderId();
+                            IgniteUuid valLdrId = swapEntry.valueClassLoaderId();
 
                             if (ldrId.equals(swapEntry.keyClassLoaderId())) {
                                 iter.removeX();

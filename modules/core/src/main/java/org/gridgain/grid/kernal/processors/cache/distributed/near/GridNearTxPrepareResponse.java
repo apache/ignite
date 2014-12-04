@@ -36,10 +36,10 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     private Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /** Mini future ID. */
-    private GridUuid miniId;
+    private IgniteUuid miniId;
 
     /** DHT version. */
     private GridCacheVersion dhtVer;
@@ -74,7 +74,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param invalidParts Invalid partitions.
      * @param err Error.
      */
-    public GridNearTxPrepareResponse(GridCacheVersion xid, GridUuid futId, GridUuid miniId, GridCacheVersion dhtVer,
+    public GridNearTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, GridCacheVersion dhtVer,
         Collection<Integer> invalidParts, Throwable err) {
         super(xid, err);
 
@@ -109,14 +109,14 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     /**
      * @return Mini future ID.
      */
-    public GridUuid miniId() {
+    public IgniteUuid miniId() {
         return miniId;
     }
 
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
@@ -377,7 +377,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 11:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -416,7 +416,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 13:
-                GridUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

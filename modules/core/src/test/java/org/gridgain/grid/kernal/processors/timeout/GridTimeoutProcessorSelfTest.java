@@ -63,13 +63,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
             ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
                 /** Timeout ID. */
-                private final GridUuid id = GridUuid.randomUuid();
+                private final IgniteUuid id = IgniteUuid.randomUuid();
 
                 /** End time. */
                 private final long endTime = System.currentTimeMillis() + RAND.nextInt(1000);
 
                 /** {@inheritDoc} */
-                @Override public GridUuid timeoutId() {
+                @Override public IgniteUuid timeoutId() {
                     return id;
                 }
 
@@ -136,13 +136,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                     ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
                         /** Timeout ID. */
-                        private final GridUuid id = GridUuid.randomUuid();
+                        private final IgniteUuid id = IgniteUuid.randomUuid();
 
                         /** End time. */
                         private final long endTime = System.currentTimeMillis() + RAND.nextInt(1000) + 500;
 
                         /** {@inheritDoc} */
-                        @Override public GridUuid timeoutId() { return id; }
+                        @Override public IgniteUuid timeoutId() { return id; }
 
                         /** {@inheritDoc} */
                         @Override public long endTime() { return endTime; }
@@ -263,13 +263,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
             GridTimeoutObject obj = new GridTimeoutObject() {
                 /** Timeout ID. */
-                private final GridUuid id = GridUuid.randomUuid();
+                private final IgniteUuid id = IgniteUuid.randomUuid();
 
                 /** End time. */
                 private final long endTime = System.currentTimeMillis() + RAND.nextInt(500) + 500;
 
                 /** {@inheritDoc} */
-                @Override public GridUuid timeoutId() {
+                @Override public IgniteUuid timeoutId() {
                     return id;
                 }
 
@@ -329,13 +329,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                     GridTimeoutObject obj = new GridTimeoutObject() {
                         /** Timeout ID. */
-                        private final GridUuid id = GridUuid.randomUuid();
+                        private final IgniteUuid id = IgniteUuid.randomUuid();
 
                         /** End time. */
                         private final long endTime = System.currentTimeMillis() + RAND.nextInt(500) + 500;
 
                         /** {@inheritDoc} */
-                        @Override public GridUuid timeoutId() {
+                        @Override public IgniteUuid timeoutId() {
                             return id;
                         }
 
@@ -385,13 +385,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                     GridTimeoutObject obj = new GridTimeoutObject() {
                         /** Timeout ID. */
-                        private final GridUuid id = GridUuid.randomUuid();
+                        private final IgniteUuid id = IgniteUuid.randomUuid();
 
                         /** End time. */
                         private final long endTime = System.currentTimeMillis() + RAND.nextInt(500) + 1000;
 
                         /** {@inheritDoc} */
-                        @Override public GridUuid timeoutId() {
+                        @Override public IgniteUuid timeoutId() {
                             return id;
                         }
 
@@ -441,13 +441,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                     GridTimeoutObject obj = new GridTimeoutObject() {
                         /** Timeout ID. */
-                        private final GridUuid id = GridUuid.randomUuid();
+                        private final IgniteUuid id = IgniteUuid.randomUuid();
 
                         /** End time. */
                         private final long endTime = System.currentTimeMillis() + RAND.nextInt(500) + 500;
 
                         /** {@inheritDoc} */
-                        @Override public GridUuid timeoutId() {
+                        @Override public IgniteUuid timeoutId() {
                             return id;
                         }
 
@@ -497,7 +497,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     public void testTimeoutCallOnce() throws Exception {
         ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
             /** Timeout ID. */
-            private final GridUuid id = GridUuid.randomUuid();
+            private final IgniteUuid id = IgniteUuid.randomUuid();
 
             /** End time. */
             private final long endTime = System.currentTimeMillis() + RAND.nextInt(500) + 100;
@@ -506,7 +506,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             private int cnt;
 
             /** {@inheritDoc} */
-            @Override public GridUuid timeoutId() { return id; }
+            @Override public IgniteUuid timeoutId() { return id; }
 
             /** {@inheritDoc} */
             @Override public long endTime() { return endTime; }
@@ -538,13 +538,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
         ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
             /** Timeout ID. */
-            private final GridUuid id = GridUuid.randomUuid();
+            private final IgniteUuid id = IgniteUuid.randomUuid();
 
             /** End time. */
             private final long endTime = endTime0;
 
             /** {@inheritDoc} */
-            @Override public GridUuid timeoutId() {
+            @Override public IgniteUuid timeoutId() {
                 return id;
             }
 
@@ -568,13 +568,13 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
         ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
             /** Timeout ID. */
-            private final GridUuid id = GridUuid.randomUuid();
+            private final IgniteUuid id = IgniteUuid.randomUuid();
 
             /** End time. */
             private final long endTime = endTime0;
 
             /** {@inheritDoc} */
-            @Override public GridUuid timeoutId() {
+            @Override public IgniteUuid timeoutId() {
                 return id;
             }
 

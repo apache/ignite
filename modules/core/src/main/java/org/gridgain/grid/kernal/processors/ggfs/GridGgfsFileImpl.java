@@ -28,7 +28,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
     private GridGgfsPath path;
 
     /** File id. */
-    private GridUuid fileId;
+    private IgniteUuid fileId;
 
     /** Block size. */
     private int blockSize;
@@ -117,7 +117,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
     /**
      * @return File ID.
      */
-    public GridUuid fileId() {
+    public IgniteUuid fileId() {
         return fileId;
     }
 

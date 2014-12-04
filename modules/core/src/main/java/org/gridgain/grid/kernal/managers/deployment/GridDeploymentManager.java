@@ -61,7 +61,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
                 new LocalDeployment(
                     ctx.config().getDeploymentMode(),
                     U.gridClassLoader(),
-                    GridUuid.fromUuid(ctx.localNodeId()),
+                    IgniteUuid.fromUuid(ctx.localNodeId()),
                     ctx.userVersion(U.gridClassLoader()),
                     String.class.getName()) :
                 null;
@@ -304,7 +304,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @param ldrId Loader ID.
      * @return Deployment for given ID.
      */
-    @Nullable public GridDeployment getDeployment(GridUuid ldrId) {
+    @Nullable public GridDeployment getDeployment(IgniteUuid ldrId) {
         if (locDep != null)
            return locDep.classLoaderId().equals(ldrId) ? locDep : null;
 
@@ -386,8 +386,8 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         String clsName,
         String userVer,
         UUID sndNodeId,
-        GridUuid clsLdrId,
-        Map<UUID, GridUuid> participants,
+        IgniteUuid clsLdrId,
+        Map<UUID, IgniteUuid> participants,
         @Nullable IgnitePredicate<ClusterNode> nodeFilter) {
         if (locDep != null)
             return locDep;
@@ -507,7 +507,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @param allParticipants All participants.
      * @param addedParticipants Added participants.
      */
-    public void addCacheParticipants(Map<UUID, GridUuid> allParticipants, Map<UUID, GridUuid> addedParticipants) {
+    public void addCacheParticipants(Map<UUID, IgniteUuid> allParticipants, Map<UUID, IgniteUuid> addedParticipants) {
         verStore.addParticipants(allParticipants, addedParticipants);
     }
 
@@ -524,7 +524,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @return ID for given class loader or {@code null} if given loader is not
      *      grid deployment class loader.
      */
-    @Nullable public GridUuid getClassLoaderId(ClassLoader ldr) {
+    @Nullable public IgniteUuid getClassLoaderId(ClassLoader ldr) {
         assert ldr != null;
 
         return ldr instanceof GridDeploymentClassLoader ? ((GridDeploymentInfo)ldr).classLoaderId() : null;
@@ -552,7 +552,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
          * @param userVer User version.
          * @param sampleClsName Sample class name.
          */
-        private LocalDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, GridUuid clsLdrId, String userVer,
+        private LocalDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
             String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, /*local*/true);
         }
@@ -593,7 +593,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<UUID, GridUuid> participants() {
+        @Nullable @Override public Map<UUID, IgniteUuid> participants() {
             return null;
         }
 

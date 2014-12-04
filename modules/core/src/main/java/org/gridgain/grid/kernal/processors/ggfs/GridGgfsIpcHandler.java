@@ -507,7 +507,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @return Affinity key that maps on local node by the time this method is called if replication factor
      *      is {@code 0}, {@code null} otherwise.
      */
-    @Nullable private GridUuid affinityKey(GridGgfsPathControlRequest req) {
+    @Nullable private IgniteUuid affinityKey(GridGgfsPathControlRequest req) {
         // Do not generate affinity key for replicated or near-only cache.
         if (!req.colocate()) {
             if (log.isDebugEnabled())
@@ -517,7 +517,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
             return null;
         }
 
-        GridUuid key = ggfs.nextAffinityKey();
+        IgniteUuid key = ggfs.nextAffinityKey();
 
         if (log.isDebugEnabled())
             log.debug("Generated affinity key for path control request [ggfsName=" + ggfs.name() +

@@ -26,7 +26,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     private static final long serialVersionUID = 0L;
 
     /** File id. */
-    private GridUuid fileId;
+    private IgniteUuid fileId;
 
     /** Batch id */
     private long id;
@@ -49,7 +49,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
      * @param id Message id.
      * @param blocks Blocks to put in cache.
      */
-    public GridGgfsBlocksMessage(GridUuid fileId, long id, Map<GridGgfsBlockKey, byte[]> blocks) {
+    public GridGgfsBlocksMessage(IgniteUuid fileId, long id, Map<GridGgfsBlockKey, byte[]> blocks) {
         this.fileId = fileId;
         this.id = id;
         this.blocks = blocks;
@@ -58,7 +58,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     /**
      * @return File id.
      */
-    public GridUuid fileId() {
+    public IgniteUuid fileId() {
         return fileId;
     }
 
@@ -220,7 +220,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                GridUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid();
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

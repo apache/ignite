@@ -85,7 +85,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid xid() {
+    @Override public IgniteUuid xid() {
         return tx.xid();
     }
 

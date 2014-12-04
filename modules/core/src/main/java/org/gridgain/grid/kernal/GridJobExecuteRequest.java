@@ -28,10 +28,10 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
-    private GridUuid jobId;
+    private IgniteUuid jobId;
 
     /** */
     @GridToStringExclude
@@ -59,8 +59,8 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = GridUuid.class)
-    private Map<UUID, GridUuid> ldrParticipants;
+    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    private Map<UUID, IgniteUuid> ldrParticipants;
 
     /** */
     @GridToStringExclude
@@ -99,7 +99,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     private long createTime = createTime0;
 
     /** */
-    private GridUuid clsLdrId;
+    private IgniteUuid clsLdrId;
 
     /** */
     private GridDeploymentMode depMode;
@@ -154,8 +154,8 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @param internal {@code True} if internal job.
      */
     public GridJobExecuteRequest(
-        GridUuid sesId,
-        GridUuid jobId,
+        IgniteUuid sesId,
+        IgniteUuid jobId,
         String taskName,
         String userVer,
         String taskClsName,
@@ -171,10 +171,10 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         byte[] jobAttrsBytes,
         Map<? extends Serializable, ? extends Serializable> jobAttrs,
         String cpSpi,
-        GridUuid clsLdrId,
+        IgniteUuid clsLdrId,
         GridDeploymentMode depMode,
         boolean dynamicSiblings,
-        Map<UUID, GridUuid> ldrParticipants,
+        Map<UUID, IgniteUuid> ldrParticipants,
         boolean forceLocDep,
         boolean sesFullSup,
         boolean internal) {
@@ -218,14 +218,14 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid getSessionId() {
+    @Override public IgniteUuid getSessionId() {
         return sesId;
     }
 
     /**
      * @return Job session ID.
      */
-    public GridUuid getJobId() {
+    public IgniteUuid getJobId() {
         return jobId;
     }
 
@@ -339,7 +339,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /**
      * @return Task local class loader id.
      */
-    public GridUuid getClassLoaderId() {
+    public IgniteUuid getClassLoaderId() {
         return clsLdrId;
     }
 
@@ -362,7 +362,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /**
      * @return Node class loader participant map.
      */
-    public Map<UUID, GridUuid> getLoaderParticipants() {
+    public Map<UUID, IgniteUuid> getLoaderParticipants() {
         return ldrParticipants;
     }
 
@@ -528,7 +528,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        Map.Entry<UUID, GridUuid> e = (Map.Entry<UUID, GridUuid>)commState.cur;
+                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
                             if (!commState.putUuid(e.getKey()))
@@ -646,7 +646,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
         switch (commState.idx) {
             case 0:
-                GridUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid();
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -728,7 +728,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 9:
-                GridUuid jobId0 = commState.getGridUuid();
+                IgniteUuid jobId0 = commState.getGridUuid();
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -760,7 +760,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                             commState.keyDone = true;
                         }
 
-                        GridUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid();
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;
@@ -798,7 +798,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 13:
-                GridUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid();
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

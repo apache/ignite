@@ -28,10 +28,10 @@ public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
     public void testRanges() throws Exception {
         GridGgfsFileMap map = new GridGgfsFileMap();
 
-        GridUuid[] affKeys = new GridUuid[20];
+        IgniteUuid[] affKeys = new IgniteUuid[20];
 
         for (int i = 0; i < affKeys.length; i++)
-            affKeys[i] = GridUuid.randomUuid();
+            affKeys[i] = IgniteUuid.randomUuid();
 
         int numOfRanges = 0;
 
@@ -41,7 +41,7 @@ public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
                 long off2 = i * 10 + 5;
                 long off3 = i * 10 + 8;
 
-                GridUuid affKey = i % 2 == 0 ? null : affKeys[i / 2];
+                IgniteUuid affKey = i % 2 == 0 ? null : affKeys[i / 2];
 
                 assertEquals("For i: " + i, affKey, map.affinityKey(off1, false));
                 assertEquals("For i: " + i, affKey, map.affinityKey(off2, false));
@@ -61,7 +61,7 @@ public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
     public void testAddUpdateAdd() throws Exception {
         GridGgfsFileMap map = new GridGgfsFileMap();
 
-        GridUuid affKey = GridUuid.randomUuid();
+        IgniteUuid affKey = IgniteUuid.randomUuid();
 
         map.addRange(new GridGgfsFileAffinityRange(0, 9, affKey));
 
@@ -86,7 +86,7 @@ public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
     public void testRangeUpdate1() throws Exception {
         GridGgfsFileMap map = new GridGgfsFileMap();
 
-        GridUuid affKey = GridUuid.randomUuid();
+        IgniteUuid affKey = IgniteUuid.randomUuid();
 
         for (int i = 0; i < 4; i++)
             map.addRange(new GridGgfsFileAffinityRange(i * 20 + 10, i * 20 + 19, affKey));
@@ -133,7 +133,7 @@ public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
     public void testRangeUpdate2() throws Exception {
         GridGgfsFileMap map = new GridGgfsFileMap();
 
-        GridUuid affKey = GridUuid.randomUuid();
+        IgniteUuid affKey = IgniteUuid.randomUuid();
 
         for (int i = 0; i < 4; i++)
             map.addRange(new GridGgfsFileAffinityRange(i * 20 + 10, i * 20 + 19, affKey));
@@ -236,8 +236,8 @@ public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
     public void testInvalidRangeUpdates() throws Exception {
         final GridGgfsFileMap map = new GridGgfsFileMap();
 
-        final GridUuid affKey1 = GridUuid.randomUuid();
-        final GridUuid affKey2 = GridUuid.randomUuid();
+        final IgniteUuid affKey1 = IgniteUuid.randomUuid();
+        final IgniteUuid affKey2 = IgniteUuid.randomUuid();
 
         map.addRange(new GridGgfsFileAffinityRange(10, 19, affKey1));
         map.addRange(new GridGgfsFileAffinityRange(30, 39, affKey1));
@@ -281,7 +281,7 @@ public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRangeSplit() throws Exception {
-        GridUuid affKey = GridUuid.randomUuid();
+        IgniteUuid affKey = IgniteUuid.randomUuid();
 
         GridGgfsFileAffinityRange range = new GridGgfsFileAffinityRange(0, 9999, affKey);
 

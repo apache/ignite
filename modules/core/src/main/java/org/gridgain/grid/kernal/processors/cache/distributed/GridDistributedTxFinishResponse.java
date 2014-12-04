@@ -28,7 +28,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     private GridCacheVersion txId;
 
     /** Future ID. */
-    private GridUuid futId;
+    private IgniteUuid futId;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -41,7 +41,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
      * @param txId Transaction id.
      * @param futId Future ID.
      */
-    public GridDistributedTxFinishResponse(GridCacheVersion txId, GridUuid futId) {
+    public GridDistributedTxFinishResponse(GridCacheVersion txId, IgniteUuid futId) {
         assert txId != null;
         assert futId != null;
 
@@ -60,7 +60,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     /**
      * @return Future ID.
      */
-    public GridUuid futureId() {
+    public IgniteUuid futureId() {
         return futId;
     }
 
@@ -128,7 +128,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
         switch (commState.idx) {
             case 3:
-                GridUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;

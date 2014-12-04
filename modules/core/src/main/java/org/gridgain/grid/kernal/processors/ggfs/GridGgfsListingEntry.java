@@ -23,10 +23,10 @@ public class GridGgfsListingEntry implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** File id. */
-    private GridUuid fileId;
+    private IgniteUuid fileId;
 
     /** File affinity key. */
-    private GridUuid affKey;
+    private IgniteUuid affKey;
 
     /** Positive block size if file, 0 if directory. */
     private int blockSize;
@@ -87,14 +87,14 @@ public class GridGgfsListingEntry implements Externalizable {
     /**
      * @return Entry file ID.
      */
-    public GridUuid fileId() {
+    public IgniteUuid fileId() {
         return fileId;
     }
 
     /**
      * @return File affinity key, if specified.
      */
-    public GridUuid affinityKey() {
+    public IgniteUuid affinityKey() {
         return affKey;
     }
 

@@ -70,8 +70,8 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
     /**
      * @return Pre-generated UUID.
      */
-    private GridUuid uuid() {
-        return GridUuid.randomUuid();
+    private IgniteUuid uuid() {
+        return IgniteUuid.randomUuid();
     }
 
     /** {@inheritDoc} */

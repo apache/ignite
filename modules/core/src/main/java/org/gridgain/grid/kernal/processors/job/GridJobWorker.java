@@ -214,8 +214,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Unique job ID.
      */
-    public GridUuid getJobId() {
-        GridUuid jobId = ses.getJobId();
+    public IgniteUuid getJobId() {
+        IgniteUuid jobId = ses.getJobId();
 
         assert jobId != null;
 
@@ -293,8 +293,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     }
 
     /** {@inheritDoc} */
-    @Override public GridUuid timeoutId() {
-        GridUuid jobId = ses.getJobId();
+    @Override public IgniteUuid timeoutId() {
+        IgniteUuid jobId = ses.getJobId();
 
         assert jobId != null;
 
@@ -862,8 +862,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         assert obj instanceof GridJobWorker;
 
-        GridUuid jobId1 = ses.getJobId();
-        GridUuid jobId2 = ((GridJobWorker)obj).ses.getJobId();
+        IgniteUuid jobId1 = ses.getJobId();
+        IgniteUuid jobId2 = ((GridJobWorker)obj).ses.getJobId();
 
         assert jobId1 != null;
         assert jobId2 != null;
@@ -873,7 +873,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        GridUuid jobId = ses.getJobId();
+        IgniteUuid jobId = ses.getJobId();
 
         assert jobId != null;
 

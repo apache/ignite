@@ -79,7 +79,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {
-                        GridUuid jobId = jobCtx.getJobId();
+                        IgniteUuid jobId = jobCtx.getJobId();
 
                         String attr = (String)taskSes.getAttribute(jobId);
 
@@ -117,7 +117,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
             Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
 
             for (GridCollisionJobContext job : waitJobs) {
-                GridUuid jobId = job.getJobContext().getJobId();
+                IgniteUuid jobId = job.getJobContext().getJobId();
 
                 try {
                     job.getTaskSession().setAttribute(jobId, "test-" + jobId);

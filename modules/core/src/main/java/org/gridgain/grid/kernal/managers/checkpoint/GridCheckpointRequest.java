@@ -24,7 +24,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
     private String key;
@@ -44,7 +44,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
      * @param key Checkpoint key.
      * @param cpSpi Checkpoint SPI.
      */
-    public GridCheckpointRequest(GridUuid sesId, String key, String cpSpi) {
+    public GridCheckpointRequest(IgniteUuid sesId, String key, String cpSpi) {
         assert sesId != null;
         assert key != null;
 
@@ -57,7 +57,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Session ID.
      */
-    public GridUuid getSessionId() {
+    public IgniteUuid getSessionId() {
         return sesId;
     }
 
@@ -157,7 +157,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 2:
-                GridUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid();
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

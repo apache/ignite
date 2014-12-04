@@ -51,7 +51,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final GridMarshaller marsh;
 
     /** */
-    private final ConcurrentMap<GridUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();
+    private final ConcurrentMap<IgniteUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();
 
     /** */
     private boolean stopping;
@@ -278,7 +278,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskCls);
 
-            return startTask(null, taskCls, null, GridUuid.fromUuid(ctx.localNodeId()), arg, false);
+            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
         }
         finally {
             lock.readUnlock();
@@ -311,7 +311,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
-            return startTask(null, null, task, GridUuid.fromUuid(ctx.localNodeId()), arg, sys);
+            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys);
         }
         finally {
             lock.readUnlock();
@@ -349,7 +349,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskName);
 
-            return startTask(taskName, null, null, GridUuid.fromUuid(ctx.localNodeId()), arg, false);
+            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
         }
         finally {
             lock.readUnlock();
@@ -370,7 +370,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
         @Nullable GridComputeTask<T, R> task,
-        GridUuid sesId,
+        IgniteUuid sesId,
         @Nullable T arg,
         boolean sys) {
         assert sesId != null;
@@ -608,7 +608,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param sesId Task's session id.
      * @return A {@link GridComputeTaskFuture} instance or {@code null} if no such task found.
      */
-    @Nullable public <R> GridComputeTaskFuture<R> taskFuture(GridUuid sesId) {
+    @Nullable public <R> GridComputeTaskFuture<R> taskFuture(IgniteUuid sesId) {
         GridTaskWorker<?, ?> taskWorker = tasks.get(sesId);
 
         return taskWorker != null ? (GridComputeTaskFuture<R>)taskWorker.getTaskFuture() : null;
@@ -618,8 +618,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @return Active task futures.
      */
     @SuppressWarnings("unchecked")
-    public <R> Map<GridUuid, GridComputeTaskFuture<R>> taskFutures() {
-        Map<GridUuid, GridComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
+    public <R> Map<IgniteUuid, GridComputeTaskFuture<R>> taskFutures() {
+        Map<IgniteUuid, GridComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
 
         for (GridTaskWorker taskWorker : tasks.values()) {
             GridComputeTaskFuture<R> fut = taskWorker.getTaskFuture();
@@ -962,7 +962,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      *
      * @param sesId Session ID.
      */
-    public void onCancelled(GridUuid sesId) {
+    public void onCancelled(IgniteUuid sesId) {
         assert sesId != null;
 
         lock.readLock();
