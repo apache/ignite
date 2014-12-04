@@ -188,14 +188,14 @@ public class GridDsiClient implements Callable {
         fileLock.lock(true); // Get shared lock, allowing multiple instances.
 
         try {
-            GridGain.start(args.length < 4 ? "modules/core/src/test/config/load/dsi-load-client.xml" : args[3]);
+            Ignition.start(args.length < 4 ? "modules/core/src/test/config/load/dsi-load-client.xml" : args[3]);
 
             Thread collector = null;
 
             Thread timer = null;
 
             try {
-                g = GridGain.grid("dsi");
+                g = Ignition.grid("dsi");
 
                 int noThreads = Integer.parseInt(args[0]);
 
@@ -402,7 +402,7 @@ public class GridDsiClient implements Callable {
                 if (timer != null)
                     timer.interrupt();
 
-                GridGain.stopAll(true);
+                Ignition.stopAll(true);
             }
         }
         finally {

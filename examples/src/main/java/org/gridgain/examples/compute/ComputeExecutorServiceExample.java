@@ -34,7 +34,7 @@ public final class ComputeExecutorServiceExample {
      */
     @SuppressWarnings({"TooBroadScope"})
     public static void main(String[] args) throws Exception {
-        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute executor service example started.");
 

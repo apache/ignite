@@ -161,7 +161,7 @@ object scalar extends ScalarConversions {
             body(g)
         }
         finally {
-            GridGain.stop(g.name, true)
+            Ignition.stop(g.name, true)
         }
     }
 
@@ -178,7 +178,7 @@ object scalar extends ScalarConversions {
             body
         }
         finally {
-            GridGain.stop(g.name, true)
+            Ignition.stop(g.name, true)
         }
     }
 
@@ -190,7 +190,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed default grid instance.
      */
     def apply(body: Ignite => Unit) {
-        if (!isStarted) init(GridGain.start, body) else body(grid$)
+        if (!isStarted) init(Ignition.start, body) else body(grid$)
     }
 
     /**
@@ -201,7 +201,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed default grid instance.
      */
     def apply[T](body: Ignite => T): T =
-        if (!isStarted) init(GridGain.start, body) else body(grid$)
+        if (!isStarted) init(Ignition.start, body) else body(grid$)
 
     /**
      * Executes given closure within automatically managed default grid instance.
@@ -211,7 +211,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed default grid instance.
      */
     def apply[T](body: => T): T =
-        if (!isStarted) init0(GridGain.start, body) else body
+        if (!isStarted) init0(Ignition.start, body) else body
 
     /**
      * Executes given closure within automatically managed default grid instance.
@@ -221,7 +221,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed grid instance.
      */
     def apply(body: => Unit) {
-        if (!isStarted) init0(GridGain.start, body) else body
+        if (!isStarted) init0(Ignition.start, body) else body
     }
 
     /**
@@ -231,7 +231,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed grid instance.
      */
     def apply(springCfgPath: String)(body: => Unit) {
-        init0(GridGain.start(springCfgPath), body)
+        init0(Ignition.start(springCfgPath), body)
     }
 
     /**
@@ -241,7 +241,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed grid instance.
      */
     def apply(cfg: IgniteConfiguration)(body: => Unit) {
-        init0(GridGain.start(cfg), body)
+        init0(Ignition.start(cfg), body)
     }
 
     /**
@@ -251,7 +251,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed grid instance.
      */
     def apply(springCfgUrl: URL)(body: => Unit) {
-        init0(GridGain.start(springCfgUrl), body)
+        init0(Ignition.start(springCfgUrl), body)
     }
 
     /**
@@ -262,7 +262,7 @@ object scalar extends ScalarConversions {
      * typed instance that cannot be used.
      */
     @inline def cache$[K, V]: Option[GridCache[K, V]] =
-        Option(GridGain.grid.cache[K, V](null))
+        Option(Ignition.grid.cache[K, V](null))
 
     /**
      * Gets named cache from default grid.
@@ -270,7 +270,7 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def cache$[K, V](@Nullable cacheName: String): Option[GridCache[K, V]] =
-        Option(GridGain.grid.cache(cacheName))
+        Option(Ignition.grid.cache(cacheName))
 
     /**
      * Gets named cache from specified grid.
@@ -304,7 +304,7 @@ object scalar extends ScalarConversions {
     /**
      * Gets default grid instance.
      */
-    @inline def grid$: Ignite = GridGain.grid
+    @inline def grid$: Ignite = Ignition.grid
 
     /**
      * Gets node ID as ID8 string.
@@ -318,7 +318,7 @@ object scalar extends ScalarConversions {
      */
     @inline def grid$(@Nullable name: String): Option[Ignite] =
         try {
-            Option(GridGain.grid(name))
+            Option(Ignition.grid(name))
         }
         catch {
             case _: IllegalStateException => None
@@ -333,7 +333,7 @@ object scalar extends ScalarConversions {
         assert(locNodeId != null)
 
         try {
-            Option(GridGain.grid(locNodeId))
+            Option(Ignition.grid(locNodeId))
         }
         catch {
             case _: IllegalStateException => None
@@ -346,7 +346,7 @@ object scalar extends ScalarConversions {
      * @param name Gird name.
      */
     def isStarted(@Nullable name: String) =
-        GridGain.state(name) == GridGainState.STARTED
+        Ignition.state(name) == GridGainState.STARTED
 
     /**
      * Tests if specified grid is stopped.
@@ -354,19 +354,19 @@ object scalar extends ScalarConversions {
      * @param name Gird name.
      */
     def isStopped(@Nullable name: String) =
-        GridGain.state(name) == GridGainState.STOPPED
+        Ignition.state(name) == GridGainState.STOPPED
 
     /**
      * Tests if default grid is started.
      */
     def isStarted =
-        GridGain.state == GridGainState.STARTED
+        Ignition.state == GridGainState.STARTED
 
     /**
      * Tests if default grid is stopped.
      */
     def isStopped =
-        GridGain.state == GridGainState.STOPPED
+        Ignition.state == GridGainState.STOPPED
 
     /**
      * Stops given grid and specified cancel flag.
@@ -377,7 +377,7 @@ object scalar extends ScalarConversions {
      */
     def stop(@Nullable name: String, cancel: Boolean) =
         if (isStarted(name))
-            GridGain.stop(name, cancel)
+            Ignition.stop(name, cancel)
 
     /**
      * Stops default grid with given cancel flag.
@@ -386,14 +386,14 @@ object scalar extends ScalarConversions {
      * @param cancel Whether or not to cancel all currently running jobs.
      */
     def stop(cancel: Boolean) =
-        if (isStarted) GridGain.stop(cancel)
+        if (isStarted) Ignition.stop(cancel)
 
     /**
      * Stops default grid with cancel flag set to `true`.
      * If default grid is already stopped - it's no-op.
      */
     def stop() =
-        if (isStarted) GridGain.stop(true)
+        if (isStarted) Ignition.stop(true)
 
     /**
      * Sets daemon flag to grid factory. Note that this method should be called
@@ -402,14 +402,14 @@ object scalar extends ScalarConversions {
      * @param f Daemon flag to set.
      */
     def daemon(f: Boolean) {
-        GridGain.setDaemon(f)
+        Ignition.setDaemon(f)
     }
 
     /**
      * Gets daemon flag set in the grid factory.
      */
     def isDaemon =
-        GridGain.isDaemon
+        Ignition.isDaemon
 
     /**
      *  Starts default grid. It's no-op if default grid is already started.
@@ -417,7 +417,7 @@ object scalar extends ScalarConversions {
      *  @return Started grid.
      */
     def start(): Ignite = {
-        if (!isStarted) GridGain.start else grid$
+        if (!isStarted) Ignition.start else grid$
     }
 
     /**
@@ -428,7 +428,7 @@ object scalar extends ScalarConversions {
      *      then the 1st found instance is returned.
      */
     def start(@Nullable springCfgPath: String): Ignite = {
-        GridGain.start(springCfgPath)
+        Ignition.start(springCfgPath)
     }
 
     /**
@@ -438,7 +438,7 @@ object scalar extends ScalarConversions {
      * @return Started grid.
      */
     def start(cfg: IgniteConfiguration): Ignite = {
-        GridGain.start(cfg)
+        Ignition.start(cfg)
     }
 
     /**
@@ -448,6 +448,6 @@ object scalar extends ScalarConversions {
      * @return Started grid.
      */
     def start(springCfgUrl: URL): Ignite = {
-        GridGain.start(springCfgUrl)
+        Ignition.start(springCfgUrl)
     }
 }

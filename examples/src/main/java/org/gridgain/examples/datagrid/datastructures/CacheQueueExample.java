@@ -44,7 +44,7 @@ public class CacheQueueExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache queue example started.");
 
@@ -175,11 +175,11 @@ public class CacheQueueExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheQueue<String> queue = GridGain.grid().cache(cacheName).dataStructures().
+                GridCacheQueue<String> queue = Ignition.grid().cache(cacheName).dataStructures().
                     queue(queueName, 0, false, true);
 
                 if (put) {
-                    UUID locId = GridGain.grid().cluster().localNode().id();
+                    UUID locId = Ignition.grid().cluster().localNode().id();
 
                     for (int i = 0; i < RETRIES; i++) {
                         String item = locId + "_" + Integer.toString(i);

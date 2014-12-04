@@ -40,7 +40,7 @@ public class CacheCountDownLatchExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic countdown latch example started.");
 
@@ -90,12 +90,12 @@ public class CacheCountDownLatchExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheCountDownLatch latch = GridGain.grid().cache(cacheName).dataStructures().
+                GridCacheCountDownLatch latch = Ignition.grid().cache(cacheName).dataStructures().
                     countDownLatch(latchName, 1, false, true);
 
                 int newCnt = latch.countDown();
 
-                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + GridGain.grid().cluster().localNode().id() + ']');
+                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + Ignition.grid().cluster().localNode().id() + ']');
             }
             catch (GridException e) {
                 throw new RuntimeException(e);

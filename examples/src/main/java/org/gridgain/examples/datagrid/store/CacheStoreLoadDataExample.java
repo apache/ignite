@@ -40,7 +40,7 @@ public class CacheStoreLoadDataExample {
     public static void main(String[] args) throws Exception {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite g = GridGain.start(CacheNodeWithStoreStartup.configure())) {
+        try (Ignite g = Ignition.start(CacheNodeWithStoreStartup.configure())) {
             System.out.println();
             System.out.println(">>> Cache store load data example started.");
 

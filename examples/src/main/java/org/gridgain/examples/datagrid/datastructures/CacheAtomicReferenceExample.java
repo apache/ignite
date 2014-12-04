@@ -37,7 +37,7 @@ public final class CacheAtomicReferenceExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic reference example started.");
 
@@ -106,7 +106,7 @@ public final class CacheAtomicReferenceExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheAtomicReference<String> ref = GridGain.grid().cache(cacheName).dataStructures().
+                GridCacheAtomicReference<String> ref = Ignition.grid().cache(cacheName).dataStructures().
                     atomicReference(refName, null, true);
 
                 System.out.println("Atomic reference value is " + ref.get() + '.');

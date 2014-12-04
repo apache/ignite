@@ -873,7 +873,7 @@ public final class GridTestUtils {
     @SuppressWarnings("BusyWait")
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, GridLogger log)
         throws Exception {
-        for (Ignite g : GridGain.allGrids()) {
+        for (Ignite g : Ignition.allGrids()) {
             GridCache<K, V> cache = ((GridEx)g).cachex(cacheName);
 
             GridDhtPartitionTopology<?, ?> top = dht(cache).topology();

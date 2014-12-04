@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.compute.gridify;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 
 import java.io.*;
@@ -190,7 +189,7 @@ public @interface GridifySetToSet {
 
     /**
      * Name of the grid to use. By default, no-name default grid is used.
-     * Refer to {@link GridGain} for information about named grids.
+     * Refer to {@link org.gridgain.grid.Ignition} for information about named grids.
      */
     String gridName() default "";
 }

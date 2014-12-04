@@ -43,7 +43,7 @@ public final class LifecycleExample {
         // Provide lifecycle bean to configuration.
         cfg.setLifecycleBeans(bean);
 
-        try (Ignite g  = GridGain.start(cfg)) {
+        try (Ignite g  = Ignition.start(cfg)) {
             // Make sure that lifecycle bean was notified about grid startup.
             assert bean.isStarted();
         }

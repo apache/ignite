@@ -49,7 +49,7 @@ public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
         @Override protected Void run(Void arg) throws GridException {
             new Thread(new Runnable() {
                 @Override public void run() {
-                    GridGain.restart(true);
+                    Ignition.restart(true);
                 }
             }, "grid-restarter").start();
 

@@ -146,7 +146,7 @@ public class GridCacheStoreValueBytesTest {
         X.println("Get keys number: " + getKeyNum);
         X.println("Random get: " + randomGet);
 
-        Ignite ignite = GridGain.start(GridCacheStoreValueBytesNode.parseConfiguration(args, true));
+        Ignite ignite = Ignition.start(GridCacheStoreValueBytesNode.parseConfiguration(args, true));
 
         if (put) {
             X.println("Putting data in cache...");

@@ -42,7 +42,7 @@ public class GgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Ignite g = GridGain.start("examples/config/filesystem/example-ggfs.xml")) {
+            try (Ignite g = Ignition.start("examples/config/filesystem/example-ggfs.xml")) {
                 System.out.println();
                 System.out.println(">>> GGFS map reduce example started.");
 

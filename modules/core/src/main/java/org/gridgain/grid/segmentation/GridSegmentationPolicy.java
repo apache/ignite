@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.segmentation;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.startup.cmdline.*;
 
@@ -30,7 +29,7 @@ public enum GridSegmentationPolicy {
     /**
      * When segmentation policy is {@code STOP}, all listeners will receive
      * {@link GridEventType#EVT_NODE_SEGMENTED} event and then particular grid node
-     * will be stopped via call to {@link GridGain#stop(String, boolean)}.
+     * will be stopped via call to {@link org.gridgain.grid.Ignition#stop(String, boolean)}.
      */
     STOP,
 

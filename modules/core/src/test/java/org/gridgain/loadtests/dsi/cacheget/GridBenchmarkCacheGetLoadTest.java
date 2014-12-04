@@ -41,9 +41,9 @@ public class GridBenchmarkCacheGetLoadTest {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        GridGain.start("modules/core/src/test/config/load/dsi-49-server-production.xml");
+        Ignition.start("modules/core/src/test/config/load/dsi-49-server-production.xml");
 
-        GridCache<Long, Long> cache = GridGain.grid("dsi").cache("PARTITIONED_CACHE");
+        GridCache<Long, Long> cache = Ignition.grid("dsi").cache("PARTITIONED_CACHE");
 
         stats();
 

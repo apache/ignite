@@ -43,7 +43,7 @@ public class StreamingRunningAverageExample {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite ignite = GridGain.start("examples/config/example-streamer.xml");
+        Ignite ignite = Ignition.start("examples/config/example-streamer.xml");
 
         System.out.println();
         System.out.println(">>> Streaming running average example started.");
@@ -134,7 +134,7 @@ public class StreamingRunningAverageExample {
             qryThread.join();
             evtThread.join();
 
-            GridGain.stopAll(false);
+            Ignition.stopAll(false);
         }
     }
 

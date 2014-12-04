@@ -49,7 +49,7 @@ public class ComputeContinuousMapperExample {
         System.out.println();
         System.out.println(">>> Compute continuous mapper example started.");
 
-        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
             int phraseLen = g.compute().execute(GridContinuousMapperTask.class, "Hello Continuous Mapper");
 
             System.out.println();

@@ -35,7 +35,7 @@ public class CachePutGetExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
 
@@ -56,7 +56,7 @@ public class CachePutGetExample {
         System.out.println();
         System.out.println(">>> Cache put-get example started.");
 
-        Ignite g = GridGain.grid();
+        Ignite g = Ignition.grid();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
@@ -81,7 +81,7 @@ public class CachePutGetExample {
         System.out.println();
         System.out.println(">>> Starting putAll-getAll example.");
 
-        Ignite g = GridGain.grid();
+        Ignite g = Ignition.grid();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 

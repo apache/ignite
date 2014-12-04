@@ -137,7 +137,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
 
         final GridCacheLoadTest test = new GridCacheLoadTest();
 
-        try (Ignite g = GridGain.start(test.configuration(cfg, log))) {
+        try (Ignite g = Ignition.start(test.configuration(cfg, log))) {
             System.gc();
 
             if (LOAD)

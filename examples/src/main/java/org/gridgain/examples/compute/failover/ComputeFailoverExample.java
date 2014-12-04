@@ -36,7 +36,7 @@ public class ComputeFailoverExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start(ComputeFailoverNodeStartup.configuration())) {
+        try (Ignite g = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 

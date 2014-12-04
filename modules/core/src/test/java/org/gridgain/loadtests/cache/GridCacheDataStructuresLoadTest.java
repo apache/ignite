@@ -304,7 +304,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
         final GridCacheDataStructuresLoadTest test = new GridCacheDataStructuresLoadTest();
 
-        try (Ignite g = GridGain.start(test.configuration(cfg, log))) {
+        try (Ignite g = Ignition.start(test.configuration(cfg, log))) {
             System.gc();
 
             if (LONG) {

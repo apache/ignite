@@ -41,10 +41,10 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Grid Spring bean allows to bypass {@link GridGain} methods.
+ * Grid Spring bean allows to bypass {@link Ignition} methods.
  * In other words, this bean class allows to inject new grid instance from
  * Spring configuration file directly without invoking static
- * {@link GridGain} methods. This class can be wired directly from
+ * {@link Ignition} methods. This class can be wired directly from
  * Spring and can be referenced from within other Spring beans.
  * By virtue of implementing {@link DisposableBean} and {@link InitializingBean}
  * interfaces, {@code GridSpringBean} automatically starts and stops underlying

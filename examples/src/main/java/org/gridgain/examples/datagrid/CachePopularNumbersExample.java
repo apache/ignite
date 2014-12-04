@@ -53,7 +53,7 @@ public class CachePopularNumbersExample {
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 

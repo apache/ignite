@@ -127,6 +127,6 @@ public class GridCacheStoreValueBytesNode {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        GridGain.start(parseConfiguration(args, false));
+        Ignition.start(parseConfiguration(args, false));
     }
 }

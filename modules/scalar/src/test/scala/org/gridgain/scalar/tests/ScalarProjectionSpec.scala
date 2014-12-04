@@ -19,7 +19,7 @@ import org.scalatest.matchers._
 import org.scalatest._
 import junit.JUnitRunner
 import org.gridgain.grid._
-import org.gridgain.grid.{GridGain => G}
+import org.gridgain.grid.{Ignition => G}
 import collection.JavaConversions._
 import java.util.UUID
 import org.junit.runner.RunWith
@@ -34,16 +34,16 @@ class ScalarProjectionSpec extends FlatSpec with ShouldMatchers with BeforeAndAf
      *
      */
     override def beforeAll() {
-        G.start(gridConfig("node-1", false))
-        G.start(gridConfig("node-2", true))
+        Ignition.start(gridConfig("node-1", false))
+        Ignition.start(gridConfig("node-2", true))
     }
 
     /**
      *
      */
     override def afterAll() {
-        G.stop("node-1", true)
-        G.stop("node-2", true)
+        Ignition.stop("node-1", true)
+        Ignition.stop("node-2", true)
     }
 
     /**

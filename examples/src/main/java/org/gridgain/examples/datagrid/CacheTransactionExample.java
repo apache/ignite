@@ -39,7 +39,7 @@ public class CacheTransactionExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
 
@@ -79,7 +79,7 @@ public class CacheTransactionExample {
      */
     private static void deposit(int acctId, double amount) throws GridException {
         // Clone every object we get from cache, so we can freely update it.
-        GridCacheProjection<Integer, Account> cache = GridGain.grid().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
+        GridCacheProjection<Integer, Account> cache = Ignition.grid().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
 
         try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Account acct = cache.get(acctId);

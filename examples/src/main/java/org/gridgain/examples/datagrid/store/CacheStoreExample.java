@@ -37,7 +37,7 @@ public class CacheStoreExample {
         IgniteConfiguration cfg = CacheNodeWithStoreStartup.configure();
 
         // To start grid with desired configuration uncomment the appropriate line.
-        try (Ignite g = GridGain.start(cfg)) {
+        try (Ignite g = Ignition.start(cfg)) {
             System.out.println();
             System.out.println(">>> Cache store example started.");
 

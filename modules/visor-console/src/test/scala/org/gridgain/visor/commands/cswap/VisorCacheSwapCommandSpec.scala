@@ -15,7 +15,7 @@ import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{GridGain => G}
+import org.gridgain.grid.{Ignition => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.jetbrains.annotations.Nullable
@@ -65,13 +65,13 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'cswap' visor command"
 
     it should "show correct result for default cache" in {
-        G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=<default>")
     }
 
     it should "show correct result for named cache" in {
-        G.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=cache")
     }

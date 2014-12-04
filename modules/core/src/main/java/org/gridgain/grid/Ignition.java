@@ -72,7 +72,7 @@ import java.util.*;
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
  * For more information refer to {@gglink org.gridgain.grid.GridSpringBean} documentation.
  */
-public class GridGain {
+public class Ignition {
     /**
      * This is restart code that can be used by external tools, like Shell scripts,
      * to auto-restart the GridGain JVM process. Note that there is no standard way
@@ -99,7 +99,7 @@ public class GridGain {
     /**
      * Enforces singleton.
      */
-    protected GridGain() {
+    protected Ignition() {
         // No-op.
     }
 

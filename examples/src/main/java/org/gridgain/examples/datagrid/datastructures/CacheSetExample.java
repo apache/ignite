@@ -40,7 +40,7 @@ public class CacheSetExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache set example started.");
 
@@ -166,9 +166,9 @@ public class CacheSetExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheSet<String> set = GridGain.grid().cache(cacheName).dataStructures().set(setName, false, true);
+                GridCacheSet<String> set = Ignition.grid().cache(cacheName).dataStructures().set(setName, false, true);
 
-                UUID locId = GridGain.grid().cluster().localNode().id();
+                UUID locId = Ignition.grid().cluster().localNode().id();
 
                 for (int i = 0; i < 5; i++) {
                     String item = locId + "_" + Integer.toString(i);

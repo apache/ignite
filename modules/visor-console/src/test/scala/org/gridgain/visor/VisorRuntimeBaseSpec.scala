@@ -11,7 +11,7 @@
 package org.gridgain.visor
 
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.gridgain.grid.{GridGain => G, _}
+import org.gridgain.grid.{Ignition => G, _}
 import org.scalatest._
 
 /**
@@ -48,14 +48,14 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec
      * Runs before all tests.
      */
     override protected def beforeAll() {
-        (1 to num).foreach((n: Int) => G.start(config("node-" + n)))
+        (1 to num).foreach((n: Int) => Ignition.start(config("node-" + n)))
     }
 
     /**
      * Runs after all tests.
      */
     override def afterAll() {
-        (1 to num).foreach((n: Int) => G.stop("node-" + n, false))
+        (1 to num).foreach((n: Int) => Ignition.stop("node-" + n, false))
     }
 
     override protected def beforeEach() {

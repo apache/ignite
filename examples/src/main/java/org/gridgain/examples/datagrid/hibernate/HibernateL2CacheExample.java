@@ -77,7 +77,7 @@ public class HibernateL2CacheExample {
      */
     public static void main(String[] args) throws GridException {
         // Start the GridGain node, run the example, and stop the node when finished.
-        try (Ignite g = GridGain.start(HibernateL2CacheExampleNodeStartup.configuration())) {
+        try (Ignite g = Ignition.start(HibernateL2CacheExampleNodeStartup.configuration())) {
             // We use a single session factory, but create a dedicated session
             // for each transaction or query. This way we ensure that L1 cache
             // is not used (L1 cache has per-session scope only).

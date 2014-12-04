@@ -32,7 +32,7 @@ public class CacheNodeWithStoreStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start(configure());
+        Ignition.start(configure());
     }
 
     /**

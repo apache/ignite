@@ -28,7 +28,7 @@ public class ComputeExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute broadcast example started.");
 

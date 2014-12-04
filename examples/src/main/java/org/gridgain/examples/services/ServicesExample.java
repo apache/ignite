@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class ServicesExample {
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             ClusterGroup rmts = ignite.cluster().forRemotes();
 
             if (rmts.nodes().isEmpty()) {

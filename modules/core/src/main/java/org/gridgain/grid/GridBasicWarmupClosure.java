@@ -205,7 +205,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
 
                 cfg0.setGridName("gridgain-warmup-grid-" + i);
 
-                ignites.add(GridGain.start(cfg0));
+                ignites.add(Ignition.start(cfg0));
             }
 
             doWarmup(ignites);
@@ -215,7 +215,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
         }
         finally {
             for (Ignite ignite : ignites)
-                GridGain.stop(ignite.name(), false);
+                Ignition.stop(ignite.name(), false);
 
             out("Stopped warmup grids.");
 

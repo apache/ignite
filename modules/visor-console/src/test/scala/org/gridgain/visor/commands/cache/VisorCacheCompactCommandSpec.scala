@@ -16,7 +16,7 @@ import org.gridgain.grid.cache.GridCacheMode._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{GridGain => G, _}
+import org.gridgain.grid.{Ignition => G, _}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.jetbrains.annotations.Nullable
@@ -68,17 +68,17 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'ccompact' visor command"
 
     it should "show correct result for default cache" in {
-        G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        G.grid("node-1").cache[Int, Int](null).clear(1)
+        Ignition.grid("node-1").cache[Int, Int](null).clear(1)
 
         VisorCacheCompactCommand().compact(Nil, None)
     }
 
     it should "show correct result for named cache" in {
-        G.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        G.grid("node-1").cache[Int, Int]("cache").clear(1)
+        Ignition.grid("node-1").cache[Int, Int]("cache").clear(1)
 
         visor.cache("-compact -c=cache")
     }

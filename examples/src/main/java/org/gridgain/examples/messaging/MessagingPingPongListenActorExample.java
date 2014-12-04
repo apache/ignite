@@ -38,7 +38,7 @@ public class MessagingPingPongListenActorExample {
      */
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
-        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 

@@ -78,7 +78,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
             // We have to explicitly configure path to license config because of undefined GRIDGAIN_HOME.
-            cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
+            cfg.setLicenseUrl("file:///" + ggHome + "/" + Ignition.DFLT_LIC_FILE_NAME);
 
             // Default console logger is used
             cfg.setGridLogger(log);

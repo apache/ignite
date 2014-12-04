@@ -72,7 +72,7 @@ public class StreamingPriceBarsExample {
         Timer timer = new Timer("priceBars");
 
         // Start grid.
-        final Ignite g = GridGain.start("examples/config/example-streamer.xml");
+        final Ignite g = Ignition.start("examples/config/example-streamer.xml");
 
         System.out.println();
         System.out.println(">>> Streaming price bars example started.");
@@ -105,7 +105,7 @@ public class StreamingPriceBarsExample {
             });
         }
         finally {
-            GridGain.stop(true);
+            Ignition.stop(true);
         }
     }
 

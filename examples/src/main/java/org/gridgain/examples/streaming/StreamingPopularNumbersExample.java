@@ -90,7 +90,7 @@ public class StreamingPopularNumbersExample {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
         // Start grid.
-        final Ignite g = GridGain.start("examples/config/example-streamer.xml");
+        final Ignite g = Ignition.start("examples/config/example-streamer.xml");
 
         System.out.println();
         System.out.println(">>> Streaming popular numbers example started.");
@@ -124,7 +124,7 @@ public class StreamingPopularNumbersExample {
             });
         }
         finally {
-            GridGain.stop(true);
+            Ignition.stop(true);
         }
     }
 

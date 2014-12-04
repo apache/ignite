@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid.cache.query.GridCacheQuerySqlField
-import org.gridgain.grid.{GridGain => G}
+import org.gridgain.grid.{Ignition => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.scalatest._
@@ -25,7 +25,7 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
      * Open Visor.
      */
     override def beforeAll() {
-        val g = G.start("examples/config/example-cache.xml")
+        val g = Ignition.start("examples/config/example-cache.xml")
 
         assert(g.caches().size() > 0)
 
@@ -38,13 +38,13 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     override def afterAll() {
         visor.close()
 
-        G.stop(false)
+        Ignition.stop(false)
     }
 
     behavior of "A 'cache' visor command"
 
     it should "put/get some values to/from cache and display information about caches" in {
-        val c = G.grid.cache[String, String]("partitioned")
+        val c = Ignition.grid.cache[String, String]("partitioned")
 
         for (i <- 0 to 3) {
             val kv = "" + i
@@ -58,7 +58,7 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     }
 
     it should "run query and display information about caches" in {
-        val g = G.grid
+        val g = Ignition.grid
 
         val c = g.cache[Int, Foo]("replicated")
 

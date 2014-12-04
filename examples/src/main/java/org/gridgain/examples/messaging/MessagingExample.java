@@ -47,7 +47,7 @@ public final class MessagingExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 

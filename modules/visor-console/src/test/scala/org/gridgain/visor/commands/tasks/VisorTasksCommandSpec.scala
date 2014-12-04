@@ -16,7 +16,7 @@ import java.util
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeJobResult, GridComputeTaskSplitAdapter}
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.{GridGain => G}
+import org.gridgain.grid.{Ignition => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.tasks.VisorTasksCommand._
 import org.scalatest._
@@ -32,8 +32,8 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
      * Open visor and execute several tasks before all tests.
      */
     override def beforeAll() {
-        G.start(config("grid-1"))
-        G.start(config("grid-2"))
+        Ignition.start(config("grid-1"))
+        Ignition.start(config("grid-2"))
 
         visor.open(config("grid-visor"), "n/a")
 
@@ -93,7 +93,7 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     override def afterAll() {
         visor.close()
 
-        G.stopAll(false)
+        Ignition.stopAll(false)
     }
 
     behavior of "A 'tasks' visor command"

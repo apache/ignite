@@ -32,7 +32,7 @@ public class ComputeProjectionExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
 

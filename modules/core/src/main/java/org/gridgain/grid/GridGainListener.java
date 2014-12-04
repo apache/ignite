@@ -14,7 +14,7 @@ import java.util.*;
 
 /**
  * Listener for gird state change notifications. Use
- * {@link GridGain#addListener(GridGainListener)} to register this
+ * {@link Ignition#addListener(GridGainListener)} to register this
  * listener with grid factory.
  */
 public interface GridGainListener extends EventListener {

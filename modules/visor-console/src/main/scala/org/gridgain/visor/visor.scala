@@ -36,7 +36,7 @@ import org.gridgain.grid.thread._
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
-import org.gridgain.grid.{GridException, GridGain => G, _}
+import org.gridgain.grid.{GridException, Ignition => G, _}
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable
 
@@ -1478,7 +1478,7 @@ object visor extends VisorTag {
 
                 // Add no-op logger to remove no-appender warning.
                 val log4jTup =
-                    if (classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
+                    if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
                         U.addLog4jNoOpLogger()
                     else
                         null
@@ -1573,21 +1573,21 @@ object visor extends VisorTag {
      * @param cfgPath Configuration path.
      */
     def open(cfg: IgniteConfiguration, cfgPath: String) {
-        val daemon = G.isDaemon
+        val daemon = Ignition.isDaemon
 
         val shutdownHook = GridSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
-        G.setDaemon(true)
+        Ignition.setDaemon(true)
 
         // Make sure visor starts without shutdown hook.
         System.setProperty(GG_NO_SHUTDOWN_HOOK, "true")
 
         val startedGridName = try {
-             G.start(cfg).name
+             Ignition.start(cfg).name
         }
         finally {
-            G.setDaemon(daemon)
+            Ignition.setDaemon(daemon)
 
             System.setProperty(GG_NO_SHUTDOWN_HOOK, shutdownHook)
         }
@@ -1596,7 +1596,7 @@ object visor extends VisorTag {
 
         grid =
             try
-                G.grid(startedGridName).asInstanceOf[GridEx]
+                Ignition.grid(startedGridName).asInstanceOf[GridEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
@@ -1711,7 +1711,7 @@ object visor extends VisorTag {
             }
         }
 
-        G.addListener(nodeStopLsnr)
+        Ignition.addListener(nodeStopLsnr)
 
         logText("Visor joined topology: " + cfgPath)
         logText("All live nodes, if any, will re-join.")
@@ -2154,7 +2154,7 @@ object visor extends VisorTag {
             // Call all close callbacks.
             cbs foreach(_.apply())
 
-            if (grid != null && G.state(grid.name) == GridGainState.STARTED) {
+            if (grid != null && Ignition.state(grid.name) == GridGainState.STARTED) {
                 if (nodeJoinLsnr != null)
                     grid.events().stopLocalListen(nodeJoinLsnr)
 
@@ -2166,11 +2166,11 @@ object visor extends VisorTag {
             }
 
             if (nodeStopLsnr != null)
-                G.removeListener(nodeStopLsnr)
+                Ignition.removeListener(nodeStopLsnr)
 
             if (grid != null && conOwner)
                 try
-                    G.stop(grid.name, true)
+                    Ignition.stop(grid.name, true)
                 catch {
                     case e: Exception => warn(e.getMessage)
                 }

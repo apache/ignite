@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.disco
 
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.gridgain.grid.{GridGain => G, _}
+import org.gridgain.grid.{Ignition => G, _}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.disco.VisorDiscoveryCommand._
 
@@ -26,8 +26,8 @@ class VisorDiscoveryCommandSpec extends VisorRuntimeBaseSpec(4) {
     override protected def beforeAll() {
         super.beforeAll()
 
-        G.stop("node-1", false)
-        G.stop("node-2", false)
+        Ignition.stop("node-1", false)
+        Ignition.stop("node-2", false)
     }
 
     /**

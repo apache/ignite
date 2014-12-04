@@ -98,7 +98,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            if (GridGain.state(IGNITEs.get(i).name()) == STOPPED) {
+            if (Ignition.state(IGNITEs.get(i).name()) == STOPPED) {
                 info("Restarting grid: " + i);
 
                 IGNITEs.set(i, startGrid(i));

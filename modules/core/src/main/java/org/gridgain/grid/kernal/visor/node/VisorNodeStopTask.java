@@ -54,7 +54,7 @@ public class VisorNodeStopTask extends VisorMultiNodeTask<Void, Void, Void> {
         @Override protected Void run(Void arg) throws GridException {
             new Thread(new Runnable() {
                 @Override public void run() {
-                    GridGain.kill(true);
+                    Ignition.kill(true);
                 }
             }, "grid-stopper").start();
 

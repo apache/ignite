@@ -40,7 +40,7 @@ public interface IgniteFuture<R> {
      * @param timeout The maximum time to wait in milliseconds.
      * @return Computation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.gridgain.grid.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
+     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
      * @throws GridException If computation failed.
      */
@@ -54,7 +54,7 @@ public interface IgniteFuture<R> {
      * @param unit The time unit of the {@code timeout} argument.
      * @return Computation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.gridgain.grid.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
+     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
      * @throws GridException If computation failed.
      */

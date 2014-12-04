@@ -206,11 +206,11 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         }
 
         if (cfgPath != null)
-            ignite = GridGain.start(cfgPath);
+            ignite = Ignition.start(cfgPath);
         else if (cfg != null)
-            ignite = GridGain.start(cfg);
+            ignite = Ignition.start(cfg);
         else
-            ignite = GridGain.grid(gridName);
+            ignite = Ignition.grid(gridName);
     }
 
     /** {@inheritDoc} */

@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.GridGainState.*;
 
 /**
- * Tests for {@link GridGain}.
+ * Tests for {@link org.gridgain.grid.Ignition}.
  */
 public class GridFactoryVmShutdownTest {
     /**

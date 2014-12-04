@@ -37,7 +37,7 @@ public final class CacheAtomicStampedExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic stamped example started.");
 
@@ -112,7 +112,7 @@ public final class CacheAtomicStampedExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheAtomicStamped<String, String> stamped = GridGain.grid().cache(cacheName).dataStructures().
+                GridCacheAtomicStamped<String, String> stamped = Ignition.grid().cache(cacheName).dataStructures().
                     atomicStamped(stampedName, null, null, true);
 
                 System.out.println("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');

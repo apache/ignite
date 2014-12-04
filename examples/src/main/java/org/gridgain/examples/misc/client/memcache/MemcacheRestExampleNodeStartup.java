@@ -38,7 +38,7 @@ public class MemcacheRestExampleNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start(configuration());
+        Ignition.start(configuration());
     }
 
     /**

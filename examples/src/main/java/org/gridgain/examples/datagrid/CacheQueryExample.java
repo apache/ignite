@@ -68,7 +68,7 @@ public class CacheQueryExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache query example started.");
 
@@ -112,7 +112,7 @@ public class CacheQueryExample {
      * @throws GridException In case of error.
      */
     private static void sqlQuery() throws GridException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Create query which selects salaries based on range.
         GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
@@ -132,7 +132,7 @@ public class CacheQueryExample {
      * @throws GridException In case of error.
      */
     private static void sqlQueryWithJoin() throws GridException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Create query which joins on 2 types to select people for a specific organization.
         GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
@@ -151,7 +151,7 @@ public class CacheQueryExample {
      * @throws GridException In case of error.
      */
     private static void textQuery() throws GridException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.grid().cache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
         GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> masters =
@@ -172,7 +172,7 @@ public class CacheQueryExample {
      * @throws GridException In case of error.
      */
     private static void sqlQueryWithReducers() throws GridException {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCacheProjection<GridCacheAffinityKey<UUID>, Person> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
         GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(
@@ -221,7 +221,7 @@ public class CacheQueryExample {
      * @throws GridException In case of error.
      */
     private static void sqlQueryWithTransformer() throws GridException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Create query to get names of all employees working for some company.
         GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
@@ -250,7 +250,7 @@ public class CacheQueryExample {
      * @throws GridException In case of error.
      */
     private static void sqlFieldsQuery() throws GridException {
-        GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<?, ?> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
         GridCacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
@@ -271,7 +271,7 @@ public class CacheQueryExample {
      * @throws GridException In case of error.
      */
     private static void sqlFieldsQueryWithJoin() throws GridException {
-        GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<?, ?> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
         GridCacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
@@ -293,7 +293,7 @@ public class CacheQueryExample {
      * @throws InterruptedException In case of error.
      */
     private static void initialize() throws GridException, InterruptedException {
-        GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<?, ?> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Organization projection.
         GridCacheProjection<UUID, Organization> orgCache = cache.projection(UUID.class, Organization.class);

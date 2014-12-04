@@ -28,6 +28,6 @@ public class GgfsNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start("examples/config/filesystem/example-ggfs.xml");
+        Ignition.start("examples/config/filesystem/example-ggfs.xml");
     }
 }

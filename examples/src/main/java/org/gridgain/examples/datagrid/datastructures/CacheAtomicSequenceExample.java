@@ -40,7 +40,7 @@ public final class CacheAtomicSequenceExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic sequence example started.");
 
@@ -89,7 +89,7 @@ public final class CacheAtomicSequenceExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheAtomicSequence seq = GridGain.grid().cache(cacheName).dataStructures().
+                GridCacheAtomicSequence seq = Ignition.grid().cache(cacheName).dataStructures().
                     atomicSequence(seqName, 0, true);
 
                 for (int i = 0; i < RETRIES; i++)

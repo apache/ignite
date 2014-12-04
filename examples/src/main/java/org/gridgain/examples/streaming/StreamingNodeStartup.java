@@ -22,6 +22,6 @@ public class StreamingNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start("examples/config/example-streamer.xml");
+        Ignition.start("examples/config/example-streamer.xml");
     }
 }

@@ -338,7 +338,7 @@ public class GridGainEx {
      *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
-     * @see GridGain#RESTART_EXIT_CODE
+     * @see org.gridgain.grid.Ignition#RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
         String file = System.getProperty(GG_SUCCESS_FILE);
@@ -355,16 +355,16 @@ public class GridGainEx {
                 return;
             }
 
-            U.log(null, "Restarting node. Will exit (" + GridGain.RESTART_EXIT_CODE + ").");
+            U.log(null, "Restarting node. Will exit (" + Ignition.RESTART_EXIT_CODE + ").");
 
             // Set the exit code so that shell process can recognize it and loop
             // the start up sequence again.
-            System.setProperty(GG_RESTART_CODE, Integer.toString(GridGain.RESTART_EXIT_CODE));
+            System.setProperty(GG_RESTART_CODE, Integer.toString(Ignition.RESTART_EXIT_CODE));
 
             stopAll(cancel);
 
             // This basically leaves loaders hang - we accept it.
-            System.exit(GridGain.RESTART_EXIT_CODE);
+            System.exit(Ignition.RESTART_EXIT_CODE);
         }
     }
 
@@ -379,19 +379,19 @@ public class GridGainEx {
      * should be responsible for stopping it.
      * <p>
      * Note that upon completion of this method, the JVM with forcefully exist with
-     * exit code {@link GridGain#KILL_EXIT_CODE}.
+     * exit code {@link org.gridgain.grid.Ignition#KILL_EXIT_CODE}.
      *
      * @param cancel If {@code true} then all jobs currently executing on
      *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
-     * @see GridGain#KILL_EXIT_CODE
+     * @see org.gridgain.grid.Ignition#KILL_EXIT_CODE
      */
     public static void kill(boolean cancel) {
         stopAll(cancel);
 
         // This basically leaves loaders hang - we accept it.
-        System.exit(GridGain.KILL_EXIT_CODE);
+        System.exit(Ignition.KILL_EXIT_CODE);
     }
 
     /**
@@ -2180,7 +2180,7 @@ public class GridGainEx {
         }
 
         /**
-         * Registers delegate Mbean instance for {@link GridGain}.
+         * Registers delegate Mbean instance for {@link org.gridgain.grid.Ignition}.
          *
          * @param srv MBeanServer where mbean should be registered.
          * @throws GridException If registration failed.
@@ -2196,7 +2196,7 @@ public class GridGainEx {
                         ObjectName objName = U.makeMBeanName(
                             null,
                             "Kernal",
-                            GridGain.class.getSimpleName()
+                            Ignition.class.getSimpleName()
                         );
 
                         // Make check if MBean was already registered.
@@ -2207,7 +2207,7 @@ public class GridGainEx {
                                 srv,
                                 null,
                                 "Kernal",
-                                GridGain.class.getSimpleName(),
+                                Ignition.class.getSimpleName(),
                                 mbean,
                                 IgnitionMBean.class
                             );
@@ -2233,7 +2233,7 @@ public class GridGainEx {
         }
 
         /**
-         * Unregister delegate Mbean instance for {@link GridGain}.
+         * Unregister delegate Mbean instance for {@link org.gridgain.grid.Ignition}.
          */
         private void unregisterFactoryMBean() {
             synchronized (mbeans) {

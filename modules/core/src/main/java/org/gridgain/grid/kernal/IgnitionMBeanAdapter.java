@@ -10,11 +10,10 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
- * Management bean that provides access to {@link GridGain}.
+ * Management bean that provides access to {@link org.gridgain.grid.Ignition}.
  */
 public class IgnitionMBeanAdapter implements IgnitionMBean {
     /** {@inheritDoc} */

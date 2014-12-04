@@ -70,7 +70,7 @@ public class GridContinuousOperationsLoadTest {
 
         dumpProperties(System.out);
 
-        try (Ignite ignite = GridGain.start(cfgPath)) {
+        try (Ignite ignite = Ignition.start(cfgPath)) {
             final GridCache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache == null)

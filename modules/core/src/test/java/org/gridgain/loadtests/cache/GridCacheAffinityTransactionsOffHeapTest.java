@@ -145,9 +145,9 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      * @return Cache.
      */
     private static GridCache<Object, Integer> cache(long key) {
-        UUID id = GridGain.grid("grid-0").cache(null).affinity().mapKeyToNode(key).id();
+        UUID id = Ignition.grid("grid-0").cache(null).affinity().mapKeyToNode(key).id();
 
-        return GridGain.grid(id).cache(null);
+        return Ignition.grid(id).cache(null);
     }
 
     /**
@@ -155,7 +155,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      */
     private static void startNodes() throws GridException {
         for (int i = 0; i < NODE_CNT; i++)
-            GridGain.start(getConfiguration("grid-" + i));
+            Ignition.start(getConfiguration("grid-" + i));
     }
 
     /**

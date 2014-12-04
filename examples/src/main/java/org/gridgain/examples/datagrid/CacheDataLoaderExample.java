@@ -45,7 +45,7 @@ public class CacheDataLoaderExample {
     public static void main(String[] args) throws Exception {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache data loader example started.");
 

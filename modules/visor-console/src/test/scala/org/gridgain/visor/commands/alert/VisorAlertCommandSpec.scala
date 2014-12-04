@@ -17,7 +17,7 @@ import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.GridDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{GridGain => G}
+import org.gridgain.grid.{Ignition => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.alert.VisorAlertCommand._
 
@@ -134,9 +134,9 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
         try {
             matchOut(visor.alert("-r -nc=gte1"), "Alert.+registered.")
 
-            G.start(config("node-2"))
+            Ignition.start(config("node-2"))
 
-            G.stop("node-2", false)
+            Ignition.stop("node-2", false)
 
             checkOut(visor.alert(), "No alerts are registered.", false)
         }

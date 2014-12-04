@@ -36,7 +36,7 @@ public class CacheApiExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
@@ -61,7 +61,7 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
 
-        GridCache<Integer, String> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<Integer, String> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Put and return previous value.
         String v = cache.put(1, "1");
@@ -122,7 +122,7 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Local iterator examples.");
 
-        GridCache<Integer, String> cache = GridGain.grid().cache(CACHE_NAME);
+        GridCache<Integer, String> cache = Ignition.grid().cache(CACHE_NAME);
 
         // Iterate over whole cache.
         for (GridCacheEntry<Integer, String> e : cache)
