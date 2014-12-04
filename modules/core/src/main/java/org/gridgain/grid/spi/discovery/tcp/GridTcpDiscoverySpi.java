@@ -3128,7 +3128,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         }
 
                         // Stick in authentication subject to node (use security-safe attributes for copy).
-                        Map<String, Object> attrs = new HashMap<>(node.attributes());
+                        Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
                         attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
 
