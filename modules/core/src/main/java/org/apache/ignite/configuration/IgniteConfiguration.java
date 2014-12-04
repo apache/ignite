@@ -1455,7 +1455,7 @@ public class IgniteConfiguration {
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
      * {@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link org.apache.ignite.marshaller.jdk.GridJdkMarshaller} will be used on other VMs.
+     * {@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller} will be used on other VMs.
      *
      * @return Marshaller to use in grid.
      */

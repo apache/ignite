@@ -35,7 +35,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     private static final long serialVersionUID = 0L;
 
     /** Marshaller. */
-    private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
+    private static final GridMarshaller MARSHALLER = new IgniteJdkMarshaller();
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,

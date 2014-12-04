@@ -997,7 +997,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     protected String getDefaultCheckpointPath(GridMarshaller marshaller) {
-        if (marshaller instanceof GridJdkMarshaller)
+        if (marshaller instanceof IgniteJdkMarshaller)
             return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
             return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';

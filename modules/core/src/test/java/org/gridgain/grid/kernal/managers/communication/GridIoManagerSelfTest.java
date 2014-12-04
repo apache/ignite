@@ -50,7 +50,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ctx.config().setCommunicationSpi(new GridTcpCommunicationSpi());
-        ctx.config().setMarshaller(new GridJdkMarshaller());
+        ctx.config().setMarshaller(new IgniteJdkMarshaller());
 
         // Turn off peer class loading to simplify mocking.
         ctx.config().setPeerClassLoadingEnabled(false);

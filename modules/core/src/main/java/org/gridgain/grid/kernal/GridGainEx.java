@@ -1596,7 +1596,7 @@ public class GridGainEx {
                         "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
-                    marsh = new GridJdkMarshaller();
+                    marsh = new IgniteJdkMarshaller();
                 }
                 else if (!GridOptimizedMarshaller.available()) {
                     U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
@@ -1606,7 +1606,7 @@ public class GridGainEx {
                         "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
-                    marsh = new GridJdkMarshaller();
+                    marsh = new IgniteJdkMarshaller();
                 }
                 else
                     marsh = new GridOptimizedMarshaller();

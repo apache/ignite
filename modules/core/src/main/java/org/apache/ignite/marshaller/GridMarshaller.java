@@ -22,7 +22,7 @@ import java.io.*;
  * Gridgain provides the following {@code GridMarshaller} implementations:
  * <ul>
  * <li>{@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller} - default</li>
- * <li>{@link org.apache.ignite.marshaller.jdk.GridJdkMarshaller}</li>
+ * <li>{@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller}</li>
  * </ul>
  * <p>
  * Below are examples of marshaller configuration, usage, and injection into tasks, jobs,

@@ -22,7 +22,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Optimized implementation of {@link GridMarshaller}. Unlike {@link org.apache.ignite.marshaller.jdk.GridJdkMarshaller},
+ * Optimized implementation of {@link GridMarshaller}. Unlike {@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller},
  * which is based on standard {@link ObjectOutputStream}, this marshaller does not
  * enforce that all serialized objects implement {@link Serializable} interface. It is also
  * about 20 times faster as it removes lots of serialization overhead that exists in

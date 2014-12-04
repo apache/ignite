@@ -44,9 +44,9 @@ public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractT
         cfg.setLocalHost("127.0.0.1");
 
         if (flag)
-            cfg.setMarshaller(new GridJdkMarshaller());
+            cfg.setMarshaller(new IgniteJdkMarshaller());
         else
-            cfg.setMarshaller(sameMarsh ? new GridJdkMarshaller() : new GridOptimizedMarshaller());
+            cfg.setMarshaller(sameMarsh ? new IgniteJdkMarshaller() : new GridOptimizedMarshaller());
 
         // Flip flag.
         flag = !flag;

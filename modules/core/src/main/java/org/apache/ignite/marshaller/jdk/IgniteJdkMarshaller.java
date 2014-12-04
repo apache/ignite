@@ -76,7 +76,7 @@ import java.io.*;
  * <br>
  *
  */
-public class GridJdkMarshaller extends GridAbstractMarshaller {
+public class IgniteJdkMarshaller extends GridAbstractMarshaller {
     /** {@inheritDoc} */
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws GridException {
         assert out != null;
@@ -84,7 +84,7 @@ public class GridJdkMarshaller extends GridAbstractMarshaller {
         ObjectOutputStream objOut = null;
 
         try {
-            objOut = new GridJdkMarshallerObjectOutputStream(new GridJdkMarshallerOutputStreamWrapper(out));
+            objOut = new IgniteJdkMarshallerObjectOutputStream(new IgniteJdkMarshallerOutputStreamWrapper(out));
 
             // Make sure that we serialize only task, without class loader.
             objOut.writeObject(obj);
@@ -110,7 +110,7 @@ public class GridJdkMarshaller extends GridAbstractMarshaller {
         ObjectInputStream objIn = null;
 
         try {
-            objIn = new GridJdkMarshallerObjectInputStream(new GridJdkMarshallerInputStreamWrapper(in), clsLdr);
+            objIn = new IgniteJdkMarshallerObjectInputStream(new IgniteJdkMarshallerInputStreamWrapper(in), clsLdr);
 
             return (T)objIn.readObject();
         }
@@ -129,6 +129,6 @@ public class GridJdkMarshaller extends GridAbstractMarshaller {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridJdkMarshaller.class, this);
+        return S.toString(IgniteJdkMarshaller.class, this);
     }
 }

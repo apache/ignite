@@ -46,7 +46,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     private GridCommunicationSpi commSpi;
 
     /** Marshaller used in test. */
-    private GridMarshaller marsh = new GridJdkMarshaller();
+    private GridMarshaller marsh = new IgniteJdkMarshaller();
 
     /**
      *

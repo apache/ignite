@@ -61,7 +61,7 @@ final class GridTestMemcacheClient {
     private final IgniteLogger log = new IgniteJavaLogger();
 
     /** JDK marshaller. */
-    private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
+    private final GridMarshaller jdkMarshaller = new IgniteJdkMarshaller();
 
     /** Socket. */
     private final Socket sock;

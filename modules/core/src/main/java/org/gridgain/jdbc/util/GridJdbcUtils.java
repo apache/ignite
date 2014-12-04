@@ -25,7 +25,7 @@ import static java.sql.Types.*;
  */
 public class GridJdbcUtils {
     /** Marshaller. */
-    private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
+    private static final GridMarshaller MARSHALLER = new IgniteJdkMarshaller();
 
     /**
      * Marshals task argument to byte array.

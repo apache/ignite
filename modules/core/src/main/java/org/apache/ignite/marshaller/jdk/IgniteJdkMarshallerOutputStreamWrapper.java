@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Wrapper for {@link OutputStream}.
  */
-class GridJdkMarshallerOutputStreamWrapper extends OutputStream {
+class IgniteJdkMarshallerOutputStreamWrapper extends OutputStream {
     /** */
     private OutputStream out;
 
@@ -23,7 +23,7 @@ class GridJdkMarshallerOutputStreamWrapper extends OutputStream {
      *
      * @param out Wrapped output stream
      */
-    GridJdkMarshallerOutputStreamWrapper(OutputStream out) {
+    IgniteJdkMarshallerOutputStreamWrapper(OutputStream out) {
         assert out != null;
 
         this.out = out;

@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * This class defines custom JDK object input stream.
  */
-class GridJdkMarshallerObjectInputStream extends ObjectInputStream {
+class IgniteJdkMarshallerObjectInputStream extends ObjectInputStream {
     /** */
     private final ClassLoader clsLdr;
 
@@ -23,7 +23,7 @@ class GridJdkMarshallerObjectInputStream extends ObjectInputStream {
      * @param clsLdr Custom class loader.
      * @throws IOException If initialization failed.
      */
-    GridJdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
+    IgniteJdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
         super(in);
 
         assert clsLdr != null;
@@ -44,7 +44,7 @@ class GridJdkMarshallerObjectInputStream extends ObjectInputStream {
 
     /** {@inheritDoc} */
     @Override protected Object resolveObject(Object o) throws IOException {
-        if (o != null && o.getClass().equals(GridJdkMarshallerDummySerializable.class))
+        if (o != null && o.getClass().equals(IgniteJdkMarshallerDummySerializable.class))
             return new Object();
 
         return super.resolveObject(o);

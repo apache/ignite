@@ -34,7 +34,7 @@ public class GridTcpRestParser implements GridNioParser {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** JDK marshaller. */
-    private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
+    private final GridMarshaller jdkMarshaller = new IgniteJdkMarshaller();
 
     /** {@inheritDoc} */
     @Nullable @Override public GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
