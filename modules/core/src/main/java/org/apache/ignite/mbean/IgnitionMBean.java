@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.mbean;
 
-import org.apache.ignite.mbean.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.mbean.*;
 
 /**
- * This interface defines JMX view on {@link GridGain}.
+ * This interface defines JMX view on {@link org.gridgain.grid.GridGain}.
  */
 @IgniteMBeanDescription("MBean that provides access to grid life-cycle operations.")
 public interface IgnitionMBean {
@@ -22,7 +21,7 @@ public interface IgnitionMBean {
      * Gets state of default grid instance.
      *
      * @return State of default grid instance.
-     * @see GridGain#state()
+     * @see org.gridgain.grid.GridGain#state()
      */
     @IgniteMBeanDescription("State of default grid instance.")
     public String getState();
@@ -32,7 +31,7 @@ public interface IgnitionMBean {
      *
      * @param name Name of grid instance.
      * @return State of grid instance with given name.
-     * @see GridGain#state(String)
+     * @see org.gridgain.grid.GridGain#state(String)
      */
     @IgniteMBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
     @GridMBeanParametersNames(
@@ -52,7 +51,7 @@ public interface IgnitionMBean {
      *      up to the actual job to exit from execution.
      * @return {@code true} if default grid instance was indeed stopped,
      *      {@code false} otherwise (if it was not started).
-     * @see GridGain#stop(boolean)
+     * @see org.gridgain.grid.GridGain#stop(boolean)
      */
     @IgniteMBeanDescription("Stops default grid instance. Return true if default grid instance was " +
         "indeed stopped, false otherwise (if it was not started).")
@@ -81,7 +80,7 @@ public interface IgnitionMBean {
      * @return {@code true} if named grid instance was indeed found and stopped,
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
-     * @see GridGain#stop(String, boolean)
+     * @see org.gridgain.grid.GridGain#stop(String, boolean)
      */
     @IgniteMBeanDescription("Stops grid by name. Cancels running jobs if cancel is true. Returns true if named " +
         "grid instance was indeed found and stopped, false otherwise.")
@@ -111,7 +110,7 @@ public interface IgnitionMBean {
      *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
-     * @see GridGain#stopAll(boolean)
+     * @see org.gridgain.grid.GridGain#stopAll(boolean)
      */
     @IgniteMBeanDescription("Stops all started grids.")
     @GridMBeanParametersNames(
@@ -129,7 +128,7 @@ public interface IgnitionMBean {
      *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
-     * @see GridGain#stopAll(boolean)
+     * @see org.gridgain.grid.GridGain#stopAll(boolean)
      */
     @IgniteMBeanDescription("Restart JVM.")
     @GridMBeanParametersNames(
