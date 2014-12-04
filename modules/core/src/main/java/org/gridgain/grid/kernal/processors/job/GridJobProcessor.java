@@ -382,7 +382,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             throw new GridException("Node that originated task execution has left grid: " + taskNodeId);
 
         // Tuple: error message-response.
-        final GridBiTuple<String, GridJobSiblingsResponse> t = F.t2();
+        final IgniteBiTuple<String, GridJobSiblingsResponse> t = F.t2();
 
         final Lock lock = new ReentrantLock();
         final Condition cond = lock.newCondition();

@@ -163,7 +163,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes) {
+    @Override public IgniteBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes) {
         return mapFor(p).valuePointer(hash, keyBytes);
     }
 
@@ -258,11 +258,11 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
-        return new GridCloseableIteratorAdapter<GridBiTuple<byte[], byte[]>>() {
+    @Override public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator() {
+        return new GridCloseableIteratorAdapter<IgniteBiTuple<byte[], byte[]>>() {
             private int p;
 
-            private GridCloseableIterator<GridBiTuple<byte[], byte[]>> curIt;
+            private GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> curIt;
 
             {
                 try {
@@ -288,11 +288,11 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 curIt = null;
             }
 
-            @Override protected GridBiTuple<byte[], byte[]> onNext() throws GridException {
+            @Override protected IgniteBiTuple<byte[], byte[]> onNext() throws GridException {
                 if (curIt == null)
                     throw new NoSuchElementException();
 
-                GridBiTuple<byte[], byte[]> t = curIt.next();
+                IgniteBiTuple<byte[], byte[]> t = curIt.next();
 
                 if (!curIt.hasNext()) {
                     curIt.close();
@@ -382,7 +382,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(int p) {
+    @Override public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator(int p) {
         return mapFor(p).iterator();
     }
 

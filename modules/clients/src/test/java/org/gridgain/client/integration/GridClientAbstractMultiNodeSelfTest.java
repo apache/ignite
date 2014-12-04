@@ -715,7 +715,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
                             Thread.currentThread().interrupt();
                         }
 
-                        return new GridBiTuple<>(locNodeId, 1);
+                        return new IgniteBiTuple<>(locNodeId, 1);
                     }
                 });
             }
@@ -730,7 +730,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             String locNodeId = null;
 
             for (GridComputeJobResult res : results) {
-                GridBiTuple<String, Integer> part = res.getData();
+                IgniteBiTuple<String, Integer> part = res.getData();
 
                 if (locNodeId == null)
                     locNodeId = part.get1();

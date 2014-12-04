@@ -238,7 +238,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
     private GridLocalEventListener evtLsnr;
 
     /** Task topologies. First pair value indicates whether or not jobs have been mapped. */
-    private ConcurrentMap<GridUuid, GridBiTuple<Boolean, WeightedTopology>> taskTops =
+    private ConcurrentMap<GridUuid, IgniteBiTuple<Boolean, WeightedTopology>> taskTops =
         new ConcurrentHashMap8<>();
 
     /** */
@@ -324,7 +324,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
                         // Here we set mapped property and later cache will be ignored
                         GridJobEvent jobEvt = (GridJobEvent)evt;
 
-                        GridBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(jobEvt.taskSessionId());
+                        IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(jobEvt.taskSessionId());
 
                         if (weightedTop != null)
                             weightedTop.set1(true);
@@ -412,7 +412,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
         A.notNull(top, "top");
         A.notNull(job, "job");
 
-        GridBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(ses.getId());
+        IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(ses.getId());
 
         // Create new cached topology if there is no one. Do not
         // use cached topology after task has been mapped.

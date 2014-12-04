@@ -66,7 +66,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private volatile IgniteInClosure2X<T, GridHadoopShuffleMessage> io;
 
     /** */
-    protected ConcurrentMap<Long, GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>> sentMsgs =
+    protected ConcurrentMap<Long, IgniteBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>> sentMsgs =
         new ConcurrentHashMap<>();
 
     /** */
@@ -234,7 +234,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("ConstantConditions")
     public void onShuffleAck(GridHadoopShuffleAck ack) {
-        GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup = sentMsgs.get(ack.id());
+        IgniteBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup = sentMsgs.get(ack.id());
 
         if (tup != null)
             tup.get2().onDone();
@@ -363,8 +363,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         final long msgId = msg.id();
 
-        GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> old = sentMsgs.putIfAbsent(msgId,
-            new GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>(msg, fut));
+        IgniteBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> old = sentMsgs.putIfAbsent(msgId,
+            new IgniteBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>(msg, fut));
 
         assert old == null;
 
@@ -463,7 +463,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
-        for (GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup : sentMsgs.values())
+        for (IgniteBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup : sentMsgs.values())
             fut.add(tup.get2());
 
         fut.markInitialized();

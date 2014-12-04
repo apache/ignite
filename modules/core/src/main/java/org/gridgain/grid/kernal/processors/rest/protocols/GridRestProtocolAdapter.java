@@ -141,10 +141,10 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridBiTuple<String, Object>> getProperties() {
+    @Override public Collection<IgniteBiTuple<String, Object>> getProperties() {
         try {
             // All addresses for wildcard endpoint, `null` without.
-            GridBiTuple<Collection<String>, Collection<String>> addrs = host != null ?
+            IgniteBiTuple<Collection<String>, Collection<String>> addrs = host != null ?
                 U.resolveLocalAddresses(host) : null;
 
             return port > 0 ?
@@ -153,7 +153,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
                     F.<String, Object>t(getHostNamePropertyName(), addrs.get2()),
                     F.<String, Object>t(getPortPropertyName(), port)
                 ) :
-                Collections.<GridBiTuple<String, Object>>emptyList();
+                Collections.<IgniteBiTuple<String, Object>>emptyList();
         }
         catch (GridException | IOException ignored) {
             return null;

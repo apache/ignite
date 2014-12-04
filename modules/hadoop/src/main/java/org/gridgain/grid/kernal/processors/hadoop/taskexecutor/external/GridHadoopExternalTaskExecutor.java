@@ -150,8 +150,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                         "[jobId=" + meta.jobId() + ", meta=" + meta + ']');
             }
             else {
-                proc.initFut.listenAsync(new CI1<GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>>>() {
-                    @Override public void apply(GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+                proc.initFut.listenAsync(new CI1<GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+                    @Override public void apply(GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                         try {
                             f.get();
 
@@ -217,9 +217,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             final HadoopProcess proc0 = proc;
 
-            proc.initFut.listenAsync(new CI1<GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+            proc.initFut.listenAsync(new CI1<GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
                 @Override public void apply(
-                    GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+                    GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                     if (!busyLock.tryReadLock())
                         return;
 
@@ -398,8 +398,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             }
         }, true);
 
-        fut.listenAsync(new CI1<GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>>>() {
-            @Override public void apply(GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+        fut.listenAsync(new CI1<GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+            @Override public void apply(GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                 try {
                     // Make sure there were no exceptions.
                     f.get();
@@ -783,9 +783,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 terminated = true;
 
                 if (!initFut.isDone())
-                    initFut.listenAsync(new CI1<GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+                    initFut.listenAsync(new CI1<GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
                         @Override public void apply(
-                            GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+                            GridFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                             proc.destroy();
                         }
                     });
@@ -846,7 +846,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     /**
      *
      */
-    private class GridHadoopProcessFuture extends GridFutureAdapter<GridBiTuple<Process, GridHadoopProcessDescriptor>> {
+    private class GridHadoopProcessFuture extends GridFutureAdapter<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -915,7 +915,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable GridBiTuple<Process, GridHadoopProcessDescriptor> res,
+        @Override public boolean onDone(@Nullable IgniteBiTuple<Process, GridHadoopProcessDescriptor> res,
             @Nullable Throwable err) {
             if (err == null) {
                 HadoopProcess proc = runningProcsByProcId.get(childProcId);

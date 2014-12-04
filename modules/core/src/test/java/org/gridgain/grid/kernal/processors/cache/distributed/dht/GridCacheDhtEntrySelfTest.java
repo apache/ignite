@@ -137,7 +137,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     public void testClearWithReaders() throws Exception {
         Integer key = 1;
 
-        GridBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
+        IgniteBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
 
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
@@ -182,7 +182,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     public void testRemoveWithReaders() throws Exception {
         Integer key = 1;
 
-        GridBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
+        IgniteBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
 
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
@@ -228,7 +228,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     public void testEvictWithReaders() throws Exception {
         Integer key = 1;
 
-        GridBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
+        IgniteBiTuple<ClusterNode, ClusterNode> t = getNodes(key);
 
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
@@ -281,7 +281,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return For the given key pair {primary node, some other node}.
      */
-    private GridBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
+    private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
         GridCacheAffinity<Integer> aff = grid(0).<Integer, Object>cache(null).affinity();
 
         int part = aff.partition(key);

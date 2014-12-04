@@ -2748,9 +2748,9 @@ public class GridFunc {
      * @param <E2> Type of the 2nd value.
      * @return Converted predicate.
      */
-    public static <E1, E2> GridPredicate<GridBiTuple<E1, E2>> as0(final IgniteBiPredicate<? super E1, ? super E2> p) {
-        return new P1<GridBiTuple<E1, E2>>() {
-            @Override public boolean apply(GridBiTuple<E1, E2> e) {
+    public static <E1, E2> GridPredicate<IgniteBiTuple<E1, E2>> as0(final IgniteBiPredicate<? super E1, ? super E2> p) {
+        return new P1<IgniteBiTuple<E1, E2>>() {
+            @Override public boolean apply(IgniteBiTuple<E1, E2> e) {
                 return p.apply(e.get1(), e.get2());
             }
         };
@@ -5873,14 +5873,14 @@ public class GridFunc {
      * @param <K> Type of the free variable for the closure and type of the map keys.
      * @param <V> Type of the closure's return value and type of the map values.
      */
-    public static <K, V> void forEach(Map<? extends K, ? extends V> m, GridInClosure<? super GridBiTuple<K, V>> f,
-        @Nullable GridPredicate<? super GridBiTuple<K, V>>... p) {
+    public static <K, V> void forEach(Map<? extends K, ? extends V> m, GridInClosure<? super IgniteBiTuple<K, V>> f,
+        @Nullable GridPredicate<? super IgniteBiTuple<K, V>>... p) {
         A.notNull(m, "m");
 
         if (!isAlwaysFalse(p)) {
             if (f != null) {
                 for (Map.Entry<? extends K, ? extends V> e : m.entrySet()) {
-                    GridBiTuple<K, V> t = F.t(e.getKey(), e.getValue());
+                    IgniteBiTuple<K, V> t = F.t(e.getKey(), e.getValue());
 
                     if (isAll(t, p))
                         f.apply(t);
@@ -6441,7 +6441,7 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Pair of two collections.
      */
-    public static <T0, T extends T0> GridPair<Collection<T>> split(@Nullable Collection<T> c,
+    public static <T0, T extends T0> IgnitePair<Collection<T>> split(@Nullable Collection<T> c,
         @Nullable GridPredicate<? super T>... p) {
         if (c == null)
             return pair(null, null);
@@ -6479,8 +6479,8 @@ public class GridFunc {
      * @param <T> Type of objects in pair.
      * @return Pair of objects.
      */
-    public static <T> GridPair<T> pair(@Nullable T t1, @Nullable T t2) {
-        return new GridPair<>(t1, t2);
+    public static <T> IgnitePair<T> pair(@Nullable T t1, @Nullable T t2) {
+        return new IgnitePair<>(t1, t2);
     }
 
     /**
@@ -6508,7 +6508,7 @@ public class GridFunc {
      *      evaluates to {@code true} - and second containing the elements for which predicate
      *      evaluates to {@code false}.
      */
-    public static <V> GridBiTuple<Collection<V>, Collection<V>> partition(Iterable<? extends V> c,
+    public static <V> IgniteBiTuple<Collection<V>, Collection<V>> partition(Iterable<? extends V> c,
         GridPredicate<? super V> p) {
         A.notNull(c, "c", p, "p");
 
@@ -6537,7 +6537,7 @@ public class GridFunc {
      *      evaluates to {@code true} - and second containing the elements for which predicate
      *      evaluates to {@code false}.
      */
-    public static <V> GridBiTuple<Collection<V>, Collection<V>> partition(V[] c, GridPredicate<? super V> p) {
+    public static <V> IgniteBiTuple<Collection<V>, Collection<V>> partition(V[] c, GridPredicate<? super V> p) {
         A.notNull(c, "c", p, "p");
 
         return partition(asList(c), p);
@@ -6554,7 +6554,7 @@ public class GridFunc {
      * @return Tuple of two maps: first containing entries for which given predicate evaluates to
      *      {@code true} - and second containing the entries for which predicate evaluates to {@code false}.
      */
-    public static <K, V> GridBiTuple<Map<K, V>, Map<K, V>> partition(Map<? extends K, ? extends V> m,
+    public static <K, V> IgniteBiTuple<Map<K, V>, Map<K, V>> partition(Map<? extends K, ? extends V> m,
         IgniteBiPredicate<? super K, ? super V> p) {
         A.notNull(m, "m", p, "p");
 
@@ -6891,8 +6891,8 @@ public class GridFunc {
      * @param <V2> Type of the 2nd tuple parameter.
      * @return Newly created tuple.
      */
-    public static <V1, V2> GridBiTuple<V1, V2> t(@Nullable V1 v1, @Nullable V2 v2) {
-        return new GridBiTuple<>(v1, v2);
+    public static <V1, V2> IgniteBiTuple<V1, V2> t(@Nullable V1 v1, @Nullable V2 v2) {
+        return new IgniteBiTuple<>(v1, v2);
     }
 
     /**
@@ -6902,8 +6902,8 @@ public class GridFunc {
      * @param <V2> Type of the 2nd tuple parameter.
      * @return Newly created empty tuple.
      */
-    public static <V1, V2> GridBiTuple<V1, V2> t2() {
-        return new GridBiTuple<>();
+    public static <V1, V2> IgniteBiTuple<V1, V2> t2() {
+        return new IgniteBiTuple<>();
     }
 
     /**

@@ -1224,11 +1224,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testTransformCompute() throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
-        GridClosure<Integer, GridBiTuple<Integer, String>> c;
+        GridClosure<Integer, IgniteBiTuple<Integer, String>> c;
 
-        c = new GridClosure<Integer, GridBiTuple<Integer, String>>() {
-            @Override public GridBiTuple<Integer, String> apply(Integer val) {
-                return val == null ? new GridBiTuple<>(0, "null") : new GridBiTuple<>(val + 1, String.valueOf(val));
+        c = new GridClosure<Integer, IgniteBiTuple<Integer, String>>() {
+            @Override public IgniteBiTuple<Integer, String> apply(Integer val) {
+                return val == null ? new IgniteBiTuple<>(0, "null") : new IgniteBiTuple<>(val + 1, String.valueOf(val));
             }
         };
 
@@ -1250,9 +1250,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)3, cache.get("k1"));
 
-        c = new GridClosure<Integer, GridBiTuple<Integer, String>>() {
-            @Override public GridBiTuple<Integer, String> apply(Integer integer) {
-                return new GridBiTuple<>(null, null);
+        c = new GridClosure<Integer, IgniteBiTuple<Integer, String>>() {
+            @Override public IgniteBiTuple<Integer, String> apply(Integer integer) {
+                return new IgniteBiTuple<>(null, null);
             }
         };
 

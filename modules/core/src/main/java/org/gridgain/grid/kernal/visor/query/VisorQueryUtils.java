@@ -112,7 +112,7 @@ public class VisorQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
+    public static IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
         GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize)
         throws GridException {
         List<Object[]> rows = new ArrayList<>();
@@ -132,7 +132,7 @@ public class VisorQueryUtils {
             next = fut.next();
         }
 
-        return new GridBiTuple<>(rows, next);
+        return new IgniteBiTuple<>(rows, next);
     }
 
     /**
@@ -163,7 +163,7 @@ public class VisorQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static GridBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
+    public static IgniteBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
         List<?> savedNext, int pageSize) throws GridException {
         List<Object[]> rows = new ArrayList<>();
 
@@ -191,6 +191,6 @@ public class VisorQueryUtils {
             next = fut.next();
         }
 
-        return new GridBiTuple<List<Object[]>, List<?>>(rows, next);
+        return new IgniteBiTuple<List<Object[]>, List<?>>(rows, next);
     }
 }

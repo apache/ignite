@@ -603,7 +603,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         byte[] keyBytes = entry.getOrMarshalKeyBytes();
 
-        GridBiTuple<Long, Integer> ptr = offheap.valuePointer(spaceName, part, key, keyBytes);
+        IgniteBiTuple<Long, Integer> ptr = offheap.valuePointer(spaceName, part, key, keyBytes);
 
         if (ptr != null) {
             assert ptr.get1() != null;
@@ -1371,7 +1371,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             return new GridEmptyCloseableIterator<>();
 
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
-            private GridCloseableIterator<GridBiTuple<byte[], byte[]>> it = offheap.iterator(spaceName);
+            private GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = offheap.iterator(spaceName);
 
             private Map.Entry<byte[], byte[]> cur;
 

@@ -352,7 +352,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             Ignite g = startGrid(NEW_GRID_NAME);
 
-            GridBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
+            IgniteBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
                 .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 10, 10, true).get();
 
             assert t.get1() == 10;
@@ -388,7 +388,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                             try {
                                 Ignite g = startGrid(name);
 
-                                GridBiTuple<Integer, Integer> t =
+                                IgniteBiTuple<Integer, Integer> t =
                                     g.cache(null).dataStructures()
                                         .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
@@ -410,7 +410,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             int val = s.value();
 
             while (!fut.isDone()) {
-                GridBiTuple<Integer, Integer> t = s.get();
+                IgniteBiTuple<Integer, Integer> t = s.get();
 
                 assert t.get1() == val;
                 assert t.get2() == val;
@@ -423,7 +423,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             fut.get();
 
             for (Ignite g : G.allGrids()) {
-                GridBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
+                IgniteBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
                     .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
                 assert t.get1() == val;
@@ -456,7 +456,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     Ignite g = startGrid(name);
 
-                                    GridBiTuple<Integer, Integer> t =
+                                    IgniteBiTuple<Integer, Integer> t =
                                         g.cache(null).dataStructures()
                                             .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
@@ -480,7 +480,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             int val = s.value();
 
             while (!fut.isDone()) {
-                GridBiTuple<Integer, Integer> t = s.get();
+                IgniteBiTuple<Integer, Integer> t = s.get();
 
                 assert t.get1() == val;
                 assert t.get2() == val;
@@ -493,7 +493,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             fut.get();
 
             for (Ignite g : G.allGrids()) {
-                GridBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
+                IgniteBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
                     .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
                 assert t.get1() == val;

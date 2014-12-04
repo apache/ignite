@@ -147,7 +147,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
     @SuppressWarnings("BusyWait")
     private class BindWorker extends GridWorker {
         /** Configurations to bind. */
-        private Collection<GridBiTuple<Map<String, String>, Boolean>> bindCfgs = new LinkedList<>();
+        private Collection<IgniteBiTuple<Map<String, String>, Boolean>> bindCfgs = new LinkedList<>();
 
         /**
          * Constructor.
@@ -173,10 +173,10 @@ public class GridGgfsServerManager extends GridGgfsManager {
             while (!isCancelled()) {
                 Thread.sleep(REBIND_INTERVAL);
 
-                Iterator<GridBiTuple<Map<String, String>, Boolean>> it = bindCfgs.iterator();
+                Iterator<IgniteBiTuple<Map<String, String>, Boolean>> it = bindCfgs.iterator();
 
                 while (it.hasNext()) {
-                    GridBiTuple<Map<String, String>, Boolean> cfg = it.next();
+                    IgniteBiTuple<Map<String, String>, Boolean> cfg = it.next();
 
                     GridGgfsServer ipcSrv = new GridGgfsServer(ggfsCtx, cfg.get1(), cfg.get2());
 

@@ -53,7 +53,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
             Map<String, String> res = new HashMap<>();
 
             try {
-                GridBiTuple<Collection<String>, Collection<String>> addrs =
+                IgniteBiTuple<Collection<String>, Collection<String>> addrs =
                     GridUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"));
 
                 assert(addrs.get1() != null);

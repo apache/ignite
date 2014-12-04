@@ -323,7 +323,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         return (R)updateAllInternal(TRANSFORM,
             Collections.singleton(key),
@@ -769,7 +769,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         Iterator<?> valsIter = vals != null ? vals.iterator() : null;
 
-        GridBiTuple<Boolean, ?> res = null;
+        IgniteBiTuple<Boolean, ?> res = null;
 
         GridCachePartialUpdateException err = null;
 
@@ -787,7 +787,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 try {
                     entry = entryEx(key);
 
-                    GridBiTuple<Boolean, V> t = entry.innerUpdateLocal(
+                    IgniteBiTuple<Boolean, V> t = entry.innerUpdateLocal(
                         ver,
                         val == null ? DELETE : op,
                         val,
@@ -805,7 +805,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (op == TRANSFORM && val instanceof GridCacheTransformComputeClosure) {
                             assert retval;
 
-                            res = new GridBiTuple<>(t.get1(),
+                            res = new IgniteBiTuple<>(t.get1(),
                                 ((GridCacheTransformComputeClosure<V, ?>)val).returnValue());
                         }
                         else
@@ -927,7 +927,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                         if (updated == null) {
                             if (intercept) {
-                                GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                                IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
                                     entry.key(), old);
 
                                 if (ctx.cancelRemove(interceptorRes))
@@ -1031,7 +1031,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 taskName,
                                 CU.<K, V>empty());
 
-                            GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                            IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
                                 entry.key(), old);
 
                             if (ctx.cancelRemove(interceptorRes))
@@ -1106,8 +1106,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         try {
             if (putMap != null) {
-                ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<V, GridBiTuple<V, GridCacheVersion>>() {
-                    @Override public GridBiTuple<V, GridCacheVersion> apply(V v) {
+                ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
+                    @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
                         return F.t(v, ver);
                     }
                 }));
@@ -1145,7 +1145,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 assert writeVal != null || op == DELETE : "null write value found.";
 
-                GridBiTuple<Boolean, V> t = entry.innerUpdateLocal(
+                IgniteBiTuple<Boolean, V> t = entry.innerUpdateLocal(
                     ver,
                     op,
                     writeVal,

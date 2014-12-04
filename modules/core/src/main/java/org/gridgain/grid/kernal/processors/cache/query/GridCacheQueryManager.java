@@ -747,7 +747,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             private void advance() {
-                GridBiTuple<K, V> next0 = null;
+                IgniteBiTuple<K, V> next0 = null;
 
                 while (iter.hasNext()) {
                     next0 = null;
@@ -1482,7 +1482,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private static Object recipient(UUID sndId, long reqId) {
         assert sndId != null;
 
-        return new GridBiTuple<>(sndId, reqId);
+        return new IgniteBiTuple<>(sndId, reqId);
     }
 
     /**

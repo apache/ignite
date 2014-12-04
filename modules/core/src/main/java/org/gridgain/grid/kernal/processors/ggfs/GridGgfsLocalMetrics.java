@@ -18,16 +18,16 @@ import org.jdk8.backport.*;
  */
 public class GridGgfsLocalMetrics {
     /** Block reads. First value - total reads, second value - reads delegated to the secondary file system. */
-    private volatile GridBiTuple<LongAdder, LongAdder> blocksRead;
+    private volatile IgniteBiTuple<LongAdder, LongAdder> blocksRead;
 
     /** Block writes. First value - total writes, second value - writes delegated to the secondary file system. */
-    private volatile GridBiTuple<LongAdder, LongAdder> blocksWritten;
+    private volatile IgniteBiTuple<LongAdder, LongAdder> blocksWritten;
 
     /** Byte reads. First value - total bytes read, second value - consumed time. */
-    private volatile GridBiTuple<LongAdder, LongAdder> bytesRead;
+    private volatile IgniteBiTuple<LongAdder, LongAdder> bytesRead;
 
     /** Byte writes. First value - total bytes written, second value - consumed time. */
-    private volatile GridBiTuple<LongAdder, LongAdder> bytesWritten;
+    private volatile IgniteBiTuple<LongAdder, LongAdder> bytesWritten;
 
     /** Number of files opened for read. */
     private final LongAdder filesOpenedForRead = new LongAdder();
@@ -63,7 +63,7 @@ public class GridGgfsLocalMetrics {
      * @param readTime Read time.
      */
     void addReadBytesTime(long readBytes, long readTime) {
-        GridBiTuple<LongAdder, LongAdder> bytesRead0 = bytesRead;
+        IgniteBiTuple<LongAdder, LongAdder> bytesRead0 = bytesRead;
 
         bytesRead0.get1().add(readBytes);
         bytesRead0.get2().add(readTime);
@@ -90,7 +90,7 @@ public class GridGgfsLocalMetrics {
      * @param writeTime Write time.
      */
     void addWrittenBytesTime(long writtenBytes, long writeTime) {
-        GridBiTuple<LongAdder, LongAdder> bytesWritten0 = bytesWritten;
+        IgniteBiTuple<LongAdder, LongAdder> bytesWritten0 = bytesWritten;
 
         bytesWritten0.get1().add(writtenBytes);
         bytesWritten0.get2().add(writeTime);
@@ -117,7 +117,7 @@ public class GridGgfsLocalMetrics {
      * @param secondary Number of blocks read form secondary FS.
      */
     void addReadBlocks(int total, int secondary) {
-        GridBiTuple<LongAdder, LongAdder> blocksRead0 = blocksRead;
+        IgniteBiTuple<LongAdder, LongAdder> blocksRead0 = blocksRead;
 
         blocksRead0.get1().add(total);
         blocksRead0.get2().add(secondary);
@@ -144,7 +144,7 @@ public class GridGgfsLocalMetrics {
      * @param secondary Number of blocks written to secondary FS.
      */
     void addWriteBlocks(int total, int secondary) {
-        GridBiTuple<LongAdder, LongAdder> blocksWritten0 = blocksWritten;
+        IgniteBiTuple<LongAdder, LongAdder> blocksWritten0 = blocksWritten;
 
         blocksWritten0.get1().add(total);
         blocksWritten0.get2().add(secondary);

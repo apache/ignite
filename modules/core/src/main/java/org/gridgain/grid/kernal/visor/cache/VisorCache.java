@@ -72,10 +72,10 @@ public class VisorCache implements Serializable {
     private int partsCnt;
 
     /** Primary partitions IDs with sizes. */
-    private Collection<GridPair<Integer>> primaryParts;
+    private Collection<IgnitePair<Integer>> primaryParts;
 
     /** Backup partitions IDs with sizes. */
-    private Collection<GridPair<Integer>> backupParts;
+    private Collection<IgnitePair<Integer>> backupParts;
 
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
@@ -110,8 +110,8 @@ public class VisorCache implements Serializable {
             swapKeys = -1;
         }
 
-        Collection<GridPair<Integer>> pps = Collections.emptyList();
-        Collection<GridPair<Integer>> bps = Collections.emptyList();
+        Collection<IgnitePair<Integer>> pps = Collections.emptyList();
+        Collection<IgnitePair<Integer>> bps = Collections.emptyList();
         GridDhtPartitionMap partsMap = null;
 
         GridCacheConfiguration cfg = ca.configuration();
@@ -146,9 +146,9 @@ public class VisorCache implements Serializable {
                     int sz = part.size();
 
                     if (part.primary(-1)) // Pass -1 as topology version in order not to wait for topology version.
-                        pps.add(new GridPair<>(p, sz));
+                        pps.add(new IgnitePair<>(p, sz));
                     else
-                        bps.add(new GridPair<>(p, sz));
+                        bps.add(new IgnitePair<>(p, sz));
                 }
             }
             else {
@@ -162,7 +162,7 @@ public class VisorCache implements Serializable {
                 for (int p : pp) {
                     Set set = ca.entrySet(p);
 
-                    pps.add(new GridPair<>(p, set != null ? set.size() : 0));
+                    pps.add(new IgnitePair<>(p, set != null ? set.size() : 0));
                 }
 
                 int[] bp = ca.affinity().backupPartitions(node);
@@ -172,7 +172,7 @@ public class VisorCache implements Serializable {
                 for (int p : bp) {
                     Set set = ca.entrySet(p);
 
-                    bps.add(new GridPair<>(p, set != null ? set.size() : 0));
+                    bps.add(new IgnitePair<>(p, set != null ? set.size() : 0));
                 }
             }
         }
@@ -241,8 +241,8 @@ public class VisorCache implements Serializable {
         c.swapSize(swapSize);
         c.swapKeys(swapKeys);
         c.partitions(partsCnt);
-        c.primaryPartitions(Collections.<GridPair<Integer>>emptyList());
-        c.backupPartitions(Collections.<GridPair<Integer>>emptyList());
+        c.primaryPartitions(Collections.<IgnitePair<Integer>>emptyList());
+        c.backupPartitions(Collections.<IgnitePair<Integer>>emptyList());
         c.metrics(metrics);
 
         return c;
@@ -419,28 +419,28 @@ public class VisorCache implements Serializable {
     /**
      * @return Primary partitions IDs with sizes.
      */
-    public Collection<GridPair<Integer>> primaryPartitions() {
+    public Collection<IgnitePair<Integer>> primaryPartitions() {
         return primaryParts;
     }
 
     /**
      * @param primaryParts New primary partitions IDs with sizes.
      */
-    public void primaryPartitions(Collection<GridPair<Integer>> primaryParts) {
+    public void primaryPartitions(Collection<IgnitePair<Integer>> primaryParts) {
         this.primaryParts = primaryParts;
     }
 
     /**
      * @return Backup partitions IDs with sizes.
      */
-    public Collection<GridPair<Integer>> backupPartitions() {
+    public Collection<IgnitePair<Integer>> backupPartitions() {
         return backupParts;
     }
 
     /**
      * @param backupParts New backup partitions IDs with sizes.
      */
-    public void backupPartitions(Collection<GridPair<Integer>> backupParts) {
+    public void backupPartitions(Collection<IgnitePair<Integer>> backupParts) {
         this.backupParts = backupParts;
     }
 

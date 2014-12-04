@@ -23,19 +23,19 @@ import java.util.*;
  *  Task for collecting next page previously executed SQL or SCAN query.
  */
 @GridInternal
-public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String, Integer>, VisorQueryResult> {
+public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<String, Integer>, VisorQueryResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryNextPageJob job(GridBiTuple<String, Integer> arg) {
+    @Override protected VisorQueryNextPageJob job(IgniteBiTuple<String, Integer> arg) {
         return new VisorQueryNextPageJob(arg);
     }
 
     /**
      * Job for collecting next page previously executed SQL or SCAN query.
      */
-    private static class VisorQueryNextPageJob extends VisorJob<GridBiTuple<String, Integer>, VisorQueryResult> {
+    private static class VisorQueryNextPageJob extends VisorJob<IgniteBiTuple<String, Integer>, VisorQueryResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -44,17 +44,17 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
          *
          * @param arg Job argument.
          */
-        private VisorQueryNextPageJob(GridBiTuple<String, Integer> arg) {
+        private VisorQueryNextPageJob(IgniteBiTuple<String, Integer> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorQueryResult run(GridBiTuple<String, Integer> arg) throws GridException {
+        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) throws GridException {
             return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
         }
 
         /** Collect data from SQL query */
-        private VisorQueryResult nextSqlPage(GridBiTuple<String, Integer> arg) throws GridException {
+        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws GridException {
             long start = U.currentTimeMillis();
 
             ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = g.nodeLocalMap();
@@ -64,7 +64,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
             if (t == null)
                 throw new GridInternalException("SQL query results are expired.");
 
-            GridBiTuple<List<Object[]>, List<?>> nextRows = VisorQueryUtils.fetchSqlQueryRows(t.future(), t.next(), arg.get2());
+            IgniteBiTuple<List<Object[]>, List<?>> nextRows = VisorQueryUtils.fetchSqlQueryRows(t.future(), t.next(), arg.get2());
 
             boolean hasMore = nextRows.get2() != null;
 
@@ -77,7 +77,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
         }
 
         /** Collect data from SCAN query */
-        private VisorQueryResult nextScanPage(GridBiTuple<String, Integer> arg) throws GridException {
+        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws GridException {
             long start = U.currentTimeMillis();
 
             ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = g.nodeLocalMap();
@@ -87,7 +87,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
             if (t == null)
                 throw new GridInternalException("Scan query results are expired.");
 
-            GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
+            IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
                 VisorQueryUtils.fetchScanQueryRows(t.future(), t.next(), arg.get2());
 
             Boolean hasMore = rows.get2() != null;

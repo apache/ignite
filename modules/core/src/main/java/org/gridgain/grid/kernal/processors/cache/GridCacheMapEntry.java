@@ -1249,7 +1249,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
-        GridBiTuple<Boolean, V> interceptRes = null;
+        IgniteBiTuple<Boolean, V> interceptRes = null;
 
         try {
             synchronized (this) {
@@ -1405,7 +1405,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridBiTuple<Boolean, V> innerUpdateLocal(
+    @Override public IgniteBiTuple<Boolean, V> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
@@ -1424,7 +1424,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         V old;
         boolean res = true;
 
-        GridBiTuple<Boolean, ?> interceptorRes = null;
+        IgniteBiTuple<Boolean, ?> interceptorRes = null;
 
         synchronized (this) {
             boolean needVal = retval || intercept || op == GridCacheOperation.TRANSFORM || !F.isEmpty(filter);
@@ -1467,7 +1467,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
 
                 if (!pass)
-                    return new GridBiTuple<>(false, retval ? old : null);
+                    return new IgniteBiTuple<>(false, retval ? old : null);
             }
 
             // Apply metrics.
@@ -1498,13 +1498,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     updated = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
 
                     if (updated == null)
-                        return new GridBiTuple<>(false, cctx.<V>unwrapTemporary(old));
+                        return new IgniteBiTuple<>(false, cctx.<V>unwrapTemporary(old));
                 }
                 else {
                     interceptorRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
                     if (cctx.cancelRemove(interceptorRes))
-                        return new GridBiTuple<>(false, cctx.<V>unwrapTemporary(interceptorRes.get2()));
+                        return new IgniteBiTuple<>(false, cctx.<V>unwrapTemporary(interceptorRes.get2()));
                 }
             }
 
@@ -1594,7 +1594,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
         }
 
-        return new GridBiTuple<>(res, cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : old));
+        return new IgniteBiTuple<>(res, cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : old));
     }
 
     /** {@inheritDoc} */
@@ -1802,7 +1802,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     newVer.dataCenterId(),
                     drVer);
 
-            GridBiTuple<Boolean, V> interceptRes = null;
+            IgniteBiTuple<Boolean, V> interceptRes = null;
 
             if (op == GridCacheOperation.UPDATE) {
                 if (intercept) {

@@ -706,7 +706,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
 
                     assert cls != null;
 
-                    GridBiTuple<Class<?>, String> rsrc = unitDesc.findResource(rsrcName);
+                    IgniteBiTuple<Class<?>, String> rsrc = unitDesc.findResource(rsrcName);
 
                     if (rsrc != null) {
                         // Recalculate resource name in case if access is performed by
@@ -901,7 +901,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
 
                 // Check class loader's registered resources.
                 for (String rsrcName : rsrcs.keySet()) {
-                    GridBiTuple<Class<?>, String> rsrc = desc.findResource(rsrcName);
+                    IgniteBiTuple<Class<?>, String> rsrc = desc.findResource(rsrcName);
 
                     // Remove class loader if resource found.
                     if (rsrc != null) {

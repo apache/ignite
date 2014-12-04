@@ -270,7 +270,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     private final Object mux = new Object();
 
     /** Map with proceeding ping requests. */
-    private final ConcurrentMap<InetSocketAddress, GridFuture<GridBiTuple<UUID, Boolean>>> pingMap =
+    private final ConcurrentMap<InetSocketAddress, GridFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
 
     /** Debug mode. */
@@ -685,7 +685,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         tcpSrvr = new TcpServer();
 
         // Init local node.
-        GridBiTuple<Collection<String>, Collection<String>> addrs;
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
         try {
             addrs = U.resolveLocalAddresses(locHost);
@@ -1129,7 +1129,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
-                GridBiTuple<UUID, Boolean> t = pingNode(addr, clientNodeId);
+                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, clientNodeId);
 
                 return node.id().equals(t.get1()) && (clientNodeId == null || t.get2());
             }
@@ -1151,16 +1151,16 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @return ID of the remote node if node alive.
      * @throws GridSpiException If an error occurs.
      */
-    private GridBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
+    private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
         throws GridException {
         assert addr != null;
 
         if (F.contains(locNodeAddrs, addr))
             return F.t(locNodeId, false);
 
-        GridFutureAdapterEx<GridBiTuple<UUID, Boolean>> fut = new GridFutureAdapterEx<>();
+        GridFutureAdapterEx<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapterEx<>();
 
-        GridFuture<GridBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
+        GridFuture<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
 
         if (oldFut != null)
             return oldFut.get();
@@ -1192,7 +1192,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                         stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
 
-                        GridBiTuple<UUID, Boolean> t = F.t(res.creatorNodeId(), res.clientExists());
+                        IgniteBiTuple<UUID, Boolean> t = F.t(res.creatorNodeId(), res.clientExists());
 
                         fut.onDone(t);
 

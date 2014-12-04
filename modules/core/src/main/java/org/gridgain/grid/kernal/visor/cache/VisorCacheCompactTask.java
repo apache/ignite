@@ -22,7 +22,7 @@ import java.util.*;
  * Task that compacts caches.
  */
 @GridInternal
-public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<String, IgniteBiTuple<Integer, Integer>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,7 +32,7 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
     }
 
     /** Job that compact caches on node. */
-    private static class VisorCachesCompactJob extends VisorJob<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+    private static class VisorCachesCompactJob extends VisorJob<Set<String>, Map<String, IgniteBiTuple<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -42,8 +42,8 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, GridBiTuple<Integer, Integer>> run(Set<String> names) throws GridException {
-            final Map<String, GridBiTuple<Integer, Integer>> res = new HashMap<>();
+        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) throws GridException {
+            final Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
@@ -58,7 +58,7 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
                             after--;
                     }
 
-                    res.put(cacheName, new GridBiTuple<>(before, after));
+                    res.put(cacheName, new IgniteBiTuple<>(before, after));
                 }
             }
 

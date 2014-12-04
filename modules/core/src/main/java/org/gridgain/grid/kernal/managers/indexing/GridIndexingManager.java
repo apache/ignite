@@ -954,17 +954,17 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             d.addFieldToTextIndex(prop.name());
         }
 
-        Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
+        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
         if (grps != null) {
-            for (Map.Entry<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
+            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
                 String idxName = entry.getKey();
 
-                LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
+                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
 
                 int order = 0;
 
-                for (Map.Entry<String, GridBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                     ClassProperty prop = buildClassProperty(cls, idxField.getKey(), idxField.getValue().get1());
 
                     d.addProperty(key, prop, false);
@@ -1027,17 +1027,17 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             d.addFieldToTextIndex(prop.name());
         }
 
-        Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
+        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
         if (grps != null) {
-            for (Map.Entry<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
+            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
                 String idxName = entry.getKey();
 
-                LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
+                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
 
                 int order = 0;
 
-                for (Map.Entry<String, GridBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                     PortableProperty prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1());
 
                     d.addProperty(key, prop, false);

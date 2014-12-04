@@ -316,7 +316,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                         res.setResponse(taskRestRes);
                     }
                     else {
-                        GridBiTuple<String, GridTaskResultResponse> t = requestTaskResult(resHolderId, tid);
+                        IgniteBiTuple<String, GridTaskResultResponse> t = requestTaskResult(resHolderId, tid);
 
                         if (t.get1() != null)
                             throw new GridException(t.get1());
@@ -375,14 +375,14 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      * @param taskId Task ID.
      * @return Response from task holder.
      */
-    private GridBiTuple<String, GridTaskResultResponse> requestTaskResult(final UUID resHolderId, GridUuid taskId) {
+    private IgniteBiTuple<String, GridTaskResultResponse> requestTaskResult(final UUID resHolderId, GridUuid taskId) {
         ClusterNode taskNode = ctx.discovery().node(resHolderId);
 
         if (taskNode == null)
             return F.t("Task result holder has left grid: " + resHolderId, null);
 
         // Tuple: error message-response.
-        final GridBiTuple<String, GridTaskResultResponse> t = F.t2();
+        final IgniteBiTuple<String, GridTaskResultResponse> t = F.t2();
 
         final Lock lock = new ReentrantLock();
         final Condition cond = lock.newCondition();

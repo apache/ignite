@@ -32,7 +32,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
  */
 @GridInternal
 public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.VisorLogSearchArg,
-    GridBiTuple<Iterable<GridBiTuple<Exception, UUID>>, Iterable<VisorLogSearchResult>>,
+    IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>, Iterable<VisorLogSearchResult>>,
     Collection<VisorLogSearchResult>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -49,16 +49,16 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiTuple<Iterable<GridBiTuple<Exception, UUID>>,
-        Iterable<VisorLogSearchResult>> reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>,
+            Iterable<VisorLogSearchResult>> reduce(List<GridComputeJobResult> results) throws GridException {
 
         Collection<VisorLogSearchResult> searchRes = new ArrayList<>();
-        Collection<GridBiTuple<Exception, UUID>> exRes = new ArrayList<>();
+        Collection<IgniteBiTuple<Exception, UUID>> exRes = new ArrayList<>();
 
         // Separate successfully executed results and exceptions.
         for (GridComputeJobResult result : results) {
             if (result.getException() != null)
-                exRes.add(new GridBiTuple<Exception, UUID>(result.getException(), result.getNode().id()));
+                exRes.add(new IgniteBiTuple<Exception, UUID>(result.getException(), result.getNode().id()));
             else if(result.getData() != null) {
                 Collection<VisorLogSearchResult> data = result.getData();
 
@@ -66,7 +66,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
             }
         }
 
-        return new GridBiTuple<Iterable<GridBiTuple<Exception, UUID>>, Iterable<VisorLogSearchResult>>
+        return new IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>, Iterable<VisorLogSearchResult>>
             (exRes.isEmpty() ? null : exRes, searchRes.isEmpty() ? null : searchRes);
     }
     /**

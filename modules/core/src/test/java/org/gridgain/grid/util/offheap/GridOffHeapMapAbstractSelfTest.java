@@ -354,9 +354,9 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
             int cnt = 0;
 
-            try (GridCloseableIterator<GridBiTuple<byte[], byte[]>> it = map.iterator()) {
+            try (GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = map.iterator()) {
                 while (it.hasNext()) {
-                    GridBiTuple<byte[], byte[]> t = it.next();
+                    IgniteBiTuple<byte[], byte[]> t = it.next();
 
                     String k = new String(t.get1());
                     String v = new String(t.get2());
@@ -428,9 +428,9 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
                     assertNotNull(map.get(hash(key), key.getBytes()));
                     assertEquals(new String(map.get(hash(key), key.getBytes())), val);
 
-                    try (GridCloseableIterator<GridBiTuple<byte[], byte[]>> it = map.iterator()) {
+                    try (GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = map.iterator()) {
                         while (it.hasNext()) {
-                            GridBiTuple<byte[], byte[]> t = it.next();
+                            IgniteBiTuple<byte[], byte[]> t = it.next();
 
                             String k = new String(t.get1());
                             String v = new String(t.get2());
@@ -661,7 +661,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
                     startLatch.await();
 
                     while (run.get()) {
-                        GridCloseableIterator<GridBiTuple<byte[], byte[]>> it = map.iterator();
+                        GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = map.iterator();
 
                         while (it.hasNext())
                             it.next();
@@ -773,7 +773,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 //                            map.insert(hash, key, val);
 //                            break;
                         case 5:
-                            GridCloseableIterator<GridBiTuple<byte[], byte[]>> iter = map.iterator();
+                            GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iter = map.iterator();
 
                             while (iter.hasNext())
                                 assertNotNull(iter.next());

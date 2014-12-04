@@ -33,9 +33,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
-        new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
-            @Override protected GridBiTuple<GridCacheContext, String> initialValue() {
+    private static final ThreadLocal<IgniteBiTuple<GridCacheContext, String>> stash =
+        new ThreadLocal<IgniteBiTuple<GridCacheContext, String>>() {
+            @Override protected IgniteBiTuple<GridCacheContext, String> initialValue() {
                 return F.t2();
             }
         };
@@ -278,7 +278,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridBiTuple<GridCacheContext, String> t = stash.get();
+        IgniteBiTuple<GridCacheContext, String> t = stash.get();
 
         t.set1((GridCacheContext)in.readObject());
         t.set2(in.readUTF());
@@ -293,7 +293,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     @SuppressWarnings("unchecked")
     private Object readResolve() throws ObjectStreamException {
         try {
-            GridBiTuple<GridCacheContext, String> t = stash.get();
+            IgniteBiTuple<GridCacheContext, String> t = stash.get();
 
             return t.get1().dataStructures().atomicReference(t.get2(), null, false);
         }

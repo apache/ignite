@@ -1650,7 +1650,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         private final GridGgfsFileInfo stopInfo = new GridGgfsFileInfo();
 
         /** Delete requests queue. */
-        private BlockingQueue<GridBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo>> delReqs =
+        private BlockingQueue<IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo>> delReqs =
             new LinkedBlockingQueue<>();
 
         /**
@@ -1685,7 +1685,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         @Override protected void body() throws InterruptedException, GridInterruptedException {
             try {
                 while (!isCancelled()) {
-                    GridBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.take();
+                    IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.take();
 
                     GridFutureAdapter<Object> fut = req.get1();
                     GridGgfsFileInfo fileInfo = req.get2();
@@ -1748,7 +1748,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Stopping asynchronous ggfs file delete thread: " + name());
 
-                GridBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.poll();
+                IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.poll();
 
                 while (req != null) {
                     req.get1().onCancelled();

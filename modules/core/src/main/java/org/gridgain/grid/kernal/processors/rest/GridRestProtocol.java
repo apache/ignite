@@ -29,7 +29,7 @@ public interface GridRestProtocol {
      *
      * @return Protocol properties.
      */
-    public abstract Collection<GridBiTuple<String, Object>> getProperties();
+    public abstract Collection<IgniteBiTuple<String, Object>> getProperties();
 
     /**
      * Starts protocol.

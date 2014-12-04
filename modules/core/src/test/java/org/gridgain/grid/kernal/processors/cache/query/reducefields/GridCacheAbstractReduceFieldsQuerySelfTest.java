@@ -150,7 +150,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         GridCacheQuery<List<?>> qry = grid(0)
             .cache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
 
-        Collection<GridBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
+        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
         assertEquals("Result", 0, F.reduce(res, new AverageLocalReducer()).intValue());
     }
@@ -161,7 +161,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     public void testAverageQuery() throws Exception {
         GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select age from Person");
 
-        Collection<GridBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
+        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
         assertEquals("Average", 33, F.reduce(res, new AverageLocalReducer()).intValue());
     }
@@ -173,7 +173,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
             "select age from Person where orgId = ?");
 
-        Collection<GridBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();
+        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();
 
         assertEquals("Average", 30, F.reduce(res, new AverageLocalReducer()).intValue());
     }
@@ -222,7 +222,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 
         GridCacheQuery<List<?>> qry = cachePrj.queries().createSqlFieldsQuery("select age from Person");
 
-        Collection<GridBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
+        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
         assertEquals("Average", 30, F.reduce(res, new AverageLocalReducer()).intValue());
     }
@@ -374,7 +374,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * Average remote reducer factory.
      */
-    protected static class AverageRemoteReducer implements GridReducer<List<?>, GridBiTuple<Integer, Integer>> {
+    protected static class AverageRemoteReducer implements GridReducer<List<?>, IgniteBiTuple<Integer, Integer>> {
         /** */
         private int sum;
 
@@ -389,7 +389,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             return true;
         }
 
-        @Override public GridBiTuple<Integer, Integer> reduce() {
+        @Override public IgniteBiTuple<Integer, Integer> reduce() {
             return F.t(sum, cnt);
         }
     }
@@ -397,14 +397,14 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * Average local reducer factory.
      */
-    protected static class AverageLocalReducer implements GridReducer<GridBiTuple<Integer, Integer>, Integer> {
+    protected static class AverageLocalReducer implements GridReducer<IgniteBiTuple<Integer, Integer>, Integer> {
         /** */
         private int sum;
 
         /** */
         private int cnt;
 
-        @Override public boolean collect(GridBiTuple<Integer, Integer> t) {
+        @Override public boolean collect(IgniteBiTuple<Integer, Integer> t) {
             sum += t.get1();
             cnt += t.get2();
 

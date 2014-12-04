@@ -111,7 +111,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
                 throw new GridRuntimeException("Failed to find Spring configuration file (path provided should be " +
                     "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
 
-            GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t;
+            IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t;
 
             try {
                 t = GridGainEx.loadConfigurations(cfgUrl);

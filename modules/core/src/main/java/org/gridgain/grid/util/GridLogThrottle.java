@@ -34,7 +34,7 @@ public class GridLogThrottle {
     private static int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
 
     /** Errors. */
-    private static final ConcurrentMap<GridBiTuple<Class<? extends Throwable>, String>, Long> errors =
+    private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
         new ConcurrentHashMap8<>();
 
     /**
@@ -128,7 +128,7 @@ public class GridLogThrottle {
         LogLevel level) {
         assert !F.isEmpty(longMsg);
 
-        GridBiTuple<Class<? extends Throwable>, String> tup =
+        IgniteBiTuple<Class<? extends Throwable>, String> tup =
             e != null ? F.<Class<? extends Throwable>, String>t(e.getClass(), e.getMessage()) :
                 F.<Class<? extends Throwable>, String>t(null, longMsg);
 
@@ -156,7 +156,7 @@ public class GridLogThrottle {
      * @param newStamp New timestamp.
      * @return {@code True} if throttle value was replaced.
      */
-    private static boolean replace(GridBiTuple<Class<? extends Throwable>, String> t, @Nullable Long oldStamp,
+    private static boolean replace(IgniteBiTuple<Class<? extends Throwable>, String> t, @Nullable Long oldStamp,
         Long newStamp) {
         assert newStamp != null;
 

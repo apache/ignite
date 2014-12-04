@@ -41,7 +41,7 @@ public class GridCacheReduceFieldsQueryPartitionedSelfTest extends GridCacheAbst
 
         int sum = 0;
 
-        for (GridBiTuple<Integer, Integer> tuple : qry.execute(new AverageRemoteReducer()).get())
+        for (IgniteBiTuple<Integer, Integer> tuple : qry.execute(new AverageRemoteReducer()).get())
             sum += tuple.get1();
 
         // One backup, so sum is two times greater

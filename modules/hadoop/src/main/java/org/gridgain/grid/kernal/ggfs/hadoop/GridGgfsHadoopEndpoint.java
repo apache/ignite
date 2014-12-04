@@ -82,7 +82,7 @@ public class GridGgfsHadoopEndpoint {
 
         String[] tokens = connStr.split("@", -1);
 
-        GridBiTuple<String, Integer> hostPort;
+        IgniteBiTuple<String, Integer> hostPort;
 
         if (tokens.length == 1) {
             ggfsName = null;
@@ -130,7 +130,7 @@ public class GridGgfsHadoopEndpoint {
      * @return Tuple with host and port.
      * @throws GridException If failed to parse connection string.
      */
-    private GridBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws GridException {
+    private IgniteBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws GridException {
         String[] tokens = hostPortStr.split(":", -1);
 
         String host = tokens[0];

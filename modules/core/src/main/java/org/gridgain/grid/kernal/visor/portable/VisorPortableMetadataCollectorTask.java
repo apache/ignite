@@ -22,7 +22,7 @@ import java.util.*;
  * Task that collects portables metadata.
  */
 @GridInternal
-public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, GridBiTuple<Long, Collection<VisorPortableMetadata>>> {
+public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, IgniteBiTuple<Long, Collection<VisorPortableMetadata>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,7 +32,7 @@ public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, G
     }
 
     /** Job that collect portables metadata on node. */
-    private static class VisorPortableCollectMetadataJob extends VisorJob<Long, GridBiTuple<Long, Collection<VisorPortableMetadata>>> {
+    private static class VisorPortableCollectMetadataJob extends VisorJob<Long, IgniteBiTuple<Long, Collection<VisorPortableMetadata>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, G
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<Long, Collection<VisorPortableMetadata>> run(Long lastUpdate) throws GridException {
+        @Override protected IgniteBiTuple<Long, Collection<VisorPortableMetadata>> run(Long lastUpdate) throws GridException {
             final GridPortables p = g.portables();
 
             final Collection<VisorPortableMetadata> data = new ArrayList<>(p.metadata().size());
@@ -70,7 +70,7 @@ public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, G
                 data.add(type);
             }
 
-            return new GridBiTuple<>(0L, data);
+            return new IgniteBiTuple<>(0L, data);
         }
 
         /** {@inheritDoc} */

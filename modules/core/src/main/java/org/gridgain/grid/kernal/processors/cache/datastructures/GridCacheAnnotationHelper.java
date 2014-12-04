@@ -73,7 +73,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
      * @throws GridException If failed to find.
      */
     public Object annotatedValue(Object target) throws GridException {
-        GridBiTuple<Object, Boolean> res = annotatedValue(target, new HashSet<>(), false);
+        IgniteBiTuple<Object, Boolean> res = annotatedValue(target, new HashSet<>(), false);
 
         assert res != null;
 
@@ -89,7 +89,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
      * @return Value of annotated field or method.
      * @throws GridException If failed to find.
      */
-    private GridBiTuple<Object, Boolean> annotatedValue(Object target, Set<Object> visited, boolean annFound)
+    private IgniteBiTuple<Object, Boolean> annotatedValue(Object target, Set<Object> visited, boolean annFound)
         throws GridException {
         assert target != null;
 
@@ -119,7 +119,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
                 if (needsRecursion(f)) {
                     if (fieldVal != null) {
                         // Recursion.
-                        GridBiTuple<Object, Boolean> tup = annotatedValue(fieldVal, visited, annFound);
+                        IgniteBiTuple<Object, Boolean> tup = annotatedValue(fieldVal, visited, annFound);
 
                         if (!annFound && tup.get2())
                             // Update value only if annotation was found in recursive call.

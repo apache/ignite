@@ -29,7 +29,7 @@ public class GridStreamerAttributes implements Externalizable {
     private String name;
 
     /** Stages. */
-    private Collection<GridBiTuple<String, String>> stages;
+    private Collection<IgniteBiTuple<String, String>> stages;
 
     /** At least once flag. */
     private boolean atLeastOnce;
@@ -74,7 +74,7 @@ public class GridStreamerAttributes implements Externalizable {
     /**
      * @return Streamer stages.
      */
-    public Collection<GridBiTuple<String, String>> stages() {
+    public Collection<IgniteBiTuple<String, String>> stages() {
         return stages;
     }
 

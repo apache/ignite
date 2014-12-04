@@ -27,31 +27,31 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
  * Get list files matching filter.
  */
 @GridInternal
-public class VisorLatestTextFilesTask extends VisorOneNodeTask<GridBiTuple<String, String>, Collection<VisorLogFile>> {
+public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<String, String>, Collection<VisorLogFile>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorLatestTextFilesJob job(GridBiTuple<String, String> arg) {
+    @Override protected VisorLatestTextFilesJob job(IgniteBiTuple<String, String> arg) {
         return new VisorLatestTextFilesJob(arg);
     }
 
     /**
      * Job that gets list of files.
      */
-    private static class VisorLatestTextFilesJob extends VisorJob<GridBiTuple<String, String>, Collection<VisorLogFile>> {
+    private static class VisorLatestTextFilesJob extends VisorJob<IgniteBiTuple<String, String>, Collection<VisorLogFile>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param arg Folder and regexp.
          */
-        private VisorLatestTextFilesJob(GridBiTuple<String, String> arg) {
+        private VisorLatestTextFilesJob(IgniteBiTuple<String, String> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Collection<VisorLogFile> run(final GridBiTuple<String, String> arg) throws GridException {
+        @Nullable @Override protected Collection<VisorLogFile> run(final IgniteBiTuple<String, String> arg) throws GridException {
             String path = arg.get1();
             String regexp = arg.get2();
 

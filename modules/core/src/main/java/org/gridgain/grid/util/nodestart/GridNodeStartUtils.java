@@ -89,7 +89,7 @@ public class GridNodeStartUtils {
      * @return Tuple with host maps and default values.
      * @throws GridException In case of error.
      */
-    public static GridBiTuple<Collection<Map<String, Object>>, Map<String, Object>> parseFile(
+    public static IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> parseFile(
         File file) throws GridException {
         assert file != null;
         assert file.exists();

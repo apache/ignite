@@ -122,7 +122,7 @@ public class GridRouterCommandLineStartup {
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
-        GridBiTuple<Object, Object> t = null;
+        IgniteBiTuple<Object, Object> t = null;
         Collection<Handler> savedHnds = null;
 
         if (isLog4jUsed)

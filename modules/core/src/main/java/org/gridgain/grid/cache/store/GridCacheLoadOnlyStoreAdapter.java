@@ -109,7 +109,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
      * @param args Arguments passed into {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
      * @return Cache entry to be saved in cache or {@code null} if no entry could be produced from this record.
      */
-    @Nullable protected abstract GridBiTuple<K, V> parse(I rec, @Nullable Object... args);
+    @Nullable protected abstract IgniteBiTuple<K, V> parse(I rec, @Nullable Object... args);
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<K, V> c, @Nullable Object... args)
@@ -284,7 +284,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
         /** {@inheritDoc} */
         @Override public void run() {
             for (I rec : buf) {
-                GridBiTuple<K, V> entry = parse(rec, args);
+                IgniteBiTuple<K, V> entry = parse(rec, args);
 
                 if (entry != null)
                     c.apply(entry.getKey(), entry.getValue());

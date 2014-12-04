@@ -69,7 +69,7 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL cfgUrl, String... excludedProps) throws GridException {
         ApplicationContext springCtx;
 

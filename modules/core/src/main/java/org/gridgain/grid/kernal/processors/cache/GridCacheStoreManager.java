@@ -140,7 +140,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (val == null)
             return null;
 
-        return locStore ? ((GridBiTuple<V, GridCacheVersion>)val).get1() : (V)val;
+        return locStore ? ((IgniteBiTuple<V, GridCacheVersion>)val).get1() : (V)val;
     }
 
     /**
@@ -221,7 +221,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         GridCacheVersion ver = null;
 
                         if (locStore) {
-                            GridBiTuple<V, GridCacheVersion> t = (GridBiTuple<V, GridCacheVersion>)o;
+                            IgniteBiTuple<V, GridCacheVersion> t = (IgniteBiTuple<V, GridCacheVersion>)o;
 
                             v = t.get1();
                             ver = t.get2();
@@ -299,12 +299,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws GridException If storage failed.
      */
     public boolean putAllToStore(@Nullable GridCacheTx tx,
-        Map<K, GridBiTuple<V, GridCacheVersion>> map) throws GridException {
+        Map<K, IgniteBiTuple<V, GridCacheVersion>> map) throws GridException {
         if (F.isEmpty(map))
             return true;
 
         if (map.size() == 1) {
-            Map.Entry<K, GridBiTuple<V, GridCacheVersion>> e = map.entrySet().iterator().next();
+            Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e = map.entrySet().iterator().next();
 
             return putToStore(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
         }
@@ -315,8 +315,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 try {
                     store.putAll(tx, locStore ? map : F.viewReadOnly(map,
-                        new C1<GridBiTuple<V, GridCacheVersion>, Object>() {
-                        @Override public Object apply(GridBiTuple<V, GridCacheVersion> t) {
+                        new C1<IgniteBiTuple<V, GridCacheVersion>, Object>() {
+                        @Override public Object apply(IgniteBiTuple<V, GridCacheVersion> t) {
                             return t.get1();
                         }
                     }));

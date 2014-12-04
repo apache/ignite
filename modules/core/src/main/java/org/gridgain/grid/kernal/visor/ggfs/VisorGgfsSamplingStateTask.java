@@ -20,14 +20,14 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Task to set GGFS instance sampling state.
  */
 @GridInternal
-public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<String, Boolean>, Void> {
+public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<String, Boolean>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Job that perform parsing of GGFS profiler logs.
      */
-    private static class VisorGgfsSamplingStateJob extends VisorJob<GridBiTuple<String, Boolean>, Void> {
+    private static class VisorGgfsSamplingStateJob extends VisorJob<IgniteBiTuple<String, Boolean>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -36,12 +36,12 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<Str
          *
          * @param arg Job argument.
          */
-        public VisorGgfsSamplingStateJob(GridBiTuple<String, Boolean> arg) {
+        public VisorGgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(GridBiTuple<String, Boolean> arg) throws GridException {
+        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) throws GridException {
             try {
                 ((GridGgfsEx) g.ggfs(arg.get1())).globalSampling(arg.get2());
 
@@ -59,7 +59,7 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<Str
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsSamplingStateJob job(GridBiTuple<String, Boolean> arg) {
+    @Override protected VisorGgfsSamplingStateJob job(IgniteBiTuple<String, Boolean> arg) {
         return new VisorGgfsSamplingStateJob(arg);
     }
 }

@@ -333,7 +333,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
         try {
-            GridBiTuple<Long, Long> t = (GridBiTuple<Long, Long>)cache.transformAndCompute(queueKey,
+            IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.transformAndCompute(queueKey,
                 new ClearClosure(id));
 
             if (t == null)
@@ -647,7 +647,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      */
     protected static class ClearClosure implements GridClosure<GridCacheQueueHeader,
-        GridBiTuple<GridCacheQueueHeader, GridBiTuple<Long, Long>>>,
+        IgniteBiTuple<GridCacheQueueHeader, IgniteBiTuple<Long, Long>>>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -670,18 +670,18 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /** {@inheritDoc} */
-        @Override public GridBiTuple<GridCacheQueueHeader, GridBiTuple<Long, Long>> apply(GridCacheQueueHeader hdr) {
+        @Override public IgniteBiTuple<GridCacheQueueHeader, IgniteBiTuple<Long, Long>> apply(GridCacheQueueHeader hdr) {
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd)
-                return new GridBiTuple<>(hdr, new GridBiTuple<>(QUEUE_REMOVED_IDX, QUEUE_REMOVED_IDX));
+                return new IgniteBiTuple<>(hdr, new IgniteBiTuple<>(QUEUE_REMOVED_IDX, QUEUE_REMOVED_IDX));
             else if (hdr.empty())
-                return new GridBiTuple<>(hdr, null);
+                return new IgniteBiTuple<>(hdr, null);
 
             GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 hdr.tail(), hdr.tail(), null);
 
-            return new GridBiTuple<>(newHdr, new GridBiTuple<>(hdr.head(), hdr.tail()));
+            return new IgniteBiTuple<>(newHdr, new IgniteBiTuple<>(hdr.head(), hdr.tail()));
         }
 
         /** {@inheritDoc} */
@@ -698,7 +698,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      */
     protected static class PollClosure implements
-        GridClosure<GridCacheQueueHeader, GridBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        GridClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -720,11 +720,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /** {@inheritDoc} */
-        @Override public GridBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
+        @Override public IgniteBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd || hdr.empty())
-                return new GridBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
+                return new IgniteBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
 
             Set<Long> rmvdIdxs = hdr.removedIndexes();
 
@@ -732,7 +732,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                     hdr.head() + 1, hdr.tail(), rmvdIdxs);
 
-                return new GridBiTuple<>(newHdr, hdr.head());
+                return new IgniteBiTuple<>(newHdr, hdr.head());
             }
 
             long next = hdr.head() + 1;
@@ -744,7 +744,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                     GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                         next + 1, hdr.tail(), rmvdIdxs.isEmpty() ? null : rmvdIdxs);
 
-                    return new GridBiTuple<>(newHdr, next);
+                    return new IgniteBiTuple<>(newHdr, next);
                 }
 
                 next++;
@@ -753,7 +753,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 next, hdr.tail(), rmvdIdxs.isEmpty() ? null : rmvdIdxs);
 
-            return new GridBiTuple<>(newHdr, null);
+            return new IgniteBiTuple<>(newHdr, null);
         }
 
         /** {@inheritDoc} */
@@ -770,7 +770,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      */
     protected static class AddClosure implements
-        GridClosure<GridCacheQueueHeader, GridBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        GridClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -797,16 +797,16 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /** {@inheritDoc} */
-        @Override public GridBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
+        @Override public IgniteBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd || !spaceAvailable(hdr, size))
-                return new GridBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
+                return new IgniteBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
 
             GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 hdr.head(), hdr.tail() + size, hdr.removedIndexes());
 
-            return new GridBiTuple<>(newHdr, hdr.tail());
+            return new IgniteBiTuple<>(newHdr, hdr.tail());
         }
 
         /**
@@ -834,7 +834,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      */
     protected static class RemoveClosure implements
-        GridClosure<GridCacheQueueHeader, GridBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        GridClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -861,11 +861,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /** {@inheritDoc} */
-        @Override public GridBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
+        @Override public IgniteBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd || hdr.empty() || idx < hdr.head())
-                return new GridBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
+                return new IgniteBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
 
             if (idx == hdr.head()) {
                 Set<Long> rmvIdxs = hdr.removedIndexes();
@@ -876,7 +876,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                     GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                         head, hdr.tail(), hdr.removedIndexes());
 
-                    return new GridBiTuple<>(newHdr, idx);
+                    return new IgniteBiTuple<>(newHdr, idx);
                 }
 
                 rmvIdxs = new HashSet<>(rmvIdxs);
@@ -887,7 +887,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                     head, hdr.tail(), rmvIdxs.isEmpty() ? null : rmvIdxs);
 
-                return new GridBiTuple<>(newHdr, null);
+                return new IgniteBiTuple<>(newHdr, null);
             }
 
             Set<Long> rmvIdxs = hdr.removedIndexes();
@@ -910,7 +910,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 hdr.head(), hdr.tail(), rmvIdxs);
 
-            return new GridBiTuple<>(newHdr, idx);
+            return new IgniteBiTuple<>(newHdr, idx);
         }
 
         /** {@inheritDoc} */

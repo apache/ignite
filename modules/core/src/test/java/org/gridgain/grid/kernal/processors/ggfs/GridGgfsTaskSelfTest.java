@@ -147,7 +147,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             generateFile(TOTAL_WORDS);
             Long genLen = ggfs.info(FILE).length();
 
-            GridBiTuple<Long, Integer> taskRes = ggfs.execute(new Task(),
+            IgniteBiTuple<Long, Integer> taskRes = ggfs.execute(new Task(),
                 new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
 
             assert F.eq(genLen, taskRes.getKey());
@@ -178,11 +178,11 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             assertNull(ggfsAsync.execute(
                 new Task(), new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
-            GridFuture<GridBiTuple<Long, Integer>> fut = ggfsAsync.future();
+            GridFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
 
             assertNotNull(fut);
 
-            GridBiTuple<Long, Integer> taskRes = fut.get();
+            IgniteBiTuple<Long, Integer> taskRes = fut.get();
 
             assert F.eq(genLen, taskRes.getKey());
             assert F.eq(TOTAL_WORDS, taskRes.getValue());
@@ -228,7 +228,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * Task.
      */
-    private static class Task extends GridGgfsTask<String, GridBiTuple<Long, Integer>> {
+    private static class Task extends GridGgfsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
         @Override public GridGgfsJob createJob(GridGgfsPath path, GridGgfsFileRange range,
             GridGgfsTaskArgs<String> args) throws GridException {
@@ -236,12 +236,12 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridBiTuple<Long, Integer> reduce(List<GridComputeJobResult> ress) throws GridException {
+        @Override public IgniteBiTuple<Long, Integer> reduce(List<GridComputeJobResult> ress) throws GridException {
             long totalLen = 0;
             int argCnt = 0;
 
             for (GridComputeJobResult res : ress) {
-                GridBiTuple<Long, Integer> res0 = (GridBiTuple<Long, Integer>)res.getData();
+                IgniteBiTuple<Long, Integer> res0 = (IgniteBiTuple<Long, Integer>)res.getData();
 
                 if (res0 != null) {
                     totalLen += res0.getKey();

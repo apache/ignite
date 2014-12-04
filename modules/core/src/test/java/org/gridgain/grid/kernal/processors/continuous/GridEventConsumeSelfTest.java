@@ -946,7 +946,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     public void testMultithreadedWithNodeRestart() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
-        final BlockingQueue<GridBiTuple<Integer, UUID>> queue = new LinkedBlockingQueue<>();
+        final BlockingQueue<IgniteBiTuple<Integer, UUID>> queue = new LinkedBlockingQueue<>();
         final Collection<UUID> started = new GridConcurrentHashSet<>();
         final Collection<UUID> stopped = new GridConcurrentHashSet<>();
 
@@ -988,7 +988,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         GridFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
-                    GridBiTuple<Integer, UUID> t = queue.poll(1, SECONDS);
+                    IgniteBiTuple<Integer, UUID> t = queue.poll(1, SECONDS);
 
                     if (t == null)
                         continue;
@@ -1051,7 +1051,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         nodeRestarterFut.get();
         jobRunnerFut.get();
 
-        GridBiTuple<Integer, UUID> t;
+        IgniteBiTuple<Integer, UUID> t;
 
         while ((t = queue.poll()) != null) {
             int idx = t.get1();

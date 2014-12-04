@@ -141,7 +141,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(dir, mgr.info(dir.id()));
         assertEquals(file, mgr.info(file.id()));
 
-        for (GridBiTuple<GridUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
+        for (IgniteBiTuple<GridUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
             GridUuid fileId = tup.get1();
             String fileName = tup.get2();
 

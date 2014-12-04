@@ -111,7 +111,7 @@ public abstract class GridUtils {
     public static final String DFLT_USER_VERSION = "0";
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
-    private static final ConcurrentMap<String, GridBiTuple<Class<?>, Collection<Field>>> p2pFields =
+    private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
         new ConcurrentHashMap8<>();
 
     /** Secure socket protocol to use. */
@@ -1415,7 +1415,7 @@ public abstract class GridUtils {
      * @throws IOException If failed.
      * @throws GridException If no network interfaces found.
      */
-    public static GridBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
+    public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
         throws IOException, GridException {
         assert locAddr != null;
 
@@ -5450,7 +5450,7 @@ public abstract class GridUtils {
             for (Class<?> cls = obj.getClass(); !cls.equals(Object.class); cls = cls.getSuperclass()) {
                 // Cache by class name instead of class to avoid infinite growth of the
                 // caching map in case of multiple redeployment of the same class.
-                GridBiTuple<Class<?>, Collection<Field>> tup = p2pFields.get(cls.getName());
+                IgniteBiTuple<Class<?>, Collection<Field>> tup = p2pFields.get(cls.getName());
 
                 boolean cached = tup != null && tup.get1().equals(cls);
 
@@ -6591,8 +6591,8 @@ public abstract class GridUtils {
      * @param <M> Map type.
      * @return Passed in collection.
      */
-    public static <K, V, M extends Map<K, V>> M addAll(M m, GridBiTuple<K, V>... entries) {
-        for (GridBiTuple<K, V> t : entries)
+    public static <K, V, M extends Map<K, V>> M addAll(M m, IgniteBiTuple<K, V>... entries) {
+        for (IgniteBiTuple<K, V> t : entries)
             m.put(t.get1(), t.get2());
 
         return m;
@@ -7686,7 +7686,7 @@ public abstract class GridUtils {
      *      if it did not found in classpath. Notice that in this case logging is not suppressed.
      * @throws GridException In case of failure to add no-op logger for Log4j.
      */
-    public static GridBiTuple<Object, Object> addLog4jNoOpLogger() throws GridException {
+    public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws GridException {
         Object rootLog;
         Object nullApp;
 
@@ -7702,7 +7702,7 @@ public abstract class GridUtils {
             catch (ClassNotFoundException ignore) {
                 // Can't found log4j no-op appender in classpath (for example, log4j was added through
                 // log4j-over-slf4j library. No-appender warning will not be suppressed.
-                return new GridBiTuple<>(rootLog, null);
+                return new IgniteBiTuple<>(rootLog, null);
             }
 
             Class appCls = Class.forName("org.apache.log4j.Appender");
@@ -7713,7 +7713,7 @@ public abstract class GridUtils {
             throw new GridException("Failed to add no-op logger for Log4j.", e);
         }
 
-        return new GridBiTuple<>(rootLog, nullApp);
+        return new IgniteBiTuple<>(rootLog, nullApp);
     }
 
     /**
@@ -7722,7 +7722,7 @@ public abstract class GridUtils {
      * @param t Tuple with root log and null appender instances.
      * @throws GridException In case of failure to remove previously added no-op logger for Log4j.
      */
-    public static void removeLog4jNoOpLogger(GridBiTuple<Object, Object> t) throws GridException {
+    public static void removeLog4jNoOpLogger(IgniteBiTuple<Object, Object> t) throws GridException {
         Object rootLog = t.get1();
         Object nullApp = t.get2();
 

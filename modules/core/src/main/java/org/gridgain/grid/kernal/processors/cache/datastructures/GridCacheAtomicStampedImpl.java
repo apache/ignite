@@ -35,9 +35,9 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
-        new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
-            @Override protected GridBiTuple<GridCacheContext, String> initialValue() {
+    private static final ThreadLocal<IgniteBiTuple<GridCacheContext, String>> stash =
+        new ThreadLocal<IgniteBiTuple<GridCacheContext, String>>() {
+            @Override protected IgniteBiTuple<GridCacheContext, String> initialValue() {
                 return F.t2();
             }
         };
@@ -61,8 +61,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private GridCacheContext ctx;
 
     /** Callable for {@link #get()} operation */
-    private final Callable<GridBiTuple<T, S>> getCall = new Callable<GridBiTuple<T, S>>() {
-        @Override public GridBiTuple<T, S> call() throws Exception {
+    private final Callable<IgniteBiTuple<T, S>> getCall = new Callable<IgniteBiTuple<T, S>>() {
+        @Override public IgniteBiTuple<T, S> call() throws Exception {
             GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
             if (stmp == null)
@@ -132,7 +132,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     }
 
     /** {@inheritDoc} */
-    @Override public GridBiTuple<T, S> get() throws GridException {
+    @Override public IgniteBiTuple<T, S> get() throws GridException {
         checkRemoved();
 
         return CU.outTx(getCall, ctx);
@@ -298,7 +298,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridBiTuple<GridCacheContext, String> t = stash.get();
+        IgniteBiTuple<GridCacheContext, String> t = stash.get();
 
         t.set1((GridCacheContext)in.readObject());
         t.set2(in.readUTF());
@@ -313,7 +313,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     @SuppressWarnings("unchecked")
     private Object readResolve() throws ObjectStreamException {
         try {
-            GridBiTuple<GridCacheContext, String> t = stash.get();
+            IgniteBiTuple<GridCacheContext, String> t = stash.get();
 
             return t.get1().dataStructures().atomicStamped(t.get2(), null, null, false);
         }

@@ -84,7 +84,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     }
 
     it should "convert tuple 2" in {
-        val t = new GridBiTuple[Int, Int](1, 2)
+        val t = new IgniteBiTuple[Int, Int](1, 2)
 
         assert(t.scala._1 == 1)
         assert(t.scala._2 == 2)

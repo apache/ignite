@@ -32,8 +32,8 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static ThreadLocal<GridBiTuple<String, Object>> stash = new ThreadLocal<GridBiTuple<String, Object>>() {
-        @Override protected GridBiTuple<String, Object> initialValue() {
+    private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
+        @Override protected IgniteBiTuple<String, Object> initialValue() {
             return F.t2();
         }
     };
@@ -175,7 +175,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridBiTuple<String, Object> t = stash.get();
+        IgniteBiTuple<String, Object> t = stash.get();
 
         t.set1(U.readString(in));
         t.set2(in.readObject());
@@ -189,7 +189,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridBiTuple<String, Object> t = stash.get();
+            IgniteBiTuple<String, Object> t = stash.get();
 
             String gridNameR = t.get1();
             Object ctgrR = t.get2();

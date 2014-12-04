@@ -216,7 +216,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                     if (log.isDebugEnabled())
                         log.debug("Processing request: " + req);
 
-                    GridPair<String> p = inOutToken(req.pid(), size);
+                    IgnitePair<String> p = inOutToken(req.pid(), size);
 
                     String file1 = p.get1();
                     String file2 = p.get2();
@@ -334,7 +334,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
      * @param size Size of the space.
      * @return Token pair.
      */
-    private GridPair<String> inOutToken(int pid, int size) {
+    private IgnitePair<String> inOutToken(int pid, int size) {
         while (true) {
             long idx = tokIdxGen.get();
 

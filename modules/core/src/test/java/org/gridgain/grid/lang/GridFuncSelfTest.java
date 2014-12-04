@@ -1374,8 +1374,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         map.put(3, "3");
 
         F.forEach(map,
-            new CI1<GridBiTuple<Integer, String>>() {
-                @Override public void apply(GridBiTuple<Integer, String> t) {
+            new CI1<IgniteBiTuple<Integer, String>>() {
+                @Override public void apply(IgniteBiTuple<Integer, String> t) {
                     sum.set(sum.get() + t.get1());
                     sum.set(sum.get() + Integer.parseInt(t.get2()));
                 }
@@ -1386,8 +1386,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         sum.set(0);
 
         F.forEach(map,
-            new CI1<GridBiTuple<Integer, String>>() {
-                @Override public void apply(GridBiTuple<Integer, String> t) {
+            new CI1<IgniteBiTuple<Integer, String>>() {
+                @Override public void apply(IgniteBiTuple<Integer, String> t) {
                     sum.set(sum.get() + t.get1());
                     sum.set(sum.get() + Integer.parseInt(t.get2()));
                 }
@@ -1735,7 +1735,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testPartition() {
-        GridBiTuple<Collection<String>, Collection<String>> tuple =
+        IgniteBiTuple<Collection<String>, Collection<String>> tuple =
             F.partition(Arrays.asList("1", "2", "3"),
                 new P1<String>() {
                     @Override public boolean apply(String e) { return "2".equals(e); }
@@ -1758,7 +1758,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         map.put(2, "2");
         map.put(3, "3");
 
-        GridBiTuple<Map<Integer, String>, Map<Integer, String>> tupleMap = F.partition(map,
+        IgniteBiTuple<Map<Integer, String>, Map<Integer, String>> tupleMap = F.partition(map,
             new P2<Integer, String>() {
                 @Override public boolean apply(Integer e1, String e2) {
                     return e1 == 2 && "2".equals(e2);

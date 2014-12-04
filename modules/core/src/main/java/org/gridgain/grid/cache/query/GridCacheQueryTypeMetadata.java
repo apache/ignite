@@ -41,7 +41,7 @@ public class GridCacheQueryTypeMetadata {
 
     /** Fields to create group indexes for. */
     @GridToStringInclude
-    private Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps;
+    private Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps;
 
     /**
      * Default constructor.
@@ -168,7 +168,7 @@ public class GridCacheQueryTypeMetadata {
      *
      * @return Map of group-indexed fields.
      */
-    public Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> getGroups() {
+    public Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> getGroups() {
         return grps;
     }
 
@@ -177,7 +177,7 @@ public class GridCacheQueryTypeMetadata {
      *
      * @param grps Map of group-indexed fields from index name to index fields.
      */
-    public void setGroups(Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps) {
+    public void setGroups(Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps) {
         this.grps = grps;
     }
 

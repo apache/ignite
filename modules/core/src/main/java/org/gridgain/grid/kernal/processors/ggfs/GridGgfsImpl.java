@@ -393,7 +393,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     @Override public GridGgfsStatus globalSpace() throws GridException {
         if (enterBusy()) {
             try {
-                GridBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
+                IgniteBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
                     new GgfsGlobalSpaceTask(name()), null);
 
                 return new GridGgfsStatus(space.get1(), space.get2());
@@ -1981,7 +1981,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * Space calculation task.
      */
     @GridInternal
-    private static class GgfsGlobalSpaceTask extends GridComputeTaskSplitAdapter<Object, GridBiTuple<Long, Long>> {
+    private static class GgfsGlobalSpaceTask extends GridComputeTaskSplitAdapter<Object, IgniteBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2006,7 +2006,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     @GridInstanceResource
                     private Ignite g;
 
-                    @Nullable @Override public GridBiTuple<Long, Long> execute() throws GridException {
+                    @Nullable @Override public IgniteBiTuple<Long, Long> execute() throws GridException {
                         GridGgfs ggfs = ((GridKernal)g).context().ggfs().ggfs(ggfsName);
 
                         if (ggfs == null)
@@ -2025,12 +2025,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridBiTuple<Long, Long> reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public IgniteBiTuple<Long, Long> reduce(List<GridComputeJobResult> results) throws GridException {
             long used = 0;
             long max = 0;
 
             for (GridComputeJobResult res : results) {
-                GridBiTuple<Long, Long> data = res.getData();
+                IgniteBiTuple<Long, Long> data = res.getData();
 
                 if (data != null) {
                     used += data.get1();

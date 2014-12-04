@@ -147,7 +147,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testContentsConsistency() throws Exception {
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
-            Collection<GridBiTuple<String, Long>> files = F.asList(
+            Collection<IgniteBiTuple<String, Long>> files = F.asList(
                 F.t("/dir1/dir2/file1", 1024L),
                 F.t("/dir1/dir2/file2", 8 * 1024L),
                 F.t("/dir1/file1", 1024 * 1024L),
@@ -157,7 +157,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
                 F.t("/file3", 123764L)
             );
 
-            for (GridBiTuple<String, Long> file : files) {
+            for (IgniteBiTuple<String, Long> file : files) {
 
                 info("Writing file: " + file.get1());
 
@@ -176,7 +176,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
             for (int i = 1; i < nodeCount(); i++) {
 
                 try (FileSystem ignored = FileSystem.get(getFileSystemURI(i), getFileSystemConfig())) {
-                    for (GridBiTuple<String, Long> file : files) {
+                    for (IgniteBiTuple<String, Long> file : files) {
                         Path path = new Path(file.get1());
 
                         FileStatus fileStatus = fs.getFileStatus(path);

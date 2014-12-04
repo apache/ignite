@@ -48,10 +48,10 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
     private List<T2<GridOptimizedFieldType, Long>> curFields;
 
     /** */
-    private List<GridBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoList;
+    private List<IgniteBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoList;
 
     /** */
-    private Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
+    private Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
 
     /** */
     private Class<?> curCls;
@@ -869,7 +869,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
      */
     private static class GetFieldImpl extends GetField {
         /** Field info map. */
-        private final Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
+        private final Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
         private final Object[] objs;
@@ -883,12 +883,12 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
         private GetFieldImpl(GridOptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
             fieldInfoMap = in.curFieldInfoMap;
 
-            List<GridBiTuple<Integer, GridOptimizedFieldType>> infos = in.curFieldInfoList;
+            List<IgniteBiTuple<Integer, GridOptimizedFieldType>> infos = in.curFieldInfoList;
 
             objs = new Object[infos.size()];
 
             for (int i = 0; i < infos.size(); i++) {
-                GridBiTuple<Integer, GridOptimizedFieldType> t = infos.get(i);
+                IgniteBiTuple<Integer, GridOptimizedFieldType> t = infos.get(i);
 
                 Object obj = null;
 

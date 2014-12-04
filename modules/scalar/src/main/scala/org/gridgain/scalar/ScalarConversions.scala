@@ -417,15 +417,15 @@ trait ScalarConversions {
      *
      * @param t Scala tuple to convert.
      */
-    implicit def toTuple2[A, B](t: (A, B)): GridBiTuple[A, B] =
-        new GridBiTuple[A, B](t._1, t._2)
+    implicit def toTuple2[A, B](t: (A, B)): IgniteBiTuple[A, B] =
+        new IgniteBiTuple[A, B](t._1, t._2)
 
     /**
      * Implicit converter from `GridTuple2` to Scala tuple.
      *
      * @param t `GridTuple2` to convert.
      */
-    implicit def fromTuple2[A, B](t: GridBiTuple[A, B]): (A, B) =
+    implicit def fromTuple2[A, B](t: IgniteBiTuple[A, B]): (A, B) =
         (t.get1, t.get2)
 
     /**
@@ -433,7 +433,7 @@ trait ScalarConversions {
       *
       * @param t Java-side tuple to pimp.
       */
-    implicit def tuple2DotScala[A, B](t: GridBiTuple[A, B]) = new {
+    implicit def tuple2DotScala[A, B](t: IgniteBiTuple[A, B]) = new {
         def scala: (A, B) =
             fromTuple2(t)
     }

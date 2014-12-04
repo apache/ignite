@@ -2631,7 +2631,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
         A.ensure(file.exists(), "file doesn't exist.");
         A.ensure(file.isFile(), "file is a directory.");
 
-        GridBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
+        IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
 
         return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
     }

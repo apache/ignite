@@ -86,7 +86,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<Integer, String> parse(String rec, @Nullable Object... args) {
+        @Override protected IgniteBiTuple<Integer, String> parse(String rec, @Nullable Object... args) {
             assertNotNull(args);
             assertTrue(Arrays.equals(EXP_ARGS, args));
 

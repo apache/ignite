@@ -908,7 +908,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 break;
                             }
 
-                            GridBiTuple<Collection<Object>, Long> t = info.checkInterval();
+                            IgniteBiTuple<Collection<Object>, Long> t = info.checkInterval();
 
                             Collection<Object> toSnd = t.get1();
 
@@ -1212,7 +1212,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          *      send for now) and time interval after next check is needed.
          */
         @SuppressWarnings("TooBroadScope")
-        GridBiTuple<Collection<Object>, Long> checkInterval() {
+        IgniteBiTuple<Collection<Object>, Long> checkInterval() {
             assert interval > 0;
 
             Collection<Object> toSnd = null;

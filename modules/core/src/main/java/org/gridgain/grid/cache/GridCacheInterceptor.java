@@ -93,7 +93,7 @@ public interface GridCacheInterceptor<K, V> {
      *      may be {@code null}.
      * @see GridCacheProjection#remove(Object, GridPredicate[])
      */
-    @Nullable public GridBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val);
+    @Nullable public IgniteBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val);
 
     /**
      * This method is called after value has been removed.

@@ -1546,14 +1546,14 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
 
         multithreaded(new Runnable() {
             @Override public void run() {
-                Deque<GridBiTuple<Integer, Path>> queue = new ArrayDeque<>();
+                Deque<IgniteBiTuple<Integer, Path>> queue = new ArrayDeque<>();
 
                 queue.add(F.t(0, dir));
 
                 U.awaitQuiet(barrier);
 
                 while (!queue.isEmpty()) {
-                    GridBiTuple<Integer, Path> t = queue.pollFirst();
+                    IgniteBiTuple<Integer, Path> t = queue.pollFirst();
 
                     int curDepth = t.getKey();
                     Path curPath = t.getValue();
@@ -1583,12 +1583,12 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         assert !err.get();
 
         // Ensure correct folders structure.
-        Deque<GridBiTuple<Integer, Path>> queue = new ArrayDeque<>();
+        Deque<IgniteBiTuple<Integer, Path>> queue = new ArrayDeque<>();
 
         queue.add(F.t(0, dir));
 
         while (!queue.isEmpty()) {
-            GridBiTuple<Integer, Path> t = queue.pollFirst();
+            IgniteBiTuple<Integer, Path> t = queue.pollFirst();
 
             int curDepth = t.getKey();
             Path curPath = t.getValue();
@@ -1622,12 +1622,12 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         int depth = 3;
         int entryCnt = 5;
 
-        Deque<GridBiTuple<Integer, Path>> queue = new ArrayDeque<>();
+        Deque<IgniteBiTuple<Integer, Path>> queue = new ArrayDeque<>();
 
         queue.add(F.t(0, dir));
 
         while (!queue.isEmpty()) {
-            GridBiTuple<Integer, Path> t = queue.pollFirst();
+            IgniteBiTuple<Integer, Path> t = queue.pollFirst();
 
             int curDepth = t.getKey();
             Path curPath = t.getValue();

@@ -64,7 +64,7 @@ public interface GridOffHeapMap<K> {
      * @param keyBytes Key bytes.
      * @return Value pointer.
      */
-    @Nullable public GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes);
+    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes);
 
     /**
      * Enables eviction for given key.
@@ -161,7 +161,7 @@ public interface GridOffHeapMap<K> {
      *
      * @return Iterator over map.
      */
-    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator();
+    public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator();
 
     /**
      * Gets iterator over map.

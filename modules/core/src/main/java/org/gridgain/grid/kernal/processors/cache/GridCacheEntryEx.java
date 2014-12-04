@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
@@ -457,7 +456,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public GridBiTuple<Boolean, V> innerUpdateLocal(
+    public IgniteBiTuple<Boolean, V> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,

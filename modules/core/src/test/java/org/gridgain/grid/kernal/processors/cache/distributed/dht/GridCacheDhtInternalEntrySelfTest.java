@@ -84,7 +84,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testInternalKeyReaders() throws Exception {
-        GridBiTuple<ClusterNode, ClusterNode> nodes = getNodes(ATOMIC_LONG_NAME);
+        IgniteBiTuple<ClusterNode, ClusterNode> nodes = getNodes(ATOMIC_LONG_NAME);
 
         ClusterNode primary = nodes.get1();
         ClusterNode other = nodes.get2();
@@ -188,7 +188,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Pair {primary node, some other node}.
      */
-    private GridBiTuple<ClusterNode, ClusterNode> getNodes(String key) {
+    private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(String key) {
         GridCacheAffinity<Object> aff = grid(0).cache(null).affinity();
 
         ClusterNode primary = aff.mapKeyToNode(key);

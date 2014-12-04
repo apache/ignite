@@ -1097,7 +1097,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             return;
 
         try {
-            GridBiTuple<Collection<EvictionInfo>, Collection<EvictionInfo>> t;
+            IgniteBiTuple<Collection<EvictionInfo>, Collection<EvictionInfo>> t;
 
             try {
                 t = fut.get();
@@ -1141,7 +1141,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
                 try {
                     // Remove readers on which the entry was evicted.
-                    for (GridBiTuple<ClusterNode, Long> r : fut.evictedReaders(entry.key())) {
+                    for (IgniteBiTuple<ClusterNode, Long> r : fut.evictedReaders(entry.key())) {
                         UUID readerId = r.get1().id();
                         Long msgId = r.get2();
 
@@ -1231,7 +1231,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      *      execution.
      */
     @SuppressWarnings( {"IfMayBeConditional"})
-    private GridBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> remoteNodes(GridCacheEntryEx<K, V> entry,
+    private IgniteBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> remoteNodes(GridCacheEntryEx<K, V> entry,
         long topVer)
         throws GridCacheEntryRemovedException {
         assert entry != null;
@@ -1257,7 +1257,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         else
             readers = Collections.emptySet();
 
-        return new GridPair<>(backups, readers);
+        return new IgnitePair<>(backups, readers);
     }
 
     /**
@@ -1470,8 +1470,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     /**
      * Future for synchronized eviction. Result is a tuple: {evicted entries, rejected entries}.
      */
-    private class EvictionFuture extends GridFutureAdapter<GridBiTuple<Collection<EvictionInfo>,
-            Collection<EvictionInfo>>> {
+    private class EvictionFuture extends GridFutureAdapter<IgniteBiTuple<Collection<EvictionInfo>,
+                Collection<EvictionInfo>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1618,7 +1618,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     if (queueNode != null)
                         bufEvictQ.unlinkx(queueNode);
 
-                    GridBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> tup;
+                    IgniteBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> tup;
 
                     try {
                         tup = remoteNodes(info.entry(), topVer);
@@ -1961,13 +1961,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
          * @param key Key.
          * @return Reader nodes on which given key was evicted.
          */
-        Collection<GridBiTuple<ClusterNode, Long>> evictedReaders(K key) {
+        Collection<IgniteBiTuple<ClusterNode, Long>> evictedReaders(K key) {
             Collection<ClusterNode> mappedReaders = readers.get(key);
 
             if (mappedReaders == null)
                 return Collections.emptyList();
 
-            Collection<GridBiTuple<ClusterNode, Long>> col = new LinkedList<>();
+            Collection<IgniteBiTuple<ClusterNode, Long>> col = new LinkedList<>();
 
             for (Map.Entry<UUID, GridCacheEvictionResponse<K, V>> e : resMap.entrySet()) {
                 ClusterNode node = cctx.node(e.getKey());

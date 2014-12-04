@@ -658,7 +658,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         finishTime = U.currentTimeMillis();
 
-        Collection<GridBiTuple<Integer, String>> evts = null;
+        Collection<IgniteBiTuple<Integer, String>> evts = null;
 
         try {
             if (ses.isFullSupport())
@@ -787,7 +787,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         }
         finally {
             if (evts != null) {
-                for (GridBiTuple<Integer, String> t : evts)
+                for (IgniteBiTuple<Integer, String> t : evts)
                     recordEvent(t.get1(), t.get2());
             }
 
@@ -830,7 +830,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param msg Message (optional).
      * @return Collection with event added.
      */
-    Collection<GridBiTuple<Integer, String>> addEvent(@Nullable Collection<GridBiTuple<Integer, String>> evts,
+    Collection<IgniteBiTuple<Integer, String>> addEvent(@Nullable Collection<IgniteBiTuple<Integer, String>> evts,
         Integer evt, @Nullable String msg) {
         assert ctx.event().isRecordable(evt);
         assert !internal;

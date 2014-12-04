@@ -180,8 +180,8 @@ public class CacheQueryExample {
             "from Person, Organization where Person.orgId = Organization.id and " +
                 "lower(Organization.name) = lower(?)");
 
-        Collection<GridBiTuple<Double, Integer>> res = qry.execute(
-            new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, GridBiTuple<Double, Integer>>() {
+        Collection<IgniteBiTuple<Double, Integer>> res = qry.execute(
+            new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, IgniteBiTuple<Double, Integer>>() {
                 private double sum;
 
                 private int cnt;
@@ -195,15 +195,15 @@ public class CacheQueryExample {
                     return true;
                 }
 
-                @Override public GridBiTuple<Double, Integer> reduce() {
-                    return new GridBiTuple<>(sum, cnt);
+                @Override public IgniteBiTuple<Double, Integer> reduce() {
+                    return new IgniteBiTuple<>(sum, cnt);
                 }
             }, "GridGain").get();
 
         double sum = 0.0d;
         int cnt = 0;
 
-        for (GridBiTuple<Double, Integer> t : res) {
+        for (IgniteBiTuple<Double, Integer> t : res) {
             sum += t.get1();
             cnt += t.get2();
         }

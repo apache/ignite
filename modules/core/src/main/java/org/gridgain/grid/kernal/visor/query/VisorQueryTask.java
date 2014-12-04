@@ -18,7 +18,7 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
 import org.gridgain.grid.kernal.visor.*;
-import org.gridgain.grid.lang.GridBiTuple;
+import org.gridgain.grid.lang.IgniteBiTuple;
 import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -33,7 +33,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
  */
 @GridInternal
 public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryArg,
-    GridBiTuple<? extends Exception, VisorQueryResultEx>> {
+    IgniteBiTuple<? extends Exception, VisorQueryResultEx>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -160,7 +160,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
      * Job for execute SCAN or SQL query and get first page of results.
      */
     private static class VisorQueryJob extends
-        VisorJob<VisorQueryArg, GridBiTuple<? extends Exception, VisorQueryResultEx>> {
+        VisorJob<VisorQueryArg, IgniteBiTuple<? extends Exception, VisorQueryResultEx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -174,7 +174,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg)
+        @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg)
             throws GridException {
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
@@ -184,7 +184,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 GridCache<Object, Object> c = g.cachex(arg.cacheName());
 
                 if (c == null)
-                    return new GridBiTuple<>(new GridException("Cache not found: " + escapeName(arg.cacheName())), null);
+                    return new IgniteBiTuple<>(new GridException("Cache not found: " + escapeName(arg.cacheName())), null);
 
                 if (scan) {
                     GridCacheQueryFuture<Map.Entry<Object, Object>> fut = c.queries().createScanQuery(null)
@@ -194,7 +194,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                     long start = U.currentTimeMillis();
 
-                    GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
+                    IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
                         VisorQueryUtils.fetchScanQueryRows(fut, null, arg.pageSize());
 
                     long fetchDuration = U.currentTimeMillis() - start;
@@ -208,7 +208,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                     scheduleResultSetHolderRemoval(qryId);
 
-                    return new GridBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
+                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
                         VisorQueryUtils.SCAN_COL_NAMES, rows.get1(), next != null, duration));
                 }
                 else {
@@ -223,7 +223,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                     List<GridIndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                     if (meta == null)
-                        return new GridBiTuple<Exception, VisorQueryResultEx>(
+                        return new IgniteBiTuple<Exception, VisorQueryResultEx>(
                             new SQLException("Fail to execute query. No metadata available."), null);
                     else {
                         VisorQueryField[] names = new VisorQueryField[meta.size()];
@@ -236,7 +236,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                         long start = U.currentTimeMillis();
 
-                        GridBiTuple<List<Object[]>, List<?>> rows = VisorQueryUtils.fetchSqlQueryRows(fut, firstRow, arg.pageSize());
+                        IgniteBiTuple<List<Object[]>, List<?>> rows = VisorQueryUtils.fetchSqlQueryRows(fut, firstRow, arg.pageSize());
 
                         long fetchDuration = U.currentTimeMillis() - start;
 
@@ -247,13 +247,13 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                         scheduleResultSetHolderRemoval(qryId);
 
-                        return new GridBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
+                        return new IgniteBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
                             names, rows.get1(), rows.get2() != null, duration));
                     }
                 }
             }
             catch (Exception e) {
-                return new GridBiTuple<>(e, null);
+                return new IgniteBiTuple<>(e, null);
             }
         }
 

@@ -404,7 +404,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         return (R)updateAllAsync0(null,
             Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, null, true,
@@ -850,7 +850,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
             List<GridDhtCacheEntry<K, V>> locked = lockEntries(keys, req.topologyVersion());
-            Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
+            Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
 
             try {
                 topology().readLock();
@@ -937,7 +937,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     assert !deleted.isEmpty();
                     assert ctx.deferredDelete();
 
-                    for (GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion> e : deleted)
+                    for (IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion> e : deleted)
                         ctx.onDeferredDelete(e.get1(), e.get2());
                 }
             }
@@ -1058,7 +1058,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (updated == null) {
                         if (intercept) {
-                            GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                            IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
                                 entry.key(), old);
 
                             if (ctx.cancelRemove(interceptorRes))
@@ -1190,7 +1190,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             taskName,
                             CU.<K, V>empty());
 
-                        GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                        IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
                             entry.key(), old);
 
                         if (ctx.cancelRemove(interceptorRes))
@@ -1269,7 +1269,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName
     ) throws GridCacheEntryRemovedException {
         GridCacheReturn<Object> retVal = null;
-        Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
+        Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
 
         List<K> keys = req.keys();
 
@@ -1496,8 +1496,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }) :
                     putMap;
 
-                ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<V, GridBiTuple<V, GridCacheVersion>>() {
-                    @Override public GridBiTuple<V, GridCacheVersion> apply(V v) {
+                ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
+                    @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
                         return F.t(v, ver);
                     }
                 }));
@@ -2226,7 +2226,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private final GridCacheReturn<Object> retVal;
 
         /** */
-        private final Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted;
+        private final Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted;
 
         /** */
         private final GridDhtAtomicUpdateFuture<K, V> dhtFut;
@@ -2237,7 +2237,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          * @param dhtFut DHT future.
          */
         private UpdateSingleResult(GridCacheReturn<Object> retVal,
-            Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted,
+            Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted,
             GridDhtAtomicUpdateFuture<K, V> dhtFut) {
             this.retVal = retVal;
             this.deleted = deleted;
@@ -2254,7 +2254,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @return Deleted entries.
          */
-        private Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted() {
+        private Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted() {
             return deleted;
         }
 
@@ -2271,7 +2271,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private static class UpdateBatchResult<K, V> {
         /** */
-        private Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted;
+        private Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted;
 
         /** */
         private GridDhtAtomicUpdateFuture<K, V> dhtFut;
@@ -2297,7 +2297,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @return Deleted entries.
          */
-        private Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted() {
+        private Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted() {
             return deleted;
         }
 

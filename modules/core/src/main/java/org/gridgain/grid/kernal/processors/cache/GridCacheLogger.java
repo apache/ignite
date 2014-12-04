@@ -28,9 +28,9 @@ class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Ex
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static ThreadLocal<GridBiTuple<String, GridCacheContext>> stash =
-        new ThreadLocal<GridBiTuple<String, GridCacheContext>>() {
-            @Override protected GridBiTuple<String, GridCacheContext> initialValue() {
+    private static ThreadLocal<IgniteBiTuple<String, GridCacheContext>> stash =
+        new ThreadLocal<IgniteBiTuple<String, GridCacheContext>>() {
+            @Override protected IgniteBiTuple<String, GridCacheContext> initialValue() {
                 return F.t2();
             }
         };
@@ -151,7 +151,7 @@ class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Ex
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridBiTuple<String, GridCacheContext> t = stash.get();
+        IgniteBiTuple<String, GridCacheContext> t = stash.get();
 
         t.set1(U.readString(in));
         t.set2((GridCacheContext)in.readObject());
@@ -165,7 +165,7 @@ class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Ex
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridBiTuple<String, GridCacheContext> t = stash.get();
+            IgniteBiTuple<String, GridCacheContext> t = stash.get();
 
             return t.get2().logger(t.get1());
         }

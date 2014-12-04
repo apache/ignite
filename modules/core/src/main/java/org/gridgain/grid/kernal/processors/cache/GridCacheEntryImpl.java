@@ -105,7 +105,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      * @param create Flag to create entry if it does not exists.
      * @return Tuple.
      */
-    private GridBiTuple<GridCacheEntryEx<K, V>, Boolean> unwrapChecked(boolean create) {
+    private IgniteBiTuple<GridCacheEntryEx<K, V>, Boolean> unwrapChecked(boolean create) {
         GridCacheEntryEx<K, V> cached = this.cached;
 
         try {
@@ -289,7 +289,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
                 try {
                     if (mode == DB || mode == SWAP) {
-                        GridBiTuple<GridCacheEntryEx<K, V>, Boolean> tup = unwrapChecked(true);
+                        IgniteBiTuple<GridCacheEntryEx<K, V>, Boolean> tup = unwrapChecked(true);
 
                         assert tup.get2() != null;
 

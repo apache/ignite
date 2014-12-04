@@ -73,9 +73,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<GridBiTuple<String, String>> stash = new ThreadLocal<GridBiTuple<String,
-            String>>() {
-        @Override protected GridBiTuple<String, String> initialValue() {
+    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
+                String>>() {
+        @Override protected IgniteBiTuple<String, String> initialValue() {
             return F.t2();
         }
     };
@@ -2181,7 +2181,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(final K key, final GridClosure<V, GridBiTuple<V, R>> transformer)
+    @Override public <R> R transformAndCompute(final K key, final GridClosure<V, IgniteBiTuple<V, R>> transformer)
         throws GridException {
         A.notNull(key, "key", transformer, "transformer");
 
@@ -3928,7 +3928,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridBiTuple<String, String> t = stash.get();
+        IgniteBiTuple<String, String> t = stash.get();
 
         t.set1(U.readString(in));
         t.set2(U.readString(in));
@@ -3942,7 +3942,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridBiTuple<String, String> t = stash.get();
+            IgniteBiTuple<String, String> t = stash.get();
 
             return GridGainEx.gridx(t.get1()).cachex(t.get2());
         }

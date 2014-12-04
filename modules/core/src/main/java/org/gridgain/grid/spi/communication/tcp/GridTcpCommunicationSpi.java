@@ -1090,7 +1090,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
         // Set local node attributes.
         try {
-            GridBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(locHost);
+            IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(locHost);
 
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);

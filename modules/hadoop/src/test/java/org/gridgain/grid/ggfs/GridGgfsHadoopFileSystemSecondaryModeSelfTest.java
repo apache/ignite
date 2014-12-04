@@ -283,12 +283,12 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
      * @param modes Modes.
      */
     @SafeVarargs
-    final void pathModes(GridBiTuple<String, GridGgfsMode>... modes) {
+    final void pathModes(IgniteBiTuple<String, GridGgfsMode>... modes) {
         assert modes != null;
 
         pathModes = new LinkedHashMap<>(modes.length, 1.0f);
 
-        for (GridBiTuple<String, GridGgfsMode> mode : modes)
+        for (IgniteBiTuple<String, GridGgfsMode> mode : modes)
             pathModes.put(mode.getKey(), mode.getValue());
     }
 

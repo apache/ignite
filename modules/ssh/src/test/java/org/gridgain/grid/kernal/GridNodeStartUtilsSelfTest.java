@@ -29,7 +29,7 @@ public class GridNodeStartUtilsSelfTest extends GridCommonAbstractTest {
     public void testParseFile() throws Exception {
         File file = U.resolveGridGainPath("modules/core/src/test/config/start-nodes.ini");
 
-        GridBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
+        IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
 
         assert t != null;
 

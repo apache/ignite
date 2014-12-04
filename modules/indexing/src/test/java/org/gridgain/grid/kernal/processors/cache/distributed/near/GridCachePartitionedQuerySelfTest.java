@@ -243,12 +243,12 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             }
         });
 
-        R1<GridPair<Integer>, Double> locRdc = new R1<GridPair<Integer>, Double>() {
+        R1<IgnitePair<Integer>, Double> locRdc = new R1<IgnitePair<Integer>, Double>() {
             private double sum;
 
             private int cnt;
 
-            @Override public boolean collect(GridPair<Integer> p) {
+            @Override public boolean collect(IgnitePair<Integer> p) {
                 sum += p.get1();
                 cnt += p.get2();
 
@@ -260,7 +260,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             }
         };
 
-        Collection<GridPair<Integer>> res = q.execute(new R1<Map.Entry<UUID, Person>, GridPair<Integer>>() {
+        Collection<IgnitePair<Integer>> res = q.execute(new R1<Map.Entry<UUID, Person>, IgnitePair<Integer>>() {
             private int sum;
 
             private int cnt;
@@ -272,8 +272,8 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
                 return true;
             }
 
-            @Override public GridPair<Integer> reduce() {
-                return new GridPair<>(sum, cnt);
+            @Override public IgnitePair<Integer> reduce() {
+                return new IgnitePair<>(sum, cnt);
             }
         }).get();
 
@@ -297,12 +297,12 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         GridCacheQuery<Map.Entry<UUID, Person>> q = c.queries().createSqlQuery(Person.class, "salary < 20000");
 
-        R1<GridPair<Integer>, Double> locRdc = new R1<GridPair<Integer>, Double>() {
+        R1<IgnitePair<Integer>, Double> locRdc = new R1<IgnitePair<Integer>, Double>() {
             private double sum;
 
             private int cnt;
 
-            @Override public boolean collect(GridPair<Integer> p) {
+            @Override public boolean collect(IgnitePair<Integer> p) {
                 sum += p.get1();
                 cnt += p.get2();
 
@@ -314,7 +314,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             }
         };
 
-        Collection<GridPair<Integer>> res = q.execute(new R1<Map.Entry<UUID, Person>, GridPair<Integer>>() {
+        Collection<IgnitePair<Integer>> res = q.execute(new R1<Map.Entry<UUID, Person>, IgnitePair<Integer>>() {
             private int sum;
 
             private int cnt;
@@ -326,8 +326,8 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
                 return true;
             }
 
-            @Override public GridPair<Integer> reduce() {
-                return new GridPair<>(sum, cnt);
+            @Override public IgnitePair<Integer> reduce() {
+                return new IgnitePair<>(sum, cnt);
             }
         }).get();
 
@@ -351,12 +351,12 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         GridCacheQuery<Map.Entry<UUID, Person>> q = c.queries().createFullTextQuery(Person.class, "White");
 
-        R1<GridPair<Integer>, Double> locRdc = new R1<GridPair<Integer>, Double>() {
+        R1<IgnitePair<Integer>, Double> locRdc = new R1<IgnitePair<Integer>, Double>() {
             private double sum;
 
             private int cnt;
 
-            @Override public boolean collect(GridPair<Integer> p) {
+            @Override public boolean collect(IgnitePair<Integer> p) {
                 sum += p.get1();
                 cnt += p.get2();
 
@@ -368,7 +368,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             }
         };
 
-        Collection<GridPair<Integer>> res = q.execute(new R1<Map.Entry<UUID, Person>, GridPair<Integer>>() {
+        Collection<IgnitePair<Integer>> res = q.execute(new R1<Map.Entry<UUID, Person>, IgnitePair<Integer>>() {
             private int sum;
 
             private int cnt;
@@ -380,8 +380,8 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
                 return true;
             }
 
-            @Override public GridPair<Integer> reduce() {
-                return new GridPair<>(sum, cnt);
+            @Override public IgnitePair<Integer> reduce() {
+                return new IgnitePair<>(sum, cnt);
             }
         }).get();
 

@@ -23,7 +23,7 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map<String,
-    GridBiTuple<Integer, Integer>>> {
+    IgniteBiTuple<Integer, Integer>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
      * Job that swap backups.
      */
     private static class VisorCachesSwapBackupsJob extends VisorJob<Set<String>, Map<String,
-            GridBiTuple<Integer, Integer>>> {
+        IgniteBiTuple<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -50,8 +50,8 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, GridBiTuple<Integer, Integer>> run(Set<String> names) throws GridException {
-            Map<String, GridBiTuple<Integer, Integer>> total = new HashMap<>();
+        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) throws GridException {
+            Map<String, IgniteBiTuple<Integer, Integer>> total = new HashMap<>();
 
             for (GridCache c: g.cachesx()) {
                 String cacheName = c.name();
@@ -66,7 +66,7 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
                             after--;
                     }
 
-                    total.put(cacheName, new GridBiTuple<>(before, after));
+                    total.put(cacheName, new IgniteBiTuple<>(before, after));
                 }
             }
 

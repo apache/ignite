@@ -52,9 +52,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     public static final int MAX_CLOSED_TOPICS = 10240;
 
     /** Ordered messages comparator. */
-    private static final Comparator<GridBiTuple<GridIoMessage, Long>> MSG_CMP =
-        new Comparator<GridBiTuple<GridIoMessage, Long>>() {
-            @Override public int compare(GridBiTuple<GridIoMessage, Long> t1, GridBiTuple<GridIoMessage, Long> t2) {
+    private static final Comparator<IgniteBiTuple<GridIoMessage, Long>> MSG_CMP =
+        new Comparator<IgniteBiTuple<GridIoMessage, Long>>() {
+            @Override public int compare(IgniteBiTuple<GridIoMessage, Long> t1, IgniteBiTuple<GridIoMessage, Long> t2) {
                 return t1.get1().messageId() < t2.get1().messageId() ? -1 :
                     t1.get1().messageId() == t2.get1().messageId() ? 0 : 1;
             }
@@ -118,9 +118,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Message cache. */
-    private ThreadLocal<GridBiTuple<Object, byte[]>> cacheMsg =
-        new GridThreadLocal<GridBiTuple<Object, byte[]>>() {
-            @Nullable @Override protected GridBiTuple<Object, byte[]> initialValue() {
+    private ThreadLocal<IgniteBiTuple<Object, byte[]>> cacheMsg =
+        new GridThreadLocal<IgniteBiTuple<Object, byte[]>>() {
+            @Nullable @Override protected IgniteBiTuple<Object, byte[]> initialValue() {
                 return null;
             }
         };
@@ -1793,7 +1793,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
         /** */
         @GridToStringInclude
-        private final List<GridBiTuple<GridIoMessage, Long>> msgs = new ArrayList<>();
+        private final List<IgniteBiTuple<GridIoMessage, Long>> msgs = new ArrayList<>();
 
         /** */
         private long nextMsgId = 1;
@@ -1959,7 +1959,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 return Collections.emptyList();
 
             if (msgs.size() == 1) {
-                GridBiTuple<GridIoMessage, Long> t = msgs.get(0);
+                IgniteBiTuple<GridIoMessage, Long> t = msgs.get(0);
 
                 GridIoMessage msg = t.get1();
 
@@ -1989,8 +1989,8 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
             Collection<GridIoMessage> orderedMsgs = new LinkedList<>();
 
-            for (Iterator<GridBiTuple<GridIoMessage, Long>> iter = msgs.iterator(); iter.hasNext();) {
-                GridBiTuple<GridIoMessage, Long> t = iter.next();
+            for (Iterator<IgniteBiTuple<GridIoMessage, Long>> iter = msgs.iterator(); iter.hasNext();) {
+                IgniteBiTuple<GridIoMessage, Long> t = iter.next();
 
                 GridIoMessage msg = t.get1();
 

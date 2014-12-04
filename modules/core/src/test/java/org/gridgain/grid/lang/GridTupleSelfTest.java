@@ -64,7 +64,7 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
         String str1 = "A test string 1";
         String str2 = "A test string 2";
 
-        Iterable<Object> tpl = new GridBiTuple<>(str1, str2);
+        Iterable<Object> tpl = new IgniteBiTuple<>(str1, str2);
 
         Iterator<Object> iter = tpl.iterator();
 

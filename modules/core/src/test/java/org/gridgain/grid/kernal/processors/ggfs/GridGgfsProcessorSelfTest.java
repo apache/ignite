@@ -498,7 +498,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         // "I like to move it, move it..."
         //
 
-        Collection<GridBiTuple<String, String>> chain = Arrays.asList(
+        Collection<IgniteBiTuple<String, String>> chain = Arrays.asList(
             F.t("/A/B1/C1", "/A/B1/C2"),
             F.t("/A/B1", "/A/B2"),
             F.t("/A", "/Q"),
@@ -513,7 +513,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         final GridGgfsPath root = path("/");
 
-        for (GridBiTuple<String, String> e : chain) {
+        for (IgniteBiTuple<String, String> e : chain) {
             final GridGgfsPath p1 = path(e.get1());
             final GridGgfsPath p2 = path(e.get2());
 

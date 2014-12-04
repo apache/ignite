@@ -289,7 +289,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
+    @Nullable @Override public IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
         return segmentFor(hash).valuePointer(hash, keyBytes);
     }
 
@@ -357,9 +357,9 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
-        return new GridCloseableIteratorAdapter<GridBiTuple<byte[], byte[]>>() {
-            private GridCloseableIterator<GridBiTuple<byte[], byte[]>> curIt;
+    @Override public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator() {
+        return new GridCloseableIteratorAdapter<IgniteBiTuple<byte[], byte[]>>() {
+            private GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> curIt;
 
             private int idx;
 
@@ -387,11 +387,11 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                 curIt = null;
             }
 
-            @Override protected GridBiTuple<byte[], byte[]> onNext() throws GridException {
+            @Override protected IgniteBiTuple<byte[], byte[]> onNext() throws GridException {
                 if (curIt == null)
                     throw new NoSuchElementException();
 
-                GridBiTuple<byte[], byte[]> t = curIt.next();
+                IgniteBiTuple<byte[], byte[]> t = curIt.next();
 
                 if (!curIt.hasNext()) {
                     curIt.close();
@@ -716,9 +716,9 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         /**
          * @return Iterator.
          */
-        GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
-            return new GridCloseableIteratorAdapter<GridBiTuple<byte[],byte[]>>() {
-                private final Queue<GridBiTuple<byte[], byte[]>> bin = new LinkedList<>();
+        GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator() {
+            return new GridCloseableIteratorAdapter<IgniteBiTuple<byte[],byte[]>>() {
+                private final Queue<IgniteBiTuple<byte[], byte[]>> bin = new LinkedList<>();
 
                 {
                     lock.readLock().lock();
@@ -764,8 +764,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                     return !bin.isEmpty();
                 }
 
-                @Override protected GridBiTuple<byte[], byte[]> onNext() {
-                    GridBiTuple<byte[], byte[]> t = bin.poll();
+                @Override protected IgniteBiTuple<byte[], byte[]> onNext() {
+                    IgniteBiTuple<byte[], byte[]> t = bin.poll();
 
                     if (t == null)
                         throw new NoSuchElementException();
@@ -1356,7 +1356,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param keyBytes Key bytes.
          * @return Value pointer.
          */
-        @Nullable GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
+        @Nullable
+        IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
             long binAddr = readLock(hash);
 
             try {
@@ -1374,7 +1375,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                         int keyLen = Entry.readKeyLength(addr, mem);
                         int valLen = Entry.readValueLength(addr, mem);
 
-                        return new GridBiTuple<>(addr + HEADER + keyLen, valLen);
+                        return new IgniteBiTuple<>(addr + HEADER + keyLen, valLen);
                     }
 
                     addr = Entry.nextAddress(addr, mem);

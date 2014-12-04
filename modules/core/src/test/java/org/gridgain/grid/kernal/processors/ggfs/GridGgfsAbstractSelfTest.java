@@ -1906,12 +1906,12 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         final Map<Integer, List<GridGgfsPath>> dirPaths = new HashMap<>();
         final Map<Integer, List<GridGgfsPath>> filePaths = new HashMap<>();
 
-        Queue<GridBiTuple<Integer, GridGgfsPath>> queue = new ArrayDeque<>();
+        Queue<IgniteBiTuple<Integer, GridGgfsPath>> queue = new ArrayDeque<>();
 
         queue.add(F.t(0, new GridGgfsPath())); // Add root directory.
 
         while (!queue.isEmpty()) {
-            GridBiTuple<Integer, GridGgfsPath> entry = queue.poll();
+            IgniteBiTuple<Integer, GridGgfsPath> entry = queue.poll();
 
             int lvl = entry.getKey();
 

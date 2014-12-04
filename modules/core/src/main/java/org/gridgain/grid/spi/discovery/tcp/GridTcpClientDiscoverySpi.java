@@ -236,7 +236,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                 mcastIpFinder.setLocalAddress(locAddr);
         }
 
-        GridBiTuple<Collection<String>, Collection<String>> addrs;
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
         try {
             addrs = U.resolveLocalAddresses(locHost);
@@ -402,7 +402,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     try {
                         long ts = U.currentTimeMillis();
 
-                        GridBiTuple<Socket, UUID> t = initConnection(addr);
+                        IgniteBiTuple<Socket, UUID> t = initConnection(addr);
 
                         sock = t.get1();
 
@@ -525,7 +525,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
      * @throws IOException In case of I/O error.
      * @throws GridException In case of other error.
      */
-    private GridBiTuple<Socket, UUID> initConnection(InetSocketAddress addr) throws IOException, GridException {
+    private IgniteBiTuple<Socket, UUID> initConnection(InetSocketAddress addr) throws IOException, GridException {
         assert addr != null;
 
         joinLatch = new CountDownLatch(1);

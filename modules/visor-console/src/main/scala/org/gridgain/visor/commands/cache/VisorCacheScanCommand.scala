@@ -14,7 +14,7 @@ package org.gridgain.visor.commands.cache
 import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid.kernal.visor.query.VisorQueryTask.VisorQueryArg
 import org.gridgain.grid.kernal.visor.query.{VisorQueryNextPageTask, VisorQueryResult, VisorQueryTask}
-import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.lang.IgniteBiTuple
 
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
@@ -201,7 +201,7 @@ class VisorCacheScanCommand {
                             .withName("visor-cscan-fetch-task")
                             .withNoFailover()
                             .execute(classOf[VisorQueryNextPageTask],
-                                toTaskArgument(nid, new GridBiTuple[String, Integer](fullRes.queryId(), pageSize)))
+                                toTaskArgument(nid, new IgniteBiTuple[String, Integer](fullRes.queryId(), pageSize)))
 
                         render()
                     }

@@ -65,7 +65,7 @@ public class ComputeFailoverExample {
         private GridLogger log;
 
         /** */
-        private GridBiTuple<Integer, Integer> state;
+        private IgniteBiTuple<Integer, Integer> state;
 
         /** */
         private String phrase;
@@ -86,7 +86,7 @@ public class ComputeFailoverExample {
             final String cpKey = checkpointKey();
 
             try {
-                GridBiTuple<Integer, Integer> state = jobSes.loadCheckpoint(cpKey);
+                IgniteBiTuple<Integer, Integer> state = jobSes.loadCheckpoint(cpKey);
 
                 int idx = 0;
                 int sum = 0;
@@ -102,7 +102,7 @@ public class ComputeFailoverExample {
                 for (int i = idx; i < words.size(); i++) {
                     sum += words.get(i).length();
 
-                    this.state = new GridBiTuple<>(i + 1, sum);
+                    this.state = new IgniteBiTuple<>(i + 1, sum);
 
                     // Save checkpoint with scope of task execution.
                     // It will be automatically removed when task completes.

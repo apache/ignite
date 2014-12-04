@@ -48,7 +48,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected GridCachePreloader<K, V> preldr;
 
     /** Multi tx future holder. */
-    private ThreadLocal<GridBiTuple<GridUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
+    private ThreadLocal<IgniteBiTuple<GridUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
 
     /** Multi tx futures. */
     private ConcurrentMap<GridUuid, MultiUpdateFuture> multiTxFuts = new ConcurrentHashMap8<>();
@@ -156,7 +156,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Topology version future registered for multi-update.
      */
     @Nullable public GridDhtTopologyFuture multiUpdateTopologyFuture() {
-        GridBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
+        IgniteBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         return tup == null ? null : tup.get2();
     }
@@ -168,7 +168,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridException If failed.
      */
     public long beginMultiUpdate() throws GridException {
-        GridBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
+        IgniteBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         if (tup != null)
             throw new GridException("Nested multi-update locks are not supported");
@@ -210,7 +210,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridException If failed.
      */
     public void endMultiUpdate() throws GridException {
-        GridBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
+        IgniteBiTuple<GridUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         if (tup == null)
             throw new GridException("Multi-update was not started or released twice.");

@@ -33,8 +33,8 @@ public class GridCacheInterceptorAdapter<K, V> implements GridCacheInterceptor<K
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val) {
-        return new GridBiTuple<>(false, val);
+    @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val) {
+        return new IgniteBiTuple<>(false, val);
     }
 
     /** {@inheritDoc} */

@@ -21,7 +21,7 @@ import java.lang.management.*;
  * Creates thread dump.
  */
 @GridInternal
-public class VisorThreadDumpTask extends VisorOneNodeTask<Void, GridBiTuple<VisorThreadInfo[], long[]>> {
+public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<VisorThreadInfo[], long[]>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,7 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, GridBiTuple<Viso
     /**
      * Job that take thread dump on node.
      */
-    private static class VisorDumpThreadJob extends VisorJob<Void, GridBiTuple<VisorThreadInfo[], long[]>> {
+    private static class VisorDumpThreadJob extends VisorJob<Void, IgniteBiTuple<VisorThreadInfo[], long[]>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -45,7 +45,7 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, GridBiTuple<Viso
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<VisorThreadInfo[], long[]> run(Void arg) throws GridException {
+        @Override protected IgniteBiTuple<VisorThreadInfo[], long[]> run(Void arg) throws GridException {
             ThreadMXBean mx = U.getThreadMx();
 
             ThreadInfo[] info = mx.dumpAllThreads(true, true);
@@ -55,7 +55,7 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, GridBiTuple<Viso
             for (int i = 0; i < info.length; i++)
                 visorInfo[i] = VisorThreadInfo.from(info[i]);
 
-            return new GridBiTuple<>(visorInfo, mx.findDeadlockedThreads());
+            return new IgniteBiTuple<>(visorInfo, mx.findDeadlockedThreads());
         }
 
         /** {@inheritDoc} */

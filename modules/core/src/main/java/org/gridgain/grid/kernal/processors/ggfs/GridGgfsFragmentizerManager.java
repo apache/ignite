@@ -682,7 +682,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      */
     private class FragmentizerWorker extends GridWorker implements GridMessageListener {
         /** Requests for this worker. */
-        private BlockingQueue<GridBiTuple<UUID, GridGgfsCommunicationMessage>> msgs = new LinkedBlockingDeque<>();
+        private BlockingQueue<IgniteBiTuple<UUID, GridGgfsCommunicationMessage>> msgs = new LinkedBlockingDeque<>();
 
         /**
          * Constructor.
@@ -699,7 +699,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     log.debug("Received fragmentizer request from remote node [nodeId=" + nodeId +
                         ", msg=" + msg + ']');
 
-                GridBiTuple<UUID, GridGgfsCommunicationMessage> tup = F.t(nodeId, (GridGgfsCommunicationMessage)msg);
+                IgniteBiTuple<UUID, GridGgfsCommunicationMessage> tup = F.t(nodeId, (GridGgfsCommunicationMessage)msg);
 
                 try {
                     if (!msgs.offer(tup, MSG_OFFER_TIMEOUT, TimeUnit.MILLISECONDS)) {
@@ -719,7 +719,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, GridInterruptedException {
             while (!isCancelled()) {
-                GridBiTuple<UUID, GridGgfsCommunicationMessage> req = msgs.take();
+                IgniteBiTuple<UUID, GridGgfsCommunicationMessage> req = msgs.take();
 
                 UUID nodeId = req.get1();
 

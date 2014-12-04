@@ -739,7 +739,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Applies {@code transformer} closure to the previous value associated with given key in cache,
-     * closure should return {@link GridBiTuple} instance where first value is new value stored in cache
+     * closure should return {@link org.gridgain.grid.lang.IgniteBiTuple} instance where first value is new value stored in cache
      * and second value is returned as result of this method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
@@ -753,7 +753,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Value computed by the closure.
      * @throws GridException On any error occurred while storing value in cache.
      */
-    public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer) throws GridException;
+    public <R> R transformAndCompute(K key, GridClosure<V, IgniteBiTuple<V, R>> transformer) throws GridException;
 
     /**
      * Stores result of applying {@code transformer} closure to the previous value associated with

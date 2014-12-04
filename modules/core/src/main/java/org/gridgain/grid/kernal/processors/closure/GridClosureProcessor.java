@@ -1241,7 +1241,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private GridComputeLoadBalancer lb;
 
         /** */
-        private GridBiTuple<GridClosureCallMode, Collection<? extends Runnable>> t;
+        private IgniteBiTuple<GridClosureCallMode, Collection<? extends Runnable>> t;
 
         /**
          * @param mode Call mode.
@@ -1276,7 +1276,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private GridComputeLoadBalancer lb;
 
         /** */
-        private GridBiTuple<GridClosureCallMode, Runnable> t;
+        private IgniteBiTuple<GridClosureCallMode, Runnable> t;
 
         /**
          * @param mode Call mode.
@@ -1497,7 +1497,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridBiTuple<GridClosureCallMode, Callable<R>> t;
+        private IgniteBiTuple<GridClosureCallMode, Callable<R>> t;
 
         /** */
         @GridLoadBalancerResource

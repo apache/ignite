@@ -300,10 +300,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
         for (GridRestProtocol proto : protos) {
-            Collection<GridBiTuple<String, Object>> props = proto.getProperties();
+            Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
 
             if (props != null) {
-                for (GridBiTuple<String, Object> p : props) {
+                for (IgniteBiTuple<String, Object> p : props) {
                     String key = p.getKey();
 
                     if (key == null)

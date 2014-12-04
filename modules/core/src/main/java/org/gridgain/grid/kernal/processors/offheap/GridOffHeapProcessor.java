@@ -154,7 +154,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Tuple where first value is pointer and second is value size.
      * @throws GridException If failed.
      */
-    @Nullable public GridBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, Object key,
+    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, Object key,
         byte[] keyBytes) throws GridException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -257,10 +257,10 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @param spaceName Space name.
      * @return Iterator.
      */
-    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(@Nullable String spaceName) {
+    public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator(@Nullable String spaceName) {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
-        return m == null ? new GridEmptyCloseableIterator<GridBiTuple<byte[], byte[]>>() : m.iterator();
+        return m == null ? new GridEmptyCloseableIterator<IgniteBiTuple<byte[], byte[]>>() : m.iterator();
     }
 
     /**
@@ -310,9 +310,9 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @param part Partition.
      * @return Iterator.
      */
-    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(@Nullable String spaceName, int part) {
+    public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator(@Nullable String spaceName, int part) {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
-        return m == null ? new GridEmptyCloseableIterator<GridBiTuple<byte[], byte[]>>() : m.iterator(part);
+        return m == null ? new GridEmptyCloseableIterator<IgniteBiTuple<byte[], byte[]>>() : m.iterator(part);
     }
 }

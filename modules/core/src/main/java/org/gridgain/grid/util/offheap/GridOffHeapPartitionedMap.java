@@ -69,7 +69,7 @@ public interface GridOffHeapPartitionedMap {
      * @param keyBytes Key bytes.
      * @return Value pointer.
      */
-    @Nullable public GridBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes);
+    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes);
 
     /**
      * Enables eviction for entry.
@@ -171,7 +171,7 @@ public interface GridOffHeapPartitionedMap {
      *
      * @return Iterator over the whole map.
      */
-    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator();
+    public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator();
 
     /**
      * Gets iterator over the whole map.
@@ -187,7 +187,7 @@ public interface GridOffHeapPartitionedMap {
      * @param p Partition.
      * @return Iterator over certain partition.
      */
-    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(int p);
+    public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator(int p);
 
     /**
      * Sets callback for when entries are evicted due to memory constraints.

@@ -55,7 +55,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     public static final int DFLT_PARTITION_COUNT = 10000;
 
     /** Comparator. */
-    private static final Comparator<GridBiTuple<Long, ClusterNode>> COMPARATOR =
+    private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR =
         new HashComparator();
 
     /** Thread local message digest. */
@@ -275,7 +275,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         if (nodes.size() <= 1)
             return nodes;
 
-        List<GridBiTuple<Long, ClusterNode>> lst = new ArrayList<>();
+        List<IgniteBiTuple<Long, ClusterNode>> lst = new ArrayList<>();
 
         MessageDigest d = digest.get();
 
@@ -335,7 +335,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         // Select backups.
         if (backups > 0) {
             for (int i = 1; i < lst.size(); i++) {
-                GridBiTuple<Long, ClusterNode> next = lst.get(i);
+                IgniteBiTuple<Long, ClusterNode> next = lst.get(i);
 
                 ClusterNode node = next.get2();
 
@@ -358,7 +358,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
             // Need to iterate one more time in case if there are no nodes which pass exclude backups criteria.
             for (int i = 1; i < lst.size(); i++) {
-                GridBiTuple<Long, ClusterNode> next = lst.get(i);
+                IgniteBiTuple<Long, ClusterNode> next = lst.get(i);
 
                 ClusterNode node = next.get2();
 
@@ -482,12 +482,12 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     /**
      *
      */
-    private static class HashComparator implements Comparator<GridBiTuple<Long, ClusterNode>>, Serializable {
+    private static class HashComparator implements Comparator<IgniteBiTuple<Long, ClusterNode>>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public int compare(GridBiTuple<Long, ClusterNode> o1, GridBiTuple<Long, ClusterNode> o2) {
+        @Override public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
                 o1.get2().id().compareTo(o2.get2().id());
         }

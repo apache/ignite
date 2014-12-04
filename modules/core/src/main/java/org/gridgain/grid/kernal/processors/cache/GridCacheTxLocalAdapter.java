@@ -456,7 +456,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 // Implicit transactions are always updated at the end.
                 if (isBatchUpdate()) {
                     if (writeEntries != null) {
-                        Map<K, GridBiTuple<V, GridCacheVersion>> putMap = null;
+                        Map<K, IgniteBiTuple<V, GridCacheVersion>> putMap = null;
                         List<K> rmvCol = null;
 
                         /*
@@ -514,7 +514,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 if (intercept) {
                                     V old = e.cached().rawGetOrUnmarshal(true);
 
-                                    GridBiTuple<Boolean, V> t = cacheCtx.config().<K, V>getInterceptor()
+                                    IgniteBiTuple<Boolean, V> t = cacheCtx.config().<K, V>getInterceptor()
                                         .onBeforeRemove(key, old);
 
                                     if (cacheCtx.cancelRemove(t))

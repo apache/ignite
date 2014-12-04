@@ -14,16 +14,16 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Simple extension over {@link GridBiTuple} for pair of objects of the same type.
+ * Simple extension over {@link org.gridgain.grid.lang.IgniteBiTuple} for pair of objects of the same type.
  */
-public class GridPair<T> extends GridBiTuple<T, T> {
+public class IgnitePair<T> extends IgniteBiTuple<T, T> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridPair() {
+    public IgnitePair() {
         // No-op.
     }
 
@@ -33,7 +33,7 @@ public class GridPair<T> extends GridBiTuple<T, T> {
      * @param t1 First object in pair.
      * @param t2 Second object in pair.
      */
-    public GridPair(@Nullable T t1, @Nullable T t2) {
+    public IgnitePair(@Nullable T t1, @Nullable T t2) {
         super(t1, t2);
     }
 

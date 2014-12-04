@@ -72,7 +72,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
             return assignments;
         }
 
-        GridBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> cp = createCopy(ctx, topSnapshot);
+        IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> cp = createCopy(ctx, topSnapshot);
 
         List<List<ClusterNode>> assignment = cp.get1();
 
@@ -381,7 +381,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      * @param topSnapshot Topology snapshot.
      * @return Assignment copy and per node partition map.
      */
-    private GridBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> createCopy(
+    private IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> createCopy(
         GridCacheAffinityFunctionContext ctx, Iterable<ClusterNode> topSnapshot) {
         GridDiscoveryEvent discoEvt = ctx.discoveryEvent();
 

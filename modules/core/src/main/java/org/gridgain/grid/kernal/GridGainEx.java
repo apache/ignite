@@ -541,7 +541,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL springCfgUrl) throws GridException {
         GridSpringProcessor spring = SPRING.create(false);
 
@@ -561,7 +561,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         String springCfgPath) throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
@@ -595,9 +595,9 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
+    public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
         throws GridException {
-        GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
 
         return F.t(F.first(t.get1()), t.get2());
     }
@@ -615,9 +615,9 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
+    public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
         throws GridException {
-        GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
             loadConfigurations(springCfgPath);
 
         return F.t(F.first(t.get1()), t.get2());
@@ -712,7 +712,7 @@ public class GridGainEx {
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
-        GridBiTuple<Object, Object> t = null;
+        IgniteBiTuple<Object, Object> t = null;
 
         Collection<Handler> savedHnds = null;
 
@@ -721,7 +721,7 @@ public class GridGainEx {
         else
             savedHnds = U.addJavaNoOpLogger();
 
-        GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
         try {
             cfgMap = loadConfigurations(springCfgUrl);

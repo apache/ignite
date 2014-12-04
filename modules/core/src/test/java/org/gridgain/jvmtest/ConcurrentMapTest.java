@@ -41,7 +41,7 @@ public class ConcurrentMapTest {
     public static void main(String args[]) throws Exception {
         Thread.sleep(5000);
 
-        Collection<GridPair<Integer>> ress = new LinkedList<>();
+        Collection<IgnitePair<Integer>> ress = new LinkedList<>();
 
         for (int lvl = 16; lvl <= 16384; lvl *= 2) {
             System.gc();
@@ -55,7 +55,7 @@ public class ConcurrentMapTest {
 
         X.println("Test summary.");
 
-        for (GridPair<Integer> p : ress)
+        for (IgnitePair<Integer> p : ress)
             X.println("Performance [lvl=" + p.get1() + ", writes=" + p.get2() + ']');
 
         testPut();

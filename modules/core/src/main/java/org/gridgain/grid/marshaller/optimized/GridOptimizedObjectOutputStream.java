@@ -47,7 +47,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     private List<T2<GridOptimizedFieldType, Long>> curFields;
 
     /** */
-    private Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
+    private Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
 
     /** */
     private PutFieldImpl curPut;
@@ -660,7 +660,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         if (curPut == null)
             throw new NotActiveException("putFields() was not called.");
 
-        for (GridBiTuple<GridOptimizedFieldType, Object> t : curPut.objs) {
+        for (IgniteBiTuple<GridOptimizedFieldType, Object> t : curPut.objs) {
             switch (t.get1()) {
                 case BYTE:
                     writeByte((Byte)t.get2());
@@ -747,10 +747,10 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         private final GridOptimizedObjectOutputStream out;
 
         /** Field info map. */
-        private final Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
+        private final Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
-        private final GridBiTuple<GridOptimizedFieldType, Object>[] objs;
+        private final IgniteBiTuple<GridOptimizedFieldType, Object>[] objs;
 
         /**
          * @param out Output stream.
@@ -762,7 +762,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
 
             fieldInfoMap = out.curFieldInfoMap;
 
-            objs = new GridBiTuple[fieldInfoMap.size()];
+            objs = new IgniteBiTuple[fieldInfoMap.size()];
         }
 
         /** {@inheritDoc} */
@@ -823,7 +823,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
          * @param val Value.
          */
         private void value(String name, Object val) {
-            GridBiTuple<Integer, GridOptimizedFieldType> info = fieldInfoMap.get(name);
+            IgniteBiTuple<Integer, GridOptimizedFieldType> info = fieldInfoMap.get(name);
 
             objs[info.get1()] = F.t(info.get2(), val);
         }

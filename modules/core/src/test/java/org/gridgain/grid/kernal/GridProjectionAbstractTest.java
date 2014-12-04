@@ -241,7 +241,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     public void testExecution() throws Exception {
         String name = "oneMoreGrid";
 
-        Collection<GridBiTuple<Ignite, GridPredicate<GridEvent>>> lsnrs = new LinkedList<>();
+        Collection<IgniteBiTuple<Ignite, GridPredicate<GridEvent>>> lsnrs = new LinkedList<>();
 
         try {
             final AtomicInteger cnt = new AtomicInteger();
@@ -304,7 +304,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             checkActiveFutures();
         }
         finally {
-            for (GridBiTuple<Ignite, GridPredicate<GridEvent>> t : lsnrs)
+            for (IgniteBiTuple<Ignite, GridPredicate<GridEvent>> t : lsnrs)
                 t.get1().events().stopLocalListen(t.get2(), EVT_JOB_STARTED);
 
             stopGrid(name);

@@ -24,8 +24,8 @@ import java.util.*;
  * Task to run gc on nodes.
  */
 @GridInternal
-public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBiTuple<Long, Long>>,
-    GridBiTuple<Long, Long>> {
+public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, IgniteBiTuple<Long, Long>>,
+    IgniteBiTuple<Long, Long>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,12 +35,12 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridB
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<UUID, GridBiTuple<Long, Long>> reduce(List<GridComputeJobResult> results)
+    @Nullable @Override public Map<UUID, IgniteBiTuple<Long, Long>> reduce(List<GridComputeJobResult> results)
         throws GridException {
-        Map<UUID, GridBiTuple<Long, Long>> total = new HashMap<>();
+        Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
         for (GridComputeJobResult res: results) {
-            GridBiTuple<Long, Long> jobRes = res.getData();
+            IgniteBiTuple<Long, Long> jobRes = res.getData();
 
             total.put(res.getNode().id(), jobRes);
         }
@@ -49,7 +49,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridB
     }
 
     /** Job that perform GC on node. */
-    private static class VisorGcJob extends VisorJob<Boolean, GridBiTuple<Long, Long>> {
+    private static class VisorGcJob extends VisorJob<Boolean, IgniteBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -59,14 +59,14 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridB
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<Long, Long> run(Boolean arg) throws GridException {
+        @Override protected IgniteBiTuple<Long, Long> run(Boolean arg) throws GridException {
             ClusterNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
 
             System.gc();
 
-            return new GridBiTuple<>(before, freeHeap(locNode));
+            return new IgniteBiTuple<>(before, freeHeap(locNode));
         }
 
         /**

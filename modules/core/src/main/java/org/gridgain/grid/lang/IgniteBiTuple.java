@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Convenience class representing mutable tuple of two values.
  */
-public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
+public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     Iterable<Object>, Externalizable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -36,7 +36,7 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridBiTuple() {
+    public IgniteBiTuple() {
         // No-op.
     }
 
@@ -46,7 +46,7 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
      * @param val1 First value.
      * @param val2 Second value.
      */
-    public GridBiTuple(@Nullable V1 val1, @Nullable V2 val2) {
+    public IgniteBiTuple(@Nullable V1 val1, @Nullable V2 val2) {
         this.val1 = val1;
         this.val2 = val2;
     }
@@ -56,7 +56,7 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
      *
      * @return New tuple with swapped values.
      */
-    public GridBiTuple<V2, V1> swap() {
+    public IgniteBiTuple<V2, V1> swap() {
         return F.t(val2, val1);
     }
 
@@ -272,10 +272,10 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
         if (this == o)
             return true;
 
-        if (!(o instanceof GridBiTuple))
+        if (!(o instanceof IgniteBiTuple))
             return false;
 
-        GridBiTuple<?, ?> t = (GridBiTuple<?, ?>)o;
+        IgniteBiTuple<?, ?> t = (IgniteBiTuple<?, ?>)o;
 
         // Both nulls or equals.
         return F.eq(val1, t.val1) && F.eq(val2, t.val2);
@@ -283,6 +283,6 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridBiTuple.class, this);
+        return S.toString(IgniteBiTuple.class, this);
     }
 }

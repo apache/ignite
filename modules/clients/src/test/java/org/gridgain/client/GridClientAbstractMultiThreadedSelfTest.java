@@ -576,7 +576,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new GridComputeJobAdapter() {
                     @Override public Object execute() {
-                        return new GridBiTuple<>(locNodeId, 1);
+                        return new IgniteBiTuple<>(locNodeId, 1);
                     }
                 });
             }
@@ -591,7 +591,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
             String locNodeId = null;
 
             for (GridComputeJobResult res : results) {
-                GridBiTuple<String, Integer> part = res.getData();
+                IgniteBiTuple<String, Integer> part = res.getData();
 
                 if (locNodeId == null)
                     locNodeId = part.get1();

@@ -418,8 +418,8 @@ class GridOptimizedClassDescriptor {
                     readObjMtds = new ArrayList<>();
                     List<List<Field>> fields = new ArrayList<>();
                     List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs = new ArrayList<>();
-                    List<Map<String, GridBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
-                    List<List<GridBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
+                    List<Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
+                    List<List<IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
 
                     for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                         Method mtd;
@@ -486,7 +486,7 @@ class GridOptimizedClassDescriptor {
                         fields.add(clsFields);
                         fieldOffs.add(clsFieldOffs);
 
-                        Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap = null;
+                        Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap = null;
 
                         try {
                             Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
@@ -528,12 +528,12 @@ class GridOptimizedClassDescriptor {
 
                         fieldInfoMaps.add(fieldInfoMap);
 
-                        List<GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoList =
+                        List<IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoList =
                             new ArrayList<>(fieldInfoMap.values());
 
-                        Collections.sort(fieldInfoList, new Comparator<GridBiTuple<Integer, GridOptimizedFieldType>>() {
-                            @Override public int compare(GridBiTuple<Integer, GridOptimizedFieldType> t1,
-                                GridBiTuple<Integer, GridOptimizedFieldType> t2) {
+                        Collections.sort(fieldInfoList, new Comparator<IgniteBiTuple<Integer, GridOptimizedFieldType>>() {
+                            @Override public int compare(IgniteBiTuple<Integer, GridOptimizedFieldType> t1,
+                                IgniteBiTuple<Integer, GridOptimizedFieldType> t2) {
                                 return t1.get1().compareTo(t2.get1());
                             }
                         });
@@ -971,10 +971,10 @@ class GridOptimizedClassDescriptor {
         private final List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs;
 
         /** Fields details lists. */
-        private final List<List<GridBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists;
+        private final List<List<IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists;
 
         /** Fields details maps. */
-        private final List<Map<String, GridBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps;
+        private final List<Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps;
 
         /**
          * Creates new instance.
@@ -985,8 +985,8 @@ class GridOptimizedClassDescriptor {
          * @param fieldInfoMaps List of field details maps for each type in the object's class hierarchy.
          */
         Fields(List<List<Field>> fields, List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs,
-            List<List<GridBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists,
-            List<Map<String, GridBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps) {
+            List<List<IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoLists,
+            List<Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>>> fieldInfoMaps) {
             this.fields = fields;
             this.fieldOffs = fieldOffs;
             this.fieldInfoLists = fieldInfoLists;
@@ -1018,7 +1018,7 @@ class GridOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return list of pairs (field number, field type) for the given hierarchy level.
          */
-        List<GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoList(int i) {
+        List<IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoList(int i) {
             return fieldInfoLists.get(i);
         }
 
@@ -1028,7 +1028,7 @@ class GridOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return map of field names and their details.
          */
-        Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap(int i) {
+        Map<String, IgniteBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap(int i) {
             return fieldInfoMaps.get(i);
         }
     }

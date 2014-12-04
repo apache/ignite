@@ -21,7 +21,7 @@ public final class GridCacheTransformComputeClosure<V, R> implements GridClosure
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridClosure<V, GridBiTuple<V, R>> transformer;
+    private GridClosure<V, IgniteBiTuple<V, R>> transformer;
 
     /** */
     private R retVal;
@@ -36,7 +36,7 @@ public final class GridCacheTransformComputeClosure<V, R> implements GridClosure
     /**
      * @param transformer Transformer closure.
      */
-    public GridCacheTransformComputeClosure(GridClosure<V, GridBiTuple<V, R>> transformer) {
+    public GridCacheTransformComputeClosure(GridClosure<V, IgniteBiTuple<V, R>> transformer) {
         this.transformer = transformer;
     }
 
@@ -49,7 +49,7 @@ public final class GridCacheTransformComputeClosure<V, R> implements GridClosure
 
     /** {@inheritDoc} */
     @Override public V apply(V v) {
-        GridBiTuple<V, R> t = transformer.apply(v);
+        IgniteBiTuple<V, R> t = transformer.apply(v);
 
         retVal = t.get2();
 
@@ -63,6 +63,6 @@ public final class GridCacheTransformComputeClosure<V, R> implements GridClosure
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        transformer = (GridClosure<V, GridBiTuple<V, R>>)in.readObject();
+        transformer = (GridClosure<V, IgniteBiTuple<V, R>>)in.readObject();
     }
 }

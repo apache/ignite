@@ -62,7 +62,7 @@ public final class GridCacheAtomicStampedValue<T, S> implements GridCacheInterna
     /**
      * @return Current value and stamp.
      */
-    public GridBiTuple<T, S> get() {
+    public IgniteBiTuple<T, S> get() {
         return F.t(val, stamp);
     }
 

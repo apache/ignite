@@ -228,8 +228,8 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked") @Nullable @Override public GridBiTuple onBeforeRemove(Object key, @Nullable Object val) {
-            return new GridBiTuple(false, val);
+        @SuppressWarnings("unchecked") @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            return new IgniteBiTuple(false, val);
         }
 
         /** {@inheritDoc} */

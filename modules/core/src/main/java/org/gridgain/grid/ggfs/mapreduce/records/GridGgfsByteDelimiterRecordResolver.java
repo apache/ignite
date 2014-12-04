@@ -74,7 +74,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();
 
-        GridBiTuple<State, Delimiter> firstDelim = findFirstDelimiter(stream, suggestedStart);
+        IgniteBiTuple<State, Delimiter> firstDelim = findFirstDelimiter(stream, suggestedStart);
 
         State state = firstDelim != null ? firstDelim.getKey() : new State();
 
@@ -89,7 +89,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
             long start = suggestedStart == 0 ? 0 : curDelim.end;
 
             if (curDelim == null || curDelim.end < suggestedEnd) {
-                GridBiTuple<State, Delimiter> lastDelim = findFirstDelimiter(stream, suggestedEnd);
+                IgniteBiTuple<State, Delimiter> lastDelim = findFirstDelimiter(stream, suggestedEnd);
 
                 state = lastDelim != null ? firstDelim.getKey() : new State();
 
@@ -137,7 +137,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
      * @return The first found delimiter.
      * @throws IOException In case of IO exception.
      */
-    @Nullable private GridBiTuple<State, Delimiter> findFirstDelimiter(GridGgfsInputStream stream, long startPos)
+    @Nullable private IgniteBiTuple<State, Delimiter> findFirstDelimiter(GridGgfsInputStream stream, long startPos)
         throws IOException {
         State state;
         Delimiter delim;

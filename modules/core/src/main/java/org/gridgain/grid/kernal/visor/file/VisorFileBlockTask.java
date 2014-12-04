@@ -26,7 +26,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
  */
 @GridInternal
 public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.VisorFileBlockArg,
-    GridBiTuple<? extends IOException, VisorFileBlock>> {
+    IgniteBiTuple<? extends IOException, VisorFileBlock>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,7 +78,7 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
      * Job that read file block on node.
      */
     private static class VisorFileBlockJob
-        extends VisorJob<VisorFileBlockArg, GridBiTuple<? extends IOException, VisorFileBlock>> {
+        extends VisorJob<VisorFileBlockArg, IgniteBiTuple<? extends IOException, VisorFileBlock>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -90,22 +90,22 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<? extends IOException, VisorFileBlock> run(VisorFileBlockArg arg) throws GridException {
+        @Override protected IgniteBiTuple<? extends IOException, VisorFileBlock> run(VisorFileBlockArg arg) throws GridException {
             try {
                 URL url = U.resolveGridGainUrl(arg.path);
 
                 if (url == null)
-                    return new GridBiTuple<>(new NoSuchFileException("File path not found: " + arg.path), null);
+                    return new IgniteBiTuple<>(new NoSuchFileException("File path not found: " + arg.path), null);
 
                 VisorFileBlock block = readBlock(new File(url.toURI()), arg.offset, arg.blockSz, arg.lastModified);
 
-                return new GridBiTuple<>(null, block);
+                return new IgniteBiTuple<>(null, block);
             }
             catch (IOException e) {
-                return new GridBiTuple<>(e, null);
+                return new IgniteBiTuple<>(e, null);
             }
             catch (URISyntaxException ignored) {
-                return new GridBiTuple<>(new NoSuchFileException("File path not found: " + arg.path), null);
+                return new IgniteBiTuple<>(new NoSuchFileException("File path not found: " + arg.path), null);
             }
         }
 

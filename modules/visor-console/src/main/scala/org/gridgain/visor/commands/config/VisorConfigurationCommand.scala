@@ -17,7 +17,7 @@ import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
 import java.lang.System._
 
 import org.gridgain.grid._
-import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.lang.IgniteBiTuple
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -257,11 +257,11 @@ class VisorConfigurationCommand {
 
             val spisT = VisorTextTable()
 
-            def spiClass(spi: GridBiTuple[String, java.util.Map[String, AnyRef]]) = {
+            def spiClass(spi: IgniteBiTuple[String, java.util.Map[String, AnyRef]]) = {
                 if (spi != null) spi.get2().getOrElse("Class Name", DFLT) else DFLT
             }
 
-            def spisClass(spis: Array[GridBiTuple[String, java.util.Map[String, AnyRef]]]) = {
+            def spisClass(spis: Array[IgniteBiTuple[String, java.util.Map[String, AnyRef]]]) = {
                 spis.map(spiClass).mkString("[", ", ", "]")
             }
 

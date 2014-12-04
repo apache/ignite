@@ -65,8 +65,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<GridBiTuple<String, String>> stash = new ThreadLocal<GridBiTuple<String, String>>() {
-        @Override protected GridBiTuple<String, String> initialValue() {
+    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String, String>>() {
+        @Override protected IgniteBiTuple<String, String> initialValue() {
             return F.t2();
         }
     };
@@ -1495,7 +1495,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param interceptorRes Result of {@link GridCacheInterceptor#onBeforeRemove} callback.
      * @return {@code True} if interceptor cancels remove.
      */
-    public boolean cancelRemove(@Nullable GridBiTuple<Boolean, ?> interceptorRes) {
+    public boolean cancelRemove(@Nullable IgniteBiTuple<Boolean, ?> interceptorRes) {
         if (interceptorRes != null) {
             if (interceptorRes.get1() == null) {
                 U.warn(log, "GridCacheInterceptor must not return null as cancellation flag value from " +
@@ -1753,7 +1753,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridBiTuple<String, String> t = stash.get();
+        IgniteBiTuple<String, String> t = stash.get();
 
         t.set1(U.readString(in));
         t.set2(U.readString(in));
@@ -1767,7 +1767,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridBiTuple<String, String> t = stash.get();
+            IgniteBiTuple<String, String> t = stash.get();
 
             GridKernal grid = GridGainEx.gridx(t.get1());
 

@@ -64,7 +64,7 @@ public interface GridCacheAtomicStamped<T, S> {
      * @return both current value and current stamp of atomic stamped.
      * @throws GridException If operation failed.
      */
-    public GridBiTuple<T, S> get() throws GridException;
+    public IgniteBiTuple<T, S> get() throws GridException;
 
     /**
      * Unconditionally sets the value and the stamp.

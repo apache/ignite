@@ -25,14 +25,14 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
  * Remove all GGFS profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, GridBiTuple<Integer, Integer>> {
+public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteBiTuple<Integer, Integer>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Job to clear profiler logs.
      */
-    private static class VisorGgfsProfilerClearJob extends VisorJob<String, GridBiTuple<Integer, Integer>> {
+    private static class VisorGgfsProfilerClearJob extends VisorJob<String, IgniteBiTuple<Integer, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, GridBiT
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<Integer, Integer> run(String arg) throws GridException {
+        @Override protected IgniteBiTuple<Integer, Integer> run(String arg) throws GridException {
             int deleted = 0;
             int notDeleted = 0;
 
@@ -87,7 +87,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, GridBiT
                 throw new GridException("Failed to clear profiler logs for GGFS: " + arg, ioe);
             }
 
-            return new GridBiTuple<>(deleted, notDeleted);
+            return new IgniteBiTuple<>(deleted, notDeleted);
         }
 
         /** {@inheritDoc} */

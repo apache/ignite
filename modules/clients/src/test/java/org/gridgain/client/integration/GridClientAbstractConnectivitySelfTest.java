@@ -35,7 +35,7 @@ public abstract class GridClientAbstractConnectivitySelfTest extends GridCommonA
      * @return IP addresses.
      * @throws Exception If failed.
      */
-    private static GridBiTuple<Collection<String>, Collection<String>> getAllIps() throws Exception {
+    private static IgniteBiTuple<Collection<String>, Collection<String>> getAllIps() throws Exception {
         return U.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"));
     }
 
@@ -259,7 +259,7 @@ public abstract class GridClientAbstractConnectivitySelfTest extends GridCommonA
      * @param nodeIp Expected IP reported to client.
      * @throws GridClientException If failed.
      */
-    private void checkConnectivityByIp(String connectIp, GridBiTuple<Collection<String>, Collection<String>> nodeIp)
+    private void checkConnectivityByIp(String connectIp, IgniteBiTuple<Collection<String>, Collection<String>> nodeIp)
         throws GridClientException {
         GridClient cli = startClient(connectIp, defaultRestPort());
 
@@ -278,7 +278,7 @@ public abstract class GridClientAbstractConnectivitySelfTest extends GridCommonA
      * @param node Node.
      * @return {@code True} if addresses are equal, {@code false} otherwise.
      */
-    private boolean eqAddresses(GridBiTuple<Collection<String>, Collection<String>> nodeIp, GridClientNode node) {
+    private boolean eqAddresses(IgniteBiTuple<Collection<String>, Collection<String>> nodeIp, GridClientNode node) {
         return F.eqOrdered(nodeIp.get1(), (Collection<String>)(node.attribute(restAddressAttributeName()))) &&
             F.eqOrdered(nodeIp.get2(), (Collection<String>)(node.attribute(restHostNameAttributeName())));
     }

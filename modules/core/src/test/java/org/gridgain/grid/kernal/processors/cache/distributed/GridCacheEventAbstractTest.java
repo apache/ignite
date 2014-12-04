@@ -94,7 +94,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * @param evtCnts Array of tuples with values: V1 - event type, V2 - expected event count on one node.
      * @throws InterruptedException If thread has been interrupted while waiting.
      */
-    private void waitForEvents(int gridIdx, GridBiTuple<Integer, Integer>... evtCnts) throws Exception {
+    private void waitForEvents(int gridIdx, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         if (!F.isEmpty(evtCnts))
             try {
                 TestEventListener.waitForEventCount(((GridKernal)grid(0)).context(), evtCnts);
@@ -110,10 +110,10 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * @param gridIdx Grid index.
      * @param expCnts Expected counters
      */
-    private void printEventCounters(int gridIdx, GridBiTuple<Integer, Integer>[] expCnts) {
+    private void printEventCounters(int gridIdx, IgniteBiTuple<Integer, Integer>[] expCnts) {
         info("Printing counters [gridIdx=" + gridIdx + ']');
 
-        for (GridBiTuple<Integer, Integer> t : expCnts) {
+        for (IgniteBiTuple<Integer, Integer> t : expCnts) {
             Integer evtType = t.get1();
 
             int actCnt = TestEventListener.eventCount(evtType);
@@ -145,7 +145,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * @throws Exception In failed.
      */
     @SuppressWarnings({"CaughtExceptionImmediatelyRethrown"})
-    private void runTest(TestCacheRunnable run, GridBiTuple<Integer, Integer>... evtCnts) throws Exception {
+    private void runTest(TestCacheRunnable run, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         for (int i = 0; i < gridCount(); i++) {
             info(">>> Running test for grid [idx=" + i + ", grid=" + grid(i).name() +
                 ", id=" + grid(i).localNode().id() + ']');
@@ -598,7 +598,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     @SuppressWarnings("unchecked")
     public void testPutIfAbsentAsyncTx() throws Exception {
-        GridBiTuple[] evts = new GridBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt), F.t(EVT_CACHE_OBJECT_READ, 1)};
+        IgniteBiTuple[] evts = new IgniteBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt), F.t(EVT_CACHE_OBJECT_READ, 1)};
 
         runTest(new TestCacheRunnable() {
             @Override public void run(GridCache<String, Integer> cache) throws GridException {
@@ -840,14 +840,14 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @throws GridException If failed to wait.
          */
         private static void waitForEventCount(GridKernalContext ctx,
-            GridBiTuple<Integer, Integer>... evtCnts) throws GridException {
+            IgniteBiTuple<Integer, Integer>... evtCnts) throws GridException {
             if (F.isEmpty(evtCnts))
                 return;
 
             // Create future that aggregates all required event types.
             GridCompoundIdentityFuture<Object> cf = new GridCompoundIdentityFuture<>(ctx);
 
-            for (GridBiTuple<Integer, Integer> t : evtCnts) {
+            for (IgniteBiTuple<Integer, Integer> t : evtCnts) {
                 Integer evtType = t.get1();
                 Integer expCnt = t.get2();
 

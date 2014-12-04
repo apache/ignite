@@ -27,13 +27,13 @@ import java.util.*;
  * Task that collect cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<GridBiTuple<Boolean, String>,
+public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiTuple<Boolean, String>,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics2>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsJob job(GridBiTuple<Boolean, String> arg) {
+    @Override protected VisorCacheMetricsJob job(IgniteBiTuple<Boolean, String> arg) {
         return new VisorCacheMetricsJob(arg);
     }
 
@@ -113,7 +113,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<GridBiTup
     /**
      * Job that collect cache metrics from node.
      */
-    private static class VisorCacheMetricsJob extends VisorJob<GridBiTuple<Boolean, String>, Collection<VisorCacheMetrics2>> {
+    private static class VisorCacheMetricsJob extends VisorJob<IgniteBiTuple<Boolean, String>, Collection<VisorCacheMetrics2>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -122,12 +122,12 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<GridBiTup
          *
          * @param arg Whether to collect metrics for all caches or for specified cache name only.
          */
-        private VisorCacheMetricsJob(GridBiTuple<Boolean, String> arg) {
+        private VisorCacheMetricsJob(IgniteBiTuple<Boolean, String> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorCacheMetrics2> run(GridBiTuple<Boolean, String> arg) throws GridException {
+        @Override protected Collection<VisorCacheMetrics2> run(IgniteBiTuple<Boolean, String> arg) throws GridException {
             Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
 
             if (caches != null) {

@@ -535,7 +535,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @return Value of annotated field or method.
      * @throws GridException If failed to find.
      */
-    private GridBiTuple<Object, Boolean> annotatedValue(Object target, Class<? extends Annotation> annCls,
+    private IgniteBiTuple<Object, Boolean> annotatedValue(Object target, Class<? extends Annotation> annCls,
         @Nullable Set<Object> visited, boolean annFound) throws GridException {
         assert target != null;
 
@@ -568,7 +568,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                         visited.add(target);
 
                         // Recursion.
-                        GridBiTuple<Object, Boolean> tup = annotatedValue(fieldVal, annCls, visited, annFound);
+                        IgniteBiTuple<Object, Boolean> tup = annotatedValue(fieldVal, annCls, visited, annFound);
 
                         if (!annFound && tup.get2())
                             // Update value only if annotation was found in recursive call.

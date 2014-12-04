@@ -32,8 +32,8 @@ public class GridExecutionStatistics {
     private ConcurrentMap<String, AtomicLong> durationMap = new ConcurrentHashMap8<>();
 
     /** Execution start time for the current thread. */
-    private ThreadLocal<GridBiTuple<String, Long>> startTime = new ThreadLocal<GridBiTuple<String, Long>>() {
-        @Override protected GridBiTuple<String, Long> initialValue() {
+    private ThreadLocal<IgniteBiTuple<String, Long>> startTime = new ThreadLocal<IgniteBiTuple<String, Long>>() {
+        @Override protected IgniteBiTuple<String, Long> initialValue() {
             return F.t(null, 0L);
         }
     };

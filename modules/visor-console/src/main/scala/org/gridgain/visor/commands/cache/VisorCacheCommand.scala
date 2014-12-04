@@ -15,7 +15,7 @@ import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cache.{VisorCacheMetricsCollectorTask, VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfiguration}
 import org.gridgain.grid.kernal.visor.node.{VisorNodeConfigurationCollectorTask, VisorGridConfiguration}
-import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.lang.IgniteBiTuple
 import org.gridgain.grid.util.typedef._
 
 import org.jetbrains.annotations._
@@ -470,7 +470,7 @@ class VisorCacheCommand {
             val nids = prj.nodes().map(_.id())
 
             grid.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
+                new IgniteBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
             case e: GridException => Nil

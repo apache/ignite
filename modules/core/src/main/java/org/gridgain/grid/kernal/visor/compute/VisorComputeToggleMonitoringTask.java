@@ -28,7 +28,7 @@ import static org.gridgain.grid.kernal.visor.compute.VisorComputeMonitoringHolde
  */
 @GridInternal
 public class VisorComputeToggleMonitoringTask extends
-    VisorMultiNodeTask<GridBiTuple<String, Boolean>, Boolean, Boolean> {
+    VisorMultiNodeTask<IgniteBiTuple<String, Boolean>, Boolean, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,19 +46,19 @@ public class VisorComputeToggleMonitoringTask extends
     /**
      * Job to toggle task monitoring on node.
      */
-    private static class VisorComputeToggleMonitoringJob extends VisorJob<GridBiTuple<String, Boolean>, Boolean> {
+    private static class VisorComputeToggleMonitoringJob extends VisorJob<IgniteBiTuple<String, Boolean>, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param arg Visor ID key and monitoring state flag.
          */
-        private VisorComputeToggleMonitoringJob(GridBiTuple<String, Boolean> arg) {
+        private VisorComputeToggleMonitoringJob(IgniteBiTuple<String, Boolean> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(GridBiTuple<String, Boolean> arg) throws GridException {
+        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) throws GridException {
             if (checkExplicitTaskMonitoring(g))
                 return true;
             else {
@@ -97,7 +97,7 @@ public class VisorComputeToggleMonitoringTask extends
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorComputeToggleMonitoringJob job(GridBiTuple<String, Boolean> arg) {
+    @Override protected VisorComputeToggleMonitoringJob job(IgniteBiTuple<String, Boolean> arg) {
         return new VisorComputeToggleMonitoringJob(arg);
     }
 }
