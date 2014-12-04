@@ -142,7 +142,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         @GridTaskSessionResource private ComputeTaskSession ses;
 
         /** */
-        @GridMarshallerResource
+        @IgniteMarshallerResource
         private GridMarshaller marshaller;
 
         /** {@inheritDoc} */

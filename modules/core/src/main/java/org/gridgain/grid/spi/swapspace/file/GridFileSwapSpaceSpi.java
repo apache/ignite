@@ -149,11 +149,11 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
     private UUID locNodeId;
 
     /** Name of the grid. */
-    @GridNameResource
+    @IgniteNameResource
     private String gridName;
 
     /** Marshaller. */
-    @GridMarshallerResource
+    @IgniteMarshallerResource
     private GridMarshaller marsh;
 
     /** {@inheritDoc} */

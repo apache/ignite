@@ -617,7 +617,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** Marshaller. */
-        @GridMarshallerResource
+        @IgniteMarshallerResource
         private GridMarshaller marshaller;
 
         /** Executor. */
@@ -625,7 +625,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private Executor exec;
 
         /** MBean server. */
-        @GridMBeanServerResource
+        @IgniteMBeanServerResource
         private MBeanServer mbeanSrv;
 
         /** Grid home. */
@@ -633,7 +633,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private String gridHome;
 
         /** Grid name. */
-        @GridNameResource
+        @IgniteNameResource
         private String gridName;
 
         /** Local node ID. */
@@ -641,7 +641,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private UUID nodeId;
 
         /** */
-        @GridSpringApplicationContextResource
+        @IgniteSpringApplicationContextResource
         private ApplicationContext appCtx;
 
         /** */

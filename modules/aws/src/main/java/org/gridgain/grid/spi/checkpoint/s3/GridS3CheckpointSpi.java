@@ -100,7 +100,7 @@ public class GridS3CheckpointSpi extends GridSpiAdapter implements GridCheckpoin
     private GridLogger log;
 
     /** Marshaller. */
-    @GridMarshallerResource
+    @IgniteMarshallerResource
     private GridMarshaller marsh;
 
     /** Task that takes care about outdated files. */
@@ -132,7 +132,7 @@ public class GridS3CheckpointSpi extends GridSpiAdapter implements GridCheckpoin
     @GridToStringExclude
     private AWSCredentials cred;
 
-    @GridNameResource
+    @IgniteNameResource
     /** Grid name. */
     private String gridName;
 

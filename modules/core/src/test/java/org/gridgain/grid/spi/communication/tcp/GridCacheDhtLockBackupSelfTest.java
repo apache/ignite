@@ -233,7 +233,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         private int delayTime;
 
         /** */
-        @GridMarshallerResource
+        @IgniteMarshallerResource
         private GridMarshaller marsh;
 
         /**

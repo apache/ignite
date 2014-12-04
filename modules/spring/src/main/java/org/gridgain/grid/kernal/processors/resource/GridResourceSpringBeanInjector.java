@@ -37,7 +37,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> cls,
         GridDeployment depCls) throws GridException {
-        GridSpringResource ann = (GridSpringResource)field.getAnnotation();
+        IgniteSpringResource ann = (IgniteSpringResource)field.getAnnotation();
 
         assert ann != null;
 
@@ -63,7 +63,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> cls,
         GridDeployment depCls) throws GridException {
-        GridSpringResource ann = (GridSpringResource)mtd.getAnnotation();
+        IgniteSpringResource ann = (IgniteSpringResource)mtd.getAnnotation();
 
         assert ann != null;
 

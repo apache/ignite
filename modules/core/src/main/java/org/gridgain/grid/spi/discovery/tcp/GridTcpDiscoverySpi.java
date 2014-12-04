@@ -201,7 +201,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** Grid marshaller. */
-    @GridMarshallerResource
+    @IgniteMarshallerResource
     private GridMarshaller gridMarsh;
 
     /** Nodes ring. */

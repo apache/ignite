@@ -117,7 +117,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param springBean Bean provided from Spring context.
          */
-        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         @SuppressWarnings("unused")
         public void setSpringBean(UserSpringBean springBean) {
             this.springBean = springBean;
@@ -297,7 +297,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param mbeanSrv MBean server.
          */
-        @GridMBeanServerResource
+        @IgniteMBeanServerResource
         public void setMbeanServer(MBeanServer mbeanSrv) {
             this.mbeanSrv = mbeanSrv;
         }
@@ -321,7 +321,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param gridName Grid name.
          */
-        @GridNameResource
+        @IgniteNameResource
         public void setGridName(String gridName) {
             this.gridName = gridName;
         }
@@ -329,7 +329,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param marshaller Marshaller.
          */
-        @GridMarshallerResource
+        @IgniteMarshallerResource
         public void setMarshaller(GridMarshaller marshaller) {
             this.marshaller = marshaller;
         }
@@ -337,7 +337,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param springCtx Spring context.
          */
-        @GridSpringApplicationContextResource
+        @IgniteSpringApplicationContextResource
         public void setSpringContext(ApplicationContext springCtx) {
             this.springCtx = springCtx;
         }
@@ -377,7 +377,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param springBean Bean provided from Spring context.
          */
-        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         public void setSpringBean(UserSpringBean springBean) {
             this.springBean = springBean;
         }
@@ -513,7 +513,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     /**
                      * @param springBean2 Bean provided from Spring context.
                      */
-                    @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+                    @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
                     public void setSpringBean2(UserSpringBean springBean2) {
                         this.springBean2 = springBean2;
                     }

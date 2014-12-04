@@ -24,12 +24,12 @@ import java.lang.annotation.*;
  * <li>{@link IgniteLoggerResource}</li>
  * <li>{@link IgniteLocalNodeIdResource}</li>
  * <li>{@link IgniteHomeResource}</li>
- * <li>{@link GridNameResource}</li>
- * <li>{@link GridMBeanServerResource}</li>
+ * <li>{@link IgniteNameResource}</li>
+ * <li>{@link IgniteMBeanServerResource}</li>
  * <li>{@link IgniteExecutorServiceResource}</li>
- * <li>{@link GridMarshallerResource}</li>
- * <li>{@link GridSpringApplicationContextResource}</li>
- * <li>{@link GridSpringResource}</li>
+ * <li>{@link IgniteMarshallerResource}</li>
+ * <li>{@link IgniteSpringApplicationContextResource}</li>
+ * <li>{@link IgniteSpringResource}</li>
  * <li>{@link IgniteInstanceResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
@@ -53,7 +53,7 @@ import java.lang.annotation.*;
  * <p>
  * Note that an instance of user resource will be created for every deployed task.
  * In case if you need a singleton resource instances on grid nodes (not per-task),
- * you can use {@link GridSpringApplicationContextResource} for injecting per-VM
+ * you can use {@link IgniteSpringApplicationContextResource} for injecting per-VM
  * singleton resources configured in Spring.
  * <p>
  * <h1 class="header">Examples</h1>

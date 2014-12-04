@@ -77,7 +77,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     private GridLogger log;
 
     /** Grid name. */
-    @GridNameResource
+    @IgniteNameResource
     @GridToStringExclude
     private String gridName;
 

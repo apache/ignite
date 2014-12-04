@@ -99,7 +99,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         private transient UserResource rsrc;
 
         /** */
-        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         private transient UserSpringBean springBean;
 
         /** */
@@ -145,7 +145,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
                     private ComputeJobContext jobCtx;
 
                     /** */
-                    @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+                    @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
                     private transient UserSpringBean jobSpringBean;
 
                     /** {@inheritDoc} */

@@ -78,10 +78,10 @@ import java.util.*;
  * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.GridMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.GridMarshallerResource}</li>
- * <li>{@link org.apache.ignite.resources.GridSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.GridSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteMBeanServerResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteMarshallerResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <h1 class="header">Service Example</h1>

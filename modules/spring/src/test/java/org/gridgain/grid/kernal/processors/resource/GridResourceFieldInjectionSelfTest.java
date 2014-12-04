@@ -245,7 +245,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static class UserResource5 extends GridAbstractUserResource {
         /** */
-        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         private UserSpringBean springBean;
 
         /**
@@ -284,7 +284,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     public static class NonTransientSpringBeanResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         private Object rsrc;
 
         /** {@inheritDoc} */
@@ -310,7 +310,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     public static class UnknownNameSpringBeanResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridSpringResource(resourceName = "unknown-bean-name")
+        @IgniteSpringResource(resourceName = "unknown-bean-name")
         private transient Object springBean;
 
         /** {@inheritDoc} */
@@ -336,7 +336,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     public static class InvalidTypeSpringBeanResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         private transient Serializable springBean;
 
         /** {@inheritDoc} */
@@ -417,7 +417,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private UUID nodeId;
 
         /** */
-        @GridMBeanServerResource
+        @IgniteMBeanServerResource
         private MBeanServer mbeanSrv;
 
         /** */
@@ -433,19 +433,19 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private String ggHome;
 
         /** */
-        @GridNameResource
+        @IgniteNameResource
         private String gridName;
 
         /** */
-        @GridMarshallerResource
+        @IgniteMarshallerResource
         private GridMarshaller marshaller;
 
         /** */
-        @GridSpringApplicationContextResource
+        @IgniteSpringApplicationContextResource
         private ApplicationContext springCtx;
 
         /** */
-        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         private transient UserSpringBean springBean;
 
         /** */
@@ -531,7 +531,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
                     private transient UserResource5 rsrc10;
 
                     /** */
-                    @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+                    @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
                     private transient UserSpringBean springBean2;
 
                     /** */

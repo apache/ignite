@@ -237,7 +237,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     private UUID nodeId;
 
     /** */
-    @GridMarshallerResource
+    @IgniteMarshallerResource
     private GridMarshaller gridMarshaller;
 
     /** */

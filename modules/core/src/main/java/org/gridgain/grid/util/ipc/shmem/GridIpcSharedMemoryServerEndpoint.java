@@ -97,7 +97,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     private UUID locNodeId;
 
     /** Grid name. */
-    @GridNameResource
+    @IgniteNameResource
     private String gridName;
 
     /** Flag allowing not to print out of resources warning. */

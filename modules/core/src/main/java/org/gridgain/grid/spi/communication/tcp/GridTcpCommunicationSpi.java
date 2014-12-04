@@ -338,7 +338,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private UUID locNodeId;
 
     /** Marshaller. */
-    @GridMarshallerResource
+    @IgniteMarshallerResource
     private GridMarshaller marsh;
 
     /** Local IP address. */
@@ -357,7 +357,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private int shmemPort = DFLT_SHMEM_PORT;
 
     /** Grid name. */
-    @GridNameResource
+    @IgniteNameResource
     private String gridName;
 
     /** Allocate direct buffer or heap buffer. */

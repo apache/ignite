@@ -50,7 +50,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
     private GridLogger log;
 
     /** */
-    @GridMBeanServerResource
+    @IgniteMBeanServerResource
     private MBeanServer jmx;
 
     /** */

@@ -55,6 +55,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridMBeanServerResource {
+public @interface IgniteMBeanServerResource {
     // No-op.
 }

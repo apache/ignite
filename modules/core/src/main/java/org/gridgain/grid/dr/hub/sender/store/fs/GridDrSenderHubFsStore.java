@@ -143,7 +143,7 @@ public class GridDrSenderHubFsStore implements GridDrSenderHubStore, LifecycleAw
     private GridLogger log;
 
     /** Name of the grid. */
-    @GridNameResource
+    @IgniteNameResource
     private String gridName;
 
     /** */

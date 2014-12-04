@@ -9,16 +9,17 @@
 
 package org.apache.ignite.resources;
 
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link GridMarshaller} resource. Grid marshaller
- * is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
+ * Annotates a field or a setter method for injection of Spring ApplicationContext resource.
+ * When GridGain starts using Spring configuration, the Application Context for Spring
+ * Configuration is injected as this resource.
+ * method.
  * <p>
- * Marshaller can be injected into instances of following classes:
+ * Spring Application Context can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
@@ -31,8 +32,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridMarshallerResource
- *      private GridMarshaller marshaller;
+ *      &#64;GridSpringApplicationContextResource
+ *      private ApplicationContext springCtx;
  *      ...
  *  }
  * </pre>
@@ -40,21 +41,23 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private GridMarshaller marshaller;
+ *     private ApplicationContext springCtx;
  *     ...
- *     &#64;GridMarshallerResource
- *     public void setMarshaller(GridMarshaller marshaller) {
- *          this.marshaller = marshaller;
+ *     &#64;GridSpringApplicationContextResource
+ *     public void setApplicationContext(MBeanServer springCtx) {
+ *          this.springCtx = springCtx;
  *     }
  *     ...
  * }
  * </pre>
  * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getMarshaller()} for Grid configuration details.
+ * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridMarshallerResource {
+public @interface IgniteSpringApplicationContextResource {
     // No-op.
 }

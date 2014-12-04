@@ -139,7 +139,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      */
     private static class CommunicationSpi extends GridTcpCommunicationSpi {
         /** */
-        @GridMarshallerResource
+        @IgniteMarshallerResource
         private GridMarshaller marsh;
 
         /** {@inheritDoc} */

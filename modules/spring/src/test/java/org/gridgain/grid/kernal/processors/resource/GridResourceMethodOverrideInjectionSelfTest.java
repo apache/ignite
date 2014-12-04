@@ -186,7 +186,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param mbeanSrv MBeanServer.
          */
-        @GridMBeanServerResource
+        @IgniteMBeanServerResource
         @SuppressWarnings("unused")
         protected void setMbeanServer(MBeanServer mbeanSrv) { this.mbeanSrv = mbeanSrv; }
 
@@ -216,7 +216,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param springCtx Spring Application Context.
          */
-        @GridSpringApplicationContextResource
+        @IgniteSpringApplicationContextResource
         @SuppressWarnings("unused")
         void setSpringContext(ApplicationContext springCtx) { this.springCtx = springCtx; }
 

@@ -44,7 +44,8 @@ public abstract class GridAbstractUserExternalResource {
     private UUID nodeId;
 
     /** */
-    @GridMBeanServerResource private MBeanServer mbeanSrv;
+    @IgniteMBeanServerResource
+    private MBeanServer mbeanSrv;
 
     /** */
     @IgniteExecutorServiceResource
@@ -55,10 +56,12 @@ public abstract class GridAbstractUserExternalResource {
     private String ggHome;
 
     /** */
-    @GridNameResource private String ggName;
+    @IgniteNameResource
+    private String ggName;
 
     /** */
-    @GridSpringApplicationContextResource private ApplicationContext springCtx;
+    @IgniteSpringApplicationContextResource
+    private ApplicationContext springCtx;
 
     /** */
     GridAbstractUserExternalResource() {

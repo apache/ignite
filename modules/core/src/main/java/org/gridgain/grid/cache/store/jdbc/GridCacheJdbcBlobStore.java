@@ -137,7 +137,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     private GridLogger log;
 
     /** Marshaller. */
-    @GridMarshallerResource
+    @IgniteMarshallerResource
     private GridMarshaller marsh;
 
     /** Init guard. */

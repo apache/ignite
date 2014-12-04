@@ -138,7 +138,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     protected UUID locNodeId;
 
     /** Name of the grid. */
-    @GridNameResource
+    @IgniteNameResource
     protected String gridName;
 
     /** Logger. */

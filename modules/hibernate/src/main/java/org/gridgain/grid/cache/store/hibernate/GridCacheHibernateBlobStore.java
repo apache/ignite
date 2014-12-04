@@ -180,7 +180,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
     private GridLogger log;
 
     /** Marshaller. */
-    @GridMarshallerResource
+    @IgniteMarshallerResource
     private GridMarshaller marsh;
 
     /** {@inheritDoc} */

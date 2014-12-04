@@ -44,7 +44,8 @@ abstract class GridP2PAbstractUserResource {
     private UUID nodeId;
 
     /** */
-    @GridMBeanServerResource private MBeanServer mbeanSrv;
+    @IgniteMBeanServerResource
+    private MBeanServer mbeanSrv;
 
     /** */
     @IgniteExecutorServiceResource
@@ -55,7 +56,8 @@ abstract class GridP2PAbstractUserResource {
     private String ggHome;
 
     /** */
-    @GridSpringApplicationContextResource private ApplicationContext springCtx;
+    @IgniteSpringApplicationContextResource
+    private ApplicationContext springCtx;
 
     /** */
     GridP2PAbstractUserResource() {

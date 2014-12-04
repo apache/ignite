@@ -45,7 +45,8 @@ abstract class GridAbstractUserResource {
     private UUID nodeId;
 
     /** */
-    @GridMBeanServerResource private MBeanServer mbeanSrv;
+    @IgniteMBeanServerResource
+    private MBeanServer mbeanSrv;
 
     /** */
     @IgniteExecutorServiceResource
@@ -56,10 +57,12 @@ abstract class GridAbstractUserResource {
     private String ggHome;
 
     /** */
-    @GridNameResource private String gridName;
+    @IgniteNameResource
+    private String gridName;
 
     /** */
-    @GridSpringApplicationContextResource private ApplicationContext springCtx;
+    @IgniteSpringApplicationContextResource
+    private ApplicationContext springCtx;
 
     /** */
     GridAbstractUserResource() {
