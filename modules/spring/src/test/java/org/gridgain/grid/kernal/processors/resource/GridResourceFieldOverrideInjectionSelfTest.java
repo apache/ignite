@@ -124,10 +124,10 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
             log.info("Injected session into task: " + ses);
             log.info("Injected spring bean into task: " + springBean);
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** */
                     @GridUserResource
                     private transient UserResource rsrc;

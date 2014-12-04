@@ -75,7 +75,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
     /**
      * Streamer broadcast job.
      */
-    private static class StreamerBroadcastJob extends GridComputeJobAdapter implements Externalizable {
+    private static class StreamerBroadcastJob extends ComputeJobAdapter implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

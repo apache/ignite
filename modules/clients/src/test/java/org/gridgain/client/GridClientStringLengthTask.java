@@ -24,11 +24,11 @@ import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
 public class GridClientStringLengthTask extends GridComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
-        Collection<GridComputeJobAdapter> jobs = new ArrayList<>();
+        Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
         if (arg != null)
             for (final Object val : arg.split(""))
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     @Override public Object execute() {
                         try {
                             Thread.sleep(5);

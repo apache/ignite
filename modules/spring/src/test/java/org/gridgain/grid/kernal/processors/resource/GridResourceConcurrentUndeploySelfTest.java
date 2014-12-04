@@ -404,7 +404,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
 
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(nodeToExec)) {
-                    return Collections.singletonMap(new GridComputeJobAdapter(arg) {
+                    return Collections.singletonMap(new ComputeJobAdapter(arg) {
                         /** */
                         @SuppressWarnings("unused")
                         @GridUserResource private transient UserResource2 rsrc2;

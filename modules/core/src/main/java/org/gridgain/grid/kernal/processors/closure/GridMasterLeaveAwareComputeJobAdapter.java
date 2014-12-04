@@ -14,7 +14,7 @@ import org.apache.ignite.compute.*;
 /**
  * Job adapter implementing {@link org.apache.ignite.compute.GridComputeJobMasterLeaveAware}.
  */
-public abstract class GridMasterLeaveAwareComputeJobAdapter extends GridComputeJobAdapter
+public abstract class GridMasterLeaveAwareComputeJobAdapter extends ComputeJobAdapter
     implements GridComputeJobMasterLeaveAware {
     /** */
     private static final long serialVersionUID = 0L;

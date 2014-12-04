@@ -72,7 +72,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
 
             sentJobs.incrementAndGet();
 
-            mapper.send(new GridComputeJobAdapter(jobId) {
+            mapper.send(new ComputeJobAdapter(jobId) {
                 @GridInstanceResource
                 private Ignite g;
 

@@ -335,7 +335,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      *
      */
-    private static class GridAllEventsSuccessTestJob extends GridComputeJobAdapter {
+    private static class GridAllEventsSuccessTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
         private GridComputeTaskSession taskSes;
@@ -354,7 +354,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      *
      */
-    private static class GridAllEventsFailTestJob extends GridComputeJobAdapter {
+    private static class GridAllEventsFailTestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @Override public String execute() {
             throw new RuntimeException("GridAllEventsFailTestJob expected test exception.");
@@ -363,7 +363,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /**
      */
-    private static class GridAllEventsTimeoutTestJob extends GridComputeJobAdapter {
+    private static class GridAllEventsTimeoutTestJob extends ComputeJobAdapter {
         /** */
         @GridLoggerResource
         private GridLogger log;
@@ -389,7 +389,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      *
      */
-    private static class GridAllCheckpointEventsTestJob extends GridComputeJobAdapter {
+    private static class GridAllCheckpointEventsTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
         private GridComputeTaskSession taskSes;

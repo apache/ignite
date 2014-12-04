@@ -138,7 +138,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /**
      * Job that always throws exception.
      */
-    private static class GridTestFailoverJob extends GridComputeJobAdapter {
+    private static class GridTestFailoverJob extends ComputeJobAdapter {
         /**
          * @param ex Exception to be thrown in {@link #execute}.
          */

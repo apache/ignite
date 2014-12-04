@@ -15,7 +15,7 @@ public class GridSleepTestTask extends GridComputeTaskSplitAdapter<String, Integ
     /** {@inheritDoc} */
     @Override public Collection<? extends ComputeJob> split(int gridSize, String arg)
         throws GridException {
-        return Collections.singleton(new GridComputeJobAdapter(arg) {
+        return Collections.singleton(new ComputeJobAdapter(arg) {
             @Override public Object execute() {
                 try {
                     Thread.sleep(10000);

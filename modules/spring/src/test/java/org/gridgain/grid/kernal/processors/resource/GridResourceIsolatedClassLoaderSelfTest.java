@@ -315,7 +315,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         @GridLoggerResource private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -333,7 +333,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
             task1Rsrc3 = rsrc3;
             task1Rsrc4 = rsrc4;
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++)
                 jobs.add(new GridSharedJob1());
@@ -357,7 +357,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
          * Job class for the 1st task. To avoid illegal
          * access when loading class with different class loader.
          */
-        public final class GridSharedJob1 extends GridComputeJobAdapter {
+        public final class GridSharedJob1 extends ComputeJobAdapter {
             /** User resource. */
             @GridUserResource(resourceClass = UserResource1.class)
             private transient GridAbstractUserResource rsrc5;
@@ -430,7 +430,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         @GridLoggerResource private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -448,10 +448,10 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
             task2Rsrc3 = rsrc3;
             task2Rsrc4 = rsrc4;
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** User resource. */
                     @GridUserResource(resourceClass = UserResource1.class)
                     private transient GridAbstractUserResource rsrc5;
@@ -541,7 +541,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         @GridLoggerResource private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -559,10 +559,10 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
             task2Rsrc3 = rsrc3;
             task2Rsrc4 = rsrc4;
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** User resource. */
                     @GridUserResource(resourceClass = UserResource1.class)
                     private transient GridAbstractUserResource rsrc5;
@@ -652,7 +652,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         @GridLoggerResource private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -670,10 +670,10 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
             task2Rsrc3 = rsrc3;
             task2Rsrc4 = rsrc4;
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** User resource. */
                     @GridUserResource(resourceClass = UserResource1.class)
                     private transient GridAbstractUserResource rsrc5;

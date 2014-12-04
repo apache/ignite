@@ -29,7 +29,7 @@ public class GridExternalGridifyTask extends GridComputeTaskSplitAdapter<Gridify
     @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws GridException {
         assert arg.getMethodParameters().length == 1;
 
-        return Collections.singletonList(new GridComputeJobAdapter((String)arg.getMethodParameters()[0]) {
+        return Collections.singletonList(new ComputeJobAdapter((String)arg.getMethodParameters()[0]) {
             /** */
             @GridLoggerResource private GridLogger log;
 

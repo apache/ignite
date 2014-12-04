@@ -84,7 +84,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
     /**
      * Query job.
      */
-    private static class ReduceJob<R> extends GridComputeJobAdapter implements Externalizable {
+    private static class ReduceJob<R> extends ComputeJobAdapter implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

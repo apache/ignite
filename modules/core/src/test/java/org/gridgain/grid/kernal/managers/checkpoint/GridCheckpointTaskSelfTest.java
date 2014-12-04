@@ -141,7 +141,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
             ses.saveCheckpoint(CP_KEY, true);
 
             return F.asMap(
-                new GridComputeJobAdapter() {
+                new ComputeJobAdapter() {
                     @GridLocalNodeIdResource
                     private UUID nodeId;
 
@@ -195,7 +195,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
             ClusterNode rmt = F.first(ignite.cluster().forRemotes().nodes());
 
             return F.asMap(
-                new GridComputeJobAdapter() {
+                new ComputeJobAdapter() {
                     @GridLocalNodeIdResource
                     private UUID nodeId;
 

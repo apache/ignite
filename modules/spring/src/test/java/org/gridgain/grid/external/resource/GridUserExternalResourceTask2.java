@@ -46,7 +46,7 @@ public class GridUserExternalResourceTask2 extends GridComputeTaskSplitAdapter<O
     @GridTaskSessionResource private GridComputeTaskSession ses;
 
     /** {@inheritDoc} */
-    @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+    @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
         assert rsrc1 != null;
         assert rsrc2 != null;
         assert rsrc3 != null;
@@ -64,7 +64,7 @@ public class GridUserExternalResourceTask2 extends GridComputeTaskSplitAdapter<O
         log.info("Injected shared resource3 into task: " + rsrc3);
         log.info("Injected shared resource4 into task: " + rsrc4);
 
-        Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+        Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++)
             jobs.add(new GridUserExternalResourceJob2());
@@ -91,7 +91,7 @@ public class GridUserExternalResourceTask2 extends GridComputeTaskSplitAdapter<O
     /**
      * Job with injected resources.
      */
-    public final class GridUserExternalResourceJob2 extends GridComputeJobAdapter {
+    public final class GridUserExternalResourceJob2 extends ComputeJobAdapter {
         /** User resource. */
         @GridUserResource(resourceClass = GridUserExternalResource1.class)
         private transient GridAbstractUserExternalResource rsrc5;

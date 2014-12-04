@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Job is used in the GridP2PTestTask.
  */
-public class GridP2PTestJob extends GridComputeJobAdapter {
+public class GridP2PTestJob extends ComputeJobAdapter {
     /** Injected job context. */
     @GridTaskSessionResource
     private GridComputeTaskSession taskSes;

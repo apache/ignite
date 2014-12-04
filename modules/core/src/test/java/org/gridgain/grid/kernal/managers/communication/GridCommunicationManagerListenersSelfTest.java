@@ -129,7 +129,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
                 }
             });
 
-            return Arrays.asList(new GridComputeJobAdapter() {
+            return Arrays.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
                     return null;
                 }

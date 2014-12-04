@@ -232,7 +232,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
-            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
+            Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
 
@@ -263,7 +263,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      * and expects "0" value.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class GridDeploymentTestJob extends GridComputeJobAdapter {
+    public static class GridDeploymentTestJob extends ComputeJobAdapter {
         /** */
         @GridLoggerResource private GridLogger log;
 

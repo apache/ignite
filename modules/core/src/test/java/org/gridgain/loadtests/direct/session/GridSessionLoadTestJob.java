@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Session load test job.
  */
-public class GridSessionLoadTestJob extends GridComputeJobAdapter {
+public class GridSessionLoadTestJob extends ComputeJobAdapter {
     /** */
     @GridTaskSessionResource private GridComputeTaskSession taskSes;
 

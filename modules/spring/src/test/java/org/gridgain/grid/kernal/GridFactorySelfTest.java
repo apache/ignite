@@ -799,7 +799,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Test job.
      */
-    private static class TestJob extends GridComputeJobAdapter {
+    private static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("StatementWithEmptyBody")
         @Override public Object execute() throws GridException {

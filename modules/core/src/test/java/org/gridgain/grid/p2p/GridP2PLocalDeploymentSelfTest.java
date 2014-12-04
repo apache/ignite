@@ -247,7 +247,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         /**
          * Simple job class.
          */
-        public static class TestJob extends GridComputeJobAdapter {
+        public static class TestJob extends ComputeJobAdapter {
             /** User resource. */
             @GridUserResource private transient UserResource rsrc;
 

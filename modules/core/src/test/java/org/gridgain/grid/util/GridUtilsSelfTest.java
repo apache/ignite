@@ -266,7 +266,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
      * Test job to test possible indefinite recursion in detecting peer deploy aware.
      */
     @SuppressWarnings({"UnusedDeclaration"})
-    private class SelfReferencedJob extends GridComputeJobAdapter implements GridPeerDeployAware {
+    private class SelfReferencedJob extends ComputeJobAdapter implements GridPeerDeployAware {
         /** */
         private SelfReferencedJob ref;
 
@@ -340,7 +340,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
      * @return Job created for given runnable.
      */
     private static ComputeJob job(final Runnable r) {
-        return new GridComputeJobAdapter() {
+        return new ComputeJobAdapter() {
             @Nullable @Override public Object execute() {
                 r.run();
 

@@ -132,7 +132,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                     remoteNode = node;
             }
 
-            return Collections.singletonMap(new GridComputeJobAdapter(locNodeId) {
+            return Collections.singletonMap(new ComputeJobAdapter(locNodeId) {
                 /** */
                @GridLocalNodeIdResource private UUID nodeId;
 

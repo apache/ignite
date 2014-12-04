@@ -65,7 +65,7 @@ import org.jetbrains.annotations.*;
  * }
  * </pre>
  */
-public abstract class GridComputeJobContinuationAdapter extends GridComputeJobAdapter implements
+public abstract class GridComputeJobContinuationAdapter extends ComputeJobAdapter implements
     GridComputeJobContinuation {
     /** */
     private static final long serialVersionUID = 0L;

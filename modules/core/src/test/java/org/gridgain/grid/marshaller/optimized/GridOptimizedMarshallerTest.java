@@ -612,7 +612,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Some serializable class.
      */
-    private static class SomeSimpleSerializable extends GridComputeJobAdapter {
+    private static class SomeSimpleSerializable extends ComputeJobAdapter {
         /** */
         private boolean flag = true;
 

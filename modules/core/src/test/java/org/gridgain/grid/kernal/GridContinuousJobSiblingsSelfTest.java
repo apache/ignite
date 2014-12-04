@@ -100,7 +100,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestJob extends GridComputeJobAdapter {
+    private static class TestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
         private GridComputeTaskSession ses;

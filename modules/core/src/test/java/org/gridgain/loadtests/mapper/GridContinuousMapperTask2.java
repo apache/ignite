@@ -35,7 +35,7 @@ public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Int
         Iterator<ClusterNode> nodeIter = g.cluster().forRemotes().nodes().iterator();
 
         for (int jobId : jobIds) {
-            ComputeJob job = new GridComputeJobAdapter(jobId) {
+            ComputeJob job = new ComputeJobAdapter(jobId) {
                 @GridInstanceResource
                 private Ignite g;
 

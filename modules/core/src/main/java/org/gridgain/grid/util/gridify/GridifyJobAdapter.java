@@ -17,7 +17,7 @@ import java.lang.reflect.*;
 
 /**
  * Convenience adapter for custom {@code gridify} jobs. In addition to
- * functionality provided in {@link org.apache.ignite.compute.GridComputeJobAdapter} adapter, this adapter
+ * functionality provided in {@link org.apache.ignite.compute.ComputeJobAdapter} adapter, this adapter
  * provides default implementation of {@link #execute()} method,
  * which reflectively executes grid-enabled method based on information provided
  * in {@link GridifyArgument} parameter.
@@ -25,13 +25,13 @@ import java.lang.reflect.*;
  * Note this adapter is only useful when passing {@link GridifyArgument} to
  * remote jobs. In many cases, remote jobs will not require {@link GridifyArgument}
  * as they will execute their code without reflection, hence the regular
- * {@link org.apache.ignite.compute.GridComputeJobAdapter} should be used.
+ * {@link org.apache.ignite.compute.ComputeJobAdapter} should be used.
  * <p>
  * See {@link Gridify} documentation for more information about execution of
  * {@code gridified} methods.
  * @see Gridify
  */
-public class GridifyJobAdapter extends GridComputeJobAdapter {
+public class GridifyJobAdapter extends ComputeJobAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

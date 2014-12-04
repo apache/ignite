@@ -36,7 +36,7 @@ public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapte
         // Register big data usage.
         GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
 
-        return F.asSet(new GridComputeJobAdapter() {
+        return F.asSet(new ComputeJobAdapter() {
             @GridInstanceResource
             private Ignite ignite;
 

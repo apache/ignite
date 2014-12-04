@@ -81,7 +81,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
 
             nodeRef.set(subgrid.get(0));
 
-            return Collections.singletonMap(new GridComputeJobAdapter(arg) {
+            return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** Local node ID. */
                 @GridLocalNodeIdResource
                 private UUID locId;

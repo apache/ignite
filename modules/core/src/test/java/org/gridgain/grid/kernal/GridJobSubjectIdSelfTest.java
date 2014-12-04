@@ -130,7 +130,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      * Job class.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Job extends GridComputeJobAdapter {
+    public static class Job extends ComputeJobAdapter {
         /** Session. */
         @GridTaskSessionResource
         private GridComputeTaskSession ses;

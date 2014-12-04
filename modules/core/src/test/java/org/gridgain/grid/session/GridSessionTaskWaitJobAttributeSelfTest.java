@@ -121,7 +121,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
             Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
-                jobs.add(new GridComputeJobAdapter(i) {
+                jobs.add(new ComputeJobAdapter(i) {
                     @Override public Object execute() throws GridException {
                         assert taskSes != null;
 

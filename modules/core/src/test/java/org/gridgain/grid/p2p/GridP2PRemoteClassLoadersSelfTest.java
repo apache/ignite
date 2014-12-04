@@ -211,7 +211,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
     /**
      * P2P test job.
      */
-    public static class GridP2PTestJob extends GridComputeJobAdapter {
+    public static class GridP2PTestJob extends ComputeJobAdapter {
         /**
          * @param arg Argument.
          */

@@ -250,13 +250,13 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         private transient UserResource1 rsrc1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             assert rsrc1 != null;
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** User resource */
                     @GridUserResource
                     private transient UserResource1 rsrc2;
@@ -295,7 +295,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             assert rsrc1 != null;
 
             return null;

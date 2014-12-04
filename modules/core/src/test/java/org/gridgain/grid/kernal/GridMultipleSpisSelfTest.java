@@ -258,7 +258,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     /**
      * Job that always throws exception.
      */
-    private static class GridTestMultipleSpisJob extends GridComputeJobAdapter {
+    private static class GridTestMultipleSpisJob extends ComputeJobAdapter {
         /** Local node ID. */
         @GridLocalNodeIdResource private UUID locId;
 

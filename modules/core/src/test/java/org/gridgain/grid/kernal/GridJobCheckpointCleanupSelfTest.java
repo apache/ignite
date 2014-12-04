@@ -122,7 +122,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
             throws GridException {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg.id()))
-                    return Collections.singletonMap(new GridComputeJobAdapter() {
+                    return Collections.singletonMap(new ComputeJobAdapter() {
                         @GridTaskSessionResource
                         private GridComputeTaskSession ses;
 

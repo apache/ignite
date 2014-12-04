@@ -84,7 +84,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
                     ses.setAttribute("test.task.attr." + i, ii);
             }
 
-            return Collections.singletonMap(new GridComputeJobAdapter(arg) {
+            return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** */
                 @GridLocalNodeIdResource
                 private UUID locNodeId;

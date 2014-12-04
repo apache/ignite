@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Stealing load test.
  */
-public class GridStealingLoadTestJob extends GridComputeJobAdapter {
+public class GridStealingLoadTestJob extends ComputeJobAdapter {
     /** */
     @GridLoggerResource
     private GridLogger log;

@@ -48,10 +48,10 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PublicInnerClass")
     public static class JobContextTask extends GridComputeTaskSplitAdapter<Object, Object> {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** */
                     @GridJobContextResource
                     private GridComputeJobContext jobCtx;

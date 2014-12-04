@@ -251,7 +251,7 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
     private static class TestTask extends GridComputeTaskSplitAdapter<String, String> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, final String arg) throws GridException {
-            return Collections.singleton(new GridComputeJobAdapter() {
+            return Collections.singleton(new ComputeJobAdapter() {
                 @Override public String execute() {
                     return arg;
                 }

@@ -134,7 +134,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             assert subgrid.size() == 1;
 
-            return Collections.singletonMap(new GridComputeJobAdapter() {
+            return Collections.singletonMap(new ComputeJobAdapter() {
                 @Override public Serializable execute() { return "result"; }
             }, subgrid.get(0));
         }
@@ -156,7 +156,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
             assert subgrid.size() == 1;
 
-            return Collections.singletonMap(new GridComputeJobAdapter() {
+            return Collections.singletonMap(new ComputeJobAdapter() {
                 @Override public Serializable execute() { return "result"; }
             }, subgrid.get(0));
         }

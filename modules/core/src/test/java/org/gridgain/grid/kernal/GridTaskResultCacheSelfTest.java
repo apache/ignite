@@ -106,10 +106,10 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
             String[] words = arg.split(" ");
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(words.length);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(words.length);
 
             for (String word : words) {
-                jobs.add(new GridComputeJobAdapter(word) {
+                jobs.add(new ComputeJobAdapter(word) {
                     @Override public Serializable execute() {
                         return argument(0);
                     }

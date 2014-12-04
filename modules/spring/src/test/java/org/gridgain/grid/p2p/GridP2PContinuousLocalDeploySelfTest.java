@@ -212,7 +212,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
     /**
      * Job class for the 1st task.
      */
-    public static final class GridSharedJob1 extends GridComputeJobAdapter {
+    public static final class GridSharedJob1 extends ComputeJobAdapter {
         /**
          * User resource.
          */
@@ -284,7 +284,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
     /**
      * Job class for the 2st task.
      */
-    public static final class GridSharedJob2 extends GridComputeJobAdapter {
+    public static final class GridSharedJob2 extends ComputeJobAdapter {
         /** User resource. */
         @GridUserResource(resourceClass = UserResource1.class)
         private transient GridP2PAbstractUserResource rsrc3;

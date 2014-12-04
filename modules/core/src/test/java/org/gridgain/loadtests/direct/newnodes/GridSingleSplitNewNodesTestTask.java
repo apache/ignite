@@ -33,7 +33,7 @@ public class GridSingleSplitNewNodesTestTask extends GridComputeTaskAdapter<Inte
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {
         assert !subgrid.isEmpty() : "Subgrid cannot be empty.";
 
-        Map<GridComputeJobAdapter, ClusterNode> jobs = new HashMap<>(subgrid.size());
+        Map<ComputeJobAdapter, ClusterNode> jobs = new HashMap<>(subgrid.size());
 
         taskSes.setAttribute("1st", "1");
         taskSes.setAttribute("2nd", "2");
@@ -41,7 +41,7 @@ public class GridSingleSplitNewNodesTestTask extends GridComputeTaskAdapter<Inte
         Collection<UUID> assigned = new ArrayList<>(subgrid.size());
 
         for (int i = 0; i < arg; i++) {
-            GridComputeJobAdapter job = new GridComputeJobAdapter(1) {
+            ComputeJobAdapter job = new ComputeJobAdapter(1) {
                 /** */
                 @GridTaskSessionResource
                 private GridComputeTaskSession jobSes;

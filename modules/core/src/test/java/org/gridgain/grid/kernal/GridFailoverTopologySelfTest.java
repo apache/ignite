@@ -117,7 +117,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
                     remoteNode = node;
             }
 
-            return Collections.singletonMap(new GridComputeJobAdapter(arg) {
+            return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 @Override public Serializable execute() throws GridException {
                     throw new GridException("Job exception.");
                 }

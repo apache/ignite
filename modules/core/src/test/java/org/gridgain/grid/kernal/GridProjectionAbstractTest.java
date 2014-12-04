@@ -742,7 +742,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * Test job.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestJob extends GridComputeJobAdapter {
+    public static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() throws GridException {
             return null;

@@ -59,7 +59,7 @@ public class ComputeTaskSplitExample {
             Collection<ComputeJob> jobs = new LinkedList<>();
 
             for (final String word : arg.split(" ")) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     @Nullable @Override public Object execute() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");

@@ -122,7 +122,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverJob extends GridComputeJobAdapter implements GridOptimizedMarshallable {
+    private static class JdbcDriverJob extends ComputeJobAdapter implements GridOptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -564,7 +564,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws GridException {
-            return F.asList(new GridComputeJobAdapter() {
+            return F.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
                     GridCacheAffinity<Object> aff = ignite.cache(null).affinity();
 

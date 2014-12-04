@@ -19,7 +19,7 @@ import org.jetbrains.annotations.*;
 /**
  * Base class for Visor jobs.
  */
-public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
+public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     @GridInstanceResource
     protected GridEx g;
 

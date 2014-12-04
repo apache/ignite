@@ -120,7 +120,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
 
             ldr = getClass().getClassLoader();
 
-            return Collections.singletonList(new GridComputeJobAdapter() {
+            return Collections.singletonList(new ComputeJobAdapter() {
                     /** User resource */
                     @GridUserResource private transient UserResource rsrcJob;
 

@@ -29,7 +29,7 @@ public abstract class GridTaskSingleJobSplitAdapter<T, R> extends GridComputeTas
 
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(final int gridSize, final T arg) throws GridException {
-        return Collections.singleton(new GridComputeJobAdapter() {
+        return Collections.singleton(new ComputeJobAdapter() {
             @Override public Object execute() throws GridException {
                 return executeJob(gridSize, arg);
             }

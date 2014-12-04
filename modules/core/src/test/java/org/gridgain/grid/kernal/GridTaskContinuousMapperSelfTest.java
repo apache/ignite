@@ -299,7 +299,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestJob extends GridComputeJobAdapter {
+    public static class TestJob extends ComputeJobAdapter {
         /** */
         public TestJob() {
             super(-1);

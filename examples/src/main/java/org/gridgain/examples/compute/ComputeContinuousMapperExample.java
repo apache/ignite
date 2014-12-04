@@ -128,7 +128,7 @@ public class ComputeContinuousMapperExample {
 
             if (word != null) {
                 // Map next word.
-                mapper.send(new GridComputeJobAdapter(word) {
+                mapper.send(new ComputeJobAdapter(word) {
                     @Override public Object execute() {
                         String word = argument(0);
 

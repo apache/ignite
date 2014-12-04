@@ -33,7 +33,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
         @Nullable Object arg) throws GridException {
         assert !subgrid.isEmpty();
 
-        Map<GridComputeJobAdapter, ClusterNode> map = U.newHashMap(subgrid.size());
+        Map<ComputeJobAdapter, ClusterNode> map = U.newHashMap(subgrid.size());
 
         // Put all jobs onto one node.
         for (int i = 0; i < N_JOBS; i++)
@@ -62,7 +62,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
     /**
      * Job stealing job.
      */
-    private static final class GridJobStealingJob extends GridComputeJobAdapter {
+    private static final class GridJobStealingJob extends ComputeJobAdapter {
         /** Injected grid. */
         @GridInstanceResource
         private Ignite ignite;

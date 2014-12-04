@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 /**
  *
  */
-public class GridDsiPerfJob extends GridComputeJobAdapter {
+public class GridDsiPerfJob extends ComputeJobAdapter {
     /** */
     private static final ConcurrentMap<Thread, ConcurrentMap<String, T3<Long, Long, Long>>> timers =
         new ConcurrentHashMap8<>();

@@ -71,7 +71,7 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
     /**
      * Stop node job it is executed on.
      */
-    private static class StopJob extends GridComputeJobAdapter {
+    private static class StopJob extends ComputeJobAdapter {
         /** */
         private final String gridType;
 

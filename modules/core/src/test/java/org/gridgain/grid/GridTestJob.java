@@ -16,7 +16,7 @@ import org.gridgain.grid.resources.*;
 /**
  * Test job.
  */
-public class GridTestJob extends GridComputeJobAdapter {
+public class GridTestJob extends ComputeJobAdapter {
     /** Logger. */
     @GridLoggerResource private GridLogger log;
 

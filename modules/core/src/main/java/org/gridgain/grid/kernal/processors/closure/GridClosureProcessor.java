@@ -975,7 +975,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             };
         }
         else {
-            return new GridComputeJobAdapter() {
+            return new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return job.apply(arg);
                 }
@@ -1010,7 +1010,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             };
         }
         else {
-            return new GridComputeJobAdapter() {
+            return new ComputeJobAdapter() {
                 @Override public Object execute() {
                     try {
                         return c.call();
@@ -1060,7 +1060,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             };
         }
         else {
-            return new GridComputeJobAdapter() {
+            return new ComputeJobAdapter() {
                 /** */
                 @GridCacheName
                 private final String cn = cacheName;
@@ -1105,7 +1105,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             };
         }
         else {
-            return new GridComputeJobAdapter() {
+            return new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     r.run();
 
@@ -1149,7 +1149,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             };
         }
         else {
-            return new GridComputeJobAdapter() {
+            return new ComputeJobAdapter() {
                 /** */
                 @GridCacheName
                 private final String cn = cacheName;

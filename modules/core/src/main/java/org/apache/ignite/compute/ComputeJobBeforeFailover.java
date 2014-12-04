@@ -16,7 +16,7 @@ import java.lang.annotation.*;
 /**
  * This annotation allows to call a method right before job is submitted to
  * {@link GridFailoverSpi}. In this method job can re-create necessary state that was
- * cleared, for example, in method with {@link GridComputeJobAfterSend} annotation.
+ * cleared, for example, in method with {@link ComputeJobAfterSend} annotation.
  * <p>
  * This annotation can be applied to methods of {@link ComputeJob} instances only. It is
  * invoked on the caller node after remote execution has failed and before the
@@ -37,6 +37,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface GridComputeJobBeforeFailover {
+public @interface ComputeJobBeforeFailover {
     // No-op.
 }

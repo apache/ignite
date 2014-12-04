@@ -114,7 +114,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             mapper = Thread.currentThread();
 
-            return Collections.singleton(new GridComputeJobAdapter() {
+            return Collections.singleton(new ComputeJobAdapter() {
                 @Override public Serializable execute() {
                     runner = Thread.currentThread();
 

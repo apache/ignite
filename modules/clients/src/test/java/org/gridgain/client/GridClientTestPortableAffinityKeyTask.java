@@ -32,7 +32,7 @@ public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapte
         @Nullable final Object arg) throws GridException {
         for (ClusterNode node : clusterNodes) {
             if (node.isLocal())
-                return Collections.singletonMap(new GridComputeJobAdapter() {
+                return Collections.singletonMap(new ComputeJobAdapter() {
                     @Override public Object execute() throws GridException {
                         return executeJob(arg);
                     }

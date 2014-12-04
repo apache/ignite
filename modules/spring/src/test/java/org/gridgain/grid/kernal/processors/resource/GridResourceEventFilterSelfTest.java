@@ -156,11 +156,11 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskName("name")
     public static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {
                         return null;

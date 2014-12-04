@@ -461,7 +461,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private transient GridComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -504,10 +504,10 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             log.info("Injected session resource into task: " + ses);
             log.info("Injected continuous mapper: " + mapper);
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** */
                     @GridUserResource(resourceClass = UserResource3.class)
                     private transient GridAbstractUserResource rsrc5;

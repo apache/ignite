@@ -673,7 +673,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         jobRes.onResponse(res0, ex, attrs, res.isCancelled());
 
                         if (loc)
-                            ctx.resource().invokeAnnotated(dep, jobRes.getJob(), GridComputeJobAfterSend.class);
+                            ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
                     }
                     catch (GridException e) {
                         U.error(log, "Error deserializing job response: " + res, e);
@@ -956,7 +956,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         assert Thread.holdsLock(mux);
 
         try {
-            ctx.resource().invokeAnnotated(dep, jobRes.getJob(), GridComputeJobBeforeFailover.class);
+            ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
 
             // Map to a new node.
             ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top));
@@ -1089,7 +1089,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
                     ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
 
-                ctx.resource().invokeAnnotated(dep, res.getJob(), GridComputeJobAfterSend.class);
+                ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
 
                 GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
                     res.getJobContext().getJobId(), null, null, null, null, null, null, false);
@@ -1176,7 +1176,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
 
                     if (!loc)
-                        ctx.resource().invokeAnnotated(dep, res.getJob(), GridComputeJobAfterSend.class);
+                        ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
                 }
                 else
                     U.warn(log, "Job timed out prior to sending job execution request: " + res.getJob());

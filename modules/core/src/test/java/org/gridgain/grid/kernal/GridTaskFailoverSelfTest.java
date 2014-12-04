@@ -65,14 +65,14 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public Collection<GridComputeJobAdapter> split(int gridSize, Serializable arg) {
+        @Override public Collection<ComputeJobAdapter> split(int gridSize, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(SPLIT_COUNT);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 0; i < SPLIT_COUNT; i++)
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     @Override public Serializable execute() {
                         if (log.isInfoEnabled())
                             log.info("Computing job [job=" + this + ']');

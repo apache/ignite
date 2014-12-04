@@ -397,7 +397,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
-            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
+            Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
 
@@ -427,7 +427,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
      * Simple job for this test.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class GridDeploymentResourceTestJob extends GridComputeJobAdapter {
+    public static final class GridDeploymentResourceTestJob extends ComputeJobAdapter {
         /** */
         @GridLoggerResource private GridLogger log;
 

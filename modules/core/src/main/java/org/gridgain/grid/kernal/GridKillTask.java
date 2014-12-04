@@ -70,7 +70,7 @@ class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
     /**
      * Kill job.
      */
-    private class GridKillJob extends GridComputeJobAdapter {
+    private class GridKillJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 

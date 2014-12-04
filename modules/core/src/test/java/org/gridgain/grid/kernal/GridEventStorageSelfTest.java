@@ -208,7 +208,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * Test job.
      */
-    private static class GridEventTestJob extends GridComputeJobAdapter {
+    private static class GridEventTestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @Override public String execute() throws GridException {
             return "GridEventTestJob-test-event.";

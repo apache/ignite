@@ -357,10 +357,10 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg)
             throws GridException {
-            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
+            Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
-                map.put(new GridComputeJobAdapter() {
+                map.put(new ComputeJobAdapter() {
                     @Override public Serializable execute() {
                         if (log.isInfoEnabled())
                             log.info("Executing grid job: " + this);
@@ -390,10 +390,10 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
-            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
+            Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
-                map.put(new GridComputeJobAdapter() {
+                map.put(new ComputeJobAdapter() {
                     @Override public Serializable execute() {
                         log.info("Executing grid job: " + this);
 
@@ -422,10 +422,10 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
-            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
+            Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
-                map.put(new GridComputeJobAdapter() {
+                map.put(new ComputeJobAdapter() {
                     @Override public Serializable execute() {
                         if (log.isInfoEnabled())
                             log.info("Executing grid job: " + this);

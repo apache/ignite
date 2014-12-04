@@ -126,7 +126,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
             Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
-                jobs.add(new GridComputeJobAdapter(i) {
+                jobs.add(new ComputeJobAdapter(i) {
                     @SuppressWarnings({"UnconditionalWait"})
                     public Serializable execute() throws GridException {
                         assert taskSes != null;

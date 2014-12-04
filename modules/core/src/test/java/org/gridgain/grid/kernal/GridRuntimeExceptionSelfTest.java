@@ -261,7 +261,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class GridTaskFailedTestJob extends GridComputeJobAdapter {
+    private static class GridTaskFailedTestJob extends ComputeJobAdapter {
         /** */
         @GridLoggerResource private GridLogger log;
 

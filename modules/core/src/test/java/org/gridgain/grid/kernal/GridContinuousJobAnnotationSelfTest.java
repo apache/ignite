@@ -132,7 +132,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     /**
      *
      */
-    private static class TestJob extends GridComputeJobAdapter {
+    private static class TestJob extends ComputeJobAdapter {
         /** */
         private boolean flag = true;
 
@@ -143,7 +143,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
 
 
         /** */
-        @GridComputeJobAfterSend
+        @ComputeJobAfterSend
         private void afterSend() {
             X.println("AfterSend start TestJob [this=" + this + ", identity=" + System.identityHashCode(this) +
                 ", flag=" + flag + "]");
@@ -157,7 +157,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         }
 
         /** */
-        @GridComputeJobBeforeFailover
+        @ComputeJobBeforeFailover
         private void beforeFailover() {
             X.println("BeforeFailover start TestJob [this=" + this + ", identity=" + System.identityHashCode(this) +
                 ", flag=" + flag + "]");

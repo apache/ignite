@@ -29,7 +29,7 @@ public class GridCacheDeploymentTestTask3 extends GridComputeTaskAdapter<T2<Clus
         final String val = tup.getValue();
 
         return F.asMap(
-                new GridComputeJobAdapter() {
+                new ComputeJobAdapter() {
                     @GridInstanceResource
                     private Ignite ignite;
 

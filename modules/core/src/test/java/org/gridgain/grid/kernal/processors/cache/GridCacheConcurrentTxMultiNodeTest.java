@@ -386,7 +386,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class PerfJob extends GridComputeJobAdapter {
+    private static class PerfJob extends ComputeJobAdapter {
         /** */
         private static final long MAX = 5000;
 

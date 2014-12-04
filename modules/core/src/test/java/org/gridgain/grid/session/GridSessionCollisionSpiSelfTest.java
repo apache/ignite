@@ -61,11 +61,11 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskSessionFullSupport
     private static class GridSessionTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     /** */
                     @GridTaskSessionResource
                     private GridComputeTaskSession taskSes;

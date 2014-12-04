@@ -46,7 +46,7 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
         Collection<ComputeJob> jobs = new LinkedList<>();
 
         for (final int[] arr : splitArray(initArr)) {
-            jobs.add(new GridComputeJobAdapter() {
+            jobs.add(new ComputeJobAdapter() {
                 // Auto-inject job context.
                 @GridJobContextResource
                 private GridComputeJobContext jobCtx;

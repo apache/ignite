@@ -201,7 +201,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestJob extends GridComputeJobAdapter {
+    public static class TestJob extends ComputeJobAdapter {
         /** */
         public TestJob() { /* No-op. */ }
 
@@ -277,7 +277,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class SessionChainTestJob extends GridComputeJobAdapter {
+    public static class SessionChainTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
         private GridComputeTaskSession ses;

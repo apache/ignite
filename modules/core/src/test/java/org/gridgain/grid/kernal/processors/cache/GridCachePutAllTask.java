@@ -51,7 +51,7 @@ class GridCachePutAllTask extends GridComputeTaskAdapter<Collection<Integer>, Vo
         });
 
         return Collections.singletonMap(
-            new GridComputeJobAdapter() {
+            new ComputeJobAdapter() {
                 @GridLoggerResource
                 private GridLogger log;
 

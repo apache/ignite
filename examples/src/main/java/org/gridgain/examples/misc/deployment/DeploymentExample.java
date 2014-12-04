@@ -101,7 +101,7 @@ public final class DeploymentExample {
             Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     @Nullable @Override public Serializable execute() {
                         System.out.println(">>> Executing deployment example job on this node.");
 

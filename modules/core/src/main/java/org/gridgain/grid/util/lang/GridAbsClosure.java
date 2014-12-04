@@ -21,7 +21,7 @@ import java.io.*;
  * <p>
  * Note that this class implements {@link org.apache.ignite.compute.ComputeJob} interface for convenience and can be
  * used in {@link org.apache.ignite.compute.GridComputeTask} implementations directly, if needed, as an alternative to
- * {@link org.apache.ignite.compute.GridComputeJobAdapter}.
+ * {@link org.apache.ignite.compute.ComputeJobAdapter}.
  * @see GridFunc
  */
 public abstract class GridAbsClosure implements Runnable, Serializable {

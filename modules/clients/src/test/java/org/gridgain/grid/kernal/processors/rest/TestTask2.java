@@ -27,7 +27,7 @@ class TestTask2 extends GridComputeTaskSplitAdapter<String, String> {
         Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++)
-            jobs.add(new GridComputeJobAdapter() {
+            jobs.add(new ComputeJobAdapter() {
                 @Nullable
                 @Override public Object execute() {
                     X.println("Test task2.");

@@ -140,7 +140,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
             Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
-                jobs.add(new GridComputeJobAdapter(i) {
+                jobs.add(new ComputeJobAdapter(i) {
                     @Override public Serializable execute() throws GridException {
                         assert taskSes != null;
 

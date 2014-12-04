@@ -698,14 +698,14 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
             throws GridException {
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
 
             final String locNodeId = ignite.cluster().localNode().id().toString();
 
             for (int i = 0; i < gridSize; i++) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     @SuppressWarnings("OverlyStrongTypeCast")
                     @Override public Object execute() {
                         try {

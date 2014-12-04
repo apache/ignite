@@ -285,7 +285,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /**
      * Test job.
      */
-    private static class GridTestCheckpointJob extends GridComputeJobAdapter {
+    private static class GridTestCheckpointJob extends ComputeJobAdapter {
         /** */
         @GridInstanceResource
         private Ignite ignite;
@@ -402,7 +402,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /**
      * Multi-node test consumer job.
      */
-    private static class GridMultiNodeTestCheckpointProducerJob extends GridComputeJobAdapter {
+    private static class GridMultiNodeTestCheckpointProducerJob extends ComputeJobAdapter {
         /** */
         @GridInstanceResource
         private Ignite ignite;
@@ -510,7 +510,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /**
      * Multi-node test consumer job.
      */
-    private static class GridMultiNodeTestCheckpointConsumerJob extends GridComputeJobAdapter {
+    private static class GridMultiNodeTestCheckpointConsumerJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
         private GridComputeTaskSession taskSes;
@@ -643,7 +643,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
-            return Collections.singleton(new GridComputeJobAdapter() {
+            return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() throws GridException {
                     assert taskSes != null;
 

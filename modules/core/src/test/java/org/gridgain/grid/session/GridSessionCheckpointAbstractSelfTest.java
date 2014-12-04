@@ -145,17 +145,17 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         @GridMarshallerResource private GridMarshaller marshaller;
 
         /** {@inheritDoc} */
-        @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             for (int i = 0; i < SPLIT_COUNT; i++) {
                 ses.saveCheckpoint("map:session:key:" + i, "map:session:testval:" + i);
                 ses.saveCheckpoint("map:global:key:" + i, "map:global:testval:" + i,
                     GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
             }
 
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(SPLIT_COUNT);
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 0; i < SPLIT_COUNT; i++) {
-                jobs.add(new GridComputeJobAdapter(i) {
+                jobs.add(new ComputeJobAdapter(i) {
                     /** */
                     private static final long serialVersionUID = -9118687978815477993L;
 

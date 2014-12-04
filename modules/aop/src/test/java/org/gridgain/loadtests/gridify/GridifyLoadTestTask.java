@@ -28,10 +28,10 @@ public class GridifyLoadTestTask extends GridComputeTaskSplitAdapter<GridifyArgu
 
         assert jobsNum > 0;
 
-        Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+        Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < jobsNum; i++)
-            jobs.add(new GridComputeJobAdapter(1) {
+            jobs.add(new ComputeJobAdapter(1) {
                 @Override public Serializable execute() {
                     Integer arg = this.<Integer>argument(0);
 

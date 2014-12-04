@@ -171,7 +171,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class GridStopTestJob extends GridComputeJobAdapter {
+    public static class GridStopTestJob extends ComputeJobAdapter {
         /** */
         @GridLoggerResource private GridLogger log;
 

@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Test gridify job.
  */
-public class GridTestGridifyJob extends GridComputeJobAdapter {
+public class GridTestGridifyJob extends ComputeJobAdapter {
     /** */
     @GridLoggerResource private GridLogger log;
 

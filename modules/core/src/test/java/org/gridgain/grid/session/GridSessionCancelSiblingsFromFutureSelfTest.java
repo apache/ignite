@@ -205,7 +205,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
             Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
-                jobs.add(new GridComputeJobAdapter(i) {
+                jobs.add(new ComputeJobAdapter(i) {
                     private volatile Thread thread;
 
                     @Override public Serializable execute() {

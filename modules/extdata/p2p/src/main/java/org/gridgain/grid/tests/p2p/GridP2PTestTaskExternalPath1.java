@@ -82,7 +82,7 @@ public class GridP2PTestTaskExternalPath1 extends GridComputeTaskAdapter<Object,
      * Simple job class
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestJob extends GridComputeJobAdapter {
+    public static class TestJob extends ComputeJobAdapter {
         /** User resource. */
         @GridUserResource
         private transient GridTestUserResource rsrc;

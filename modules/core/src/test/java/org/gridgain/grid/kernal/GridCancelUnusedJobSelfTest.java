@@ -149,7 +149,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
     /**
      * Cancel test job.
      */
-    private static class GridCancelTestJob extends GridComputeJobAdapter {
+    private static class GridCancelTestJob extends ComputeJobAdapter {
         /** */
         @GridLoggerResource
         private GridLogger log;

@@ -2001,7 +2001,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             Collection<ComputeJob> res = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
-                res.add(new GridComputeJobAdapter() {
+                res.add(new ComputeJobAdapter() {
                     /** Injected grid. */
                     @GridInstanceResource
                     private Ignite g;

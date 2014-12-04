@@ -196,7 +196,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class GridTaskTimeoutTestJob extends GridComputeJobAdapter {
+    private static class GridTaskTimeoutTestJob extends ComputeJobAdapter {
         /** Injected logger. */
         @GridLoggerResource
         private GridLogger log;

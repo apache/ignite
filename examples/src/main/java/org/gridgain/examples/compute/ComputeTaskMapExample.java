@@ -70,7 +70,7 @@ public class ComputeTaskMapExample {
 
                 ClusterNode node = it.next();
 
-                map.put(new GridComputeJobAdapter() {
+                map.put(new ComputeJobAdapter() {
                     @Nullable @Override public Object execute() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");

@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Load test job.
  */
-public class GridLoadTestJob extends GridComputeJobAdapter {
+public class GridLoadTestJob extends ComputeJobAdapter {
     /** */
     @GridInstanceResource
     private Ignite ignite;

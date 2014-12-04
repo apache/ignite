@@ -240,7 +240,7 @@ public final class GridSingleExecutionTest {
             Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
-                jobs.add(new GridComputeJobAdapter(i) {
+                jobs.add(new ComputeJobAdapter(i) {
                     @GridLoggerResource private GridLogger log;
 
                     @Override public Serializable execute() throws GridException {
@@ -274,7 +274,7 @@ public final class GridSingleExecutionTest {
             Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
-                jobs.add(new GridComputeJobAdapter(i) {
+                jobs.add(new ComputeJobAdapter(i) {
                     @GridLoggerResource private GridLogger log;
 
                     @Override public Serializable execute() throws GridException {

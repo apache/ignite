@@ -154,7 +154,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     /**
      * Test job.
      */
-    public static class GridCancelTestJob extends GridComputeJobAdapter {
+    public static class GridCancelTestJob extends ComputeJobAdapter {
         /** */
         @GridLoggerResource
         private GridLogger log;

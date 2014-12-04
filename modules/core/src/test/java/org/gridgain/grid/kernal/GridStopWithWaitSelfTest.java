@@ -139,7 +139,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
             assert mappedNode != null;
 
-            return Collections.singletonMap(new GridComputeJobAdapter(arg) {
+            return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 @Override public Integer execute() {
                     jobStarted.countDown();
 
@@ -175,7 +175,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
             nodeRef.set(node);
 
-            return Collections.singletonMap(new GridComputeJobAdapter(arg) {
+            return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** Local node ID. */
                 @GridLocalNodeIdResource
                 private UUID locId;

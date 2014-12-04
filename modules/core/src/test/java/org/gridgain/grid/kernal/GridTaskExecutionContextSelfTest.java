@@ -148,7 +148,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
-            return F.asSet(new GridComputeJobAdapter() {
+            return F.asSet(new ComputeJobAdapter() {
                 @GridTaskSessionResource
                 private GridComputeTaskSession ses;
 

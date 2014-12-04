@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  * </li>
  * </ul>
  */
-public abstract class GridComputeJobAdapter implements ComputeJob, Callable<Object> {
+public abstract class ComputeJobAdapter implements ComputeJob, Callable<Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public abstract class GridComputeJobAdapter implements ComputeJob, Callable<Obje
     /**
      * No-arg constructor.
      */
-    protected GridComputeJobAdapter() {
+    protected ComputeJobAdapter() {
         /* No-op. */
     }
 
@@ -51,7 +51,7 @@ public abstract class GridComputeJobAdapter implements ComputeJob, Callable<Obje
      *
      * @param arg Job argument.
      */
-    protected GridComputeJobAdapter(@Nullable Object arg) {
+    protected ComputeJobAdapter(@Nullable Object arg) {
         args = new Object[]{arg};
     }
 
@@ -60,7 +60,7 @@ public abstract class GridComputeJobAdapter implements ComputeJob, Callable<Obje
      *
      * @param args Optional job arguments.
      */
-    protected GridComputeJobAdapter(@Nullable Object... args) {
+    protected ComputeJobAdapter(@Nullable Object... args) {
         this.args = args;
     }
 

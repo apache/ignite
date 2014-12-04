@@ -137,7 +137,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
     /**
      * Sleeping job.
      */
-    private static final class SleepJob extends GridComputeJobAdapter {
+    private static final class SleepJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @Override public Object execute() {
             try {

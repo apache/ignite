@@ -591,10 +591,10 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> args)
             throws GridException {
-            Collection<GridComputeJobAdapter> jobs = new ArrayList<>(args.size());
+            Collection<ComputeJobAdapter> jobs = new ArrayList<>(args.size());
 
             for (final Object arg : args) {
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     @SuppressWarnings("OverlyStrongTypeCast")
                     @Override public Object execute() {
                         try {

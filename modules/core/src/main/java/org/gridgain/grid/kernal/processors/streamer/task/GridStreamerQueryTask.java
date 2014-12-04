@@ -80,7 +80,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
     /**
      * Query job.
      */
-    private static class QueryJob<R> extends GridComputeJobAdapter implements Externalizable {
+    private static class QueryJob<R> extends ComputeJobAdapter implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

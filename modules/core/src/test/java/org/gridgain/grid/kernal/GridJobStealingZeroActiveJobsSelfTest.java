@@ -99,7 +99,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
-            Map<GridComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
+            Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             // Put all jobs onto local node.
             for (Iterator iter = subgrid.iterator(); iter.hasNext(); iter.next())
@@ -132,7 +132,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
      *
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class GridJobStealingJob extends GridComputeJobAdapter {
+    public static final class GridJobStealingJob extends ComputeJobAdapter {
         /** Injected grid. */
         @GridInstanceResource
         private Ignite ignite;

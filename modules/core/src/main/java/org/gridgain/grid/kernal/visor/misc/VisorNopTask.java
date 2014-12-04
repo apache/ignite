@@ -51,7 +51,7 @@ public class VisorNopTask implements GridComputeTask<Integer, Void> {
     /**
      * Nop job with random timeout.
      */
-    private static class VisorNopJob extends GridComputeJobAdapter {
+    private static class VisorNopJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 

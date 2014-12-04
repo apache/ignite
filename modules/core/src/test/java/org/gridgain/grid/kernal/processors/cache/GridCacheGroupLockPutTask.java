@@ -76,7 +76,7 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
         });
 
         return Collections.singletonMap(
-            new GridComputeJobAdapter() {
+            new ComputeJobAdapter() {
                 @GridLoggerResource
                 private GridLogger log;
 

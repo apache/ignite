@@ -27,7 +27,7 @@ public class GridCacheDeploymentTestTask2 extends GridComputeTaskAdapter<Cluster
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable ClusterNode node) throws GridException {
         return F.asMap(
-            new GridComputeJobAdapter() {
+            new ComputeJobAdapter() {
                 @GridInstanceResource
                 private Ignite ignite;
 

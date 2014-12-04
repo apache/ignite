@@ -25,7 +25,7 @@ public class GridSingleSplitTestTask extends GridComputeTaskSplitAdapter<Integer
     @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws GridException {
         assert gridSize > 0 : "Subgrid cannot be empty.";
 
-        Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
+        Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < arg; i++)
             jobs.add(new GridSingleSplitTestJob(1));
@@ -52,7 +52,7 @@ public class GridSingleSplitTestTask extends GridComputeTaskSplitAdapter<Integer
      * Test job for P2P deployment tests.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static final class GridSingleSplitTestJob extends GridComputeJobAdapter {
+    public static final class GridSingleSplitTestJob extends ComputeJobAdapter {
         /**
          * @param args Job arguments.
          */

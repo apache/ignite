@@ -121,7 +121,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static final class GridCancelledJob extends GridComputeJobAdapter {
+    private static final class GridCancelledJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @Override public String execute() throws GridException {
             X.println("Executing job.");

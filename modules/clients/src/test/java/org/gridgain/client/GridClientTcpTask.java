@@ -25,11 +25,11 @@ public class GridClientTcpTask extends GridComputeTaskSplitAdapter<List<Object>,
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
         throws GridException {
-        Collection<GridComputeJobAdapter> jobs = new ArrayList<>();
+        Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
         if (list != null)
             for (final Object val : list)
-                jobs.add(new GridComputeJobAdapter() {
+                jobs.add(new ComputeJobAdapter() {
                     @Override public Object execute() {
                         try {
                             Thread.sleep(5);

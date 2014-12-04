@@ -108,7 +108,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
     }
 
     /** */
-    private static class SessionTestJob extends GridComputeJobAdapter {
+    private static class SessionTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
         private GridComputeTaskSession taskSes;

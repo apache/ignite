@@ -63,7 +63,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
             @Nullable String arg) throws GridException {
             for (ClusterNode node : subgrid)
                 if (node.id().equals(locId))
-                    return Collections.singletonMap(new GridComputeJobAdapter() {
+                    return Collections.singletonMap(new ComputeJobAdapter() {
                         @Override public Serializable execute() {
                             return null;
                         }
