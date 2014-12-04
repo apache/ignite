@@ -67,7 +67,7 @@ public class GridTestMain {
 
         final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 
-        final BlockingQueue<GridFuture> q = new ArrayBlockingQueue<>(400);
+        final BlockingQueue<IgniteFuture> q = new ArrayBlockingQueue<>(400);
 
         long start = System.currentTimeMillis();
 
@@ -87,12 +87,12 @@ public class GridTestMain {
                 }
             });
 
-            final GridFuture<?> f = comp.future();
+            final IgniteFuture<?> f = comp.future();
 
             q.put(f);
 
-            f.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> o) {
+            f.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> o) {
                     q.poll();
                 }
             });

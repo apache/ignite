@@ -223,7 +223,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *      {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
      * @return Future to be completed whenever loading completes.
      */
-    public GridFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
+    public IgniteFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
 
     /**
      * Gets a random entry out of cache. In the worst cache scenario this method
@@ -261,7 +261,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * <p>
      * @return Future that will be completed when preloading is finished.
      */
-    public GridFuture<?> forceRepartition();
+    public IgniteFuture<?> forceRepartition();
 
     /**
      * Resets metrics for current cache.

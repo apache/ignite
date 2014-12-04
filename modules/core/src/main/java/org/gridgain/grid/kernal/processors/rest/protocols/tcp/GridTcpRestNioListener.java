@@ -169,8 +169,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 final GridRestRequest req = createRestRequest(ses, msg);
 
                 if (req != null)
-                    hnd.handleAsync(req).listenAsync(new CI1<GridFuture<GridRestResponse>>() {
-                        @Override public void apply(GridFuture<GridRestResponse> fut) {
+                    hnd.handleAsync(req).listenAsync(new CI1<IgniteFuture<GridRestResponse>>() {
+                        @Override public void apply(IgniteFuture<GridRestResponse> fut) {
                             GridClientResponse res = new GridClientResponse();
 
                             res.requestId(msg.requestId());

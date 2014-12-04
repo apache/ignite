@@ -325,7 +325,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridFuture<Map<K, V>> getAllAsync(
+    @Override protected IgniteFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
@@ -375,7 +375,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<V> putAsync(K key,
+    @Override public IgniteFuture<V> putAsync(K key,
         V val,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl,
@@ -385,7 +385,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Boolean> putxAsync(K key,
+    @Override public IgniteFuture<Boolean> putxAsync(K key,
         V val,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl,
@@ -399,7 +399,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> putIfAbsentAsync(K key, V val) {
+    @Override public IgniteFuture<V> putIfAbsentAsync(K key, V val) {
         return dht.putIfAbsentAsync(key, val);
     }
 
@@ -409,7 +409,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> putxIfAbsentAsync(K key, V val) {
+    @Override public IgniteFuture<Boolean> putxIfAbsentAsync(K key, V val) {
         return dht.putxIfAbsentAsync(key, val);
     }
 
@@ -419,7 +419,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> replaceAsync(K key, V val) {
+    @Override public IgniteFuture<V> replaceAsync(K key, V val) {
         return dht.replaceAsync(key, val);
     }
 
@@ -429,7 +429,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> replacexAsync(K key, V val) {
+    @Override public IgniteFuture<Boolean> replacexAsync(K key, V val) {
         return dht.replacexAsync(key, val);
     }
 
@@ -439,7 +439,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
         return dht.replaceAsync(key, oldVal, newVal);
     }
 
@@ -455,13 +455,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
+    @Override public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
         return dht.removexAsync(key, val);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
         return dht.replacexAsync(key, oldVal, newVal);
     }
 
@@ -472,7 +472,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
+    @Override public IgniteFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return dht.putAllAsync(m, filter);
     }
@@ -483,7 +483,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws GridException {
+    @Override public IgniteFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws GridException {
         return dht.putAllDrAsync(drMap);
     }
 
@@ -499,7 +499,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key,
+    @Override public IgniteFuture<?> transformAsync(K key,
         IgniteClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl) {
@@ -512,7 +512,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
+    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         return dht.transformAllAsync(m);
     }
 
@@ -525,7 +525,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<V> removeAsync(K key,
+    @Override public IgniteFuture<V> removeAsync(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
         return dht.removeAsync(key, entry, filter);
@@ -538,7 +538,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeAllAsync(Collection<? extends K> keys,
+    @Override public IgniteFuture<?> removeAllAsync(Collection<? extends K> keys,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return dht.removeAllAsync(keys, filter);
     }
@@ -552,7 +552,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Boolean> removexAsync(K key,
+    @Override public IgniteFuture<Boolean> removexAsync(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
         return dht.removexAsync(key, entry, filter);
@@ -564,7 +564,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> removeAsync(K key, V val) {
+    @Override public IgniteFuture<Boolean> removeAsync(K key, V val) {
         return dht.removeAsync(key, val);
     }
 
@@ -574,7 +574,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeAllAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<?> removeAllAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return dht.removeAllAsync(keySet(filter));
     }
 
@@ -584,12 +584,12 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws GridException {
+    @Override public IgniteFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws GridException {
         return dht.removeAllDrAsync(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
         long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx,
         boolean isInvalidate,

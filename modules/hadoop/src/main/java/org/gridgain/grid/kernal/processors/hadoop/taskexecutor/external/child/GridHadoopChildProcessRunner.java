@@ -139,8 +139,8 @@ public class GridHadoopChildProcessRunner {
         if (!initFut.isDone() && log.isDebugEnabled())
             log.debug("Will wait for process initialization future completion: " + req);
 
-        initFut.listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> f) {
+        initFut.listenAsync(new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> f) {
                 try {
                     // Make sure init was successful.
                     f.get();
@@ -211,8 +211,8 @@ public class GridHadoopChildProcessRunner {
      * @param req Update request.
      */
     private void updateTasks(final GridHadoopJobInfoUpdateRequest req) {
-        initFut.listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> gridFut) {
+        initFut.listenAsync(new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> gridFut) {
                 assert initGuard.get();
 
                 assert req.jobId().equals(job.id());
@@ -308,8 +308,8 @@ public class GridHadoopChildProcessRunner {
             final long start = U.currentTimeMillis();
 
             try {
-                shuffleJob.flush().listenAsync(new CI1<GridFuture<?>>() {
-                    @Override public void apply(GridFuture<?> f) {
+                shuffleJob.flush().listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> f) {
                         long end = U.currentTimeMillis();
 
                         if (log.isDebugEnabled())
@@ -388,8 +388,8 @@ public class GridHadoopChildProcessRunner {
                 if (log.isTraceEnabled())
                     log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
 
-                initFut.listenAsync(new CI1<GridFuture<?>>() {
-                    @Override public void apply(GridFuture<?> f) {
+                initFut.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> f) {
                         try {
                             GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
 

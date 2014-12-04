@@ -66,7 +66,7 @@ public class GridCacheLocalFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridIndexingFieldMetadata>> metadata() {
+    @Override public IgniteFuture<List<GridIndexingFieldMetadata>> metadata() {
         return metaFut;
     }
 

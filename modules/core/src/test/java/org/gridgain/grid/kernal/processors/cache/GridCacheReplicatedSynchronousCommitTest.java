@@ -129,7 +129,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
             GridCache<Integer, String> cache1 = ignite1.cache(null);
             GridCache<Integer, String> cache3 = ignite3.cache(null);
 
-            GridFuture<?> fut = multithreadedAsync(
+            IgniteFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         Thread.sleep(1000);

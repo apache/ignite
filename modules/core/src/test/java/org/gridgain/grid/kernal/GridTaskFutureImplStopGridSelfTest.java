@@ -60,9 +60,9 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         try {
             final GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridStopTestTask.class.getName(), null);
 
-            fut.listenAsync(new CI1<GridFuture>() {
+            fut.listenAsync(new CI1<IgniteFuture>() {
                 @SuppressWarnings({"NakedNotify"})
-                @Override public void apply(GridFuture gridFut) {
+                @Override public void apply(IgniteFuture gridFut) {
                     synchronized (mux) {
                         mux.notifyAll();
                     }

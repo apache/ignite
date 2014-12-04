@@ -56,7 +56,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      */
     public void testRunLocal() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            GridFuture<?> fut = grid(i).scheduler().runLocal(new TestRunnable());
+            IgniteFuture<?> fut = grid(i).scheduler().runLocal(new TestRunnable());
 
             assert fut.get() == null;
 
@@ -69,7 +69,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      */
     public void testCallLocal() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            GridFuture<?> fut = grid(i).scheduler().callLocal(new TestCallable());
+            IgniteFuture<?> fut = grid(i).scheduler().callLocal(new TestCallable());
 
             assertEquals(1, fut.get());
 
@@ -106,8 +106,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> e) {
+            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> e) {
                     notifyCnt.incrementAndGet();
                 }
             });
@@ -164,8 +164,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> e) {
+            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> e) {
                     notifyCnt.incrementAndGet();
                 }
             });

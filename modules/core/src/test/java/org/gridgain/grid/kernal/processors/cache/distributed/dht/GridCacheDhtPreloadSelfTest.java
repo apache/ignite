@@ -250,7 +250,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +
                 U.grids2names(ignites) + ']');
 
-            Collection<GridFuture<?>> futs = new LinkedList<>();
+            Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
             Ignite last = F.last(ignites);
 
@@ -529,7 +529,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 it.remove();
 
-                Collection<GridFuture<?>> futs = new LinkedList<>();
+                Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
                 for (Ignite gg : ignites)
                     futs.add(waitForLocalEvent(gg.events(), new P1<GridEvent>() {

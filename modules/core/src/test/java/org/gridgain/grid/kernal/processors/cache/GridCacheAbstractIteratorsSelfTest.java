@@ -85,7 +85,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final GridFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
@@ -164,7 +164,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final GridFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
@@ -253,7 +253,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final GridFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
@@ -321,7 +321,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final GridFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);

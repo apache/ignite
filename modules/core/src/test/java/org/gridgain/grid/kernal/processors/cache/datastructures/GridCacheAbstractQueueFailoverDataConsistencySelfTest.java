@@ -159,7 +159,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        GridFuture<?> fut = startNodeKiller(stop, new AtomicInteger(), killIdxs);
+        IgniteFuture<?> fut = startNodeKiller(stop, new AtomicInteger(), killIdxs);
 
         final int ITEMS = (atomicityMode() == ATOMIC) ? 10_000 : 3000;
 
@@ -265,7 +265,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         final AtomicInteger stopCnt = new AtomicInteger();
 
-        GridFuture<?> fut = startNodeKiller(stop, stopCnt, killIdxs);
+        IgniteFuture<?> fut = startNodeKiller(stop, stopCnt, killIdxs);
 
         int err = 0;
 
@@ -318,7 +318,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @param killIdxs Indexes of nodes to kill.
      * @return Future completing when thread finishes.
      */
-    private GridFuture<?> startNodeKiller(final AtomicBoolean stop, final AtomicInteger killCnt,
+    private IgniteFuture<?> startNodeKiller(final AtomicBoolean stop, final AtomicInteger killCnt,
         final List<Integer> killIdxs) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {

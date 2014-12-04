@@ -103,7 +103,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            GridFuture<Long> fut = comp.future();
+            IgniteFuture<Long> fut = comp.future();
 
             assertEquals((Long)1L, fut.get());
 

@@ -181,7 +181,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param valTypeName Value type name.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public GridFuture<?> rebuildIndexes(@Nullable final String spi, @Nullable final String space, String valTypeName) {
+    public IgniteFuture<?> rebuildIndexes(@Nullable final String spi, @Nullable final String space, String valTypeName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
@@ -199,7 +199,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private GridFuture<?> rebuildIndexes(@Nullable final String spi, @Nullable final String space,
+    private IgniteFuture<?> rebuildIndexes(@Nullable final String spi, @Nullable final String space,
         @Nullable final TypeDescriptor desc) {
         if (desc == null || !desc.registered())
             return new GridFinishedFuture<Void>(ctx);
@@ -238,7 +238,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     @SuppressWarnings("unchecked")
-    public GridFuture<?> rebuildAllIndexes(@Nullable String spi) {
+    public IgniteFuture<?> rebuildAllIndexes(@Nullable String spi) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to get space size (grid is stopping).");
 
@@ -246,7 +246,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
-                fut.add((GridFuture)rebuildIndexes(spi, e.getKey().space, e.getValue()));
+                fut.add((IgniteFuture)rebuildIndexes(spi, e.getKey().space, e.getValue()));
 
             fut.markInitialized();
 

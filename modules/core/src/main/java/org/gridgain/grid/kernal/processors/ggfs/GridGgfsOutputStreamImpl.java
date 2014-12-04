@@ -60,7 +60,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
     private int remainderDataLen;
 
     /** Write completion future. */
-    private final GridFuture<Boolean> writeCompletionFut;
+    private final IgniteFuture<Boolean> writeCompletionFut;
 
     /** GGFS mode. */
     private final GridGgfsMode mode;

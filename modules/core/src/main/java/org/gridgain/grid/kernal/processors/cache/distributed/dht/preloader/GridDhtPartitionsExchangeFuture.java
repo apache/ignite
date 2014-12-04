@@ -121,7 +121,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     @GridToStringInclude
-    private volatile GridFuture<?> partReleaseFut;
+    private volatile IgniteFuture<?> partReleaseFut;
 
     /** */
     private final Object mux = new Object();
@@ -368,7 +368,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Init future.
      */
-    GridFuture<?> initFuture() {
+    IgniteFuture<?> initFuture() {
         return initFut;
     }
 
@@ -444,7 +444,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     cacheCtx.preloader().updateLastExchangeFuture(this);
                 }
 
-                GridFuture<?> partReleaseFut = cctx.partitionReleaseFuture(topVer);
+                IgniteFuture<?> partReleaseFut = cctx.partitionReleaseFuture(topVer);
 
                 // Assign to class variable so it will be included into toString() method.
                 this.partReleaseFut = partReleaseFut;
@@ -718,8 +718,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             }
         }
         else {
-            initFut.listenAsync(new CI1<GridFuture<Boolean>>() {
-                @Override public void apply(GridFuture<Boolean> t) {
+            initFut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+                @Override public void apply(IgniteFuture<Boolean> t) {
                     try {
                         if (!t.get()) // Just to check if there was an error.
                             return;
@@ -816,8 +816,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         assert exchId.topologyVersion() == msg.topologyVersion();
 
-        initFut.listenAsync(new CI1<GridFuture<Boolean>>() {
-            @Override public void apply(GridFuture<Boolean> t) {
+        initFut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+            @Override public void apply(IgniteFuture<Boolean> t) {
                 assert msg.lastVersion() != null;
 
                 cctx.versions().onReceived(nodeId, msg.lastVersion());
@@ -876,8 +876,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         try {
             // Wait for initialization part of this future to complete.
-            initFut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> f) {
+            initFut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> f) {
                     if (isDone())
                         return;
 

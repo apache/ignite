@@ -151,7 +151,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final AtomicBoolean finish = new AtomicBoolean();
 
-        GridFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try {
                     IgniteUuid msgId = IgniteUuid.randomUuid();
@@ -243,7 +243,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final AtomicBoolean finish = new AtomicBoolean();
 
-        GridFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try {
                     IgniteUuid msgId = IgniteUuid.randomUuid();
@@ -333,7 +333,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final AtomicBoolean finish = new AtomicBoolean();
         final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>();
 
-        GridFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!finish.get()) {
                     CountDownLatch latch = latchRef.get();
@@ -352,7 +352,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             }
         }, THREADS, "send-thread");
 
-        GridFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             private long ts = System.currentTimeMillis();
 
             @Override public Object call() throws Exception {
@@ -405,7 +405,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             }
         }, 1, "load-dispatcher");
 
-        GridFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!finish.get()) {
                     U.sleep(1000);

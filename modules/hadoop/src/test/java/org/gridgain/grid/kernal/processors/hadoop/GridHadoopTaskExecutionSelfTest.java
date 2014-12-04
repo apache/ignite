@@ -135,7 +135,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+        IgniteFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
                 createJobInfo(job.getConfiguration()));
 
         fut.get();
@@ -181,7 +181,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 2);
 
-        GridFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+        IgniteFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
 
         fut.get();
 
@@ -218,7 +218,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        final GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 3),
+        final IgniteFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 3),
                 createJobInfo(job.getConfiguration()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -306,7 +306,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
 
-        final GridFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(cfg));
+        final IgniteFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(cfg));
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -357,7 +357,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         assertFalse(killRes);
 
-        final GridFuture<?> fut = hadoop.submit(jobId, createJobInfo(cfg));
+        final IgniteFuture<?> fut = hadoop.submit(jobId, createJobInfo(cfg));
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

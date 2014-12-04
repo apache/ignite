@@ -78,7 +78,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
     public void testQueueCreation() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
-        GridFuture<?> fut = multithreadedAsync(
+        IgniteFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Ignite ignite = startGrid(idx.getAndIncrement());
@@ -130,7 +130,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
         final CountDownLatch latch = new CountDownLatch(threadCnt);
 
-        GridFuture<?> fut = multithreadedAsync(
+        IgniteFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Ignite ignite = startGrid(idx.getAndIncrement());

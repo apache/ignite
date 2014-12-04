@@ -33,7 +33,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     protected final GridCacheAffinityFunction aff;
 
     /** Start future (always completed by default). */
-    private final GridFuture finFut;
+    private final IgniteFuture finFut;
 
     /** Preload predicate. */
     protected IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
@@ -88,12 +88,12 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Object> startFuture() {
+    @Override public IgniteFuture<Object> startFuture() {
         return finFut;
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> syncFuture() {
+    @Override public IgniteFuture<?> syncFuture() {
         return finFut;
     }
 
@@ -103,7 +103,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Object> request(Collection<? extends K> keys, long topVer) {
+    @Override public IgniteFuture<Object> request(Collection<? extends K> keys, long topVer) {
         return new GridFinishedFuture<>(cctx.kernalContext());
     }
 

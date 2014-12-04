@@ -108,7 +108,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut1 = multithreadedAsync(new CAX() {
+        IgniteFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 while (!done.get()) {
                     GridCacheQuery<Map.Entry<Integer, Integer>> qry =
@@ -134,7 +134,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         for (int i = 0; i < GRID_CNT; i++)
             grid(i).events().localListen(lsnr, GridEventType.EVT_CACHE_PRELOAD_STOPPED);
 
-        GridFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
                 while (!done.get()) {

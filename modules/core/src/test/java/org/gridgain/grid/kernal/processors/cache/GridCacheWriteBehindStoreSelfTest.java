@@ -137,7 +137,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
             final AtomicInteger actualPutCnt = new AtomicInteger();
 
-            GridFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
                 @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {
@@ -197,7 +197,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         try {
             final AtomicBoolean running = new AtomicBoolean(true);
 
-            GridFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
                 @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {

@@ -29,7 +29,7 @@ public interface GridGgfsServerHandler {
      * @return Future that will be completed when response is ready or {@code null} if no
      *      response is required.
      */
-    @Nullable public GridFuture<GridGgfsMessage> handleAsync(GridGgfsClientSession ses,
+    @Nullable public IgniteFuture<GridGgfsMessage> handleAsync(GridGgfsClientSession ses,
         GridGgfsMessage msg, DataInput in);
 
     /**

@@ -64,7 +64,7 @@ public abstract class GridCacheTxPreloadAbstractTest extends GridCacheAbstractSe
 
         final AtomicInteger gridIdx = new AtomicInteger(1);
 
-        GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int idx = gridIdx.getAndIncrement();

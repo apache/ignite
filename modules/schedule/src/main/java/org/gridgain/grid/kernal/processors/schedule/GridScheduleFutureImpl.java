@@ -70,7 +70,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     private final AtomicBoolean descheduled = new AtomicBoolean(false);
 
     /** Listeners. */
-    private Collection<IgniteInClosure<? super GridFuture<R>>> lsnrs =
+    private Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs =
         new ArrayList<>(1);
 
     /** Statistics. */
@@ -569,7 +569,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable IgniteInClosure<? super GridFuture<R>> lsnr) {
+    @Override public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
         if (lsnr != null) {
             Throwable err;
             R res;
@@ -599,7 +599,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
         if (!F.isEmpty(lsnr))
             synchronized (mux) {
                 lsnrs.removeAll(F.asList(lsnr));
@@ -608,7 +608,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public <T> GridFuture<T> chain(final IgniteClosure<? super GridFuture<R>, T> doneCb) {
+    @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx, syncNotify) {
             @Override public String toString() {
                 return "ChainFuture[orig=" + GridScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
@@ -626,7 +626,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      * @param err Last execution error.
      * @param syncNotify Synchronous notification flag.
      */
-    private void notifyListener(final IgniteInClosure<? super GridFuture<R>> lsnr, R res, Throwable err,
+    private void notifyListener(final IgniteInClosure<? super IgniteFuture<R>> lsnr, R res, Throwable err,
         boolean syncNotify) {
         assert lsnr != null;
         assert !Thread.holdsLock(mux);
@@ -655,7 +655,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      * @param err Last execution error.
      */
     private void notifyListeners(R res, Throwable err) {
-        final Collection<IgniteInClosure<? super GridFuture<R>>> tmp;
+        final Collection<IgniteInClosure<? super IgniteFuture<R>>> tmp;
 
         synchronized (mux) {
             tmp = new ArrayList<>(lsnrs);
@@ -664,7 +664,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         final GridSchedulerFuture<R> snapshot = snapshot(res, err);
 
         if (concurNotify) {
-            for (final IgniteInClosure<? super GridFuture<R>> lsnr : tmp)
+            for (final IgniteInClosure<? super IgniteFuture<R>> lsnr : tmp)
                 ctx.closure().runLocalSafe(new GPR() {
                     @Override public void run() {
                         lsnr.apply(snapshot);
@@ -674,7 +674,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         else {
             ctx.closure().runLocalSafe(new GPR() {
                 @Override public void run() {
-                    for (IgniteInClosure<? super GridFuture<R>> lsnr : tmp)
+                    for (IgniteInClosure<? super IgniteFuture<R>> lsnr : tmp)
                         lsnr.apply(snapshot);
                 }
             }, true);
@@ -929,17 +929,17 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         }
 
         /** {@inheritDoc} */
-        @Override public void listenAsync(@Nullable IgniteInClosure<? super GridFuture<R>> lsnr) {
+        @Override public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
             ref.listenAsync(lsnr);
         }
 
         /** {@inheritDoc} */
-        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr) {
+        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
             ref.stopListenAsync(lsnr);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> GridFuture<T> chain(IgniteClosure<? super GridFuture<R>, T> doneCb) {
+        @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
             return ref.chain(doneCb);
         }
     }

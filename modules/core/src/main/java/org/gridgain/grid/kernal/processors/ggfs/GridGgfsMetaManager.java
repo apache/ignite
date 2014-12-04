@@ -46,7 +46,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private GridCache<Object, Object> metaCache;
 
     /** */
-    private GridFuture<?> metaCacheStartFut;
+    private IgniteFuture<?> metaCacheStartFut;
 
     /** File ID to file info projection. */
     private GridCacheProjectionEx<IgniteUuid, GridGgfsFileInfo> id2InfoPrj;
@@ -1663,12 +1663,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 id2InfoPrj.transform(parentInfo.id(),
                                     new UpdateListing(path.name(), new GridGgfsListingEntry(newInfo), false));
 
-                                GridFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
+                                IgniteFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
 
                                 // Record PURGE event if needed.
                                 if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
-                                    delFut.listenAsync(new CI1<GridFuture<?>>() {
-                                        @Override public void apply(GridFuture<?> t) {
+                                    delFut.listenAsync(new CI1<IgniteFuture<?>>() {
+                                        @Override public void apply(IgniteFuture<?> t) {
                                             try {
                                                 t.get(); // Ensure delete succeeded.
 

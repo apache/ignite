@@ -194,8 +194,8 @@ public class GridCacheStoreValueBytesTest {
 
         final Semaphore sem = new Semaphore(concurrentGetNum);
 
-        final IgniteInClosure<GridFuture> lsnr = new CI1<GridFuture>() {
-            @Override public void apply(GridFuture t) {
+        final IgniteInClosure<IgniteFuture> lsnr = new CI1<IgniteFuture>() {
+            @Override public void apply(IgniteFuture t) {
                 sem.release();
             }
         };
@@ -224,7 +224,7 @@ public class GridCacheStoreValueBytesTest {
                             if (keys.size() == getKeyNum) {
                                 sem.acquire();
 
-                                GridFuture<Map<Integer, String>> f = cache.getAllAsync(keys);
+                                IgniteFuture<Map<Integer, String>> f = cache.getAllAsync(keys);
 
                                 f.listenAsync(lsnr);
 

@@ -167,7 +167,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             System.err.println("FINISHED PUTS");
 
             // Start put threads.
-            GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Random rnd = new Random();
 

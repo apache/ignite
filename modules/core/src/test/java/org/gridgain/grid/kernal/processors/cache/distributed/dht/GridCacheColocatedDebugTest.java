@@ -266,7 +266,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             final int keysCnt = 10;
 
-            GridFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     // Make thread-local copy to shuffle keys.
                     List<Integer> threadKeys = new ArrayList<>(keys);
@@ -360,7 +360,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             final CountDownLatch lockLatch = new CountDownLatch(1);
             final CountDownLatch unlockLatch = new CountDownLatch(1);
 
-            GridFuture<?> unlockFut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         assert g0.cache(null).lock(key, 0);
@@ -386,7 +386,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             assert g0.cache(null).isLocked(key);
             assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
 
-            GridFuture<Boolean> lockFut = g0.cache(null).lockAsync(key, 0);
+            IgniteFuture<Boolean> lockFut = g0.cache(null).lockAsync(key, 0);
 
             assert g0.cache(null).isLocked(key);
             assert !lockFut.isDone() : "Key can not be locked by current thread.";

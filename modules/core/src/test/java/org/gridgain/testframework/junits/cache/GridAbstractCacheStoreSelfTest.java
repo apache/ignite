@@ -483,7 +483,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridFuture<GridCacheTx> commitAsync() {
+        @Nullable @Override public IgniteFuture<GridCacheTx> commitAsync() {
             return null;
         }
 

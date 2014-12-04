@@ -67,8 +67,8 @@ public class GridFutureListenPerformanceTest {
                             futs.add(fut);
 
                             for (int k = 1; k < rnd.nextInt(3); k++) {
-                                fut.listenAsync(new IgniteInClosure<GridFuture<Object>>() {
-                                    @Override public void apply(GridFuture<Object> t) {
+                                fut.listenAsync(new IgniteInClosure<IgniteFuture<Object>>() {
+                                    @Override public void apply(IgniteFuture<Object> t) {
                                         try {
                                             t.get();
                                         }

@@ -62,7 +62,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public GridFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
+    public IgniteFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -89,7 +89,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
+    public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -109,7 +109,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @throws GridException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws GridException;
+    public IgniteFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws GridException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -120,7 +120,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param ttl Optional time-to-lve.
      * @return Transform operation future.
      */
-    public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer, @Nullable GridCacheEntryEx<K, V> entry,
+    public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer, @Nullable GridCacheEntryEx<K, V> entry,
         long ttl);
 
     /**
@@ -143,7 +143,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public GridFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    public IgniteFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -163,7 +163,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @throws GridException If remove failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws GridException;
+    public IgniteFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws GridException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -185,7 +185,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public GridFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    public IgniteFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -211,7 +211,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
+    public IgniteFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -281,7 +281,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<GridCacheReturn<V>> removexAsync(K key, V val);
+    public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val);
 
     /**
      * @param key Key to retrieve the value for.
@@ -309,7 +309,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param key Key to get value for.
      * @return Future with result.
      */
-    public GridFuture<V> getForcePrimaryAsync(K key);
+    public IgniteFuture<V> getForcePrimaryAsync(K key);
 
     /**
      * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
@@ -328,7 +328,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param keys Keys to get values for.
      * @return Future with result.
      */
-    public GridFuture<Map<K, V>> getAllOutTxAsync(List<K> keys);
+    public IgniteFuture<Map<K, V>> getAllOutTxAsync(List<K> keys);
 
     /**
      * Checks whether this cache is GGFS data cache.

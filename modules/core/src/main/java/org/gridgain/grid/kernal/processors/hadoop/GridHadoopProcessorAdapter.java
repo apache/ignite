@@ -47,7 +47,7 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
      * @param jobInfo Job info to submit.
      * @return Execution future.
      */
-    public abstract GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
+    public abstract IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
 
     /**
      * Gets Hadoop job execution status.
@@ -74,7 +74,7 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
      * @return Job finish future or {@code null}.
      * @throws GridException If failed.
      */
-    public abstract GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
+    public abstract IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
 
     /**
      * Kills job.

@@ -1049,8 +1049,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         // Thread that prepares future should remove it and install listener.
                         curEvictFut.compareAndSet(fut, null);
 
-                        fut.listenAsync(new CI1<GridFuture<?>>() {
-                            @Override public void apply(GridFuture<?> f) {
+                        fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                            @Override public void apply(IgniteFuture<?> f) {
                                 if (!busyLock.enterBusy()) {
                                     if (log.isDebugEnabled())
                                         log.debug("Will not notify eviction future completion (grid is stopping): " +

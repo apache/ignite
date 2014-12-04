@@ -182,8 +182,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** {@inheritDoc} */
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<Map<K, V>>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(GridFuture<Map<K, V>> f) {
+            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<Map<K, V>>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(IgniteFuture<Map<K, V>> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -194,7 +194,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (GridFuture<Map<K, V>> fut : futures())
+        for (IgniteFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -213,7 +213,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param res Result.
      */
     void onResult(UUID nodeId, GridNearGetResponse<K, V> res) {
-        for (GridFuture<Map<K, V>> fut : futures())
+        for (IgniteFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -242,7 +242,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<Map<K, V>> f) {
+    private boolean isMini(IgniteFuture<Map<K, V>> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -315,8 +315,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 }
 
                 // Add new future.
-                add(fut.chain(new C1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
-                    @Override public Map<K, V> apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
+                add(fut.chain(new C1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
+                    @Override public Map<K, V> apply(IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
                         try {
                             return loadEntries(n.id(), mappedKeys.keySet(), fut.get(), saved, topVer);
                         }
@@ -704,8 +704,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             else {
                 final RemapTimeoutObject timeout = new RemapTimeoutObject(ctx.config().getNetworkTimeout(), topVer, e);
 
-                ctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<GridFuture<Long>>() {
-                    @Override public void apply(GridFuture<Long> longGridFuture) {
+                ctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<IgniteFuture<Long>>() {
+                    @Override public void apply(IgniteFuture<Long> longIgniteFuture) {
                         if (timeout.finish()) {
                             ctx.timeout().removeTimeoutObject(timeout);
 
@@ -754,10 +754,10 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                GridFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
+                IgniteFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
 
-                topFut.listenAsync(new CIX1<GridFuture<Long>>() {
-                    @Override public void applyx(GridFuture<Long> fut) throws GridException {
+                topFut.listenAsync(new CIX1<IgniteFuture<Long>>() {
+                    @Override public void applyx(IgniteFuture<Long> fut) throws GridException {
                         long readyTopVer = fut.get();
 
                         // This will append new futures to compound list.

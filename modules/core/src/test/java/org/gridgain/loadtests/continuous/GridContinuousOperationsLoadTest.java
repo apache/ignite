@@ -173,7 +173,7 @@ public class GridContinuousOperationsLoadTest {
             X.println("Starting " + threadsCnt + " generator thread(s).");
 
             // Start generator threads.
-            GridFuture<Long> genFut = runMultiThreadedAsync(new Callable<Object>() {
+            IgniteFuture<Long> genFut = runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     byte[] val = new byte[valSize];
                     ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();

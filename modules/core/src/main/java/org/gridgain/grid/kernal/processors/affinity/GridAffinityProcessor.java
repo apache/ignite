@@ -53,7 +53,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     private static final String NULL_NAME = U.id8(UUID.randomUUID());
 
     /** Affinity map. */
-    private final ConcurrentMap<AffinityAssignmentKey, GridFuture<AffinityInfo>> affMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<AffinityAssignmentKey, IgniteFuture<AffinityInfo>> affMap = new ConcurrentHashMap8<>();
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
@@ -247,7 +247,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     private AffinityInfo affinityCache(@Nullable final String cacheName, long topVer) throws GridException {
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
-        GridFuture<AffinityInfo> fut = affMap.get(key);
+        IgniteFuture<AffinityInfo> fut = affMap.get(key);
 
         if (fut != null)
             return fut.get();
@@ -264,7 +264,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)),
                 cctx.portableEnabled());
 
-            GridFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(ctx, info));
+            IgniteFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(ctx, info));
 
             if (old != null)
                 info = old.get();
@@ -285,7 +285,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         GridFutureAdapter<AffinityInfo> fut0 = new GridFutureAdapter<>();
 
-        GridFuture<AffinityInfo> old = affMap.putIfAbsent(key, fut0);
+        IgniteFuture<AffinityInfo> old = affMap.putIfAbsent(key, fut0);
 
         if (old != null)
             return old.get();

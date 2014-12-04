@@ -28,7 +28,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
 /**
  * Future adapter.
  */
-public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements GridFuture<R>, Externalizable {
+public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements IgniteFuture<R>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -70,7 +70,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private boolean valid = true;
 
     /** Asynchronous listeners. */
-    private Collection<IgniteInClosure<? super GridFuture<R>>> lsnrs;
+    private Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs;
 
     /** Context. */
     protected GridKernalContext ctx;
@@ -252,7 +252,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable final IgniteInClosure<? super GridFuture<R>> lsnr) {
+    @Override public void listenAsync(@Nullable final IgniteInClosure<? super IgniteFuture<R>> lsnr) {
         if (lsnr != null) {
             checkValid();
 
@@ -291,7 +291,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
         synchronized (mux) {
             if (lsnrs == null)
                 return;
@@ -300,10 +300,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                 lsnrs.clear();
             else {
                 // Iterate through the whole list, removing all occurrences, if any.
-                for (Iterator<IgniteInClosure<? super GridFuture<R>>> it = lsnrs.iterator(); it.hasNext();) {
-                    IgniteInClosure<? super GridFuture<R>> l1 = it.next();
+                for (Iterator<IgniteInClosure<? super IgniteFuture<R>>> it = lsnrs.iterator(); it.hasNext();) {
+                    IgniteInClosure<? super IgniteFuture<R>> l1 = it.next();
 
-                    for (IgniteInClosure<? super GridFuture<R>> l2 : lsnr)
+                    for (IgniteInClosure<? super IgniteFuture<R>> l2 : lsnr)
                         // Must be l1.equals(l2), not l2.equals(l1), because of the way listeners are added.
                         if (l1.equals(l2))
                             it.remove();
@@ -313,7 +313,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridFuture<T> chain(final IgniteClosure<? super GridFuture<R>, T> doneCb) {
+    @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
         return new ChainFuture<>(ctx, syncNotify, this, doneCb);
     }
 
@@ -321,7 +321,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * Notifies all registered listeners.
      */
     private void notifyListeners() {
-        final Collection<IgniteInClosure<? super GridFuture<R>>> lsnrs0;
+        final Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs0;
 
         synchronized (mux) {
             lsnrs0 = lsnrs;
@@ -335,7 +335,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         assert !lsnrs0.isEmpty();
 
         if (concurNotify) {
-            for (final IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs0)
+            for (final IgniteInClosure<? super IgniteFuture<R>> lsnr : lsnrs0)
                 ctx.closure().runLocalSafe(new GPR() {
                     @Override public void run() {
                         notifyListener(lsnr);
@@ -349,13 +349,13 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                     @Override public void run() {
                         // Since concurrent notifications are off, we notify
                         // all listeners in one thread.
-                        for (IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs0)
+                        for (IgniteInClosure<? super IgniteFuture<R>> lsnr : lsnrs0)
                             notifyListener(lsnr);
                     }
                 }, true);
             }
             else
-                for (IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs0)
+                for (IgniteInClosure<? super IgniteFuture<R>> lsnr : lsnrs0)
                     notifyListener(lsnr);
         }
     }
@@ -365,7 +365,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      *
      * @param lsnr Listener.
      */
-    private void notifyListener(IgniteInClosure<? super GridFuture<R>> lsnr) {
+    private void notifyListener(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
         assert lsnr != null;
 
         try {
@@ -586,7 +586,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         private GridFutureAdapter<R> fut;
 
         /** */
-        private IgniteClosure<? super GridFuture<R>, T> doneCb;
+        private IgniteClosure<? super IgniteFuture<R>, T> doneCb;
 
         /**
          *
@@ -602,7 +602,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
          * @param doneCb Closure.
          */
         ChainFuture(GridKernalContext ctx, boolean syncNotify,
-            GridFutureAdapter<R> fut, IgniteClosure<? super GridFuture<R>, T> doneCb) {
+            GridFutureAdapter<R> fut, IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
             super(ctx, syncNotify);
 
             this.fut = fut;

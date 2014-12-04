@@ -30,7 +30,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>();
 
         for (int i = 0; i < 5; i++) {
-            GridFuture<Boolean> part = new GridFinishedFuture<>(ctx, true);
+            IgniteFuture<Boolean> part = new GridFinishedFuture<>(ctx, true);
 
             part.syncNotify(true);
 
@@ -134,7 +134,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
 
         fut.markInitialized();
 
-        GridFuture<?> complete = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> complete = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 GridFutureAdapter<Boolean> part;
 
@@ -169,7 +169,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
 
         fut.markInitialized();
 
-        GridFuture<?> complete = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> complete = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 GridFutureAdapter<Boolean> part;
 

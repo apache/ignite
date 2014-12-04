@@ -105,7 +105,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Throwable> error = new AtomicReference<>();
 
-        GridFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Random rnd = new Random();

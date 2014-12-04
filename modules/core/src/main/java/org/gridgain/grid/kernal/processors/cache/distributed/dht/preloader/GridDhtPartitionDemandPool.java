@@ -161,7 +161,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     /**
      * @return Future for {@link GridCachePreloadMode#SYNC} mode.
      */
-    GridFuture<?> syncFuture() {
+    IgniteFuture<?> syncFuture() {
         return syncFut;
     }
 
@@ -206,8 +206,8 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Forcing preload event for future: " + exchFut);
 
-            exchFut.listenAsync(new CI1<GridFuture<Long>>() {
-                @Override public void apply(GridFuture<Long> t) {
+            exchFut.listenAsync(new CI1<IgniteFuture<Long>>() {
+                @Override public void apply(IgniteFuture<Long> t) {
                     cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
             });
@@ -362,8 +362,8 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
-                    exchFut.listenAsync(new CI1<GridFuture<Long>>() {
-                        @Override public void apply(GridFuture<Long> f) {
+                    exchFut.listenAsync(new CI1<IgniteFuture<Long>>() {
+                        @Override public void apply(IgniteFuture<Long> f) {
                             cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }
                     });
@@ -812,7 +812,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                 int preloadOrder = cctx.config().getPreloadOrder();
 
                 if (preloadOrder > 0) {
-                    GridFuture<?> fut = cctx.kernalContext().cache().orderedPreloadFuture(preloadOrder);
+                    IgniteFuture<?> fut = cctx.kernalContext().cache().orderedPreloadFuture(preloadOrder);
 
                     try {
                         if (fut != null) {

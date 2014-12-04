@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
-import org.gridgain.grid.GridFuture;
+import org.gridgain.grid.IgniteFuture;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.X;
 import org.gridgain.testframework.junits.common.*;
@@ -256,7 +256,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 int x = 0;
 
@@ -309,7 +309,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             final LongAdder locAdder = new LongAdder();
 
-            GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Random rnd = new GridRandom();
 

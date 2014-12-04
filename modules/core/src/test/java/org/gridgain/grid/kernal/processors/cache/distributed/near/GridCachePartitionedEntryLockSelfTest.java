@@ -53,7 +53,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
 
                 comp.call(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
-                        GridFuture<Boolean> f = e.lockAsync(1000);
+                        IgniteFuture<Boolean> f = e.lockAsync(1000);
 
                         try {
                             f.get(100);
@@ -75,7 +75,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
                     }
                 });
 
-                GridFuture<Boolean> f = comp.future();
+                IgniteFuture<Boolean> f = comp.future();
 
                 // Let another thread start.
                 Thread.sleep(300);

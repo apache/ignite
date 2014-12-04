@@ -104,7 +104,7 @@ public interface GridCacheQueries<K, V> {
      *
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public GridFuture<?> rebuildIndexes(Class<?> cls);
+    public IgniteFuture<?> rebuildIndexes(Class<?> cls);
 
     /**
      * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
@@ -117,7 +117,7 @@ public interface GridCacheQueries<K, V> {
      *
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public GridFuture<?> rebuildIndexes(String typeName);
+    public IgniteFuture<?> rebuildIndexes(String typeName);
 
     /**
      * Forces this cache to rebuild search indexes of all types. Sometimes indexes
@@ -128,7 +128,7 @@ public interface GridCacheQueries<K, V> {
      *
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public GridFuture<?> rebuildAllIndexes();
+    public IgniteFuture<?> rebuildAllIndexes();
 
     /**
      * Accumulated metrics for all queries executed for this cache.

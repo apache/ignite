@@ -31,7 +31,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     private Runnable run;
 
     /** */
-    private GridFuture<?> fut;
+    private IgniteFuture<?> fut;
 
     /**
      * Required by {@link Externalizable}.

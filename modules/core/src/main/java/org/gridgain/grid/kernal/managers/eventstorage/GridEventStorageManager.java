@@ -653,7 +653,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param types Event types to wait for.
      * @return Event future.
      */
-    public <T extends GridEvent> GridFuture<T> waitForEvent(@Nullable final IgnitePredicate<T> p,
+    public <T extends GridEvent> IgniteFuture<T> waitForEvent(@Nullable final IgnitePredicate<T> p,
         @Nullable int... types) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<>(ctx);
 
@@ -752,7 +752,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param timeout Maximum time to wait for result, if {@code 0}, then wait until result is received.
      * @return Collection of events.
      */
-    public <T extends GridEvent> GridFuture<List<T>> remoteEventsAsync(final IgnitePredicate<T> p,
+    public <T extends GridEvent> IgniteFuture<List<T>> remoteEventsAsync(final IgnitePredicate<T> p,
         final Collection<? extends ClusterNode> nodes, final long timeout) {
         assert p != null;
         assert nodes != null;

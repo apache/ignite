@@ -84,7 +84,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut1 = multithreadedAsync(
+        IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!done.get()) {
@@ -104,7 +104,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
             3
         );
 
-        GridFuture<?> fut2 = multithreadedAsync(
+        IgniteFuture<?> fut2 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!done.get()) {

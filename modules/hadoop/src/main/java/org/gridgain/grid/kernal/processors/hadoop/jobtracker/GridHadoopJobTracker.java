@@ -66,8 +66,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     private GridSpinReadWriteLock busyLock;
 
     /** Closure to check result of async transform of system cache. */
-    private final IgniteInClosure<GridFuture<?>> failsLog = new CI1<GridFuture<?>>() {
-        @Override public void apply(GridFuture<?> gridFut) {
+    private final IgniteInClosure<IgniteFuture<?>> failsLog = new CI1<IgniteFuture<?>>() {
+        @Override public void apply(IgniteFuture<?> gridFut) {
             try {
                 gridFut.get();
             }
@@ -193,7 +193,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @return Job completion future.
      */
     @SuppressWarnings("unchecked")
-    public GridFuture<GridHadoopJobId> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
+    public IgniteFuture<GridHadoopJobId> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
             return new GridFinishedFutureEx<>(new GridException("Failed to execute map-reduce job " +
                 "(grid is stopping): " + info));
@@ -300,7 +300,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @return Finish future or {@code null}.
      * @throws GridException If failed.
      */
-    @Nullable public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+    @Nullable public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         if (!busyLock.tryReadLock())
             return null; // Grid is stopping.
 
@@ -992,7 +992,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             busyLock.readUnlock();
         }
 
-        GridFuture<?> fut = finishFuture(jobId);
+        IgniteFuture<?> fut = finishFuture(jobId);
 
         if (fut != null) {
             try {
@@ -1141,8 +1141,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 return;
             }
 
-            IgniteInClosure<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
-                @Override public void applyx(GridFuture<?> f) {
+            IgniteInClosure<IgniteFuture<?>> cacheUpdater = new CIX1<IgniteFuture<?>>() {
+                @Override public void applyx(IgniteFuture<?> f) {
                     Throwable err = null;
 
                     if (f != null) {
@@ -1191,8 +1191,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 // Fail the whole job.
                 transform(jobId, new RemoveMappersClosure(prev, currMappers, status.failCause()));
             else {
-                ctx.shuffle().flush(jobId).listenAsync(new CIX1<GridFuture<?>>() {
-                    @Override public void applyx(GridFuture<?> f) {
+                ctx.shuffle().flush(jobId).listenAsync(new CIX1<IgniteFuture<?>>() {
+                    @Override public void applyx(IgniteFuture<?> f) {
                         Throwable err = null;
 
                         if (f != null) {

@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * This interface should be implemented by all distributed futures.
  */
-public interface GridCacheFuture<R> extends GridFuture<R> {
+public interface GridCacheFuture<R> extends IgniteFuture<R> {
     /**
      * @return Unique identifier for this future.
      */

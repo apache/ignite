@@ -204,7 +204,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> reloadAsync() {
+    @Override public IgniteFuture<V> reloadAsync() {
         throw unsupported();
     }
 
@@ -241,7 +241,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> getAsync() {
+    @Override public IgniteFuture<V> getAsync() {
         throw unsupported();
     }
 
@@ -251,7 +251,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> setAsync(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<V> setAsync(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -261,7 +261,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> setxAsync(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<Boolean> setxAsync(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -271,7 +271,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
+    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
         throw unsupported();
     }
 
@@ -281,7 +281,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> replaceAsync(V val) {
+    @Override public IgniteFuture<V> replaceAsync(V val) {
         throw unsupported();
     }
 
@@ -291,7 +291,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+    @Override public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal) {
         throw unsupported();
     }
 
@@ -311,7 +311,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> setIfAbsentAsync(V val) {
+    @Override public IgniteFuture<V> setIfAbsentAsync(V val) {
         throw unsupported();
     }
 
@@ -321,7 +321,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> setxIfAbsentAsync(V val) {
+    @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
         throw unsupported();
     }
 
@@ -331,7 +331,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> replacexAsync(V val) {
+    @Override public IgniteFuture<Boolean> replacexAsync(V val) {
         throw unsupported();
     }
 
@@ -341,7 +341,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> removeAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<V> removeAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -351,7 +351,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> removexAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<Boolean> removexAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -361,7 +361,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> removeAsync(V val) {
+    @Override public IgniteFuture<Boolean> removeAsync(V val) {
         throw unsupported();
     }
 
@@ -454,7 +454,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> lockAsync(long timeout,
+    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         throw unsupported();
     }

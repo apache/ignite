@@ -73,7 +73,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req instanceof GridRestLogRequest : "Invalid command for topology handler: " + req;
 
         assert SUPPORTED_COMMANDS.contains(req.command());

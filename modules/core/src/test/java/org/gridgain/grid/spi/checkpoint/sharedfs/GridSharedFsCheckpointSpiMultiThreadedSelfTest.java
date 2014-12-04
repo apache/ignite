@@ -58,7 +58,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
 
         final AtomicBoolean fail = new AtomicBoolean();
 
-        GridFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     try {
@@ -78,7 +78,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
             "writer-1"
         );
 
-        GridFuture fut2 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     try{
@@ -98,7 +98,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
             "writer-2"
         );
 
-        GridFuture fut3 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture fut3 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (writeFinished.get() < THREAD_CNT * 2) {

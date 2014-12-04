@@ -118,7 +118,7 @@ public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
     /**
      * Schedule sending of given email to all configured admin emails.
      */
-    GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
+    IgniteFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
 
     /**
      * Get GGFS instance returning null if it doesn't exist.

@@ -37,7 +37,7 @@ public interface GridHadoop {
      * @param jobInfo Job info to submit.
      * @return Execution future.
      */
-    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
+    public IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
 
     /**
      * Gets Hadoop job execution status.
@@ -64,7 +64,7 @@ public interface GridHadoop {
      * @return Job finish future or {@code null} in case job with the given ID is not found.
      * @throws GridException If failed.
      */
-    @Nullable public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
+    @Nullable public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
 
     /**
      * Kills job.

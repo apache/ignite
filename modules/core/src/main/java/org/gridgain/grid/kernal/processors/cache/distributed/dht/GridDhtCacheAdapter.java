@@ -237,7 +237,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Topology version.
      * @return Finish future.
      */
-    @Nullable public GridFuture<?> multiUpdateFinishFuture(long topVer) {
+    @Nullable public IgniteFuture<?> multiUpdateFinishFuture(long topVer) {
         GridCompoundFuture<IgniteUuid, Object> fut = null;
 
         for (MultiUpdateFuture multiFut : multiTxFuts.values()) {
@@ -425,7 +425,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param filter {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public GridFuture<Map<K, V>> getAllAsync(
+    @Override public IgniteFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
@@ -455,7 +455,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param filter {@inheritDoc}
      * @return {@inheritDoc}
      */
-    GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
+    IgniteFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
         String taskName, boolean deserializePortable, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable, false,
             filter);
@@ -488,12 +488,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest<K, V> req) {
         assert isAffinityNode(cacheCfg);
 
-        GridFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
+        IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
             getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.subjectId(),
                 req.taskNameHash(), false, req.filter());
 
-        fut.listenAsync(new CI1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
-            @Override public void apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
+        fut.listenAsync(new CI1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
+            @Override public void apply(IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
                 GridNearGetResponse<K, V> res = new GridNearGetResponse<>(ctx.cacheId(),
                     req.futureId(), req.miniId(), req.version());
 

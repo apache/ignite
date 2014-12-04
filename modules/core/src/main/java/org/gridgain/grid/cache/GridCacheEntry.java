@@ -118,7 +118,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @return See {@link GridCacheProjection#reloadAsync(Object)}.
      */
-    public GridFuture<V> reloadAsync();
+    public IgniteFuture<V> reloadAsync();
 
     /**
      * This method has the same semantic as
@@ -218,7 +218,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @return See {@link GridCacheProjection#getAsync(Object)}.
      */
-    public GridFuture<V> getAsync();
+    public IgniteFuture<V> getAsync();
 
     /**
      * This method has the same semantic as {@link #set(Object, org.apache.ignite.lang.IgnitePredicate[])} method, however it
@@ -248,7 +248,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param filter See {@link GridCacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public GridFuture<V> setAsync(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public IgniteFuture<V> setAsync(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -267,7 +267,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param val See {@link GridCacheProjection#putIfAbsentAsync(Object, Object)}
      * @return See {@link GridCacheProjection#putIfAbsentAsync(Object, Object)}.
      */
-    public GridFuture<V> setIfAbsentAsync(V val);
+    public IgniteFuture<V> setIfAbsentAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -289,7 +289,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param filter See {@link GridCacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public GridFuture<Boolean> setxAsync(V val,
+    public IgniteFuture<Boolean> setxAsync(V val,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -309,7 +309,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param val See {@link GridCacheProjection#putxIfAbsentAsync(Object, Object)}
      * @return See {@link GridCacheProjection#putxIfAbsentAsync(Object, Object)}.
      */
-    public GridFuture<Boolean> setxIfAbsentAsync(V val);
+    public IgniteFuture<Boolean> setxIfAbsentAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -330,7 +330,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *      {@code null}, the associated value will be removed from cache.
      * @return Transform operation future.
      */
-    public GridFuture<?> transformAsync(IgniteClosure<V, V> transformer);
+    public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer);
 
     /**
      * This method has the same semantic as
@@ -349,7 +349,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param val See {@link GridCacheProjection#replaceAsync(Object, Object)}
      * @return See {@link GridCacheProjection#replaceAsync(Object, Object)}.
      */
-    public GridFuture<V> replaceAsync(V val);
+    public IgniteFuture<V> replaceAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -368,7 +368,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param val See {@link GridCacheProjection#replacexAsync(Object, Object)}
      * @return See {@link GridCacheProjection#replacexAsync(Object, Object)}.
      */
-    public GridFuture<Boolean> replacexAsync(V val);
+    public IgniteFuture<Boolean> replacexAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -389,7 +389,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param newVal See {@link GridCacheProjection#replaceAsync(Object, Object, Object)}
      * @return See {@link GridCacheProjection#replaceAsync(Object, Object)}.
      */
-    public GridFuture<Boolean> replaceAsync(V oldVal, V newVal);
+    public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal);
 
     /**
      * This method has the same semantic as
@@ -408,7 +408,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param filter See {@link GridCacheProjection#removeAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#removeAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public GridFuture<V> removeAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public IgniteFuture<V> removeAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -427,7 +427,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param filter See {@link GridCacheProjection#removexAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#removexAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public GridFuture<Boolean> removexAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public IgniteFuture<Boolean> removexAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -446,7 +446,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param val See {@link GridCacheProjection#removeAsync(Object, Object)}.
      * @return See {@link GridCacheProjection#removeAsync(Object, Object)}.
      */
-    public GridFuture<Boolean> removeAsync(V val);
+    public IgniteFuture<Boolean> removeAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -518,7 +518,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *      {@code false} otherwise.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public GridFuture<Boolean> lockAsync(long timeout,
+    public IgniteFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**

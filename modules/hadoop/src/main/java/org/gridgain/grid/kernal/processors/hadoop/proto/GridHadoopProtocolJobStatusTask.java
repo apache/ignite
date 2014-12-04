@@ -46,14 +46,14 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
             pollDelay = DFLT_POLL_DELAY;
 
         if (pollDelay > 0) {
-            GridFuture<?> fut = hadoop.finishFuture(jobId);
+            IgniteFuture<?> fut = hadoop.finishFuture(jobId);
 
             if (fut != null) {
                 if (fut.isDone() || F.eq(jobCtx.getAttribute(ATTR_HELD), true))
                     return hadoop.status(jobId);
                 else {
-                    fut.listenAsync(new IgniteInClosure<GridFuture<?>>() {
-                        @Override public void apply(GridFuture<?> fut0) {
+                    fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
+                        @Override public void apply(IgniteFuture<?> fut0) {
                             jobCtx.callcc();
                         }
                     });

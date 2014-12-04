@@ -414,7 +414,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             assertEquals(1, futs.size());
 
             GridSpiCloseableIterator<GridIndexingKeyValueRow<Integer, Integer>> iter =
-                U.field(((GridFuture)F.first(futs.values()).get()).get(), "iter");
+                U.field(((IgniteFuture)F.first(futs.values()).get()).get(), "iter");
 
             ResultSet rs = U.field(iter, "data");
 

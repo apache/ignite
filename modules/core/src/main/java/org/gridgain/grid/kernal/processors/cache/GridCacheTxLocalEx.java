@@ -29,7 +29,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
     /**
      * @return Future for this transaction.
      */
-    public GridFuture<GridCacheTxEx<K, V>> future();
+    public IgniteFuture<GridCacheTxEx<K, V>> future();
 
     /**
      * @return Commit error.
@@ -64,7 +64,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param filter Entry filter.
      * @return Future for this get.
      */
-    public GridFuture<Map<K, V>> getAllAsync(
+    public IgniteFuture<Map<K, V>> getAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -79,7 +79,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param ttl Time to live for entry. If negative, leave unchanged.
      * @return Future for put operation.
      */
-    public GridFuture<GridCacheReturn<V>> putAllAsync(
+    public IgniteFuture<GridCacheReturn<V>> putAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, ? extends V> map,
         boolean retval,
@@ -91,7 +91,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param map Map to put.
      * @return Transform operation future.
      */
-    public GridFuture<GridCacheReturn<V>> transformAllAsync(
+    public IgniteFuture<GridCacheReturn<V>> transformAllAsync(
         GridCacheContext<K, V> cacheCtx,
         @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> map,
         boolean retval,
@@ -105,7 +105,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param filter Filter.
      * @return Future for asynchronous remove.
      */
-    public GridFuture<GridCacheReturn<V>> removeAllAsync(
+    public IgniteFuture<GridCacheReturn<V>> removeAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -116,7 +116,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param drMap DR map to put.
      * @return Future for DR put operation.
      */
-    public GridFuture<?> putAllDrAsync(
+    public IgniteFuture<?> putAllDrAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, GridCacheDrInfo<V>> drMap);
 
@@ -124,7 +124,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param drMap DR map.
      * @return Future for asynchronous remove.
      */
-    public GridFuture<?> removeAllDrAsync(
+    public IgniteFuture<?> removeAllDrAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, GridCacheVersion> drMap);
 
@@ -134,7 +134,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param keys Keys to lock.
      * @return Lock future.
      */
-    public GridFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys);
+    public IgniteFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys);
 
     /**
      * @return {@code True} if keys from the same partition are allowed to be enlisted in group-lock transaction.
@@ -157,7 +157,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param deserializePortable Deserialize portable flag.
      * @return Future with {@code True} value if loading took place.
      */
-    public GridFuture<Boolean> loadMissing(
+    public IgniteFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
         boolean async,
         Collection<? extends K> keys,

@@ -87,7 +87,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
 
-            GridFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+            IgniteFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
 
             fut.get();
 

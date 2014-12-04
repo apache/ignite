@@ -1207,12 +1207,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param f Target future.
      * @return Wrapped future that is aware of cloning behaviour.
      */
-    public GridFuture<V> wrapClone(GridFuture<V> f) {
+    public IgniteFuture<V> wrapClone(IgniteFuture<V> f) {
         if (!hasFlag(CLONE))
             return f;
 
-        return f.chain(new CX1<GridFuture<V>, V>() {
-            @Override public V applyx(GridFuture<V> f) throws GridException {
+        return f.chain(new CX1<IgniteFuture<V>, V>() {
+            @Override public V applyx(IgniteFuture<V> f) throws GridException {
                 return cloneValue(f.get());
             }
         });
@@ -1222,12 +1222,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param f Target future.
      * @return Wrapped future that is aware of cloning behaviour.
      */
-    public GridFuture<Map<K, V>> wrapCloneMap(GridFuture<Map<K, V>> f) {
+    public IgniteFuture<Map<K, V>> wrapCloneMap(IgniteFuture<Map<K, V>> f) {
         if (!hasFlag(CLONE))
             return f;
 
-        return f.chain(new CX1<GridFuture<Map<K, V>>, Map<K, V>>() {
-            @Override public Map<K, V> applyx(GridFuture<Map<K, V>> f) throws GridException {
+        return f.chain(new CX1<IgniteFuture<Map<K, V>>, Map<K, V>>() {
+            @Override public Map<K, V> applyx(IgniteFuture<Map<K, V>> f) throws GridException {
                 Map<K, V> map = new GridLeanMap<>();
 
                 for (Map.Entry<K, V> e : f.get().entrySet())

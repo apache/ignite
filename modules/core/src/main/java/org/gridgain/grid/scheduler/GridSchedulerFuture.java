@@ -18,7 +18,7 @@ import java.util.concurrent.*;
  * when calling {@link GridScheduler#scheduleLocal(Callable, String)} or
  * {@link GridScheduler#scheduleLocal(Runnable, String)} methods.
  */
-public interface GridSchedulerFuture<R> extends GridFuture<R> {
+public interface GridSchedulerFuture<R> extends IgniteFuture<R> {
     /**
      * Gets scheduled task ID.
      *

@@ -157,7 +157,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpC
 
         long start = System.currentTimeMillis();
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     while (cntr.getAndIncrement() < msgCnt) {

@@ -204,7 +204,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to await for.
      * @return Future that will be completed after affinity for topology version {@code topVer} is calculated.
      */
-    public GridFuture<Long> readyFuture(long topVer) {
+    public IgniteFuture<Long> readyFuture(long topVer) {
         GridAffinityAssignment aff = head.get();
 
         if (aff.topologyVersion() >= topVer) {
@@ -338,7 +338,7 @@ public class GridAffinityAssignmentCache {
                 log.debug("Will wait for topology version [locNodeId=" + ctx.localNodeId() +
                 ", topVer=" + topVer + ']');
 
-            GridFuture<Long> fut = readyFuture(topVer);
+            IgniteFuture<Long> fut = readyFuture(topVer);
 
             if (fut != null)
                 fut.get();

@@ -181,8 +181,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     @SuppressWarnings("unchecked")
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<Map<K, V>>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(GridFuture<Map<K, V>> f) {
+            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<Map<K, V>>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(IgniteFuture<Map<K, V>> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -193,7 +193,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (GridFuture<Map<K, V>> fut : futures())
+        for (IgniteFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -212,7 +212,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridNearGetResponse<K, V> res) {
-        for (GridFuture<Map<K, V>> fut : futures())
+        for (IgniteFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -241,7 +241,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<Map<K, V>> f) {
+    private boolean isMini(IgniteFuture<Map<K, V>> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -318,8 +318,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 }
 
                 // Add new future.
-                add(fut.chain(new C1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
-                    @Override public Map<K, V> apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
+                add(fut.chain(new C1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
+                    @Override public Map<K, V> apply(IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
                         try {
                             return createResultMap(fut.get());
                         }
@@ -648,11 +648,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                GridFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
+                IgniteFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
 
-                topFut.listenAsync(new CIX1<GridFuture<Long>>() {
+                topFut.listenAsync(new CIX1<IgniteFuture<Long>>() {
                     @SuppressWarnings("unchecked")
-                    @Override public void applyx(GridFuture<Long> fut) throws GridException {
+                    @Override public void applyx(IgniteFuture<Long> fut) throws GridException {
                         long topVer = fut.get();
 
                         // This will append new futures to compound list.

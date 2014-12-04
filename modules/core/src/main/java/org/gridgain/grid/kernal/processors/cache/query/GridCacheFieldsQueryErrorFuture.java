@@ -40,7 +40,7 @@ public class GridCacheFieldsQueryErrorFuture extends GridCacheQueryErrorFuture<L
     /**
      * @return Metadata.
      */
-    public GridFuture<List<GridIndexingFieldMetadata>> metadata() {
+    public IgniteFuture<List<GridIndexingFieldMetadata>> metadata() {
         return new GridFinishedFuture<>(ctx, incMeta ? Collections.<GridIndexingFieldMetadata>emptyList() : null);
     }
 }

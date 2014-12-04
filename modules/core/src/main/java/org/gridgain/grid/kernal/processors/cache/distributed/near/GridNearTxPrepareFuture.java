@@ -131,8 +131,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -155,7 +155,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
-        for (GridFuture<?> fut : futures())
+        for (IgniteFuture<?> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -251,7 +251,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
         if (!isDone()) {
-            for (GridFuture<GridCacheTxEx<K, V>> fut : pending()) {
+            for (IgniteFuture<GridCacheTxEx<K, V>> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -290,7 +290,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<?> f) {
+    private boolean isMini(IgniteFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -363,8 +363,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             else {
                 topFut.syncNotify(false);
 
-                topFut.listenAsync(new CI1<GridFuture<Long>>() {
-                    @Override public void apply(GridFuture<Long> t) {
+                topFut.listenAsync(new CI1<IgniteFuture<Long>>() {
+                    @Override public void apply(IgniteFuture<Long> t) {
                         prepare();
                     }
                 });
@@ -562,7 +562,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            GridFuture<GridCacheTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
+            IgniteFuture<GridCacheTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(

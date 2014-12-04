@@ -255,7 +255,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         final GridCache<Integer, String> cache = cache();
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.

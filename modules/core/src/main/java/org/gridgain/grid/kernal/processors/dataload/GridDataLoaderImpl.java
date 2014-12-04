@@ -108,12 +108,12 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
     /** Active futures of this data loader. */
     @GridToStringInclude
-    private final Collection<GridFuture<?>> activeFuts = new GridConcurrentHashSet<>();
+    private final Collection<IgniteFuture<?>> activeFuts = new GridConcurrentHashSet<>();
 
     /** Closure to remove from active futures. */
     @GridToStringExclude
-    private final IgniteInClosure<GridFuture<?>> rmvActiveFut = new IgniteInClosure<GridFuture<?>>() {
-        @Override public void apply(GridFuture<?> t) {
+    private final IgniteInClosure<IgniteFuture<?>> rmvActiveFut = new IgniteInClosure<IgniteFuture<?>>() {
+        @Override public void apply(IgniteFuture<?> t) {
             boolean rmv = activeFuts.remove(t);
 
             assert rmv;
@@ -248,7 +248,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> future() {
+    @Override public IgniteFuture<?> future() {
         return fut;
     }
 
@@ -337,14 +337,14 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
+    @Override public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
         A.notNull(entries, "entries");
 
         return addData(entries.entrySet());
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
+    @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
         enterBusy();
@@ -374,21 +374,21 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(Map.Entry<K, V> entry) throws GridException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws GridException, IllegalStateException {
         A.notNull(entry, "entry");
 
         return addData(F.asList(entry));
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(K key, V val) throws GridException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(K key, V val) throws GridException, IllegalStateException {
         A.notNull(key, "key");
 
         return addData(new Entry0<>(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeData(K key) throws GridException, IllegalStateException {
+    @Override public IgniteFuture<?> removeData(K key) throws GridException, IllegalStateException {
         return addData(key, null);
     }
 
@@ -468,8 +468,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             final Collection<Map.Entry<K, V>> entriesForNode = e.getValue();
 
-            IgniteInClosure<GridFuture<?>> lsnr = new IgniteInClosure<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> t) {
+            IgniteInClosure<IgniteFuture<?>> lsnr = new IgniteInClosure<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> t) {
                     try {
                         t.get();
 
@@ -523,11 +523,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     private void doFlush() throws GridException {
         lastFlushTime = U.currentTimeMillis();
 
-        List<GridFuture> activeFuts0 = null;
+        List<IgniteFuture> activeFuts0 = null;
 
         int doneCnt = 0;
 
-        for (GridFuture<?> f : activeFuts) {
+        for (IgniteFuture<?> f : activeFuts) {
             if (!f.isDone()) {
                 if (activeFuts0 == null)
                     activeFuts0 = new ArrayList<>((int)(activeFuts.size() * 1.2));
@@ -545,10 +545,10 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             return;
 
         while (true) {
-            Queue<GridFuture<?>> q = null;
+            Queue<IgniteFuture<?>> q = null;
 
             for (Buffer buf : bufMappings.values()) {
-                GridFuture<?> flushFut = buf.flush();
+                IgniteFuture<?> flushFut = buf.flush();
 
                 if (flushFut != null) {
                     if (q == null)
@@ -563,7 +563,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 boolean err = false;
 
-                for (GridFuture fut = q.poll(); fut != null; fut = q.poll()) {
+                for (IgniteFuture fut = q.poll(); fut != null; fut = q.poll()) {
                     try {
                         fut.get();
                     }
@@ -583,7 +583,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             doneCnt = 0;
 
             for (int i = 0; i < activeFuts0.size(); i++) {
-                GridFuture f = activeFuts0.get(i);
+                IgniteFuture f = activeFuts0.get(i);
 
                 if (f == null)
                     doneCnt++;
@@ -720,7 +720,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         private final ClusterNode node;
 
         /** Active futures. */
-        private final Collection<GridFuture<Object>> locFuts;
+        private final Collection<IgniteFuture<Object>> locFuts;
 
         /** Buffered entries. */
         private List<Map.Entry<K, V>> entries;
@@ -743,8 +743,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
         /** Closure to signal on task finish. */
         @GridToStringExclude
-        private final IgniteInClosure<GridFuture<Object>> signalC = new IgniteInClosure<GridFuture<Object>>() {
-            @Override public void apply(GridFuture<Object> t) {
+        private final IgniteInClosure<IgniteFuture<Object>> signalC = new IgniteInClosure<IgniteFuture<Object>>() {
+            @Override public void apply(IgniteFuture<Object> t) {
                 signalTaskFinished(t);
             }
         };
@@ -777,7 +777,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * @return Future for operation.
          */
         @Nullable GridFutureAdapter<?> update(Iterable<Map.Entry<K, V>> newEntries,
-            IgniteInClosure<GridFuture<?>> lsnr) throws GridInterruptedException {
+            IgniteInClosure<IgniteFuture<?>> lsnr) throws GridInterruptedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
@@ -820,7 +820,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          *
          * @throws GridInterruptedException If thread has been interrupted.
          */
-        @Nullable GridFuture<?> flush() throws GridInterruptedException {
+        @Nullable
+        IgniteFuture<?> flush() throws GridInterruptedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
@@ -841,14 +842,14 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             // Create compound future for this flush.
             GridCompoundFuture<Object, Object> res = null;
 
-            for (GridFuture<Object> f : locFuts) {
+            for (IgniteFuture<Object> f : locFuts) {
                 if (res == null)
                     res = new GridCompoundFuture<>(ctx);
 
                 res.add(f);
             }
 
-            for (GridFuture<Object> f : reqs.values()) {
+            for (IgniteFuture<Object> f : reqs.values()) {
                 if (res == null)
                     res = new GridCompoundFuture<>(ctx);
 
@@ -873,7 +874,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         /**
          * @param f Future that finished.
          */
-        private void signalTaskFinished(GridFuture<Object> f) {
+        private void signalTaskFinished(IgniteFuture<Object> f) {
             assert f != null;
 
             sem.release();
@@ -892,7 +893,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             incrementActiveTasks();
 
-            GridFuture<Object> fut;
+            IgniteFuture<Object> fut;
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
@@ -900,8 +901,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 locFuts.add(fut);
 
-                fut.listenAsync(new IgniteInClosure<GridFuture<Object>>() {
-                    @Override public void apply(GridFuture<Object> t) {
+                fut.listenAsync(new IgniteInClosure<IgniteFuture<Object>>() {
+                    @Override public void apply(IgniteFuture<Object> t) {
                         try {
                             boolean rmv = locFuts.remove(t);
 
@@ -1089,7 +1090,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         void cancelAll() {
             GridException err = new GridException("Data loader has been cancelled: " + GridDataLoaderImpl.this);
 
-            for (GridFuture<?> f : locFuts) {
+            for (IgniteFuture<?> f : locFuts) {
                 try {
                     f.cancel();
                 }

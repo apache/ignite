@@ -123,10 +123,10 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 cache.get(key);
 
-                GridFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
+                IgniteFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
 
-                fut.listenAsync(new CI1<GridFuture<?>>() {
-                    @Override public void apply(GridFuture<?> e) {
+                fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> e) {
                         latch.countDown();
                     }
                 });
@@ -186,9 +186,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             GridCacheAdapter<String, Integer> internal = grid.internalCache();
 
-            GridFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(key), 2);
+            IgniteFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(key), 2);
 
-            GridFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
+            IgniteFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
                 Collections.singletonList(key), 2);
 
             assert !nearFut.isDone();
@@ -220,12 +220,12 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         info("Start time: " + start);
 
-        GridFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
+        IgniteFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
 
         assert fut != null;
 
-        fut.listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> e) {
+        fut.listenAsync(new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> e) {
                 end.set(System.currentTimeMillis());
 
                 latch.countDown();
@@ -274,12 +274,12 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             info("Start time: " + start);
 
-            GridFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
+            IgniteFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
 
             assert fut != null;
 
-            fut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> e) {
+            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> e) {
                     end.set(System.currentTimeMillis());
 
                     latch.countDown();

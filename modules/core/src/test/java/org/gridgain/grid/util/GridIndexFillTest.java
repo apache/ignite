@@ -107,7 +107,7 @@ public class GridIndexFillTest extends GridCommonAbstractTest {
     public void testSnaptreeParallelBuild() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
-        GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

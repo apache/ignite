@@ -167,7 +167,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
             long start = System.currentTimeMillis();
 
-            GridFuture<?> fut = multithreadedAsync(
+            IgniteFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Override
                     public Object call() throws Exception {

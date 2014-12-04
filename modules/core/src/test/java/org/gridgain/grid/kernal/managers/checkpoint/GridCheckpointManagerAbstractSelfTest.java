@@ -243,7 +243,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             Ignite ignite = startGrid(gridName);
 
-            GridFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
+            IgniteFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
 
             executeAsync(ignite.compute(), GridMultiNodeTestCheckPointTask.class, null).get(2 * 60 * 1000);
 

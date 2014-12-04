@@ -81,7 +81,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     private boolean isBeingShutdown;
 
     /** List of executing or scheduled for execution tasks. */
-    private List<GridFuture<?>> futs = new ArrayList<>();
+    private List<IgniteFuture<?>> futs = new ArrayList<>();
 
     /** Rejected or completed tasks listener. */
     private TaskTerminateListener lsnr = new TaskTerminateListener<>();
@@ -145,7 +145,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
     /** {@inheritDoc} */
     @Override public List<Runnable> shutdownNow() {
-        List<GridFuture<?>> cpFuts;
+        List<IgniteFuture<?>> cpFuts;
 
         // Cancel all tasks.
         synchronized (mux) {
@@ -154,7 +154,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
             isBeingShutdown = true;
         }
 
-        for (GridFuture<?> task : cpFuts) {
+        for (IgniteFuture<?> task : cpFuts) {
             try {
                 task.cancel();
             }
@@ -192,17 +192,17 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         if (end < 0)
             end = Long.MAX_VALUE;
 
-        List<GridFuture<?>> locTasks;
+        List<IgniteFuture<?>> locTasks;
 
         // Cancel all tasks.
         synchronized (mux) {
             locTasks = new ArrayList<>(futs);
         }
 
-        Iterator<GridFuture<?>> iter = locTasks.iterator();
+        Iterator<IgniteFuture<?>> iter = locTasks.iterator();
 
         while (iter.hasNext() && now < end) {
-            GridFuture<?> fut = iter.next();
+            IgniteFuture<?> fut = iter.next();
 
             try {
                 fut.get(end - now);
@@ -255,8 +255,8 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         try {
             comp.run(task);
 
-            GridFuture<T> fut = comp.future().chain(new CX1<GridFuture<?>, T>() {
-                @Override public T applyx(GridFuture<?> fut) throws GridException {
+            IgniteFuture<T> fut = comp.future().chain(new CX1<IgniteFuture<?>, T>() {
+                @Override public T applyx(IgniteFuture<?> fut) throws GridException {
                     fut.get();
 
                     return res;
@@ -339,14 +339,14 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        Collection<GridFuture<T>> taskFuts = new ArrayList<>();
+        Collection<IgniteFuture<T>> taskFuts = new ArrayList<>();
 
         assert comp.isAsync();
 
         for (Callable<T> task : tasks) {
             // Execute task without predefined timeout.
             // GridFuture.cancel() will be called if timeout elapsed.
-            GridFuture<T> fut;
+            IgniteFuture<T> fut;
 
             try {
                 comp.call(task);
@@ -365,7 +365,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         boolean isInterrupted = false;
 
-        for (GridFuture<T> fut : taskFuts) {
+        for (IgniteFuture<T> fut : taskFuts) {
             if (!isInterrupted && now < end) {
                 try {
                     fut.get(end - now);
@@ -397,7 +397,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         List<Future<T>> futs = new ArrayList<>(taskFuts.size());
 
         // Convert futures.
-        for (GridFuture<T> fut : taskFuts) {
+        for (IgniteFuture<T> fut : taskFuts) {
             // Per executor service contract any task that was not completed
             // should be cancelled upon return.
             if (!fut.isDone())
@@ -414,7 +414,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      *
      * @param fut Future to cancel.
      */
-    private void cancelFuture(GridFuture<?> fut) {
+    private void cancelFuture(IgniteFuture<?> fut) {
         try {
             fut.cancel();
         }
@@ -479,13 +479,13 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        Collection<GridFuture<T>> taskFuts = new ArrayList<>();
+        Collection<IgniteFuture<T>> taskFuts = new ArrayList<>();
 
         assert comp.isAsync();
 
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
-            GridFuture<T> fut;
+            IgniteFuture<T> fut;
 
             try
             {
@@ -508,7 +508,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         int errCnt = 0;
 
-        for (GridFuture<T> fut : taskFuts) {
+        for (IgniteFuture<T> fut : taskFuts) {
             now = U.currentTimeMillis();
 
             boolean cancel = false;
@@ -595,7 +595,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      * @return Future for command.
      */
     @SuppressWarnings("unchecked")
-    private <T> Future<T> addFuture(GridFuture<T> fut) {
+    private <T> Future<T> addFuture(IgniteFuture<T> fut) {
         synchronized (mux) {
             if (!fut.isDone()) {
                 fut.listenAsync(lsnr);
@@ -610,12 +610,12 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /**
      * Listener to track tasks.
      */
-    private class TaskTerminateListener<T> implements IgniteInClosure<GridFuture<T>> {
+    private class TaskTerminateListener<T> implements IgniteInClosure<IgniteFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void apply(GridFuture<T> taskFut) {
+        @Override public void apply(IgniteFuture<T> taskFut) {
             synchronized (mux) {
                 futs.remove(taskFut);
             }
@@ -623,20 +623,20 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     }
 
     /**
-     * Wrapper for {@link GridFuture}.
+     * Wrapper for {@link org.gridgain.grid.IgniteFuture}.
      * Used for compatibility {@link Future} interface.
      * @param <T> The result type of the {@link Future} argument.
      */
     private class TaskFutureWrapper<T> implements Future<T> {
         /** */
-        private final GridFuture<T> fut;
+        private final IgniteFuture<T> fut;
 
         /**
          * Creates wrapper.
          *
          * @param fut Grid future.
          */
-        TaskFutureWrapper(GridFuture<T> fut) {
+        TaskFutureWrapper(IgniteFuture<T> fut) {
             assert fut != null;
 
             this.fut = fut;

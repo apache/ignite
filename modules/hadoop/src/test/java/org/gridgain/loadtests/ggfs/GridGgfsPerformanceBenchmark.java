@@ -78,7 +78,7 @@ public class GridGgfsPerformanceBenchmark {
 
         long start = System.currentTimeMillis();
 
-        GridFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 String fileIdx = op == OP_READ ? String.valueOf(idx.getAndIncrement()) : UUID.randomUUID().toString();
 

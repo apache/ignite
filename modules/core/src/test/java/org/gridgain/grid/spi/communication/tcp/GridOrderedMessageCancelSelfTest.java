@@ -118,7 +118,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @param fut Future to cancel.
      * @throws Exception If failed.
      */
-    private void testMessageSet(GridFuture<?> fut) throws Exception {
+    private void testMessageSet(IgniteFuture<?> fut) throws Exception {
         cancelLatch.await();
 
         assertTrue(fut.cancel());

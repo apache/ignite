@@ -208,7 +208,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
                 = ((GridKernal)g1).context().cache().context().exchange();
 
             // Wait for exchanges to complete.
-            for (GridFuture<?> fut : exchMgr.exchangeFutures())
+            for (IgniteFuture<?> fut : exchMgr.exchangeFutures())
                 fut.get();
 
             GridCacheAffinity<Integer> aff = affinity(c1);

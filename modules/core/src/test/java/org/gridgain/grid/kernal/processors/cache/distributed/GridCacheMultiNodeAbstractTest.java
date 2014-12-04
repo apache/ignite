@@ -225,7 +225,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
         addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
 
-        GridFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
+        IgniteFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
 
         assert f1.get(10000);
 
@@ -267,9 +267,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
         addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
 
-        GridFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
-        GridFuture<Boolean> f2 = cache2.lockAsync(1, 0L);
-        GridFuture<Boolean> f3 = cache3.lockAsync(1, 0L);
+        IgniteFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
+        IgniteFuture<Boolean> f2 = cache2.lockAsync(1, 0L);
+        IgniteFuture<Boolean> f3 = cache3.lockAsync(1, 0L);
 
         boolean l1 = false;
         boolean l2 = false;
@@ -354,9 +354,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, lsnr);
         addListener(ignite3, lsnr);
 
-        GridFuture<String> f1 = cache1.putAsync(2, "val1");
-        GridFuture<String> f2 = cache2.putAsync(2, "val2");
-        GridFuture<String> f3 = cache3.putAsync(2, "val3");
+        IgniteFuture<String> f1 = cache1.putAsync(2, "val1");
+        IgniteFuture<String> f2 = cache2.putAsync(2, "val2");
+        IgniteFuture<String> f3 = cache3.putAsync(2, "val3");
 
         String v1 = f1.get(20000);
 

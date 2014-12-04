@@ -109,7 +109,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
-            GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+            IgniteFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
                     createJobInfo(job.getConfiguration()));
 
             fut.get();
@@ -146,7 +146,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
 
         }
     }
-    
+
     /**
      * Custom serialization class that inherits behaviour of native {@link WritableSerialization}.
      */

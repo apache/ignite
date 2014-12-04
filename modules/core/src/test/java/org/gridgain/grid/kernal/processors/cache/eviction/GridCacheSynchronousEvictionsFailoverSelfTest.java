@@ -72,7 +72,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        GridFuture<?> fut = null;
+        IgniteFuture<?> fut = null;
 
         try {
             Map<String, Integer> data = new HashMap<>();

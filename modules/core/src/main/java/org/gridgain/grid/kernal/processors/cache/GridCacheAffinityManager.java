@@ -89,10 +89,10 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version to wait.
      * @return Affinity ready future.
      */
-    public GridFuture<Long> affinityReadyFuture(long topVer) {
+    public IgniteFuture<Long> affinityReadyFuture(long topVer) {
         assert !cctx.isLocal();
 
-        GridFuture<Long> fut = aff.readyFuture(topVer);
+        IgniteFuture<Long> fut = aff.readyFuture(topVer);
 
         return fut != null ? fut : new GridFinishedFutureEx<>(topVer);
     }
@@ -104,7 +104,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version to wait.
      * @return Affinity ready future or {@code null}.
      */
-    @Nullable public GridFuture<Long> affinityReadyFuturex(long topVer) {
+    @Nullable public IgniteFuture<Long> affinityReadyFuturex(long topVer) {
         assert !cctx.isLocal();
 
         return aff.readyFuture(topVer);

@@ -433,5 +433,5 @@ public interface GridComputeTaskSession {
      *
      * @return Future that will be completed when task "<tt>map</tt>" step has completed.
      */
-    public GridFuture<?> mapFuture();
+    public IgniteFuture<?> mapFuture();
 }

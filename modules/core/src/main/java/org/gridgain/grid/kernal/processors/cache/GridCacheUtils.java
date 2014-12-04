@@ -1052,10 +1052,10 @@ public class GridCacheUtils {
      * @param excl Excludes.
      * @return Future listener that logs errors.
      */
-    public static IgniteInClosure<GridFuture<?>> errorLogger(final GridLogger log,
+    public static IgniteInClosure<IgniteFuture<?>> errorLogger(final GridLogger log,
         final Class<? extends Exception>... excl) {
-        return new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> f) {
+        return new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> f) {
                 try {
                     f.get();
                 }

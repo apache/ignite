@@ -21,5 +21,5 @@ public interface GridCacheQueryMetadataAware {
     /**
      * @return Future to retrieve metadata.
      */
-    public GridFuture<List<GridIndexingFieldMetadata>> metadata();
+    public IgniteFuture<List<GridIndexingFieldMetadata>> metadata();
 }

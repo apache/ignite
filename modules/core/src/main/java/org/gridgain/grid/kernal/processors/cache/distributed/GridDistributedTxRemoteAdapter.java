@@ -380,7 +380,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTxEx<K, V>> prepareAsync() {
+    @Override public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync() {
         assert false;
         return null;
     }
@@ -724,7 +724,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<GridCacheTx> commitAsync() {
         try {
             commit();
 
@@ -755,7 +755,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTx> rollbackAsync() {
+    @Override public IgniteFuture<GridCacheTx> rollbackAsync() {
         rollback();
 
         return new GridFinishedFutureEx<GridCacheTx>(this);

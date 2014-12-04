@@ -26,7 +26,7 @@ import java.util.concurrent.locks.*;
 /**
  * Future adapter without kernal context.
  */
-public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implements GridFuture<R>, Externalizable {
+public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implements IgniteFuture<R>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     private boolean valid = true;
 
     /** Asynchronous listener. */
-    private final ConcurrentLinkedDeque8<IgniteInClosure<? super GridFuture<R>>>
+    private final ConcurrentLinkedDeque8<IgniteInClosure<? super IgniteFuture<R>>>
         lsnrs = new ConcurrentLinkedDeque8<>();
 
     /**
@@ -201,21 +201,21 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    @Override public void listenAsync(@Nullable final IgniteInClosure<? super GridFuture<R>> lsnr) {
+    @Override public void listenAsync(@Nullable final IgniteInClosure<? super IgniteFuture<R>> lsnr) {
         if (lsnr != null) {
             checkValid();
 
             boolean done;
 
-            IgniteInClosure<? super GridFuture<R>> lsnr0 = lsnr;
+            IgniteInClosure<? super IgniteFuture<R>> lsnr0 = lsnr;
 
             done = isDone();
 
             if (!done) {
-                lsnr0 = new IgniteInClosure<GridFuture<R>>() {
+                lsnr0 = new IgniteInClosure<IgniteFuture<R>>() {
                     private final AtomicBoolean called = new AtomicBoolean();
 
-                    @Override public void apply(GridFuture<R> t) {
+                    @Override public void apply(IgniteFuture<R> t) {
                         if (called.compareAndSet(false, true))
                             lsnr.apply(t);
                     }
@@ -240,15 +240,15 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
         if (lsnr == null || lsnr.length == 0)
             lsnrs.clear();
         else {
             // Iterate through the whole list, removing all occurrences, if any.
-            for (Iterator<IgniteInClosure<? super GridFuture<R>>> it = lsnrs.iterator(); it.hasNext(); ) {
-                IgniteInClosure<? super GridFuture<R>> l1 = it.next();
+            for (Iterator<IgniteInClosure<? super IgniteFuture<R>>> it = lsnrs.iterator(); it.hasNext(); ) {
+                IgniteInClosure<? super IgniteFuture<R>> l1 = it.next();
 
-                for (IgniteInClosure<? super GridFuture<R>> l2 : lsnr)
+                for (IgniteInClosure<? super IgniteFuture<R>> l2 : lsnr)
                     // Must be l1.equals(l2), not l2.equals(l1), because of the way listeners are added.
                     if (l1.equals(l2))
                         it.remove();
@@ -257,15 +257,15 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridFuture<T> chain(final IgniteClosure<? super GridFuture<R>, T> doneCb) {
+    @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
         final GridFutureAdapterEx<T> fut = new GridFutureAdapterEx<T>() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + GridFutureAdapterEx.this + ", doneCb=" + doneCb + ']';
             }
         };
 
-        listenAsync(new IgniteInClosure<GridFuture<R>>() {
-            @Override public void apply(GridFuture<R> t) {
+        listenAsync(new IgniteInClosure<IgniteFuture<R>>() {
+            @Override public void apply(IgniteFuture<R> t) {
                 try {
                     fut.onDone(doneCb.apply(t));
                 }
@@ -301,7 +301,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
         if (lsnrs.isEmptyx())
             return;
 
-        for (IgniteInClosure<? super GridFuture<R>> lsnr : lsnrs)
+        for (IgniteInClosure<? super IgniteFuture<R>> lsnr : lsnrs)
             notifyListener(lsnr);
     }
 
@@ -310,7 +310,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
      *
      * @param lsnr Listener.
      */
-    private void notifyListener(IgniteInClosure<? super GridFuture<R>> lsnr) {
+    private void notifyListener(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
         assert lsnr != null;
 
         try {

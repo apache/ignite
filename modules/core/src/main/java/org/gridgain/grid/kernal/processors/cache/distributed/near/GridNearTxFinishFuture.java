@@ -109,8 +109,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -121,7 +121,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (GridFuture<?> fut : futures())
+        for (IgniteFuture<?> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -188,7 +188,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     public void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
         if (!isDone())
-            for (GridFuture<GridCacheTx> fut : futures()) {
+            for (IgniteFuture<GridCacheTx> fut : futures()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -244,7 +244,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<?> f) {
+    private boolean isMini(IgniteFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -271,7 +271,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             // Finish local mapping only as we need send commit message to backups.
             for (GridDistributedTxMapping<K, V> m : mappings.values()) {
                 if (m.node().isLocal()) {
-                    GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+                    IgniteFuture<GridCacheTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
 
                     // Add new future.
                     if (fut != null)
@@ -292,7 +292,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (!isSync()) {
                 boolean complete = true;
 
-                for (GridFuture<?> f : pending())
+                for (IgniteFuture<?> f : pending())
                     // Mini-future in non-sync mode gets done when message gets sent.
                     if (isMini(f) && !f.isDone())
                         complete = false;
@@ -356,7 +356,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (n.isLocal()) {
             req.miniId(IgniteUuid.randomUuid());
 
-            GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
+            IgniteFuture<GridCacheTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
             // Add new future.
             if (fut != null)

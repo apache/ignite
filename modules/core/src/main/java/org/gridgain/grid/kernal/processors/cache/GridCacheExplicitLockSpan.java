@@ -234,7 +234,7 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      *
      * @return Release future.
      */
-    public GridFuture<Object> releaseFuture() {
+    public IgniteFuture<Object> releaseFuture() {
         return releaseFut;
     }
 

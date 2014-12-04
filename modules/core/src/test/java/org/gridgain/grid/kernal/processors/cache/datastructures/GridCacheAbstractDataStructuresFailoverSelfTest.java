@@ -115,7 +115,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicLong s = cache().dataStructures().atomicLong(STRUCTURE_NAME, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -165,7 +165,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicLong s = cache().dataStructures().atomicLong(STRUCTURE_NAME, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -244,7 +244,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicReference<Integer> s = cache().dataStructures().atomicReference(STRUCTURE_NAME, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -293,7 +293,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicReference<Integer> s = cache().dataStructures().atomicReference(STRUCTURE_NAME, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -379,7 +379,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicStamped<Integer, Integer> s = cache().dataStructures().atomicStamped(STRUCTURE_NAME, 1, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -442,7 +442,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicStamped<Integer, Integer> s = cache().dataStructures().atomicStamped(STRUCTURE_NAME, 1, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -537,7 +537,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             GridCacheCountDownLatch s = cache().dataStructures().countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE,
                 false, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -592,7 +592,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             GridCacheCountDownLatch s = cache().dataStructures()
                 .countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -677,7 +677,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             s.put(1);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -727,7 +727,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             s.put(1);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -802,7 +802,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         String name = UUID.randomUUID().toString();
@@ -853,7 +853,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
         final AtomicInteger idx = new AtomicInteger(gridCount());
 
-        GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
                 int id = idx.getAndIncrement();
 
@@ -904,7 +904,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             GridCacheAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
 
-            GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {

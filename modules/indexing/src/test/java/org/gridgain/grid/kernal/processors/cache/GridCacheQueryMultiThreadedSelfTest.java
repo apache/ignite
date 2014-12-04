@@ -241,7 +241,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 Random rnd = new Random();
 
@@ -321,7 +321,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 Random rnd = new Random();
 
@@ -405,7 +405,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 Random rnd = new Random();
 
@@ -486,7 +486,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 Random rnd = new Random();
 
@@ -566,7 +566,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final GridCacheQuery<Map.Entry<Integer, Integer>> qry = c.queries().createSqlQuery(Integer.class, "_val >= 0");
 
-        GridFuture<?> fut = multithreadedAsync(
+        IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
                 @Override public void applyx() throws GridException {
                     int iter = 0;
@@ -630,7 +630,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 int iter = 0;
 
@@ -712,7 +712,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        GridFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 while (!stop.get()) {
                     Collection<Integer> rmtVals = rdcQry.execute(rmtRdc).get();
@@ -781,7 +781,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final GridCacheQuery<Map.Entry<Integer, Integer>> qry = c.queries().createScanQuery(null);
 
-        GridFuture<?> fut = multithreadedAsync(
+        IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
                 @Override public void applyx() throws GridException {
                     int iter = 0;

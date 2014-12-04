@@ -92,7 +92,7 @@ public interface GridGgfsEx extends GridGgfs {
      * @return Future which will be completed when all entries existed in trash by the time of invocation are removed.
      * @throws GridException If failed.
      */
-    public GridFuture<?> awaitDeletesAsync() throws GridException;
+    public IgniteFuture<?> awaitDeletesAsync() throws GridException;
 
     /**
      * Gets client file system log directory.

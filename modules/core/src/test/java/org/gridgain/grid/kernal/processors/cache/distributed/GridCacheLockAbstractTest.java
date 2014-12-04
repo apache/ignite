@@ -379,7 +379,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        GridFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Before lock for keys.");
 
@@ -422,7 +422,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 }
             }, 1, "TEST-THREAD-1");
 
-        GridFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Waiting for latch1...");
 

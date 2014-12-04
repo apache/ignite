@@ -940,7 +940,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param awaitVer Topology version to await.
      * @return Future.
      */
-    public GridFuture<Long> topologyFuture(final long awaitVer) {
+    public IgniteFuture<Long> topologyFuture(final long awaitVer) {
         long topVer = topologyVersion();
 
         if (topVer >= awaitVer)

@@ -107,7 +107,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
             assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
         }
 
-        Collection<GridFuture<?>> futs = new LinkedList<>();
+        Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
         for (int i = 1; i < GRID_CNT; i++) {
             futs.add(
@@ -122,7 +122,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         stopGrid(idx);
 
-        for (GridFuture<?> fut : futs)
+        for (IgniteFuture<?> fut : futs)
             fut.get();
 
         for (int i = 0; i < 3; i++) {

@@ -129,7 +129,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param entry Transaction entry.
      * @return {@code True} if reader was added as a result of this call.
      */
-    @Nullable protected abstract GridFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
+    @Nullable protected abstract IgniteFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
         GridCacheTxEntry<K, V> entry, long topVer);
 
     /**
@@ -385,7 +385,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @return Future for active transactions for the time when reader was added.
      * @throws GridException If failed.
      */
-    @Nullable public GridFuture<Boolean> addEntry(long msgId, GridCacheTxEntry<K, V> e) throws GridException {
+    @Nullable public IgniteFuture<Boolean> addEntry(long msgId, GridCacheTxEntry<K, V> e) throws GridException {
         init();
 
         GridCacheTxState state = state();
@@ -472,7 +472,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param read Read flag.
      * @return Lock future.
      */
-    GridFuture<GridCacheReturn<V>> lockAllAsync(
+    IgniteFuture<GridCacheReturn<V>> lockAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Collection<GridCacheEntryEx<K, V>> entries,
         List<GridCacheTxEntry<K, V>> writeEntries,
@@ -582,7 +582,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param filter Entry write filter.
      * @return Future for lock acquisition.
      */
-    private GridFuture<GridCacheReturn<V>> obtainLockAsync(
+    private IgniteFuture<GridCacheReturn<V>> obtainLockAsync(
         final GridCacheContext<K, V> cacheCtx,
         GridCacheReturn<V> ret,
         final Collection<? extends K> passedKeys,
@@ -598,7 +598,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
         GridDhtTransactionalCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
 
-        GridFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
+        IgniteFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             lockTimeout(), this, isInvalidate(), read, /*retval*/false, isolation, CU.<K, V>empty());
 
         return new GridEmbeddedFuture<>(

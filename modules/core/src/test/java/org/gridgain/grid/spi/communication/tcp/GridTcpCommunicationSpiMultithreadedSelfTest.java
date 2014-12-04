@@ -175,7 +175,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         long start = System.currentTimeMillis();
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             /** Randomizer. */
             private Random rnd = new Random();
 
@@ -272,7 +272,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         final int interval = 50;
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
                 try {
@@ -311,7 +311,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        GridFuture<?> fut2 = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut2 = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     while (run.get() && !Thread.currentThread().isInterrupted()) {
@@ -349,7 +349,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         long start = System.currentTimeMillis();
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     ClusterNode from = nodes.get(0);

@@ -1,6 +1,6 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
-import org.gridgain.grid.GridFuture;
+import org.gridgain.grid.IgniteFuture;
 import org.gridgain.grid.util.typedef.X;
 import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
 import org.jdk8.backport.LongAdder;
@@ -66,7 +66,7 @@ public class GridHadoopExecutorServiceTest extends GridCommonAbstractTest {
 
             final AtomicBoolean finish = new AtomicBoolean();
 
-            GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     while (!finish.get()) {
                         exec.submit(new Callable<Void>() {

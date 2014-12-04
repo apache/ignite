@@ -375,7 +375,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     public void testAddRemoveInterleaving() throws Exception {
         final AtomicInteger callCnt = new AtomicInteger(0);
 
-        GridFuture<?> rmv = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteFuture<?> rmv = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             /** {@inheritDoc} */
             @SuppressWarnings("CallToThreadYield")
             @Override public void run() {
@@ -433,7 +433,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(max * threads);
 
-        GridFuture<?> called = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteFuture<?> called = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             /** {@inheritDoc} */
             @SuppressWarnings("CallToThreadYield")
             @Override public void run() {

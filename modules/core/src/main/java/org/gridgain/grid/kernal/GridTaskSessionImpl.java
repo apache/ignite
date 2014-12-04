@@ -820,7 +820,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> mapFuture() {
+    @Override public IgniteFuture<?> mapFuture() {
         return mapFut;
     }
 

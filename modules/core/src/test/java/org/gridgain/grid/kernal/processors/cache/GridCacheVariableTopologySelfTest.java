@@ -106,7 +106,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             /** */
             private int cnt;
 

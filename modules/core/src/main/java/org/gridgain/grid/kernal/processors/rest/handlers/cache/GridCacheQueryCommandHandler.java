@@ -63,7 +63,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req instanceof GridRestCacheQueryRequest;
         assert SUPPORTED_COMMANDS.contains(req.command());
 
@@ -108,7 +108,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param c Closure to execute.
      * @return Execution future.
      */
-    private GridFuture<GridRestResponse> execute(UUID destId, String cacheName, Callable<GridRestResponse> c) {
+    private IgniteFuture<GridRestResponse> execute(UUID destId, String cacheName, Callable<GridRestResponse> c) {
         boolean locExec = destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec)
@@ -137,16 +137,16 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param c Closure to execute.
      * @return Execution future.
      */
-    private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
+    private IgniteFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
         GridCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().enableAsync();
 
         try {
             comp.broadcast(c);
 
-            GridFuture<Collection<Object>> fut = comp.future();
+            IgniteFuture<Collection<Object>> fut = comp.future();
 
-            return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
-                @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
+            return fut.chain(new C1<IgniteFuture<Collection<Object>>, GridRestResponse>() {
+                @Override public GridRestResponse apply(IgniteFuture<Collection<Object>> fut) {
                     try {
                         fut.get();
 

@@ -138,11 +138,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        GridFuture<?> fut1 = svcs1.future();
+        IgniteFuture<?> fut1 = svcs1.future();
 
         svcs2.deployClusterSingleton(name, new DummyService());
 
-        GridFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -167,11 +167,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        GridFuture<?> fut1 = svcs1.future();
+        IgniteFuture<?> fut1 = svcs1.future();
 
         svcs2.deployNodeSingleton(name, new DummyService());
 
-        GridFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -251,7 +251,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -283,7 +283,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -317,7 +317,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -344,7 +344,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -378,7 +378,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 

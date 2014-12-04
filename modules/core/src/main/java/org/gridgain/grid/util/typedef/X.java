@@ -812,11 +812,11 @@ public final class X {
      * @param futs Futures to wait for.
      * @throws GridException If any of the futures threw exception.
      */
-    public static void waitAll(@Nullable Iterable<GridFuture<?>> futs) throws GridException {
+    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) throws GridException {
         if (F.isEmpty(futs))
             return;
 
-        for (GridFuture fut : futs)
+        for (IgniteFuture fut : futs)
             fut.get();
     }
 

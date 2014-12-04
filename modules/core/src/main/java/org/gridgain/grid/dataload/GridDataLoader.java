@@ -185,7 +185,7 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      *
      * @return Future for this loading process.
      */
-    public GridFuture<?> future();
+    public IgniteFuture<?> future();
 
     /**
      * Optional deploy class for peer deployment. All classes loaded by a data loader
@@ -216,7 +216,7 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public GridFuture<?> removeData(K key)  throws GridException, GridInterruptedException, IllegalStateException;
+    public IgniteFuture<?> removeData(K key)  throws GridException, GridInterruptedException, IllegalStateException;
 
     /**
      * Adds data for loading on remote node. This method can be called from multiple
@@ -234,7 +234,7 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public GridFuture<?> addData(K key, @Nullable V val) throws GridException, GridInterruptedException,
+    public IgniteFuture<?> addData(K key, @Nullable V val) throws GridException, GridInterruptedException,
         IllegalStateException;
 
     /**
@@ -252,7 +252,7 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public GridFuture<?> addData(Map.Entry<K, V> entry) throws GridException, GridInterruptedException,
+    public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws GridException, GridInterruptedException,
         IllegalStateException;
 
     /**
@@ -268,7 +268,7 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      *      {@link #close(boolean)} has already been called on loader.
      * @return Future for this load operation.
      */
-    public GridFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) throws IllegalStateException;
+    public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) throws IllegalStateException;
 
     /**
      * Adds data for loading on remote node. This method can be called from multiple
@@ -283,7 +283,7 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      *      {@link #close(boolean)} has already been called on loader.
      * @return Future for this load operation.
      */
-    public GridFuture<?> addData(Map<K, V> entries) throws IllegalStateException;
+    public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException;
 
     /**
      * Loads any remaining data, but doesn't close the loader. Data can be still added after

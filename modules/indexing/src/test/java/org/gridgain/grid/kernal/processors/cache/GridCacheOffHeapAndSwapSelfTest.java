@@ -504,7 +504,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     public void testIteratorsCleanup() throws Exception {
         final GridCache<Long, Long> cache = populate();
 
-        GridFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Iterator<Map.Entry<Long, Long>> ohIt = cache.offHeapIterator();
@@ -527,7 +527,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
             }
         }, 20);
 
-        GridFuture<?> swapFut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> swapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Iterator<Map.Entry<Long, Long>> ohIt = cache.swapIterator();

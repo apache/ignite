@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * callback.
  * @param <R> Type of the result for the future.
  */
-public interface GridFuture<R> {
+public interface IgniteFuture<R> {
     /**
      * Synchronously waits for completion of the computation and
      * returns computation result.
@@ -160,7 +160,7 @@ public interface GridFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable IgniteInClosure<? super GridFuture<R>> lsnr);
+    public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr);
 
     /**
      * Removes given listeners from the future. If no listener is passed in, then all listeners
@@ -168,7 +168,7 @@ public interface GridFuture<R> {
      *
      * @param lsnr Listeners to remove.
      */
-    public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<R>>... lsnr);
+    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.
@@ -177,5 +177,5 @@ public interface GridFuture<R> {
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
-    public <T> GridFuture<T> chain(IgniteClosure<? super GridFuture<R>, T> doneCb);
+    public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<R>, T> doneCb);
 }

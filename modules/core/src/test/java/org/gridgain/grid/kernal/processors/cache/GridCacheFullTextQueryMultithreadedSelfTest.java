@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -68,7 +67,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
 
         final GridCache<Integer, H2TextValue> c = grid(0).cache(null);
 
-        GridFuture<?> fut1 = multithreadedAsync(new Callable() {
+        IgniteFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     for (int i = 0; i < keyCnt; i++) {
                         c.putx(i, new H2TextValue(txt));
@@ -91,7 +90,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        GridFuture<?> fut2 = multithreadedAsync(new Callable() {
+        IgniteFuture<?> fut2 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     int cnt = 0;
 

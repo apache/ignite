@@ -34,7 +34,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
         try {
             final AtomicBoolean stop = new AtomicBoolean();
 
-            GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     GridCache<Object,Object> cache = g.cache(null);
 

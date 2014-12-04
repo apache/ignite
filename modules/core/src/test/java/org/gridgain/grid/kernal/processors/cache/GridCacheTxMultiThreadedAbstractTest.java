@@ -209,7 +209,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
 
         cache.put(key, 0L);
 
-        List<GridFuture<Collection<Long>>> futs = new ArrayList<>(THREADS);
+        List<IgniteFuture<Collection<Long>>> futs = new ArrayList<>(THREADS);
 
         for (int i = 0; i < THREADS; i++) {
             futs.add(GridTestUtils.runAsync(new Callable<Collection<Long>>() {
@@ -242,7 +242,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
 
         List<Collection<Long>> cols = new ArrayList<>(THREADS);
 
-        for (GridFuture<Collection<Long>> fut : futs) {
+        for (IgniteFuture<Collection<Long>> fut : futs) {
             Collection<Long> col = fut.get();
 
             assertEquals(ITERATIONS, col.size());

@@ -64,7 +64,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheTxMetricsAdapter txMetrics;
 
     /** Preloaders start future. */
-    private GridFuture<Object> preloadersStartFut;
+    private IgniteFuture<Object> preloadersStartFut;
 
     /**
      * @param txMgr Transaction manager.
@@ -176,12 +176,12 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Compound preloaders start future.
      */
-    public GridFuture<Object> preloadersStartFuture() {
+    public IgniteFuture<Object> preloadersStartFuture() {
         if (preloadersStartFut == null) {
             GridCompoundFuture<Object, Object> compound = null;
 
             for (GridCacheContext<K, V> cacheCtx : cacheContexts()) {
-                GridFuture<Object> startFut = cacheCtx.preloader().startFuture();
+                IgniteFuture<Object> startFut = cacheCtx.preloader().startFuture();
 
                 if (!startFut.isDone()) {
                     if (compound == null)
@@ -355,7 +355,7 @@ public class GridCacheSharedContext<K, V> {
      * @return {@code true} if waiting was successful.
      */
     @SuppressWarnings({"unchecked"})
-    public GridFuture<?> partitionReleaseFuture(long topVer) {
+    public IgniteFuture<?> partitionReleaseFuture(long topVer) {
         GridCompoundFuture f = new GridCompoundFuture(kernalCtx);
 
         f.add(mvcc().finishExplicitLocks(topVer));
@@ -424,7 +424,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
-    public GridFuture<GridCacheTx> commitTxAsync(GridCacheTxEx<K, V> tx) {
+    public IgniteFuture<GridCacheTx> commitTxAsync(GridCacheTxEx<K, V> tx) {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (cacheIds.isEmpty())

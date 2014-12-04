@@ -413,8 +413,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 snapshot = fut.topologySnapshot();
             }
             else {
-                fut.listenAsync(new CI1<GridFuture<Long>>() {
-                    @Override public void apply(GridFuture<Long> t) {
+                fut.listenAsync(new CI1<IgniteFuture<Long>>() {
+                    @Override public void apply(IgniteFuture<Long> t) {
                         mapOnTopology(keys, remap, oldNodeId);
                     }
                 });

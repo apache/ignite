@@ -128,7 +128,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             GridKernal[] nodes = new GridKernal[] {(GridKernal)grid(0), (GridKernal)grid(1)};
 
-            Collection<GridFuture> futs = new ArrayList<>();
+            Collection<IgniteFuture> futs = new ArrayList<>();
 
             final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -176,7 +176,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 }
             }
 
-            GridFuture<?> startFut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> startFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         startGrid(2);
@@ -197,7 +197,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             startLatch.countDown();
 
-            for (GridFuture fut : futs)
+            for (IgniteFuture fut : futs)
                 fut.get(1000);
 
             startFut.get();
@@ -225,7 +225,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             final CountDownLatch commitLatch = new CountDownLatch(1);
 
-            Collection<GridFuture> futs = new ArrayList<>();
+            Collection<IgniteFuture> futs = new ArrayList<>();
 
             for (final GridKernal node : nodes) {
                 printDistribution(node);
@@ -288,7 +288,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             // Now start new node. We do it in a separate thread since startGrid
             // should block until partition exchange completes.
-            GridFuture startFut = multithreadedAsync(new Runnable() {
+            IgniteFuture startFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         Ignite g3 = startGrid(3);
@@ -308,7 +308,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             assertFalse("Node was able to join the grid while there exist pending transactions.", startFut.isDone());
 
             // Now check that new transactions will wait for new topology version to become available.
-            Collection<GridFuture> txFuts = new ArrayList<>(nodes.length);
+            Collection<IgniteFuture> txFuts = new ArrayList<>(nodes.length);
 
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
@@ -336,19 +336,19 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             Thread.sleep(500);
 
-            for (GridFuture txFut : txFuts)
+            for (IgniteFuture txFut : txFuts)
                 assertFalse("New transaction was completed before new node joined topology", txFut.isDone());
 
             info(">>> Committing pending transactions.");
 
             commitLatch.countDown();
 
-            for (GridFuture fut : futs)
+            for (IgniteFuture fut : futs)
                 fut.get(1000);
 
             startFut.get(1000);
 
-            for (GridFuture txFut : txFuts)
+            for (IgniteFuture txFut : txFuts)
                 txFut.get(1000);
         }
         finally {
@@ -377,7 +377,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             info(">>> Started nodes [g0=" + g0.localNode().id() + ", g1=" + g1.localNode().id() + ", g2=" +
                 g2.localNode().id() + ", g3=" + g3.localNode().id() + ']');
 
-            Collection<GridFuture> futs = new ArrayList<>();
+            Collection<IgniteFuture> futs = new ArrayList<>();
 
             printDistribution(g3);
 
@@ -444,7 +444,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             leaveLatch.await();
 
             // Now check that new transactions will wait for new topology version to become available.
-            Collection<GridFuture> txFuts = new ArrayList<>(nodes.length);
+            Collection<IgniteFuture> txFuts = new ArrayList<>(nodes.length);
 
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
@@ -470,17 +470,17 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             Thread.sleep(500);
 
-            for (GridFuture txFut : txFuts)
+            for (IgniteFuture txFut : txFuts)
                 assertFalse("New transaction was completed before old transactions were committed", txFut.isDone());
 
             info(">>> Committing pending transactions.");
 
             commitLatch.countDown();
 
-            for (GridFuture fut : futs)
+            for (IgniteFuture fut : futs)
                 fut.get(1000);
 
-            for (GridFuture txFut : txFuts)
+            for (IgniteFuture txFut : txFuts)
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {

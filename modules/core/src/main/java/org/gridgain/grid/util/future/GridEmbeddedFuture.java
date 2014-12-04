@@ -27,7 +27,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     private static final long serialVersionUID = 0L;
 
     /** Embedded future to wait for. */
-    private GridFuture<B> embedded;
+    private IgniteFuture<B> embedded;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -41,7 +41,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param embedded Embedded future.
      * @param c Closure to execute upon completion of embedded future.
      */
-    public GridEmbeddedFuture(GridKernalContext ctx, GridFuture<B> embedded, final IgniteBiClosure<B, Exception, A> c) {
+    public GridEmbeddedFuture(GridKernalContext ctx, IgniteFuture<B> embedded, final IgniteBiClosure<B, Exception, A> c) {
         super(ctx);
 
         assert embedded != null;
@@ -51,7 +51,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
         embedded.listenAsync(new AL1() {
             @SuppressWarnings({"ErrorNotRethrown", "CatchGenericClass"})
-            @Override public void applyx(GridFuture<B> embedded) {
+            @Override public void applyx(IgniteFuture<B> embedded) {
                 try {
                     onDone(c.apply(embedded.get(), null));
                 }
@@ -75,7 +75,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      * @param ctx Context.
      */
-    public GridEmbeddedFuture(boolean syncNotify, GridFuture<B> embedded, IgniteBiClosure<B, Exception, GridFuture<A>> c,
+    public GridEmbeddedFuture(boolean syncNotify, IgniteFuture<B> embedded, IgniteBiClosure<B, Exception, IgniteFuture<A>> c,
         GridKernalContext ctx) {
         this(embedded, c, ctx);
 
@@ -89,7 +89,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param embedded Closure.
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      */
-    public GridEmbeddedFuture(GridFuture<B> embedded, final IgniteBiClosure<B, Exception, GridFuture<A>> c,
+    public GridEmbeddedFuture(IgniteFuture<B> embedded, final IgniteBiClosure<B, Exception, IgniteFuture<A>> c,
         GridKernalContext ctx) {
         super(ctx);
 
@@ -99,9 +99,9 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
         this.embedded = embedded;
 
         embedded.listenAsync(new AL1() {
-            @Override public void applyx(GridFuture<B> embedded) {
+            @Override public void applyx(IgniteFuture<B> embedded) {
                 try {
-                    GridFuture<A> next = c.apply(embedded.get(), null);
+                    IgniteFuture<A> next = c.apply(embedded.get(), null);
 
                     if (next == null) {
                         onDone();
@@ -110,7 +110,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                     }
 
                     next.listenAsync(new AL2() {
-                        @Override public void applyx(GridFuture<A> next) {
+                        @Override public void applyx(IgniteFuture<A> next) {
                             try {
                                 onDone(next.get());
                             }
@@ -155,8 +155,8 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param c1 Closure which runs upon completion of embedded future and which returns another future.
      * @param c2 Closure will runs upon completion of future returned by {@code c1} closure.
      */
-    public GridEmbeddedFuture(GridKernalContext ctx, GridFuture<B> embedded, final IgniteBiClosure<B, Exception,
-                    GridFuture<A>> c1, final IgniteBiClosure<A, Exception, A> c2) {
+    public GridEmbeddedFuture(GridKernalContext ctx, IgniteFuture<B> embedded, final IgniteBiClosure<B, Exception,
+        IgniteFuture<A>> c1, final IgniteBiClosure<A, Exception, A> c2) {
         super(ctx);
 
         assert embedded != null;
@@ -166,9 +166,9 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
         this.embedded = embedded;
 
         embedded.listenAsync(new AL1() {
-            @Override public void applyx(GridFuture<B> embedded) {
+            @Override public void applyx(IgniteFuture<B> embedded) {
                 try {
-                    GridFuture<A> next = c1.apply(embedded.get(), null);
+                    IgniteFuture<A> next = c1.apply(embedded.get(), null);
 
                     if (next == null) {
                         onDone();
@@ -177,7 +177,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                     }
 
                     next.listenAsync(new AL2() {
-                        @Override public void applyx(GridFuture<A> next) {
+                        @Override public void applyx(IgniteFuture<A> next) {
                             try {
                                 onDone(c2.apply(next.get(), null));
                             }
@@ -250,12 +250,12 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener1 implements IgniteInClosure<GridFuture<B>> {
+    private abstract class AsyncListener1 implements IgniteInClosure<IgniteFuture<B>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public final void apply(GridFuture<B> f) {
+        @Override public final void apply(IgniteFuture<B> f) {
             try {
                 applyx(f);
             }
@@ -276,18 +276,18 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
          * @param f Future.
          * @throws Exception In case of error.
          */
-        protected abstract void applyx(GridFuture<B> f) throws Exception;
+        protected abstract void applyx(IgniteFuture<B> f) throws Exception;
     }
 
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener2 implements IgniteInClosure<GridFuture<A>> {
+    private abstract class AsyncListener2 implements IgniteInClosure<IgniteFuture<A>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public final void apply(GridFuture<A> f) {
+        @Override public final void apply(IgniteFuture<A> f) {
             try {
                 applyx(f);
             }
@@ -308,6 +308,6 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
          * @param f Future.
          * @throws Exception In case of error.
          */
-        protected abstract void applyx(GridFuture<A> f) throws Exception;
+        protected abstract void applyx(IgniteFuture<A> f) throws Exception;
     }
 }

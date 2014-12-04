@@ -248,13 +248,13 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert nearOther.peekExx(key) == null;
         assert dhtOther.peekExx(key) == null;
 
-        GridFuture<GridEvent> futOther =
+        IgniteFuture<GridEvent> futOther =
             waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        GridFuture<GridEvent> futBackup =
+        IgniteFuture<GridEvent> futBackup =
             waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        GridFuture<GridEvent> futPrimary =
+        IgniteFuture<GridEvent> futPrimary =
             waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Get value on other node, it should be loaded to near cache.

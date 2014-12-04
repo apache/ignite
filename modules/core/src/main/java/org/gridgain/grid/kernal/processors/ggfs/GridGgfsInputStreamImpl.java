@@ -52,13 +52,13 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     private long pos;
 
     /** Local cache. */
-    private final Map<Long, GridFuture<byte[]>> locCache;
+    private final Map<Long, IgniteFuture<byte[]>> locCache;
 
     /** Maximum local cache size. */
     private final int maxLocCacheSize;
 
     /** Pending data read futures which were evicted from the local cache before completion. */
-    private final Set<GridFuture<byte[]>> pendingFuts;
+    private final Set<IgniteFuture<byte[]>> pendingFuts;
 
     /** Pending futures lock. */
     private final Lock pendingFutsLock = new ReentrantLock();
@@ -273,7 +273,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
                 secReader.close();
 
                 // Ensuring local cache futures completion.
-                for (GridFuture<byte[]> fut : locCache.values()) {
+                for (IgniteFuture<byte[]> fut : locCache.values()) {
                     try {
                         fut.get();
                     }
@@ -420,7 +420,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     private byte[] block(long blockIdx) throws IOException, GridException {
         assert blockIdx >= 0;
 
-        GridFuture<byte[]> bytesFut = locCache.get(blockIdx);
+        IgniteFuture<byte[]> bytesFut = locCache.get(blockIdx);
 
         if (bytesFut == null) {
             if (closed)
@@ -475,18 +475,18 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param idx Block index.
      * @param fut Future.
      */
-    private void addLocalCacheFuture(long idx, GridFuture<byte[]> fut) {
+    private void addLocalCacheFuture(long idx, IgniteFuture<byte[]> fut) {
         assert Thread.holdsLock(this);
 
         if (!locCache.containsKey(idx)) {
             if (locCache.size() == maxLocCacheSize) {
-                final GridFuture<byte[]> evictFut = locCache.remove(locCache.keySet().iterator().next());
+                final IgniteFuture<byte[]> evictFut = locCache.remove(locCache.keySet().iterator().next());
 
                 if (!evictFut.isDone()) {
                     pendingFuts.add(evictFut);
 
-                    evictFut.listenAsync(new IgniteInClosure<GridFuture<byte[]>>() {
-                        @Override public void apply(GridFuture<byte[]> t) {
+                    evictFut.listenAsync(new IgniteInClosure<IgniteFuture<byte[]>>() {
+                        @Override public void apply(IgniteFuture<byte[]> t) {
                             pendingFuts.remove(evictFut);
 
                             pendingFutsLock.lock();
@@ -514,7 +514,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @return Requested data block or {@code null} if nothing found.
      * @throws GridException If failed.
      */
-    @Nullable protected GridFuture<byte[]> dataBlock(GridGgfsFileInfo fileInfo, long blockIdx) throws GridException {
+    @Nullable protected IgniteFuture<byte[]> dataBlock(GridGgfsFileInfo fileInfo, long blockIdx) throws GridException {
         return data.dataBlock(fileInfo, path, blockIdx, secReader);
     }
 

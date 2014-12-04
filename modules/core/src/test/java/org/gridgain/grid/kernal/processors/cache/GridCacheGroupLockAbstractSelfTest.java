@@ -359,7 +359,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         final CountDownLatch unlockLatch = new CountDownLatch(1);
         final CountDownLatch lockLatch = new CountDownLatch(1);
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     assertTrue(cache.lock(key1, 0));

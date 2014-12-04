@@ -108,13 +108,13 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     log.debug("Received message has higher topology version [msg=" + msg +
                         ", locTopVer=" + locTopVer + ", rmtTopVer=" + rmtTopVer + ']');
 
-                GridFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
+                IgniteFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
                 if (!topFut.isDone()) {
                     final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
 
-                    topFut.listenAsync(new CI1<GridFuture<Long>>() {
-                        @Override public void apply(GridFuture<Long> t) {
+                    topFut.listenAsync(new CI1<IgniteFuture<Long>>() {
+                        @Override public void apply(IgniteFuture<Long> t) {
                             onMessage0(nodeId, cacheMsg, c0);
                         }
                     });
@@ -203,7 +203,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             if (cacheMsg.allowForStartup())
                 processMessage(nodeId, cacheMsg, c);
             else {
-                GridFuture<?> startFut = startFuture(cacheMsg);
+                IgniteFuture<?> startFut = startFuture(cacheMsg);
 
                 if (startFut.isDone())
                     processMessage(nodeId, cacheMsg, c);
@@ -213,8 +213,8 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                             ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                     // Don't hold this thread waiting for preloading to complete.
-                    startFut.listenAsync(new CI1<GridFuture<?>>() {
-                        @Override public void apply(GridFuture<?> f) {
+                    startFut.listenAsync(new CI1<IgniteFuture<?>>() {
+                        @Override public void apply(IgniteFuture<?> f) {
                             rw.readLock();
 
                             try {
@@ -269,7 +269,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param cacheMsg Cache message to get start future.
      * @return Preloader start future.
      */
-    private GridFuture<Object> startFuture(GridCacheMessage<K, V> cacheMsg) {
+    private IgniteFuture<Object> startFuture(GridCacheMessage<K, V> cacheMsg) {
         int cacheId = cacheMsg.cacheId();
 
         return cacheId != 0 ? cctx.cacheContext(cacheId).preloader().startFuture() : cctx.preloadersStartFuture();

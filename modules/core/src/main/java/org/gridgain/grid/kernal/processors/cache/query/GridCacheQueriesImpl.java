@@ -146,21 +146,21 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildIndexes(Class<?> cls) {
+    @Override public IgniteFuture<?> rebuildIndexes(Class<?> cls) {
         A.notNull(cls, "cls");
 
         return ctx.queries().rebuildIndexes(cls);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildIndexes(String typeName) {
+    @Override public IgniteFuture<?> rebuildIndexes(String typeName) {
         A.notNull("typeName", typeName);
 
         return ctx.queries().rebuildIndexes(typeName);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildAllIndexes() {
+    @Override public IgniteFuture<?> rebuildAllIndexes() {
         return ctx.queries().rebuildAllIndexes();
     }
 

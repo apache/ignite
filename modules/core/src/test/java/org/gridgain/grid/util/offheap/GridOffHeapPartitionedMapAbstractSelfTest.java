@@ -587,7 +587,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        GridFuture<?> iterFut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> iterFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     while (running.get()) {

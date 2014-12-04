@@ -236,10 +236,10 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         assertTrue(entryPrimary.readers().isEmpty());
         assertTrue(entryBackup.readers().isEmpty());
 
-        GridFuture<GridEvent> futBackup =
+        IgniteFuture<GridEvent> futBackup =
             waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        GridFuture<GridEvent> futPrimary =
+        IgniteFuture<GridEvent> futPrimary =
             waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Evict on primary node.
@@ -301,7 +301,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntBackup = new AtomicInteger();
 
-        GridFuture<GridEvent> futBackup = waitForLocalEvent(backupIgnite.events(), new P1<GridEvent>() {
+        IgniteFuture<GridEvent> futBackup = waitForLocalEvent(backupIgnite.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 return e.node().id().equals(backupIgnite.cluster().localNode().id()) &&
                     cntBackup.incrementAndGet() == keyCnt;
@@ -310,7 +310,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntPrimary = new AtomicInteger();
 
-        GridFuture<GridEvent> futPrimary = waitForLocalEvent(primaryIgnite.events(), new P1<GridEvent>() {
+        IgniteFuture<GridEvent> futPrimary = waitForLocalEvent(primaryIgnite.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 return e.node().id().equals(primaryIgnite.cluster().localNode().id()) &&
                     cntPrimary.incrementAndGet() == keyCnt;

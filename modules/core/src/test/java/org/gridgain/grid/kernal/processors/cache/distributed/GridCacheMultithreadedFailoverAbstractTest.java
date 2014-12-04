@@ -350,7 +350,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
             putThreads[i] = thread;
         }
 
-        GridFuture<?> killNodeFut = null;
+        IgniteFuture<?> killNodeFut = null;
 
         if (nodeKillProbability() > 0) {
             killNodeFut = GridTestUtils.runAsync(new Callable<Void>() {

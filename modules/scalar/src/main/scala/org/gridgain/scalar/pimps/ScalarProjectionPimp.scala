@@ -370,7 +370,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
-        GridFuture[java.util.Collection[R]] = {
+        IgniteFuture[java.util.Collection[R]] = {
         val comp = value.grid().compute(forPredicate(p)).enableAsync()
 
         comp.call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
@@ -388,7 +388,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def #?[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
+    def #?[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
         callAsync$(s, p)
     }
 
@@ -403,7 +403,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def callAsync$[R](@Nullable s: Call[R], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
+    def callAsync$[R](@Nullable s: Call[R], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
         callAsync$(Seq(s), p)
     }
 
@@ -417,7 +417,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def #?[R](@Nullable s: Call[R], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
+    def #?[R](@Nullable s: Call[R], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
         callAsync$(s, p)
     }
 
@@ -430,7 +430,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): GridFuture[_] = {
+    def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
         val comp = value.grid().compute(forPredicate(p)).enableAsync()
 
         comp.run(toJavaCollection(s, (f: Run) => toRunnable(f)))
@@ -446,7 +446,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def *?(@Nullable s: Seq[Run], @Nullable p: NF): GridFuture[_] = {
+    def *?(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
         runAsync$(s, p)
     }
 
@@ -459,7 +459,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def runAsync$(@Nullable s: Run, @Nullable p: NF): GridFuture[_] = {
+    def runAsync$(@Nullable s: Run, @Nullable p: NF): IgniteFuture[_] = {
         runAsync$(Seq(s), p)
     }
 
@@ -471,7 +471,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def *?(@Nullable s: Run, @Nullable p: NF): GridFuture[_] = {
+    def *?(@Nullable s: Run, @Nullable p: NF): IgniteFuture[_] = {
         runAsync$(s, p)
     }
 
@@ -487,7 +487,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @return Future over the reduced result or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.reduce(...)`
      */
-    def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
+    def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
         assert(s != null && r != null)
 
         val comp = value.grid().compute(forPredicate(p)).enableAsync()
@@ -508,7 +508,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @return Future over the reduced result or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.reduce(...)`
      */
-    def @?[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
+    def @?[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
         reduceAsync$(s, r, p)
     }
 
@@ -643,7 +643,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @throws GridFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
-        @Nullable p: NF): GridFuture[_] = {
+        @Nullable p: NF): IgniteFuture[_] = {
         val comp = value.grid().compute(forPredicate(p)).enableAsync()
 
         comp.affinityRun(cacheName, affKey, toRunnable(r))

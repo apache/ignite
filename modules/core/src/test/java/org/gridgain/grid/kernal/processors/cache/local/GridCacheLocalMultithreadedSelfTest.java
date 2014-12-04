@@ -360,7 +360,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                 try {
                     l1.await();
 
-                    GridFuture<Boolean> f1 = cache.lockAsync(1, 0L);
+                    IgniteFuture<Boolean> f1 = cache.lockAsync(1, 0L);
 
                     try {
                         f1.get(100, TimeUnit.MILLISECONDS);
@@ -371,7 +371,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                         info("Correctly received timeout exception: " + e);
                     }
 
-                    GridFuture<Boolean> f2 = cache.lockAsync(2, 0L);
+                    IgniteFuture<Boolean> f2 = cache.lockAsync(2, 0L);
 
                     try {
                         // Can't acquire f2 because f1 is held.

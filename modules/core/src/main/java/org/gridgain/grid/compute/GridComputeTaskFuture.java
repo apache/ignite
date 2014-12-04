@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * hierarchy.
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
-public interface GridComputeTaskFuture<R> extends GridFuture<R> {
+public interface GridComputeTaskFuture<R> extends IgniteFuture<R> {
     /**
      * {@inheritDoc}
      *

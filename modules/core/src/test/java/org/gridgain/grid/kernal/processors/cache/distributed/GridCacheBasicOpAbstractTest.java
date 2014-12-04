@@ -174,7 +174,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite3.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
 
-            GridFuture<String> f1 = cache1.getAsync("async1");
+            IgniteFuture<String> f1 = cache1.getAsync("async1");
 
             assert f1.get() == null;
 
@@ -191,8 +191,8 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
             assert latch.await(5, SECONDS);
 
-            GridFuture<String> f2 = cache2.getAsync("async1");
-            GridFuture<String> f3 = cache3.getAsync("async1");
+            IgniteFuture<String> f2 = cache2.getAsync("async1");
+            IgniteFuture<String> f3 = cache3.getAsync("async1");
 
             String v2 = f2.get();
             String v3 = f3.get();

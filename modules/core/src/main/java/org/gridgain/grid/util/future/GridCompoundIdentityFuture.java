@@ -50,7 +50,7 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
      * @param futs Futures to add.
      */
     public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc,
-        @Nullable Iterable<GridFuture<T>> futs) {
+        @Nullable Iterable<IgniteFuture<T>> futs) {
         super(ctx, rdc, futs);
     }
 

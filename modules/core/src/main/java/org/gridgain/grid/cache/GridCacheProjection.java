@@ -393,7 +393,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param key Key to reload.
      * @return Future to be completed whenever the entry is reloaded.
      */
-    public GridFuture<V> reloadAsync(K key);
+    public IgniteFuture<V> reloadAsync(K key);
 
     /**
      * Reloads all currently cached keys form persistent storage.
@@ -414,7 +414,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @return Future which will complete whenever {@code reload} completes.
      */
-    public GridFuture<?> reloadAllAsync();
+    public IgniteFuture<?> reloadAllAsync();
 
     /**
      * Reloads specified entries from underlying persistent storage.
@@ -437,7 +437,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param keys Keys to reload.
      * @return Future which will complete whenever {@code reload} completes.
      */
-    public GridFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys);
+    public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys);
 
     /**
      * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
@@ -522,7 +522,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException if the key is {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> getAsync(K key);
+    public IgniteFuture<V> getAsync(K key);
 
     /**
      * Retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -569,7 +569,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Future for the get operation.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys);
+    public IgniteFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -641,7 +641,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> putAsync(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public IgniteFuture<V> putAsync(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -705,7 +705,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> putxAsync(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores result of applying {@code valTransform} closure to the previous value associated with
@@ -781,7 +781,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Future for the transform operation.
      * @throws NullPointerException If either key or transform closure is {@code null}.
      */
-    public GridFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer);
+    public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer);
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -843,7 +843,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> putIfAbsentAsync(K key, V val);
+    public IgniteFuture<V> putIfAbsentAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it.
@@ -894,7 +894,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> putxIfAbsentAsync(K key, V val);
+    public IgniteFuture<Boolean> putxIfAbsentAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if there is a previous mapping for it.
@@ -953,7 +953,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> replaceAsync(K key, V val);
+    public IgniteFuture<V> replaceAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if only if there is a previous mapping for it.
@@ -1004,7 +1004,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> replacexAsync(K key, V val);
+    public IgniteFuture<Boolean> replacexAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -1053,7 +1053,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> replaceAsync(K key, V oldVal, V newVal);
+    public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pairs in cache. If filters are provided, then entries will
@@ -1152,7 +1152,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Future for putAll operation.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
+    public IgniteFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -1179,7 +1179,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param m Map containing keys and closures to be applied to values.
      * @return Future for operation.
      */
-    public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m);
+    public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m);
 
     /**
      * Stores result of applying the specified transform closure to previous values associated
@@ -1208,7 +1208,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Future for operation.
      * @throws GridException On any error occurred while storing value in cache.
      */
-    public GridFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
+    public IgniteFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
         throws GridException;
 
     /**
@@ -1637,7 +1637,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException if the key is {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> removeAsync(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public IgniteFuture<V> removeAsync(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Removes given key mapping from cache.
@@ -1690,7 +1690,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException if the key is {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> removexAsync(K key,
+    public IgniteFuture<Boolean> removexAsync(K key,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -1737,7 +1737,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> removeAsync(K key, V val);
+    public IgniteFuture<Boolean> removeAsync(K key, V val);
 
     /**
      * Removes given key mappings from cache for entries for which the optionally passed in filters do
@@ -1781,7 +1781,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      remove operation completes.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public GridFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
+    public IgniteFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -1834,7 +1834,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      remove operation completes.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public GridFuture<?> removeAllAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public IgniteFuture<?> removeAllAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Synchronously acquires lock on a cached object with given
@@ -1885,7 +1885,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      {@code false} otherwise.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public GridFuture<Boolean> lockAsync(K key, long timeout,
+    public IgniteFuture<Boolean> lockAsync(K key, long timeout,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
@@ -1937,7 +1937,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      timeout has expired, {@code false} otherwise.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public GridFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
+    public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**

@@ -146,7 +146,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         final AtomicInteger clientIdx = new AtomicInteger(GRID_CNT);
 
-        GridFuture<?> fut1 = multithreadedAsync(
+        IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     clientFlagPerThread.set(true);
@@ -169,7 +169,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++)
             srvIdx.add(i);
 
-        GridFuture<?> fut2 = multithreadedAsync(
+        IgniteFuture<?> fut2 = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     clientFlagPerThread.set(false);

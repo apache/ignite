@@ -116,8 +116,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         for (int i = 0; i < lsnrCnt; i++) {
-            fut.listenAsync(new CI1<GridFuture<String>>() {
-                @Override public void apply(GridFuture<String> t) {
+            fut.listenAsync(new CI1<IgniteFuture<String>>() {
+                @Override public void apply(IgniteFuture<String> t) {
                     if (Thread.currentThread() != runThread)
                         err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
 
@@ -137,8 +137,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         err.set(null);
 
-        fut.listenAsync(new CI1<GridFuture<String>>() {
-            @Override public void apply(GridFuture<String> t) {
+        fut.listenAsync(new CI1<IgniteFuture<String>>() {
+            @Override public void apply(IgniteFuture<String> t) {
                 if (Thread.currentThread() != runThread)
                     err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
 
@@ -177,8 +177,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             final AtomicReference<Exception> err = new AtomicReference<>();
 
             for (int i = 0; i < lsnrCnt; i++) {
-                fut.listenAsync(new CI1<GridFuture<String>>() {
-                    @Override public void apply(GridFuture<String> t) {
+                fut.listenAsync(new CI1<IgniteFuture<String>>() {
+                    @Override public void apply(IgniteFuture<String> t) {
                         if (Thread.currentThread() == runThread)
                             err.compareAndSet(null, new Exception("Wrong notification thread: " +
                                 Thread.currentThread()));
@@ -199,8 +199,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             err.set(null);
 
-            fut.listenAsync(new CI1<GridFuture<String>>() {
-                @Override public void apply(GridFuture<String> t) {
+            fut.listenAsync(new CI1<IgniteFuture<String>>() {
+                @Override public void apply(IgniteFuture<String> t) {
                     if (Thread.currentThread() == runThread)
                         err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
 
@@ -225,8 +225,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void testChaining() throws Exception {
-        final CX1<GridFuture<Object>, Object> passThrough = new CX1<GridFuture<Object>, Object>() {
-            @Override public Object applyx(GridFuture<Object> f) throws GridException {
+        final CX1<IgniteFuture<Object>, Object> passThrough = new CX1<IgniteFuture<Object>, Object>() {
+            @Override public Object applyx(IgniteFuture<Object> f) throws GridException {
                 return f.get();
             }
         };
@@ -244,7 +244,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             // Test result returned.
 
             GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ctx);
-            GridFuture<Object> chain = fut.chain(passThrough);
+            IgniteFuture<Object> chain = fut.chain(passThrough);
 
             assertFalse(fut.isDone());
             assertFalse(chain.isDone());

@@ -23,7 +23,7 @@ import java.util.concurrent.*;
  * {@link GridFinishedFuture} as it does not take context as a parameter and
  * performs notifications in the same thread.
  */
-public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
+public class GridFinishedFutureEx<T> implements IgniteFuture<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -135,7 +135,7 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> chain(IgniteClosure<? super GridFuture<T>, R> doneCb) {
+    @Override public <R> IgniteFuture<R> chain(IgniteClosure<? super IgniteFuture<T>, R> doneCb) {
         try {
             return new GridFinishedFutureEx<>(doneCb.apply(this));
         }
@@ -151,13 +151,13 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public void listenAsync(IgniteInClosure<? super GridFuture<T>> lsnr) {
+    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<T>> lsnr) {
         if (lsnr != null)
             lsnr.apply(this);
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super GridFuture<T>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<T>>... lsnr) {
         // No-op.
     }
 

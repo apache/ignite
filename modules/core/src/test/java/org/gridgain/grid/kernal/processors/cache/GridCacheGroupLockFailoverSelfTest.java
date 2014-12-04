@@ -319,8 +319,8 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
 
         GridComputeTaskFuture<Void> fut = comp.future();
 
-        fut.listenAsync(new CI1<GridFuture<Void>>() {
-            @Override public void apply(GridFuture<Void> f) {
+        fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+            @Override public void apply(IgniteFuture<Void> f) {
                 GridComputeTaskFuture taskFut = (GridComputeTaskFuture)f;
 
                 boolean fail = false;

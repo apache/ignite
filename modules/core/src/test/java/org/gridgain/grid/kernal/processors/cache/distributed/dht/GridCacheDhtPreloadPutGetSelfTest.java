@@ -178,7 +178,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean done = new AtomicBoolean();
 
-            GridFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+            IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         Ignite g2 = startGrid(2);
@@ -214,7 +214,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                 "reader"
             );
 
-            GridFuture fut2 = GridTestUtils.runMultiThreadedAsync(
+            IgniteFuture fut2 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         writeLatch.await();

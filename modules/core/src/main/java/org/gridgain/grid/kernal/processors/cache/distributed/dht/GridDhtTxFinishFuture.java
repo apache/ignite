@@ -112,8 +112,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -124,7 +124,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (GridFuture<?> fut : futures())
+        for (IgniteFuture<?> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -189,7 +189,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
         if (!isDone()) {
-            for (GridFuture<GridCacheTx> fut : futures()) {
+            for (IgniteFuture<GridCacheTx> fut : futures()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -229,7 +229,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<?> f) {
+    private boolean isMini(IgniteFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 

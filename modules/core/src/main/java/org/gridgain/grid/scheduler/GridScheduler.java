@@ -48,7 +48,7 @@ public interface GridScheduler {
      * @see #callLocal(Callable)
      * @see org.apache.ignite.lang.IgniteClosure
      */
-    public GridFuture<?> runLocal(@Nullable Runnable r);
+    public IgniteFuture<?> runLocal(@Nullable Runnable r);
 
     /**
      * Executes given callable on internal system thread pool asynchronously.
@@ -62,7 +62,7 @@ public interface GridScheduler {
      * @see #runLocal(Runnable)
      * @see org.apache.ignite.lang.IgniteOutClosure
      */
-    public <R> GridFuture<R> callLocal(@Nullable Callable<R> c);
+    public <R> IgniteFuture<R> callLocal(@Nullable Callable<R> c);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.

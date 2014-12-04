@@ -54,7 +54,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
         final int usrType = Integer.MAX_VALUE - 1;
 
-        GridFuture<GridEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<GridEvent>() {
+        IgniteFuture<GridEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 return e.type() == usrType;
             }

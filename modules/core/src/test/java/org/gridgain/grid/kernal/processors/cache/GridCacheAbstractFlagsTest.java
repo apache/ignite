@@ -2,7 +2,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.store.*;
 
 import java.util.concurrent.*;
@@ -58,7 +57,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
 
             final AtomicInteger cntr = new AtomicInteger();
 
-            GridFuture<?> f = multithreadedAsync(new Callable() {
+            IgniteFuture<?> f = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     int idx = cntr.getAndIncrement() % gridCount();
 

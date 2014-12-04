@@ -107,7 +107,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
             long topVer = cache.beginMultiUpdate();
 
-            GridFuture<?> startFut;
+            IgniteFuture<?> startFut;
 
             try {
                 assertEquals(3, topVer);

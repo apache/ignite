@@ -124,7 +124,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<?> f) {
+    private boolean isMini(IgniteFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -149,7 +149,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         int type = evt.type();
 
-        for (GridFuture<?> f : futures()) {
+        for (IgniteFuture<?> f : futures()) {
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
 
@@ -173,7 +173,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      */
     @SuppressWarnings( {"unchecked"})
     public void onResult(UUID nodeId, GridDhtForceKeysResponse<K, V> res) {
-        for (GridFuture<Object> f : futures())
+        for (IgniteFuture<Object> f : futures())
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
 

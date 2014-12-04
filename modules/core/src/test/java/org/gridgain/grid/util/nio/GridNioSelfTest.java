@@ -92,7 +92,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         GridNioServer<?> srvr = startServer(PORT, new GridPlainParser(), lsnr);
 
         try {
-            GridFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override
                 public void run() {
                     byte[] msg = new byte[MSG_SIZE];
@@ -246,7 +246,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try {
-            GridFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -618,7 +618,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             new EchoListener());
 
         try {
-            GridFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
                 @SuppressWarnings("BusyWait")
                 @Override public void run() {
                     try {

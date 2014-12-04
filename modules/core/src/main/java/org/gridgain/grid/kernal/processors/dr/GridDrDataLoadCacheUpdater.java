@@ -41,7 +41,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdate
         if (log.isDebugEnabled())
             log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
 
-        GridFuture<?> f = cache.context().preloader().startFuture();
+        IgniteFuture<?> f = cache.context().preloader().startFuture();
 
         if (!f.isDone())
             f.get();

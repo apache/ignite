@@ -57,7 +57,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         final AtomicReference<GridIpcSharedMemorySpace> spaceRef = new AtomicReference<>();
 
-        GridFuture <?> fut1 = multithreadedAsync(
+        IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings("TooBroadScope")
                 @Override public Object call() throws Exception {
@@ -88,7 +88,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
             1,
             "writer");
 
-        GridFuture<?> fut2 = multithreadedAsync(
+        IgniteFuture<?> fut2 = multithreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings({"TooBroadScope", "StatementWithEmptyBody"})
                 @Override public Object call() throws Exception {

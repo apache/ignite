@@ -49,7 +49,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        GridFuture<?> f = multithreadedAsync(
+        IgniteFuture<?> f = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     assert !lock.tryWriteLock();

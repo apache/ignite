@@ -189,7 +189,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<GridCacheTx> commitAsync() {
         enter();
 
         try {

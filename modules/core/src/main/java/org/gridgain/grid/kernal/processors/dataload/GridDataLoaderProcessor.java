@@ -144,8 +144,8 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
 
             ldrs.add(ldr);
 
-            ldr.future().listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> f) {
+            ldr.future().listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> f) {
                     boolean b = ldrs.remove(ldr);
 
                     assert b : "Loader has not been added to set: " + ldr;

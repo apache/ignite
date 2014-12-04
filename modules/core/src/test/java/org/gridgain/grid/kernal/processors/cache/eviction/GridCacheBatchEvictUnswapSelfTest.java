@@ -98,7 +98,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         info("Finished load cache.");
 
-        GridFuture<?> evictFut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> evictFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 Collection<Long> keys = new ArrayList<>(batchSize);
 
@@ -125,7 +125,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicInteger unswappedKeys = new AtomicInteger();
 
-        GridFuture<?> unswapFut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> unswapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Collection<Long> keys = new ArrayList<>(batchSize);

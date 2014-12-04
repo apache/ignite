@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Keys to retry.
  */
-public interface GridDhtFuture<T> extends GridFuture<T> {
+public interface GridDhtFuture<T> extends IgniteFuture<T> {
     /**
      * Node that future should be able to provide keys to retry before
      * it completes, so it's not necessary to wait till future is done

@@ -165,7 +165,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             info("Check grid index: " + checkIdx);
 
-            GridFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<GridEvent>() {
+            IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<GridEvent>() {
                 @Override public boolean apply(GridEvent e) {
                     info("Received grid event: " + e);
 
@@ -249,7 +249,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
 
-        GridFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<GridEvent>() {
+        IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 info("Received grid event: " + e);
 

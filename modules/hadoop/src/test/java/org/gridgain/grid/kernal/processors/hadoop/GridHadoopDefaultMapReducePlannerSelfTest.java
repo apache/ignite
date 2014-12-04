@@ -724,7 +724,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> awaitDeletesAsync() throws GridException {
+        @Override public IgniteFuture<?> awaitDeletesAsync() throws GridException {
             return null;
         }
 
@@ -911,7 +911,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <R> GridFuture<R> future() {
+        @Override public <R> IgniteFuture<R> future() {
             return null;
         }
     }
@@ -991,7 +991,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
+        @Override public IgniteFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
             return null;
         }
 
@@ -1205,7 +1205,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <R> GridFuture<R> future() {
+        @Override public <R> IgniteFuture<R> future() {
             return null;
         }
     }

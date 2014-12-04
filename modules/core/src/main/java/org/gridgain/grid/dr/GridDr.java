@@ -69,7 +69,7 @@ public interface GridDr {
      * @param dataCenterId Remote data center IDs for which full state transfer was requested.
      * @return Future that will be completed when all required data is transferred from sender caches to sender hubs.
      */
-    public GridFuture<?> senderCacheDrStateTransfer(String cacheName, byte... dataCenterId);
+    public IgniteFuture<?> senderCacheDrStateTransfer(String cacheName, byte... dataCenterId);
 
     /**
      * List all currently active state transfer for the given sender cache.

@@ -111,7 +111,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
 
             final IgniteClosure<String, String> trans = new TransformClosure();
 
-            GridFuture<?> fut = multithreadedAsync(
+            IgniteFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         GridCache<Integer, String> c = cache(ThreadLocalRandom.current().nextInt(3));

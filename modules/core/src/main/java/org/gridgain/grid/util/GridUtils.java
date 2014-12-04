@@ -7199,10 +7199,10 @@ public abstract class GridUtils {
      * @param f Future to listen to.
      * @param log Logger.
      */
-    public static void asyncLogError(GridFuture<?> f, final GridLogger log) {
+    public static void asyncLogError(IgniteFuture<?> f, final GridLogger log) {
         if (f != null)
-            f.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> f) {
+            f.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> f) {
                     try {
                         f.get();
                     }

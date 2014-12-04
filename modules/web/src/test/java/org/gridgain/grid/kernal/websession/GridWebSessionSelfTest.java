@@ -110,7 +110,7 @@ public class GridWebSessionSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        GridFuture<?> restarterFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> restarterFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @SuppressWarnings("BusyWait")
             @Override public Object call() throws Exception {
                 Random rnd = new Random();

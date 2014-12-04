@@ -135,7 +135,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final AtomicLong luceneCnt = new AtomicLong();
 
         // Start lucene query threads.
-        GridFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        IgniteFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 while (!done.get()) {
                     GridCacheQuery<Map.Entry<UUID, Person>> masters = cache0.queries().createFullTextQuery(
@@ -156,7 +156,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final AtomicLong sqlCnt = new AtomicLong();
 
         // Start sql query threads.
-        GridFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        IgniteFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 while (!done.get()) {
                     GridCacheQuery<Map.Entry<UUID, Person>> bachelors =

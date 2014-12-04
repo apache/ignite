@@ -3181,7 +3181,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             new GridFutureAdapter<>(), new GridFutureAdapter<>(), new GridFutureAdapter<>()
         };
 
-        for (GridFuture fut : futs) {
+        for (IgniteFuture fut : futs) {
             assert !fut.isDone();
         }
 
@@ -3202,7 +3202,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         F.<Object>awaitAll(futs);
 
-        for (GridFuture fut : futs) {
+        for (IgniteFuture fut : futs) {
             assert fut.isDone();
         }
     }
@@ -3214,7 +3214,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testAwaitOne() throws Exception {
         final GridFutureAdapter<?>[] futs = {new GridFutureAdapter(), new GridFutureAdapter(), new GridFutureAdapter()};
 
-        for (GridFuture fut : futs) {
+        for (IgniteFuture fut : futs) {
             assert !fut.isDone();
         }
 
@@ -3231,16 +3231,16 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             }
         }.start();
 
-        GridFuture doneFut = F.awaitOne((GridFuture[])futs);
+        IgniteFuture doneFut = F.awaitOne((IgniteFuture[])futs);
 
         assert doneFut.isDone();
 
-        for (GridFuture fut : futs) {
+        for (IgniteFuture fut : futs) {
             assert doneFut == fut ? fut.isDone() : !fut.isDone();
         }
 
         // Check only NULLs.
-        GridFuture<Object> fut = F.awaitOne(Arrays.asList((GridFuture<Object>)null, null, null));
+        IgniteFuture<Object> fut = F.awaitOne(Arrays.asList((IgniteFuture<Object>)null, null, null));
 
         assert fut.isDone();
     }

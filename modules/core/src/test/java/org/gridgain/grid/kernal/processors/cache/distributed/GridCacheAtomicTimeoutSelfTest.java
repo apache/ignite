@@ -113,7 +113,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipNearRequest = true;
 
-        GridFuture<Object> fut = cache.putAsync(key, 1);
+        IgniteFuture<Object> fut = cache.putAsync(key, 1);
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -147,7 +147,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipNearResponse = true;
 
-        GridFuture<Object> fut = cache.putAsync(key, 1);
+        IgniteFuture<Object> fut = cache.putAsync(key, 1);
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -181,7 +181,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipDhtRequest = true;
 
-        GridFuture<Object> fut = cache.putAsync(key, 1);
+        IgniteFuture<Object> fut = cache.putAsync(key, 1);
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -216,7 +216,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipDhtResponse = true;
 
-        GridFuture<Object> fut = cache.putAsync(key, 1);
+        IgniteFuture<Object> fut = cache.putAsync(key, 1);
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 

@@ -118,7 +118,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridRestResponse> handleAsync(final GridRestRequest req) {
+    @Override public IgniteFuture<GridRestResponse> handleAsync(final GridRestRequest req) {
         assert req instanceof GridRestCacheRequest : "Invalid command for topology handler: " + req;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
@@ -144,7 +144,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             final Long ttl = req0.ttl();
 
-            GridFuture<GridRestResponse> fut;
+            IgniteFuture<GridRestResponse> fut;
 
             switch (cmd) {
                 case CACHE_GET: {
@@ -328,7 +328,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Operation result in future.
      * @throws GridException If failed
      */
-    private GridFuture<GridRestResponse> executeCommand(
+    private IgniteFuture<GridRestResponse> executeCommand(
         @Nullable UUID destId,
         UUID clientId,
         final String cacheName,
@@ -373,7 +373,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Operation result in future.
      * @throws GridException If failed
      */
-    private GridFuture<GridRestResponse> executeCommand(
+    private IgniteFuture<GridRestResponse> executeCommand(
         @Nullable UUID destId,
         UUID clientId,
         final String cacheName,
@@ -408,7 +408,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Future of operation result.
      * @throws GridException In case of error.
      */
-    private static GridFuture<?> incrementOrDecrement(GridCacheProjection<Object, Object> cache, String key,
+    private static IgniteFuture<?> incrementOrDecrement(GridCacheProjection<Object, Object> cache, String key,
         GridRestCacheRequest req, final boolean decr) throws GridException {
         assert cache != null;
         assert key != null;
@@ -442,7 +442,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Future of operation result.
      * @throws GridException In case of any exception.
      */
-    private static GridFuture<?> appendOrPrepend(
+    private static IgniteFuture<?> appendOrPrepend(
         final GridKernalContext ctx,
         final GridCacheProjection<Object, Object> cache,
         final Object key, GridRestCacheRequest req, final boolean prepend) throws GridException {
@@ -546,10 +546,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param key Affinity key for previous operation.
      * @return Rest response.
      */
-    private static IgniteClosure<GridFuture<?>, GridRestResponse> resultWrapper(
+    private static IgniteClosure<IgniteFuture<?>, GridRestResponse> resultWrapper(
         final GridCacheProjection<Object, Object> c, @Nullable final Object key) {
-        return new CX1<GridFuture<?>, GridRestResponse>() {
-            @Override public GridRestResponse applyx(GridFuture<?> f) throws GridException {
+        return new CX1<IgniteFuture<?>, GridRestResponse>() {
+            @Override public GridRestResponse applyx(IgniteFuture<?> f) throws GridException {
                 GridCacheRestResponse resp = new GridCacheRestResponse();
 
                 resp.setResponse(f.get());
@@ -608,7 +608,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Fixed result closure.
      */
-    private static final class FixedResult extends CX1<GridFuture<?>, Object> {
+    private static final class FixedResult extends CX1<IgniteFuture<?>, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -623,7 +623,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Object applyx(GridFuture<?> f) throws GridException {
+        @Override public Object applyx(IgniteFuture<?> f) throws GridException {
             f.get();
 
             return res;
@@ -634,7 +634,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * Type alias.
      */
     private abstract static class CacheCommand
-        extends IgniteClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, GridFuture<?>> {
+        extends IgniteClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, IgniteFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -645,7 +645,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * Type alias.
      */
     private abstract static class CacheProjectionCommand
-        extends IgniteClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, GridFuture<?>> {
+        extends IgniteClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, IgniteFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -779,7 +779,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             return c.getAsync(key);
         }
     }
@@ -800,7 +800,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             return c.getAllAsync(keys);
         }
     }
@@ -821,7 +821,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             return c.putAllAsync(map).chain(new FixedResult(true));
         }
     }
@@ -842,7 +842,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             return c.removexAsync(key);
         }
     }
@@ -863,7 +863,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             return (F.isEmpty(keys) ? c.removeAllAsync() : c.removeAllAsync(keys))
                 .chain(new FixedResult(true));
         }
@@ -895,7 +895,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             return exp == null && val == null ? c.removexAsync(key) :
                 exp == null ? c.putxIfAbsentAsync(key, val) :
                     val == null ? c.removeAsync(key, exp) :
@@ -929,7 +929,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             if (ttl != null) {
                 GridCacheEntry<Object, Object> entry = c.entry(key);
 
@@ -972,7 +972,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             GridCacheEntry<Object, Object> entry = c.entry(key);
 
             if (entry != null) {
@@ -1012,7 +1012,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             GridCacheEntry<Object, Object> entry = c.entry(key);
 
             if (entry != null) {
@@ -1047,7 +1047,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
             throws GridException {
             return incrementOrDecrement(c, (String)key, req, false);
         }
@@ -1074,7 +1074,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) throws GridException {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) throws GridException {
             return incrementOrDecrement(c, (String)key, req, true);
         }
     }
@@ -1100,7 +1100,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
             throws GridException {
             return appendOrPrepend(ctx, c, key, req, false);
         }
@@ -1127,7 +1127,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
             throws GridException {
             return appendOrPrepend(ctx, c, key, req, true);
         }
@@ -1139,7 +1139,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             GridCacheMetrics metrics = c.cache().metrics();
 
             assert metrics != null;

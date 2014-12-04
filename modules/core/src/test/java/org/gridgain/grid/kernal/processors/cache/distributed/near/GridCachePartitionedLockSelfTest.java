@@ -73,7 +73,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
             }
         }, GridException.class, "Locks are not supported");
 
-        final GridFuture<Boolean> lockFut1 = g0.cache(null).lockAsync(1, Long.MAX_VALUE);
+        final IgniteFuture<Boolean> lockFut1 = g0.cache(null).lockAsync(1, Long.MAX_VALUE);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -81,7 +81,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
             }
         }, GridException.class, "Locks are not supported");
 
-        final GridFuture<Boolean> lockFut2 = g0.cache(null).lockAllAsync(Arrays.asList(1), Long.MAX_VALUE);
+        final IgniteFuture<Boolean> lockFut2 = g0.cache(null).lockAllAsync(Arrays.asList(1), Long.MAX_VALUE);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

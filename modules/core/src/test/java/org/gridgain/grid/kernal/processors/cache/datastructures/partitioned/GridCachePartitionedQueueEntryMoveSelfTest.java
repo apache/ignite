@@ -92,7 +92,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
             final CountDownLatch latch1 = new CountDownLatch(1);
             //final CountDownLatch latch2 = new CountDownLatch(1);
 
-            GridFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
+            IgniteFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws GridException {
                     Ignite ignite = grid(0);
 
@@ -132,7 +132,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
             //latch2.countDown();
 
-            GridFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
+            IgniteFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws GridException {
                     Ignite ignite = grid(GRID_CNT);
 

@@ -112,20 +112,20 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return;
         }
 
-        GridFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
+        IgniteFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
 
         if (lastFut != null && lastFut.isDone())
             lastFut = null;
 
-        GridFuture<GridRestResponse> f;
+        IgniteFuture<GridRestResponse> f;
 
         if (lastFut == null)
             f = handleRequest0(ses, req, cmd);
         else {
             f = new GridEmbeddedFuture<>(
                 lastFut,
-                new C2<GridRestResponse, Exception, GridFuture<GridRestResponse>>() {
-                    @Override public GridFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
+                new C2<GridRestResponse, Exception, IgniteFuture<GridRestResponse>>() {
+                    @Override public IgniteFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
                         return handleRequest0(ses, req, cmd);
                     }
                 },
@@ -142,7 +142,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param cmd Command.
      * @return Future or {@code null} if processed immediately.
      */
-    @Nullable private GridFuture<GridRestResponse> handleRequest0(
+    @Nullable private IgniteFuture<GridRestResponse> handleRequest0(
         final GridNioSession ses,
         final GridMemcachedMessage req,
         final GridTuple3<GridRestCommand, Boolean, Boolean> cmd
@@ -157,10 +157,10 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return null;
         }
 
-        GridFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
+        IgniteFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
 
-        f.listenAsync(new CIX1<GridFuture<GridRestResponse>>() {
-            @Override public void applyx(GridFuture<GridRestResponse> f) throws GridException {
+        f.listenAsync(new CIX1<IgniteFuture<GridRestResponse>>() {
+            @Override public void applyx(IgniteFuture<GridRestResponse> f) throws GridException {
                 GridRestResponse restRes = f.get();
 
                 // Handle 'Stat' command (special case because several packets are included in response).

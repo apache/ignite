@@ -106,7 +106,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             int oldSize = cache1.size();
 
-            GridFuture fut = multithreadedAsync(
+            IgniteFuture fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         startLatch.await();

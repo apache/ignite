@@ -743,8 +743,8 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
             execSvc.submit(worker);
 
-            batchFut.listenAsync(new CI1<GridFuture<Object>>() {
-                @Override public void apply(GridFuture<Object> t) {
+            batchFut.listenAsync(new CI1<IgniteFuture<Object>>() {
+                @Override public void apply(IgniteFuture<Object> t) {
                     BatchExecutionFuture fut = (BatchExecutionFuture)t;
 
                     if (log.isDebugEnabled())

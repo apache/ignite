@@ -187,9 +187,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch l1 = new CountDownLatch(threads);
 
-            GridFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<GridFuture<?>> futs = new ArrayList<>(cnt);
+                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {
                         int idx = idxGen.getAndIncrement();
@@ -199,7 +199,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                     l1.countDown();
 
-                    for (GridFuture<?> fut : futs)
+                    for (IgniteFuture<?> fut : futs)
                         fut.get();
 
                     return null;
@@ -231,9 +231,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
-            GridFuture<?> f2 = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> f2 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<GridFuture<?>> futs = new ArrayList<>(cnt);
+                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {
                         final int key = idxGen.decrementAndGet();
@@ -243,7 +243,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                     l2.countDown();
 
-                    for (GridFuture<?> fut : futs)
+                    for (IgniteFuture<?> fut : futs)
                         fut.get();
 
                     return null;
@@ -377,9 +377,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             try {
                 final int totalPutCnt = 50000;
 
-                GridFuture<?> fut1 = multithreadedAsync(new Callable<Object>() {
+                IgniteFuture<?> fut1 = multithreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        Collection<GridFuture<?>> futs = new ArrayList<>();
+                        Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
                         while (!done.get()) {
                             int idx = idxGen.getAndIncrement();
@@ -395,14 +395,14 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                         ldr.flush();
 
-                        for (GridFuture<?> fut : futs)
+                        for (IgniteFuture<?> fut : futs)
                             fut.get();
 
                         return null;
                     }
                 }, 5, "producer");
 
-                GridFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
+                IgniteFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         while (!done.get()) {
                             ldr.flush();
@@ -417,7 +417,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 // Define index of node being restarted.
                 final int restartNodeIdx = nodesCntCache + nodesCntNoCache + 1;
 
-                GridFuture<?> fut3 = multithreadedAsync(new Callable<Object>() {
+                IgniteFuture<?> fut3 = multithreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         try {
                             for (int i = 0; i < 5; i++) {

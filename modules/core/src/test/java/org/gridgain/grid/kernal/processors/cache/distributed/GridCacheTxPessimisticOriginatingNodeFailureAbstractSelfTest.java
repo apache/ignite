@@ -176,7 +176,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
 
                     info("Before commitAsync");
 
-                    GridFuture<GridCacheTx> fut = tx.commitAsync();
+                    IgniteFuture<GridCacheTx> fut = tx.commitAsync();
 
                     info("Got future for commitAsync().");
 

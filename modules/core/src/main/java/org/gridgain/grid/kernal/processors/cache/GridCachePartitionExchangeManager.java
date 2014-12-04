@@ -122,8 +122,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (log.isDebugEnabled())
                     log.debug("Discovery event (will start exchange): " + exchId);
 
-                locExchFut.listenAsync(new CI1<GridFuture<?>>() {
-                    @Override public void apply(GridFuture<?> t) {
+                locExchFut.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> t) {
                         if (!enterBusy())
                             return;
 
@@ -330,8 +330,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange futures.
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    public List<GridFuture<?>> exchangeFutures() {
-        return (List<GridFuture<?>>)(List)exchFuts.values();
+    public List<IgniteFuture<?>> exchangeFutures() {
+        return (List<IgniteFuture<?>>)(List)exchFuts.values();
     }
 
     /**

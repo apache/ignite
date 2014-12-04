@@ -46,7 +46,7 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert SUPPORTED_COMMANDS.contains(req.command()) : req.command();
 
         try {

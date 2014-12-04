@@ -32,7 +32,7 @@ import static org.gridgain.client.hadoop.GridHadoopClientProtocol.*;
  */
 public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** Clients. */
-    private static final ConcurrentHashMap<String, GridFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, IgniteFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
@@ -87,12 +87,12 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
      */
     private static GridClient client(String addr) throws IOException {
         try {
-            GridFuture<GridClient> fut = cliMap.get(addr);
+            IgniteFuture<GridClient> fut = cliMap.get(addr);
 
             if (fut == null) {
                 GridFutureAdapter<GridClient> fut0 = new GridFutureAdapter<>();
 
-                GridFuture<GridClient> oldFut = cliMap.putIfAbsent(addr, fut0);
+                IgniteFuture<GridClient> oldFut = cliMap.putIfAbsent(addr, fut0);
 
                 if (oldFut != null)
                     return oldFut.get();

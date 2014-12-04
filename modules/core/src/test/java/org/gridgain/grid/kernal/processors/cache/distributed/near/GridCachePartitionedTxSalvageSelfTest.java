@@ -187,7 +187,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         final Collection<Integer> keys = nearKeys(ignite);
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 GridCache<Object, Object> c = cache(0);
 

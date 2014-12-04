@@ -233,7 +233,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {
-                            GridFuture<Object> fut = new GridFinishedFuture<>(ctx,
+                            IgniteFuture<Object> fut = new GridFinishedFuture<>(ctx,
                                 new GridException("Operation failed"));
 
                             fut.syncNotify(sync);

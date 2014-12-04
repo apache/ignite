@@ -53,7 +53,7 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
+    @Override public IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         if (busyLock.enterBusy()) {
             try {
                 return proc.submit(jobId, jobInfo);
@@ -95,7 +95,7 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+    @Nullable @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.finishFuture(jobId);

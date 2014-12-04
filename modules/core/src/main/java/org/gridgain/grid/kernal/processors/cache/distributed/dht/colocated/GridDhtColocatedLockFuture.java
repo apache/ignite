@@ -157,8 +157,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new IgniteClosure<GridFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
+            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -335,7 +335,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
-        for (GridFuture<?> fut : futures()) {
+        for (IgniteFuture<?> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -368,7 +368,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" +
                     this + ']');
 
-            for (GridFuture<Boolean> fut : pending()) {
+            for (IgniteFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture mini = (MiniFuture)fut;
 
@@ -500,7 +500,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<?> f) {
+    private boolean isMini(IgniteFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -560,8 +560,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     markInitialized();
                 }
                 else {
-                    fut.listenAsync(new CI1<GridFuture<Long>>() {
-                        @Override public void apply(GridFuture<Long> t) {
+                    fut.listenAsync(new CI1<IgniteFuture<Long>>() {
+                        @Override public void apply(IgniteFuture<Long> t) {
                             mapOnTopology();
                         }
                     });
@@ -822,7 +822,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
             add(fut); // Append new future.
 
-            GridFuture<?> txSync = null;
+            IgniteFuture<?> txSync = null;
 
             if (inTx())
                 txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
@@ -841,8 +841,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 }
             }
             else {
-                txSync.listenAsync(new CI1<GridFuture<?>>() {
-                    @Override public void apply(GridFuture<?> t) {
+                txSync.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> t) {
                         try {
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
@@ -875,7 +875,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
 
-        GridFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx, tx, threadId, lockVer,
+        IgniteFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx, tx, threadId, lockVer,
             topVer, keys, read, timeout, filter);
 
         // Add new future.

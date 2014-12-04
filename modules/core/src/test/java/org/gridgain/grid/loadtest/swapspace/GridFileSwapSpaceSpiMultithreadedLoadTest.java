@@ -138,7 +138,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
             }
         });
 
-        GridFuture<?> evictFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteFuture<?> evictFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
@@ -200,7 +200,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
             }
         });
 
-        GridFuture<?> unswapFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteFuture<?> unswapFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();

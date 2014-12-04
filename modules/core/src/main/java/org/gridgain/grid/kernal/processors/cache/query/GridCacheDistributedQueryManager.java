@@ -536,8 +536,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             cctx.io().addOrderedHandler(topic, resHnd);
 
-            fut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> fut) {
+            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
             });
@@ -645,8 +645,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             cctx.io().addOrderedHandler(topic, resHnd);
 
-            fut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> fut) {
+            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
             });

@@ -154,7 +154,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildIndexes(Class<?> cls) {
+    @Override public IgniteFuture<?> rebuildIndexes(Class<?> cls) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -166,7 +166,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildIndexes(String typeName) {
+    @Override public IgniteFuture<?> rebuildIndexes(String typeName) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -178,7 +178,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildAllIndexes() {
+    @Override public IgniteFuture<?> rebuildAllIndexes() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

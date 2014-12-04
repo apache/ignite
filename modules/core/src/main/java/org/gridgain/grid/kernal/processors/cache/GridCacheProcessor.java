@@ -74,7 +74,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCache<?, ?>> publicProxies;
 
     /** Map of preload finish futures grouped by preload order. */
-    private final NavigableMap<Integer, GridFuture<?>> preloadFuts;
+    private final NavigableMap<Integer, IgniteFuture<?>> preloadFuts;
 
     /** Maximum detected preload order. */
     private int maxPreloadOrder;
@@ -1264,7 +1264,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (GridFuture<?> fut : preloadFuts.values())
+        for (IgniteFuture<?> fut : preloadFuts.values())
             ((GridCompoundFuture<Object, Object>)fut).markInitialized();
 
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
@@ -1417,8 +1417,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param order Cache order.
      * @return Compound preload future or {@code null} if order is minimal order found.
      */
-    @Nullable public GridFuture<?> orderedPreloadFuture(int order) {
-        Map.Entry<Integer, GridFuture<?>> entry = preloadFuts.lowerEntry(order);
+    @Nullable public IgniteFuture<?> orderedPreloadFuture(int order) {
+        Map.Entry<Integer, IgniteFuture<?>> entry = preloadFuts.lowerEntry(order);
 
         return entry == null ? null : entry.getValue();
     }

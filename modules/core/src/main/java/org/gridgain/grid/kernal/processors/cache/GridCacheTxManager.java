@@ -498,7 +498,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public GridFuture<Boolean> finishTxs(long topVer) {
+    public IgniteFuture<Boolean> finishTxs(long topVer) {
         GridCompoundFuture<GridCacheTx, Boolean> res =
             new GridCompoundFuture<>(context().kernalContext(),
                 new IgniteReducer<GridCacheTx, Boolean>() {
@@ -1454,7 +1454,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param threadId Near tx thread ID.
      * @return {@code null} if ack was received or future that will be completed when ack is received.
      */
-    @Nullable public GridFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
+    @Nullable public IgniteFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
         if (finishSyncDisabled)
             return null;
 
@@ -2115,7 +2115,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * Commit listener. Checks if commit succeeded and rollbacks if case of error.
      */
-    private class CommitListener implements CI1<GridFuture<GridCacheTx>> {
+    private class CommitListener implements CI1<IgniteFuture<GridCacheTx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2130,7 +2130,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(GridFuture<GridCacheTx> t) {
+        @Override public void apply(IgniteFuture<GridCacheTx> t) {
             try {
                 t.get();
             }

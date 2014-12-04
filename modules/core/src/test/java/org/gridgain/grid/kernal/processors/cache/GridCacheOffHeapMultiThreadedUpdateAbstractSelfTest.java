@@ -262,7 +262,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         final int THREADS = 5;
         final int ITERATIONS_PER_THREAD = iterations();
 
-        GridFuture<Long> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+        IgniteFuture<Long> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 for (int i = 0; i < ITERATIONS_PER_THREAD; i++) {
                     if (i % 1000 == 0)
@@ -277,7 +277,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        GridFuture<Long> getFut;
+        IgniteFuture<Long> getFut;
 
         try {
             getFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {

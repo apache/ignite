@@ -18,7 +18,7 @@ import java.util.*;
  * Cache query future returned by query execution.
  * Refer to {@link GridCacheQuery} documentation for more information.
  */
-public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>> {
+public interface GridCacheQueryFuture<T> extends IgniteFuture<Collection<T>> {
     /**
      * Returns number of elements that are already fetched and can
      * be returned from {@link #next()} method without blocking.

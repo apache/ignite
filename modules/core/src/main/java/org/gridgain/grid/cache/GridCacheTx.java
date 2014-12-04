@@ -231,7 +231,7 @@ public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
      *
      * @return Future for commit operation.
      */
-    public GridFuture<GridCacheTx> commitAsync();
+    public IgniteFuture<GridCacheTx> commitAsync();
 
     /**
      * Rolls back this transaction.

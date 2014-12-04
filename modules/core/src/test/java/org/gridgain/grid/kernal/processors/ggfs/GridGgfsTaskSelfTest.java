@@ -178,7 +178,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             assertNull(ggfsAsync.execute(
                 new Task(), new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
-            GridFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
+            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
 
             assertNotNull(fut);
 
@@ -190,7 +190,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfsAsync.format();
 
-        GridFuture<?> fut = ggfsAsync.future();
+        IgniteFuture<?> fut = ggfsAsync.future();
 
         assertNotNull(fut);
 

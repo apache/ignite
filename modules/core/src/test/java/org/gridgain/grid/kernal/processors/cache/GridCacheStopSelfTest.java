@@ -128,7 +128,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
             assertEquals(atomic ? ATOMIC : TRANSACTIONAL, cache.configuration().getAtomicityMode());
             assertEquals(replicated ? REPLICATED : PARTITIONED, cache.configuration().getCacheMode());
 
-            Collection<GridFuture<?>> putFuts = new ArrayList<>();
+            Collection<IgniteFuture<?>> putFuts = new ArrayList<>();
 
             for (int j = 0; j < PUT_THREADS; j++) {
                 final int key = j;
@@ -165,7 +165,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             stopGrid(0);
 
-            for (GridFuture<?> fut : putFuts) {
+            for (IgniteFuture<?> fut : putFuts) {
                 try {
                     fut.get();
                 }

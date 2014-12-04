@@ -84,7 +84,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> txLockAsync(Collection<? extends K> keys, long timeout,
+    @Override public IgniteFuture<Boolean> txLockAsync(Collection<? extends K> keys, long timeout,
         GridCacheTxLocalEx<K, V> tx, boolean isRead,
         boolean retval, GridCacheTxIsolation isolation, boolean invalidate,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
@@ -92,7 +92,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
+    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         GridCacheTxLocalEx<K, V> tx = ctx.tm().localTx();
 
@@ -106,7 +106,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param filter Filter.
      * @return Future.
      */
-    public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
+    public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);

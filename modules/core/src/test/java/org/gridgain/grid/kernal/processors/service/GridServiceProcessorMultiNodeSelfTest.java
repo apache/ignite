@@ -41,7 +41,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -89,7 +89,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -127,7 +127,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        GridFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 

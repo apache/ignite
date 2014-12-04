@@ -72,11 +72,11 @@ public class CacheApiExample {
         cache.putx(2, "2");
 
         // Put asynchronously (every cache operation has async counterpart).
-        GridFuture<String> fut = cache.putAsync(3, "3");
+        IgniteFuture<String> fut = cache.putAsync(3, "3");
 
         // Asynchronously wait for result.
-        fut.listenAsync(new IgniteInClosure<GridFuture<String>>() {
-            @Override public void apply(GridFuture<String> fut) {
+        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
+            @Override public void apply(IgniteFuture<String> fut) {
                 try {
                     System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
                 }

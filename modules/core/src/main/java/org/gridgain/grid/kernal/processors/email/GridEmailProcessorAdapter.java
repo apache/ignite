@@ -59,7 +59,7 @@ public abstract class GridEmailProcessorAdapter extends GridProcessorAdapter {
      * @param html HTML format flag.
      * @return Future for scheduled email.
      */
-    public abstract GridFuture<Boolean> schedule(String subj, String body, boolean html);
+    public abstract IgniteFuture<Boolean> schedule(String subj, String body, boolean html);
 
     /**
      * Schedules sending of given email. If SMTP is disabled - this method is no-op. Emails will be send
@@ -72,5 +72,5 @@ public abstract class GridEmailProcessorAdapter extends GridProcessorAdapter {
      * @param addrs Addresses.
      * @return Future for scheduled email.
      */
-    public abstract GridFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs);
+    public abstract IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs);
 }

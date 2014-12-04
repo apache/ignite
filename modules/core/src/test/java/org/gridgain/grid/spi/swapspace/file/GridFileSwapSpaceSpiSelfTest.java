@@ -50,7 +50,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        GridFuture<?> wFut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> wFut = multithreadedAsync(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 while (!done.get()) {
                     long val = valCntr.incrementAndGet();
@@ -67,7 +67,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         wLatch.await();
 
-        GridFuture<?> rFut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> rFut = multithreadedAsync(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 while (valCntr.get() < 1000) {
                     byte[] val = spi.read(null, key, context());
@@ -132,7 +132,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         final AtomicBoolean fin = new AtomicBoolean();
 
-        final GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        final IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 

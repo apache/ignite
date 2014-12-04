@@ -41,7 +41,7 @@ public class GridSchedulerImpl implements GridScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> runLocal(Runnable r) {
+    @Override public IgniteFuture<?> runLocal(Runnable r) {
         A.notNull(r, "r");
 
         guard();
@@ -55,7 +55,7 @@ public class GridSchedulerImpl implements GridScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> callLocal(Callable<R> c) {
+    @Override public <R> IgniteFuture<R> callLocal(Callable<R> c) {
         A.notNull(c, "c");
 
         guard();

@@ -156,7 +156,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      */
     public void onResult(UUID nodeId, GridCachePessimisticCheckCommittedTxResponse<K, V> res) {
         if (!isDone()) {
-            for (GridFuture<GridCacheCommittedTxInfo<K, V>> fut : pending()) {
+            for (IgniteFuture<GridCacheCommittedTxInfo<K, V>> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -189,7 +189,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (GridFuture<?> fut : futures())
+        for (IgniteFuture<?> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -245,7 +245,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<?> f) {
+    private boolean isMini(IgniteFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 

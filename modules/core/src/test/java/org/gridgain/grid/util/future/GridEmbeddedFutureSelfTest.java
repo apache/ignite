@@ -40,12 +40,12 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     public void testFutureChain() throws Exception {
         GridFutureAdapter<Integer> fut = new GridFutureAdapter<>(ctx);
 
-        GridFuture<Integer> cur = fut;
+        IgniteFuture<Integer> cur = fut;
 
         for (int i = 0; i < DFLT_MAX_CONCURRENT_ASYNC_OPS; i++) {
             cur = new GridEmbeddedFuture<>(cur,
-                new IgniteBiClosure<Integer, Exception, GridFuture<Integer>>() {
-                    @Override public GridFuture<Integer> apply(Integer o, Exception e) {
+                new IgniteBiClosure<Integer, Exception, IgniteFuture<Integer>>() {
+                    @Override public IgniteFuture<Integer> apply(Integer o, Exception e) {
                         return new GridFinishedFuture<>(ctx, o);
                     }
                 }, ctx);

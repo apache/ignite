@@ -27,5 +27,5 @@ public interface GridRestProtocolHandler {
      * @param req Request.
      * @return Future.
      */
-    public GridFuture<GridRestResponse> handleAsync(GridRestRequest req);
+    public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req);
 }

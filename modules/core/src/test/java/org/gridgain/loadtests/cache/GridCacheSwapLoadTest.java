@@ -116,7 +116,7 @@ public class GridCacheSwapLoadTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED);
 
-            Collection<GridFuture<?>> futs = new ArrayList<>(3);
+            Collection<IgniteFuture<?>> futs = new ArrayList<>(3);
 
             long start = System.currentTimeMillis();
 
@@ -190,7 +190,7 @@ public class GridCacheSwapLoadTest {
     /**
      * @return Future.
      */
-    private static GridFuture<?> doPut(final Ignite g) {
+    private static IgniteFuture<?> doPut(final Ignite g) {
         final AtomicInteger putKey = new AtomicInteger(0);
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
@@ -219,7 +219,7 @@ public class GridCacheSwapLoadTest {
     /**
      * @return Futures.
      */
-    private static Collection<GridFuture<Long>> doGetRemove(final Ignite g) {
+    private static Collection<IgniteFuture<Long>> doGetRemove(final Ignite g) {
         final AtomicBoolean stop = new AtomicBoolean(false);
 
         return F.asList(
@@ -293,9 +293,9 @@ public class GridCacheSwapLoadTest {
     /**
      * @param futs Futures.
      */
-    private static void wait(Iterable<GridFuture<?>> futs) {
-        F.forEach(futs, new CIX1<GridFuture<?>>() {
-            @Override public void applyx(GridFuture<?> fut) throws GridException {
+    private static void wait(Iterable<IgniteFuture<?>> futs) {
+        F.forEach(futs, new CIX1<IgniteFuture<?>>() {
+            @Override public void applyx(IgniteFuture<?> fut) throws GridException {
                 fut.get();
             }
         });

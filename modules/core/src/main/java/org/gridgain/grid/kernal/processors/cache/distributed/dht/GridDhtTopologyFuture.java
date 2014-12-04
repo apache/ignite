@@ -12,8 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 
-import java.util.*;
-
 /**
  * Future that implements a barrier after which dht topology is safe to use. Topology is considered to be
  * safe to use when all transactions that involve moving primary partitions are completed and partition map
@@ -22,7 +20,7 @@ import java.util.*;
  * When new new transaction is started, it will wait for this future before acquiring new locks on particular
  * topology version.
  */
-public interface GridDhtTopologyFuture extends GridFuture<Long> {
+public interface GridDhtTopologyFuture extends IgniteFuture<Long> {
     /**
      * Gets a topology snapshot for the topology version represented by the future. Note that by the time
      * partition exchange completes some nodes from the snapshot may leave the grid. One should use discovery

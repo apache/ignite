@@ -298,7 +298,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
             final String val = "v" + i;
 
-            GridFuture<?> f = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> f = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     l.await();
 
@@ -326,7 +326,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
         final ConcurrentLinkedQueue<String> execQueue = new ConcurrentLinkedQueue<>();
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override
             public void run() {
                 long processed;
@@ -405,7 +405,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
         assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings("OverlyStrongTypeCast")
             @Override public void run() {
                 try {

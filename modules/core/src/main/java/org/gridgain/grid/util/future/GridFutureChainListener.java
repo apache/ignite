@@ -18,7 +18,7 @@ import org.gridgain.grid.util.lang.*;
 /**
  * Future listener to fill chained future with converted result of the source future.
  */
-public class GridFutureChainListener<T, R> implements IgniteInClosure<GridFuture<T>> {
+public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteFuture<T>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -29,7 +29,7 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<GridFuture
     private final GridFutureAdapter<R> fut;
 
     /** Done callback. */
-    private final IgniteClosure<? super GridFuture<T>, R> doneCb;
+    private final IgniteClosure<? super IgniteFuture<T>, R> doneCb;
 
     /**
      * Constructs chain listener.
@@ -39,14 +39,14 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<GridFuture
      * @param doneCb Done callback.
      */
     public GridFutureChainListener(GridKernalContext ctx, GridFutureAdapter<R> fut,
-        IgniteClosure<? super GridFuture<T>, R> doneCb) {
+        IgniteClosure<? super IgniteFuture<T>, R> doneCb) {
         this.ctx = ctx;
         this.fut = fut;
         this.doneCb = doneCb;
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(GridFuture<T> t) {
+    @Override public void apply(IgniteFuture<T> t) {
         try {
             fut.onDone(doneCb.apply(t));
         }

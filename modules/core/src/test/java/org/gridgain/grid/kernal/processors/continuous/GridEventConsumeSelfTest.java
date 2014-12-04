@@ -952,7 +952,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
-        GridFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < CONSUME_CNT; i++) {
                     int idx = rnd.nextInt(GRID_CNT);
@@ -985,7 +985,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             }
         }, 8, "consume-starter");
 
-        GridFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     IgniteBiTuple<Integer, UUID> t = queue.poll(1, SECONDS);
@@ -1014,7 +1014,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             }
         }, 4, "consume-stopper");
 
-        GridFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     startGrid("anotherGrid");
@@ -1025,7 +1025,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             }
         }, 1, "node-restarter");
 
-        GridFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     int idx = rnd.nextInt(GRID_CNT);

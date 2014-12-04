@@ -16,7 +16,7 @@ import org.gridgain.grid.*;
  */
 public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
     /** Future for previous asynchronous operation. */
-    protected ThreadLocal<GridFuture<?>> curFut;
+    protected ThreadLocal<IgniteFuture<?>> curFut;
 
     /**
      * Default constructor.
@@ -44,18 +44,18 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         if (curFut == null)
             throw new IllegalStateException("Asynchronous mode is disabled.");
 
-        GridFuture<?> fut = curFut.get();
+        IgniteFuture<?> fut = curFut.get();
 
         if (fut == null)
             throw new IllegalStateException("Asynchronous operation not started.");
 
         curFut.set(null);
 
-        return (GridFuture<R>)fut;
+        return (IgniteFuture<R>)fut;
     }
 
     /**
@@ -64,7 +64,7 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
      *         otherwise waits for future and returns result.
      * @throws GridException If asynchronous mode is disabled and future failed.
      */
-    public <R> R saveOrGet(GridFuture<R> fut) throws GridException {
+    public <R> R saveOrGet(IgniteFuture<R> fut) throws GridException {
         if (curFut != null) {
             curFut.set(fut);
 

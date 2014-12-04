@@ -64,7 +64,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTxEx<K, V>> future() {
+    @Override public IgniteFuture<GridCacheTxEx<K, V>> future() {
         return fut.get();
     }
 
@@ -102,7 +102,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTxEx<K, V>> prepareAsync() {
+    @Override public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync() {
         try {
             prepare();
 
@@ -141,7 +141,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public GridFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<GridCacheTx> commitAsync() {
         try {
             prepare();
         }
@@ -159,11 +159,11 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
                 fut.checkLocks();
 
-                return (GridFuture)fut;
+                return (IgniteFuture)fut;
             }
         }
 
-        return (GridFuture)this.fut.get();
+        return (IgniteFuture)this.fut.get();
     }
 
     /** {@inheritDoc} */
@@ -171,7 +171,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         rollbackAsync().get();
     }
 
-    @Override public GridFuture<GridCacheTx> rollbackAsync() {
+    @Override public IgniteFuture<GridCacheTx> rollbackAsync() {
         try {
             state(ROLLING_BACK);
 

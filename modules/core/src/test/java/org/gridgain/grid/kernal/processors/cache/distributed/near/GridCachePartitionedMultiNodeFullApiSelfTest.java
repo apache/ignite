@@ -445,7 +445,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                     @Override public Boolean call() throws Exception {
                         syncLatch.countDown();
 
-                        GridFuture<Boolean> f = e.lockAsync(15000);
+                        IgniteFuture<Boolean> f = e.lockAsync(15000);
 
                         try {
                             f.get(100);
@@ -470,7 +470,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                     }
                 });
 
-            GridFuture<Boolean> f = comp.future();
+            IgniteFuture<Boolean> f = comp.future();
 
             syncLatch.await();
 

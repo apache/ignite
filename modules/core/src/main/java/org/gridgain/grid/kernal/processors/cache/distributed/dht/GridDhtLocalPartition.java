@@ -381,7 +381,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
      * @param updateSeq Update sequence.
      * @return Future to signal that this node is no longer an owner or backup.
      */
-    GridFuture<?> rent(boolean updateSeq) {
+    IgniteFuture<?> rent(boolean updateSeq) {
         while (true) {
             int reservations = state.getStamp();
 
@@ -409,7 +409,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
      * @param updateSeq Update sequence.
      * @return Future for evict attempt.
      */
-    private GridFuture<Boolean> tryEvictAsync(boolean updateSeq) {
+    private IgniteFuture<Boolean> tryEvictAsync(boolean updateSeq) {
         if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);

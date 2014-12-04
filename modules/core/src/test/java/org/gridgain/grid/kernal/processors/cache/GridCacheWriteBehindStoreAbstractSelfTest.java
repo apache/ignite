@@ -90,7 +90,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
         final AtomicInteger operations = new AtomicInteger();
 
-        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.

@@ -246,7 +246,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         final int half = ENTRY_CNT / 2;
 
-        GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
                 info("Run topology change.");
 

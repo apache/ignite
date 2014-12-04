@@ -112,7 +112,7 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
         try {
             gridReady.await();
 
-            GridFuture<GridClient> c = GridTestUtils.runAsync(new Callable<GridClient>() {
+            IgniteFuture<GridClient> c = GridTestUtils.runAsync(new Callable<GridClient>() {
                 @Override public GridClient call() throws Exception {
                     return GridClientFactory.start(cfg);
                 }

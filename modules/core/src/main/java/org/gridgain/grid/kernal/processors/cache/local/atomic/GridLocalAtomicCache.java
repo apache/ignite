@@ -151,7 +151,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<V> putAsync(K key,
+    @Override public IgniteFuture<V> putAsync(K key,
         V val,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl,
@@ -165,7 +165,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Boolean> putxAsync(K key,
+    @Override public IgniteFuture<Boolean> putxAsync(K key,
         V val,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl,
@@ -184,7 +184,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> putIfAbsentAsync(K key, V val) {
+    @Override public IgniteFuture<V> putIfAbsentAsync(K key, V val) {
         return putAsync(key, val, ctx.noPeekArray());
     }
 
@@ -194,7 +194,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> putxIfAbsentAsync(K key, V val) {
+    @Override public IgniteFuture<Boolean> putxIfAbsentAsync(K key, V val) {
         return putxAsync(key, val, ctx.noPeekArray());
     }
 
@@ -205,7 +205,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> replaceAsync(K key, V val) {
+    @Override public IgniteFuture<V> replaceAsync(K key, V val) {
         return putAsync(key, val, ctx.hasPeekArray());
     }
 
@@ -215,7 +215,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> replacexAsync(K key, V val) {
+    @Override public IgniteFuture<Boolean> replacexAsync(K key, V val) {
         return putxAsync(key, val, ctx.hasPeekArray());
     }
 
@@ -225,7 +225,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
         return putxAsync(key, newVal, ctx.equalsPeekArray(oldVal));
     }
 
@@ -265,7 +265,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
+    @Override public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
         A.notNull(key, "key");
 
         ctx.denyOnLocalRead();
@@ -275,7 +275,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key");
 
         ctx.denyOnLocalRead();
@@ -300,7 +300,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
+    @Override public IgniteFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         ctx.denyOnLocalRead();
 
@@ -336,7 +336,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key,
+    @Override public IgniteFuture<?> transformAsync(K key,
         IgniteClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl) {
@@ -364,7 +364,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
+    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
         ctx.denyOnLocalRead();
 
         if (F.isEmpty(m))
@@ -392,7 +392,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<V> removeAsync(K key,
+    @Override public IgniteFuture<V> removeAsync(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
         ctx.denyOnLocalRead();
@@ -417,7 +417,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeAllAsync(Collection<? extends K> keys,
+    @Override public IgniteFuture<?> removeAllAsync(Collection<? extends K> keys,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         ctx.denyOnLocalRead();
 
@@ -445,7 +445,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Boolean> removexAsync(K key,
+    @Override public IgniteFuture<Boolean> removexAsync(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
         A.notNull(key, "key");
@@ -472,7 +472,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> removeAsync(K key, V val) {
+    @Override public IgniteFuture<Boolean> removeAsync(K key, V val) {
         return removexAsync(key, ctx.equalsPeekArray(val));
     }
 
@@ -483,7 +483,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeAllAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<?> removeAllAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return removeAllAsync(keySet(filter), filter);
     }
 
@@ -528,7 +528,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Map<K, V>> getAllAsync(
+    @Override public IgniteFuture<Map<K, V>> getAllAsync(
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
         boolean skipTx,
@@ -665,7 +665,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param filter Cache entry filter for atomic updates.
      * @return Completion future.
      */
-    private GridFuture updateAllAsync0(
+    private IgniteFuture updateAllAsync0(
         @Nullable final Map<? extends K, ? extends V> map,
         @Nullable final Map<? extends K, ? extends IgniteClosure<V, V>> transformMap,
         final boolean retval,
@@ -702,7 +702,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param filter Cache entry filter.
      * @return Completion future.
      */
-    private GridFuture removeAllAsync0(
+    private IgniteFuture removeAllAsync0(
         @Nullable final Collection<? extends K> keys,
         final boolean retval,
         final boolean rawRetval,
@@ -1245,7 +1245,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> txLockAsync(Collection<? extends K> keys,
+    @Override public IgniteFuture<Boolean> txLockAsync(Collection<? extends K> keys,
         long timeout,
         GridCacheTxLocalEx<K, V> tx,
         boolean isRead,
@@ -1259,7 +1259,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
+    @Override public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
         long timeout,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
         return new GridFinishedFutureEx<>(new UnsupportedOperationException("Locks are not supported for " +
@@ -1279,8 +1279,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    protected GridFuture asyncOp(final Callable<?> op) {
-        GridFuture fail = asyncOpAcquire();
+    protected IgniteFuture asyncOp(final Callable<?> op) {
+        IgniteFuture fail = asyncOpAcquire();
 
         if (fail != null)
             return fail;
@@ -1290,12 +1290,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         holder.lock();
 
         try {
-            GridFuture fut = holder.future();
+            IgniteFuture fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
-                GridFuture f = new GridEmbeddedFuture(fut,
-                    new C2<Object, Exception, GridFuture>() {
-                        @Override public GridFuture apply(Object t, Exception e) {
+                IgniteFuture f = new GridEmbeddedFuture(fut,
+                    new C2<Object, Exception, IgniteFuture>() {
+                        @Override public IgniteFuture apply(Object t, Exception e) {
                             return ctx.closures().callLocalSafe(op);
                         }
                     }, ctx.kernalContext());
@@ -1305,7 +1305,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 return f;
             }
 
-            GridFuture f = ctx.closures().callLocalSafe(op);
+            IgniteFuture f = ctx.closures().callLocalSafe(op);
 
             saveFuture(holder, f);
 

@@ -63,7 +63,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private GridCache<Object, Object> dataCache;
 
     /** */
-    private GridFuture<?> dataCacheStartFut;
+    private IgniteFuture<?> dataCacheStartFut;
 
     /** Local GGFS metrics. */
     private GridGgfsLocalMetrics metrics;
@@ -102,7 +102,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private long trashPurgeTimeout;
 
     /** On-going remote reads futures. */
-    private final ConcurrentHashMap8<GridGgfsBlockKey, GridFuture<byte[]>> rmtReadFuts =
+    private final ConcurrentHashMap8<GridGgfsBlockKey, IgniteFuture<byte[]>> rmtReadFuts =
         new ConcurrentHashMap8<>();
 
     /** Executor service for puts in dual mode */
@@ -371,7 +371,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws GridException If failed.
      */
-    @Nullable public GridFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final GridGgfsPath path,
+    @Nullable public IgniteFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final GridGgfsPath path,
         final long blockIdx, @Nullable final GridGgfsReader secReader)
         throws GridException {
         //assert validTxState(any); // Allow this method call for any transaction state.
@@ -392,17 +392,17 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     ", blockIdx=" + blockIdx + ']');
         }
 
-        GridFuture<byte[]> fut = dataCachePrj.getAsync(key);
+        IgniteFuture<byte[]> fut = dataCachePrj.getAsync(key);
 
         if (secReader != null) {
-            fut = fut.chain(new CX1<GridFuture<byte[]>, byte[]>() {
-                @Override public byte[] applyx(GridFuture<byte[]> fut) throws GridException {
+            fut = fut.chain(new CX1<IgniteFuture<byte[]>, byte[]>() {
+                @Override public byte[] applyx(IgniteFuture<byte[]> fut) throws GridException {
                     byte[] res = fut.get();
 
                     if (res == null) {
                         GridFutureAdapter<byte[]> rmtReadFut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
 
-                        GridFuture<byte[]> oldRmtReadFut = rmtReadFuts.putIfAbsent(key, rmtReadFut);
+                        IgniteFuture<byte[]> oldRmtReadFut = rmtReadFuts.putIfAbsent(key, rmtReadFut);
 
                         if (oldRmtReadFut == null) {
                             try {
@@ -483,7 +483,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileInfo File info of file opened to write.
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
-    public GridFuture<Boolean> writeStart(GridGgfsFileInfo fileInfo) {
+    public IgniteFuture<Boolean> writeStart(GridGgfsFileInfo fileInfo) {
         WriteCompletionFuture fut = new WriteCompletionFuture(ggfsCtx.kernalContext(), fileInfo.id());
 
         WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
@@ -586,7 +586,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileInfo File details to remove data for.
      * @return Delete future that will be completed when file is actually erased.
      */
-    public GridFuture<Object> delete(GridGgfsFileInfo fileInfo) {
+    public IgniteFuture<Object> delete(GridGgfsFileInfo fileInfo) {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         if (!fileInfo.isFile()) {
@@ -1040,8 +1040,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
         else {
             callGgfsLocalSafe(new GridPlainCallable<Object>() {
                 @Override @Nullable public Object call() throws Exception {
-                    storeBlocksAsync(blocks).listenAsync(new CI1<GridFuture<?>>() {
-                        @Override public void apply(GridFuture<?> fut) {
+                    storeBlocksAsync(blocks).listenAsync(new CI1<IgniteFuture<?>>() {
+                        @Override public void apply(IgniteFuture<?> fut) {
                             try {
                                 fut.get();
 
@@ -1239,7 +1239,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Future that will be completed after put is done.
      */
     @SuppressWarnings("unchecked")
-    private GridFuture<?> storeBlocksAsync(Map<GridGgfsBlockKey, byte[]> blocks) {
+    private IgniteFuture<?> storeBlocksAsync(Map<GridGgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
 
         if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
@@ -1273,8 +1273,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param blocksMsg Write request message.
      */
     private void processBlocksMessage(final UUID nodeId, final GridGgfsBlocksMessage blocksMsg) {
-        storeBlocksAsync(blocksMsg.blocks()).listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> fut) {
+        storeBlocksAsync(blocksMsg.blocks()).listenAsync(new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> fut) {
                 GridException err = null;
 
                 try {
@@ -1673,7 +1673,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param info File info to delete.
          * @return Future which completes when entry is actually removed.
          */
-        private GridFuture<Object> deleteAsync(GridGgfsFileInfo info) {
+        private IgniteFuture<Object> deleteAsync(GridGgfsFileInfo info) {
             GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
 
             delReqs.offer(F.t(fut, info));

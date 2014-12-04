@@ -86,7 +86,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
 
                 X.println("Running main test.");
 
-                GridFuture<Void> collectorFut = GridTestUtils.runAsync(new Callable<Void>() {
+                IgniteFuture<Void> collectorFut = GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         GridCumulativeAverage avgTasksPerSec = new GridCumulativeAverage();
 
@@ -156,8 +156,8 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
         final LongAdder iterCntr) {
         final Semaphore sem = new Semaphore(taskCnt);
 
-        final IgniteInClosure<GridFuture> lsnr = new CI1<GridFuture>() {
-            @Override public void apply(GridFuture t) {
+        final IgniteInClosure<IgniteFuture> lsnr = new CI1<IgniteFuture>() {
+            @Override public void apply(IgniteFuture t) {
                 sem.release();
             }
         };

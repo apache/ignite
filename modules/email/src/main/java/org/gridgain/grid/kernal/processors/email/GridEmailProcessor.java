@@ -156,7 +156,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> schedule(String subj, String body, boolean html) {
+    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html) {
         String[] addrs = ctx.config().getAdminEmails();
 
         return addrs == null || addrs.length == 0 ? new GridFinishedFuture<>(ctx, false) :
@@ -165,7 +165,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"SynchronizeOnNonFinalField"})
-    @Override public GridFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
+    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
         assert subj != null;
         assert body != null;
         assert addrs != null;

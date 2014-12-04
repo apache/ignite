@@ -81,7 +81,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 
-        GridFuture<?> fut1 = multithreadedAsync(new Callable() {
+        IgniteFuture<?> fut1 = multithreadedAsync(new Callable() {
             @Override public Object call() throws Exception {
                 for (int i = 1; i < keyCnt; i++) {
                     assertTrue(c.putx(String.valueOf(i), i));
@@ -119,7 +119,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
 
         startLatch.await();
 
-        GridFuture<?> fut2 = multithreadedAsync(new Callable() {
+        IgniteFuture<?> fut2 = multithreadedAsync(new Callable() {
             @Override public Object call() throws Exception {
                 int cnt = 0;
 

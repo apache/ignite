@@ -351,7 +351,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      *
      * @return Future for prepare step.
      */
-    public GridFuture<GridCacheTxEx<K, V>> prepareAsync();
+    public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -375,7 +375,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     /**
      * @return Future for transaction completion.
      */
-    public GridFuture<GridCacheTx> finishFuture();
+    public IgniteFuture<GridCacheTx> finishFuture();
 
     /**
      * @param state Transaction state.
@@ -404,7 +404,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      *
      * @return Rollback future.
      */
-    public GridFuture<GridCacheTx> rollbackAsync();
+    public IgniteFuture<GridCacheTx> rollbackAsync();
 
     /**
      * Callback invoked whenever there is a lock that has been acquired

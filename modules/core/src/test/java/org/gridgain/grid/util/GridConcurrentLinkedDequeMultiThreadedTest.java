@@ -36,7 +36,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
         final ConcurrentLinkedDeque8<Byte> queue = new ConcurrentLinkedDeque8<>();
 
         // Poll thread.
-        GridFuture<?> pollFut = multithreadedAsync(
+        IgniteFuture<?> pollFut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Thread started.");
@@ -61,7 +61,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
         );
 
         // Producer thread.
-        GridFuture<?> prodFut = multithreadedAsync(
+        IgniteFuture<?> prodFut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Thread started.");

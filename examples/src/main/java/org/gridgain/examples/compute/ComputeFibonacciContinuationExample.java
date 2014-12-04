@@ -79,10 +79,10 @@ public final class ComputeFibonacciContinuationExample {
      */
     private static class FibonacciClosure implements IgniteClosure<Long, BigInteger> {
         /** Future for spawned task. */
-        private GridFuture<BigInteger> fut1;
+        private IgniteFuture<BigInteger> fut1;
 
         /** Future for spawned task. */
-        private GridFuture<BigInteger>fut2;
+        private IgniteFuture<BigInteger> fut2;
 
         /** Auto-inject job context. */
         @GridJobContextResource
@@ -116,7 +116,7 @@ public final class ComputeFibonacciContinuationExample {
                         return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
                     // Node-local storage.
-                    ClusterNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
+                    ClusterNodeLocalMap<Long, IgniteFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
 
                     // Check if value is cached in node-local-map first.
                     fut1 = locMap.get(n - 1);
@@ -142,8 +142,8 @@ public final class ComputeFibonacciContinuationExample {
 
                     // If futures are not done, then wait asynchronously for the result
                     if (!fut1.isDone() || !fut2.isDone()) {
-                        IgniteInClosure<GridFuture<BigInteger>> lsnr = new IgniteInClosure<GridFuture<BigInteger>>() {
-                            @Override public void apply(GridFuture<BigInteger> f) {
+                        IgniteInClosure<IgniteFuture<BigInteger>> lsnr = new IgniteInClosure<IgniteFuture<BigInteger>>() {
+                            @Override public void apply(IgniteFuture<BigInteger> f) {
                                 // If both futures are done, resume the continuation.
                                 if (fut1.isDone() && fut2.isDone())
                                     // CONTINUATION:

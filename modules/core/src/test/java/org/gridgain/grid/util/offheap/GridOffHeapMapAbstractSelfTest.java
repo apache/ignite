@@ -11,7 +11,7 @@ package org.gridgain.grid.util.offheap;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridFuture;
+import org.gridgain.grid.IgniteFuture;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.X;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -655,7 +655,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        GridFuture<?> itFut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> itFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     startLatch.await();
@@ -680,7 +680,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             }
         }, 1);
 
-        GridFuture<?> putFut = multithreadedAsync(new Runnable() {
+        IgniteFuture<?> putFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     startLatch.await();
@@ -739,7 +739,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             keys[i][0] = (byte)i; // hash
         }
 
-        GridFuture<?> fut = multithreadedAsync(new Callable<Void>() {
+        IgniteFuture<?> fut = multithreadedAsync(new Callable<Void>() {
             @Override
             public Void call() throws GridException {
                 Random rnd = new Random();

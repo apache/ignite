@@ -200,7 +200,7 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
      * @param queueName Queue name.
      * @return Future completing when thread finishes.
      */
-    private GridFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
+    private IgniteFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, false, true);

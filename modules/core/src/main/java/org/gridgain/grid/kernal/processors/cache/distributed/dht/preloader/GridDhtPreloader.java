@@ -253,12 +253,12 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /**
      * @return Start future.
      */
-    @Override public GridFuture<Object> startFuture() {
+    @Override public IgniteFuture<Object> startFuture() {
         return startFut;
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> syncFuture() {
+    @Override public IgniteFuture<?> syncFuture() {
         return demandPool.syncFuture();
     }
 
@@ -307,13 +307,13 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param msg Force keys message.
      */
     private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest<K, V> msg) {
-        GridFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
+        IgniteFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
 
         if (fut.isDone())
             processForceKeysRequest0(node, msg);
         else
-            fut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> t) {
+            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> t) {
                     processForceKeysRequest0(node, msg);
                 }
             });
@@ -410,8 +410,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<GridFuture<Long>>() {
-            @Override public void apply(GridFuture<Long> fut) {
+        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<IgniteFuture<Long>>() {
+            @Override public void apply(IgniteFuture<Long> fut) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                         ", node=" + node + ']');
@@ -465,27 +465,27 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     @Override public GridDhtFuture<Object> request(Collection<? extends K> keys, long topVer) {
         final GridDhtForceKeysFuture<K, V> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
-        GridFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
+        IgniteFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
 
         if (startFut.isDone() && topReadyFut == null)
             fut.init();
         else {
             if (topReadyFut == null)
-                startFut.listenAsync(new CI1<GridFuture<?>>() {
-                    @Override public void apply(GridFuture<?> syncFut) {
+                startFut.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> syncFut) {
                         fut.init();
                     }
                 });
             else {
                 GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>(cctx.kernalContext());
 
-                compound.add((GridFuture<Object>)startFut);
-                compound.add((GridFuture<Object>)topReadyFut);
+                compound.add((IgniteFuture<Object>)startFut);
+                compound.add((IgniteFuture<Object>)topReadyFut);
 
                 compound.markInitialized();
 
-                compound.listenAsync(new CI1<GridFuture<?>>() {
-                    @Override public void apply(GridFuture<?> syncFut) {
+                compound.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> syncFut) {
                         fut.init();
                     }
                 });

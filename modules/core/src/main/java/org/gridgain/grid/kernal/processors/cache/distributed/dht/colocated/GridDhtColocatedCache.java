@@ -142,7 +142,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, V>> getAllAsync(
+    @Override public IgniteFuture<Map<K, V>> getAllAsync(
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
@@ -162,7 +162,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public GridFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
+                @Override public IgniteFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
                     return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
                 }
             });
@@ -211,7 +211,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param filter Filter.
      * @return Loaded values.
      */
-    public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
+    public IgniteFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
         boolean forcePrimary, long topVer, @Nullable UUID subjId, String taskName, boolean deserializePortable,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
@@ -315,7 +315,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      *
      * {@inheritDoc}
      */
-    @Override public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
+    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
         @Nullable GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx == null || tx instanceof GridNearTxLocal;
@@ -534,7 +534,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param filter filter Optional filter.
      * @return Lock future.
      */
-    GridFuture<Exception> lockAllAsync(
+    IgniteFuture<Exception> lockAllAsync(
         final GridCacheContext<K, V> cacheCtx,
         @Nullable final GridNearTxLocal<K, V> tx,
         final long threadId,
@@ -547,7 +547,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     ) {
         assert keys != null;
 
-        GridFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
+        IgniteFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
 
         // Prevent embedded future creation if possible.
         if (keyFut.isDone()) {
@@ -563,8 +563,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
         else {
             return new GridEmbeddedFuture<>(true, keyFut,
-                new C2<Object, Exception, GridFuture<Exception>>() {
-                    @Override public GridFuture<Exception> apply(Object o, Exception exx) {
+                new C2<Object, Exception, IgniteFuture<Exception>>() {
+                    @Override public IgniteFuture<Exception> apply(Object o, Exception exx) {
                         if (exx != null)
                             return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
@@ -586,7 +586,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param filter filter Optional filter.
      * @return Lock future.
      */
-    private GridFuture<Exception> lockAllAsync0(
+    private IgniteFuture<Exception> lockAllAsync0(
         GridCacheContext<K, V> cacheCtx,
         @Nullable final GridNearTxLocal<K, V> tx, long threadId,
         final GridCacheVersion ver, final long topVer, final Collection<K> keys, final boolean txRead,
@@ -658,7 +658,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (log.isDebugEnabled())
                 log.debug("Performing colocated lock [tx=" + tx + ", keys=" + keys + ']');
 
-            GridFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(cacheCtx, keys, tx.implicit(), txRead);
+            IgniteFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(cacheCtx, keys, tx.implicit(), txRead);
 
             return new GridDhtEmbeddedFuture<>(
                 ctx.kernalContext(),

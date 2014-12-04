@@ -1020,7 +1020,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         Assert.assertNull(id);
 
-        GridFuture<UUID> fut = msg.future();
+        IgniteFuture<UUID> fut = msg.future();
 
         Assert.assertNotNull(fut);
 
@@ -1048,7 +1048,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         msg.stopRemoteListen(id);
 
-        GridFuture<?> stopFut = msg.future();
+        IgniteFuture<?> stopFut = msg.future();
 
         Assert.assertNotNull(stopFut);
 

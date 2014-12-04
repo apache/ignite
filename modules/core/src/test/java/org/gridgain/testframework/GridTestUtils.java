@@ -449,7 +449,7 @@ public final class GridTestUtils {
      * @param threadName Thread name.
      * @return Future for the run. Future returns execution time in milliseconds.
      */
-    public static GridFuture<Long> runMultiThreadedAsync(Runnable run, int threadNum, String threadName) {
+    public static IgniteFuture<Long> runMultiThreadedAsync(Runnable run, int threadNum, String threadName) {
         return runMultiThreadedAsync(makeCallable(run, null), threadNum, threadName);
     }
 
@@ -477,7 +477,7 @@ public final class GridTestUtils {
      * @return Future for the run. Future returns execution time in milliseconds.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public static GridFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
+    public static IgniteFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
 
@@ -497,7 +497,7 @@ public final class GridTestUtils {
         };
 
         // Async execution future (doesn't support cancel()).
-        GridFuture<Long> runFut = runAsync(new Callable<Long>() {
+        IgniteFuture<Long> runFut = runAsync(new Callable<Long>() {
             @Override public Long call() throws Exception {
                 return runMultiThreaded(calls, threadFactory);
             }
@@ -575,7 +575,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public static <T> GridFuture<T> runAsync(final Callable<T> task) {
+    public static <T> IgniteFuture<T> runAsync(final Callable<T> task) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
 

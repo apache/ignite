@@ -141,7 +141,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     private void checkSwapMultithreaded() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
-        GridFuture<?> fut = null;
+        IgniteFuture<?> fut = null;
 
         try {
             startGrid(0);

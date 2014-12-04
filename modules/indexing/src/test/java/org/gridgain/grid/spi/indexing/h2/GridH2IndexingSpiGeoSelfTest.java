@@ -129,7 +129,7 @@ public class GridH2IndexingSpiGeoSelfTest extends GridCacheAbstractSelfTest {
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Exception> err = new AtomicReference<>();
 
-        GridFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+        IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 WKTReader r = new WKTReader();
 
@@ -153,7 +153,7 @@ public class GridH2IndexingSpiGeoSelfTest extends GridCacheAbstractSelfTest {
             }
         }, Runtime.getRuntime().availableProcessors(), "put-thread");
 
-        GridFuture<?> qryFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+        IgniteFuture<?> qryFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 WKTReader r = new WKTReader();
 

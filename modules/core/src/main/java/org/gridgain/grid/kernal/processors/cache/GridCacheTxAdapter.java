@@ -890,7 +890,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public GridFuture<GridCacheTx> finishFuture() {
+    @Override public IgniteFuture<GridCacheTx> finishFuture() {
         GridFutureAdapter<GridCacheTx> fut = finFut.get();
 
         if (fut == null) {
@@ -1462,7 +1462,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<GridCacheTx> commitAsync() {
+        @Override public IgniteFuture<GridCacheTx> commitAsync() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

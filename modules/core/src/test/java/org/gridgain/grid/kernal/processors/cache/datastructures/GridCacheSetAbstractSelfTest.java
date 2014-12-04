@@ -659,7 +659,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         assertNotNull(set0);
 
-        Collection<GridFuture> futs = new ArrayList<>();
+        Collection<IgniteFuture> futs = new ArrayList<>();
 
         final int THREADS_PER_NODE = 5;
         final int KEY_RANGE = 10_000;
@@ -714,7 +714,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             }, THREADS_PER_NODE, "testSetMultithreaded"));
         }
 
-        for (GridFuture fut : futs)
+        for (IgniteFuture fut : futs)
             fut.get();
     }
 
@@ -766,7 +766,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         final AtomicInteger val = new AtomicInteger(10_000);
 
-        GridFuture<?> fut;
+        IgniteFuture<?> fut;
 
         try {
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {

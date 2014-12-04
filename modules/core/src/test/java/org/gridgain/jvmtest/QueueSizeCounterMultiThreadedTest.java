@@ -38,7 +38,7 @@ public class QueueSizeCounterMultiThreadedTest extends TestCase {
 
         final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-        GridFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings( {"BusyWait"})
                 @Nullable @Override public Object call() throws Exception {

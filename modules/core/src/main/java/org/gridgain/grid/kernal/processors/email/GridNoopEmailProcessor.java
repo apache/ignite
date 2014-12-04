@@ -37,12 +37,12 @@ public class GridNoopEmailProcessor extends GridEmailProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> schedule(String subj, String body, boolean html) {
+    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html) {
         return new GridFinishedFuture<>(ctx, true);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
+    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
         return new GridFinishedFuture<>(ctx, true);
     }
 }

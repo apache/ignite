@@ -40,7 +40,7 @@ public class GridCacheTxHandler<K, V> {
     /** Shared cache context. */
     private GridCacheSharedContext<K, V> ctx;
 
-    public GridFuture<GridCacheTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
+    public IgniteFuture<GridCacheTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         return prepareTx(nearNodeId, null, req);
     }
@@ -108,7 +108,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Future for transaction.
      */
-    public GridFuture<GridCacheTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
+    public IgniteFuture<GridCacheTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
         final GridNearTxPrepareRequest<K, V> req) {
         assert nearNodeId != null;
         assert req != null;
@@ -134,20 +134,20 @@ public class GridCacheTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private GridFuture<GridCacheTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
+    private IgniteFuture<GridCacheTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
         final GridNearTxPrepareRequest<K, V> req) {
 
-        GridFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
+        IgniteFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
 
         return new GridEmbeddedFuture<>(
             ctx.kernalContext(),
             fut,
-            new C2<Object, Exception, GridFuture<GridCacheTxEx<K, V>>>() {
-                @Override public GridFuture<GridCacheTxEx<K, V>> apply(Object o, Exception ex) {
+            new C2<Object, Exception, IgniteFuture<GridCacheTxEx<K, V>>>() {
+                @Override public IgniteFuture<GridCacheTxEx<K, V>> apply(Object o, Exception ex) {
                     if (ex != null)
                         throw new GridClosureException(ex);
 
-                    GridFuture<GridCacheTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
+                    IgniteFuture<GridCacheTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
                         locTx.transactionNodes(), req.last(), req.lastBackups());
 
                     if (locTx.isRollbackOnly())
@@ -180,7 +180,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private GridFuture<GridCacheTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
+    private IgniteFuture<GridCacheTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         ClusterNode nearNode = ctx.node(nearNodeId);
 
@@ -242,7 +242,7 @@ public class GridCacheTxHandler<K, V> {
         }
 
         if (tx != null) {
-            GridFuture<GridCacheTxEx<K, V>> fut = tx.prepareAsync(req.reads(), req.writes(),
+            IgniteFuture<GridCacheTxEx<K, V>> fut = tx.prepareAsync(req.reads(), req.writes(),
                 req.dhtVersions(), req.messageId(), req.miniId(), req.transactionNodes(), req.last(),
                 req.lastBackups());
 
@@ -257,8 +257,8 @@ public class GridCacheTxHandler<K, V> {
 
             final GridDhtTxLocal<K, V> tx0 = tx;
 
-            fut.listenAsync(new CI1<GridFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(GridFuture<GridCacheTxEx<K, V>> txFut) {
+            fut.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
+                @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> txFut) {
                     try {
                         txFut.get();
                     }
@@ -359,7 +359,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public GridFuture<GridCacheTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
+    @Nullable public IgniteFuture<GridCacheTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
         return finish(nodeId, null, req);
     }
 
@@ -368,7 +368,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public GridFuture<GridCacheTx> finish(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
+    @Nullable public IgniteFuture<GridCacheTx> finish(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
         GridNearTxFinishRequest<K, V> req) {
         assert locTx == null || locTx.nearLocallyMapped() || locTx.colocatedLocallyMapped();
         assert nodeId != null;
@@ -377,12 +377,12 @@ public class GridCacheTxHandler<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
 
-        GridFuture<GridCacheTx> colocatedFinishFut = null;
+        IgniteFuture<GridCacheTx> colocatedFinishFut = null;
 
         if (locTx != null && locTx.colocatedLocallyMapped())
             colocatedFinishFut = finishColocatedLocal(req.commit(), locTx);
 
-        GridFuture<GridCacheTx> nearFinishFut = null;
+        IgniteFuture<GridCacheTx> nearFinishFut = null;
 
         if (locTx == null || locTx.nearLocallyMapped()) {
             if (locTx != null)
@@ -414,7 +414,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Finish request.
      * @return Finish future.
      */
-    private GridFuture<GridCacheTx> finishDhtLocal(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
+    private IgniteFuture<GridCacheTx> finishDhtLocal(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
         GridNearTxFinishRequest<K, V> req) {
         GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
@@ -512,7 +512,7 @@ public class GridCacheTxHandler<K, V> {
                 if (tx.pessimistic())
                     tx.prepare();
 
-                GridFuture<GridCacheTx> commitFut = tx.commitAsync();
+                IgniteFuture<GridCacheTx> commitFut = tx.commitAsync();
 
                 // Only for error logging.
                 commitFut.listenAsync(CU.errorLogger(log));
@@ -528,7 +528,7 @@ public class GridCacheTxHandler<K, V> {
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
 
-                GridFuture<GridCacheTx> rollbackFut = tx.rollbackAsync();
+                IgniteFuture<GridCacheTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
                 rollbackFut.listenAsync(CU.errorLogger(log));
@@ -540,7 +540,7 @@ public class GridCacheTxHandler<K, V> {
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
             if (tx != null) {
-                GridFuture<GridCacheTx> rollbackFut = tx.rollbackAsync();
+                IgniteFuture<GridCacheTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
                 rollbackFut.listenAsync(CU.errorLogger(log));
@@ -557,7 +557,7 @@ public class GridCacheTxHandler<K, V> {
      * @param tx Transaction to commit.
      * @return Future.
      */
-    public GridFuture<GridCacheTx> finishColocatedLocal(boolean commit, GridNearTxLocal<K, V> tx) {
+    public IgniteFuture<GridCacheTx> finishColocatedLocal(boolean commit, GridNearTxLocal<K, V> tx) {
         try {
             if (commit) {
                 if (!tx.markFinalizing(USER_FINISH)) {

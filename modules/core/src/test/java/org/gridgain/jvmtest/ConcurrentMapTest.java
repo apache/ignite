@@ -76,7 +76,7 @@ public class ConcurrentMapTest {
 
         final AtomicInteger writes = new AtomicInteger();
 
-        GridFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
                 new Runnable() {
                     @Override public void run() {
                         while (!done.get()) {

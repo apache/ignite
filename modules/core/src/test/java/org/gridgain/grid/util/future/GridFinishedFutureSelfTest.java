@@ -60,7 +60,7 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
         GridMarshaller m = new GridOptimizedMarshaller();
         ClassLoader clsLdr = getClass().getClassLoader();
 
-        GridFuture<Object> orig = t == null ? new GridFinishedFuture<>(ctx, ex) :
+        IgniteFuture<Object> orig = t == null ? new GridFinishedFuture<>(ctx, ex) :
             new GridFinishedFuture<>(ctx, t);
 
         orig.syncNotify(syncNotify);
@@ -81,8 +81,8 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch done = new CountDownLatch(1);
 
-        fut.listenAsync(new CI1<GridFuture<Object>>() {
-            @Override public void apply(GridFuture<Object> t) {
+        fut.listenAsync(new CI1<IgniteFuture<Object>>() {
+            @Override public void apply(IgniteFuture<Object> t) {
                 done.countDown();
             }
         });

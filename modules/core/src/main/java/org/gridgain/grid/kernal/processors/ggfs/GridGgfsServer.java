@@ -248,7 +248,7 @@ public class GridGgfsServer {
 
                     GridGgfsMessage msg = marsh.unmarshall(cmd, hdr, dis);
 
-                    GridFuture<GridGgfsMessage> fut = hnd.handleAsync(ses, msg, dis);
+                    IgniteFuture<GridGgfsMessage> fut = hnd.handleAsync(ses, msg, dis);
 
                     // If fut is null, no response is required.
                     if (fut != null) {
@@ -279,8 +279,8 @@ public class GridGgfsServer {
                             }
                         }
                         else {
-                            fut.listenAsync(new CIX1<GridFuture<GridGgfsMessage>>() {
-                                @Override public void applyx(GridFuture<GridGgfsMessage> fut) {
+                            fut.listenAsync(new CIX1<IgniteFuture<GridGgfsMessage>>() {
+                                @Override public void applyx(IgniteFuture<GridGgfsMessage> fut) {
                                     GridGgfsMessage res;
 
                                     try {

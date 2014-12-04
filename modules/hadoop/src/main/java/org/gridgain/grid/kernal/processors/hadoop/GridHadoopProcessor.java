@@ -170,7 +170,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
+    @Override public IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return hctx.jobTracker().submit(jobId, jobInfo);
     }
 
@@ -185,7 +185,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+    @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         return hctx.jobTracker().finishFuture(jobId);
     }
 

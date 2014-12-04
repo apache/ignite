@@ -128,7 +128,7 @@ abstract class GridCacheAbstractLoadTest {
         assert cache != null;
 
         try {
-            GridFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     long start = System.currentTimeMillis();
 
@@ -150,7 +150,7 @@ abstract class GridCacheAbstractLoadTest {
                 }
             }, writeThreads(), "cache-load-test-worker");
 
-            GridFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     long start = System.currentTimeMillis();
 

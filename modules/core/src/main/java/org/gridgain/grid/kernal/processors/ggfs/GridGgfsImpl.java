@@ -1544,7 +1544,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      *
      * @return Future.
      */
-    GridFuture<?> formatAsync() throws GridException {
+    IgniteFuture<?> formatAsync() throws GridException {
         IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
 
         if (id == null)
@@ -1570,7 +1570,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> awaitDeletesAsync() throws GridException {
+    @Override public IgniteFuture<?> awaitDeletesAsync() throws GridException {
         Collection<IgniteUuid> ids = meta.pendingDeletes();
 
         if (!ids.isEmpty()) {
@@ -1582,7 +1582,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             for (IgniteUuid id : ids) {
                 GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
 
-                GridFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
+                IgniteFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
                 if (oldFut != null)
                     resFut.add(oldFut);
@@ -1702,7 +1702,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    <T, R> IgniteFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, @Nullable T arg) {
         return executeAsync(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
@@ -1721,7 +1721,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    <T, R> IgniteFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute(task, new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
@@ -1736,7 +1736,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
+    <T, R> IgniteFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) {
         return executeAsync(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
@@ -1754,7 +1754,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
+    <T, R> IgniteFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute((Class<GridGgfsTask<T, R>>)taskCls,
@@ -1829,7 +1829,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 

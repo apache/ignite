@@ -159,7 +159,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -214,7 +214,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -285,7 +285,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -340,7 +340,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 

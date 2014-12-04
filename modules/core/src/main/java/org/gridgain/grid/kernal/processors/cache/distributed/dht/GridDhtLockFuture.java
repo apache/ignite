@@ -217,8 +217,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @return Participating nodes.
      */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<GridFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(GridFuture<?> f) {
+        return F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
+            @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
                 if (isMini(f))
                     return ((MiniFuture)f).node();
 
@@ -453,7 +453,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
-        for (GridFuture<?> fut : futures()) {
+        for (IgniteFuture<?> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -479,7 +479,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
             boolean found = false;
 
-            for (GridFuture<Boolean> fut : pending()) {
+            for (IgniteFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture mini = (MiniFuture)fut;
 
@@ -695,7 +695,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(GridFuture<?> f) {
+    private boolean isMini(IgniteFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 

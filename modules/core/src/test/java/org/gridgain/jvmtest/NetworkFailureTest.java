@@ -34,7 +34,7 @@ public class NetworkFailureTest extends TestCase {
 
         final InetAddress addr = InetAddress.getByName("192.168.0.100");
 
-        GridFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     ServerSocket srvSock = null;
@@ -72,7 +72,7 @@ public class NetworkFailureTest extends TestCase {
             "server"
         );
 
-        GridFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     Socket sock = null;
@@ -133,7 +133,7 @@ public class NetworkFailureTest extends TestCase {
     public void testReadTimeout() throws Exception {
         final InetAddress addr = InetAddress.getByName("192.168.3.10");
 
-        GridFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     ServerSocket srvSock = null;
@@ -174,7 +174,7 @@ public class NetworkFailureTest extends TestCase {
             "server"
         );
 
-        GridFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     Socket sock = null;
@@ -217,7 +217,7 @@ public class NetworkFailureTest extends TestCase {
 
         final InetAddress addr = InetAddress.getByName("192.168.0.100");
 
-        GridFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     ServerSocket srvSock = null;
@@ -245,7 +245,7 @@ public class NetworkFailureTest extends TestCase {
 
         final AtomicReference<Socket> sockRef = new AtomicReference<>();
 
-        GridFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     Socket sock = null;
@@ -279,7 +279,7 @@ public class NetworkFailureTest extends TestCase {
             "client"
         );
 
-        GridFuture<?> fut3 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut3 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (true) {

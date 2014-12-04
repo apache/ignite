@@ -146,13 +146,13 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
 
                     comp.call(job);
 
-                    GridFuture<Boolean> fut = comp.future();
+                    IgniteFuture<Boolean> fut = comp.future();
 
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);
 
-                    fut.listenAsync(new CIX1<GridFuture<Boolean>>() {
-                        @Override public void applyx(GridFuture<Boolean> f) throws GridException {
+                    fut.listenAsync(new CIX1<IgniteFuture<Boolean>>() {
+                        @Override public void applyx(IgniteFuture<Boolean> f) throws GridException {
                             try {
                                 assert f.get();
                             }

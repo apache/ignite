@@ -107,7 +107,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
         log.info("Trying to update " + failedKey);
 
-        GridFuture<?> fut = cache.putAsync(failedKey, 2);
+        IgniteFuture<?> fut = cache.putAsync(failedKey, 2);
 
         try {
             fut.get(5000);

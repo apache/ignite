@@ -92,12 +92,12 @@ public interface GridCachePreloader<K, V> {
     /**
      * @return Future which will complete when preloader is safe to use.
      */
-    public GridFuture<Object> startFuture();
+    public IgniteFuture<Object> startFuture();
 
     /**
      * @return Future which will complete when preloading is finished.
      */
-    public GridFuture<?> syncFuture();
+    public IgniteFuture<?> syncFuture();
 
     /**
      * Requests that preloader sends the request for the key.
@@ -106,7 +106,7 @@ public interface GridCachePreloader<K, V> {
      * @param topVer Topology version, {@code -1} if not required.
      * @return Future to complete when all keys are preloaded.
      */
-    public GridFuture<Object> request(Collection<? extends K> keys, long topVer);
+    public IgniteFuture<Object> request(Collection<? extends K> keys, long topVer);
 
     /**
      * Force preload process.

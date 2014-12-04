@@ -170,7 +170,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             final Ignite g = startGrid(GRID_CNT + 1);
 
-            GridFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     info(">>> Executing put callable [node=" + g.cluster().localNode().id() +
                         ", thread=" + Thread.currentThread().getName() + ", aff=" +
@@ -201,7 +201,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             final Ignite g1 = startGrid(GRID_CNT + 2);
 
-            GridFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                 @SuppressWarnings("BusyWait")
                 @Override public Object call() throws Exception {
                     try {
@@ -355,7 +355,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         info("Queue name: " + queueName + ", collocated: " + collocated);
 
         try {
-            Collection<GridFuture> futs = new ArrayList<>();
+            Collection<IgniteFuture> futs = new ArrayList<>();
 
             final int THREADS_PER_NODE = 3;
             final int ITEMS_PER_THREAD = 1000;
@@ -377,7 +377,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
                 }, THREADS_PER_NODE, "testPutMultiNode"));
             }
 
-            for (GridFuture fut : futs)
+            for (IgniteFuture fut : futs)
                 fut.get();
 
             GridCache cache = grid(0).cache(null);
@@ -420,8 +420,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         info("Queue name: " + queueName + ", collocated: " + collocated);
 
         try {
-            Collection<GridFuture> putFuts = new ArrayList<>();
-            Collection<GridFuture> pollFuts = new ArrayList<>();
+            Collection<IgniteFuture> putFuts = new ArrayList<>();
+            Collection<IgniteFuture> pollFuts = new ArrayList<>();
 
             final int PUT_THREADS_PER_NODE = 3;
             final int POLL_THREADS_PER_NODE = 2;
@@ -472,12 +472,12 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
                 }
             }
 
-            for (GridFuture fut : putFuts)
+            for (IgniteFuture fut : putFuts)
                 fut.get();
 
             stopPoll.set(true);
 
-            for (GridFuture fut : pollFuts)
+            for (IgniteFuture fut : pollFuts)
                 fut.get();
 
             GridCache cache = grid(0).cache(null);

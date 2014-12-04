@@ -375,8 +375,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             fut.onDone(U.unwrap(e));
         }
 
-        fut.listenAsync(new IgniteInClosure<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> f) {
+        fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> f) {
                 try {
                     f.get();
 
@@ -426,7 +426,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    public GridFuture<?> flush() throws GridException {
+    public IgniteFuture<?> flush() throws GridException {
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 

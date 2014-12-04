@@ -127,7 +127,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> awaitDeletesAsync() throws GridException {
+    @Override public IgniteFuture<?> awaitDeletesAsync() throws GridException {
         return ggfs.awaitDeletesAsync();
     }
 

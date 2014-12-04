@@ -101,7 +101,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMultithreadedPut() throws Exception {
-        GridFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @Override public Object call() throws Exception {
@@ -115,7 +115,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
             }
         }, 4, "put");
 
-        GridFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
+        IgniteFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @Override public Object call() throws Exception {

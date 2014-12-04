@@ -158,7 +158,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            GridFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteFuture<Boolean> fut = mgr.writeStart(info);
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
@@ -245,7 +245,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             info = new GridGgfsFileInfo(info, info.length() + data.length + remainder.length);
 
-            GridFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteFuture<Boolean> fut = mgr.writeStart(info);
 
             GridGgfsFileAffinityRange range = new GridGgfsFileAffinityRange();
 
@@ -330,7 +330,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             info = new GridGgfsFileInfo(info, info.length() + data.length * writesCnt);
 
-            GridFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteFuture<Boolean> fut = mgr.writeStart(info);
 
             for (int j = 0; j < 64; j++) {
                 Arrays.fill(data, (byte)(j / 4));
@@ -367,7 +367,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
                 pos += stored.length;
             }
 
-            GridFuture<Object> delFut = mgr.delete(info);
+            IgniteFuture<Object> delFut = mgr.delete(info);
 
             delFut.get();
 

@@ -38,7 +38,7 @@ public class ComputeRunnableExample {
             System.out.println();
             System.out.println("Compute runnable example started.");
 
-            Collection<GridFuture> futs = new ArrayList<>();
+            Collection<IgniteFuture> futs = new ArrayList<>();
 
             // Enable asynchronous mode.
             GridCompute compute = g.compute().enableAsync();
@@ -57,7 +57,7 @@ public class ComputeRunnableExample {
             }
 
             // Wait for all futures to complete.
-            for (GridFuture<?> f : futs)
+            for (IgniteFuture<?> f : futs)
                 f.get();
 
             System.out.println();

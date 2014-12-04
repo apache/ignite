@@ -72,7 +72,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             final AtomicBoolean finished = new AtomicBoolean();
 
-            GridFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new IgniteCallable<Object>() {
+            IgniteFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new IgniteCallable<Object>() {
                 @Override public Object call() throws Exception {
                     Random rnd = new Random();
 
@@ -131,7 +131,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                 GridCacheContext<Object, Object> cctx = grid.internalCache(null).context();
 
-                GridFuture<Long> verFut = cctx.affinity().affinityReadyFuture(topVer);
+                IgniteFuture<Long> verFut = cctx.affinity().affinityReadyFuture(topVer);
 
                 assertEquals((Long)topVer, verFut.get());
                 assertEquals((Long)topVer, cctx.topologyVersionFuture().get());

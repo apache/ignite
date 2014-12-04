@@ -814,7 +814,7 @@ public class GridBasicPerformanceTest {
 
         final CountDownLatch latch1 = new CountDownLatch(1);
 
-        GridFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     latch1.await();
@@ -847,7 +847,7 @@ public class GridBasicPerformanceTest {
 
         final CountDownLatch latch2 = new CountDownLatch(1);
 
-        GridFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
+        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings("StatementWithEmptyBody")
                 @Nullable @Override public Object call() throws Exception {

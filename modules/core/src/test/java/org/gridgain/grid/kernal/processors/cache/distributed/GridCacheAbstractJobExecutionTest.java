@@ -113,7 +113,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         Ignite ignite = grid(0);
 
-        Collection<GridFuture<?>> futs = new LinkedList<>();
+        Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
         GridCompute comp = ignite.compute().enableAsync();
 
@@ -150,7 +150,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             futs.add(comp.future());
         }
 
-        for (GridFuture<?> fut : futs)
+        for (IgniteFuture<?> fut : futs)
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {

@@ -229,7 +229,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTxEx<K, V>> future() {
+    @Override public IgniteFuture<GridCacheTxEx<K, V>> future() {
         return prepFut.get();
     }
 
@@ -241,7 +241,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable protected GridFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
+    @Override @Nullable protected IgniteFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
         GridCacheTxEntry<K, V> entry, long topVer) {
         // Don't add local node as reader.
         if (!cctx.localNodeId().equals(nearNodeId)) {
@@ -271,7 +271,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTxEx<K, V>> prepareAsync() {
+    @Override public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync() {
         if (optimistic()) {
             assert isSystemInvalidate();
 
@@ -343,7 +343,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    public GridFuture<GridCacheTxEx<K, V>> prepareAsync(@Nullable Iterable<GridCacheTxEntry<K, V>> reads,
+    public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync(@Nullable Iterable<GridCacheTxEntry<K, V>> reads,
         @Nullable Iterable<GridCacheTxEntry<K, V>> writes, Map<GridCacheTxKey<K>, GridCacheVersion> verMap, long msgId,
         IgniteUuid nearMiniId, Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
         assert optimistic();
@@ -439,7 +439,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
-    @Override public GridFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<GridCacheTx> commitAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing dht local tx: " + this);
 
@@ -476,8 +476,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 }
             }
             else
-                prep.listenAsync(new CI1<GridFuture<GridCacheTxEx<K, V>>>() {
-                    @Override public void apply(GridFuture<GridCacheTxEx<K, V>> f) {
+                prep.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
+                    @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
                         try {
                             f.get(); // Check for errors of a parent future.
 
@@ -534,7 +534,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridCacheTx> rollbackAsync() {
+    @Override public IgniteFuture<GridCacheTx> rollbackAsync() {
         GridDhtTxPrepareFuture<K, V> prepFut = this.prepFut.get();
 
         final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
@@ -564,8 +564,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         else {
             prepFut.complete();
 
-            prepFut.listenAsync(new CI1<GridFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(GridFuture<GridCacheTxEx<K, V>> f) {
+            prepFut.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
+                @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
                     }

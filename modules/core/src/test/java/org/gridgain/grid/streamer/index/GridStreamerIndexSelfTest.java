@@ -287,7 +287,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
         win.start();
 
-        GridFuture<Long> pollFut = null;
+        IgniteFuture<Long> pollFut = null;
 
         if (pollEvicted) {
             // These threads poll evicted events from the window if it doesn't break
@@ -322,7 +322,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             // if it is still present in the window. In the tested index events are
             // sorted by value and the value is a number of repeated events, so, this
             // should be invariant.
-            GridFuture<Long> fut1 = runMultiThreadedAsync(new CAX() {
+            IgniteFuture<Long> fut1 = runMultiThreadedAsync(new CAX() {
                 @Override public void applyx() throws GridException {
                     final String evt = Thread.currentThread().getName();
                     int cntr = 1;
@@ -349,7 +349,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             }, threadCnt / 2, "test-multi");
 
             // This thread generates a set of single non-repeating events from 0 to iters.
-            GridFuture<Long> fut2 = runMultiThreadedAsync(new CAX() {
+            IgniteFuture<Long> fut2 = runMultiThreadedAsync(new CAX() {
                 @Override public void applyx() throws GridException {
                     for (int i = 0; i < iters && !Thread.currentThread().isInterrupted(); i++)
                         win.enqueue(String.valueOf(i));

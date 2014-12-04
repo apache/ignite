@@ -120,7 +120,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         // Expected values in cache.
         final Map<Integer, GridTuple<Integer>> expVals = new ConcurrentHashMap8<>();
 
-        GridFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -169,7 +169,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
             }
         });
 
-        GridFuture<?> killFut = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteFuture<?> killFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while (!stop.get()) {
                     U.sleep(random(KILL_DELAY.get1(), KILL_DELAY.get2()));

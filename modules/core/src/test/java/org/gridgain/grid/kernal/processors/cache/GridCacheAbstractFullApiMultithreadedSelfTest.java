@@ -64,7 +64,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     private void runTest(final IgniteInClosure<GridCache<String, Integer>> c) throws Exception {
-        final GridFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 while (true) {
                     int i = cnt.getAndIncrement();
@@ -82,7 +82,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
             }
         }, WRITE_THREAD_CNT, WRITE_THREAD_NAME);
 
-        GridFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new CA() {
+        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
                 GridCache<String, Integer> cache = cache();
 

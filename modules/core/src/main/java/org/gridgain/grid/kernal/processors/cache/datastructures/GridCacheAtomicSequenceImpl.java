@@ -255,7 +255,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @throws GridException If update failed.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    private GridFuture<Long> internalUpdateAsync(long l, @Nullable Callable<Long> updateCall, boolean updated)
+    private IgniteFuture<Long> internalUpdateAsync(long l, @Nullable Callable<Long> updateCall, boolean updated)
         throws GridException {
         checkRemoved();
 

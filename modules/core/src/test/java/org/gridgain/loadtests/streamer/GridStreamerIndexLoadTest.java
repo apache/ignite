@@ -103,7 +103,7 @@ public class GridStreamerIndexLoadTest {
 
         final AtomicLong enqueueCntr = new AtomicLong();
 
-        GridFuture<Long> enqueueFut = runMultiThreadedAsync(new CAX() {
+        IgniteFuture<Long> enqueueFut = runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 Random rnd = new Random();
 
@@ -117,7 +117,7 @@ public class GridStreamerIndexLoadTest {
 
         final AtomicLong evictCntr = new AtomicLong();
 
-        GridFuture<Long> evictFut = runMultiThreadedAsync(new CAX() {
+        IgniteFuture<Long> evictFut = runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws GridException {
                 while (!Thread.currentThread().isInterrupted()) {
                     win.pollEvicted();
@@ -127,7 +127,7 @@ public class GridStreamerIndexLoadTest {
             }
         }, thrCnt, "evictor");
 
-        GridFuture<Long> collFut = runMultiThreadedAsync(new CAX() {
+        IgniteFuture<Long> collFut = runMultiThreadedAsync(new CAX() {
             @Override public void applyx() {
                 int nSec = 0;
                 long prevEnqueue = enqueueCntr.get();

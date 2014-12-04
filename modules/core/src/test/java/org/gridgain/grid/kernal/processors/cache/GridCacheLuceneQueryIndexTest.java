@@ -101,7 +101,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
 
         final int keyCnt = 10000;
 
-        final GridFuture<?> fut = multithreadedAsync(
+        final IgniteFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -121,7 +121,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             10);
 
-        GridFuture<?> fut1 = multithreadedAsync(
+        IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {
@@ -158,7 +158,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
 
         final int keyCnt = 10000;
 
-        final GridFuture<?> fut = multithreadedAsync(
+        final IgniteFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -192,7 +192,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             10);
 
-        GridFuture<?> fut1 = multithreadedAsync(
+        IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {
@@ -231,7 +231,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
 
         final ObjectValue val = new ObjectValue("String value");
 
-        final GridFuture<?> fut = multithreadedAsync(
+        final IgniteFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -265,7 +265,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             10);
 
-        GridFuture<?> fut1 = multithreadedAsync(
+        IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {
@@ -307,7 +307,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
         for (int i = 0; i < vals.length; i++)
             vals[i] = new ObjectValue("Object value " + i);
 
-        final GridFuture<?> fut = multithreadedAsync(
+        final IgniteFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -341,7 +341,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             1);
 
-        GridFuture<?> fut1 = multithreadedAsync(
+        IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {

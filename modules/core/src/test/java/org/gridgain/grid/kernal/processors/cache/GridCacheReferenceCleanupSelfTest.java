@@ -382,7 +382,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    Collection<GridFuture<?>> futs = new ArrayList<>(1000);
+                    Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
                     for (int i = 0; i < 1000; i++) {
                         TestValue val = new TestValue(i);
@@ -392,7 +392,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                         futs.add(cache.putxAsync(i, val));
                     }
 
-                    for (GridFuture<?> fut : futs)
+                    for (IgniteFuture<?> fut : futs)
                         fut.get();
                 }
                 finally {

@@ -71,7 +71,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
                 }
             }, EVT_NODE_JOINED);
 
-            GridFuture<?> f = multithreadedAsync(new Callable<Object>() {
+            IgniteFuture<?> f = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     startGrid(2);
 

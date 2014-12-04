@@ -193,13 +193,13 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
 
         spi.sleepInRebuild = false;
 
-        final GridFuture<?> fut1 = grid(0).cache(null).queries().rebuildIndexes(TestValue1.class);
+        final IgniteFuture<?> fut1 = grid(0).cache(null).queries().rebuildIndexes(TestValue1.class);
 
         assertFalse(fut1.isCancelled());
 
         fut1.get();
 
-        final GridFuture<?> fut2 = grid(0).cache(null).queries().rebuildAllIndexes();
+        final IgniteFuture<?> fut2 = grid(0).cache(null).queries().rebuildAllIndexes();
 
         assertFalse(fut2.isCancelled());
 
@@ -209,7 +209,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception if failed.
      */
-    private void checkCancel(final GridFuture<?> fut) throws Exception {
+    private void checkCancel(final IgniteFuture<?> fut) throws Exception {
         assertTrue(fut.cancel());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {

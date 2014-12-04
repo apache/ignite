@@ -73,7 +73,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
 
         GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
-        GridFuture<?> f = cache.context().preloader().startFuture();
+        IgniteFuture<?> f = cache.context().preloader().startFuture();
 
         if (!f.isDone())
             f.get();
