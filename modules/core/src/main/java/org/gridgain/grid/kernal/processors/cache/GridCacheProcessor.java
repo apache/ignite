@@ -93,7 +93,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Collection<ObjectName> cacheMBeans = new LinkedList<>();
 
     /** Transaction interface implementation. */
-    private GridTransactionsImpl transactions;
+    private IgniteTransactionsImpl transactions;
 
     /**
      * @param ctx Kernal context.
@@ -841,7 +841,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
         }
 
-        transactions = new GridTransactionsImpl(sharedCtx);
+        transactions = new IgniteTransactionsImpl(sharedCtx);
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
@@ -1654,7 +1654,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Transactions interface implementation.
      */
-    public GridTransactions transactions() {
+    public IgniteTransactions transactions() {
         return transactions;
     }
 

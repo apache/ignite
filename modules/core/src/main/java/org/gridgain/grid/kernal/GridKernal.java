@@ -2897,7 +2897,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public GridTransactions transactions() {
+    @Override public IgniteTransactions transactions() {
         guard();
 
         try {

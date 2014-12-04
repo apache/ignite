@@ -271,7 +271,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridTransactions transactions() {
+    @Override public IgniteTransactions transactions() {
         assert g != null;
 
         return g.transactions();

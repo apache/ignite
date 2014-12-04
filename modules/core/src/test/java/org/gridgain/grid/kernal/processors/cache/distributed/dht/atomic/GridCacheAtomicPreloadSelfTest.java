@@ -92,7 +92,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             List<Integer> keys = generateKeys(grid(0).localNode(), cache);
 
-            GridTransactions txs = grid(0).transactions();
+            IgniteTransactions txs = grid(0).transactions();
 
             assert txs != null;
 

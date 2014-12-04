@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * Transactions facade.
  */
-public interface GridTransactions {
+public interface IgniteTransactions {
     /**
      * Starts transaction with default isolation, concurrency, timeout, and invalidation policy.
      * All defaults are set in {@link GridCacheConfiguration} at startup.

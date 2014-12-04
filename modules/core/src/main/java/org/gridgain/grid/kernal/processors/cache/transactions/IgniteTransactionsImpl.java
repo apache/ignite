@@ -21,14 +21,14 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 /**
  * Grid transactions implementation.
  */
-public class GridTransactionsImpl<K, V> implements GridTransactions {
+public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
     /** Cache shared context. */
     private GridCacheSharedContext<K, V> cctx;
 
     /**
      * @param cctx Cache shared context.
      */
-    public GridTransactionsImpl(GridCacheSharedContext<K, V> cctx) {
+    public IgniteTransactionsImpl(GridCacheSharedContext<K, V> cctx) {
         this.cctx = cctx;
     }
 

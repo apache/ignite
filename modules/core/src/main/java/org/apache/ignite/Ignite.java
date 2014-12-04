@@ -242,7 +242,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Grid transactions facade.
      */
-    public GridTransactions transactions();
+    public IgniteTransactions transactions();
 
     /**
      * Gets a new instance of data loader associated with given cache name. Data loader
