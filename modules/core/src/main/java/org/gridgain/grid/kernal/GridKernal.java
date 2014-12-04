@@ -266,7 +266,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public final GridMessaging message(ClusterGroup prj) {
+    @Override public final IgniteMessaging message(ClusterGroup prj) {
         return ((ClusterGroupAdapter)prj).message();
     }
 

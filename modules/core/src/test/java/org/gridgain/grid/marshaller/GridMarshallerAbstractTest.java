@@ -731,7 +731,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            GridMessaging messaging = message(grid().forNode(g1.cluster().localNode()));
+            IgniteMessaging messaging = message(grid().forNode(g1.cluster().localNode()));
 
             messaging.send(null, "test");
 
@@ -744,14 +744,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean.getObjectField() != null;
             assert outBean.getObjectField() != null;
 
-            assert inBean.getObjectField().getClass().equals(GridMessagingImpl.class);
-            assert outBean.getObjectField().getClass().equals(GridMessagingImpl.class);
+            assert inBean.getObjectField().getClass().equals(IgniteMessagingImpl.class);
+            assert outBean.getObjectField().getClass().equals(IgniteMessagingImpl.class);
 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
             ClusterGroup inPrj = messaging.projection();
-            ClusterGroup outPrj = ((GridMessaging)outBean.getObjectField()).projection();
+            ClusterGroup outPrj = ((IgniteMessaging)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());

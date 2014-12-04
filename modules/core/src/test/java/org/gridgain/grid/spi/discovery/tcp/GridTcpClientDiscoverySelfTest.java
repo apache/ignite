@@ -434,7 +434,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkNodes(2, 2);
 
-        GridMessaging msg = grid(masterName).message();
+        IgniteMessaging msg = grid(masterName).message();
 
         UUID id = null;
 

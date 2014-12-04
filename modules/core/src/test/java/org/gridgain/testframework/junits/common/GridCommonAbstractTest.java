@@ -525,15 +525,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param prj Projection.
-     * @return {@link GridMessaging} for given projection.
+     * @return {@link org.gridgain.grid.messaging.IgniteMessaging} for given projection.
      */
-    protected GridMessaging message(ClusterGroup prj) {
+    protected IgniteMessaging message(ClusterGroup prj) {
         return prj.grid().message(prj);
     }
 
     /**
      * @param prj Projection.
-     * @return {@link GridMessaging} for given projection.
+     * @return {@link org.gridgain.grid.messaging.IgniteMessaging} for given projection.
      */
     protected IgniteEvents events(ClusterGroup prj) {
         return prj.grid().events(prj);

@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.communication;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.jetbrains.annotations.*;
@@ -28,8 +27,8 @@ import java.util.*;
  * <p>
  * Functionality to this SPI is exposed directly in {@link org.apache.ignite.Ignite} interface:
  * <ul>
- *      <li>{@link GridMessaging#send(Object, Object)}
- *      <li>{@link GridMessaging#send(Object, Collection)}</li>
+ *      <li>{@link org.gridgain.grid.messaging.IgniteMessaging#send(Object, Object)}
+ *      <li>{@link org.gridgain.grid.messaging.IgniteMessaging#send(Object, Collection)}</li>
  * </ul>
  * <p>
  * GridGain comes with built-in communication SPI implementations:

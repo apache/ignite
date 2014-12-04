@@ -43,7 +43,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private transient IgniteComputeImpl compute;
 
     /** Messaging. */
-    private transient GridMessagingImpl messaging;
+    private transient IgniteMessagingImpl messaging;
 
     /** Events. */
     private transient IgniteEvents evts;
@@ -201,13 +201,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link GridMessaging} for this projection.
+     * @return {@link org.gridgain.grid.messaging.IgniteMessaging} for this projection.
      */
-    public final GridMessaging message() {
+    public final IgniteMessaging message() {
         if (messaging == null) {
             assert ctx != null;
 
-            messaging = new GridMessagingImpl(ctx, this, false);
+            messaging = new IgniteMessagingImpl(ctx, this, false);
         }
 
         return messaging;

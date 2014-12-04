@@ -95,7 +95,7 @@ public final class MessagingExample {
      * @param msg Grid messaging.
      * @throws GridException If failed.
      */
-    private static void startListening(GridMessaging msg) throws GridException {
+    private static void startListening(IgniteMessaging msg) throws GridException {
         // Add ordered message listener.
         msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @GridInstanceResource
@@ -143,7 +143,7 @@ public final class MessagingExample {
      * @param unorderedLatch Latch for unordered messages acks.
      */
     private static void localListen(
-        GridMessaging msg,
+        IgniteMessaging msg,
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {

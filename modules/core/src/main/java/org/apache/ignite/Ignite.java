@@ -52,7 +52,7 @@ import java.util.concurrent.*;
  * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
- * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link org.gridgain.grid.messaging.IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * </ul>
  */
@@ -117,18 +117,18 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets {@code messaging} functionality over this grid projection. All operations
-     * on the returned {@link GridMessaging} instance will only include nodes from
+     * on the returned {@link org.gridgain.grid.messaging.IgniteMessaging} instance will only include nodes from
      * this projection.
      *
      * @return Messaging instance over this grid projection.
      */
-    public GridMessaging message();
+    public IgniteMessaging message();
 
     /**
      * @param prj Projection.
      * @return Messaging instance over given projection.
      */
-    public GridMessaging message(ClusterGroup prj);
+    public IgniteMessaging message(ClusterGroup prj);
 
     /**
      * Gets {@code events} functionality over this grid projection. All operations
@@ -147,7 +147,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets {@code services} functionality over this grid projection. All operations
-     * on the returned {@link GridMessaging} instance will only include nodes from
+     * on the returned {@link org.gridgain.grid.messaging.IgniteMessaging} instance will only include nodes from
      * this projection.
      *
      * @return Services instance over this grid projection.

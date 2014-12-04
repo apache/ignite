@@ -991,7 +991,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         assertFalse(ignite2.message().isAsync());
 
-        final GridMessaging msg = ignite2.message().enableAsync();
+        final IgniteMessaging msg = ignite2.message().enableAsync();
 
         assertTrue(msg.isAsync());
 

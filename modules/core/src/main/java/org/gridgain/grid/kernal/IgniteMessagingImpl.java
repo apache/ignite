@@ -22,9 +22,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link GridMessaging} implementation.
+ * {@link org.gridgain.grid.messaging.IgniteMessaging} implementation.
  */
-public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements GridMessaging, Externalizable {
+public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements IgniteMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,7 +37,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
     /**
      * Required by {@link Externalizable}.
      */
-    public GridMessagingImpl() {
+    public IgniteMessagingImpl() {
         // No-op.
     }
 
@@ -46,7 +46,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
      * @param prj Projection.
      * @param async Async support flag.
      */
-    public GridMessagingImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
+    public IgniteMessagingImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
         super(async);
 
         this.ctx = ctx;
@@ -188,8 +188,8 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridMessaging enableAsync() {
-        return new GridMessagingImpl(ctx, prj, true);
+    @Override public IgniteMessaging enableAsync() {
+        return new IgniteMessagingImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

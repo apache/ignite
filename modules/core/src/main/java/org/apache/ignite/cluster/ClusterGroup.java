@@ -12,7 +12,6 @@ package org.apache.ignite.cluster;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.messaging.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -46,7 +45,7 @@ import java.util.*;
  * Grid projection provides the following functionality over the underlying group of nodes:
  * <ul>
  * <li>{@link org.apache.ignite.IgniteCompute} - functionality for executing tasks and closures over nodes in this projection.</li>
- * <li>{@link GridMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
+ * <li>{@link org.gridgain.grid.messaging.IgniteMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
  * <li>{@link org.apache.ignite.IgniteEvents} - functionality for querying and listening to events on nodes in this projection.</li>
  * </ul>
  */

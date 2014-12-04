@@ -21,7 +21,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, org.apache.ignite.lang.IgniteBiPredicate)}
+ * Convenience actor-base adapter for {@link IgniteMessaging#localListen(Object, org.apache.ignite.lang.IgniteBiPredicate)}
  * method.
  */
 public abstract class GridMessagingListenActor<T> implements IgniteBiPredicate<UUID, T> {
