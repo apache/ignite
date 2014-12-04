@@ -12,7 +12,6 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid.cache.query.GridCacheQuerySqlField
-import org.gridgain.grid.{Ignition => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.scalatest._

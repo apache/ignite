@@ -13,8 +13,8 @@ import org.gridgain.grid.segmentation.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Possible states of {@link Ignition}. You can register a listener for
- * state change notifications via {@link Ignition#addListener(GridGainListener)}
+ * Possible states of {@link org.apache.ignite.Ignition}. You can register a listener for
+ * state change notifications via {@link org.apache.ignite.Ignition#addListener(GridGainListener)}
  * method.
  */
 public enum GridGainState {

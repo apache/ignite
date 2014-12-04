@@ -68,15 +68,15 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
- * {@link org.gridgain.grid.Ignition#start(IgniteConfiguration)} method. It defines all configuration
+ * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method. It defines all configuration
  * parameters required to start a grid instance. Usually, a special
  * class called "loader" will create an instance of this interface and apply
- * {@link org.gridgain.grid.Ignition#start(IgniteConfiguration)} method to initialize GridGain instance.
+ * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method to initialize GridGain instance.
  * <p>
  * Note that you should only set values that differ from defaults, as grid
  * will automatically pick default values for all values that are not set.
  * <p>
- * For more information about grid configuration and startup refer to {@link org.gridgain.grid.Ignition}
+ * For more information about grid configuration and startup refer to {@link org.apache.ignite.Ignition}
  * documentation.
  */
 public class IgniteConfiguration {

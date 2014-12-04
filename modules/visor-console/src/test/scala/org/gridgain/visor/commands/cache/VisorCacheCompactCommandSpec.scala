@@ -16,7 +16,7 @@ import org.gridgain.grid.cache.GridCacheMode._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{Ignition => G, _}
+import org.gridgain.grid.{_}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.jetbrains.annotations.Nullable

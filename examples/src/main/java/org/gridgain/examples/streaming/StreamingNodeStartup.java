@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.streaming;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 /**

@@ -36,7 +36,7 @@ import org.gridgain.grid.thread._
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
-import org.gridgain.grid.{GridException, Ignition => G, _}
+import org.gridgain.grid.GridException
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable
 

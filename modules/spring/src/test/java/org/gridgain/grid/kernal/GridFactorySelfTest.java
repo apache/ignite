@@ -48,7 +48,7 @@ import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
- * Tests for {@link org.gridgain.grid.Ignition}.
+ * Tests for {@link org.apache.ignite.Ignition}.
  * @see GridFactoryVmShutdownTest
  */
 @SuppressWarnings("UnusedDeclaration")

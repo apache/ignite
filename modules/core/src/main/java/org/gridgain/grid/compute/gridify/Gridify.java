@@ -174,7 +174,7 @@ public @interface Gridify {
 
     /**
      * Name of the grid to use. By default, no-name default grid is used.
-     * Refer to {@link org.gridgain.grid.Ignition} for information about named grids.
+     * Refer to {@link org.apache.ignite.Ignition} for information about named grids.
      */
     @SuppressWarnings({"JavaDoc"})
     String gridName() default "";

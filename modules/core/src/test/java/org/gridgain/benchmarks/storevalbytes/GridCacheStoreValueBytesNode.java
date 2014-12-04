@@ -9,8 +9,8 @@
 
 package org.gridgain.benchmarks.storevalbytes;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.communication.tcp.*;

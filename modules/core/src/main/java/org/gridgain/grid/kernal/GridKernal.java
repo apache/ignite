@@ -2220,10 +2220,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
     /**
      * Whether or not node restart is enabled. Node restart us supported when this node was started
      * with {@code bin/ggstart.{sh|bat}} script using {@code -r} argument. Node can be
-     * programmatically restarted using {@link org.gridgain.grid.Ignition#restart(boolean)}} method.
+     * programmatically restarted using {@link org.apache.ignite.Ignition#restart(boolean)}} method.
      *
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
-     * @see org.gridgain.grid.Ignition#restart(boolean)
+     * @see org.apache.ignite.Ignition#restart(boolean)
      */
     @Override public boolean isRestartEnabled() {
         return System.getProperty(GG_SUCCESS_FILE) != null;

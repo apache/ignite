@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.tests
 
+import org.apache.ignite.Ignition
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.scalar._
@@ -19,7 +20,6 @@ import org.scalatest.matchers._
 import org.scalatest._
 import junit.JUnitRunner
 import org.gridgain.grid._
-import org.gridgain.grid.{Ignition => G}
 import collection.JavaConversions._
 import java.util.UUID
 import org.junit.runner.RunWith

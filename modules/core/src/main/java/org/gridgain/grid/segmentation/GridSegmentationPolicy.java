@@ -29,7 +29,7 @@ public enum GridSegmentationPolicy {
     /**
      * When segmentation policy is {@code STOP}, all listeners will receive
      * {@link GridEventType#EVT_NODE_SEGMENTED} event and then particular grid node
-     * will be stopped via call to {@link org.gridgain.grid.Ignition#stop(String, boolean)}.
+     * will be stopped via call to {@link org.apache.ignite.Ignition#stop(String, boolean)}.
      */
     STOP,
 

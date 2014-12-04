@@ -11,7 +11,7 @@
 package org.gridgain.visor
 
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.gridgain.grid.{Ignition => G, _}
+import org.gridgain.grid.{_}
 import org.scalatest._
 
 /**

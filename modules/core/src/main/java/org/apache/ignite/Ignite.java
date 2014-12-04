@@ -36,8 +36,8 @@ import java.util.concurrent.*;
 
 /**
  * Main entry-point for all GridGain APIs.
- * You can obtain an instance of {@code Grid} through {@link org.gridgain.grid.Ignition#grid()},
- * or for named grids you can use {@link org.gridgain.grid.Ignition#grid(String)}. Note that you
+ * You can obtain an instance of {@code Grid} through {@link Ignition#grid()},
+ * or for named grids you can use {@link Ignition#grid(String)}. Note that you
  * can have multiple instances of {@code Grid} running in the same VM by giving
  * each instance a different name.
  * <p>
@@ -66,7 +66,7 @@ public interface Ignite extends AutoCloseable {
      * local node) belongs to.
      * <p>
      * If default grid instance is used, then
-     * {@code null} is returned. Refer to {@link org.gridgain.grid.Ignition} documentation
+     * {@code null} is returned. Refer to {@link Ignition} documentation
      * for information on how to start named grids.
      *
      * @return Name of the grid, or {@code null} for default grid.

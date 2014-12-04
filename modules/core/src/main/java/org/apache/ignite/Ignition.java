@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.startup.cmdline.*;

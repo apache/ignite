@@ -17,7 +17,6 @@ import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.GridDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{Ignition => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.alert.VisorAlertCommand._
 

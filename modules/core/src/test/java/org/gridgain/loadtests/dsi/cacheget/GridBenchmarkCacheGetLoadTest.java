@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.dsi.cacheget;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 
 import java.util.concurrent.atomic.*;

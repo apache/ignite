@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.ggfs;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 /**
