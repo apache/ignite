@@ -10,8 +10,8 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.io.*;
 
 /**

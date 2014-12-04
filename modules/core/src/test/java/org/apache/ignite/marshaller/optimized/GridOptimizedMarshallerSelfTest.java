@@ -1,4 +1,4 @@
-package org.gridgain.grid.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
