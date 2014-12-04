@@ -10,7 +10,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.scheduler.*;
+import org.apache.ignite.scheduler.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;

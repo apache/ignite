@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.scheduler;
+package org.apache.ignite.scheduler;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;

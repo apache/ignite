@@ -11,10 +11,10 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.scheduler.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.junits.common.*;
@@ -321,7 +321,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Waits until method {@link org.gridgain.grid.scheduler.SchedulerFuture#last()} returns not a null value. Tries to call specified number
+     * Waits until method {@link org.apache.ignite.scheduler.SchedulerFuture#last()} returns not a null value. Tries to call specified number
      * of attempts with 100ms interval between them.
      *
      * @param fut Schedule future to call method on.

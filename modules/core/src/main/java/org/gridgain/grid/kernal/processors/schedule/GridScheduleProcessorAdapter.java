@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.schedule;
 
+import org.apache.ignite.scheduler.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.grid.scheduler.*;
 
 import java.util.concurrent.*;
 
