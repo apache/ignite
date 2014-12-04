@@ -19,7 +19,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;

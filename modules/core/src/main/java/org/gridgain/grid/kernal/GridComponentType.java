@@ -74,7 +74,7 @@ public enum GridComponentType {
         "gridgain-jta"
     ),
 
-    /** Cron-based scheduling, see {@link org.gridgain.grid.scheduler.IgniteScheduler}. */
+    /** Cron-based scheduling, see {@link org.apache.ignite.IgniteScheduler}. */
     SCHEDULE(
         "org.gridgain.grid.kernal.processors.schedule.GridNoopScheduleProcessor",
         "org.gridgain.grid.kernal.processors.schedule.GridScheduleProcessor",

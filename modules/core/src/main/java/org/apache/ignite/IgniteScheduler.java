@@ -7,9 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.scheduler;
+package org.apache.ignite;
 
 import org.apache.ignite.lang.*;
+import org.gridgain.grid.scheduler.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;

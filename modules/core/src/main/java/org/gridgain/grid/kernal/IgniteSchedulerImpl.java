@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -17,7 +18,7 @@ import java.io.*;
 import java.util.concurrent.*;
 
 /**
- * {@link org.gridgain.grid.scheduler.IgniteScheduler} implementation.
+ * {@link org.apache.ignite.IgniteScheduler} implementation.
  */
 public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     /** */

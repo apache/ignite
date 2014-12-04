@@ -30,7 +30,6 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.p2p.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.window.*;
 import org.gridgain.grid.util.*;
