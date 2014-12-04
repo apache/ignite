@@ -791,7 +791,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         }
 
         if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-            IgniteEvent evt = new GridTaskEvent(
+            IgniteEvent evt = new IgniteTaskEvent(
                 ctx.discovery().localNode(),
                 "Changed attributes: " + attrs,
                 EVT_TASK_SESSION_ATTR_SET,

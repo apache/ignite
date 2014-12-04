@@ -158,7 +158,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridTaskEvent
+     * @see IgniteTaskEvent
      */
     public static final int EVT_TASK_STARTED = 20;
 
@@ -171,7 +171,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridTaskEvent
+     * @see IgniteTaskEvent
      */
     public static final int EVT_TASK_FINISHED = 21;
 
@@ -185,7 +185,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridTaskEvent
+     * @see IgniteTaskEvent
      */
     public static final int EVT_TASK_FAILED = 22;
 
@@ -195,7 +195,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridTaskEvent
+     * @see IgniteTaskEvent
      */
     public static final int EVT_TASK_TIMEDOUT = 23;
 
@@ -205,7 +205,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridTaskEvent
+     * @see IgniteTaskEvent
      */
     public static final int EVT_TASK_SESSION_ATTR_SET = 24;
 
@@ -482,7 +482,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_READ = 71;
 
@@ -492,7 +492,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_STORED = 72;
 
@@ -502,7 +502,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_REMOVED = 73;
 
@@ -512,7 +512,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_CLEARED = 74;
 
@@ -522,7 +522,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_EVICTED = 75;
 
@@ -548,7 +548,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_CACHE_PRELOAD_STARTED = 80;
 
@@ -558,7 +558,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_CACHE_PRELOAD_STOPPED = 81;
 
@@ -568,7 +568,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int EVT_CACHE_PRELOAD_PART_LOADED = 82;
 
@@ -738,7 +738,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridLicenseEvent
+     * @see IgniteLicenseEvent
      */
     public static final int EVT_LIC_VIOLATION = 108;
 
@@ -748,7 +748,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridLicenseEvent
+     * @see IgniteLicenseEvent
      */
     public static final int EVT_LIC_CLEARED = 109;
 
@@ -758,7 +758,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridLicenseEvent
+     * @see IgniteLicenseEvent
      */
     public static final int EVT_LIC_GRACE_EXPIRED = 110;
 
@@ -797,7 +797,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSecureSessionEvent
+     * @see IgniteSecureSessionEvent
      */
     public static final int EVT_SECURE_SESSION_VALIDATION_SUCCEEDED = 113;
 
@@ -810,7 +810,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridSecureSessionEvent
+     * @see IgniteSecureSessionEvent
      */
     public static final int EVT_SECURE_SESSION_VALIDATION_FAILED = 114;
 
@@ -997,7 +997,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all license events.
      *
-     * @see GridLicenseEvent
+     * @see IgniteLicenseEvent
      */
     public static final int[] EVTS_LICENSE = {
         EVT_LIC_CLEARED,
@@ -1120,7 +1120,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all grid task execution events.
      *
-     * @see GridTaskEvent
+     * @see IgniteTaskEvent
      */
     public static final int[] EVTS_TASK_EXECUTION = {
         EVT_TASK_STARTED,
@@ -1178,7 +1178,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see GridSwapSpaceEvent
+     * @see IgniteSwapSpaceEvent
      */
     public static final int[] EVTS_SWAPSPACE = {
         EVT_SWAP_SPACE_CLEARED,
@@ -1229,7 +1229,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see GridSecureSessionEvent
+     * @see IgniteSecureSessionEvent
      */
     public static final int[] EVTS_GGFS = {
         EVT_GGFS_FILE_CREATED,

@@ -1,11 +1,21 @@
+/* @java.file.header */
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
- * Grid swap space event.
+ * Grid license event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -35,50 +45,61 @@ import org.jetbrains.annotations.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_READ
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_STORED
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_REMOVED
- * @see IgniteEventType#EVT_SWAP_SPACE_CLEARED
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_EVICTED
+ * @see IgniteEventType#EVT_LIC_CLEARED
+ * @see IgniteEventType#EVT_LIC_GRACE_EXPIRED
+ * @see IgniteEventType#EVT_LIC_VIOLATION
  */
-public class GridSwapSpaceEvent extends IgniteEventAdapter {
+public class IgniteLicenseEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Swap space name. */
-    private String space;
+    /** License ID. */
+    private UUID licId;
 
     /**
-     * Creates swap space event.
+     * No-arg constructor.
+     */
+    public IgniteLicenseEvent() {
+        // No-op.
+    }
+
+    /**
+     * Creates license event with given parameters.
      *
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
-     * @param space Swap space name ({@code null} for default space).
      */
-    public GridSwapSpaceEvent(ClusterNode node, String msg, int type, @Nullable String space) {
+    public IgniteLicenseEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
-
-        this.space = space;
-    }
-
-    /**
-     * Gets swap space name.
-     *
-     * @return Swap space name or {@code null} for default space.
-     */
-    @Nullable public String space() {
-        return space;
     }
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": space=" + space;
+        return name() + ": licId8=" + U.id8(licId) + ", msg=" + message();
+    }
+
+    /**
+     * Gets license ID.
+     *
+     * @return License ID.
+     */
+    public UUID licenseId() {
+        return licId;
+    }
+
+    /**
+     * Sets license ID.
+     *
+     * @param licId License ID to set.
+     */
+    public void licenseId(UUID licId) {
+        this.licId = licId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSwapSpaceEvent.class, this,
+        return S.toString(IgniteLicenseEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

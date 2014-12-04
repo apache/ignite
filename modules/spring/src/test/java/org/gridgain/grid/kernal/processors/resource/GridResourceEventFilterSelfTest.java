@@ -80,7 +80,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
 
             // Checks event list. It should have only GridTaskEvent.
             for (IgniteEvent evt : evts) {
-                assert evt instanceof GridTaskEvent;
+                assert evt instanceof IgniteTaskEvent;
             }
 
             checkUsageCount(createClss, UserResource1.class, 2);
@@ -139,7 +139,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {
-            if (evt instanceof GridTaskEvent) {
+            if (evt instanceof IgniteTaskEvent) {
                 log.info("Received task event: [evt=" + evt + ']');
 
                 return true;

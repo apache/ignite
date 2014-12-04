@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link org.apache.ignite.events.GridLicenseEvent}.
+ * Lightweight counterpart for {@link org.apache.ignite.events.IgniteLicenseEvent}.
  */
 public class VisorGridLicenseEvent extends VisorGridEvent {
     /** */

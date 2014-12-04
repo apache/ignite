@@ -1383,7 +1383,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 (Map<?, ?>)marsh.unmarshal(req.getAttributesBytes(), ses.getClassLoader());
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-                IgniteEvent evt = new GridTaskEvent(
+                IgniteEvent evt = new IgniteTaskEvent(
                     ctx.discovery().localNode(),
                     "Changed attributes: " + attrs,
                     EVT_TASK_SESSION_ATTR_SET,

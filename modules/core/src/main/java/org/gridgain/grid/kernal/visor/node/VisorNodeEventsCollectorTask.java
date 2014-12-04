@@ -209,8 +209,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @return {@code true} if not contains {@code visor} in task name.
          */
         private boolean filterByTaskName(IgniteEvent e, String taskName) {
-            if (e.getClass().equals(GridTaskEvent.class)) {
-                GridTaskEvent te = (GridTaskEvent)e;
+            if (e.getClass().equals(IgniteTaskEvent.class)) {
+                IgniteTaskEvent te = (IgniteTaskEvent)e;
 
                 return containsInTaskName(te.taskName(), te.taskClassName(), taskName);
             }
@@ -237,8 +237,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @return {@code true} if not contains {@code visor} in task name.
          */
         private boolean filterByTaskSessionId(IgniteEvent e, IgniteUuid taskSessionId) {
-            if (e.getClass().equals(GridTaskEvent.class)) {
-                GridTaskEvent te = (GridTaskEvent)e;
+            if (e.getClass().equals(IgniteTaskEvent.class)) {
+                IgniteTaskEvent te = (IgniteTaskEvent)e;
 
                 return te.taskSessionId().equals(taskSessionId);
             }
@@ -287,8 +287,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                 maxOrder = Math.max(maxOrder, e.localOrder());
 
-                if (e instanceof GridTaskEvent) {
-                    GridTaskEvent te = (GridTaskEvent)e;
+                if (e instanceof IgniteTaskEvent) {
+                    IgniteTaskEvent te = (IgniteTaskEvent)e;
 
                     res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
                         te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
@@ -304,8 +304,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                     res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
                 }
-                else if (e instanceof GridLicenseEvent) {
-                    GridLicenseEvent le = (GridLicenseEvent)e;
+                else if (e instanceof IgniteLicenseEvent) {
+                    IgniteLicenseEvent le = (IgniteLicenseEvent)e;
 
                     res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
                 }
@@ -331,8 +331,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                     res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
                         ae.subject()));
                 }
-                else if (e instanceof GridSecureSessionEvent) {
-                    GridSecureSessionEvent se = (GridSecureSessionEvent) e;
+                else if (e instanceof IgniteSecureSessionEvent) {
+                    IgniteSecureSessionEvent se = (IgniteSecureSessionEvent) e;
 
                     res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
                         se.subjectId()));

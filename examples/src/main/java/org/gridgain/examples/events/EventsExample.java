@@ -65,8 +65,8 @@ public class EventsExample {
 
         Ignite g = Ignition.grid();
 
-        IgnitePredicate<GridTaskEvent> lsnr = new IgnitePredicate<GridTaskEvent>() {
-            @Override public boolean apply(GridTaskEvent evt) {
+        IgnitePredicate<IgniteTaskEvent> lsnr = new IgnitePredicate<IgniteTaskEvent>() {
+            @Override public boolean apply(IgniteTaskEvent evt) {
                 System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
 
                 return true; // Return true to continue listening.
@@ -98,8 +98,8 @@ public class EventsExample {
 
         // This optional local callback is called for each event notification
         // that passed remote predicate listener.
-        IgniteBiPredicate<UUID, GridTaskEvent> locLsnr = new IgniteBiPredicate<UUID, GridTaskEvent>() {
-            @Override public boolean apply(UUID nodeId, GridTaskEvent evt) {
+        IgniteBiPredicate<UUID, IgniteTaskEvent> locLsnr = new IgniteBiPredicate<UUID, IgniteTaskEvent>() {
+            @Override public boolean apply(UUID nodeId, IgniteTaskEvent evt) {
                 // Remote filter only accepts tasks whose name being with "good-task" prefix.
                 assert evt.taskName().startsWith("good-task");
 
@@ -110,8 +110,8 @@ public class EventsExample {
         };
 
         // Remote filter which only accepts tasks whose name begins with "good-task" prefix.
-        IgnitePredicate<GridTaskEvent> rmtLsnr = new IgnitePredicate<GridTaskEvent>() {
-            @Override public boolean apply(GridTaskEvent evt) {
+        IgnitePredicate<IgniteTaskEvent> rmtLsnr = new IgnitePredicate<IgniteTaskEvent>() {
+            @Override public boolean apply(IgniteTaskEvent evt) {
                 return evt.taskName().startsWith("good-task");
             }
         };

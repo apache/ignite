@@ -68,11 +68,11 @@ import java.io.*;
  * @see IgniteJobEvent
  * @see IgniteCacheEvent
  * @see IgniteCachePreloadingEvent
- * @see GridSwapSpaceEvent
+ * @see IgniteSwapSpaceEvent
  * @see IgniteCheckpointEvent
  * @see IgniteDeploymentEvent
  * @see IgniteDiscoveryEvent
- * @see GridTaskEvent
+ * @see IgniteTaskEvent
  * @see org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)
  */
 public interface IgniteEvent extends Comparable<IgniteEvent>, Serializable {

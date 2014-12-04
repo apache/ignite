@@ -318,8 +318,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {
             if (evt.timestamp() >= tstamp) {
-                if (evt instanceof GridTaskEvent)
-                    return taskName.equals(((GridTaskEvent)evt).taskName());
+                if (evt instanceof IgniteTaskEvent)
+                    return taskName.equals(((IgniteTaskEvent)evt).taskName());
                 else if (evt instanceof IgniteJobEvent)
                     return taskName.equals(((IgniteJobEvent)evt).taskName());
                 else if (evt instanceof IgniteDeploymentEvent)

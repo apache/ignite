@@ -254,11 +254,11 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridTaskEvent || evt instanceof IgniteJobEvent;
+                assert evt instanceof IgniteTaskEvent || evt instanceof IgniteJobEvent;
 
                 if (evt.type() == EVT_TASK_FINISHED ||
                     evt.type() == EVT_TASK_FAILED) {
-                    IgniteUuid sesId = ((GridTaskEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((IgniteTaskEvent)evt).taskSessionId();
 
                     taskTops.remove(sesId);
 

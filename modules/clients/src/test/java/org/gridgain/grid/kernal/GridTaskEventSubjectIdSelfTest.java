@@ -31,7 +31,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final Collection<GridTaskEvent> evts = new ArrayList<>();
+    private static final Collection<IgniteTaskEvent> evts = new ArrayList<>();
 
     /** */
     private static CountDownLatch latch;
@@ -57,9 +57,9 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         g.events().localListen(new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof GridTaskEvent;
+                assert evt instanceof IgniteTaskEvent;
 
-                evts.add((GridTaskEvent)evt);
+                evts.add((IgniteTaskEvent)evt);
 
                 latch.countDown();
 
@@ -100,11 +100,11 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<GridTaskEvent> it = evts.iterator();
+        Iterator<IgniteTaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        GridTaskEvent evt = it.next();
+        IgniteTaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -155,11 +155,11 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(2, evts.size());
 
-        Iterator<GridTaskEvent> it = evts.iterator();
+        Iterator<IgniteTaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        GridTaskEvent evt = it.next();
+        IgniteTaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -201,11 +201,11 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<GridTaskEvent> it = evts.iterator();
+        Iterator<IgniteTaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        GridTaskEvent evt = it.next();
+        IgniteTaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -249,11 +249,11 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<GridTaskEvent> it = evts.iterator();
+        Iterator<IgniteTaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        GridTaskEvent evt = it.next();
+        IgniteTaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -293,11 +293,11 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<GridTaskEvent> it = evts.iterator();
+        Iterator<IgniteTaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        GridTaskEvent evt = it.next();
+        IgniteTaskEvent evt = it.next();
 
         assert evt != null;
 

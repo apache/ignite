@@ -173,7 +173,7 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
         @Override public void onEvent(IgniteEvent evt) {
             if (evt.type() == EVT_TASK_FAILED ||
                 evt.type() == EVT_TASK_FINISHED)
-                perTaskBalancers.remove(((GridTaskEvent)evt).taskSessionId());
+                perTaskBalancers.remove(((IgniteTaskEvent)evt).taskSessionId());
             else if (evt.type() == EVT_JOB_MAPPED) {
                 GridRoundRobinPerTaskLoadBalancer balancer =
                     perTaskBalancers.get(((IgniteJobEvent)evt).taskSessionId());

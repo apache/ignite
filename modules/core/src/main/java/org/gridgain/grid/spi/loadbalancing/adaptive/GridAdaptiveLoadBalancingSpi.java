@@ -307,7 +307,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
                 switch (evt.type()) {
                     case EVT_TASK_FINISHED:
                     case EVT_TASK_FAILED: {
-                        GridTaskEvent taskEvt = (GridTaskEvent)evt;
+                        IgniteTaskEvent taskEvt = (IgniteTaskEvent)evt;
 
                         taskTops.remove(taskEvt.taskSessionId());
 

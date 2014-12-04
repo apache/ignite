@@ -384,8 +384,8 @@ public class VisorTaskUtils {
             String msg = e.message();
             String shortDisplay = e.shortDisplay();
 
-            if (e instanceof GridTaskEvent) {
-                GridTaskEvent te = (GridTaskEvent)e;
+            if (e instanceof IgniteTaskEvent) {
+                IgniteTaskEvent te = (IgniteTaskEvent)e;
 
                 res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
                     te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
@@ -401,8 +401,8 @@ public class VisorTaskUtils {
 
                 res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
             }
-            else if (e instanceof GridLicenseEvent) {
-                GridLicenseEvent le = (GridLicenseEvent)e;
+            else if (e instanceof IgniteLicenseEvent) {
+                IgniteLicenseEvent le = (IgniteLicenseEvent)e;
 
                 res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
             }
@@ -418,8 +418,8 @@ public class VisorTaskUtils {
                 res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
                     ae.subjectId(), ae.login()));
             }
-            else if (e instanceof GridSecureSessionEvent) {
-                GridSecureSessionEvent se = (GridSecureSessionEvent)e;
+            else if (e instanceof IgniteSecureSessionEvent) {
+                IgniteSecureSessionEvent se = (IgniteSecureSessionEvent)e;
 
                 res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
                     se.subjectId()));

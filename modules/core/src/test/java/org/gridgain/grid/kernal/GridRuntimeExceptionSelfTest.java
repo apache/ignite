@@ -195,9 +195,9 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {
-            return evt instanceof GridTaskEvent &&
-                ((GridTaskEvent)evt).taskSessionId() != null &&
-                ((GridTaskEvent)evt).taskSessionId().equals(sesId) &&
+            return evt instanceof IgniteTaskEvent &&
+                ((IgniteTaskEvent)evt).taskSessionId() != null &&
+                ((IgniteTaskEvent)evt).taskSessionId().equals(sesId) &&
                 evt.type() == EVT_TASK_FAILED;
         }
     }

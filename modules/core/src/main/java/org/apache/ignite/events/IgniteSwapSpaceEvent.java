@@ -1,22 +1,11 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
-
-import java.util.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Grid secure session validation event.
+ * Grid swap space event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -46,98 +35,50 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_SECURE_SESSION_VALIDATION_FAILED
- * @see IgniteEventType#EVT_SECURE_SESSION_VALIDATION_SUCCEEDED
+ * @see IgniteEventType#EVT_SWAP_SPACE_DATA_READ
+ * @see IgniteEventType#EVT_SWAP_SPACE_DATA_STORED
+ * @see IgniteEventType#EVT_SWAP_SPACE_DATA_REMOVED
+ * @see IgniteEventType#EVT_SWAP_SPACE_CLEARED
+ * @see IgniteEventType#EVT_SWAP_SPACE_DATA_EVICTED
  */
-public class GridSecureSessionEvent extends IgniteEventAdapter {
+public class IgniteSwapSpaceEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**  Subject type. */
-    private GridSecuritySubjectType subjType;
+    /** Swap space name. */
+    private String space;
 
-    /** Subject ID. */
-    private UUID subjId;
+    /**
+     * Creates swap space event.
+     *
+     * @param node Node.
+     * @param msg Optional message.
+     * @param type Event type.
+     * @param space Swap space name ({@code null} for default space).
+     */
+    public IgniteSwapSpaceEvent(ClusterNode node, String msg, int type, @Nullable String space) {
+        super(node, msg, type);
+
+        this.space = space;
+    }
+
+    /**
+     * Gets swap space name.
+     *
+     * @return Swap space name or {@code null} for default space.
+     */
+    @Nullable public String space() {
+        return space;
+    }
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": subjType=" + subjType;
-    }
-
-    /**
-     * No-arg constructor.
-     */
-    public GridSecureSessionEvent() {
-        // No-op.
-    }
-
-    /**
-     * Creates secure session event with given parameters.
-     *
-     * @param node Node.
-     * @param msg Optional message.
-     * @param type Event type.
-     */
-    public GridSecureSessionEvent(ClusterNode node, String msg, int type) {
-        super(node, msg, type);
-    }
-
-    /**
-     * Creates secure session event with given parameters.
-     *
-     * @param node Node.
-     * @param msg Optional message.
-     * @param type Event type.
-     * @param subjType Subject type.
-     * @param subjId Subject ID.
-     */
-    public GridSecureSessionEvent(ClusterNode node, String msg, int type, GridSecuritySubjectType subjType,
-        UUID subjId) {
-        super(node, msg, type);
-
-        this.subjType = subjType;
-        this.subjId = subjId;
-    }
-
-    /**
-     * Gets subject type that triggered the event.
-     *
-     * @return Subject type that triggered the event.
-     */
-    public GridSecuritySubjectType subjectType() {
-        return subjType;
-    }
-
-    /**
-     * Gets subject ID that triggered the event.
-     *
-     * @return Subject ID that triggered the event.
-     */
-    public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
-     * Sets subject type that triggered the event.
-     *
-     * @param subjType Subject type to set.
-     */
-    public void subjectType(GridSecuritySubjectType subjType) {
-        this.subjType = subjType;
-    }
-
-    /**
-     * Sets subject ID that triggered the event.
-     *
-     * @param subjId Subject ID to set.
-     */
-    public void subjectId(UUID subjId) {
-        this.subjId = subjId;
+        return name() + ": space=" + space;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSecureSessionEvent.class, this,
+        return S.toString(IgniteSwapSpaceEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

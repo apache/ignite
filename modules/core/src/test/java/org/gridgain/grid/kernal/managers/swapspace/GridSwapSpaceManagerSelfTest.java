@@ -75,11 +75,11 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
 
         ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof GridSwapSpaceEvent;
+                assert evt instanceof IgniteSwapSpaceEvent;
 
                 info("Received event: " + evt);
 
-                GridSwapSpaceEvent e = (GridSwapSpaceEvent) evt;
+                IgniteSwapSpaceEvent e = (IgniteSwapSpaceEvent) evt;
 
                 assert spaceName.equals(e.space());
                 assert ignite.cluster().localNode().id().equals(e.node().id());
