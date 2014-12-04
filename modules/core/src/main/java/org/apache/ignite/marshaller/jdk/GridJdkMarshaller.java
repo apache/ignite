@@ -11,7 +11,6 @@ package org.apache.ignite.marshaller.jdk;
 
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -24,7 +23,7 @@ import java.io.*;
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
- * {@code GridJdkMarshaller} needs to be explicitly configured to override default {@link GridOptimizedMarshaller}.
+ * {@code GridJdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller}.
  * <pre name="code" class="java">
  * GridJdkMarshaller marshaller = new GridJdkMarshaller();
  *

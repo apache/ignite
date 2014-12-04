@@ -25,7 +25,6 @@ import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
@@ -1455,7 +1454,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link GridOptimizedMarshaller} will be used on Java HotSpot VM, and
+     * {@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller} will be used on Java HotSpot VM, and
      * {@link org.apache.ignite.marshaller.jdk.GridJdkMarshaller} will be used on other VMs.
      *
      * @return Marshaller to use in grid.

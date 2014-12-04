@@ -11,9 +11,9 @@ package org.gridgain.examples.misc.client.memcache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;

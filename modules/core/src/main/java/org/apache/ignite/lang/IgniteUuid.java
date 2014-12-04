@@ -9,7 +9,7 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.marshaller.optimized.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;

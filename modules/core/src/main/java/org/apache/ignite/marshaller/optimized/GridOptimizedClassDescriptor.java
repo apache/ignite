@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
@@ -20,9 +20,6 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static java.lang.reflect.Modifier.*;
-import static org.gridgain.grid.marshaller.optimized.GridOptimizedClassResolver.*;
-import static org.gridgain.grid.marshaller.optimized.GridOptimizedFieldType.*;
-import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtils.*;
 
 /**
  * Class descriptor.
@@ -553,7 +550,7 @@ class GridOptimizedClassDescriptor {
             }
         }
 
-        shortId = computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
+        shortId = GridOptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
     }
 
     /**
@@ -797,7 +794,7 @@ class GridOptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                writeClass(out, classDescriptor((Class<?>)obj, obj));
+                GridOptimizedClassResolver.writeClass(out, GridOptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
 
                 break;
 
@@ -916,7 +913,7 @@ class GridOptimizedClassDescriptor {
                 return in.readDate();
 
             case TYPE_CLS:
-                return readClass(in, in.classLoader()).describedClass();
+                return GridOptimizedClassResolver.readClass(in, in.classLoader()).describedClass();
 
             case TYPE_EXTERNALIZABLE:
                 return in.readExternalizable(constructor, readResolveMtd);
@@ -938,23 +935,23 @@ class GridOptimizedClassDescriptor {
         GridOptimizedFieldType type;
 
         if (cls == byte.class)
-            type = BYTE;
+            type = GridOptimizedFieldType.BYTE;
         else if (cls == short.class)
-            type = SHORT;
+            type = GridOptimizedFieldType.SHORT;
         else if (cls == int.class)
-            type = INT;
+            type = GridOptimizedFieldType.INT;
         else if (cls == long.class)
-            type = LONG;
+            type = GridOptimizedFieldType.LONG;
         else if (cls == float.class)
-            type = FLOAT;
+            type = GridOptimizedFieldType.FLOAT;
         else if (cls == double.class)
-            type = DOUBLE;
+            type = GridOptimizedFieldType.DOUBLE;
         else if (cls == char.class)
-            type = CHAR;
+            type = GridOptimizedFieldType.CHAR;
         else if (cls == boolean.class)
-            type = BOOLEAN;
+            type = GridOptimizedFieldType.BOOLEAN;
         else
-            type = OTHER;
+            type = GridOptimizedFieldType.OTHER;
 
         return type;
     }

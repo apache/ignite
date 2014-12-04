@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

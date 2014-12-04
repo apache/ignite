@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communi
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 

@@ -10,7 +10,6 @@
 package org.apache.ignite.marshaller;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -22,7 +21,7 @@ import java.io.*;
  * <p>
  * Gridgain provides the following {@code GridMarshaller} implementations:
  * <ul>
- * <li>{@link GridOptimizedMarshaller} - default</li>
+ * <li>{@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller} - default</li>
  * <li>{@link org.apache.ignite.marshaller.jdk.GridJdkMarshaller}</li>
  * </ul>
  * <p>

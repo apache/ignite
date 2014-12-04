@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.*;
@@ -24,8 +24,6 @@ import java.util.Date;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
-
-import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtils.*;
 
 /**
  * Resolves class names by serialVersionUID.
@@ -240,7 +238,7 @@ class GridOptimizedClassResolver {
             GridOptimizedClassDescriptor desc = ggxT.get2();
 
             if (desc == null) {
-                desc = classDescriptor(ggxT.get1(), null);
+                desc = GridOptimizedMarshallerUtils.classDescriptor(ggxT.get1(), null);
 
                 ggxT.set2(desc);
             }
@@ -278,14 +276,14 @@ class GridOptimizedClassResolver {
                             ggT.set2(cls);
                         }
 
-                        desc = classDescriptor(cls, null);
+                        desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
 
                         ggT.set3(desc);
                     }
                     else {
                         cls = forName(name, clsLdr);
 
-                        desc = classDescriptor(cls, null);
+                        desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
                     }
                 }
 
@@ -319,7 +317,7 @@ class GridOptimizedClassResolver {
                         usrT.set2(cls);
                     }
 
-                    desc = classDescriptor(cls, null);
+                    desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
 
                     usrT.set3(desc);
                 }
@@ -333,14 +331,14 @@ class GridOptimizedClassResolver {
 
                 cls = forName(name, clsLdr);
 
-                return classDescriptor(cls, null);
+                return GridOptimizedMarshallerUtils.classDescriptor(cls, null);
 
             case HEADER_NAME:
                 name = in.readUTF();
 
                 cls = forName(name, clsLdr);
 
-                desc = classDescriptor(cls, null);
+                desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
 
                 break;
 
@@ -382,7 +380,7 @@ class GridOptimizedClassResolver {
                 return;
 
             case HEADER_ARRAY:
-                writeClass(out, classDescriptor(desc.componentType(), null));
+                writeClass(out, GridOptimizedMarshallerUtils.classDescriptor(desc.componentType(), null));
 
                 return;
 

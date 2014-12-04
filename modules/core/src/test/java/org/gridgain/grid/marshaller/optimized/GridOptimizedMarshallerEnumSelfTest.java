@@ -10,6 +10,7 @@
 package org.gridgain.grid.marshaller.optimized;
 
 import junit.framework.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 /**
  *

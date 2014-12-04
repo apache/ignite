@@ -9,17 +9,17 @@
 
 package org.gridgain.client.marshaller.optimized;
 
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.marshaller.optimized.*;
 
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
 /**
- * Wrapper, that adapts {@link GridOptimizedMarshaller} to
+ * Wrapper, that adapts {@link org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller} to
  * {@link GridClientMarshaller} interface.
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {

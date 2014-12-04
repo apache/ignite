@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized;
 
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -22,7 +22,7 @@ import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallable.*;
+import static org.apache.ignite.marshaller.optimized.GridOptimizedMarshallable.*;
 
 /**
  * Miscellaneous utility methods to facilitate {@link GridOptimizedMarshaller}.

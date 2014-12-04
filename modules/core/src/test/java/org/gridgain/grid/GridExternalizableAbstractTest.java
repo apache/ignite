@@ -11,7 +11,7 @@ package org.gridgain.grid;
 
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.marshaller.optimized.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 

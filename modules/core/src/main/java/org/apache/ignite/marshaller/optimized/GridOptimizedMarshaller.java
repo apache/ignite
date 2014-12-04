@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
@@ -20,8 +20,6 @@ import sun.misc.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-
-import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtils.*;
 
 /**
  * Optimized implementation of {@link GridMarshaller}. Unlike {@link org.apache.ignite.marshaller.jdk.GridJdkMarshaller},
@@ -210,7 +208,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
         try {
             clsNames = new LinkedList<>();
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), GridOptimizedMarshallerUtils.UTF_8))) {
                 String clsName;
 
                 while ((clsName = reader.readLine()) != null)

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.*;
@@ -18,7 +18,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.GridOptimizedMarshallerUtils.*;
 
 /**
  * Optimized object output stream.
