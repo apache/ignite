@@ -56,7 +56,7 @@ object ScalarGridPimp {
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
  */
-class ScalarGridPimp extends ScalarProjectionPimp[GridCluster] with ScalarTaskThreadContext[GridCluster] {
+class ScalarGridPimp extends ScalarProjectionPimp[IgniteCluster] with ScalarTaskThreadContext[IgniteCluster] {
     /**
      * Schedules closure for execution using local cron-based scheduling.
      *

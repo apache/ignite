@@ -38,7 +38,7 @@ public class ComputeProjectionExample {
             System.out.println();
             System.out.println("Compute projection example started.");
 
-            GridCluster cluster = ignite.cluster();
+            IgniteCluster cluster = ignite.cluster();
 
             // Say hello to all nodes in the grid, including local node.
             // Note, that Grid itself also implements GridProjection.

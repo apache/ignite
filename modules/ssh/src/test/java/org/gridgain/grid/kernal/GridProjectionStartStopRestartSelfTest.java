@@ -1009,7 +1009,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
      * @return Results collection.
      * @throws GridException If failed.
      */
-    private Collection<GridTuple3<String, Boolean, String>> startNodes(GridCluster cluster,
+    private Collection<GridTuple3<String, Boolean, String>> startNodes(IgniteCluster cluster,
         Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts,
         boolean restart,

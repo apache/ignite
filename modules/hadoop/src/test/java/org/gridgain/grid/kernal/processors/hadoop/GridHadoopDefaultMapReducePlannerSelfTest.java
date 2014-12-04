@@ -1194,7 +1194,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridCluster enableAsync() {
+        @Override public IgniteCluster enableAsync() {
             return null;
         }
 

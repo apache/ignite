@@ -95,11 +95,11 @@ public interface Ignite extends AutoCloseable {
     public GridConfiguration configuration();
 
     /**
-     * Gets an instance of {@link GridCluster} interface.
+     * Gets an instance of {@link org.gridgain.grid.IgniteCluster} interface.
      *
-     * @return Instance of {@link GridCluster} interface.
+     * @return Instance of {@link org.gridgain.grid.IgniteCluster} interface.
      */
-    public GridCluster cluster();
+    public IgniteCluster cluster();
 
     /**
      * Gets {@code compute} functionality over this grid projection. All operations

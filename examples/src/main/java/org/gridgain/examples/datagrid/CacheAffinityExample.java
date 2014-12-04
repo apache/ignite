@@ -90,7 +90,7 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link GridCluster#mapKeysToNodes(String, Collection)}
+     * Collocates jobs with keys they need to work on using {@link org.gridgain.grid.IgniteCluster#mapKeysToNodes(String, Collection)}
      * method. The difference from {@code affinityRun(...)} method is that here we process multiple keys
      * in a single job.
      *

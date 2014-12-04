@@ -23,7 +23,7 @@ import java.util.concurrent.*;
  * {@code GridNodeLocalMap} essentially is a {@link ConcurrentMap} with a few additional methods,
  * so it is fairly trivial to use.
  * <p>
- * You can get an instance of {@code GridNodeLocalMap} by calling {@link GridCluster#nodeLocalMap()} method.
+ * You can get an instance of {@code GridNodeLocalMap} by calling {@link IgniteCluster#nodeLocalMap()} method.
  */
 public interface GridNodeLocalMap<K, V> extends ConcurrentMap<K, V>, GridMetadataAware {
     /**

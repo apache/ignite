@@ -197,7 +197,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCluster cluster() {
+    @Override public IgniteCluster cluster() {
         assert g != null;
 
         return g.cluster();

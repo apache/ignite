@@ -21,14 +21,14 @@ import java.util.*;
 /**
  *
  */
-public class GridClusterAsyncImpl extends IgniteAsyncSupportAdapter implements GridCluster {
+public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements IgniteCluster {
     /** */
     private final GridKernal grid;
 
     /**
      * @param grid Grid.
      */
-    public GridClusterAsyncImpl(GridKernal grid) {
+    public IgniteClusterAsyncImpl(GridKernal grid) {
         super(true);
 
         this.grid = grid;
@@ -114,7 +114,7 @@ public class GridClusterAsyncImpl extends IgniteAsyncSupportAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridCluster enableAsync() {
+    @Override public IgniteCluster enableAsync() {
         return this;
     }
 

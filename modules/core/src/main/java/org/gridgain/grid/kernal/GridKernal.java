@@ -254,7 +254,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public GridCluster cluster() {
+    @Override public IgniteCluster cluster() {
         return this;
     }
 
@@ -2621,7 +2621,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
      * @throws GridException In case of error.
-     * @see {@link GridCluster#startNodes(java.io.File, boolean, int, int)}.
+     * @see {@link org.gridgain.grid.IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
      */
     GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws GridException {
         A.notNull(file, "file");
@@ -2634,8 +2634,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public GridCluster enableAsync() {
-        return new GridClusterAsyncImpl(this);
+    @Override public IgniteCluster enableAsync() {
+        return new IgniteClusterAsyncImpl(this);
     }
 
     /** {@inheritDoc} */
@@ -2663,7 +2663,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
      * @throws GridException In case of error.
-     * @see {@link GridCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
+     * @see {@link org.gridgain.grid.IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
      */
     GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
