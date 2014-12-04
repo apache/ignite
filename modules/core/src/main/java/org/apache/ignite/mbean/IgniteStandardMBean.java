@@ -7,9 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util.mbean;
+package org.apache.ignite.mbean;
 
-import org.apache.ignite.mbean.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import javax.management.*;
 import java.lang.reflect.*;

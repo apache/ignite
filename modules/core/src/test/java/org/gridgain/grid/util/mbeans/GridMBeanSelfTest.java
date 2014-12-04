@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.mbeans;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.util.mbean.*;
 import org.gridgain.testframework.junits.common.*;
 import javax.management.*;
 
