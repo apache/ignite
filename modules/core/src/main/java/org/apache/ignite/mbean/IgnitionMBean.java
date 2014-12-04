@@ -34,7 +34,7 @@ public interface IgnitionMBean {
      * @see org.gridgain.grid.GridGain#state(String)
      */
     @IgniteMBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         "name"
     )
     @GridMBeanParametersDescriptions(
@@ -55,7 +55,7 @@ public interface IgnitionMBean {
      */
     @IgniteMBeanDescription("Stops default grid instance. Return true if default grid instance was " +
         "indeed stopped, false otherwise (if it was not started).")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         "cancel"
     )
     @GridMBeanParametersDescriptions(
@@ -84,7 +84,7 @@ public interface IgnitionMBean {
      */
     @IgniteMBeanDescription("Stops grid by name. Cancels running jobs if cancel is true. Returns true if named " +
         "grid instance was indeed found and stopped, false otherwise.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         {
             "name",
             "cancel"
@@ -113,7 +113,7 @@ public interface IgnitionMBean {
      * @see org.gridgain.grid.GridGain#stopAll(boolean)
      */
     @IgniteMBeanDescription("Stops all started grids.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         "cancel"
     )
     @GridMBeanParametersDescriptions(
@@ -131,7 +131,7 @@ public interface IgnitionMBean {
      * @see org.gridgain.grid.GridGain#stopAll(boolean)
      */
     @IgniteMBeanDescription("Restart JVM.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         {
             "cancel",
             "wait"

@@ -181,7 +181,7 @@ public class GridStandardMBean extends StandardMBean {
         try {
             Method m = getMethod(op);
 
-            GridMBeanParametersNames namesAnn = m.getAnnotation(GridMBeanParametersNames.class);
+            IgniteMBeanParametersNames namesAnn = m.getAnnotation(IgniteMBeanParametersNames.class);
 
             if (namesAnn != null) {
                 assert namesAnn.value() != null;

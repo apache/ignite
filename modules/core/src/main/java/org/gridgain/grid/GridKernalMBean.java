@@ -163,7 +163,7 @@ public interface GridKernalMBean {
      */
     @IgniteMBeanDescription("This method allows manually remove the checkpoint with given key. Return true " +
         "if specified checkpoint was indeed removed, false otherwise.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         "key"
     )
     @GridMBeanParametersDescriptions(
@@ -180,7 +180,7 @@ public interface GridKernalMBean {
      */
     @IgniteMBeanDescription("Pings node with given node ID to see whether it is alive. " +
         "Returns whether or not node is alive.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         "nodeId"
     )
     @GridMBeanParametersDescriptions(
@@ -203,7 +203,7 @@ public interface GridKernalMBean {
      * @throws JMException Thrown if undeploy failed.
      */
     @IgniteMBeanDescription("Makes the best attempt to undeploy a task from the whole grid.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         "taskName"
     )
     @GridMBeanParametersDescriptions(
@@ -222,7 +222,7 @@ public interface GridKernalMBean {
      */
     @IgniteMBeanDescription("A shortcut method that executes given task assuming single " +
         "String argument and String return type. Returns Task return value (assumed of String type).")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         {
             "taskName",
             "arg"
@@ -244,7 +244,7 @@ public interface GridKernalMBean {
      */
     @IgniteMBeanDescription("Pings node with given host name to see if it is alive. " +
         "Returns whether or not node is alive.")
-    @GridMBeanParametersNames(
+    @IgniteMBeanParametersNames(
         "host"
     )
     @GridMBeanParametersDescriptions(

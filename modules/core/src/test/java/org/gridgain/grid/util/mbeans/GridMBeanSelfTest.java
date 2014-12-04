@@ -154,7 +154,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @return Some string.
          */
         @IgniteMBeanDescription("MBeanSuperOperation.")
-        @GridMBeanParametersNames({"someData"})
+        @IgniteMBeanParametersNames({"someData"})
         @GridMBeanParametersDescriptions({"MBeanOperationParameter1."})
         public String doSomethingSuper(String someData);
     }
@@ -209,7 +209,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @return Some string.
          */
         @IgniteMBeanDescription("MBeanOperation.")
-        @GridMBeanParametersNames({"ignored", "someData"})
+        @IgniteMBeanParametersNames({"ignored", "someData"})
         @GridMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
         public String doSomething(boolean ignored, String someData);
     }
@@ -226,7 +226,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @return Some string.
          */
         @IgniteMBeanDescription("MBeanOperation.")
-        @GridMBeanParametersNames({"ignored"})
+        @IgniteMBeanParametersNames({"ignored"})
         @GridMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
         public String doSomethingBad(boolean ignored, String someData);
     }
@@ -257,7 +257,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @param someData Some data.
          * @return Some string.
          */
-        @GridMBeanParametersNames({"", "someData"})
+        @IgniteMBeanParametersNames({"", "someData"})
         public String doSomethingBadAgain(boolean ignored, String someData);
     }
 
@@ -273,7 +273,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @return Some string.
          */
         @IgniteMBeanDescription("MBeanOperation.")
-        @GridMBeanParametersNames({"ignored", "someData"})
+        @IgniteMBeanParametersNames({"ignored", "someData"})
         @GridMBeanParametersDescriptions({"MBeanOperationParameter1."})
         public String doSomethingBadAgain(boolean ignored, String someData);
     }
