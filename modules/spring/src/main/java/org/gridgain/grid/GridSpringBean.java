@@ -23,7 +23,6 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.service.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;

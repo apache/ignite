@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Streamer failure listener. Asynchronous callback passed to user in case of any failure determined by streamer.
  *
- * @see IgniteStreamer#addStreamerFailureListener(GridStreamerFailureListener)
+ * @see org.apache.ignite.IgniteStreamer#addStreamerFailureListener(GridStreamerFailureListener)
  *
  */
 public interface GridStreamerFailureListener {
@@ -24,7 +24,7 @@ public interface GridStreamerFailureListener {
      * If {@link GridStreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then this callback
      * will be invoked on node on which failure occurred. If {@link GridStreamerConfiguration#isAtLeastOnce()}
      * is set to {@code true}, then this callback will be invoked on node on which
-     * {@link IgniteStreamer#addEvents(Collection)} or its variant was called. Callback will be called if maximum
+     * {@link org.apache.ignite.IgniteStreamer#addEvents(Collection)} or its variant was called. Callback will be called if maximum
      * number of failover attempts exceeded or failover cannot be performed (for example, if router
      * returned {@code null}).
      *

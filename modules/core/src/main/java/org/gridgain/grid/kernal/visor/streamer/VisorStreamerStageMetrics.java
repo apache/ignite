@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.streamer;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

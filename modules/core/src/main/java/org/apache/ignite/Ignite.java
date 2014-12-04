@@ -23,7 +23,6 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.service.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -47,7 +46,7 @@ import java.util.concurrent.*;
  * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link GridDr} - functionality for WAN-based Data Center Replication of in-memory cache.</li>
  * <li>{@link GridGgfs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
- * <li>{@link org.gridgain.grid.streamer.IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
+ * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>

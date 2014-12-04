@@ -7,9 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer;
+package org.apache.ignite;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.streamer.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -17,10 +18,10 @@ import java.util.*;
 /**
  * Streamer interface. Streamer provides an easy way to process large (possibly infinite) stream of
  * events. Event can be of any object type, different types of events can be submitted to streamer. Each event
- * is processed by one or more {@link GridStreamerStage}, a set of stages event passed through is called pipeline.
+ * is processed by one or more {@link org.gridgain.grid.streamer.GridStreamerStage}, a set of stages event passed through is called pipeline.
  * <p>
  * For each submitted group of events streamer determines one or more execution nodes that will process this
- * group of events. Execution nodes are determined by {@link GridStreamerEventRouter}. Execution nodes run stages
+ * group of events. Execution nodes are determined by {@link org.gridgain.grid.streamer.GridStreamerEventRouter}. Execution nodes run stages
  * with received events. After stage execution streamer gets an optional set of events that should be processed
  * further. The process is repeated until stage returns empty map. After stage returned empty map pipeline execution
  * for given group of events is finished.
@@ -29,14 +30,14 @@ import java.util.*;
  * any other group of events and will be passed to stage as is. Event processing order is not guaranteed, group that
  * was submitted second can be processed earlier then first submitted group.
  * <p>
- * If {@link GridStreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then event execution is not tracked
+ * If {@link org.gridgain.grid.streamer.GridStreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then event execution is not tracked
  * by streamer and any occurred failure will be reported to failure listener on node on which failure happened. If
  * this configuration property is set to {@code true}, then streamer will cancel current pipeline execution in case
  * of failure and will try to execute pipeline from the beginning. If failover cannot be succeeded or maximum number
  * of failover attempts is exceeded, then listener will be notified on node which originated pipeline execution.
  *
- * @see GridStreamerStage
- * @see GridStreamerEventRouter
+ * @see org.gridgain.grid.streamer.GridStreamerStage
+ * @see org.gridgain.grid.streamer.GridStreamerEventRouter
  */
 public interface IgniteStreamer {
     /**

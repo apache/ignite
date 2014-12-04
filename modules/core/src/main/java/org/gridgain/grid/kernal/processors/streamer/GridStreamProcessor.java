@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
