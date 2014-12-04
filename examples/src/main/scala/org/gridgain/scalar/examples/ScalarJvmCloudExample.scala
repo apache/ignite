@@ -3,7 +3,7 @@ package org.gridgain.scalar.examples
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit._
 import javax.swing.{JComponent, JLabel, JOptionPane}
-import org.gridgain.grid.GridConfiguration
+import org.gridgain.grid.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
 import org.gridgain.grid.util.scala.impl
@@ -35,7 +35,7 @@ object ScalarJvmCloudExample {
             NODES.foreach(name => pool.submit(new Runnable {
                 @impl def run() {
                     // All defaults.
-                    val cfg = new GridConfiguration
+                    val cfg = new IgniteConfiguration
 
                     cfg.setGridName(name)
 

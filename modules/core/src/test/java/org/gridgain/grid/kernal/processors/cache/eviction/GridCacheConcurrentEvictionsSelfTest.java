@@ -52,8 +52,8 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     private int iterCnt;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(READ_COMMITTED);

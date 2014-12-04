@@ -35,7 +35,7 @@ public class GridTestMain {
         BeanFactory ctx = new ClassPathXmlApplicationContext("org/gridgain/loadtests/colocation/spring-colocation.xml");
 
         // Initialize Spring factory.
-        try (Ignite g = G.start((GridConfiguration)ctx.getBean("grid.cfg"))) {
+        try (Ignite g = G.start((IgniteConfiguration)ctx.getBean("grid.cfg"))) {
             final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 
             assert cache != null;

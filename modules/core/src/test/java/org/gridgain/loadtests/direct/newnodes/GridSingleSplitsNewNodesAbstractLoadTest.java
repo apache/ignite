@@ -33,7 +33,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      * @param cfg Current configuration.
      * @return Configured discovery spi.
      */
-    protected abstract GridDiscoverySpi getDiscoverySpi(GridConfiguration cfg);
+    protected abstract GridDiscoverySpi getDiscoverySpi(IgniteConfiguration cfg);
 
     /**
      * @return Discovery spi heartbeat frequency.
@@ -42,8 +42,8 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new GridTcpCommunicationSpi());
 

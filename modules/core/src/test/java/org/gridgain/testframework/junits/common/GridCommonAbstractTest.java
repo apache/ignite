@@ -543,7 +543,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration(GridConfiguration cfg, String cacheName) {
+    protected GridCacheConfiguration cacheConfiguration(IgniteConfiguration cfg, String cacheName) {
         for (GridCacheConfiguration ccfg : cfg.getCacheConfiguration()) {
             if (F.eq(cacheName, ccfg.getName()))
                 return ccfg;

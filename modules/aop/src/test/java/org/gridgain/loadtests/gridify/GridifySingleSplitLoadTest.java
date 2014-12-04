@@ -46,8 +46,8 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
 
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         /* Uncomment following code if you start it manually. */
             GridCommunicationSpi commSpi = new GridTcpCommunicationSpi();

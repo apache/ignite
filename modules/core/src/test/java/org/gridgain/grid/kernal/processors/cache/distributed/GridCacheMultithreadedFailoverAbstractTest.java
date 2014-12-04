@@ -184,7 +184,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      * @return Node configuration.
      * @throws Exception If failed.
      */
-    private GridConfiguration configuration(int idx) throws Exception {
+    private IgniteConfiguration configuration(int idx) throws Exception {
         GridCacheConfiguration ccfg = new GridCacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
@@ -217,7 +217,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
             }
         }
 
-        GridConfiguration cfg = getConfiguration(nodeName(idx));
+        IgniteConfiguration cfg = getConfiguration(nodeName(idx));
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

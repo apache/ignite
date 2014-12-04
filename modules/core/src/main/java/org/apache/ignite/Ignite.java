@@ -93,7 +93,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Grid configuration instance.
      */
-    public GridConfiguration configuration();
+    public IgniteConfiguration configuration();
 
     /**
      * Gets an instance of {@link IgniteCluster} interface.

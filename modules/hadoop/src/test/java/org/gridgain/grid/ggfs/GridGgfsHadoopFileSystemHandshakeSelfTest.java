@@ -179,8 +179,8 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    private GridConfiguration gridConfiguration(boolean dfltGridName, boolean dfltGgfsName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(dfltGridName ? null : GRID_NAME);
+    private IgniteConfiguration gridConfiguration(boolean dfltGridName, boolean dfltGgfsName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(dfltGridName ? null : GRID_NAME);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);

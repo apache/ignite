@@ -239,7 +239,7 @@ object scalar extends ScalarConversions {
      * @param cfg Grid configuration instance.
      * @param body Closure to execute within automatically managed grid instance.
      */
-    def apply(cfg: GridConfiguration)(body: => Unit) {
+    def apply(cfg: IgniteConfiguration)(body: => Unit) {
         init0(GridGain.start(cfg), body)
     }
 
@@ -436,7 +436,7 @@ object scalar extends ScalarConversions {
      * @param cfg Grid configuration. This cannot be `null`.
      * @return Started grid.
      */
-    def start(cfg: GridConfiguration): Ignite = {
+    def start(cfg: IgniteConfiguration): Ignite = {
         GridGain.start(cfg)
     }
 

@@ -57,8 +57,8 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     private static Collection<CacheEventListener> lsnrs = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

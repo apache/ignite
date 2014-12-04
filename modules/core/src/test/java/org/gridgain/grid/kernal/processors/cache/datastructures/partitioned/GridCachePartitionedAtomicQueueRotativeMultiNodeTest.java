@@ -21,8 +21,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 public class GridCachePartitionedAtomicQueueRotativeMultiNodeTest extends
     GridCachePartitionedQueueRotativeMultiNodeTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridCacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
 

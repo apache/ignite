@@ -261,7 +261,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Grid configuration.
      */
-    public GridConfiguration gridConfig() {
+    public IgniteConfiguration gridConfig() {
         return kernalCtx.config();
     }
 

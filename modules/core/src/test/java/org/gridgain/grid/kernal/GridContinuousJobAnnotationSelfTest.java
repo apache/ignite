@@ -39,8 +39,8 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     private static final AtomicReference<Exception> err = new AtomicReference<>();
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.setMarshalLocalJobs(false);
 

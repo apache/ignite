@@ -37,8 +37,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     private String secondNodeVer;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         final int idx = cnt.getAndIncrement();
 

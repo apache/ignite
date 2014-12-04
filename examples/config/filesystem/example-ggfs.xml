@@ -46,7 +46,7 @@
     <!--
         Configuration below demonstrates how to setup a GGFS node with file data.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+    <bean id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
         <!-- Explicitly set to local host address. -->
         <property name="localHost" value="127.0.0.1"/>
 

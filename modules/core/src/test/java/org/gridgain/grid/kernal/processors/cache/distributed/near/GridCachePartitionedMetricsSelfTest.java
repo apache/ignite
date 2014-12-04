@@ -25,8 +25,8 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
     private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
 

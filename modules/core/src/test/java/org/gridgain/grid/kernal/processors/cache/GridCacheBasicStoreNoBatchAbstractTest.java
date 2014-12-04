@@ -51,8 +51,8 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
     protected abstract GridCacheMode cacheMode();
 
     /** {@inheritDoc} */
-    @Override protected final GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration c = super.getConfiguration();
+    @Override protected final IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration c = super.getConfiguration();
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

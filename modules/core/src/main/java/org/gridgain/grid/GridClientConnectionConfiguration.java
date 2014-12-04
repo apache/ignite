@@ -35,10 +35,10 @@ public class GridClientConnectionConfiguration {
     public static final int DFLT_REST_PORT_RANGE = 100;
 
     /** Default size of REST thread pool. */
-    public static final int DFLT_REST_CORE_THREAD_CNT = GridConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_REST_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
 
     /** Default max size of REST thread pool. */
-    public static final int DFLT_REST_MAX_THREAD_CNT = GridConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_REST_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
 
     /** Default max queue capacity of REST thread pool. */
     public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
@@ -193,7 +193,7 @@ public class GridClientConnectionConfiguration {
      * IP address or a domain name.
      * <p>
      * If not defined, system-wide local address will be used
-     * (see {@link GridConfiguration#getLocalHost()}.
+     * (see {@link IgniteConfiguration#getLocalHost()}.
      * <p>
      * You can also use {@code 0.0.0.0} value to bind to all
      * locally-available IP addresses.
@@ -506,7 +506,7 @@ public class GridClientConnectionConfiguration {
      * Sets thread pool to use for processing of client messages (REST requests).
      *
      * @param restExecSvc Thread pool to use for processing of client messages.
-     * @see GridConfiguration#getRestExecutorService()
+     * @see IgniteConfiguration#getRestExecutorService()
      */
     public void setRestExecutorService(ExecutorService restExecSvc) {
         this.restExecSvc = restExecSvc;
@@ -516,7 +516,7 @@ public class GridClientConnectionConfiguration {
      * Sets REST executor service shutdown flag.
      *
      * @param restSvcShutdown REST executor service shutdown flag.
-     * @see GridConfiguration#getRestExecutorService()
+     * @see IgniteConfiguration#getRestExecutorService()
      */
     public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
         this.restSvcShutdown = restSvcShutdown;

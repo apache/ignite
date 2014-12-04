@@ -93,7 +93,7 @@ public class GridH2IndexingSpiLoadTest {
         final int MAX_SIZE = getInt(p, "max-entries-count", 500000);
         final int MAX_NAMES = getInt(p, "max-names-count", 100);
 
-        GridConfiguration c = new GridConfiguration();
+        IgniteConfiguration c = new IgniteConfiguration();
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

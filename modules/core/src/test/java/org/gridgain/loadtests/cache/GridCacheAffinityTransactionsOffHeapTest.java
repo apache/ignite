@@ -161,8 +161,8 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      * @param name Grid name.
      * @return Configuration.
      */
-    private static GridConfiguration getConfiguration(String name) {
-        GridConfiguration cfg = new GridConfiguration();
+    private static IgniteConfiguration getConfiguration(String name) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(name);
 

@@ -33,7 +33,7 @@ public class VisorMetricsConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node metrics configuration properties.
      */
-    public static VisorMetricsConfiguration from(GridConfiguration c) {
+    public static VisorMetricsConfiguration from(IgniteConfiguration c) {
         VisorMetricsConfiguration cfg = new VisorMetricsConfiguration();
 
         cfg.expireTime(c.getMetricsExpireTime());

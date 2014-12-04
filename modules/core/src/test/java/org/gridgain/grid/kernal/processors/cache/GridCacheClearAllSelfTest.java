@@ -60,8 +60,8 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     private GridCache<Integer, Integer>[] cachesReplicated;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridCacheConfiguration ccfgLoc = new GridCacheConfiguration();
 

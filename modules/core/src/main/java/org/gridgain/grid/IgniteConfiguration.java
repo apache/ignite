@@ -66,10 +66,10 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
- * {@link GridGain#start(GridConfiguration)} method. It defines all configuration
+ * {@link GridGain#start(IgniteConfiguration)} method. It defines all configuration
  * parameters required to start a grid instance. Usually, a special
  * class called "loader" will create an instance of this interface and apply
- * {@link GridGain#start(GridConfiguration)} method to initialize GridGain instance.
+ * {@link GridGain#start(IgniteConfiguration)} method to initialize GridGain instance.
  * <p>
  * Note that you should only set values that differ from defaults, as grid
  * will automatically pick default values for all values that are not set.
@@ -77,7 +77,7 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * For more information about grid configuration and startup refer to {@link GridGain}
  * documentation.
  */
-public class GridConfiguration {
+public class IgniteConfiguration {
     /** Courtesy notice log category. */
     public static final String COURTESY_LOGGER_NAME = "org.gridgain.grid.CourtesyConfigNotice";
 
@@ -539,12 +539,12 @@ public class GridConfiguration {
     private GridPortableConfiguration portableCfg;
 
     /** Warmup closure. Will be invoked before actual grid start. */
-    private GridInClosure<GridConfiguration> warmupClos;
+    private GridInClosure<IgniteConfiguration> warmupClos;
 
     /**
      * Creates valid grid configuration with all default values.
      */
-    public GridConfiguration() {
+    public IgniteConfiguration() {
         // No-op.
     }
 
@@ -555,7 +555,7 @@ public class GridConfiguration {
      * @param cfg Grid configuration to copy from.
      */
     @SuppressWarnings("deprecation")
-    public GridConfiguration(GridConfiguration cfg) {
+    public IgniteConfiguration(IgniteConfiguration cfg) {
         assert cfg != null;
 
         // SPIs.
@@ -1083,7 +1083,7 @@ public class GridConfiguration {
      * Sets user attributes for this node.
      *
      * @param userAttrs User attributes for this node.
-     * @see GridConfiguration#getUserAttributes()
+     * @see IgniteConfiguration#getUserAttributes()
      */
     public void setUserAttributes(Map<String, ?> userAttrs) {
         this.userAttrs = userAttrs;
@@ -1104,7 +1104,7 @@ public class GridConfiguration {
      * Sets logger to use within grid.
      *
      * @param log Logger to use within grid.
-     * @see GridConfiguration#getGridLogger()
+     * @see IgniteConfiguration#getGridLogger()
      */
     public void setGridLogger(GridLogger log) {
         this.log = log;
@@ -1268,7 +1268,7 @@ public class GridConfiguration {
      * Sets thread pool to use within grid.
      *
      * @param execSvc Thread pool to use within grid.
-     * @see GridConfiguration#getExecutorService()
+     * @see IgniteConfiguration#getExecutorService()
      */
     public void setExecutorService(ExecutorService execSvc) {
         this.execSvc = execSvc;
@@ -1278,7 +1278,7 @@ public class GridConfiguration {
      * Sets executor service shutdown flag.
      *
      * @param execSvcShutdown Executor service shutdown flag.
-     * @see GridConfiguration#getExecutorServiceShutdown()
+     * @see IgniteConfiguration#getExecutorServiceShutdown()
      */
     public void setExecutorServiceShutdown(boolean execSvcShutdown) {
         this.execSvcShutdown = execSvcShutdown;
@@ -1288,7 +1288,7 @@ public class GridConfiguration {
      * Sets system thread pool to use within grid.
      *
      * @param sysSvc Thread pool to use within grid.
-     * @see GridConfiguration#getSystemExecutorService()
+     * @see IgniteConfiguration#getSystemExecutorService()
      */
     public void setSystemExecutorService(ExecutorService sysSvc) {
         this.sysSvc = sysSvc;
@@ -1298,7 +1298,7 @@ public class GridConfiguration {
      * Sets system executor service shutdown flag.
      *
      * @param sysSvcShutdown System executor service shutdown flag.
-     * @see GridConfiguration#getSystemExecutorServiceShutdown()
+     * @see IgniteConfiguration#getSystemExecutorServiceShutdown()
      */
     public void setSystemExecutorServiceShutdown(boolean sysSvcShutdown) {
         this.sysSvcShutdown = sysSvcShutdown;
@@ -1308,7 +1308,7 @@ public class GridConfiguration {
      * Sets management thread pool to use within grid.
      *
      * @param mgmtSvc Thread pool to use within grid.
-     * @see GridConfiguration#getManagementExecutorService()
+     * @see IgniteConfiguration#getManagementExecutorService()
      */
     public void setManagementExecutorService(ExecutorService mgmtSvc) {
         this.mgmtSvc = mgmtSvc;
@@ -1318,7 +1318,7 @@ public class GridConfiguration {
      * Sets management executor service shutdown flag.
      *
      * @param mgmtSvcShutdown Management executor service shutdown flag.
-     * @see GridConfiguration#getManagementExecutorServiceShutdown()
+     * @see IgniteConfiguration#getManagementExecutorServiceShutdown()
      */
     public void setManagementExecutorServiceShutdown(boolean mgmtSvcShutdown) {
         this.mgmtSvcShutdown = mgmtSvcShutdown;
@@ -1328,7 +1328,7 @@ public class GridConfiguration {
      * Sets thread pool to use for peer class loading.
      *
      * @param p2pSvc Thread pool to use within grid.
-     * @see GridConfiguration#getPeerClassLoadingExecutorService()
+     * @see IgniteConfiguration#getPeerClassLoadingExecutorService()
      */
     public void setPeerClassLoadingExecutorService(ExecutorService p2pSvc) {
         this.p2pSvc = p2pSvc;
@@ -1338,7 +1338,7 @@ public class GridConfiguration {
      * Sets peer class loading executor service shutdown flag.
      *
      * @param p2pSvcShutdown Peer class loading executor service shutdown flag.
-     * @see GridConfiguration#getPeerClassLoadingExecutorServiceShutdown()
+     * @see IgniteConfiguration#getPeerClassLoadingExecutorServiceShutdown()
      */
     public void setPeerClassLoadingExecutorServiceShutdown(boolean p2pSvcShutdown) {
         this.p2pSvcShutdown = p2pSvcShutdown;
@@ -1348,7 +1348,7 @@ public class GridConfiguration {
      * Set executor service that will be used to process outgoing GGFS messages.
      *
      * @param ggfsSvc Executor service to use for outgoing GGFS messages.
-     * @see GridConfiguration#getGgfsExecutorService()
+     * @see IgniteConfiguration#getGgfsExecutorService()
      */
     public void setGgfsExecutorService(ExecutorService ggfsSvc) {
         this.ggfsSvc = ggfsSvc;
@@ -1358,7 +1358,7 @@ public class GridConfiguration {
      * Sets GGFS executor service shutdown flag.
      *
      * @param ggfsSvcShutdown GGFS executor service shutdown flag.
-     * @see GridConfiguration#getGgfsExecutorService()
+     * @see IgniteConfiguration#getGgfsExecutorService()
      */
     public void setGgfsExecutorServiceShutdown(boolean ggfsSvcShutdown) {
         this.ggfsSvcShutdown = ggfsSvcShutdown;
@@ -1382,7 +1382,7 @@ public class GridConfiguration {
      * Sets GridGain installation folder.
      *
      * @param ggHome {@code GridGain} installation folder.
-     * @see GridConfiguration#getGridGainHome()
+     * @see IgniteConfiguration#getGridGainHome()
      * @see GridSystemProperties#GG_HOME
      */
     public void setGridGainHome(String ggHome) {
@@ -1391,13 +1391,13 @@ public class GridConfiguration {
 
     /**
      * Gets GridGain work folder. If not provided, the method will use work folder under
-     * {@code GRIDGAIN_HOME} specified by {@link GridConfiguration#setGridGainHome(String)} or
+     * {@code GRIDGAIN_HOME} specified by {@link IgniteConfiguration#setGridGainHome(String)} or
      * {@code GRIDGAIN_HOME} environment variable or system property.
      * <p>
      * If {@code GRIDGAIN_HOME} is not provided, then system temp folder is used.
      *
      * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
-     * @see GridConfiguration#getGridGainHome()
+     * @see IgniteConfiguration#getGridGainHome()
      * @see GridSystemProperties#GG_HOME
      */
     public String getWorkDirectory() {
@@ -1408,7 +1408,7 @@ public class GridConfiguration {
      * Sets GridGain work folder.
      *
      * @param ggWork {@code GridGain} work folder.
-     * @see GridConfiguration#getWorkDirectory()
+     * @see IgniteConfiguration#getWorkDirectory()
      */
     public void setWorkDirectory(String ggWork) {
         this.ggWork = ggWork;
@@ -1447,7 +1447,7 @@ public class GridConfiguration {
      * Sets unique identifier for local node.
      *
      * @param nodeId Unique identifier for local node.
-     * @see GridConfiguration#getNodeId()
+     * @see IgniteConfiguration#getNodeId()
      */
     public void setNodeId(UUID nodeId) {
         this.nodeId = nodeId;
@@ -1468,7 +1468,7 @@ public class GridConfiguration {
      * Sets marshaller to use within grid.
      *
      * @param marsh Marshaller to use within grid.
-     * @see GridConfiguration#getMarshaller()
+     * @see IgniteConfiguration#getMarshaller()
      */
     public void setMarshaller(GridMarshaller marsh) {
         this.marsh = marsh;
@@ -1790,7 +1790,7 @@ public class GridConfiguration {
      * Sets fully configured instance of {@link GridEventStorageSpi}.
      *
      * @param evtSpi Fully configured instance of {@link GridEventStorageSpi}.
-     * @see GridConfiguration#getEventStorageSpi()
+     * @see IgniteConfiguration#getEventStorageSpi()
      */
     public void setEventStorageSpi(GridEventStorageSpi evtSpi) {
         this.evtSpi = evtSpi;
@@ -1810,7 +1810,7 @@ public class GridConfiguration {
      * Sets fully configured instance of {@link GridDiscoverySpi}.
      *
      * @param discoSpi Fully configured instance of {@link GridDiscoverySpi}.
-     * @see GridConfiguration#getDiscoverySpi()
+     * @see IgniteConfiguration#getDiscoverySpi()
      */
     public void setDiscoverySpi(GridDiscoverySpi discoSpi) {
         this.discoSpi = discoSpi;
@@ -1964,7 +1964,7 @@ public class GridConfiguration {
      * Sets fully configured instance of {@link GridCommunicationSpi}.
      *
      * @param commSpi Fully configured instance of {@link GridCommunicationSpi}.
-     * @see GridConfiguration#getCommunicationSpi()
+     * @see IgniteConfiguration#getCommunicationSpi()
      */
     public void setCommunicationSpi(GridCommunicationSpi commSpi) {
         this.commSpi = commSpi;
@@ -1989,7 +1989,7 @@ public class GridConfiguration {
      *
      * @param colSpi Fully configured instance of {@link GridCollisionSpi} or
      *      {@code null} if no SPI provided.
-     * @see GridConfiguration#getCollisionSpi()
+     * @see IgniteConfiguration#getCollisionSpi()
      */
     public void setCollisionSpi(GridCollisionSpi colSpi) {
         this.colSpi = colSpi;
@@ -2010,7 +2010,7 @@ public class GridConfiguration {
      *
      * @param authSpi Fully configured instance of {@link GridAuthenticationSpi} or
      * {@code null} if no SPI provided.
-     * @see GridConfiguration#getAuthenticationSpi()
+     * @see IgniteConfiguration#getAuthenticationSpi()
      */
     public void setAuthenticationSpi(GridAuthenticationSpi authSpi) {
         this.authSpi = authSpi;
@@ -2031,7 +2031,7 @@ public class GridConfiguration {
      *
      * @param sesSpi Fully configured instance of {@link GridSecureSessionSpi} or
      * {@code null} if no SPI provided.
-     * @see GridConfiguration#getSecureSessionSpi()
+     * @see IgniteConfiguration#getSecureSessionSpi()
      */
     public void setSecureSessionSpi(GridSecureSessionSpi sesSpi) {
         this.sesSpi = sesSpi;
@@ -2051,7 +2051,7 @@ public class GridConfiguration {
      * Sets fully configured instance of {@link GridDeploymentSpi}.
      *
      * @param deploySpi Fully configured instance of {@link GridDeploymentSpi}.
-     * @see GridConfiguration#getDeploymentSpi()
+     * @see IgniteConfiguration#getDeploymentSpi()
      */
     public void setDeploymentSpi(GridDeploymentSpi deploySpi) {
         this.deploySpi = deploySpi;
@@ -2071,7 +2071,7 @@ public class GridConfiguration {
      * Sets fully configured instance of {@link GridCheckpointSpi}.
      *
      * @param cpSpi Fully configured instance of {@link GridCheckpointSpi}.
-     * @see GridConfiguration#getCheckpointSpi()
+     * @see IgniteConfiguration#getCheckpointSpi()
      */
     public void setCheckpointSpi(GridCheckpointSpi... cpSpi) {
         this.cpSpi = cpSpi;
@@ -2092,7 +2092,7 @@ public class GridConfiguration {
      *
      * @param failSpi Fully configured instance of {@link GridFailoverSpi} or
      *      {@code null} if no SPI provided.
-     * @see GridConfiguration#getFailoverSpi()
+     * @see IgniteConfiguration#getFailoverSpi()
      */
     public void setFailoverSpi(GridFailoverSpi... failSpi) {
         this.failSpi = failSpi;
@@ -2145,7 +2145,7 @@ public class GridConfiguration {
      *
      * @param loadBalancingSpi Fully configured instance of {@link GridLoadBalancingSpi} or
      *      {@code null} if no SPI provided.
-     * @see GridConfiguration#getLoadBalancingSpi()
+     * @see IgniteConfiguration#getLoadBalancingSpi()
      */
     public void setLoadBalancingSpi(GridLoadBalancingSpi... loadBalancingSpi) {
         this.loadBalancingSpi = loadBalancingSpi;
@@ -2156,7 +2156,7 @@ public class GridConfiguration {
      *
      * @param swapSpaceSpi Fully configured instances of {@link GridSwapSpaceSpi} or
      *      <tt>null</tt> if no SPI provided.
-     * @see GridConfiguration#getSwapSpaceSpi()
+     * @see IgniteConfiguration#getSwapSpaceSpi()
      */
     public void setSwapSpaceSpi(GridSwapSpaceSpi swapSpaceSpi) {
         this.swapSpaceSpi = swapSpaceSpi;
@@ -2179,7 +2179,7 @@ public class GridConfiguration {
      * Sets fully configured instances of {@link GridIndexingSpi}.
      *
      * @param indexingSpi Fully configured instances of {@link GridIndexingSpi}.
-     * @see GridConfiguration#getIndexingSpi()
+     * @see IgniteConfiguration#getIndexingSpi()
      */
     public void setIndexingSpi(GridIndexingSpi... indexingSpi) {
         this.indexingSpi = indexingSpi;
@@ -2769,7 +2769,7 @@ public class GridConfiguration {
      * Sets thread pool to use for processing of client messages (REST requests).
      *
      * @param restExecSvc Thread pool to use for processing of client messages.
-     * @see GridConfiguration#getRestExecutorService()
+     * @see IgniteConfiguration#getRestExecutorService()
      * @deprecated Use {@link GridClientConnectionConfiguration#setRestExecutorService(ExecutorService)}.
      */
     @Deprecated
@@ -2781,7 +2781,7 @@ public class GridConfiguration {
      * Sets REST executor service shutdown flag.
      *
      * @param restSvcShutdown REST executor service shutdown flag.
-     * @see GridConfiguration#getRestExecutorService()
+     * @see IgniteConfiguration#getRestExecutorService()
      * @deprecated Use {@link GridClientConnectionConfiguration#setRestExecutorServiceShutdown(boolean)}.
      */
     @Deprecated
@@ -3184,7 +3184,7 @@ public class GridConfiguration {
      *
      * @return Warmup closure to execute.
      */
-    public GridInClosure<GridConfiguration> getWarmupClosure() {
+    public GridInClosure<IgniteConfiguration> getWarmupClosure() {
         return warmupClos;
     }
 
@@ -3194,7 +3194,7 @@ public class GridConfiguration {
      * @param warmupClos Warmup closure to execute.
      * @see #getWarmupClosure()
      */
-    public void setWarmupClosure(GridInClosure<GridConfiguration> warmupClos) {
+    public void setWarmupClosure(GridInClosure<IgniteConfiguration> warmupClos) {
         this.warmupClos = warmupClos;
     }
 
@@ -3248,6 +3248,6 @@ public class GridConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridConfiguration.class, this);
+        return S.toString(IgniteConfiguration.class, this);
     }
 }

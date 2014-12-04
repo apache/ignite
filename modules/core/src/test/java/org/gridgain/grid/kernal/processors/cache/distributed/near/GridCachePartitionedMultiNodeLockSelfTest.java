@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -23,8 +22,8 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  */
 public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNodeLockAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridCacheConfiguration cc = defaultCacheConfiguration();
 

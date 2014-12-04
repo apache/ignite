@@ -9,7 +9,7 @@
         Base Spring file for grid configuration.
     </description>
 
-    <bean abstract="true" id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+    <bean abstract="true" id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="marshaller">

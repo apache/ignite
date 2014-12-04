@@ -228,7 +228,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @return REST host.
      * @throws IOException If failed to resolve REST host.
      */
-    private InetAddress resolveRestTcpHost(GridConfiguration cfg) throws IOException {
+    private InetAddress resolveRestTcpHost(IgniteConfiguration cfg) throws IOException {
         String host = cfg.getClientConnectionConfiguration().getRestTcpHost();
 
         if (host == null)

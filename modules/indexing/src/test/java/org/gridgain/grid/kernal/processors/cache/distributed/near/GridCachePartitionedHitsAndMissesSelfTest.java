@@ -39,8 +39,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // IndexingSpi
         GridH2IndexingSpi spi = new GridH2IndexingSpi();

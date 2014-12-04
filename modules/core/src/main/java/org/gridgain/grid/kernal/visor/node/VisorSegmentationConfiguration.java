@@ -44,7 +44,7 @@ public class VisorSegmentationConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node segmentation configuration properties.
      */
-    public static VisorSegmentationConfiguration from(GridConfiguration c) {
+    public static VisorSegmentationConfiguration from(IgniteConfiguration c) {
         VisorSegmentationConfiguration cfg = new VisorSegmentationConfiguration();
 
         cfg.policy(c.getSegmentationPolicy());

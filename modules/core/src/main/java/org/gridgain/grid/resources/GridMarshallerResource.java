@@ -18,7 +18,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of {@link GridMarshaller} resource. Grid marshaller
- * is provided to grid via {@link GridConfiguration}.
+ * is provided to grid via {@link org.gridgain.grid.IgniteConfiguration}.
  * <p>
  * Marshaller can be injected into instances of following classes:
  * <ul>
@@ -52,7 +52,7 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See {@link GridConfiguration#getMarshaller()} for Grid configuration details.
+ * See {@link org.gridgain.grid.IgniteConfiguration#getMarshaller()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

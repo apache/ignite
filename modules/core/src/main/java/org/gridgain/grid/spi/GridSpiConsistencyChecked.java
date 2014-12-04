@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.spi;
 
-import org.gridgain.grid.*;
-
 import java.lang.annotation.*;
 
 /**
@@ -18,7 +16,7 @@ import java.lang.annotation.*;
  * If SPIs are not consistent, then warning will be printed out to the log.
  * <p>
  * Note that SPI consistency courtesy log can also be disabled by disabling
- * {@link GridConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
+ * {@link org.gridgain.grid.IgniteConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

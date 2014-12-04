@@ -174,8 +174,8 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     }
 
     /** {@inheritDoc} */
-    @Override protected final GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridStreamerConfiguration streamerCfg = new GridStreamerConfiguration();
 

@@ -309,7 +309,7 @@ abstract class GridCacheAbstractLoadTest {
      * @throws GridException If fails.
      */
     @SuppressWarnings("unchecked")
-    protected GridConfiguration configuration(String springCfgPath, String log) throws GridException {
+    protected IgniteConfiguration configuration(String springCfgPath, String log) throws GridException {
         File path = GridTestUtils.resolveGridGainPath(springCfgPath);
 
         if (path == null)
@@ -337,10 +337,10 @@ abstract class GridCacheAbstractLoadTest {
 
         try {
             // Note: Spring is not generics-friendly.
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
+            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
@@ -355,7 +355,7 @@ abstract class GridCacheAbstractLoadTest {
         else if (cfgMap.size() > 1)
             throw new GridException("More than one configuration provided for cache load test: " + cfgMap.values());
 
-        GridConfiguration cfg = (GridConfiguration)cfgMap.values().iterator().next();
+        IgniteConfiguration cfg = (IgniteConfiguration)cfgMap.values().iterator().next();
 
         cfg.setGridLogger(initLogger(log));
 

@@ -59,7 +59,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
      * @param log Grid logger.
      * @return Grid configuration.
      */
-    private GridConfiguration getConfiguration(GridLogger log) {
+    private IgniteConfiguration getConfiguration(GridLogger log) {
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
         String ggHome = GridSystemProperties.getString(GG_HOME);
@@ -76,7 +76,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
 
         disc.setIpFinder(IP_FINDER);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridLogger(log);
         cfg.setDiscoverySpi(disc);
@@ -132,7 +132,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
 
         try {
             for (int i = 0; i < GRID_COUNT; i++) {
-                GridConfiguration cfg = getConfiguration(log);
+                IgniteConfiguration cfg = getConfiguration(log);
 
                 cfg.setWorkDirectory(tmpWorkDir);
 

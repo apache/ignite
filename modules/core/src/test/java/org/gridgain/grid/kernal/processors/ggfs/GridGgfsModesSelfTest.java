@@ -110,7 +110,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("ggfs-grid");
 
@@ -164,7 +164,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("ggfs-grid-secondary");
 

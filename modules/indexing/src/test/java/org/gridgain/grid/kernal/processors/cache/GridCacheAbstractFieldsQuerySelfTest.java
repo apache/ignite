@@ -62,8 +62,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     protected boolean hasCache;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setIndexingSpi(indexing(null, true), indexing(SPI_NO_PRIMITIVES, false), indexing(SPI_COMPLEX_KEYS, false));
 

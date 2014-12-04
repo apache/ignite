@@ -50,10 +50,10 @@ class ScalarProjectionSpec extends FlatSpec with ShouldMatchers with BeforeAndAf
      * @param name Grid name.
      * @param shown Shown flag.
      */
-    private def gridConfig(name: String, shown: Boolean): GridConfiguration = {
+    private def gridConfig(name: String, shown: Boolean): IgniteConfiguration = {
         val attrs: java.util.Map[String, Boolean] = Map[String, Boolean]("shown" -> shown)
 
-        val cfg = new GridConfiguration
+        val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
         cfg.setUserAttributes(attrs)

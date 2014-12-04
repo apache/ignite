@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.collision.jobstealing;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.mbean.*;
 import java.io.*;
@@ -176,7 +175,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
     /**
      * Configuration parameter to enable stealing to/from only nodes that
      * have these attributes set (see {@link org.apache.ignite.cluster.ClusterNode#attribute(String)} and
-     * {@link GridConfiguration#getUserAttributes()} methods).
+     * {@link org.gridgain.grid.IgniteConfiguration#getUserAttributes()} methods).
      *
      * @return Node attributes to enable job stealing for.
      */

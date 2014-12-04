@@ -59,7 +59,7 @@ public final class GridSingleExecutionTest {
             System.exit(1);
         }
         else if (args.length >= 2) {
-            for (GridConfiguration cfg: getConfigurations(args[1], args[0])) {
+            for (IgniteConfiguration cfg: getConfigurations(args[1], args[0])) {
                 G.start(cfg);
             }
         }
@@ -172,7 +172,7 @@ public final class GridSingleExecutionTest {
      * @throws GridException If failed..
      */
     @SuppressWarnings("unchecked")
-    private static Iterable<GridConfiguration> getConfigurations(String springCfgPath, String log) throws GridException {
+    private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath, String log) throws GridException {
         File path = GridTestUtils.resolveGridGainPath(springCfgPath);
 
         if (path == null) {
@@ -201,10 +201,10 @@ public final class GridSingleExecutionTest {
 
         try {
             // Note: Spring is not generics-friendly.
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
+            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
@@ -217,9 +217,9 @@ public final class GridSingleExecutionTest {
         if (cfgMap.isEmpty())
             throw new GridException("Can't find grid factory configuration in: " + path);
 
-        Collection<GridConfiguration> res = new ArrayList<>();
+        Collection<IgniteConfiguration> res = new ArrayList<>();
 
-        for (GridConfiguration cfg : (Collection<GridConfiguration>)cfgMap.values()) {
+        for (IgniteConfiguration cfg : (Collection<IgniteConfiguration>)cfgMap.values()) {
             UUID nodeId = UUID.randomUUID();
 
             cfg.setNodeId(nodeId);

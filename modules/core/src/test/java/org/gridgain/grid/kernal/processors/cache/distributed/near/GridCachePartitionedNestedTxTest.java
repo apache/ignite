@@ -9,9 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.GridConfiguration;
+import org.gridgain.grid.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 
@@ -23,8 +22,8 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCachePartitionedNestedTxTest extends GridCacheNestedTxAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 

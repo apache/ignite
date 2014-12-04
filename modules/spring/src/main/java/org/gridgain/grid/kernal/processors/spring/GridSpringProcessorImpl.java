@@ -68,7 +68,7 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+    @Override public GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL cfgUrl, String... excludedProps) throws GridException {
         ApplicationContext springCtx;
 
@@ -85,13 +85,13 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
 
-        Map<String, GridConfiguration> cfgMap;
+        Map<String, IgniteConfiguration> cfgMap;
 
         try {
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
+            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
@@ -209,7 +209,7 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
 
     /**
      * Creates Spring application context. Optionally excluded properties can be specified,
-     * it means that if such a property is found in {@link GridConfiguration}
+     * it means that if such a property is found in {@link org.gridgain.grid.IgniteConfiguration}
      * then it is removed before the bean is instantiated.
      * For example, {@code streamerConfiguration} can be excluded from the configs that Visor uses.
      *

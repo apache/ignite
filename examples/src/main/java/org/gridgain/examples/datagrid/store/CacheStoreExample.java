@@ -33,7 +33,7 @@ public class CacheStoreExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        GridConfiguration cfg = CacheNodeWithStoreStartup.configure();
+        IgniteConfiguration cfg = CacheNodeWithStoreStartup.configure();
 
         // To start grid with desired configuration uncomment the appropriate line.
         try (Ignite g = GridGain.start(cfg)) {

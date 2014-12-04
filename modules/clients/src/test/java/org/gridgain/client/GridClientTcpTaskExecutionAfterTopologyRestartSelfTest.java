@@ -22,8 +22,8 @@ public class GridClientTcpTaskExecutionAfterTopologyRestartSelfTest extends Grid
     private static final int PORT = 11211;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
         cfg.setLocalHost("127.0.0.1");
 

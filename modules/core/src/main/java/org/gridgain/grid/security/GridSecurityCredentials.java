@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.security;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -24,7 +23,7 @@ import java.io.*;
  * client or node startup in configuration.
  * <p>
  * For grid node, security credentials provider is specified in
- * {@link GridConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
+ * {@link org.gridgain.grid.IgniteConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
  * configuration property. For Java clients, you can provide credentials in
  * {@code GridClientConfiguration.setSecurityCredentialsProvider(...)} method.
  * <p>

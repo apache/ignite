@@ -50,7 +50,7 @@ public class VisorEmailConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node email configuration properties.
      */
-    public static VisorEmailConfiguration from(GridConfiguration c) {
+    public static VisorEmailConfiguration from(IgniteConfiguration c) {
         VisorEmailConfiguration cfg = new VisorEmailConfiguration();
 
         cfg.smtpHost(getProperty(GG_SMTP_HOST, c.getSmtpHost()));

@@ -279,7 +279,7 @@ public final class GridRandomCommandLineLoader {
      * @throws GridException If an error occurs.
      */
     @SuppressWarnings("unchecked")
-    private static GridConfiguration getConfiguration(String springCfgPath, @Nullable String logCfgPath)
+    private static IgniteConfiguration getConfiguration(String springCfgPath, @Nullable String logCfgPath)
         throws GridException {
         assert springCfgPath != null;
 
@@ -310,10 +310,10 @@ public final class GridRandomCommandLineLoader {
 
         try {
             // Note: Spring is not generics-friendly.
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
+            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
@@ -326,7 +326,7 @@ public final class GridRandomCommandLineLoader {
         if (cfgMap.size() != 1)
             throw new GridException("Spring configuration file should contain exactly 1 grid configuration: " + path);
 
-        GridConfiguration cfg = (GridConfiguration)F.first(cfgMap.values());
+        IgniteConfiguration cfg = (IgniteConfiguration)F.first(cfgMap.values());
 
         assert cfg != null;
 

@@ -38,7 +38,7 @@
         Note that for job stealing to work, you must always use both,
         GridJobStealingCollisionSpi and GridJobStealingFailoverSPI.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+    <bean id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="cacheConfiguration">

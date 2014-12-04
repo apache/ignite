@@ -31,7 +31,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
     private static final boolean CACHE_DEBUG = false;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         if (CACHE_DEBUG)
             resetLog4j(Level.DEBUG, true, GridCacheProcessor.class.getPackage().getName());
 
@@ -52,7 +52,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
      * @throws GridException If failed.
      */
     public void testLockAtomicCache() throws GridException {
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(getTestGridName(0));
         cfg.setRestEnabled(false);

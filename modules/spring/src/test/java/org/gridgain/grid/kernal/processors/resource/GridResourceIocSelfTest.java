@@ -59,9 +59,9 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName,
+    @Override protected IgniteConfiguration getConfiguration(String gridName,
         GridTestResources rsrcs) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName, rsrcs);
+        IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
         cfg.setDeploymentMode(depMode);
 

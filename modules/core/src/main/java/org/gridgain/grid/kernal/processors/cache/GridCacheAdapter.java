@@ -133,7 +133,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** Grid configuration. */
     @GridToStringExclude
-    protected GridConfiguration gridCfg;
+    protected IgniteConfiguration gridCfg;
 
     /** Cache metrics. */
     protected volatile GridCacheMetricsAdapter metrics;

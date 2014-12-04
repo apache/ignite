@@ -18,8 +18,8 @@ import org.gridgain.testframework.junits.common.*;
  */
 public class GridGgfsCommonAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setLocalHost("127.0.0.1");
@@ -28,8 +28,8 @@ public class GridGgfsCommonAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setLocalHost("127.0.0.1");
@@ -38,8 +38,8 @@ public class GridGgfsCommonAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(rsrcs);
+    @Override protected IgniteConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(rsrcs);
 
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setLocalHost("127.0.0.1");
@@ -48,8 +48,8 @@ public class GridGgfsCommonAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName, rsrcs);
+    @Override protected IgniteConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setLocalHost("127.0.0.1");

@@ -95,8 +95,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridCacheConfiguration namedCache = new GridCacheConfiguration();
 
@@ -644,7 +644,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testCompute() throws Exception {
-        GridConfiguration cfg = optimize(getConfiguration("g1"));
+        IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
             GridCompute compute = compute(grid().forNode(g1.cluster().localNode()));
@@ -685,7 +685,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testEvents() throws Exception {
-        GridConfiguration cfg = optimize(getConfiguration("g1"));
+        IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
             GridEvents evts = events(grid().forNode(g1.cluster().localNode()));
@@ -727,7 +727,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testMessaging() throws Exception {
-        GridConfiguration cfg = optimize(getConfiguration("g1"));
+        IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
             GridMessaging messaging = message(grid().forNode(g1.cluster().localNode()));
@@ -763,7 +763,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testServices() throws Exception {
-        GridConfiguration cfg = optimize(getConfiguration("g1"));
+        IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
             GridServices services = grid().services(grid().forNode(g1.cluster().localNode()));

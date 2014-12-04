@@ -46,7 +46,7 @@
     <!--
         Configuration below demonstrates how to setup a GGFS node with file data.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+    <bean id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
         <!--
             For better performance set this property to false in case
             peer deployment is not used.

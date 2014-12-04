@@ -71,7 +71,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
-import static org.gridgain.grid.GridConfiguration.*;
+import static org.gridgain.grid.IgniteConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -95,7 +95,7 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
- * {@link GridConfiguration} to override some default configuration. Below is an
+ * {@link org.gridgain.grid.IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with <strong>URI deployment</strong>.
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
@@ -156,7 +156,7 @@ public class GridGainEx {
      * <p>
      * If daemon flag is set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link GridConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link org.gridgain.grid.IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @param daemon Daemon flag to set.
@@ -170,7 +170,7 @@ public class GridGainEx {
      * <p>
      * If daemon flag it set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link GridConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link org.gridgain.grid.IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @return Daemon flag.
@@ -426,7 +426,7 @@ public class GridGainEx {
 
         U.warn(null, "Default Spring XML file not found (is GRIDGAIN_HOME set?): " + DFLT_CFG);
 
-        return start0(new GridStartContext(new GridConfiguration(), null, springCtx)).grid();
+        return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx)).grid();
     }
 
     /**
@@ -438,7 +438,7 @@ public class GridGainEx {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(GridConfiguration cfg) throws GridException {
+    public static Ignite start(IgniteConfiguration cfg) throws GridException {
         return start(cfg, null);
     }
 
@@ -455,7 +455,7 @@ public class GridGainEx {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(GridConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws GridException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx)).grid();
@@ -500,7 +500,7 @@ public class GridGainEx {
      */
     public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws GridException {
         if (springCfgPath == null) {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             if (cfg.getGridName() == null && !F.isEmpty(gridName))
                 cfg.setGridName(gridName);
@@ -540,7 +540,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+    public static GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL springCfgUrl) throws GridException {
         GridSpringProcessor spring = SPRING.create(false);
 
@@ -560,7 +560,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+    public static GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         String springCfgPath) throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
@@ -594,9 +594,9 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<GridConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
+    public static GridBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
         throws GridException {
-        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
+        GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
 
         return F.t(F.first(t.get1()), t.get2());
     }
@@ -614,9 +614,9 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<GridConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
+    public static GridBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
         throws GridException {
-        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t =
+        GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
             loadConfigurations(springCfgPath);
 
         return F.t(F.first(t.get1()), t.get2());
@@ -720,7 +720,7 @@ public class GridGainEx {
         else
             savedHnds = U.addJavaNoOpLogger();
 
-        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> cfgMap;
+        GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
         try {
             cfgMap = loadConfigurations(springCfgUrl);
@@ -736,7 +736,7 @@ public class GridGainEx {
         List<GridNamedInstance> grids = new ArrayList<>(cfgMap.size());
 
         try {
-            for (GridConfiguration cfg : cfgMap.get1()) {
+            for (IgniteConfiguration cfg : cfgMap.get1()) {
                 assert cfg != null;
 
                 if (cfg.getGridName() == null && !F.isEmpty(gridName))
@@ -1015,7 +1015,7 @@ public class GridGainEx {
      */
     private static final class GridStartContext {
         /** User-defined configuration. */
-        private GridConfiguration cfg;
+        private IgniteConfiguration cfg;
 
         /** Optional configuration path. */
         private URL cfgUrl;
@@ -1032,7 +1032,7 @@ public class GridGainEx {
          * @param cfgUrl Optional configuration path.
          * @param springCtx Optional Spring application context.
          */
-        GridStartContext(GridConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
+        GridStartContext(IgniteConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
             assert(cfg != null);
 
             this.cfg = cfg;
@@ -1057,14 +1057,14 @@ public class GridGainEx {
         /**
          * @return User-defined configuration.
          */
-        GridConfiguration config() {
+        IgniteConfiguration config() {
             return cfg;
         }
 
         /**
          * @param cfg User-defined configuration.
          */
-        void config(GridConfiguration cfg) {
+        void config(IgniteConfiguration cfg) {
             this.cfg = cfg;
         }
 
@@ -1297,12 +1297,12 @@ public class GridGainEx {
         private void start0(GridStartContext startCtx) throws GridException {
             assert grid == null : "Grid is already started: " + name;
 
-            GridConfiguration cfg = startCtx.config();
+            IgniteConfiguration cfg = startCtx.config();
 
             if (cfg == null)
-                cfg = new GridConfiguration();
+                cfg = new IgniteConfiguration();
 
-            GridConfiguration myCfg = new GridConfiguration();
+            IgniteConfiguration myCfg = new IgniteConfiguration();
 
             String ggHome = cfg.getGridGainHome();
 
@@ -1858,7 +1858,7 @@ public class GridGainEx {
                 // Use reflection to avoid loading undesired classes.
                 Class helperCls = Class.forName("org.gridgain.grid.util.GridConfigurationHelper");
 
-                helperCls.getMethod("overrideConfiguration", GridConfiguration.class, Properties.class,
+                helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
                     String.class, GridLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
             }
             catch (Exception ignored) {

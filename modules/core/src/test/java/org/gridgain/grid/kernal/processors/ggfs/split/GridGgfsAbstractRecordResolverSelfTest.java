@@ -70,7 +70,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         metaCacheCfg.setQueryIndexEnabled(false);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("grid");
 

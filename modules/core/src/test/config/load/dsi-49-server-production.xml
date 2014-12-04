@@ -10,7 +10,7 @@
 
     <import resource="dsi-load-base.xml"/>
 
-    <bean class="org.gridgain.grid.GridConfiguration" parent="grid.cfg">
+    <bean class="org.gridgain.grid.IgniteConfiguration" parent="grid.cfg">
         <property name="userAttributes">
             <util:map>
                 <entry key="segment" value="server"/>

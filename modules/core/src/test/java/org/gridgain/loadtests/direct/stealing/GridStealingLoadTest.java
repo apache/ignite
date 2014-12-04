@@ -52,8 +52,8 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String name) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(name);
+    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
 
         GridJobStealingCollisionSpi colSpi = new GridJobStealingCollisionSpi();
 

@@ -43,8 +43,8 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         GridCommunicationSpi commSpi = new GridTcpCommunicationSpi();
 

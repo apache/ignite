@@ -35,7 +35,7 @@ public class VisorLifecycleConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node lifecycle configuration properties.
      */
-    public static VisorLifecycleConfiguration from(GridConfiguration c) {
+    public static VisorLifecycleConfiguration from(IgniteConfiguration c) {
         VisorLifecycleConfiguration cfg = new VisorLifecycleConfiguration();
 
         cfg.beans(compactArray(c.getLifecycleBeans()));

@@ -87,7 +87,7 @@ public class GridCachePutRemoveLoadTest {
      */
     protected void startNodes() throws Exception {
         for (int i = 0; i < args.nodes(); i++) {
-            GridConfiguration cfg =
+            IgniteConfiguration cfg =
                 GridGainEx.loadConfiguration("modules/core/src/test/config/spring-cache-put-remove-load.xml").get1();
 
             assert cfg != null;

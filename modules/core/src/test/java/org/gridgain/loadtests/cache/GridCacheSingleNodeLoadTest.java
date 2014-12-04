@@ -11,7 +11,6 @@ package org.gridgain.loadtests.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.spi.collision.fifoqueue.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -101,7 +100,7 @@ public class GridCacheSingleNodeLoadTest {
      * @throws Exception If failed.
      */
     private static void start() throws Exception {
-        GridConfiguration c =  new GridConfiguration();
+        IgniteConfiguration c =  new IgniteConfiguration();
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.GridConfiguration;
+import org.gridgain.grid.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -28,8 +28,8 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
     /** Memory mode. */
     private GridCacheMemoryMode memMode;
 
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 

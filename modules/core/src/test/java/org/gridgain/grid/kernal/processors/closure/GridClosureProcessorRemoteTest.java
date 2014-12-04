@@ -36,8 +36,8 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(new GridTcpDiscoverySpi());
 

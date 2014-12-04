@@ -38,8 +38,8 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
     public static final int GRID_CNT = 4;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
 

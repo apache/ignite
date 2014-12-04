@@ -92,8 +92,8 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
      * @return Grid configuration.
      * @throws Exception If error occurred.
      */
-    private static GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+    private static IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
         cfg.setGridLogger(new GridLog4jLogger());

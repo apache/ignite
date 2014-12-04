@@ -17,9 +17,6 @@ import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.testframework.junits.common.*;
 import org.hsqldb.jdbc.*;
 
-import java.io.*;
-import java.util.*;
-
 /**
  * Grid session checkpoint self test.
  */
@@ -29,7 +26,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
      * @throws Exception If failed.
      */
     public void testSharedFsCheckpoint() throws Exception {
-        GridConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
         cfg.setCheckpointSpi(spi = new GridSharedFsCheckpointSpi());
 
@@ -40,7 +37,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
      * @throws Exception If failed.
      */
     public void testJdbcCheckpoint() throws Exception {
-        GridConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
         jdbcDataSource ds = new jdbcDataSource();
 
@@ -68,7 +65,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
      * @throws Exception If failed.
      */
     public void testCacheCheckpoint() throws Exception {
-        GridConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
         String cacheName = "test-checkpoints";
 

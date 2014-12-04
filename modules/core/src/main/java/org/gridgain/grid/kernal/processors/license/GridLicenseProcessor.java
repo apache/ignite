@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.license;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
@@ -24,7 +23,7 @@ public interface GridLicenseProcessor extends GridProcessor {
      * @param licTxt The string representation of the license file.
      * @throws GridProductLicenseException Thrown if validation check failed for specified license or
      *      license can not be updated because configured license URL use non-file scheme.
-     * @see GridConfiguration#getLicenseUrl()
+     * @see org.gridgain.grid.IgniteConfiguration#getLicenseUrl()
      */
     public void updateLicense(String licTxt) throws GridProductLicenseException;
 

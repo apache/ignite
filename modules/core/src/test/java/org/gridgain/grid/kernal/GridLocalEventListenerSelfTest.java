@@ -12,8 +12,6 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -27,8 +25,8 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
     private final CountDownLatch fired = new CountDownLatch(1);
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         int idx = getTestGridIndex(gridName);
 

@@ -39,7 +39,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param cfg Ignite configuration.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgnitePluginProcessor(GridKernalContext ctx, GridConfiguration cfg) {
+    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) {
         super(ctx);
 
         ExtensionRegistry registry = new ExtensionRegistry();

@@ -32,11 +32,11 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
     private static final String GGFS_NO_ENDPOINT_CFG = "modules/core/src/test/config/ggfs-no-endpoint.xml";
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         String cfgPath = gridName == null ? (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
             GGFS_NO_ENDPOINT_CFG;
 
-        GridConfiguration cfg = GridGainEx.loadConfiguration(cfgPath).get1();
+        IgniteConfiguration cfg = GridGainEx.loadConfiguration(cfgPath).get1();
 
         cfg.setGridName(gridName);
 

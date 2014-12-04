@@ -1459,7 +1459,7 @@ object visor extends VisorTag {
         }
 
         try {
-            def configuration(path: String): GridConfiguration = {
+            def configuration(path: String): IgniteConfiguration = {
                 assert(path != null)
 
                 val url =
@@ -1571,7 +1571,7 @@ object visor extends VisorTag {
      * @param cfg Configuration.
      * @param cfgPath Configuration path.
      */
-    def open(cfg: GridConfiguration, cfgPath: String) {
+    def open(cfg: IgniteConfiguration, cfgPath: String) {
         val daemon = G.isDaemon
 
         val shutdownHook = GridSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")

@@ -136,7 +136,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Grid configuration.
      */
-    public GridConfiguration config();
+    public IgniteConfiguration config();
 
     /**
      * Gets task processor.

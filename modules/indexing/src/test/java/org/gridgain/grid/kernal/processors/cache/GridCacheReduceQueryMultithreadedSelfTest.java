@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.indexing.h2.*;
@@ -45,8 +44,8 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridH2IndexingSpi indexing = new GridH2IndexingSpi();
 

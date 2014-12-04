@@ -34,7 +34,7 @@ public final class LifecycleExample {
         System.out.println(">>> Lifecycle example started.");
 
         // Create new configuration.
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         LifecycleExampleBean bean = new LifecycleExampleBean();
 

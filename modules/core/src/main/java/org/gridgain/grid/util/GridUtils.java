@@ -1377,7 +1377,7 @@ public abstract class GridUtils {
 
     /**
      * Tries to resolve host by name, returning local host if input is empty.
-     * This method reflects how {@link GridConfiguration#getLocalHost()} should
+     * This method reflects how {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()} should
      * be handled in most places.
      *
      * @param hostName Hostname or {@code null} if local host should be returned.
@@ -3564,7 +3564,7 @@ public abstract class GridUtils {
         assert shortMsg != null;
 
         if (log != null)
-            log.getLogger(GridConfiguration.COURTESY_LOGGER_NAME).warning(compact(longMsg.toString()));
+            log.getLogger(IgniteConfiguration.COURTESY_LOGGER_NAME).warning(compact(longMsg.toString()));
         else
             X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (courtesy) " +
                 compact(shortMsg.toString()));

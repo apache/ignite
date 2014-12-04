@@ -85,8 +85,8 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override protected final GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration c = super.getConfiguration();
+    @Override protected final IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration c = super.getConfiguration();
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

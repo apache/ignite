@@ -35,8 +35,8 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setFailoverSpi(new GridTestFailoverSpi());
 

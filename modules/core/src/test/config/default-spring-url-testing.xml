@@ -26,7 +26,7 @@
         All configuration properties are commented. Uncomment any property to
         provide a non-default value for it.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+    <bean id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
         <!--
             Specify grid instance name.
         -->

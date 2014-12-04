@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.checkpoint.s3;
 import com.amazonaws.auth.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.session.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testsuites.bamboo.*;
 
 /**
@@ -23,7 +22,7 @@ public class GridS3SessionCheckpointSelfTest extends GridSessionCheckpointAbstra
      * @throws Exception If failed.
      */
     public void testS3Checkpoint() throws Exception {
-        GridConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
         GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
 

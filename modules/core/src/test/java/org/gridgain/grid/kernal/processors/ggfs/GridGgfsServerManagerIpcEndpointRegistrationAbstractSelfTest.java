@@ -48,7 +48,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @throws Exception If failed.
      */
     public void testLoopbackEndpointsRegistration() throws Exception {
-        GridConfiguration cfg = gridConfiguration();
+        IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setGgfsConfiguration(
             gridGgfsConfiguration("{type:'tcp', port:" + DFLT_IPC_PORT + "}")
@@ -67,7 +67,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @throws Exception If failed.
      */
     public void testLoopbackEndpointsCustomHostRegistration() throws Exception {
-        GridConfiguration cfg = gridConfiguration();
+        IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setGgfsConfiguration(
             gridGgfsConfiguration("{type:'tcp', port:" + DFLT_IPC_PORT + ", host:'127.0.0.1'}"),
@@ -110,8 +110,8 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @return Base grid configuration.
      * @throws Exception In case of any error.
      */
-    protected GridConfiguration gridConfiguration() throws Exception {
-        GridConfiguration cfg = getConfiguration(getTestGridName());
+    protected IgniteConfiguration gridConfiguration() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestGridName());
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);

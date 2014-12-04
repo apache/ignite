@@ -29,8 +29,8 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
     private static final Random RAND = new Random();
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridCacheConfiguration cc = defaultCacheConfiguration();
 

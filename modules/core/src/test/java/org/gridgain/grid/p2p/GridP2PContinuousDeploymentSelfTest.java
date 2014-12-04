@@ -42,8 +42,8 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     private static final String TEST_TASK_2 = "org.gridgain.grid.tests.p2p.GridP2PContinuousDeploymentTask2";
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setDeploymentMode(CONTINUOUS);
 

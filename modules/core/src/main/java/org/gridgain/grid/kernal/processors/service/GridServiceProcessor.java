@@ -94,7 +94,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        GridConfiguration cfg = ctx.config();
+        IgniteConfiguration cfg = ctx.config();
 
         GridDeploymentMode depMode = cfg.getDeploymentMode();
 
@@ -219,7 +219,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @throws GridRuntimeException If validation failed.
      */
     private void validate(GridServiceConfiguration c) throws GridRuntimeException {
-        GridConfiguration cfg = ctx.config();
+        IgniteConfiguration cfg = ctx.config();
 
         GridDeploymentMode depMode = cfg.getDeploymentMode();
 

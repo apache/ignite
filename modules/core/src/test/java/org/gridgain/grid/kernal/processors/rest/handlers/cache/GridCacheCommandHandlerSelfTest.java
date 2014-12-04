@@ -37,7 +37,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
         // Discovery config.
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -50,7 +50,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         cacheCfg.setQueryIndexEnabled(false);
 
         // Grid config.
-        GridConfiguration cfg = super.getConfiguration();
+        IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setLocalHost("localhost");
         cfg.setRestEnabled(true);

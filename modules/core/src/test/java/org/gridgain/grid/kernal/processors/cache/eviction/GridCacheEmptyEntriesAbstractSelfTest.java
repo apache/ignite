@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.GridConfiguration;
+import org.gridgain.grid.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
 import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
@@ -50,8 +50,8 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private GridCacheTxIsolation txIsolation;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
 

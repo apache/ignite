@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.collision.jobstealing;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -58,7 +57,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Note that this SPI must always be used in conjunction with
  * {@link GridJobStealingFailoverSpi}.
  * Also note that job metrics update should be enabled in order for this SPI
- * to work properly (i.e. {@link GridConfiguration#getMetricsUpdateFrequency()}
+ * to work properly (i.e. {@link org.gridgain.grid.IgniteConfiguration#getMetricsUpdateFrequency()}
  * should be set to {@code 0} or greater value).
  * The responsibility of Job Stealing Failover SPI is to properly route <b>stolen</b>
  * jobs to the nodes that initially requested (<b>stole</b>) these jobs. The
@@ -343,7 +342,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
     /**
      * Configuration parameter to enable stealing to/from only nodes that
      * have these attributes set (see {@link org.apache.ignite.cluster.ClusterNode#attribute(String)} and
-     * {@link GridConfiguration#getUserAttributes()} methods).
+     * {@link org.gridgain.grid.IgniteConfiguration#getUserAttributes()} methods).
      *
      * @param stealAttrs Node attributes to enable job stealing for.
      */

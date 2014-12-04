@@ -1362,7 +1362,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * transaction. All updates to the keys involved should always go through {@code affinity-group-locked}
      * transaction, otherwise cache may be left in inconsistent state.
      * <p>
-     * If cache sanity check is enabled ({@link GridConfiguration#isCacheSanityCheckEnabled()}),
+     * If cache sanity check is enabled ({@link org.gridgain.grid.IgniteConfiguration#isCacheSanityCheckEnabled()}),
      * the following checks are performed:
      * <ul>
      *     <li>
@@ -1398,7 +1398,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * transaction. All updates to the keys involved should always go through {@code partition-group-locked}
      * transaction, otherwise, cache may be left in inconsistent state.
      * <p>
-     * If cache sanity check is enabled ({@link GridConfiguration#isCacheSanityCheckEnabled()}),
+     * If cache sanity check is enabled ({@link org.gridgain.grid.IgniteConfiguration#isCacheSanityCheckEnabled()}),
      * the following checks are performed:
      * <ul>
      *     <li>

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.segmentation;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.*;
 
 /**
@@ -20,11 +19,11 @@ import org.gridgain.grid.kernal.processors.*;
  * Typically, resolver should run light-weight single check (i.e. one IP address or
  * one shared folder). Compound segment checks may be performed using several
  * resolvers.
- * @see GridConfiguration#getSegmentationResolvers()
- * @see GridConfiguration#getSegmentationPolicy()
- * @see GridConfiguration#getSegmentCheckFrequency()
- * @see GridConfiguration#isAllSegmentationResolversPassRequired()
- * @see GridConfiguration#isWaitForSegmentOnStart()
+ * @see org.gridgain.grid.IgniteConfiguration#getSegmentationResolvers()
+ * @see org.gridgain.grid.IgniteConfiguration#getSegmentationPolicy()
+ * @see org.gridgain.grid.IgniteConfiguration#getSegmentCheckFrequency()
+ * @see org.gridgain.grid.IgniteConfiguration#isAllSegmentationResolversPassRequired()
+ * @see org.gridgain.grid.IgniteConfiguration#isWaitForSegmentOnStart()
  */
 public interface GridSegmentationProcessor extends GridProcessor {
     /**
@@ -35,7 +34,7 @@ public interface GridSegmentationProcessor extends GridProcessor {
      *     <li>Before discovery SPI start.</li>
      *     <li>When other node leaves topology.</li>
      *     <li>When other node in topology fails.</li>
-     *     <li>Periodically (see {@link GridConfiguration#getSegmentCheckFrequency()}).</li>
+     *     <li>Periodically (see {@link org.gridgain.grid.IgniteConfiguration#getSegmentCheckFrequency()}).</li>
      * </ol>
      *
      * @return {@code True} if segment is correct.

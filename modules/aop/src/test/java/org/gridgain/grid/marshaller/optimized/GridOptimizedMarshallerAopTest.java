@@ -48,7 +48,7 @@ public class GridOptimizedMarshallerAopTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setMarshaller(new GridOptimizedMarshaller());
 

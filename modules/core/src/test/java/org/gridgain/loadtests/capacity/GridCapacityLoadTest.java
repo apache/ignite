@@ -35,7 +35,7 @@ public class GridCapacityLoadTest {
         ClassPathXmlApplicationContext ctx =
             new ClassPathXmlApplicationContext("org/gridgain/loadtests/capacity/spring-capacity-cache.xml");
 
-        GridConfiguration cfg = (GridConfiguration)ctx.getBean("grid.cfg");
+        IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("grid.cfg");
 
         try (Ignite g = G.start(cfg)) {
             GridCache<Integer, Integer> c = g.cache(null);

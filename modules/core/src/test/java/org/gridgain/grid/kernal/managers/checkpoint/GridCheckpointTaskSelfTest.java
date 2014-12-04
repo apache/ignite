@@ -44,8 +44,8 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     private static final String CP_KEY = "test.checkpoint.key." + System.currentTimeMillis();
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setCheckpointSpi(checkpointSpi());

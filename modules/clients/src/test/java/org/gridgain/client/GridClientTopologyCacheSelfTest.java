@@ -249,7 +249,7 @@ public class GridClientTopologyCacheSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(LOCAL);
@@ -261,7 +261,7 @@ public class GridClientTopologyCacheSelfTest extends GridCommonAbstractTest {
 
         disco.setIpFinder(IP_FINDER);
 
-        GridConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
 

@@ -56,7 +56,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -70,7 +70,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         spi.setIpFinder(ipFinder);
 
-        GridConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(spi);

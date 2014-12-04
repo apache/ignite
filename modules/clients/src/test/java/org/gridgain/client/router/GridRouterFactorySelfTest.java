@@ -30,12 +30,12 @@ public class GridRouterFactorySelfTest extends GridCommonAbstractTest {
     private static final int GRID_HTTP_PORT = 11087;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setGridName(gridName);

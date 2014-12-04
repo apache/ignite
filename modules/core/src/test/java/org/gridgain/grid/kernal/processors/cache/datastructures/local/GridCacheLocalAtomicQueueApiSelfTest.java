@@ -19,8 +19,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
  */
 public class GridCacheLocalAtomicQueueApiSelfTest extends GridCacheLocalQueueApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         GridCacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
 

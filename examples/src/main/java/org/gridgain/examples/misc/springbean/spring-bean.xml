@@ -25,7 +25,7 @@
     <!-- Example of bean definition with given configuration. -->
     <bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean">
         <property name="configuration">
-            <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+            <bean id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
                 <!-- Set to local host address just for examples. -->
                 <property name="localHost" value="127.0.0.1"/>
 

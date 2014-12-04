@@ -57,7 +57,7 @@ public class VisorRestConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Create data transfer object for node REST configuration properties.
      */
-    public static VisorRestConfiguration from(GridConfiguration c) {
+    public static VisorRestConfiguration from(IgniteConfiguration c) {
         VisorRestConfiguration cfg = new VisorRestConfiguration();
 
         GridClientConnectionConfiguration clnCfg = c.getClientConnectionConfiguration();

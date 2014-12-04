@@ -132,18 +132,18 @@ public class GridServletStartup extends HttpServlet {
                 "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
 
         try {
-            GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t =
+            GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
                 GridGainEx.loadConfigurations(cfgUrl);
 
-            Collection<GridConfiguration> cfgs = t.get1();
+            Collection<IgniteConfiguration> cfgs = t.get1();
 
             if (cfgs == null)
                 throw new ServletException("Failed to find a single grid factory configuration in: " + cfgUrl);
 
-            for (GridConfiguration cfg : cfgs) {
+            for (IgniteConfiguration cfg : cfgs) {
                 assert cfg != null;
 
-                GridConfiguration adapter = new GridConfiguration(cfg);
+                IgniteConfiguration adapter = new IgniteConfiguration(cfg);
 
                 Ignite ignite = GridGainEx.start(adapter, t.get2());
 

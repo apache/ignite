@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.dr.hub.sender;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -104,7 +103,7 @@ public class GridDrSenderHubConnectionConfiguration {
      * Gets local network interface name form with remote data center is reachable.
      * <p>
      * By default is set to {@code null} meaning that sender hub will be bound to the same interface as the grid itself
-     * (see {@link GridConfiguration#getLocalHost()})
+     * (see {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()})
      *
      * @return Local network interface name form with remote data center is reachable.
      */

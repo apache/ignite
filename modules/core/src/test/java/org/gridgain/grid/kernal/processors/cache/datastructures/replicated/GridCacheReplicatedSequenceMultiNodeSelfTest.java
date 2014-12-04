@@ -21,8 +21,8 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCacheReplicatedSequenceMultiNodeSelfTest extends GridCacheSequenceMultiNodeAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // Default cache configuration.
         GridCacheConfiguration dfltCacheCfg = defaultCacheConfiguration();

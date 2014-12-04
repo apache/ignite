@@ -45,8 +45,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
     protected static final String TRANSACTIONAL_CACHE_NAME = "transactionalCache";
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setMarshaller(new GridOptimizedMarshaller(false));
 

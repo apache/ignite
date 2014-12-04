@@ -136,7 +136,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
     private static final int SHUTDOWN_DELAY = 60 * 1000;
 
     /** */
-    private GridConfiguration cfg;
+    private IgniteConfiguration cfg;
 
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -549,7 +549,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(final GridConfiguration cfg, ExecutorService utilityCachePool, GridAbsClosure errHnd)
+    public void start(final IgniteConfiguration cfg, ExecutorService utilityCachePool, GridAbsClosure errHnd)
         throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
@@ -1104,7 +1104,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      *
      * @param cfg Configuration.
      */
-    private void validateCommon(GridConfiguration cfg) {
+    private void validateCommon(IgniteConfiguration cfg) {
         A.notNull(cfg.getNodeId(), "cfg.getNodeId()");
 
         A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
@@ -1169,7 +1169,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      * @param ctx Context.
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridKernalContext ctx, GridConfiguration cfg) {
+    private void suggestOptimizations(GridKernalContext ctx, IgniteConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         if (ctx.collision().enabled())
@@ -1197,7 +1197,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      *
      * @param cfg Grid configuration.
      */
-    private void warnNotSupportedFeaturesForOs(GridConfiguration cfg) {
+    private void warnNotSupportedFeaturesForOs(IgniteConfiguration cfg) {
         Collection<String> msgs = new ArrayList<>();
 
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
@@ -1230,7 +1230,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      * @throws GridException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private Map<String, Object> createNodeAttributes(GridConfiguration cfg, String build) throws GridException {
+    private Map<String, Object> createNodeAttributes(IgniteConfiguration cfg, String build) throws GridException {
         Map<String, Object> attrs = new HashMap<>();
 
         final String[] incProps = cfg.getIncludeProperties();
@@ -2230,18 +2230,18 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
 
     /**
      * Whether or not SMTP is configured. Note that SMTP is considered configured if
-     * SMTP host is provided in configuration (see {@link GridConfiguration#getSmtpHost()}.
+     * SMTP host is provided in configuration (see {@link org.gridgain.grid.IgniteConfiguration#getSmtpHost()}.
      * <p>
      * If SMTP is not configured all emails notifications will be disabled.
      *
      * @return {@code True} if SMTP is configured - {@code false} otherwise.
-     * @see GridConfiguration#getSmtpFromEmail()
-     * @see GridConfiguration#getSmtpHost()
-     * @see GridConfiguration#getSmtpPassword()
-     * @see GridConfiguration#getSmtpPort()
-     * @see GridConfiguration#getSmtpUsername()
-     * @see GridConfiguration#isSmtpSsl()
-     * @see GridConfiguration#isSmtpStartTls()
+     * @see org.gridgain.grid.IgniteConfiguration#getSmtpFromEmail()
+     * @see org.gridgain.grid.IgniteConfiguration#getSmtpHost()
+     * @see org.gridgain.grid.IgniteConfiguration#getSmtpPassword()
+     * @see org.gridgain.grid.IgniteConfiguration#getSmtpPort()
+     * @see org.gridgain.grid.IgniteConfiguration#getSmtpUsername()
+     * @see org.gridgain.grid.IgniteConfiguration#isSmtpSsl()
+     * @see org.gridgain.grid.IgniteConfiguration#isSmtpStartTls()
      * @see #sendAdminEmailAsync(String, String, boolean)
      */
     @Override public boolean isSmtpEnabled() {
@@ -2410,7 +2410,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      * @param cfg Grid configuration.
      * @return Components provided in configuration which can implement {@link GridLifecycleAware} interface.
      */
-    private Iterable<Object> lifecycleAwares(GridConfiguration cfg) {
+    private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
         Collection<Object> objs = new ArrayList<>();
 
         if (!F.isEmpty(cfg.getLifecycleBeans()))
@@ -2429,7 +2429,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
     }
 
     /** {@inheritDoc} */
-    @Override public GridConfiguration configuration() {
+    @Override public IgniteConfiguration configuration() {
         return cfg;
     }
 
@@ -2531,7 +2531,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      *      completes ok and its result value is {@code true} email was successfully sent. In all
      *      other cases - sending process has failed.
      * @see #isSmtpEnabled()
-     * @see GridConfiguration#getAdminEmails()
+     * @see org.gridgain.grid.IgniteConfiguration#getAdminEmails()
      */
     @Override public GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
         A.notNull(subj, "subj");

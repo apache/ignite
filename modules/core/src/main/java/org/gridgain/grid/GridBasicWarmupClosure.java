@@ -26,7 +26,7 @@ import java.util.concurrent.*;
 /**
  * Basic warm-up closure which warm-ups cache operations.
  */
-public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> {
+public class GridBasicWarmupClosure implements GridInClosure<IgniteConfiguration> {
     /** */
     private static final long serialVersionUID = 9175346848249957458L;
 
@@ -169,9 +169,9 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(GridConfiguration gridCfg) {
+    @Override public void apply(IgniteConfiguration gridCfg) {
         // Remove cache duplicates, clean up the rest, etc.
-        GridConfiguration cfg = prepareConfiguration(gridCfg);
+        IgniteConfiguration cfg = prepareConfiguration(gridCfg);
 
         // Do nothing if no caches found.
         if (cfg == null)
@@ -190,7 +190,7 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
             GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
             for (int i = 0; i < gridCnt; i++) {
-                GridConfiguration cfg0 = new GridConfiguration(cfg);
+                IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
                 GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
@@ -324,11 +324,11 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
      * @param gridCfg Original grid configuration.
      * @return Prepared configuration or {@code null} if no caches found.
      */
-    private GridConfiguration prepareConfiguration(GridConfiguration gridCfg) {
+    private IgniteConfiguration prepareConfiguration(IgniteConfiguration gridCfg) {
         if (F.isEmpty(gridCfg.getCacheConfiguration()))
             return null;
 
-        GridConfiguration cp = new GridConfiguration();
+        IgniteConfiguration cp = new IgniteConfiguration();
 
         cp.setClientConnectionConfiguration(null);
 

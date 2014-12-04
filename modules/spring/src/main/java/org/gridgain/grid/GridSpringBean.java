@@ -86,13 +86,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     private Ignite g;
 
     /** */
-    private GridConfiguration cfg;
+    private IgniteConfiguration cfg;
 
     /** */
     private ApplicationContext appCtx;
 
     /** {@inheritDoc} */
-    @Override public GridConfiguration configuration() {
+    @Override public IgniteConfiguration configuration() {
         return cfg;
     }
 
@@ -101,7 +101,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
      *
      * @param cfg Grid configuration.
      */
-    public void setConfiguration(GridConfiguration cfg) {
+    public void setConfiguration(IgniteConfiguration cfg) {
         this.cfg = cfg;
     }
 
@@ -122,7 +122,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     /** {@inheritDoc} */
     @Override public void afterPropertiesSet() throws Exception {
         if (cfg == null)
-            cfg = new GridConfiguration();
+            cfg = new IgniteConfiguration();
 
         g = GridGainSpring.start(cfg, appCtx);
     }

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.collision.noop;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -21,7 +20,7 @@ import org.jetbrains.annotations.*;
  * jobs are activated immediately on arrival to mapped node. This approach suits well
  * for large amount of small jobs (which is a wide-spread use case). User still can
  * control the number of concurrent jobs by setting maximum thread pool size defined
- * by {@link GridConfiguration#getExecutorService()} configuration property.
+ * by {@link org.gridgain.grid.IgniteConfiguration#getExecutorService()} configuration property.
  */
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)

@@ -57,7 +57,7 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRest() throws Exception {
-        GridConfiguration cfg = getConfiguration((String)null);
+        IgniteConfiguration cfg = getConfiguration((String)null);
 
         cfg = cacheTestConfiguration(cfg);
 
@@ -90,7 +90,7 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
      * @return Final configuration.
      */
     @SuppressWarnings({"unchecked"})
-    private GridConfiguration cacheTestConfiguration(GridConfiguration cfg) {
+    private IgniteConfiguration cacheTestConfiguration(IgniteConfiguration cfg) {
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();

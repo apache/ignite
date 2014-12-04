@@ -41,7 +41,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStop() throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setRestEnabled(false);
 
@@ -63,7 +63,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void _testStopWhileInUse() throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setRestEnabled(false);
 
@@ -77,7 +77,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         final Ignite g0 = G.start(cfg);
 
-        cfg = new GridConfiguration();
+        cfg = new IgniteConfiguration();
 
         cfg.setGridName(getTestGridName(1));
 
@@ -125,7 +125,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStoppedState() throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setRestEnabled(false);
 

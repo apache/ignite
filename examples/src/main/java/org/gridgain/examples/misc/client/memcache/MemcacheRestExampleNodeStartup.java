@@ -46,8 +46,8 @@ public class MemcacheRestExampleNodeStartup {
      * @return Grid configuration.
      * @throws GridException If configuration creation failed.
      */
-    public static GridConfiguration configuration() throws GridException {
-        GridConfiguration cfg = new GridConfiguration();
+    public static IgniteConfiguration configuration() throws GridException {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setDeploymentMode(SHARED);

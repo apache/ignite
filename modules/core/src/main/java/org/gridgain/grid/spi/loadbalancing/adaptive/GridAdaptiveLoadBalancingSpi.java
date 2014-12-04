@@ -59,8 +59,8 @@ import static org.gridgain.grid.events.GridEventType.*;
  * of {@code 1} will be used.
  * <p>
  * When working with node metrics, take into account that all averages are
- * calculated over metrics history size defined by {@link GridConfiguration#getMetricsExpireTime()}
- * and {@link GridConfiguration#getMetricsHistorySize()} grid configuration parameters.
+ * calculated over metrics history size defined by {@link org.gridgain.grid.IgniteConfiguration#getMetricsExpireTime()}
+ * and {@link org.gridgain.grid.IgniteConfiguration#getMetricsHistorySize()} grid configuration parameters.
  * Generally the larger these configuration parameter values are, the more precise the metrics are.
  * You should tune these values based on the level of accuracy needed vs. the additional memory
  * that would be required for storing metrics.

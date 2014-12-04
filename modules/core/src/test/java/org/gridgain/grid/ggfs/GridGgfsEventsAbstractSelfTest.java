@@ -90,7 +90,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return getConfiguration(gridName, getGgfsConfiguration());
     }
 
@@ -102,8 +102,8 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    protected GridConfiguration getConfiguration(String gridName, GridGgfsConfiguration ggfsCfg) throws Exception {
-        GridConfiguration cfg = GridGainEx.loadConfiguration("config/hadoop/default-config.xml").get1();
+    protected IgniteConfiguration getConfiguration(String gridName, GridGgfsConfiguration ggfsCfg) throws Exception {
+        IgniteConfiguration cfg = GridGainEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
 

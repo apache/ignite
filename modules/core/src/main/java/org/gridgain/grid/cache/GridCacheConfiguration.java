@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
@@ -28,12 +27,12 @@ import java.util.*;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
- * grid via {@link GridConfiguration#getCacheConfiguration()} method. It defines all configuration
+ * grid via {@link org.gridgain.grid.IgniteConfiguration#getCacheConfiguration()} method. It defines all configuration
  * parameters required to start a cache within grid instance. You can have multiple caches
  * configured with different names within one grid.
  * <p>
  * Cache configuration is set on {@link
- * GridConfiguration#setCacheConfiguration(GridCacheConfiguration...)} method. This adapter is a simple bean and
+ * org.gridgain.grid.IgniteConfiguration#setCacheConfiguration(GridCacheConfiguration...)} method. This adapter is a simple bean and
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */

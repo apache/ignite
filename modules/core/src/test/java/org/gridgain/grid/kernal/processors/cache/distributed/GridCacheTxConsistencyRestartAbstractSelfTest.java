@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -42,8 +41,8 @@ public abstract class GridCacheTxConsistencyRestartAbstractSelfTest extends Grid
     private static final int RANGE = 100_000;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

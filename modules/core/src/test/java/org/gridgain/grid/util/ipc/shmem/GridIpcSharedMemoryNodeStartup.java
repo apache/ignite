@@ -33,7 +33,7 @@ public class GridIpcSharedMemoryNodeStartup {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception{
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 

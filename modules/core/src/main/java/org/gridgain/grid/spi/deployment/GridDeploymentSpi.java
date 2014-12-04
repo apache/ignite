@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.deployment;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.local.*;
@@ -28,7 +27,7 @@ import org.jetbrains.annotations.*;
  * {@link GridDeploymentListener#onUnregistered(ClassLoader)}} must be called by SPI.
  * <p>
  * If peer class loading is enabled (which is default behavior, see
- * {@link GridConfiguration#isPeerClassLoadingEnabled()}), then it is usually
+ * {@link org.gridgain.grid.IgniteConfiguration#isPeerClassLoadingEnabled()}), then it is usually
  * enough to deploy class loader only on one grid node. Once a task starts executing
  * on the grid, all other nodes will automatically load all task classes from
  * the node that initiated the execution. Hot redeployment is also supported

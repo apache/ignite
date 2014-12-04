@@ -56,7 +56,7 @@ public class GridGainSpring {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(GridConfiguration cfg, @Nullable ApplicationContext springCtx) throws GridException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable ApplicationContext springCtx) throws GridException {
         return GridGainEx.start(cfg, new GridSpringResourceContextImpl(springCtx));
     }
 

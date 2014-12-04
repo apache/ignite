@@ -60,7 +60,7 @@ public class GridFactoryVmShutdownTest {
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override public void run() {
-                GridConfiguration cfg = new GridConfiguration();
+                IgniteConfiguration cfg = new IgniteConfiguration();
 
                 cfg.setGridName("test1");
 

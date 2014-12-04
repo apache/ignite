@@ -51,7 +51,7 @@ public class VisorExecutorServiceConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node executors configuration properties.
      */
-    public static VisorExecutorServiceConfiguration from(GridConfiguration c) {
+    public static VisorExecutorServiceConfiguration from(IgniteConfiguration c) {
         VisorExecutorServiceConfiguration cfg = new VisorExecutorServiceConfiguration();
 
         cfg.executeService(compactClass(c.getExecutorService()));

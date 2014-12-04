@@ -79,7 +79,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect caches. */
     private void caches(VisorNodeDataCollectorJobResult res, VisorNodeDataCollectorTaskArg arg) {
         try {
-            GridConfiguration cfg = g.configuration();
+            IgniteConfiguration cfg = g.configuration();
 
             for (GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();

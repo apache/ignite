@@ -59,7 +59,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
         if (type == null)
             throw new IllegalArgumentException("Node type to start should be specified.");
 
-        GridConfiguration cfg = getConfig(type);
+        IgniteConfiguration cfg = getConfig(type);
 
         // Generate unique for this VM grid name.
         String gridName = cfg.getGridName() + " (" + UUID.randomUUID() + ")";
@@ -90,7 +90,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
      * @param type Node type to load configuration for.
      * @return Grid configuration for specified node type.
      */
-    static GridConfiguration getConfig(String type) {
+    static IgniteConfiguration getConfig(String type) {
         String path = NODE_CFG.get(type);
 
         if (path == null)
@@ -100,7 +100,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
 
         BeanFactory ctx = new FileSystemXmlApplicationContext(url.toString());
 
-        return (GridConfiguration)ctx.getBean("grid.cfg");
+        return (IgniteConfiguration)ctx.getBean("grid.cfg");
     }
 
     /**

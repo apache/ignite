@@ -39,8 +39,8 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration c = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration c = super.getConfiguration();
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

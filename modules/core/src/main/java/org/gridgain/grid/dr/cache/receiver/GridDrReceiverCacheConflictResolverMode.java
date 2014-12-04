@@ -11,13 +11,11 @@ package org.gridgain.grid.dr.cache.receiver;
 
 import org.jetbrains.annotations.*;
 
-import org.gridgain.grid.*;
-
 /**
  * Data center replication receiver cache conflict resolver mode.
  * <p>
  * Each cache entry has data center ID. In case cache update is performed and either old or new cache entry has data
- * center ID which differs from local data center ID defined by {@link GridConfiguration#getDataCenterId()}, then
+ * center ID which differs from local data center ID defined by {@link org.gridgain.grid.IgniteConfiguration#getDataCenterId()}, then
  * we consider such situation as conflict.
  * <p>
  * If both entries participating in conflict have the same data cneter ID (i.e. they both were replicated from the same

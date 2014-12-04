@@ -251,7 +251,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cc Configuration to validate.
      * @throws GridException If failed.
      */
-    private void validate(GridConfiguration c, GridCacheConfiguration cc) throws GridException {
+    private void validate(IgniteConfiguration c, GridCacheConfiguration cc) throws GridException {
         if (cc.getCacheMode() == REPLICATED) {
             if (cc.getAffinity() instanceof GridCachePartitionFairAffinity)
                 throw new GridException("REPLICATED cache can not be started with GridCachePartitionFairAffinity" +
@@ -297,7 +297,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + cc.getName() + ']');
         }
 
-        GridConfiguration cfg = ctx.config();
+        IgniteConfiguration cfg = ctx.config();
 
         GridDeploymentMode depMode = cfg.getDeploymentMode();
 

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -23,8 +22,8 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCachePartitionedAtomicReferenceApiSelfTest extends GridCacheAtomicReferenceApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         // Default cache configuration.
         GridCacheConfiguration cacheCfg = getCacheConfiguration();

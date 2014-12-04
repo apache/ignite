@@ -6,5 +6,5 @@
 
     <import resource="jobs-load-base.xml"/>
 
-    <bean class="org.gridgain.grid.GridConfiguration" parent="grid.cfg"/>
+    <bean class="org.gridgain.grid.IgniteConfiguration" parent="grid.cfg"/>
 </beans>

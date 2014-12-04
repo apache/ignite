@@ -40,8 +40,8 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);

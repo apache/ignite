@@ -35,7 +35,7 @@ public final class GridSystemProperties {
     /**
      * Presence of this system property with value {@code true} will make the grid
      * node start as a daemon node. Node that this system property will override
-     * {@link GridConfiguration#isDaemon()} configuration.
+     * {@link IgniteConfiguration#isDaemon()} configuration.
      */
     public static final String GG_DAEMON = "GRIDGAIN_DAEMON";
 
@@ -142,7 +142,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#getSmtpHost()
+     * @see IgniteConfiguration#getSmtpHost()
      */
     public static final String GG_SMTP_HOST = "GRIDGAIN_SMTP_HOST";
 
@@ -155,8 +155,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#getSmtpPort()
-     * @see GridConfiguration#DFLT_SMTP_PORT
+     * @see IgniteConfiguration#getSmtpPort()
+     * @see IgniteConfiguration#DFLT_SMTP_PORT
      */
     public static final String GG_SMTP_PORT = "GRIDGAIN_SMTP_PORT";
 
@@ -169,7 +169,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#getSmtpUsername()
+     * @see IgniteConfiguration#getSmtpUsername()
      */
     public static final String GG_SMTP_USERNAME = "GRIDGAIN_SMTP_USERNAME";
 
@@ -182,7 +182,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#getSmtpPassword()
+     * @see IgniteConfiguration#getSmtpPassword()
      */
     public static final String GG_SMTP_PWD = "GRIDGAIN_SMTP_PASSWORD";
 
@@ -195,8 +195,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#getSmtpFromEmail()
-     * @see GridConfiguration#DFLT_SMTP_FROM_EMAIL
+     * @see IgniteConfiguration#getSmtpFromEmail()
+     * @see IgniteConfiguration#DFLT_SMTP_FROM_EMAIL
      */
     public static final String GG_SMTP_FROM = "GRIDGAIN_SMTP_FROM";
 
@@ -210,7 +210,7 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#getAdminEmails()
+     * @see IgniteConfiguration#getAdminEmails()
      */
     public static final String GG_ADMIN_EMAILS = "GRIDGAIN_ADMIN_EMAILS";
 
@@ -224,8 +224,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#isSmtpSsl()
-     * @see GridConfiguration#DFLT_SMTP_SSL
+     * @see IgniteConfiguration#isSmtpSsl()
+     * @see IgniteConfiguration#DFLT_SMTP_SSL
      */
     public static final String GG_SMTP_SSL = "GRIDGAIN_SMTP_SSL";
 
@@ -234,7 +234,7 @@ public final class GridSystemProperties {
      * whether or not to enable email notifications for node lifecycle. If provided -
      * it will override the property in grid configuration.
      *
-     * @see GridConfiguration#isLifeCycleEmailNotification()
+     * @see IgniteConfiguration#isLifeCycleEmailNotification()
      */
     public static final String GG_LIFECYCLE_EMAIL_NOTIFY = "GRIDGAIN_LIFECYCLE_EMAIL_NOTIFY";
 
@@ -248,8 +248,8 @@ public final class GridSystemProperties {
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
      *
-     * @see GridConfiguration#isSmtpStartTls()
-     * @see GridConfiguration#DFLT_SMTP_STARTTLS
+     * @see IgniteConfiguration#isSmtpStartTls()
+     * @see IgniteConfiguration#DFLT_SMTP_STARTTLS
      */
     public static final String GG_SMTP_STARTTLS = "GRIDGAIN_SMTP_STARTTLS";
 
@@ -257,9 +257,9 @@ public final class GridSystemProperties {
      * Name of system property to set system-wide local IP address or host. If provided it will
      * override all default local bind settings within GridGain or any of its SPIs.
      * <p>
-     * Note that system-wide local bind address can also be set via {@link GridConfiguration#getLocalHost()}
+     * Note that system-wide local bind address can also be set via {@link IgniteConfiguration#getLocalHost()}
      * method. However, system properties have priority over configuration properties specified in
-     * {@link GridConfiguration}.
+     * {@link IgniteConfiguration}.
      */
     public static final String GG_LOCAL_HOST = "GRIDGAIN_LOCAL_HOST";
 
@@ -288,7 +288,7 @@ public final class GridSystemProperties {
      * Valid values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS.
      *
      * @see GridDeploymentMode
-     * @see GridConfiguration#getDeploymentMode()
+     * @see IgniteConfiguration#getDeploymentMode()
      */
     public static final String GG_DEP_MODE_OVERRIDE = "GRIDGAIN_DEPLOYMENT_MODE_OVERRIDE";
 
@@ -445,7 +445,7 @@ public final class GridSystemProperties {
     public static final String GG_LOG_DIR = "GRIDGAIN_LOG_DIR";
 
     /**
-     * Environment variable to set work directory. The property {@link GridConfiguration#setWorkDirectory} has higher
+     * Environment variable to set work directory. The property {@link IgniteConfiguration#setWorkDirectory} has higher
      * priority.
      */
     public static final String GG_WORK_DIR = "GRIDGAIN_WORK_DIR";

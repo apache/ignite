@@ -99,7 +99,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
      * @param cfg Configuration.
      * @throws Exception If check failed.
      */
-    protected void checkCheckpoints(GridConfiguration cfg) throws Exception {
+    protected void checkCheckpoints(IgniteConfiguration cfg) throws Exception {
         Ignite ignite = G.start(cfg);
 
         try {

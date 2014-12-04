@@ -52,8 +52,8 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

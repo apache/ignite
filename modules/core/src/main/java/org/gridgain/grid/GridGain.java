@@ -31,7 +31,7 @@ import java.util.*;
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
- * {@link GridConfiguration} to override some default configuration. Below is an
+ * {@link IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with custom configuration for <strong>URI deployment</strong>.
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
@@ -107,7 +107,7 @@ public class GridGain {
      * <p>
      * If daemon flag is set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link GridConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @param daemon Daemon flag to set.
@@ -121,7 +121,7 @@ public class GridGain {
      * <p>
      * If daemon flag it set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link GridConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @return Daemon flag.
@@ -277,7 +277,7 @@ public class GridGain {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(GridConfiguration cfg) throws GridException {
+    public static Ignite start(IgniteConfiguration cfg) throws GridException {
         return GridGainEx.start(cfg);
     }
 

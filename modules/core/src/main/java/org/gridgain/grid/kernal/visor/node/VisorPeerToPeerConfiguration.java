@@ -37,7 +37,7 @@ public class VisorPeerToPeerConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node P2P configuration properties.
      */
-    public static VisorPeerToPeerConfiguration from(GridConfiguration c) {
+    public static VisorPeerToPeerConfiguration from(IgniteConfiguration c) {
         VisorPeerToPeerConfiguration cfg = new VisorPeerToPeerConfiguration();
 
         cfg.p2pEnabled(c.isPeerClassLoadingEnabled());

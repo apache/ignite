@@ -19,8 +19,8 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 public class GridHomePathSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(getTestResources().getLocalHost());
 
@@ -35,7 +35,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
             startGrid(0);
 
             // Test home override.
-            GridConfiguration c = getConfiguration(getTestGridName(1));
+            IgniteConfiguration c = getConfiguration(getTestGridName(1));
 
             c.setGridGainHome("/new/path");
 
@@ -52,7 +52,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
             }
 
             // Test no override.
-            GridConfiguration c1 = getConfiguration(getTestGridName(1));
+            IgniteConfiguration c1 = getConfiguration(getTestGridName(1));
 
             c1.setGridGainHome(System.getProperty(GG_HOME));
 

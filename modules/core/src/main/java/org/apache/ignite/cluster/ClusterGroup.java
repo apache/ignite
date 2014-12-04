@@ -125,7 +125,7 @@ public interface ClusterGroup {
      * specified in user attributes.
      * <p>
      * User attributes for every node are optional and can be specified in
-     * grid node configuration. See {@link org.gridgain.grid.GridConfiguration#getUserAttributes()}
+     * grid node configuration. See {@link org.gridgain.grid.IgniteConfiguration#getUserAttributes()}
      * for more information.
      *
      * @param name Name of the attribute.

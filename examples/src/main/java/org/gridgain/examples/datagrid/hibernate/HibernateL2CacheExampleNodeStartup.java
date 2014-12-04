@@ -40,8 +40,8 @@ public class HibernateL2CacheExampleNodeStartup {
      * @return Grid configuration.
      * @throws GridException If configuration creation failed.
      */
-    public static GridConfiguration configuration() throws GridException {
-        GridConfiguration cfg = new GridConfiguration();
+    public static IgniteConfiguration configuration() throws GridException {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("hibernate-grid");
         cfg.setLocalHost("127.0.0.1");

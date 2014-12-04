@@ -439,7 +439,7 @@ public abstract class GridAbstractTest extends TestCase {
             info(">>> Starting test class: " + getClass().getSimpleName() + " <<<");
 
             if (startGrid) {
-                GridConfiguration cfg = optimize(getConfiguration());
+                IgniteConfiguration cfg = optimize(getConfiguration());
 
                 G.start(cfg);
             }
@@ -647,7 +647,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cfg Configuration.
      * @return Optimized configuration (by modifying passed in one).
      */
-    protected GridConfiguration optimize(GridConfiguration cfg) {
+    protected IgniteConfiguration optimize(IgniteConfiguration cfg) {
         // TODO: GG-4048: propose another way to avoid network overhead in tests.
         if (cfg.getLocalHost() == null) {
             if (cfg.getDiscoverySpi() instanceof GridTcpDiscoverySpi)
@@ -826,7 +826,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, GridConfiguration cfg) throws Exception {
+    protected Ignite startGrid(String gridName, IgniteConfiguration cfg) throws Exception {
         cfg.setGridName(gridName);
 
         return G.start(cfg);
@@ -840,7 +840,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws GridException If load failed.
      */
     @SuppressWarnings("deprecation")
-    protected GridConfiguration loadConfiguration(String springCfgPath) throws GridException {
+    protected IgniteConfiguration loadConfiguration(String springCfgPath) throws GridException {
         URL cfgLocation = U.resolveGridGainUrl(springCfgPath);
 
         assert cfgLocation != null;
@@ -858,10 +858,10 @@ public abstract class GridAbstractTest extends TestCase {
 
         try {
             // Note: Spring is not generics-friendly.
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
+            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
@@ -873,7 +873,7 @@ public abstract class GridAbstractTest extends TestCase {
         else if (cfgMap.size() > 1)
             throw new GridException("More than one configuration provided for cache load test: " + cfgMap.values());
 
-        GridConfiguration cfg = (GridConfiguration)cfgMap.values().iterator().next();
+        IgniteConfiguration cfg = (IgniteConfiguration)cfgMap.values().iterator().next();
 
         cfg.setNodeId(UUID.randomUUID());
 
@@ -925,7 +925,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid test configuration.
      * @throws Exception If failed.
      */
-    protected GridConfiguration getConfiguration() throws Exception {
+    protected IgniteConfiguration getConfiguration() throws Exception {
         // Generate unique grid name.
         return getConfiguration(getTestGridName());
     }
@@ -938,8 +938,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = getConfiguration(gridName, getTestResources());
+    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(gridName, getTestResources());
 
         cfg.setNodeId(null);
 
@@ -953,7 +953,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param rsrcs Resources.
      * @throws Exception If failed.
      */
-    protected GridConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
         return getConfiguration(getTestGridName(), rsrcs);
     }
 
@@ -1027,8 +1027,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    protected GridConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+    protected IgniteConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
         cfg.setGridLogger(rsrcs.getLogger());

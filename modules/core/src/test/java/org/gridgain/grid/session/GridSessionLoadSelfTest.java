@@ -38,8 +38,8 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     private boolean locMarsh;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.setMarshalLocalJobs(locMarsh);
         c.setPeerClassLoadingEnabled(false);

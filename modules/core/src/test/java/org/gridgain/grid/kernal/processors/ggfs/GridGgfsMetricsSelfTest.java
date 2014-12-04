@@ -90,7 +90,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
-    private GridConfiguration primaryConfiguration(int idx) throws Exception {
+    private IgniteConfiguration primaryConfiguration(int idx) throws Exception {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -126,7 +126,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("grid-" + idx);
 
@@ -178,7 +178,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("grid-secondary");
 

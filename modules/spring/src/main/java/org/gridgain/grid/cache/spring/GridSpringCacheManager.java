@@ -66,7 +66,7 @@ import java.util.*;
  *     &lt;cache:annotation-driven/&gt;
  * &lt;/beans&gt;
  * </pre>
- * Or you can provide a {@link GridConfiguration} bean, like below:
+ * Or you can provide a {@link org.gridgain.grid.IgniteConfiguration} bean, like below:
  * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -114,7 +114,7 @@ import java.util.*;
  * for node startup.
  * <p>
  * If neither {@link #setConfigurationPath(String) configurationPath},
- * {@link #setConfiguration(GridConfiguration) configuration}, nor
+ * {@link #setConfiguration(org.gridgain.grid.IgniteConfiguration) configuration}, nor
  * {@link #setGridName(String) gridName} are provided, cache manager
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.
@@ -130,7 +130,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     private String cfgPath;
 
     /** Grid configuration. */
-    private GridConfiguration cfg;
+    private IgniteConfiguration cfg;
 
     /** Grid name. */
     private String gridName;
@@ -161,7 +161,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
      *
      * @return Grid configuration bean.
      */
-    public GridConfiguration getConfiguration() {
+    public IgniteConfiguration getConfiguration() {
         return cfg;
     }
 
@@ -170,7 +170,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
      *
      * @param cfg Grid configuration bean.
      */
-    public void setConfiguration(GridConfiguration cfg) {
+    public void setConfiguration(IgniteConfiguration cfg) {
         this.cfg = cfg;
     }
 

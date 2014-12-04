@@ -133,7 +133,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
         assert !addrs.isEmpty();
 
         if (isSmtpEnabled) {
-            GridConfiguration cfg = ctx.config();
+            IgniteConfiguration cfg = ctx.config();
 
             sendEmail(
                 // Static SMTP configuration data.

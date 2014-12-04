@@ -17,7 +17,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of local host address or host name for
- * connection binding. Local host is provided via {@link GridConfiguration#getLocalHost()} or
+ * connection binding. Local host is provided via {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()} or
  * via {@link GridSystemProperties#GG_LOCAL_HOST} system or environment property.
  * <p>
  * Local node ID can be injected into instances of following classes:
@@ -52,7 +52,7 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See {@link GridConfiguration#getLocalHost()} for Grid configuration details.
+ * See {@link org.gridgain.grid.IgniteConfiguration#getLocalHost()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

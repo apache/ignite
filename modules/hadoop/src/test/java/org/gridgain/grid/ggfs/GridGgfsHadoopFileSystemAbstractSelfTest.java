@@ -188,7 +188,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
             metaCacheCfg.setQueryIndexEnabled(false);
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.setGridName("grid_secondary");
 
@@ -255,8 +255,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

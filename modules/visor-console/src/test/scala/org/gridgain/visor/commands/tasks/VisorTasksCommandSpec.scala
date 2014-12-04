@@ -15,7 +15,7 @@ import java.util
 
 import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeJobResult, GridComputeTaskSplitAdapter}
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.{GridConfiguration, GridGain => G}
+import org.gridgain.grid.{IgniteConfiguration, GridGain => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.tasks.VisorTasksCommand._
 import org.scalatest._
@@ -76,8 +76,8 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
      * @param name Grid name.
      * @return Grid configuration.
      */
-    private def config(name: String): GridConfiguration = {
-        val cfg = new GridConfiguration
+    private def config(name: String): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
         cfg.setLifeCycleEmailNotification(false)

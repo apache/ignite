@@ -57,7 +57,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
         };
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
 
         aff.setBackupFilter(backupFilter);
@@ -76,7 +76,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
         spi.setIpFinder(IP_FINDER);
 
-        GridConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(spi);

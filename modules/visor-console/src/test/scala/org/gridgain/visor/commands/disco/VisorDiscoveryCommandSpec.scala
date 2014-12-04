@@ -35,8 +35,8 @@ class VisorDiscoveryCommandSpec extends VisorRuntimeBaseSpec(4) {
      * @param name Grid name.
      * @return Grid configuration.
      */
-    override def config(name: String): GridConfiguration = {
-        val cfg = new GridConfiguration
+    override def config(name: String): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
         cfg.setLifeCycleEmailNotification(false)

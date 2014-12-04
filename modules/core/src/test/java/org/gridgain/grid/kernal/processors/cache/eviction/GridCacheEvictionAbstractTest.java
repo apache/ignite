@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -68,8 +67,8 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
     protected GridCacheEvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridCacheConfiguration cc = defaultCacheConfiguration();
 

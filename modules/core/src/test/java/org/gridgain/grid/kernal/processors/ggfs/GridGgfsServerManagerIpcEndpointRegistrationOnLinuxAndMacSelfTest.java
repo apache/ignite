@@ -24,7 +24,7 @@ public class GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
      * @throws Exception If failed.
      */
     public void testLoopbackAndShmemEndpointsRegistration() throws Exception {
-        GridConfiguration cfg = gridConfiguration();
+        IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setGgfsConfiguration(
             gridGgfsConfiguration(null), // Check null IPC endpoint config won't bring any hassles.

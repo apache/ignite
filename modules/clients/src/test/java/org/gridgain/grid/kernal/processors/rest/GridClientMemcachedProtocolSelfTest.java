@@ -44,7 +44,7 @@ public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcess
      * @throws Exception If start failed.
      */
     private MemcachedClientIF startClient() throws Exception {
-        int port = customPort != null ? customPort : GridConfiguration.DFLT_TCP_PORT;
+        int port = customPort != null ? customPort : IgniteConfiguration.DFLT_TCP_PORT;
 
         return new MemcachedClient(new BinaryConnectionFactory(),
             F.asList(new InetSocketAddress(LOC_HOST, port)));
@@ -67,8 +67,8 @@ public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcess
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         assert cfg.getClientConnectionConfiguration() != null;
 

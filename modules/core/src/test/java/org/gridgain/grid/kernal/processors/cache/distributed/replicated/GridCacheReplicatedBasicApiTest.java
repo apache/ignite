@@ -20,8 +20,8 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridCacheReplicatedBasicApiTest extends GridCacheBasicApiAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 

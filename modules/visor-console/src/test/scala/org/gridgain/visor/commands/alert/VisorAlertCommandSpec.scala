@@ -16,7 +16,7 @@ import java.util.regex.Pattern
 import org.gridgain.grid.spi.discovery.GridDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{GridConfiguration, GridGain => G}
+import org.gridgain.grid.{IgniteConfiguration, GridGain => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.alert.VisorAlertCommand._
 
@@ -36,8 +36,8 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
      * @param name Grid name.
      * @return Grid configuration.
      */
-    override def config(name: String): GridConfiguration = {
-        val cfg = new GridConfiguration
+    override def config(name: String): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
         cfg.setLifeCycleEmailNotification(false)

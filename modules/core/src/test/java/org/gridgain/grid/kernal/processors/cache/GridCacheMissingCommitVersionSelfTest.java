@@ -40,12 +40,12 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
         maxCompletedTxCount = System.getProperty(GG_MAX_COMPLETED_TX_COUNT);
 
         System.setProperty(GG_MAX_COMPLETED_TX_COUNT, String.valueOf(5));
 
-        GridConfiguration cfg = super.getConfiguration();
+        IgniteConfiguration cfg = super.getConfiguration();
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

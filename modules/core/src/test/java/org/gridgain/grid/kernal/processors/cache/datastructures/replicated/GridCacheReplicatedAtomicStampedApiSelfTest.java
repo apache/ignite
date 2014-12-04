@@ -21,8 +21,8 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCacheReplicatedAtomicStampedApiSelfTest extends GridCacheAtomicStampedApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         // Default cache configuration.
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();

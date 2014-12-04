@@ -88,7 +88,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
      * @param idx Node index.
      * @return Grid configuration
      */
-    private GridConfiguration config(int idx) {
+    private IgniteConfiguration config(int idx) {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -117,7 +117,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         dataCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setQueryIndexEnabled(false);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

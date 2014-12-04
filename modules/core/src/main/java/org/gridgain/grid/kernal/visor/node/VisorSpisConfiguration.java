@@ -132,7 +132,7 @@ public class VisorSpisConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node SPIs configuration properties.
      */
-    public static VisorSpisConfiguration from(GridConfiguration c) {
+    public static VisorSpisConfiguration from(IgniteConfiguration c) {
         VisorSpisConfiguration cfg = new VisorSpisConfiguration();
 
         cfg.discoverySpi(collectSpiInfo(c.getDiscoverySpi()));

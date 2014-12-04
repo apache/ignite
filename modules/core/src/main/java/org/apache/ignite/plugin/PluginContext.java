@@ -31,7 +31,7 @@ public interface PluginContext {
     /**
      * @return Ignite configuration.
      */
-    public GridConfiguration igniteConfiguration();
+    public IgniteConfiguration igniteConfiguration();
 
     /**
      * @return Grid.

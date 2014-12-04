@@ -265,7 +265,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private GridProduct product;
 
     /** */
-    private GridConfiguration cfg;
+    private IgniteConfiguration cfg;
 
     /** */
     private GridKernalGateway gw;
@@ -311,7 +311,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(GridLoggerProxy log,
         GridEx grid,
-        GridConfiguration cfg,
+        IgniteConfiguration cfg,
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
         boolean ent) {
@@ -489,7 +489,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridConfiguration config() {
+    @Override public IgniteConfiguration config() {
         return cfg;
     }
 

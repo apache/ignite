@@ -150,7 +150,7 @@ public final class GridVmNodesStarter {
         System.out.println("  Config Path: " + cfgPath);
         System.out.println();
 
-        final GridConfiguration[] cfgs = new GridConfiguration[nodesCnt];
+        final IgniteConfiguration[] cfgs = new IgniteConfiguration[nodesCnt];
 
         for (int i = 0; i < nodesCnt; i++)
             cfgs[i] = getConfigurations(cfgPath).iterator().next();
@@ -175,7 +175,7 @@ public final class GridVmNodesStarter {
      * @throws GridException If an error occurs.
      */
     @SuppressWarnings("unchecked")
-    private static Iterable<GridConfiguration> getConfigurations(String springCfgPath)
+    private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath)
         throws GridException {
         File path = GridTestUtils.resolveGridGainPath(springCfgPath);
 
@@ -204,10 +204,10 @@ public final class GridVmNodesStarter {
 
         try {
             // Note: Spring is not generics-friendly.
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
+            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
@@ -220,9 +220,9 @@ public final class GridVmNodesStarter {
         if (cfgMap.isEmpty())
             throw new GridException("Can't find grid factory configuration in: " + path);
 
-        Collection<GridConfiguration> res = new ArrayList<>();
+        Collection<IgniteConfiguration> res = new ArrayList<>();
 
-        for (GridConfiguration cfg : (Collection<GridConfiguration>)cfgMap.values()) {
+        for (IgniteConfiguration cfg : (Collection<IgniteConfiguration>)cfgMap.values()) {
             res.add(cfg);
 
             cfg.setGridName(GRID_NAME_PREF + gridCnt.incrementAndGet());

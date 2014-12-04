@@ -240,7 +240,7 @@ public class GridSwapEvictAllBenchmark {
      * @throws GridException If failed.
      */
     private static Ignite start(GridCacheStore<Long, String> store) throws GridException {
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
 

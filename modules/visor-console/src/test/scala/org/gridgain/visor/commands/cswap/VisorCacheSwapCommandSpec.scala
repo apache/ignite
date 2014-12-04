@@ -14,7 +14,7 @@ package org.gridgain.visor.commands.cswap
 import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.gridgain.grid.{GridConfiguration, GridGain => G}
+import org.gridgain.grid.{IgniteConfiguration, GridGain => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.jetbrains.annotations.Nullable
@@ -31,8 +31,8 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Grid name.
      * @return Grid configuration.
      */
-    override def config(name: String): GridConfiguration = {
-        val cfg = new GridConfiguration
+    override def config(name: String): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
         cfg.setLocalHost("127.0.0.1")

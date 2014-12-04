@@ -38,7 +38,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Grid #1 config. */
-    private GridConfiguration g1Cfg;
+    private IgniteConfiguration g1Cfg;
 
     /** Data cache 1 name. */
     private static final String dataCache1Name = "dataCache1";
@@ -64,8 +64,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
@@ -265,7 +265,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfDataBlockSizeDiffers() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
@@ -285,7 +285,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfAffinityMapperGroupSizeDiffers() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(4021), metaCaches(), GridCacheConfiguration.class));
@@ -300,7 +300,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfMetaCacheNameDiffers() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
         GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
@@ -323,7 +323,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfMetaCacheNameEquals() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
         GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
@@ -349,7 +349,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfDataCacheNameDiffers() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
         GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
@@ -372,7 +372,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfDataCacheNameEquals() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
         GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
@@ -398,7 +398,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfDefaultModeDiffers() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
         GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
@@ -423,7 +423,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testRemoteIfPathModeDiffers() throws Exception {
-        GridConfiguration g2Cfg = getConfiguration("g2");
+        IgniteConfiguration g2Cfg = getConfiguration("g2");
 
         GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
         GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
@@ -448,7 +448,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @param excMsgSnippet Root cause (assertion) exception message snippet.
      * @param testLoc {@code True} if checking is done for "testLocal" tests.
      */
-    private void checkGridStartFails(GridConfiguration cfg, CharSequence excMsgSnippet, boolean testLoc) {
+    private void checkGridStartFails(IgniteConfiguration cfg, CharSequence excMsgSnippet, boolean testLoc) {
         assertNotNull(cfg);
         assertNotNull(excMsgSnippet);
 

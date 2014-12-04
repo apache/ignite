@@ -10,7 +10,6 @@
 package org.gridgain.grid.service;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -20,7 +19,7 @@ import java.io.*;
 /**
  * Managed service configuration. In addition to deploying managed services by
  * calling any of the provided {@code deploy(...)} methods, managed services
- * can also be automatically deployed on startup by specifying them in {@link GridConfiguration}
+ * can also be automatically deployed on startup by specifying them in {@link org.gridgain.grid.IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
  * GridConfiguration gridCfg = new GridConfiguration();

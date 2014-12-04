@@ -76,8 +76,8 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridCacheConfiguration[] cacheCfgs = new GridCacheConfiguration[cacheCnt];
 

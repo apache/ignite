@@ -27,7 +27,7 @@
         folder. To start a GGFS data node use 'config/hadoop/default-config.xml' file. To start
         a GGFS client node use 'config/hadoop/default-config-client.xml' file.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+    <bean id="grid.cfg" class="org.gridgain.grid.IgniteConfiguration">
         <!-- Cache configurations. -->
         <property name="cacheConfiguration">
             <list>

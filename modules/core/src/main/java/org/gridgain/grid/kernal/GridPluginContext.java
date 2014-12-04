@@ -30,13 +30,13 @@ public class GridPluginContext implements PluginContext {
     private final GridKernalContext ctx;
 
     /** */
-    private GridConfiguration igniteCfg;
+    private IgniteConfiguration igniteCfg;
 
     /**
      * @param ctx Kernal context.
      * @param cfg Plugin configuration.
      */
-    public GridPluginContext(GridKernalContext ctx, PluginConfiguration cfg, GridConfiguration igniteCfg) {
+    public GridPluginContext(GridKernalContext ctx, PluginConfiguration cfg, IgniteConfiguration igniteCfg) {
         this.cfg = cfg;
         this.ctx = ctx;
         this.igniteCfg = igniteCfg;
@@ -48,7 +48,7 @@ public class GridPluginContext implements PluginContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridConfiguration igniteConfiguration() {
+    @Override public IgniteConfiguration igniteConfiguration() {
         return igniteCfg;
     }
 

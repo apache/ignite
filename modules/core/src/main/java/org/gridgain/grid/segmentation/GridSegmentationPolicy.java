@@ -12,11 +12,10 @@ package org.gridgain.grid.segmentation;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.startup.cmdline.*;
-import org.gridgain.grid.spi.discovery.*;
 
 /**
  * Policy that defines how node will react on topology segmentation. Note that default
- * segmentation policy is defined by {@link GridConfiguration#DFLT_SEG_PLC} property.
+ * segmentation policy is defined by {@link org.gridgain.grid.IgniteConfiguration#DFLT_SEG_PLC} property.
  * @see GridSegmentationResolver
  */
 public enum GridSegmentationPolicy {

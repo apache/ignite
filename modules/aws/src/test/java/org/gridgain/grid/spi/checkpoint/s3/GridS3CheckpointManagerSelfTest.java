@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.checkpoint.s3;
 import com.amazonaws.auth.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testsuites.bamboo.*;
 
 /**
@@ -20,10 +19,10 @@ import org.gridgain.testsuites.bamboo.*;
  */
 public class GridS3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         assertTrue("Unexpected grid name: " + gridName, gridName.contains("s3"));
 
-        GridConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
 

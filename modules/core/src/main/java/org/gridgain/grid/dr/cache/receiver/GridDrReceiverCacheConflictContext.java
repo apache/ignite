@@ -11,7 +11,6 @@ package org.gridgain.grid.dr.cache.receiver;
 
 import org.gridgain.grid.cache.*;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.dr.*;
 import org.jetbrains.annotations.*;
 
@@ -61,7 +60,7 @@ public interface GridDrReceiverCacheConflictContext<K, V> {
     /**
      * Force data center replication engine to use neither old, nor new, but some other value passed
      * as argument. In this case old value will be replaced with merge value and update will be
-     * considered as local (i.e. {@link GridConfiguration#getDataCenterId()} will be used).
+     * considered as local (i.e. {@link org.gridgain.grid.IgniteConfiguration#getDataCenterId()} will be used).
      * <p>
      * Also in case of merge you have to specify new TTL explicitly. For unlimited TTL use {@code 0}.
      *

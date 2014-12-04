@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -21,7 +20,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
  * {@code GGFS} configuration. More than one file system can be configured within grid.
- * {@code GGFS} configuration is provided via {@link GridConfiguration#getGgfsConfiguration()}
+ * {@code GGFS} configuration is provided via {@link org.gridgain.grid.IgniteConfiguration#getGgfsConfiguration()}
  * method.
  * <p>
  * Refer to {@code config/hadoop/default-config.xml} or {@code config/hadoop/default-config-client.xml}

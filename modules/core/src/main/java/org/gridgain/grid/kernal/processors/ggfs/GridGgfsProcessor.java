@@ -230,7 +230,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     @Override public void addAttributes(Map<String, Object> attrs) throws GridException {
         super.addAttributes(attrs);
 
-        GridConfiguration gridCfg = ctx.config();
+        IgniteConfiguration gridCfg = ctx.config();
 
         // Node doesn't have GGFS if it:
         // is daemon;

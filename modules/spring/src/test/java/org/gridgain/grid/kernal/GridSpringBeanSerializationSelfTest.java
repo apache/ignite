@@ -46,8 +46,8 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     /**
      * @return Grid configuration.
      */
-    private GridConfiguration config() {
-        GridConfiguration cfg = new GridConfiguration();
+    private IgniteConfiguration config() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

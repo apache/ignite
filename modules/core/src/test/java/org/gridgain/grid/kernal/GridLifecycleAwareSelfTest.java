@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 
 /**
- * Test for {@link GridLifecycleAware} support in {@link GridConfiguration}.
+ * Test for {@link GridLifecycleAware} support in {@link org.gridgain.grid.IgniteConfiguration}.
  */
 public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**
@@ -138,8 +138,8 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected final GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TestClientMessageInterceptor interceptor = new TestClientMessageInterceptor();
 

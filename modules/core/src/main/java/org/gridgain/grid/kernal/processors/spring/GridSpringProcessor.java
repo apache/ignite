@@ -36,7 +36,7 @@ public interface GridSpringProcessor {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+    public GridBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL cfgUrl, String... excludedProps) throws GridException;
 
     /**

@@ -36,8 +36,8 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
         F.asList("1.0.0-ent", "2.0.0-ent", "3.0.0-ent", "4.0.0-ent");
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         final int idx = cnt.incrementAndGet();
 

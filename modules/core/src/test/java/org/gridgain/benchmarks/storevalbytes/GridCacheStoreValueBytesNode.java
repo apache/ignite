@@ -11,7 +11,6 @@ package org.gridgain.benchmarks.storevalbytes;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -68,7 +67,7 @@ public class GridCacheStoreValueBytesNode {
      * @return Configuration.
      * @throws Exception If failed.
      */
-    static GridConfiguration parseConfiguration(String[] args, boolean nearOnly) throws Exception {
+    static IgniteConfiguration parseConfiguration(String[] args, boolean nearOnly) throws Exception {
         boolean p2pEnabled = false;
 
         boolean storeValBytes = false;
@@ -92,7 +91,7 @@ public class GridCacheStoreValueBytesNode {
         X.println("Peer class loading enabled: " + p2pEnabled);
         X.println("Store value bytes: " + storeValBytes);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
         commSpi.setSharedMemoryPort(-1);

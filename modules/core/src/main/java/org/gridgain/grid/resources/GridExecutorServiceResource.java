@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 
 /**
  * Annotates a field or a setter method for injection of {@link ExecutorService} resource.
- * {@code ExecutorService} is provided to grid via {@link GridConfiguration}.
+ * {@code ExecutorService} is provided to grid via {@link org.gridgain.grid.IgniteConfiguration}.
  * <p>
  * Executor service can be injected into instances of following classes:
  * <ul>
@@ -52,7 +52,7 @@ import java.util.concurrent.*;
  * }
  * </pre>
  * <p>
- * See {@link GridConfiguration#getExecutorService()} for Grid configuration details.
+ * See {@link org.gridgain.grid.IgniteConfiguration#getExecutorService()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

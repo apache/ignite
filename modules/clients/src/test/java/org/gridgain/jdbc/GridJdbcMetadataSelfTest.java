@@ -38,8 +38,8 @@ public class GridJdbcMetadataSelfTest extends GridCommonAbstractTest {
     private static final String URL = "jdbc:gridgain://127.0.0.1/";
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridCacheConfiguration cache = defaultCacheConfiguration();
 

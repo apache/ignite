@@ -40,8 +40,8 @@ public class CacheNodeWithStoreStartup {
      * @return Grid configuration.
      * @throws GridException If failed.
      */
-    public static GridConfiguration configure() throws GridException {
-        GridConfiguration cfg = new GridConfiguration();
+    public static IgniteConfiguration configure() throws GridException {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
 

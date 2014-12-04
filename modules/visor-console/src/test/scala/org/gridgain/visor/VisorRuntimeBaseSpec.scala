@@ -26,8 +26,8 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec
      * @param name Grid name.
      * @return Grid configuration.
      */
-    protected def config(name: String): GridConfiguration = {
-        val cfg = new GridConfiguration
+    protected def config(name: String): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
 

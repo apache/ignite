@@ -20,8 +20,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
  */
 public class GridCachePartitionedAtomicQueueApiSelfTest extends GridCachePartitionedQueueApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         GridCacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
 

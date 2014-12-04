@@ -107,7 +107,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
             multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
+                        IgniteConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
                         startGrid(Thread.currentThread().getName(), cfg);
 
@@ -151,8 +151,8 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
         cfg.setGridName(gridName);
 

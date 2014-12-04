@@ -42,8 +42,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public static final int GRID_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 

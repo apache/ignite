@@ -23,13 +23,13 @@ import java.util.*;
 public class GridTcpRouterConfiguration {
     /** Default servers to which router will try to connect. */
     public static final Collection<String> DFLT_SERVERS =
-        Collections.singleton("127.0.0.1:" + GridConfiguration.DFLT_TCP_PORT);
+        Collections.singleton("127.0.0.1:" + IgniteConfiguration.DFLT_TCP_PORT);
 
     /** Default TCP host for router to bind to. */
     public static final String DFLT_TCP_HOST = "0.0.0.0";
 
     /** Default TCP port. The next port number after Grid's default is used. */
-    public static final int DFLT_TCP_PORT = GridConfiguration.DFLT_TCP_PORT + 1;
+    public static final int DFLT_TCP_PORT = IgniteConfiguration.DFLT_TCP_PORT + 1;
 
     /** Default port range. */
     public static final int DFLT_PORT_RANGE = 0;
@@ -51,7 +51,7 @@ public class GridTcpRouterConfiguration {
     private boolean noDelay = DFLT_TCP_NODELAY;
 
     /** Idle timeout. */
-    private long idleTimeout = GridConfiguration.DFLT_REST_IDLE_TIMEOUT;
+    private long idleTimeout = IgniteConfiguration.DFLT_REST_IDLE_TIMEOUT;
 
     /** Client auth. */
     private boolean sslClientAuth;
@@ -121,7 +121,7 @@ public class GridTcpRouterConfiguration {
      * Gets timeout in milliseconds to consider connection idle. If no messages sent by client
      * within this interval router closes idling connection.
      * <p/>
-     * If not specified, default value is {@link GridConfiguration#DFLT_REST_IDLE_TIMEOUT}.
+     * If not specified, default value is {@link org.gridgain.grid.IgniteConfiguration#DFLT_REST_IDLE_TIMEOUT}.
      *
      * @return Idle timeout.
      */

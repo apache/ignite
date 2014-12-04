@@ -85,7 +85,7 @@ public class VisorGridConfiguration implements Serializable {
     public VisorGridConfiguration fill(GridEx g) {
         assert g != null;
 
-        GridConfiguration c = g.configuration();
+        IgniteConfiguration c = g.configuration();
 
         basic(VisorBasicConfiguration.from(g, c));
         metrics(VisorMetricsConfiguration.from(c));

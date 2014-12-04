@@ -46,8 +46,8 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

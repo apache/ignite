@@ -23,7 +23,7 @@ public class GridClientTcpConnectivitySelfTest extends GridClientAbstractConnect
     /** {@inheritDoc} */
     @Override protected Ignite startRestNode(String name, @Nullable String addr, @Nullable Integer port)
         throws Exception {
-        GridConfiguration cfg = getConfiguration(name);
+        IgniteConfiguration cfg = getConfiguration(name);
 
         assert cfg.getClientConnectionConfiguration() == null;
 
@@ -42,7 +42,7 @@ public class GridClientTcpConnectivitySelfTest extends GridClientAbstractConnect
 
     /** {@inheritDoc} */
     @Override protected int defaultRestPort() {
-        return GridConfiguration.DFLT_TCP_PORT;
+        return IgniteConfiguration.DFLT_TCP_PORT;
     }
 
     /** {@inheritDoc} */

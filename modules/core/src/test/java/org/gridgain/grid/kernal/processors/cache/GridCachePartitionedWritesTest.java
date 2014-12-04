@@ -32,8 +32,8 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     private GridCacheStore store;
 
     /** {@inheritDoc} */
-    @Override protected final GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

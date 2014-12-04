@@ -22,8 +22,8 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCacheReplicatedQueueMultiNodeSelfTest extends GridCacheQueueMultiNodeAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         // Default cache configuration.
         GridCacheConfiguration cc = defaultCacheConfiguration();

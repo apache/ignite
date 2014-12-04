@@ -102,8 +102,8 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setCollisionSpi(new GridTestCollision());
 

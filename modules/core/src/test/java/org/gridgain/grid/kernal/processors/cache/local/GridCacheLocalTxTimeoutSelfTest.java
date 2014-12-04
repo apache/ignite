@@ -35,8 +35,8 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration() throws Exception {
-        GridConfiguration c = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration c = super.getConfiguration();
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
         c.getTransactionsConfiguration().setDefaultTxTimeout(50);

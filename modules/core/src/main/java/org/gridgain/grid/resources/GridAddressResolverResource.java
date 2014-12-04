@@ -13,7 +13,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of address resolver.
- * Address resolver is provided via {@link org.gridgain.grid.GridConfiguration#getAddressResolver()}.
+ * Address resolver is provided via {@link org.gridgain.grid.IgniteConfiguration#getAddressResolver()}.
  * <p>
  * Address resolver can be injected into instances of {@link org.gridgain.grid.spi.GridSpi}.
  * <p>
@@ -40,7 +40,7 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See {@link org.gridgain.grid.GridConfiguration#getAddressResolver()} for Grid configuration details.
+ * See {@link org.gridgain.grid.IgniteConfiguration#getAddressResolver()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

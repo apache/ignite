@@ -664,7 +664,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Grid configuration.
      */
-    public GridConfiguration gridConfig() {
+    public IgniteConfiguration gridConfig() {
         return ctx.config();
     }
 

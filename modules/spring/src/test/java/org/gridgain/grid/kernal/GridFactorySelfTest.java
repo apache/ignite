@@ -141,7 +141,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         TestLifecycleBean bean1 = new TestLifecycleBean();
         TestLifecycleBean bean2 = new TestLifecycleBean();
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setGridName(gridName);
@@ -260,7 +260,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         try {
-                            GridConfiguration cfg = new GridConfiguration();
+                            IgniteConfiguration cfg = new IgniteConfiguration();
 
                             cfg.setRestEnabled(false);
 
@@ -297,7 +297,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         try {
-                            GridConfiguration cfg = new GridConfiguration();
+                            IgniteConfiguration cfg = new IgniteConfiguration();
 
                             cfg.setGridName("TEST_NAME");
                             cfg.setRestEnabled(false);
@@ -375,7 +375,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     @Nullable @Override public Object call() throws Exception {
                         for (int i = 0; i < iterCnt; i++) {
                             try {
-                                GridConfiguration cfg = getConfiguration(gridName);
+                                IgniteConfiguration cfg = getConfiguration(gridName);
 
                                 G.start(cfg);
                             }
@@ -423,7 +423,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             log,
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    GridConfiguration cfg = new GridConfiguration();
+                    IgniteConfiguration cfg = new IgniteConfiguration();
 
                     cfg.setRestEnabled(false);
 
@@ -449,8 +449,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void disabledTestStartSingleInstanceSpi() throws Exception {
-        GridConfiguration cfg1 = getConfiguration();
-        GridConfiguration cfg2 = getConfiguration();
+        IgniteConfiguration cfg1 = getConfiguration();
+        IgniteConfiguration cfg2 = getConfiguration();
 
         cfg1.setCollisionSpi(new TestSingleInstancesCollisionSpi());
         cfg2.setCollisionSpi(new TestSingleInstancesCollisionSpi());
@@ -495,9 +495,9 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartMultipleInstanceSpi() throws Exception {
-        GridConfiguration cfg1 = getConfiguration();
-        GridConfiguration cfg2 = getConfiguration();
-        GridConfiguration cfg3 = getConfiguration();
+        IgniteConfiguration cfg1 = getConfiguration();
+        IgniteConfiguration cfg2 = getConfiguration();
+        IgniteConfiguration cfg3 = getConfiguration();
 
         cfg1.setCollisionSpi(new TestMultipleInstancesCollisionSpi());
         cfg2.setCollisionSpi(new TestMultipleInstancesCollisionSpi());
@@ -768,7 +768,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopCancel() throws Exception {
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setRestEnabled(false);
 

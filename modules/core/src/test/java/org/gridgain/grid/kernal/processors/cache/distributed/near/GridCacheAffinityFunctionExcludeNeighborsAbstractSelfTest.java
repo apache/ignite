@@ -43,8 +43,8 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(final String gridName) throws Exception {
-        GridConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {

@@ -109,7 +109,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("ggfs-grid");
 
@@ -168,7 +168,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridConfiguration cfg = new GridConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("ggfs-grid-secondary");
 

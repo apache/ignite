@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 
 /**
  * Grid deployment mode. Deployment mode is specified at grid startup via
- * {@link GridConfiguration#getDeploymentMode()} configuration property
+ * {@link IgniteConfiguration#getDeploymentMode()} configuration property
  * (it can also be specified in Spring XML configuration file). The main
  * difference between all deployment modes is how classes and user resources
  * are loaded on remote nodes via peer-class-loading mechanism. User resources

@@ -47,8 +47,8 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (portableEnabled()) {
             GridPortableConfiguration pCfg = new GridPortableConfiguration();
