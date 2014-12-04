@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.logger.java.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.testframework.junits.common.*;

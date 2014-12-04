@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.ipc.shmem.benchmark;
 
+import org.apache.ignite.logger.java.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.ipc.shmem.*;
