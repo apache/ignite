@@ -75,10 +75,10 @@ public class GridStealingLoadTestTask extends GridComputeTaskAdapter<UUID, Integ
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         assert results != null;
 
-        for (GridComputeJobResult res : results) {
+        for (ComputeJobResult res : results) {
             if (res.getData() != null && stealingNodeId.equals(res.getData()))
                 stolenJobs++;
         }

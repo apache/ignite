@@ -191,10 +191,10 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             int sum = 0;
 
-            for (GridComputeJobResult res : results)
+            for (ComputeJobResult res : results)
                 sum += res.<Integer>getData();
 
             return sum;

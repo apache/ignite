@@ -89,8 +89,8 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
-            for (GridComputeJobResult res : results) {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+            for (ComputeJobResult res : results) {
                 ComputeJobContext jobCtx = res.getJobContext();
 
                 assert jobCtx.getAttribute("nodeId").equals(res.getNode().id());

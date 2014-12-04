@@ -963,14 +963,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
         A.notNull(job, "job");
 
-        if (job instanceof GridComputeJobMasterLeaveAware) {
+        if (job instanceof ComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return job.apply(arg);
                 }
 
                 @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-                    ((GridComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
+                    ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
                 }
             };
         }
@@ -993,7 +993,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private ComputeJob job(final Callable<?> c) {
         A.notNull(c, "job");
 
-        if (c instanceof GridComputeJobMasterLeaveAware) {
+        if (c instanceof ComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
                 @Override public Object execute() {
                     try {
@@ -1005,7 +1005,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 }
 
                 @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-                    ((GridComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
+                    ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
                 }
             };
         }
@@ -1035,7 +1035,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private ComputeJob job(final Callable<?> c, @Nullable final String cacheName, final Object affKey) {
         A.notNull(c, "job");
 
-        if (c instanceof GridComputeJobMasterLeaveAware) {
+        if (c instanceof ComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
                 /** */
                 @GridCacheName
@@ -1055,7 +1055,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 }
 
                 @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-                    ((GridComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
+                    ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
                 }
             };
         }
@@ -1091,7 +1091,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static ComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
-        if (r instanceof GridComputeJobMasterLeaveAware) {
+        if (r instanceof ComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     r.run();
@@ -1100,7 +1100,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 }
 
                 @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-                    ((GridComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
+                    ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
                 }
             };
         }
@@ -1127,7 +1127,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private ComputeJob job(final Runnable r, @Nullable final String cacheName, final Object affKey) {
         A.notNull(r, "job");
 
-        if (r instanceof GridComputeJobMasterLeaveAware) {
+        if (r instanceof ComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
                 /** */
                 @GridCacheName
@@ -1144,7 +1144,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 }
 
                 @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-                    ((GridComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
+                    ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
                 }
             };
         }
@@ -1223,7 +1223,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -1336,7 +1336,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             GridComputeJobResultPolicy resPlc = super.result(res, rcvd);
 
@@ -1347,7 +1347,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public R2 reduce(List<GridComputeJobResult> res) {
+        @Override public R2 reduce(List<ComputeJobResult> res) {
             return t.get3().reduce();
         }
     }
@@ -1434,8 +1434,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public R reduce(List<GridComputeJobResult> res) throws GridException {
-            for (GridComputeJobResult r : res) {
+        @Override public R reduce(List<ComputeJobResult> res) throws GridException {
+            for (ComputeJobResult r : res) {
                 if (r.getException() == null)
                     return r.getData();
             }
@@ -1483,7 +1483,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<R> reduce(List<GridComputeJobResult> res) {
+        @Override public Collection<R> reduce(List<ComputeJobResult> res) {
             return F.jobResults(res);
         }
     }
@@ -1520,8 +1520,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public R reduce(List<GridComputeJobResult> res) throws GridException {
-            for (GridComputeJobResult r : res)
+        @Override public R reduce(List<ComputeJobResult> res) throws GridException {
+            for (ComputeJobResult r : res)
                 if (r.getException() == null)
                     return r.getData();
 
@@ -1565,8 +1565,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public R reduce(List<GridComputeJobResult> res) throws GridException {
-            for (GridComputeJobResult r : res)
+        @Override public R reduce(List<ComputeJobResult> res) throws GridException {
+            for (ComputeJobResult r : res)
                 if (r.getException() == null)
                     return r.getData();
 
@@ -1618,7 +1618,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<R> reduce(List<GridComputeJobResult> res) throws GridException {
+        @Override public Collection<R> reduce(List<ComputeJobResult> res) throws GridException {
             return F.jobResults(res);
         }
     }
@@ -1672,7 +1672,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             GridComputeJobResultPolicy resPlc = super.result(res, rcvd);
 
@@ -1683,7 +1683,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public R2 reduce(List<GridComputeJobResult> res) throws GridException {
+        @Override public R2 reduce(List<ComputeJobResult> res) throws GridException {
             return rdc.reduce();
         }
     }
@@ -1729,7 +1729,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<R> reduce(List<GridComputeJobResult> res) {
+        @Override public Collection<R> reduce(List<ComputeJobResult> res) {
             return F.jobResults(res);
         }
     }

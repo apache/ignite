@@ -59,12 +59,12 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
     }
 
     /** {@inheritDoc} */
-    @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         // No failover.
         if (res.getException() != null)
             throw res.getException();

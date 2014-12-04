@@ -92,7 +92,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
             try {
                 if (taskSes.waitForAttribute(TEST_ATTR_KEY, SETS_ATTR_COUNT, 20000)) {
                     log.info("Successfully waited for attribute [key=" + TEST_ATTR_KEY +

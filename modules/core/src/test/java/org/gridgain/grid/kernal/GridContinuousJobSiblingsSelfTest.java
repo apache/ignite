@@ -75,7 +75,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
             throws GridException {
             if (res.getException() != null)
                 throw new GridException("Job resulted in error: " + res, res.getException());
@@ -92,7 +92,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assertEquals(JOB_COUNT, results.size());
 
             return null;
@@ -127,7 +127,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
 
             assert sibCnt != null;
 
-            Collection<GridComputeJobSibling> sibs = ses.getJobSiblings();
+            Collection<ComputeJobSibling> sibs = ses.getJobSiblings();
 
             assert sibs != null;
             assert sibs.size() == sibCnt : "Unexpected siblings collection [expectedSize=" + sibCnt +

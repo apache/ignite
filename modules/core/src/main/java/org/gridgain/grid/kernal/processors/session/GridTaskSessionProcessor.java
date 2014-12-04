@@ -77,7 +77,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         @Nullable Collection<UUID> top,
         long startTime,
         long endTime,
-        Collection<GridComputeJobSibling> siblings,
+        Collection<ComputeJobSibling> siblings,
         Map<Object, Object> attrs,
         boolean fullSup,
         UUID subjId) {

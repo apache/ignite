@@ -30,12 +30,12 @@ public class GridJobExecutionLoadTestTask implements GridComputeTask<Object, Obj
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         return REDUCE;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 }

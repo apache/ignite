@@ -162,7 +162,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 1;
 
             return results.get(0).getData();

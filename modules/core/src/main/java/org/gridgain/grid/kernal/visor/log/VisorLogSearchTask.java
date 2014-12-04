@@ -50,13 +50,13 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>,
-            Iterable<VisorLogSearchResult>> reduce(List<GridComputeJobResult> results) throws GridException {
+            Iterable<VisorLogSearchResult>> reduce(List<ComputeJobResult> results) throws GridException {
 
         Collection<VisorLogSearchResult> searchRes = new ArrayList<>();
         Collection<IgniteBiTuple<Exception, UUID>> exRes = new ArrayList<>();
 
         // Separate successfully executed results and exceptions.
-        for (GridComputeJobResult result : results) {
+        for (ComputeJobResult result : results) {
             if (result.getException() != null)
                 exRes.add(new IgniteBiTuple<Exception, UUID>(result.getException(), result.getNode().id()));
             else if(result.getData() != null) {

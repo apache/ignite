@@ -220,7 +220,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
         }
 
         // Check all job attributes.
-        for (GridComputeJobSibling sibling : ses.getJobSiblings()) {
+        for (ComputeJobSibling sibling : ses.getJobSiblings()) {
             info("Checking session attributes for sibling: " + sibling);
 
             checkSessionAttributes(ses, sibling.getJobId().toString(), type);
@@ -406,7 +406,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -447,13 +447,13 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
             // Check that attributes just set are present.
             checkSessionAttributes(taskSes, jobId.toString(), m);
 
-            Collection<GridComputeJobSibling> siblings = taskSes.getJobSiblings();
+            Collection<ComputeJobSibling> siblings = taskSes.getJobSiblings();
 
             if (log.isInfoEnabled())
                 log.info("Got siblings from job [size=" + siblings.size() + ", siblings=" + siblings + ']');
 
             // Check attributes from siblings.
-            for (GridComputeJobSibling sibling : taskSes.getJobSiblings()) {
+            for (ComputeJobSibling sibling : taskSes.getJobSiblings()) {
                 if (!sibling.getJobId().equals(jobId))
                     checkSessionAttributes(taskSes, sibling.getJobId().toString(), m);
             }

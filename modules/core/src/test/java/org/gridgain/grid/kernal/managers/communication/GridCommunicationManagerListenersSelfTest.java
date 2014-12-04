@@ -137,7 +137,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             stop.set(true);
 
             return null;

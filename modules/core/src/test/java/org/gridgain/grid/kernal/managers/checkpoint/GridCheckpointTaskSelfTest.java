@@ -169,7 +169,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -215,7 +215,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
             assert ses.loadCheckpoint(CP_KEY) != null;
 
             return null;

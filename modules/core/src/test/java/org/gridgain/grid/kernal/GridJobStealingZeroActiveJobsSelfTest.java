@@ -109,10 +109,10 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 2;
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 log.info("Job result: " + res.getData());
             }
 

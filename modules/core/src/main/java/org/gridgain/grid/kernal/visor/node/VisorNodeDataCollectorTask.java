@@ -52,13 +52,13 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public VisorNodeDataCollectorTaskResult reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public VisorNodeDataCollectorTaskResult reduce(List<ComputeJobResult> results) throws GridException {
         return reduce(new VisorNodeDataCollectorTaskResult(), results);
     }
 
     protected VisorNodeDataCollectorTaskResult reduce(VisorNodeDataCollectorTaskResult taskResult,
-        List<GridComputeJobResult> results) throws GridException {
-        for (GridComputeJobResult res : results) {
+        List<ComputeJobResult> results) throws GridException {
+        for (ComputeJobResult res : results) {
             VisorNodeDataCollectorJobResult jobResult = res.getData();
 
             if (jobResult != null) {

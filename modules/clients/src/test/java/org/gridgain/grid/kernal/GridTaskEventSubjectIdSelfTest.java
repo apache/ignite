@@ -337,7 +337,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -354,7 +354,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             throw new GridException("Task failed.");
         }
     }
@@ -378,7 +378,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }

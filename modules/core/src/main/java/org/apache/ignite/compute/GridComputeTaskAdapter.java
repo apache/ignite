@@ -65,7 +65,7 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
      * Default implementation which will wait for all jobs to complete before
      * calling {@link #reduce(List)} method.
      * <p>
-     * If remote job resulted in exception ({@link GridComputeJobResult#getException()} is not {@code null}),
+     * If remote job resulted in exception ({@link ComputeJobResult#getException()} is not {@code null}),
      * then {@link GridComputeJobResultPolicy#FAILOVER} policy will be returned if the exception is instance
      * of {@link GridTopologyException} or {@link ComputeExecutionRejectedException}, which means that
      * remote node either failed or job execution was rejected before it got a chance to start. In all
@@ -78,7 +78,7 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
      * @throws GridException If handling a job result caused an error effectively rejecting
      *      a failover. This exception will be thrown out of {@link GridComputeTaskFuture#get()} method.
      */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         GridException e = res.getException();
 
         // Try to failover if result is failed.

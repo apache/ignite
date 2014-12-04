@@ -91,10 +91,10 @@ public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, 
     }
 
     /** {@inheritDoc} */
-    @Override public final Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public final Object reduce(List<ComputeJobResult> results) throws GridException {
         assert results.size() == 1;
 
-        GridComputeJobResult res = results.get(0);
+        ComputeJobResult res = results.get(0);
 
         if (res.getException() != null)
             throw res.getException();

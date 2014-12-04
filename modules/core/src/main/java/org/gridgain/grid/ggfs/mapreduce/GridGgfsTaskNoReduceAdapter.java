@@ -28,7 +28,7 @@ public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends GridGgfsTask<T, 
      *      {@link GridComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Will always return {@code null}.
      */
-    @Override public R reduce(List<GridComputeJobResult> results) {
+    @Override public R reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

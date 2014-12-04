@@ -448,7 +448,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         Collection<GridJobResultImpl> jobResList = new ArrayList<>(jobs.size());
 
-        Collection<GridComputeJobSibling> sibs = new ArrayList<>(jobs.size());
+        Collection<ComputeJobSibling> sibs = new ArrayList<>(jobs.size());
 
         // Map jobs to nodes for computation.
         for (Map.Entry<? extends ComputeJob, ClusterNode> mappedJob : jobs.entrySet()) {
@@ -682,7 +682,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                 }
 
-                List<GridComputeJobResult> results;
+                List<ComputeJobResult> results;
 
                 if (!resCache)
                     results = Collections.emptyList();
@@ -793,7 +793,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @return Job result policy.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    @Nullable private GridComputeJobResultPolicy result(final GridComputeJobResult jobRes, final List<GridComputeJobResult> results) {
+    @Nullable private GridComputeJobResultPolicy result(final ComputeJobResult jobRes, final List<ComputeJobResult> results) {
         assert !Thread.holdsLock(mux);
 
         return U.wrapThreadLoader(dep.classLoader(), new CO<GridComputeJobResultPolicy>() {
@@ -896,7 +896,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @param results Job results.
      */
-    private void reduce(final List<GridComputeJobResult> results) {
+    private void reduce(final List<ComputeJobResult> results) {
         R reduceRes = null;
         Throwable userE = null;
 
@@ -1070,7 +1070,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @param res Job result.
      */
-    private void sendRequest(GridComputeJobResult res) {
+    private void sendRequest(ComputeJobResult res) {
         assert res != null;
 
         GridJobExecuteRequest req = null;
@@ -1299,10 +1299,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @return Collection of job results.
      */
-    private List<GridComputeJobResult> getRemoteResults() {
+    private List<ComputeJobResult> getRemoteResults() {
         assert Thread.holdsLock(mux);
 
-        List<GridComputeJobResult> results = new ArrayList<>(jobRes.size());
+        List<ComputeJobResult> results = new ArrayList<>(jobRes.size());
 
         for (GridJobResultImpl jobResult : jobRes.values())
             if (jobResult.hasResponse())

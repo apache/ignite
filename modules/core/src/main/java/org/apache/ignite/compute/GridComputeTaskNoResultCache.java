@@ -16,7 +16,7 @@ import java.util.*;
  * This annotation disables caching of task results when attached to {@link GridComputeTask} class
  * being executed. Use it when number of jobs within task grows too big, or jobs themselves
  * are too large to keep in memory throughout task execution. By default all results are cached and passed into
- * {@link GridComputeTask#result(GridComputeJobResult,List) GridComputeTask.result(GridComputeJobResult, List&lt;GridComputeJobResult&gt;)}
+ * {@link GridComputeTask#result(ComputeJobResult,List) GridComputeTask.result(GridComputeJobResult, List&lt;GridComputeJobResult&gt;)}
  * method or {@link GridComputeTask#reduce(List) GridComputeTask.reduce(List&lt;GridComputeJobResult&gt;)} method.
  * When this annotation is attached to a task class, then this list of job results will always be empty.
  * <p>
@@ -32,7 +32,7 @@ import java.util.*;
  *
  * Use this annotation when job results are too large to hold in memory and can be discarded
  * after being processed in
- * {@link GridComputeTask#result(GridComputeJobResult, List) GridComputeTask.result(GridComputeJobResult, List&lt;GridComputeJobResult&gt;)}
+ * {@link GridComputeTask#result(ComputeJobResult, List) GridComputeTask.result(GridComputeJobResult, List&lt;GridComputeJobResult&gt;)}
  * method.
  */
 @Documented

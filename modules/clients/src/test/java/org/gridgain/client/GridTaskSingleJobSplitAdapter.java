@@ -37,10 +37,10 @@ public abstract class GridTaskSingleJobSplitAdapter<T, R> extends GridComputeTas
     }
 
     /** {@inheritDoc} */
-    @Override public R reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public R reduce(List<ComputeJobResult> results) throws GridException {
         assert results.size() == 1;
 
-        GridComputeJobResult res = results.get(0);
+        ComputeJobResult res = results.get(0);
 
         if (res.isCancelled())
             throw new GridException("Reduce receives failed job.");
@@ -55,11 +55,11 @@ public abstract class GridTaskSingleJobSplitAdapter<T, R> extends GridComputeTas
      *      jobs can be less, equal or greater than this grid size.
      * @param arg Task execution argument. Can be {@code null}.
      * @return Job execution result (possibly {@code null}). This result will be returned
-     *      in {@link GridComputeJobResult#getData()} method passed into
-     *      {@link GridComputeTask#result(GridComputeJobResult, List)} method into task on caller node.
+     *      in {@link org.apache.ignite.compute.ComputeJobResult#getData()} method passed into
+     *      {@link GridComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
      * @throws GridException If job execution caused an exception. This exception will be
-     *      returned in {@link GridComputeJobResult#getException()} method passed into
-     *      {@link GridComputeTask#result(GridComputeJobResult, List)} method into task on caller node.
+     *      returned in {@link org.apache.ignite.compute.ComputeJobResult#getException()} method passed into
+     *      {@link GridComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link GridException}.
      */

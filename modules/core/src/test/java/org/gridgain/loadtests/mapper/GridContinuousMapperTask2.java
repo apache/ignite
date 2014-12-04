@@ -63,7 +63,7 @@ public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Int
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         TestObject o = res.getData();
 
         X.println("Received job result from node [resId=" + o.getId() + ", node=" + res.getNode().id() + ']');
@@ -72,7 +72,7 @@ public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Int
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         X.println(">>> Reducing task...");
 
         return null;

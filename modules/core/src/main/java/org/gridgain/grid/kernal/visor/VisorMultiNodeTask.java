@@ -56,8 +56,8 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<Vis
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
-        List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res,
+        List<ComputeJobResult> rcvd) throws GridException {
         // All Visor tasks should handle exceptions in reduce method.
         return GridComputeJobResultPolicy.WAIT;
     }

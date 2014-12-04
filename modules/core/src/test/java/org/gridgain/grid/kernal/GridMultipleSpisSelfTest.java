@@ -241,8 +241,8 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
-            List<GridComputeJobResult> received) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res,
+            List<ComputeJobResult> received) throws GridException {
             if (res.getException() != null)
                 return GridComputeJobResultPolicy.FAILOVER;
 
@@ -250,7 +250,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

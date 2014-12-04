@@ -29,7 +29,7 @@ import java.util.*;
  * grid nodes and provides another node on which the job execution will be retried.
  * It is up to failover SPI to make sure that job is not mapped to the node it
  * failed on. The failed node can be retrieved from
- * {@link org.apache.ignite.compute.GridComputeJobResult#getNode() GridFailoverContext.getJobResult().node()}
+ * {@link org.apache.ignite.compute.ComputeJobResult#getNode() GridFailoverContext.getJobResult().node()}
  * method.
  * <p>
  * GridGain comes with the following built-in failover SPI implementations:
@@ -47,7 +47,7 @@ import java.util.*;
  */
 public interface GridFailoverSpi extends GridSpi {
     /**
-     * This method is called when method {@link org.apache.ignite.compute.GridComputeTask#result(org.apache.ignite.compute.GridComputeJobResult, List)} returns
+     * This method is called when method {@link org.apache.ignite.compute.GridComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} returns
      * value {@link org.apache.ignite.compute.GridComputeJobResultPolicy#FAILOVER} policy indicating that the result of
      * job execution must be failed over. Implementation of this method should examine failover
      * context and choose one of the grid nodes from supplied {@code topology} to retry job execution

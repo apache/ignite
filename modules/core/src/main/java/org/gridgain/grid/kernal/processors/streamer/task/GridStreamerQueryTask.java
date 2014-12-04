@@ -59,17 +59,17 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Collection<R> reduce(List<ComputeJobResult> results) throws GridException {
         Collection<R> res = new ArrayList<>(results.size());
 
-        for (GridComputeJobResult jobRes : results)
+        for (ComputeJobResult jobRes : results)
             res.add(jobRes.<R>getData());
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         // No failover for this task.
         if (res.getException() != null)
             throw res.getException();

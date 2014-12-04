@@ -273,7 +273,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -302,7 +302,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert rsrc1 != null;
 
             // Nothing to reduce.

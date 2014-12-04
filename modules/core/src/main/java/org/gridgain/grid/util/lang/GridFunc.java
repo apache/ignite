@@ -1521,11 +1521,11 @@ public class GridFunc {
      * Note that this method doesn't create a new collection but simply iterates over the input one.
      *
      * @param res Collection of grid job res.
-     * @param <T> Type of the data item to cast to. See {@link org.apache.ignite.compute.GridComputeJobResult#getData()} method.
+     * @param <T> Type of the data item to cast to. See {@link org.apache.ignite.compute.ComputeJobResult#getData()} method.
      * @return Collections of data items casted to type {@code T}.
-     * @see org.apache.ignite.compute.GridComputeJobResult#getData()
+     * @see org.apache.ignite.compute.ComputeJobResult#getData()
      */
-    public static <T> Collection<T> jobResults(@Nullable Collection<? extends GridComputeJobResult> res) {
+    public static <T> Collection<T> jobResults(@Nullable Collection<? extends ComputeJobResult> res) {
         if (isEmpty(res))
             return Collections.emptyList();
 
@@ -1533,7 +1533,7 @@ public class GridFunc {
 
         Collection<T> c = new ArrayList<>(res.size());
 
-        for (GridComputeJobResult r : res)
+        for (ComputeJobResult r : res)
             c.add(r.<T>getData());
 
         return c;

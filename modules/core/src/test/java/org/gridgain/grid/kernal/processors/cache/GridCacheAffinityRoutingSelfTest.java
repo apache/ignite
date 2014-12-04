@@ -579,7 +579,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
             return results.get(0).getData();
         }
     }

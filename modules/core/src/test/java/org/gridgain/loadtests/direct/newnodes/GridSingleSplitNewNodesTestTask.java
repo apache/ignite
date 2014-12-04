@@ -73,10 +73,10 @@ public class GridSingleSplitNewNodesTestTask extends GridComputeTaskAdapter<Inte
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         int retVal = 0;
 
-        for (GridComputeJobResult res : results) {
+        for (ComputeJobResult res : results) {
             assert res.getData() != null : "Load test should return result: " + res;
 
             retVal += (Integer)res.getData();

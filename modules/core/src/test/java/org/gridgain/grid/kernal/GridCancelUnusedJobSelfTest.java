@@ -130,12 +130,12 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received) {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
             return GridComputeJobResultPolicy.REDUCE;
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

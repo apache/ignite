@@ -174,10 +174,10 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             int res = 0;
 
-            for (GridComputeJobResult result : results) {
+            for (ComputeJobResult result : results) {
                 res += (Integer)result.getData();
             }
 

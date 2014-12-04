@@ -132,19 +132,19 @@ public class GridTestCollisionTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridComputeJobSibling> getJobSiblings() {
+    @Override public Collection<ComputeJobSibling> getJobSiblings() {
         assert false : "Not implemented";
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridComputeJobSibling> refreshJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws GridException {
         return getJobSiblings();
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) {
+    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) {
         assert false : "Not implemented";
 
         return null;

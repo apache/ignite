@@ -290,7 +290,7 @@ public interface GridEventType {
 
     /**
      * Built-in event type: grid job result was received by
-     * {@link org.apache.ignite.compute.GridComputeTask#result(org.apache.ignite.compute.GridComputeJobResult, List)} method.
+     * {@link org.apache.ignite.compute.GridComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.

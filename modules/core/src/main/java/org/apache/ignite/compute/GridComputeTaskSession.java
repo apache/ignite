@@ -154,7 +154,7 @@ public interface GridComputeTaskSession {
      * @return Collection of grid job siblings executing within this task.
      * @throws GridException If job siblings can not be received from task node.
      */
-    public Collection<GridComputeJobSibling> getJobSiblings() throws GridException;
+    public Collection<ComputeJobSibling> getJobSiblings() throws GridException;
 
     /**
      * Refreshes collection of job siblings. This method has no effect when invoked
@@ -166,7 +166,7 @@ public interface GridComputeTaskSession {
      * @return Refreshed collection of job siblings.
      * @throws GridException If refresh failed.
      */
-    public Collection<GridComputeJobSibling> refreshJobSiblings() throws GridException;
+    public Collection<ComputeJobSibling> refreshJobSiblings() throws GridException;
 
     /**
      * Gets job sibling for a given ID.
@@ -179,7 +179,7 @@ public interface GridComputeTaskSession {
      * @return Grid job sibling for a given ID.
      * @throws GridException If job sibling can not be received from task node.
      */
-    @Nullable public GridComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException;
+    @Nullable public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException;
 
     /**
      * Sets session attributed. Note that task session is distributed and

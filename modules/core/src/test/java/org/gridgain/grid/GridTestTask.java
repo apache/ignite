@@ -36,7 +36,7 @@ public class GridTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Reducing task [task=" + this + ", results=" + results + ']');
 

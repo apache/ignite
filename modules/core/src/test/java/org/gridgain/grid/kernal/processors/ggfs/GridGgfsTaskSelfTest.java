@@ -236,11 +236,11 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Long, Integer> reduce(List<GridComputeJobResult> ress) throws GridException {
+        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) throws GridException {
             long totalLen = 0;
             int argCnt = 0;
 
-            for (GridComputeJobResult res : ress) {
+            for (ComputeJobResult res : ress) {
                 IgniteBiTuple<Long, Integer> res0 = (IgniteBiTuple<Long, Integer>)res.getData();
 
                 if (res0 != null) {

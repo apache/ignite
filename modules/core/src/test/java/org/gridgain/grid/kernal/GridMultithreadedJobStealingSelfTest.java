@@ -164,10 +164,10 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public JobStealingResult reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public JobStealingResult reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 2;
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 log.info("Job result: " + res.getData());
             }
 

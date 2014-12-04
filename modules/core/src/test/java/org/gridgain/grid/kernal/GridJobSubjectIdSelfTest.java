@@ -121,7 +121,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }

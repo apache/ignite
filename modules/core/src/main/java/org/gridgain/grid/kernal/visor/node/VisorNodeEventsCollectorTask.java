@@ -43,11 +43,11 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
     /** {@inheritDoc} */
     @Override public Iterable<? extends VisorGridEvent> reduce(
-        List<GridComputeJobResult> results) throws GridException {
+        List<ComputeJobResult> results) throws GridException {
 
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
 
-        for (GridComputeJobResult r : results) {
+        for (ComputeJobResult r : results) {
             if (r.getException() == null)
                 allEvents.addAll((Collection<VisorGridEvent>) r.getData());
         }

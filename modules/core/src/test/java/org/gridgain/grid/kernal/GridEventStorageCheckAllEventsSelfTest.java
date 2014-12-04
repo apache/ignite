@@ -417,7 +417,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
             assert results != null;
             assert results.size() == 1;
 

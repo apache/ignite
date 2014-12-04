@@ -256,7 +256,7 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert results != null : "Unexpected result [results=" + results + ']';
             assert results.size() == JOB_COUNT : "Unexpected result [results=" + results + ']';
 
@@ -296,8 +296,8 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
-            List<GridComputeJobResult> received) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res,
+            List<ComputeJobResult> received) throws GridException {
             ses.setAttribute("attr7", 7);
             ses.setAttribute("attr8", 8);
 
@@ -305,7 +305,7 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert results != null : "Unexpected result [results=" + results + ']';
             assert results.size() == JOB_COUNT : "Unexpected result [results=" + results + ']';
 

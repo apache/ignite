@@ -25,7 +25,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 /**
  * This class provides implementation for job sibling.
  */
-public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements GridComputeJobSibling, Externalizable {
+public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements ComputeJobSibling, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

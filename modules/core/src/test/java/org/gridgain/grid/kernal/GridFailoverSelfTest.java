@@ -114,8 +114,8 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
-            List<GridComputeJobResult> received) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res,
+            List<ComputeJobResult> received) throws GridException {
             if (res.getException() != null && !(res.getException() instanceof GridComputeUserUndeclaredException)) {
                 assert res.getNode().id().equals(nodeRef.get().id());
 
@@ -128,7 +128,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 1;
 
             assert nodeRef.get() != null;

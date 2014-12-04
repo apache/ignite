@@ -203,7 +203,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             // Nothing to reduce.
             return null;
         }
@@ -275,7 +275,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             // Nothing to reduce.
             return null;
         }

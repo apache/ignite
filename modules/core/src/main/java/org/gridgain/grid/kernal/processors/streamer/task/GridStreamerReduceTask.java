@@ -66,12 +66,12 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public R2 reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public R2 reduce(List<ComputeJobResult> results) throws GridException {
         return rdc.reduce();
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         // No failover for this task.
         if (res.getException() != null)
             throw res.getException();

@@ -86,7 +86,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** */
     @GridDirectTransient
-    private Collection<GridComputeJobSibling> siblings;
+    private Collection<ComputeJobSibling> siblings;
 
     /** */
     private byte[] siblingsBytes;
@@ -166,7 +166,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         long timeout,
         @Nullable Collection<UUID> top,
         byte[] siblingsBytes,
-        Collection<GridComputeJobSibling> siblings,
+        Collection<ComputeJobSibling> siblings,
         byte[] sesAttrsBytes,
         Map<Object, Object> sesAttrs,
         byte[] jobAttrsBytes,
@@ -298,7 +298,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /**
      * @return Job siblings.
      */
-    public Collection<GridComputeJobSibling> getSiblings() {
+    public Collection<ComputeJobSibling> getSiblings() {
         return siblings;
     }
 

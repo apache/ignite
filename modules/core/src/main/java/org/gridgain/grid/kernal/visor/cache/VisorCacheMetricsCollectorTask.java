@@ -38,11 +38,11 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Iterable<VisorCacheAggregatedMetrics> reduce(List<GridComputeJobResult> results)
+    @Nullable @Override public Iterable<VisorCacheAggregatedMetrics> reduce(List<ComputeJobResult> results)
         throws GridException {
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = new HashMap<>();
 
-        for (GridComputeJobResult res : results) {
+        for (ComputeJobResult res : results) {
             if (res.getException() == null && res.getData() instanceof Collection<?>) {
                 Collection<VisorCacheMetrics2> cms = res.getData();
                 for (VisorCacheMetrics2 cm : cms) {

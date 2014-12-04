@@ -31,15 +31,15 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
         throws GridException {
         return GridComputeJobResultPolicy.REDUCE;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public R reduce(List<ComputeJobResult> results) throws GridException {
         if (!F.isEmpty(results)) {
-            GridComputeJobResult res = results.get(0);
+            ComputeJobResult res = results.get(0);
 
             return res.getData();
         }

@@ -85,7 +85,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received) throws
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws
             GridException {
             if (res.getException() != null)
                 throw res.getException();
@@ -94,13 +94,13 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 
             int res = 0;
 
-            for (GridComputeJobResult result : results)
+            for (ComputeJobResult result : results)
                 res += (Integer)result.getData();
 
             return res;

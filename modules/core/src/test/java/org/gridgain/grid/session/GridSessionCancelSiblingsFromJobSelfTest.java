@@ -226,10 +226,10 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
 
                                 assert jobId != null;
 
-                                Collection<GridComputeJobSibling> jobSiblings = taskSes.getJobSiblings();
+                                Collection<ComputeJobSibling> jobSiblings = taskSes.getJobSiblings();
 
                                 // Cancel all jobs except first job with argument 1.
-                                for (GridComputeJobSibling jobSibling : jobSiblings) {
+                                for (ComputeJobSibling jobSibling : jobSiblings) {
                                     if (!jobId.equals(jobSibling.getJobId()))
                                         jobSibling.cancel();
                                 }
@@ -266,13 +266,13 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
             throws GridException {
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 

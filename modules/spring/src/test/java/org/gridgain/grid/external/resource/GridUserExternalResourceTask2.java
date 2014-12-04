@@ -73,7 +73,7 @@ public class GridUserExternalResourceTask2 extends GridComputeTaskSplitAdapter<O
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
         assert rsrc1 != null;
         assert rsrc2 != null;
         assert rsrc3 != null;

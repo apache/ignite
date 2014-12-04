@@ -220,7 +220,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
                 throws GridException {
             if (res.getException() != null && !(res.getException() instanceof GridComputeUserUndeclaredException))
                 return GridComputeJobResultPolicy.FAILOVER;
@@ -229,7 +229,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 1;
 
             return results.get(0).getData();

@@ -43,7 +43,7 @@ public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
         return results.get(0).getData();
     }
 

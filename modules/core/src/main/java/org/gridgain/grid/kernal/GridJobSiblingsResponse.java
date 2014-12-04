@@ -29,7 +29,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
 
     /** */
     @GridDirectTransient
-    private Collection<GridComputeJobSibling> siblings;
+    private Collection<ComputeJobSibling> siblings;
 
     /** */
     private byte[] siblingsBytes;
@@ -45,7 +45,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
      * @param siblings Siblings.
      * @param siblingsBytes Serialized siblings.
      */
-    public GridJobSiblingsResponse(@Nullable Collection<GridComputeJobSibling> siblings, @Nullable byte[] siblingsBytes) {
+    public GridJobSiblingsResponse(@Nullable Collection<ComputeJobSibling> siblings, @Nullable byte[] siblingsBytes) {
         this.siblings = siblings;
         this.siblingsBytes = siblingsBytes;
     }
@@ -53,7 +53,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
     /**
      * @return Job siblings.
      */
-    public Collection<GridComputeJobSibling> jobSiblings() {
+    public Collection<ComputeJobSibling> jobSiblings() {
         return siblings;
     }
 

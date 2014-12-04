@@ -22,9 +22,9 @@ import java.util.*;
  * not grow indefinitely.
  * <p>
  * Continuous mapper methods can be used right after it injected into a task.
- * Mapper can not be used after {@link GridComputeTask#result(GridComputeJobResult, List)}
+ * Mapper can not be used after {@link GridComputeTask#result(ComputeJobResult, List)}
  * method returned the {@link GridComputeJobResultPolicy#REDUCE} policy. Also if
- * {@link GridComputeTask#result(GridComputeJobResult, List)} method returned the
+ * {@link GridComputeTask#result(ComputeJobResult, List)} method returned the
  * {@link GridComputeJobResultPolicy#WAIT} policy and all jobs are finished then task
  * will go to reducing results and continuous mapper can not be used.
  * <p>

@@ -47,7 +47,7 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         GridComputeJobResultPolicy superRes = super.result(res, rcvd);
 
         // Deny failover.
@@ -58,10 +58,10 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         int stoppedCnt = 0;
 
-        for (GridComputeJobResult res : results)
+        for (ComputeJobResult res : results)
             if (!res.isCancelled())
                 stoppedCnt+=(Integer)res.getData();
 

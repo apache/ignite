@@ -164,7 +164,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
             assert mapper != null;
             assert res.getException() == null : "Unexpected exception: " + res.getException();
 
@@ -182,14 +182,14 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 10 : "Unexpected result count: " + results.size();
 
             log.info("Called reduce() method [results=" + results + ']');
 
             int res = 0;
 
-            for (GridComputeJobResult result : results) {
+            for (ComputeJobResult result : results) {
                 assert result.getData() != null : "Unexpected result data (null): " + result;
 
                 res += (Integer)result.getData();
@@ -268,7 +268,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assertEquals(JOB_COUNT * JOB_COUNT, results.size());
 
             return null;
@@ -335,7 +335,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             return results == null ? 0 : results.size();
         }
     }

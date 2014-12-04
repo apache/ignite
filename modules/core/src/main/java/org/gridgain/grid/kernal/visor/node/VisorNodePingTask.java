@@ -33,7 +33,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridTuple3<Boolean, Long, Long> reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public GridTuple3<Boolean, Long, Long> reduce(List<ComputeJobResult> results) throws GridException {
         try {
             return super.reduce(results);
         } catch (GridEmptyProjectionException ignored) {

@@ -136,10 +136,10 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
 
             assert await : "Jobs did not start.";
 
-            Collection<GridComputeJobSibling> jobSiblings = fut.getTaskSession().getJobSiblings();
+            Collection<ComputeJobSibling> jobSiblings = fut.getTaskSession().getJobSiblings();
 
             // Cancel all jobs.
-            for (GridComputeJobSibling jobSibling : jobSiblings) {
+            for (ComputeJobSibling jobSibling : jobSiblings) {
                 jobSibling.cancel();
             }
 
@@ -251,7 +251,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Received job result [job=" + this + ", result=" + res + ']');
 
@@ -259,7 +259,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 

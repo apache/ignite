@@ -253,7 +253,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             return results.get(0).getData();
         }
     }

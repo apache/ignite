@@ -46,16 +46,16 @@ public class GridJobLoadTestTask extends GridComputeTaskAdapter<GridJobLoadTestP
      *
      * {@inheritDoc}
      */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         return res.getException() == null ? WAIT :
             res.getException().getCause() instanceof AssertionError ? REDUCE : FAILOVER;
     }
 
     /**{@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         int sum = 0;
 
-        for (GridComputeJobResult r: results) {
+        for (ComputeJobResult r: results) {
             if (!r.isCancelled() && r.getException() == null)
                 sum += r.<Integer>getData();
         }

@@ -38,7 +38,7 @@ class TestTask1 extends GridComputeTaskSplitAdapter<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public String reduce(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 }

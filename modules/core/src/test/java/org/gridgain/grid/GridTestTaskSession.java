@@ -117,17 +117,17 @@ public class GridTestTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<GridComputeJobSibling> getJobSiblings() {
+    @Nullable @Override public Collection<ComputeJobSibling> getJobSiblings() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<GridComputeJobSibling> refreshJobSiblings() {
+    @Nullable @Override public Collection<ComputeJobSibling> refreshJobSiblings() {
         return getJobSiblings();
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) {
+    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) {
         return null;
     }
 

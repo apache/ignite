@@ -54,7 +54,7 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public byte[] reduce(List<ComputeJobResult> results) throws GridException {
         return F.first(results).getData();
     }
 

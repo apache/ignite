@@ -37,12 +37,12 @@ public class GridClientHttpTask extends GridComputeTaskSplitAdapter<String, Inte
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         return delegate.reduce(results);
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         if (res.getException() != null)
             return FAILOVER;
 

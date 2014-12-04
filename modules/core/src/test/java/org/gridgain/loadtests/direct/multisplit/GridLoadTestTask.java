@@ -59,12 +59,12 @@ public class GridLoadTestTask extends GridComputeTaskAdapter<Integer, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         assert results != null;
 
         int retVal = 0;
 
-        for (GridComputeJobResult res : results) {
+        for (ComputeJobResult res : results) {
             assert res.getException() == null : "Load test jobs can never fail: " + ctx;
             assert res.getData() != null;
 

@@ -34,7 +34,7 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
         // No-op, just awaiting all jobs done.
         return null;
     }

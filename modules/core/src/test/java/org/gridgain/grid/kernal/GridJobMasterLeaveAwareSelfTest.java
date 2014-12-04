@@ -40,7 +40,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test behavior of jobs when master node has failed, but job class implements {@link GridComputeJobMasterLeaveAware}
+ * Test behavior of jobs when master node has failed, but job class implements {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware}
  * interface.
  */
 @GridCommonTest(group = "Task Session")
@@ -118,7 +118,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensure that {@link GridComputeJobMasterLeaveAware} callback is invoked on job which is initiated by
+     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked on job which is initiated by
      * master and is currently running on it.
      *
      * @throws Exception If failed.
@@ -155,7 +155,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensure that {@link GridComputeJobMasterLeaveAware} callback is invoked when master node leaves topology normally.
+     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked when master node leaves topology normally.
      *
      * @throws Exception If failed.
      */
@@ -179,7 +179,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensure that {@link GridComputeJobMasterLeaveAware} callback is invoked when master node leaves topology
+     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked when master node leaves topology
      * abruptly (e.g. due to a network failure or immediate node shutdown).
      *
      * @throws Exception If failed.
@@ -206,7 +206,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensure that {@link GridComputeJobMasterLeaveAware} callback is invoked when fails to send
+     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked when fails to send
      * {@link GridJobExecuteResponse} to master node.
      *
      * @throws Exception If failed.
@@ -577,7 +577,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware callable.
      */
-    private static class TestCallable implements Callable<Void>, GridComputeJobMasterLeaveAware {
+    private static class TestCallable implements Callable<Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
         @GridLoggerResource
         private GridLogger log;
@@ -601,7 +601,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware runnable.
      */
-    private static class TestRunnable implements Runnable, GridComputeJobMasterLeaveAware {
+    private static class TestRunnable implements Runnable, ComputeJobMasterLeaveAware {
         /** Task session. */
         @GridLoggerResource
         private GridLogger log;
@@ -623,7 +623,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware closure.
      */
-    private static class TestClosure implements IgniteClosure<String, Void>, GridComputeJobMasterLeaveAware {
+    private static class TestClosure implements IgniteClosure<String, Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
         @GridLoggerResource
         private GridLogger log;
@@ -675,7 +675,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -683,7 +683,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Base implementation of dummy test job.
      */
-    private static class TestJob extends ComputeJobAdapter implements GridComputeJobMasterLeaveAware {
+    private static class TestJob extends ComputeJobAdapter implements ComputeJobMasterLeaveAware {
         /** Task session. */
         @GridLoggerResource
         private GridLogger log;

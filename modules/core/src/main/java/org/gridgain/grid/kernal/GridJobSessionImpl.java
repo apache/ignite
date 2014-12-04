@@ -118,9 +118,9 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridComputeJobSibling> refreshJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws GridException {
         if (!isTaskNode()) {
-            Collection<GridComputeJobSibling> sibs = ctx.job().requestJobSiblings(this);
+            Collection<ComputeJobSibling> sibs = ctx.job().requestJobSiblings(this);
 
             // Request siblings list from task node (task is continuous).
             ses.setJobSiblings(sibs);
@@ -139,8 +139,8 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridComputeJobSibling> getJobSiblings() throws GridException {
-        Collection<GridComputeJobSibling> sibs = ses.getJobSiblings();
+    @Override public Collection<ComputeJobSibling> getJobSiblings() throws GridException {
+        Collection<ComputeJobSibling> sibs = ses.getJobSiblings();
 
         if (sibs == null) {
             if (isTaskNode()) {
@@ -160,8 +160,8 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
-        for (GridComputeJobSibling sib : getJobSiblings())
+    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
+        for (ComputeJobSibling sib : getJobSiblings())
             if (sib.getJobId().equals(jobId))
                 return sib;
 

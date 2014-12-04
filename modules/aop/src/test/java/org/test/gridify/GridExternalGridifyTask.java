@@ -63,7 +63,7 @@ public class GridExternalGridifyTask extends GridComputeTaskSplitAdapter<Gridify
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
         assert results.size() == 1;
 
         return results.get(0).getData();

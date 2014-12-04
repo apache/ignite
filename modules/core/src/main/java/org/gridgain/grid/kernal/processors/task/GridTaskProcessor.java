@@ -522,7 +522,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             top,
             startTime,
             endTime,
-            Collections.<GridComputeJobSibling>emptyList(),
+            Collections.<ComputeJobSibling>emptyList(),
             Collections.emptyMap(),
             fullSup,
             subjId);
@@ -752,7 +752,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         assert attrs != null;
         assert ses != null;
 
-        Collection<GridComputeJobSibling> siblings = ses.getJobSiblings();
+        Collection<ComputeJobSibling> siblings = ses.getJobSiblings();
 
         GridIoManager commMgr = ctx.io();
 
@@ -780,7 +780,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
             // Do this inside of synchronization block, so every message
             // ID will be associated with a certain session state.
-            for (GridComputeJobSibling s : siblings) {
+            for (ComputeJobSibling s : siblings) {
                 GridJobSiblingImpl sib = (GridJobSiblingImpl)s;
 
                 UUID nodeId = sib.nodeId();
@@ -807,7 +807,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         GridException ex = null;
 
         // Every job gets an individual message to keep track of ghost requests.
-        for (GridComputeJobSibling s : ses.getJobSiblings()) {
+        for (ComputeJobSibling s : ses.getJobSiblings()) {
             GridJobSiblingImpl sib = (GridJobSiblingImpl)s;
 
             UUID nodeId = sib.nodeId();
@@ -1101,7 +1101,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             // Unregister job message listener from all job topics.
             if (ses.isFullSupport()) {
                 try {
-                    for (GridComputeJobSibling sibling : worker.getSession().getJobSiblings()) {
+                    for (ComputeJobSibling sibling : worker.getSession().getJobSiblings()) {
                         GridJobSiblingImpl s = (GridJobSiblingImpl)sibling;
 
                         ctx.io().removeMessageId(s.jobTopic());
@@ -1196,7 +1196,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                 GridTaskWorker<?, ?> worker = tasks.get(req.sessionId());
 
-                Collection<GridComputeJobSibling> siblings;
+                Collection<ComputeJobSibling> siblings;
 
                 if (worker != null) {
                     try {

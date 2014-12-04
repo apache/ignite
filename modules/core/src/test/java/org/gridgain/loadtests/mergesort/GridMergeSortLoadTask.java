@@ -108,7 +108,7 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
      * @param results The child task execution results (sorted arrays).
      * @return A merge result: single sorted array.
      */
-    @Override public int[] reduce(List<GridComputeJobResult> results) {
+    @Override public int[] reduce(List<ComputeJobResult> results) {
         if (results.size() == 1) // This is in case we have a single-element array.
             return results.get(0).getData();
 

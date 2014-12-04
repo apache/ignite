@@ -134,13 +134,13 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
 
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 
             int res = 0;
 
-            for (GridComputeJobResult result : results) {
+            for (ComputeJobResult result : results) {
                 assert result != null;
 
                 if (result.getData() != null)

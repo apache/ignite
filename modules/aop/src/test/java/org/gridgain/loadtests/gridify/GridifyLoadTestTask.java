@@ -45,10 +45,10 @@ public class GridifyLoadTestTask extends GridComputeTaskSplitAdapter<GridifyArgu
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         int retVal = 0;
 
-        for (GridComputeJobResult res : results) {
+        for (ComputeJobResult res : results) {
             if (res.getException() != null) {
                 throw new GridException("Received exception in reduce method (load test jobs can never fail): " + res,
                     res.getException());

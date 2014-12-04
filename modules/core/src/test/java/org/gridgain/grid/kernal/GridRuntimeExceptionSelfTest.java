@@ -238,7 +238,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
             if (failType == FailType.RESULT)
                 throw new RuntimeException("Failing out of result method.");
 
@@ -250,7 +250,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
             assert results != null;
 
             if (failType == FailType.REDUCE)

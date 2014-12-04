@@ -143,10 +143,10 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Long reduce(List<ComputeJobResult> results) throws GridException {
             long retVal = 0;
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 retVal += (Long)res.getData();
             }
 

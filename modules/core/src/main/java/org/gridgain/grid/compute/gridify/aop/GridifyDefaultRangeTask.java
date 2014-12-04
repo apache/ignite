@@ -177,12 +177,12 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
     }
 
     /** {@inheritDoc} */
-    @Override public final Collection<?> reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public final Collection<?> reduce(List<ComputeJobResult> results) throws GridException {
         assert results.size() >= 1;
 
         Collection<Object> data = new ArrayList<>(results.size());
 
-        for (GridComputeJobResult res : results) {
+        for (ComputeJobResult res : results) {
             if (res.getException() != null)
                 throw res.getException();
 

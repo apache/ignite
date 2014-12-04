@@ -127,7 +127,7 @@ public class GgfsMapReduceExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<Line> reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Collection<Line> reduce(List<ComputeJobResult> results) throws GridException {
             Collection<Line> lines = new TreeSet<>(new Comparator<Line>() {
                 @Override public int compare(Line line1, Line line2) {
                     return line1.rangePosition() < line2.rangePosition() ? -1 :
@@ -135,7 +135,7 @@ public class GgfsMapReduceExample {
                 }
             });
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 if (res.getException() != null)
                     throw res.getException();
 

@@ -54,7 +54,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
         nodes.add(new GridTestNode(UUID.randomUUID()));
         nodes.add(new GridTestNode(UUID.randomUUID()));
 
-        GridComputeJobResult jobRes = new GridTestJobResult(nodes.get(0));
+        ComputeJobResult jobRes = new GridTestJobResult(nodes.get(0));
 
         ClusterNode node = spi.failover(new GridFailoverTestContext(new GridTestTaskSession(), jobRes), nodes);
 
@@ -77,7 +77,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
         nodes.add(new GridTestNode(UUID.randomUUID()));
         nodes.add(new GridTestNode(UUID.randomUUID()));
 
-        GridComputeJobResult jobRes = new GridTestJobResult(nodes.get(0));
+        ComputeJobResult jobRes = new GridTestJobResult(nodes.get(0));
 
         // First attempt.
         ClusterNode node = spi.failover(new GridFailoverTestContext(new GridTestTaskSession(), jobRes), nodes);
@@ -100,7 +100,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
      * @param cnt Failure count.
      */
     @SuppressWarnings("unchecked")
-    private void checkFailedNodes(GridComputeJobResult res, int cnt) {
+    private void checkFailedNodes(ComputeJobResult res, int cnt) {
         Collection<UUID> failedNodes =
             (Collection<UUID>)res.getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);
 

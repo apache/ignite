@@ -26,7 +26,7 @@ public class GridFailoverTestContext implements GridFailoverContext {
     private final GridComputeTaskSession taskSes;
 
     /** Failed job result. */
-    private final GridComputeJobResult jobRes;
+    private final ComputeJobResult jobRes;
 
     /** */
     public GridFailoverTestContext() {
@@ -40,7 +40,7 @@ public class GridFailoverTestContext implements GridFailoverContext {
      * @param taskSes Grid task session.
      * @param jobRes Failed job result.
      */
-    public GridFailoverTestContext(GridComputeTaskSession taskSes, GridComputeJobResult jobRes) {
+    public GridFailoverTestContext(GridComputeTaskSession taskSes, ComputeJobResult jobRes) {
         this.taskSes = taskSes;
         this.jobRes = jobRes;
     }
@@ -51,7 +51,7 @@ public class GridFailoverTestContext implements GridFailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResult getJobResult() {
+    @Override public ComputeJobResult getJobResult() {
         return jobRes;
     }
 

@@ -50,7 +50,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final GridKernalContext ctx;
 
     /** */
-    private Collection<GridComputeJobSibling> siblings;
+    private Collection<ComputeJobSibling> siblings;
 
     /** */
     private Map<Object, Object> attrs;
@@ -115,7 +115,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable Collection<UUID> top,
         long startTime,
         long endTime,
-        Collection<GridComputeJobSibling> siblings,
+        Collection<ComputeJobSibling> siblings,
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
         boolean fullSup,
@@ -450,12 +450,12 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridComputeJobSibling> refreshJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws GridException {
         return getJobSiblings();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridComputeJobSibling> getJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> getJobSiblings() throws GridException {
         synchronized (mux) {
             return siblings;
         }
@@ -464,7 +464,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /**
      * @param siblings Siblings.
      */
-    public void setJobSiblings(Collection<GridComputeJobSibling> siblings) {
+    public void setJobSiblings(Collection<ComputeJobSibling> siblings) {
         synchronized (mux) {
             this.siblings = Collections.unmodifiableCollection(siblings);
         }
@@ -473,11 +473,11 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /**
      * @param siblings Siblings.
      */
-    public void addJobSiblings(Collection<GridComputeJobSibling> siblings) {
+    public void addJobSiblings(Collection<ComputeJobSibling> siblings) {
         assert isTaskNode();
 
         synchronized (mux) {
-            Collection<GridComputeJobSibling> tmp = new ArrayList<>(this.siblings);
+            Collection<ComputeJobSibling> tmp = new ArrayList<>(this.siblings);
 
             tmp.addAll(siblings);
 
@@ -486,12 +486,12 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
+    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
         A.notNull(jobId, "jobId");
 
-        Collection<GridComputeJobSibling> tmp = getJobSiblings();
+        Collection<ComputeJobSibling> tmp = getJobSiblings();
 
-        for (GridComputeJobSibling sibling : tmp)
+        for (ComputeJobSibling sibling : tmp)
             if (sibling.getJobId().equals(jobId))
                 return sibling;
 

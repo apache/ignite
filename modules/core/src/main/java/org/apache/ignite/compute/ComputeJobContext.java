@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * it ever got a chance to execute (job rejection) which will cause fail-over
  * to another node. Or user is not satisfied with the outcome of a job and
  * fails it over to another node by returning {@link GridComputeJobResultPolicy#FAILOVER}
- * policy from {@link GridComputeTask#result(GridComputeJobResult, List)} method. In this case
+ * policy from {@link GridComputeTask#result(ComputeJobResult, List)} method. In this case
  * all context attributes set on one node will be available on any other node
  * this job travels to.
  * <p>
@@ -40,8 +40,8 @@ import java.util.concurrent.*;
  * that a job was cancelled by grid and not by a user. Context attributes can
  * also be assigned in {@link GridFailoverSpi} prior to failing over a job.
  * <p>
- * From within {@link GridComputeTask#result(GridComputeJobResult, List)} or {@link GridComputeTask#reduce(List)} methods,
- * job context is available via {@link GridComputeJobResult#getJobContext()} method which gives user the
+ * From within {@link GridComputeTask#result(ComputeJobResult, List)} or {@link GridComputeTask#reduce(List)} methods,
+ * job context is available via {@link ComputeJobResult#getJobContext()} method which gives user the
  * ability to check context attributes from within grid task implementation for every job
  * returned from remote nodes.
  * <p>

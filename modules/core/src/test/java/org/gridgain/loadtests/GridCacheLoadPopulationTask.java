@@ -25,7 +25,7 @@ public class GridCacheLoadPopulationTask extends GridComputeTaskSplitAdapter<Voi
     private static final long serialVersionUID = 1L;
 
     /** {@inheritDoc} */
-    @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 

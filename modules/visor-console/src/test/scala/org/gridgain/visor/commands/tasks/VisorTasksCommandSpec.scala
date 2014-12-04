@@ -13,7 +13,7 @@ package org.gridgain.visor.commands.tasks
 
 import java.util
 
-import org.apache.ignite.compute.{ComputeJobAdapter, GridComputeTaskSplitAdapter, ComputeJob, GridComputeJobResult}
+import org.apache.ignite.compute.{ComputeJobAdapter, GridComputeTaskSplitAdapter, ComputeJob, ComputeJobResult}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.GridEventType
 import org.gridgain.grid.compute.GridComputeJobAdapter
@@ -186,7 +186,7 @@ private class TestTask1 extends GridComputeTaskSplitAdapter[String, Void] {
         })
     }
 
-    def reduce(results: util.List[GridComputeJobResult]) = null
+    def reduce(results: util.List[ComputeJobResult]) = null
 }
 
 /**
@@ -203,7 +203,7 @@ private class TestTask2 extends GridComputeTaskSplitAdapter[String, Void] {
         })
     }
 
-    def reduce(results: util.List[GridComputeJobResult]) = null
+    def reduce(results: util.List[ComputeJobResult]) = null
 }
 
 /**
@@ -220,5 +220,5 @@ private class Test3 extends GridComputeTaskSplitAdapter[String, Void] {
         })
     }
 
-    def reduce(results: util.List[GridComputeJobResult]) = null
+    def reduce(results: util.List[ComputeJobResult]) = null
 }

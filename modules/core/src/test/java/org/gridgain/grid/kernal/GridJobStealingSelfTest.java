@@ -336,8 +336,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("SuspiciousMethodCalls")
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
-            for (GridComputeJobResult res : results) {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+            for (ComputeJobResult res : results) {
                 log.info("Job result: " + res.getData());
             }
 

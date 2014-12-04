@@ -107,7 +107,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

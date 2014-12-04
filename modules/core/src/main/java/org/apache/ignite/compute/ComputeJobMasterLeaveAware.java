@@ -12,7 +12,7 @@ import org.gridgain.grid.*;
  * which could be reused later. E.g. you can save job execution result to the database or as a checkpoint
  * and reuse it when failed task is being executed again thus avoiding job execution from scratch.
  */
-public interface GridComputeJobMasterLeaveAware {
+public interface ComputeJobMasterLeaveAware {
     /**
      * A method which is executed in case master node has left topology during job execution.
      *

@@ -32,7 +32,7 @@ public class GridP2PContinuousDeploymentTask2 extends GridComputeTaskSplitAdapte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 }

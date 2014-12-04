@@ -164,7 +164,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             return F.first(results).getData();
         }
     }

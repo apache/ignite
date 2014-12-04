@@ -78,7 +78,7 @@ public class GridSessionLoadTestTask extends GridComputeTaskAdapter<Integer, Boo
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
-    @Override public Boolean reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
         assert taskSes != null;
         assert results != null;
         assert params != null;

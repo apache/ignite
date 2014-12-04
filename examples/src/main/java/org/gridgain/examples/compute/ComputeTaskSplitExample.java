@@ -74,10 +74,10 @@ public class ComputeTaskSplitExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<GridComputeJobResult> results) {
+        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
-            for (GridComputeJobResult res : results)
+            for (ComputeJobResult res : results)
                 sum += res.<Integer>getData();
 
             return sum;

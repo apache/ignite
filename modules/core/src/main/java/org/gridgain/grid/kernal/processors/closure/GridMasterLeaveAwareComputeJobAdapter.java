@@ -12,10 +12,10 @@ package org.gridgain.grid.kernal.processors.closure;
 import org.apache.ignite.compute.*;
 
 /**
- * Job adapter implementing {@link org.apache.ignite.compute.GridComputeJobMasterLeaveAware}.
+ * Job adapter implementing {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware}.
  */
 public abstract class GridMasterLeaveAwareComputeJobAdapter extends ComputeJobAdapter
-    implements GridComputeJobMasterLeaveAware {
+    implements ComputeJobMasterLeaveAware {
     /** */
     private static final long serialVersionUID = 0L;
 

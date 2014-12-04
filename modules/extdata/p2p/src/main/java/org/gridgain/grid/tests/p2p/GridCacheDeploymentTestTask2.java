@@ -43,7 +43,7 @@ public class GridCacheDeploymentTestTask2 extends GridComputeTaskAdapter<Cluster
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 }

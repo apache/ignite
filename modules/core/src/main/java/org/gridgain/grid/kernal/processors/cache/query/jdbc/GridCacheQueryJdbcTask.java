@@ -88,11 +88,11 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public byte[] reduce(List<ComputeJobResult> results) throws GridException {
         byte status;
         byte[] bytes;
 
-        GridComputeJobResult res = F.first(results);
+        ComputeJobResult res = F.first(results);
 
         if (res.getException() == null) {
             status = 0;
@@ -115,7 +115,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         return WAIT;
     }
 

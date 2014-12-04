@@ -35,11 +35,11 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, Ignit
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<UUID, IgniteBiTuple<Long, Long>> reduce(List<GridComputeJobResult> results)
+    @Nullable @Override public Map<UUID, IgniteBiTuple<Long, Long>> reduce(List<ComputeJobResult> results)
         throws GridException {
         Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
-        for (GridComputeJobResult res: results) {
+        for (ComputeJobResult res: results) {
             IgniteBiTuple<Long, Long> jobRes = res.getData();
 
             total.put(res.getNode().id(), jobRes);

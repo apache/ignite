@@ -46,17 +46,17 @@ public class GridClientTcpTask extends GridComputeTaskSplitAdapter<List<Object>,
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         int sum = 0;
 
-        for (GridComputeJobResult res : results)
+        for (ComputeJobResult res : results)
             sum += res.<Integer>getData();
 
         return sum;
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         if (res.getException() != null)
             return FAILOVER;
 

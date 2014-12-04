@@ -181,7 +181,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert log != null;
             assert rsrc != null;
 

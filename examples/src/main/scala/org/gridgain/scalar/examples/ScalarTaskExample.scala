@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.compute.{GridComputeTaskSplitAdapter, ComputeJob, GridComputeJobResult}
+import org.apache.ignite.compute.{GridComputeTaskSplitAdapter, ComputeJob, ComputeJobResult}
 import org.gridgain.scalar.scalar
 import scalar._
 import collection.JavaConversions._
@@ -40,6 +40,6 @@ object ScalarTaskExample extends App {
             (for (w <- arg.split(" ")) yield toJob(() => println(w))).toSeq
         }
 
-        def reduce(results: util.List[GridComputeJobResult]) = null
+        def reduce(results: util.List[ComputeJobResult]) = null
     }
 }

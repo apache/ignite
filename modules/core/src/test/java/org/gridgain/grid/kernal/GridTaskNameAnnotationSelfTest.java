@@ -87,13 +87,13 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             return WAIT;
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             return F.first(results).getData();
         }
     }

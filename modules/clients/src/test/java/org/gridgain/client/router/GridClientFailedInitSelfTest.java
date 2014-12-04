@@ -259,7 +259,7 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             assertEquals(1, results.size());
 
             return results.get(0).getData();

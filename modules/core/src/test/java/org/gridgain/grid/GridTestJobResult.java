@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Test job result.
  */
-public class GridTestJobResult implements GridComputeJobResult {
+public class GridTestJobResult implements ComputeJobResult {
     /** */
     private final Serializable data;
 

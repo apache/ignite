@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Class provides implementation for job result.
  */
-public class GridJobResultImpl implements GridComputeJobResult {
+public class GridJobResultImpl implements ComputeJobResult {
     /** */
     private final ComputeJob job;
 

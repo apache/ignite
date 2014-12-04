@@ -75,7 +75,7 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
         long timeout,
         @Nullable Collection<UUID> top,
         byte[] siblingsBytes,
-        Collection<GridComputeJobSibling> siblings,
+        Collection<ComputeJobSibling> siblings,
         byte[] sesAttrsBytes,
         Map<Object, Object> sesAttrs,
         byte[] jobAttrsBytes,

@@ -54,7 +54,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskNoResultCache
     private static class GridResultNoCacheTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             assert res.getData() != null;
             assert rcvd.isEmpty();
 
@@ -62,7 +62,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert results.isEmpty();
 
             return null;
@@ -74,20 +74,20 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
      */
     private static class GridResultCacheTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             assert res.getData() != null;
             assert rcvd.contains(res);
 
-            for (GridComputeJobResult jobRes : rcvd)
+            for (ComputeJobResult jobRes : rcvd)
                 assert jobRes.getData() != null;
 
             return super.result(res, rcvd);
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
-            for (GridComputeJobResult res : results) {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+            for (ComputeJobResult res : results) {
                 if (res.getException() != null)
                     throw res.getException();
 

@@ -74,7 +74,7 @@ public class GridP2PTestTaskExternalPath1 extends GridComputeTaskAdapter<Object,
     /**
      * {@inheritDoc}
      */
-    @Override public int[] reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public int[] reduce(List<ComputeJobResult> results) throws GridException {
         return results.get(0).getData();
     }
 

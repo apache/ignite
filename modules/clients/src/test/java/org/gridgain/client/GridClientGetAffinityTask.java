@@ -48,7 +48,7 @@ public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<Str
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         if (res.getException() != null)
             return FAILOVER;
 

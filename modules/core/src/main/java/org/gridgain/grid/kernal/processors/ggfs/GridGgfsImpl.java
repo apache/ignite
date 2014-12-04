@@ -2025,11 +2025,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Long, Long> reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public IgniteBiTuple<Long, Long> reduce(List<ComputeJobResult> results) throws GridException {
             long used = 0;
             long max = 0;
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 IgniteBiTuple<Long, Long> data = res.getData();
 
                 if (data != null) {
@@ -2042,7 +2042,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             // Never failover.
             return GridComputeJobResultPolicy.WAIT;
         }

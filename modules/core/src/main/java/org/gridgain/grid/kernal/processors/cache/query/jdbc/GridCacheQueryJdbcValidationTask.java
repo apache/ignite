@@ -51,7 +51,7 @@ public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
         return F.first(results).getData();
     }
 }

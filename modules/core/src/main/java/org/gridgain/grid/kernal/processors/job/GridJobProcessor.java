@@ -371,7 +371,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return Siblings.
      * @throws GridException If failed.
      */
-    public Collection<GridComputeJobSibling> requestJobSiblings(final GridComputeTaskSession ses) throws GridException {
+    public Collection<ComputeJobSibling> requestJobSiblings(final GridComputeTaskSession ses) throws GridException {
         assert ses != null;
 
         final UUID taskNodeId = ses.getTaskNodeId();
@@ -959,10 +959,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     GridJobContextImpl jobCtx;
 
                     try {
-                        List<GridComputeJobSibling> siblings = null;
+                        List<ComputeJobSibling> siblings = null;
 
                         if (!req.isDynamicSiblings()) {
-                            Collection<GridComputeJobSibling> siblings0 = req.getSiblings();
+                            Collection<ComputeJobSibling> siblings0 = req.getSiblings();
 
                             if (siblings0 == null) {
                                 assert req.getSiblingsBytes() != null;

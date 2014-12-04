@@ -27,7 +27,7 @@ public class GridFailoverContextImpl implements GridFailoverContext {
     private final GridTaskSessionImpl taskSes;
 
     /** Failed job result. */
-    private final GridComputeJobResult jobRes;
+    private final ComputeJobResult jobRes;
 
     /** Load balancing manager. */
     @GridToStringExclude
@@ -40,7 +40,7 @@ public class GridFailoverContextImpl implements GridFailoverContext {
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
      */
-    public GridFailoverContextImpl(GridTaskSessionImpl taskSes, GridComputeJobResult jobRes,
+    public GridFailoverContextImpl(GridTaskSessionImpl taskSes, ComputeJobResult jobRes,
         GridLoadBalancerManager loadMgr) {
         assert taskSes != null;
         assert jobRes != null;
@@ -57,7 +57,7 @@ public class GridFailoverContextImpl implements GridFailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResult getJobResult() {
+    @Override public ComputeJobResult getJobResult() {
         return jobRes;
     }
 

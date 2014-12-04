@@ -235,7 +235,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int[] reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public int[] reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 1;
 
             assert taskRsrc == rsrc;

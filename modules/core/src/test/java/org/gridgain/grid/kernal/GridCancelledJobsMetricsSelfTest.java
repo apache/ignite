@@ -111,7 +111,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.get(0).isCancelled() : "Wrong job result status.";
 
             return null;

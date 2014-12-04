@@ -108,7 +108,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
         if (res.getException() != null)
             throw new GridException(res.getException());
 
@@ -125,7 +125,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
         X.println(">>> Reducing task...");
 
         t.interrupt();

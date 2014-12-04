@@ -25,7 +25,7 @@ public class GridDsiResponseTask extends GridComputeTaskSplitAdapter<GridDsiMess
     }
 
     /** {@inheritDoc} */
-    @Override public T3<Long, Integer, Integer> reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public T3<Long, Integer, Integer> reduce(List<ComputeJobResult> results) throws GridException {
         assert results.size() == 1;
 
         return results.get(0).getData();

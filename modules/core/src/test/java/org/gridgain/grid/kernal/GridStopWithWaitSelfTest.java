@@ -149,7 +149,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             return results.get(0).getData();
         }
     }
@@ -224,7 +224,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
             if (res.getException() != null && !(res.getException() instanceof GridComputeUserUndeclaredException)) {
                 assert res.getNode().id().equals(nodeRef.get().id());
 
@@ -237,7 +237,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> res) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> res) throws GridException {
             assert res.size() == 1;
 
             assert nodeRef.get() != null;

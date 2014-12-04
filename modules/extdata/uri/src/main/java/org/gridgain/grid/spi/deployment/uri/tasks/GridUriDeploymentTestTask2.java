@@ -54,7 +54,7 @@ public class GridUriDeploymentTestTask2 extends GridComputeTaskSplitAdapter<Obje
     /**
      * {@inheritDoc}
      */
-    @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
         System.out.println("Reduce is called.");
 
         return null;

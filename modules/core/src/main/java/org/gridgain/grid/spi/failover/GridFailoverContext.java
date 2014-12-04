@@ -32,7 +32,7 @@ public interface GridFailoverContext {
      *
      * @return Result of a failed job.
      */
-    public GridComputeJobResult getJobResult();
+    public ComputeJobResult getJobResult();
 
     /**
      * Gets the next balanced node for failed job. Internally this method will

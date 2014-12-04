@@ -58,7 +58,7 @@ import java.util.*;
  *      on the remote node (immediately, buffered or canceled).
  * </li>
  * <li>
- *      Once job execution results become available method {@link #result(GridComputeJobResult, List) result(GridComputeJobResult, List)}
+ *      Once job execution results become available method {@link #result(ComputeJobResult, List) result(GridComputeJobResult, List)}
  *      will be called for each received job result. The policy returned by this method will
  *      determine the way task reacts to every job result:
  *      <ul>
@@ -81,13 +81,13 @@ import java.util.*;
  *          known failure cases:
  *          <ul>
  *          <li>
- *              Job has failed due to node crash. In this case {@link GridComputeJobResult#getException()}
+ *              Job has failed due to node crash. In this case {@link ComputeJobResult#getException()}
  *              method will return an instance of {@link GridTopologyException} exception.
  *          </li>
  *          <li>
  *              Job execution was rejected, i.e. remote node has cancelled job before it got
  *              a chance to execute, while it still was on the waiting list. In this case
- *              {@link GridComputeJobResult#getException()} method will return an instance of
+ *              {@link ComputeJobResult#getException()} method will return an instance of
  *              {@link ComputeExecutionRejectedException} exception.
  *          </li>
  *          </ul>
@@ -95,7 +95,7 @@ import java.util.*;
  *      </ul>
  * </li>
  * <li>
- *      Once all results are received or {@link #result(GridComputeJobResult, List) result(GridComputeJobResult, List)}
+ *      Once all results are received or {@link #result(ComputeJobResult, List) result(GridComputeJobResult, List)}
  *      method returned {@link GridComputeJobResultPolicy#REDUCE} policy, method {@link #reduce(List) reduce(List)}
  *      is called to aggregate received results into one final result. Once this method is finished the
  *      execution of the grid task is complete. This result will be returned to the user through
@@ -115,9 +115,9 @@ import java.util.*;
  * Sometimes job results are too large or task simply has too many jobs to keep track
  * of which may hinder performance. In such cases it may make sense to disable task
  * result caching by attaching {@link GridComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation to task class, and
- * processing all results as they come in {@link #result(GridComputeJobResult, List)} method.
+ * processing all results as they come in {@link #result(ComputeJobResult, List)} method.
  * When GridGain sees this annotation it will disable tracking of job results and
- * list of all job results passed into {@link #result(GridComputeJobResult, List)} or
+ * list of all job results passed into {@link #result(ComputeJobResult, List)} or
  * {@link #reduce(List)} methods will always be empty. Note that list of
  * job siblings on {@link GridComputeTaskSession} will also be empty to prevent number
  * of job siblings from growing as well.
@@ -144,7 +144,7 @@ import java.util.*;
  * {@code GridComputeTask} comes with several convenience adapters to make the usage easier:
  * <ul>
  * <li>
- * {@link GridComputeTaskAdapter} provides default implementation for {@link GridComputeTask#result(GridComputeJobResult, List)}
+ * {@link GridComputeTaskAdapter} provides default implementation for {@link GridComputeTask#result(ComputeJobResult, List)}
  * method which provides automatic fail-over to another node if remote job has failed
  * due to node crash (detected by {@link GridTopologyException} exception) or due to job
  * execution rejection (detected by {@link ComputeExecutionRejectedException} exception).
@@ -262,7 +262,7 @@ public interface GridComputeTask<T, R> extends Serializable {
      * @throws GridException If handling a job result caused an error. This exception will
      *      be thrown out of {@link GridComputeTaskFuture#get()} method.
      */
-    public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException;
+    public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException;
 
     /**
      * Reduces (or aggregates) results received so far into one compound result to be returned to
@@ -278,5 +278,5 @@ public interface GridComputeTask<T, R> extends Serializable {
      * @throws GridException If reduction or results caused an error. This exception will
      *      be thrown out of {@link GridComputeTaskFuture#get()} method.
      */
-    @Nullable public R reduce(List<GridComputeJobResult> results) throws GridException;
+    @Nullable public R reduce(List<ComputeJobResult> results) throws GridException;
 }

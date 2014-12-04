@@ -62,7 +62,7 @@ public class GridBasicAopSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }

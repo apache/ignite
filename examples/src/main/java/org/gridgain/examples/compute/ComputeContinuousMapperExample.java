@@ -64,7 +64,7 @@ public class ComputeContinuousMapperExample {
      * <p>
      * Note that annotation {@link GridComputeTaskNoResultCache} is optional and tells GridGain
      * not to accumulate results from individual jobs. In this example we increment
-     * total character count directly in {@link #result(org.apache.ignite.compute.GridComputeJobResult, List)} method,
+     * total character count directly in {@link #result(org.apache.ignite.compute.ComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.
      */
     @GridComputeTaskNoResultCache
@@ -97,7 +97,7 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
             throws GridException {
             // If there is an error, fail-over to another node.
             if (res.getException() != null)
@@ -113,7 +113,7 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             return totalChrCnt.get();
         }
 

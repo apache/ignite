@@ -169,7 +169,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
             throws GridException {
             if (res.getException() != null)
                 throw res.getException();
@@ -178,7 +178,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 
@@ -187,7 +187,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             int sum = 0;
 
-            for (GridComputeJobResult result : results) {
+            for (ComputeJobResult result : results) {
                 if (result.getData() != null)
                     sum += (Integer)result.getData();
             }

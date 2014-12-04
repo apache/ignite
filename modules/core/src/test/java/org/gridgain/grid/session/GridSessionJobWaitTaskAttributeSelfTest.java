@@ -173,7 +173,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
             throws GridException {
             if (result.getException() != null)
                 throw result.getException();
@@ -190,7 +190,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 
@@ -199,7 +199,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
             int sum = 0;
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 if (res.getData() == null)
                     fail("Got null result data: " + res);
                 else

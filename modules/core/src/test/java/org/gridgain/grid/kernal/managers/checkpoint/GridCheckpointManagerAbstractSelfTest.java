@@ -394,7 +394,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -629,7 +629,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }
@@ -727,10 +727,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
+        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
             int sum = 0;
 
-            for (GridComputeJobResult res : results)
+            for (ComputeJobResult res : results)
                 sum += res.<Integer>getData();
 
             return sum;

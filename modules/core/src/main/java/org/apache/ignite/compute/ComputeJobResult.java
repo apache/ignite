@@ -15,10 +15,10 @@ import org.gridgain.grid.*;
 import java.util.*;
 
 /**
- * Result of remote job which gets passed into {@link GridComputeTask#result(GridComputeJobResult, List)}
+ * Result of remote job which gets passed into {@link GridComputeTask#result(ComputeJobResult, List)}
  * method.
  */
-public interface GridComputeJobResult {
+public interface ComputeJobResult {
     /**
      * Gets job context. Use job context to access job unique ID or to get/set
      * jobs attributes. Context is attached to a job and travels with it wherever
@@ -36,7 +36,7 @@ public interface GridComputeJobResult {
      * <p>
      * Note that if task is annotated with {@link GridComputeTaskNoResultCache} annotation,
      * then job results will not be cached and will be available only in
-     * {@link GridComputeTask#result(GridComputeJobResult, List)} method for every individual job,
+     * {@link GridComputeTask#result(ComputeJobResult, List)} method for every individual job,
      * but not in {@link GridComputeTask#reduce(List)} method. This feature was added to
      * avoid excessive storing of overly large results.
      *

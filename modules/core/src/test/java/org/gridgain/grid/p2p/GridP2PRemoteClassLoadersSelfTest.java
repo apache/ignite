@@ -250,10 +250,10 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
             assert results.size() == 1;
 
-            GridComputeJobResult res = results.get(0);
+            ComputeJobResult res = results.get(0);
 
             if (log.isInfoEnabled())
                 log.info("Got job result for aggregation: " + res);

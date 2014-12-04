@@ -724,12 +724,12 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             int sum = 0;
 
             String locNodeId = null;
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 IgniteBiTuple<String, Integer> part = res.getData();
 
                 if (locNodeId == null)

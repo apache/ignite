@@ -128,7 +128,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
             return null;
         }
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
             return null;
         }
     }

@@ -44,10 +44,10 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
 
     /** {@inheritDoc} */
     @SuppressWarnings("SuspiciousMethodCalls")
-    @Override public Map<UUID, Integer> reduce(List<GridComputeJobResult> results) throws GridException {
+    @Override public Map<UUID, Integer> reduce(List<ComputeJobResult> results) throws GridException {
         Map<UUID, Integer> ret = U.newHashMap(results.size());
 
-        for (GridComputeJobResult res : results) {
+        for (ComputeJobResult res : results) {
             log.info("Job result: " + res.getData());
 
             UUID resUuid = (UUID)res.getData();

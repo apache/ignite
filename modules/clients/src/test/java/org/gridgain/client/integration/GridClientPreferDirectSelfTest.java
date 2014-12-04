@@ -169,10 +169,10 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<GridComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
             int sum = 0;
 
-            for (GridComputeJobResult res : results) {
+            for (ComputeJobResult res : results) {
                 assertNotNull(res.getData());
 
                 sum += 1;
