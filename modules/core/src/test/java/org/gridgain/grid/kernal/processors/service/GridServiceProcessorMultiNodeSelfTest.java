@@ -37,7 +37,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
@@ -84,7 +84,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         String name = "serviceAffinityUpdateTopology";
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
@@ -123,7 +123,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 

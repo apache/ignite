@@ -44,7 +44,7 @@ public class ServicesExample {
                 return;
             }
 
-            GridServices svcs = ignite.services(rmts);
+            IgniteManaged svcs = ignite.services(rmts);
 
             try {
                 // Deploy cluster singleton.

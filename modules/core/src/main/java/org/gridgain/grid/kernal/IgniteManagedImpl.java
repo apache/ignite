@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * {@link org.apache.ignite.IgniteCompute} implementation.
  */
-public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridServices, Externalizable {
+public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements IgniteManaged, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,7 @@ public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridS
     /**
      * Required by {@link Externalizable}.
      */
-    public GridServicesImpl() {
+    public IgniteManagedImpl() {
         // No-op.
     }
 
@@ -44,7 +44,7 @@ public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridS
      * @param prj Projection.
      * @param async Async support flag.
      */
-    public GridServicesImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
+    public IgniteManagedImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
         super(async);
 
         this.ctx = ctx;
@@ -227,11 +227,11 @@ public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public GridServices enableAsync() {
+    @Override public IgniteManaged enableAsync() {
         if (isAsync())
             return this;
 
-        return new GridServicesImpl(ctx, prj, true);
+        return new IgniteManagedImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

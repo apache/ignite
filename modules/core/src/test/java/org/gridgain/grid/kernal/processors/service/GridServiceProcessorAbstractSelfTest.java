@@ -134,8 +134,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testSameConfiguration() throws Exception {
         String name = "dupService";
 
-        GridServices svcs1 = randomGrid().services().enableAsync();
-        GridServices svcs2 = randomGrid().services().enableAsync();
+        IgniteManaged svcs1 = randomGrid().services().enableAsync();
+        IgniteManaged svcs2 = randomGrid().services().enableAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
@@ -163,8 +163,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDifferentConfiguration() throws Exception {
         String name = "dupService";
 
-        GridServices svcs1 = randomGrid().services().enableAsync();
-        GridServices svcs2 = randomGrid().services().enableAsync();
+        IgniteManaged svcs1 = randomGrid().services().enableAsync();
+        IgniteManaged svcs2 = randomGrid().services().enableAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
@@ -248,7 +248,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 
@@ -280,7 +280,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
@@ -313,7 +313,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         String name = "serviceAffinity";
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
@@ -341,7 +341,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
@@ -375,7 +375,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        GridServices svcs = g.services().enableAsync();
+        IgniteManaged svcs = g.services().enableAsync();
 
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 

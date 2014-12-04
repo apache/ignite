@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.resources;
 
-import org.gridgain.grid.service.*;
-
 import java.lang.annotation.*;
 
 /**
@@ -62,7 +60,7 @@ public @interface GridServiceResource {
      * instance, then leave this property as {@code null}.
      * <p>
      * For more information about service proxies, see
-     * {@link GridServices#serviceProxy(String, Class, boolean)} documentation.
+     * {@link org.gridgain.grid.service.IgniteManaged#serviceProxy(String, Class, boolean)} documentation.
      *
      * @return Interface class for remote service proxy.
      */
@@ -72,7 +70,7 @@ public @interface GridServiceResource {
      * Flag indicating if a sticky instance of a service proxy should be returned.
      * This flag is only valid if {@link #proxyInterface()} is not {@code null}.
      * <p>
-     * For information about sticky flag, see {@link GridServices#serviceProxy(String, Class, boolean)}
+     * For information about sticky flag, see {@link org.gridgain.grid.service.IgniteManaged#serviceProxy(String, Class, boolean)}
      * documentation.
      *
      * @return {@code True} if a sticky instance of a service proxy should be injected.

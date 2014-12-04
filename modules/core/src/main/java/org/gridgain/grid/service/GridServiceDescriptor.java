@@ -18,7 +18,7 @@ import java.util.*;
  * Service deployment descriptor. Contains all service deployment configuration, and also
  * deployment topology snapshot as well as origin node ID.
  * <p>
- * Service descriptors can be retrieved by calling {@link GridServices#deployedServices()} method.
+ * Service descriptors can be retrieved by calling {@link IgniteManaged#deployedServices()} method.
  */
 public interface GridServiceDescriptor extends Serializable {
     /**

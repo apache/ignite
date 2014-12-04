@@ -116,7 +116,7 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface GridServices extends IgniteAsyncSupport {
+public interface IgniteManaged extends IgniteAsyncSupport {
     /**
      * Gets grid projection to which this {@code GridServices} instance belongs.
      *
@@ -338,5 +338,5 @@ public interface GridServices extends IgniteAsyncSupport {
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override public GridServices enableAsync();
+    @Override public IgniteManaged enableAsync();
 }
