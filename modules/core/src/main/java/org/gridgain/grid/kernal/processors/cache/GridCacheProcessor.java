@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -35,7 +36,6 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;

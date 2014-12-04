@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.transactions;
+package org.apache.ignite;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;

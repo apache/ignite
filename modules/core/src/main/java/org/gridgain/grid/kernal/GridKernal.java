@@ -70,7 +70,6 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.securesession.noop.*;
-import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.transactions.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
