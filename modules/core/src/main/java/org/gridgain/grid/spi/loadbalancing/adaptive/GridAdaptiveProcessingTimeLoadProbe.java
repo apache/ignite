@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.loadbalancing.adaptive;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**

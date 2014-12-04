@@ -10,7 +10,6 @@
 package org.gridgain.testframework;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.lang.*;
