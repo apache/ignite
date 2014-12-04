@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.IgniteBiClosure
+import org.apache.ignite.lang.IgniteBiClosure
 
 /**
  * Peer deploy aware adapter for Java's `GridClosure2`.
