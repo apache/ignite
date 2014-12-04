@@ -10,8 +10,8 @@
 package org.gridgain.loadtests.direct.session;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 

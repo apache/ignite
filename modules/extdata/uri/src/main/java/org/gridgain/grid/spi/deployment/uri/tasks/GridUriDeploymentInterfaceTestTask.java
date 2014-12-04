@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.deployment.uri.tasks;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 
 /**
  * URI deployment interface test task.

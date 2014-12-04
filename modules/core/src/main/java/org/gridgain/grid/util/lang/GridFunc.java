@@ -10,11 +10,11 @@
 package org.gridgain.grid.util.lang;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -1521,9 +1521,9 @@ public class GridFunc {
      * Note that this method doesn't create a new collection but simply iterates over the input one.
      *
      * @param res Collection of grid job res.
-     * @param <T> Type of the data item to cast to. See {@link GridComputeJobResult#getData()} method.
+     * @param <T> Type of the data item to cast to. See {@link org.apache.ignite.compute.GridComputeJobResult#getData()} method.
      * @return Collections of data items casted to type {@code T}.
-     * @see GridComputeJobResult#getData()
+     * @see org.apache.ignite.compute.GridComputeJobResult#getData()
      */
     public static <T> Collection<T> jobResults(@Nullable Collection<? extends GridComputeJobResult> res) {
         if (isEmpty(res))

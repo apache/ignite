@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.collision.priorityqueue;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
@@ -43,7 +43,7 @@ import java.util.*;
  * <li>
  *      Priority attribute job context key (see {@link #getJobPriorityAttributeKey()}).
  *      It is used for specifying job priority.
- *      See {@link GridComputeJobContext} for more information about job context.
+ *      See {@link org.apache.ignite.compute.GridComputeJobContext} for more information about job context.
  * </li>
  * <li>Default priority value (see {@link #getDefaultPriority()}). It is used when no priority is set.</li>
  * <li>
@@ -285,7 +285,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
 
     /**
      * Sets job priority attribute key. This key will be used to look up job
-     * priorities from job context (see {@link GridComputeJobContext#getAttribute(Object)}).
+     * priorities from job context (see {@link org.apache.ignite.compute.GridComputeJobContext#getAttribute(Object)}).
      * <p>
      * If not provided, default value is {@code {@link #DFLT_JOB_PRIORITY_ATTRIBUTE_KEY}}.
      *

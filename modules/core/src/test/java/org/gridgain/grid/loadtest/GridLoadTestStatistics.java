@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.loadtest;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

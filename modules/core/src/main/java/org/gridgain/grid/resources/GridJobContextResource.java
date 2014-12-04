@@ -9,17 +9,15 @@
 
 package org.gridgain.grid.resources;
 
-import org.gridgain.grid.compute.*;
-
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link GridComputeJobContext} instance.
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.GridComputeJobContext} instance.
  * It can be injected into grid jobs only.
  * <p>
  * Job context can be injected into instances of following classes:
  * <ul>
- * <li>{@link GridComputeJob}</li>
+ * <li>{@link org.apache.ignite.compute.GridComputeJob}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:

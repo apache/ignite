@@ -10,6 +10,7 @@
  */
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.compute.GridComputeJobContext
 import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
 import org.gridgain.scalar._
 import scalar._

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.ggfs.mapreduce;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 
 import java.util.*;
 

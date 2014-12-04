@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
+import org.apache.ignite.compute.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;

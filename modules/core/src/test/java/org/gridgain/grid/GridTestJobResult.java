@@ -10,7 +10,7 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 
 import java.io.*;
 

@@ -11,6 +11,7 @@ package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -18,7 +19,6 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.mbean.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -5043,7 +5043,7 @@ public abstract class GridUtils {
      * Gets task name for the given task class.
      *
      * @param taskCls Task class.
-     * @return Either task name from class annotation (see {@link org.gridgain.grid.compute.GridComputeTaskName}})
+     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.GridComputeTaskName}})
      *      or task class name if there is no annotation.
      */
     public static String getTaskName(Class<? extends GridComputeTask<?, ?>> taskCls) {

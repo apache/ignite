@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.failover.always;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
@@ -82,7 +81,7 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
     /**
      * Name of job context attribute containing all nodes a job failed on.
      *
-     * @see GridComputeJobContext
+     * @see org.apache.ignite.compute.GridComputeJobContext
      */
     public static final String FAILED_NODE_LIST_ATTR = "gg:failover:failednodelist";
 

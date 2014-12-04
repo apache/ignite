@@ -2,7 +2,7 @@
 
 package org.gridgain.grid.kernal.processors.closure;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

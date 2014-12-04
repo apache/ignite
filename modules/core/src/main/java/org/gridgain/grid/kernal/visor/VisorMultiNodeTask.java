@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.visor;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.collision;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 
 /**
  * This interface defines set of operations that collision SPI implementation can perform on

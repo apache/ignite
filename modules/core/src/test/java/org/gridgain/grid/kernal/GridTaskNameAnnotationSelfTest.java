@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
 
 /**
  * Tests for {@link GridComputeTaskName} annotation.

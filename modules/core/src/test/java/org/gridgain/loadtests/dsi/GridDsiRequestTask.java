@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.dsi;
 
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;

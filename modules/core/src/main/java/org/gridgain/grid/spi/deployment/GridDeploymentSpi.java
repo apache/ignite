@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.deployment;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.local.*;
 import org.jetbrains.annotations.*;
@@ -68,12 +67,12 @@ public interface GridDeploymentSpi extends GridSpi {
      * with a separate class loader maintained internally by the SPI.
      * <p>
      * The array of classes passed in should be checked for presence of
-     * {@link GridComputeTaskName} annotations. The classes that have this annotation
+     * {@link org.apache.ignite.compute.GridComputeTaskName} annotations. The classes that have this annotation
      * should be accessible by this name from {@link #findResource(String)} method.
      *
      * @param ldr Class loader to register.
      * @param rsrc Class that should be checked for aliases.
-     *      Currently the only alias in the system is {@link GridComputeTaskName} for
+     *      Currently the only alias in the system is {@link org.apache.ignite.compute.GridComputeTaskName} for
      *      task classes; in future, there may be others.
      * @return {@code True} if resource was registered.
      * @throws GridSpiException If registration failed.
@@ -82,9 +81,9 @@ public interface GridDeploymentSpi extends GridSpi {
 
     /**
      * Unregisters all class loaders that have a class with given name or have
-     * a class with give {@link GridComputeTaskName} value.
+     * a class with give {@link org.apache.ignite.compute.GridComputeTaskName} value.
      *
-     * @param rsrcName Either class name or {@link GridComputeTaskName} value for a class
+     * @param rsrcName Either class name or {@link org.apache.ignite.compute.GridComputeTaskName} value for a class
      *      whose class loader needs to be unregistered.
      * @return {@code True} if resource was unregistered.
      */

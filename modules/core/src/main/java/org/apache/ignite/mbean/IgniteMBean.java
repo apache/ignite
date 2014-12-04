@@ -9,8 +9,6 @@
 
 package org.apache.ignite.mbean;
 
-import org.gridgain.grid.compute.*;
-
 import javax.management.*;
 import java.util.*;
 
@@ -195,7 +193,7 @@ public interface IgniteMBean {
      * This method will attempt to undeploy all versions on the grid task with
      * given name.
      *
-     * @param taskName Name of the task to undeploy. If task class has {@link GridComputeTaskName} annotation,
+     * @param taskName Name of the task to undeploy. If task class has {@link org.apache.ignite.compute.GridComputeTaskName} annotation,
      *      then task was deployed under a name specified within annotation. Otherwise, full
      *      class name should be used as task's name.
      * @throws JMException Thrown if undeploy failed.

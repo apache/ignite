@@ -10,8 +10,8 @@
 package org.gridgain.grid.compute.gridify;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.compute.*;
 
 /**
  * Predicate node filter.

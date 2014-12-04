@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.springframework.beans.*;

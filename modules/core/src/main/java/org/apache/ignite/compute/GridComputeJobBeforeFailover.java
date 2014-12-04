@@ -7,24 +7,27 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.compute;
+package org.apache.ignite.compute;
+
+import org.gridgain.grid.spi.failover.*;
 
 import java.lang.annotation.*;
 
 /**
- * This annotation allows to call a method right after the job has been
- * successfully sent for execution. It is useful to clean up the internal
- * state of the job when it is not immediately needed.
+ * This annotation allows to call a method right before job is submitted to
+ * {@link GridFailoverSpi}. In this method job can re-create necessary state that was
+ * cleared, for example, in method with {@link GridComputeJobAfterSend} annotation.
  * <p>
- * This annotation can be applied to methods of {@link GridComputeJob} instance only.
- * It is invoked on the caller node after the job has been sent to remote node for execution.
+ * This annotation can be applied to methods of {@link GridComputeJob} instances only. It is
+ * invoked on the caller node after remote execution has failed and before the
+ * job gets failed over to another node.
  * <p>
  * Example:
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     &#64;GridComputeJobAfterSend
- *     public void onJobAfterSend() {
+ *     &#64;GridComputeJobBeforeFailover
+ *     public void onJobBeforeFailover() {
  *          ...
  *     }
  *     ...
@@ -34,6 +37,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface GridComputeJobAfterSend {
+public @interface GridComputeJobBeforeFailover {
     // No-op.
 }

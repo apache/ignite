@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.streamer.task;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.resources.*;

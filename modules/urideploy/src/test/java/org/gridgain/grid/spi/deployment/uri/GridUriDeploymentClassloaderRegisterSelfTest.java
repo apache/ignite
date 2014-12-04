@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;

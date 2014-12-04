@@ -11,8 +11,8 @@
 
 package org.gridgain.scalar.lang
 
+import org.apache.ignite.compute.GridComputeJobAdapter
 import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.grid.compute.GridComputeJobAdapter
 
 /**
  * Peer deploy aware adapter for Java's `GridComputeJob`.

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 

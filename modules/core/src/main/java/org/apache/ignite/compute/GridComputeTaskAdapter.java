@@ -7,13 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.compute;
+package org.apache.ignite.compute;
 
 import org.gridgain.grid.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
 
 /**
  * Convenience adapter for {@link GridComputeTask} interface. Here is an example of
@@ -90,13 +88,13 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
                 e instanceof GridTopologyException ||
                 // Failover exception is always wrapped.
                 e.hasCause(GridComputeJobFailoverException.class))
-                return FAILOVER;
+                return GridComputeJobResultPolicy.FAILOVER;
 
             throw new GridException("Remote job threw user exception (override or implement GridComputeTask.result(..) " +
                 "method if you would like to have automatic failover for this exception).", e);
         }
 
         // Wait for all job responses.
-        return WAIT;
+        return GridComputeJobResultPolicy.WAIT;
     }
 }

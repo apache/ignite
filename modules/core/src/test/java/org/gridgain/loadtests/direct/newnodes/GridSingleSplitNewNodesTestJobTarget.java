@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.direct.newnodes;
 
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 
 /**
  * Single split on new nodes test job target.

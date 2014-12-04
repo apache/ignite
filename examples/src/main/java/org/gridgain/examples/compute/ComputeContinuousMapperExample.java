@@ -11,9 +11,9 @@ package org.gridgain.examples.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;
 
 import java.util.*;
@@ -64,7 +64,7 @@ public class ComputeContinuousMapperExample {
      * <p>
      * Note that annotation {@link GridComputeTaskNoResultCache} is optional and tells GridGain
      * not to accumulate results from individual jobs. In this example we increment
-     * total character count directly in {@link #result(GridComputeJobResult, List)} method,
+     * total character count directly in {@link #result(org.apache.ignite.compute.GridComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.
      */
     @GridComputeTaskNoResultCache

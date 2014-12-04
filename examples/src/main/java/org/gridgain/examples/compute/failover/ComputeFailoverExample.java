@@ -10,10 +10,10 @@
 package org.gridgain.examples.compute.failover;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;

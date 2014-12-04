@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.deployment.uri.tasks;
 
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.core.io.*;
 

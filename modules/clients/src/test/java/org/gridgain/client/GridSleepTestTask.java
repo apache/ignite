@@ -1,11 +1,11 @@
 package org.gridgain.client;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
 
 /**
  * Test task, that sleeps for 10 seconds in split and returns

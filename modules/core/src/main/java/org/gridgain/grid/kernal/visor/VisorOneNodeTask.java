@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor;
 
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

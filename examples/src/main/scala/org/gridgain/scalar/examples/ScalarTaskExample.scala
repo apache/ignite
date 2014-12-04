@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.compute.{GridComputeTaskSplitAdapter, GridComputeJob, GridComputeJobResult}
 import org.gridgain.scalar.scalar
 import scalar._
 import collection.JavaConversions._

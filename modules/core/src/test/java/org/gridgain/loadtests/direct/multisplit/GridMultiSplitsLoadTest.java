@@ -10,9 +10,9 @@
 package org.gridgain.loadtests.direct.multisplit;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.loadtest.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;

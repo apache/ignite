@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -99,7 +98,7 @@ class GridUriDeploymentUnitDescriptor {
     }
 
     /**
-     * Constructs deployment unit descriptor based on timestamp and {@link GridComputeTask} instances.
+     * Constructs deployment unit descriptor based on timestamp and {@link org.apache.ignite.compute.GridComputeTask} instances.
      *
      * @param tstamp Tasks deployment timestamp.
      * @param clsLdr Class loader.

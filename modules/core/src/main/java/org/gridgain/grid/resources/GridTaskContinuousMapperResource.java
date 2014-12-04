@@ -9,15 +9,13 @@
 
 package org.gridgain.grid.resources;
 
-import org.gridgain.grid.compute.*;
-
 import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of
- * {@link GridComputeTaskContinuousMapper} resource.
+ * {@link org.apache.ignite.compute.GridComputeTaskContinuousMapper} resource.
  * <p>
- * Task continuous mapper can be injected into {@link GridComputeTask} class
+ * Task continuous mapper can be injected into {@link org.apache.ignite.compute.GridComputeTask} class
  * instance.
  * <p>
  * Here is how injection would typically happen:

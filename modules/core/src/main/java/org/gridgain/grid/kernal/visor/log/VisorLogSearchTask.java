@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.log;
 
+import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;

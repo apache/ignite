@@ -9,7 +9,6 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -56,7 +55,7 @@ import org.jetbrains.annotations.*;
  * <h1 class="header">Always-Local Development</h1>
  * GridGain deployment (regardless of mode) allows you to develop everything as you would
  * locally. You never need to specifically write any kind of code for remote nodes. For
- * example, if you need to use a distributed cache from your {@link GridComputeJob}, then you can
+ * example, if you need to use a distributed cache from your {@link org.apache.ignite.compute.GridComputeJob}, then you can
  * the following:
  * <ol>
  *  <li>

@@ -1,4 +1,4 @@
-package org.gridgain.grid.compute;
+package org.apache.ignite.compute;
 
 import org.gridgain.grid.*;
 

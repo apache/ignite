@@ -9,20 +9,19 @@
 
 package org.gridgain.grid.resources;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link GridComputeLoadBalancer}.
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.GridComputeLoadBalancer}.
  * Specific implementation for grid load balancer is defined by
  * {@link GridLoadBalancingSpi}
  * which is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}..
  * <p>
  * Load balancer can be injected into instances of following classes:
  * <ul>
- * <li>{@link GridComputeTask}</li>
+ * <li>{@link org.apache.ignite.compute.GridComputeTask}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:

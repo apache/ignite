@@ -10,10 +10,10 @@
 package org.gridgain.loadtests.direct.singlesplit;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.loadtest.*;
 import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.spi.communication.tcp.*;

@@ -10,11 +10,11 @@
 package org.gridgain.client.integration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;

@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi.collision.jobstealing;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
@@ -202,7 +202,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
      * This count is incremented every time the same job gets stolen for
      * execution.
      *
-     * @see GridComputeJobContext
+     * @see org.apache.ignite.compute.GridComputeJobContext
      */
     public static final String STEALING_ATTEMPT_COUNT_ATTR = "gridgain.stealing.attempt.count";
 

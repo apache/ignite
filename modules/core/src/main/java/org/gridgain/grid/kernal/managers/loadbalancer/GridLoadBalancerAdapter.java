@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.loadbalancer;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.util.lang.*;
 
 import java.io.*;

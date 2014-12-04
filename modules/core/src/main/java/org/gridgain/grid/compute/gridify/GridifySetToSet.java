@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.compute.gridify;
 
-import org.gridgain.grid.compute.*;
-
 import java.io.*;
 import java.lang.annotation.*;
 
@@ -32,7 +30,7 @@ import java.lang.annotation.*;
  * find prime numbers in collection or find maximum in collection). The goal of this
  * annotation is to provide very simple and easy to use ForkJoin gridification
  * for some often used use cases. Note that in a standard {@code Gridify} annotation
- * the user has to write {@link GridComputeTask} to provide ForkJoin behavior.
+ * the user has to write {@link org.apache.ignite.compute.GridComputeTask} to provide ForkJoin behavior.
  * In a proposed design - the ForkJoin will be achieved <b>automatically</b>.
  * <p>
  * Let <b>F</b> be the function or a method in Java language and <b>St</b> be a set of values

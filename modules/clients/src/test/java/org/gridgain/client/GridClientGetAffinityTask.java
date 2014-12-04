@@ -11,14 +11,14 @@ package org.gridgain.client;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
 
 /**
  * Get affinity for task argument.

@@ -9,8 +9,6 @@
 
 package org.apache.ignite.mbean;
 
-import org.gridgain.grid.compute.*;
-
 /**
  * This interface defines JMX view on {@link org.apache.ignite.Ignition}.
  */
@@ -45,7 +43,7 @@ public interface IgnitionMBean {
      * Stops default grid instance.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      default grid will be cancelled by calling {@link GridComputeJob#cancel()}
+     *      default grid will be cancelled by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
      * @return {@code true} if default grid instance was indeed stopped,
@@ -71,7 +69,7 @@ public interface IgnitionMBean {
      * @param name Grid name. If {@code null}, then default no-name grid will
      *      be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
-     *      by calling {@link GridComputeJob#cancel()} method. Note that just like with
+     *      by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()} method. Note that just like with
      *      {@link Thread#interrupt()}, it is up to the actual job to exit from
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
@@ -106,7 +104,7 @@ public interface IgnitionMBean {
      * should be responsible for stopping it.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      * @see org.apache.ignite.Ignition#stopAll(boolean)
@@ -124,7 +122,7 @@ public interface IgnitionMBean {
      * Restart JVM.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      * @see org.apache.ignite.Ignition#stopAll(boolean)

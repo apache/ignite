@@ -16,7 +16,6 @@ import org.apache.ignite.mbean.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
@@ -215,7 +214,7 @@ public class GridGainEx {
      * Note that method does not wait for all tasks to be completed.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      default grid will be cancelled by calling {@link GridComputeJob#cancel()}
+     *      default grid will be cancelled by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      * @return {@code true} if default grid instance was indeed stopped,
@@ -235,7 +234,7 @@ public class GridGainEx {
      * @param name Grid name. If {@code null}, then default no-name grid will
      *      be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
-     *      by calling {@link GridComputeJob#cancel()} method. Note that just like with
+     *      by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()} method. Note that just like with
      *      {@link Thread#interrupt()}, it is up to the actual job to exit from
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
@@ -286,7 +285,7 @@ public class GridGainEx {
      * should be responsible for stopping it.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      */
@@ -335,7 +334,7 @@ public class GridGainEx {
      * scripts support restarting of JVM GridGain's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
      * @see org.apache.ignite.Ignition#RESTART_EXIT_CODE
@@ -382,7 +381,7 @@ public class GridGainEx {
      * exit code {@link org.apache.ignite.Ignition#KILL_EXIT_CODE}.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
      * @see org.apache.ignite.Ignition#KILL_EXIT_CODE

@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.query.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.resources.*;

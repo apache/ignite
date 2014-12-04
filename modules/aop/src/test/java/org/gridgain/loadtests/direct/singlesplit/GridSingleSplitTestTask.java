@@ -10,8 +10,8 @@
 package org.gridgain.loadtests.direct.singlesplit;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;
 
 import java.util.*;

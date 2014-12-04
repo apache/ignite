@@ -11,8 +11,8 @@ package org.gridgain.loadtests.job;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.GridComputeJobResultPolicy.*;
 
 /**
  * This test measures the performance of task execution engine by

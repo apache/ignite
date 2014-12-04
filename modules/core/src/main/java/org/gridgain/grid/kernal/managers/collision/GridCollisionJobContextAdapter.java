@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.collision;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.spi.collision.*;

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.resources;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 
 import java.lang.annotation.*;
@@ -21,8 +20,8 @@ import java.util.*;
  * <p>
  * Local node ID can be injected into instances of following classes:
  * <ul>
- * <li>{@link GridComputeTask}</li>
- * <li>{@link GridComputeJob}</li>
+ * <li>{@link org.apache.ignite.compute.GridComputeTask}</li>
+ * <li>{@link org.apache.ignite.compute.GridComputeJob}</li>
  * <li>{@link GridSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>{@link GridUserResource @GridUserResource}</li>

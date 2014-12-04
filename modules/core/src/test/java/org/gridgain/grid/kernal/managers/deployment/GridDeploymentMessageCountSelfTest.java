@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.managers.deployment;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.communication.tcp.*;

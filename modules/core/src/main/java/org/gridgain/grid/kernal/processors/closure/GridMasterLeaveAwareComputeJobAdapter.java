@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.closure;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 
 /**
- * Job adapter implementing {@link GridComputeJobMasterLeaveAware}.
+ * Job adapter implementing {@link org.apache.ignite.compute.GridComputeJobMasterLeaveAware}.
  */
 public abstract class GridMasterLeaveAwareComputeJobAdapter extends GridComputeJobAdapter
     implements GridComputeJobMasterLeaveAware {

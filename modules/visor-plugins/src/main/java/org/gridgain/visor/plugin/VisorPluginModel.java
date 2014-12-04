@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.plugin;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.logger.*;
 import org.jetbrains.annotations.*;
 
@@ -60,9 +60,9 @@ public interface VisorPluginModel {
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
-     * refer to {@link GridComputeTask} documentation.
+     * refer to {@link org.apache.ignite.compute.GridComputeTask} documentation.
      *
-     * @param taskCls Class of the task to execute. If class has {@link GridComputeTaskName} annotation,
+     * @param taskCls Class of the task to execute. If class has {@link org.apache.ignite.compute.GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param nodeIds Node IDs on with execute task.

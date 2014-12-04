@@ -17,7 +17,6 @@ import org.apache.ignite.plugin.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
@@ -1114,7 +1113,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of fully configured thread pool to be used in grid.
-     * This executor service will be in charge of processing {@link GridComputeJob GridJobs}
+     * This executor service will be in charge of processing {@link org.apache.ignite.compute.GridComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
@@ -1149,7 +1148,7 @@ public class IgniteConfiguration {
 
     /**
      * Executor service that is in charge of processing internal and Visor
-     * {@link GridComputeJob GridJobs}.
+     * {@link org.apache.ignite.compute.GridComputeJob GridJobs}.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
      * <ul>
@@ -1486,7 +1485,7 @@ public class IgniteConfiguration {
      * execution. This way, a task can be physically deployed only on one node
      * and then internally penetrate to all other nodes.
      * <p>
-     * See {@link GridComputeTask} documentation for more information about task deployment.
+     * See {@link org.apache.ignite.compute.GridComputeTask} documentation for more information about task deployment.
      *
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.

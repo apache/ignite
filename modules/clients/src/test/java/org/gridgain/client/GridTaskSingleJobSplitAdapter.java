@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 
 import java.util.*;
 

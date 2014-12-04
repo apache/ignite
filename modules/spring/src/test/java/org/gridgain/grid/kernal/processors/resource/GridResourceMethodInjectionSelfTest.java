@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;

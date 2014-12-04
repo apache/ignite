@@ -10,8 +10,8 @@
 package org.gridgain.loadtests.direct.newnodes;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.loadtest.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.*;

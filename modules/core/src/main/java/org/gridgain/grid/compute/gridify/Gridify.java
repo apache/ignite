@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.compute.gridify;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.compute.gridify.aop.*;
 
 import java.io.*;
@@ -39,7 +39,7 @@ import java.lang.annotation.*;
  * <a target="github" href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/session">HelloWorld - Gridify With State</a>
  * example). In either case, GridGain must be able to serialize the state passed to remote node.
  * <p>
- * Refer to {@link GridComputeTask} documentation for more information on how a task
+ * Refer to {@link org.apache.ignite.compute.GridComputeTask} documentation for more information on how a task
  * can be split into multiple sub-jobs.
  * <p>
  * <h1 class="header">Java Example</h1>

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.marshaller;
 
-import org.gridgain.grid.compute.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.logger.*;

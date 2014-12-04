@@ -11,8 +11,8 @@ package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.commons.codec.binary.*;
 import org.apache.commons.codec.digest.*;
+import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
@@ -42,7 +42,7 @@ final class GridUriDeploymentFileProcessor {
 
     /**
      * Method processes given GAR file and extracts all tasks from it which are
-     * either mentioned in GAR descriptor or implements interface {@link GridComputeTask}
+     * either mentioned in GAR descriptor or implements interface {@link org.apache.ignite.compute.GridComputeTask}
      * if there is no descriptor in file.
      *
      * @param file GAR file with tasks.

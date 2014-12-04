@@ -11,10 +11,10 @@ package org.gridgain.grid.kernal.managers.checkpoint;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;

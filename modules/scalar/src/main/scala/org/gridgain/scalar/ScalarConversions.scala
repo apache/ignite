@@ -13,6 +13,7 @@ package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
 import org.apache.ignite.cluster.ClusterGroup
+import org.apache.ignite.compute.GridComputeJob
 import org.apache.ignite.lang._
 import org.gridgain.grid.lang._
 import org.gridgain.grid.cache._
@@ -24,7 +25,6 @@ import collection._
 import scala.util.control.Breaks._
 import java.util.concurrent._
 import java.util.TimerTask
-import org.gridgain.grid.compute.GridComputeJob
 import org.gridgain.grid.util.lang._
 import scala.Tuple2
 

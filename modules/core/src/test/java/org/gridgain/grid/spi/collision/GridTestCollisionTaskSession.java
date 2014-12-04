@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.spi.collision;
 
+import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 
 import java.util.*;
 

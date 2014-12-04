@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.external.resource.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
