@@ -179,7 +179,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 UUID id = discoEvt.eventNode().id();
 

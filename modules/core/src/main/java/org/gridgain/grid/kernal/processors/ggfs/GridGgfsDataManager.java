@@ -180,7 +180,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 if (ggfsCtx.ggfsNode(discoEvt.eventNode())) {
                     for (WriteCompletionFuture future : pendingWrites.values()) {

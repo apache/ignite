@@ -318,7 +318,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {
-            GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
             Integer cnt = F.addIfAbsent(metricsRcvdCnt, discoEvt.eventNode().id(), 0);
 

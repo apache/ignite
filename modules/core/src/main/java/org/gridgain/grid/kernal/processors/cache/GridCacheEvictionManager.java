@@ -163,7 +163,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT ||
                             evt.type() == EVT_NODE_JOINED;
 
-                        GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                         // Notify backup worker on each topology change.
                         if (CU.affinityNode(cctx, discoEvt.eventNode()))
@@ -200,7 +200,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     @Override public void onEvent(IgniteEvent evt) {
                         assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                        GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                         for (EvictionFuture fut : futs.values())
                             fut.onNodeLeft(discoEvt.eventNode().id());
@@ -242,7 +242,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (plcEnabled && evictSync && !cctx.isNear()) {
             // Add dummy event to worker.
-            backupWorker.addEvent(new GridDiscoveryEvent(cctx.localNode(), "Dummy event.",
+            backupWorker.addEvent(new IgniteDiscoveryEvent(cctx.localNode(), "Dummy event.",
                 EVT_NODE_JOINED, cctx.localNode()));
 
             backupWorkerThread = new GridThread(backupWorker);
@@ -1345,7 +1345,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     private class BackupWorker extends GridWorker {
         /** */
-        private final BlockingQueue<GridDiscoveryEvent> evts = new LinkedBlockingQueue<>();
+        private final BlockingQueue<IgniteDiscoveryEvent> evts = new LinkedBlockingQueue<>();
 
         /** */
         private final Collection<Integer> primaryParts = new HashSet<>();
@@ -1362,7 +1362,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @param evt New event.
          */
-        void addEvent(GridDiscoveryEvent evt) {
+        void addEvent(IgniteDiscoveryEvent evt) {
             assert evt != null;
 
             evts.add(evt);
@@ -1379,7 +1379,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 cctx.affinity().affinityTopologyVersion()));
 
             while (!isCancelled()) {
-                GridDiscoveryEvent evt = evts.take();
+                IgniteDiscoveryEvent evt = evts.take();
 
                 if (log.isDebugEnabled())
                     log.debug("Processing event: " + evt);

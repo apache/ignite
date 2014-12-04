@@ -2094,7 +2094,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            GridDiscoveryEvent evt0 = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent evt0 = (IgniteDiscoveryEvent)evt;
 
             if (evt0.eventNode() != null) {
                 if (sameGgfs((GridGgfsAttributes[])evt0.eventNode().attribute(ATTR_GGFS))) {

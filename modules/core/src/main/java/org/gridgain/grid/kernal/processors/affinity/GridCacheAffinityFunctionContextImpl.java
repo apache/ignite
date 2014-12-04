@@ -27,7 +27,7 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
     private List<List<ClusterNode>> prevAssignment;
 
     /** Discovery event that caused this topology change. */
-    private GridDiscoveryEvent discoEvt;
+    private IgniteDiscoveryEvent discoEvt;
 
     /** Topology version. */
     private long topVer;
@@ -40,7 +40,7 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
      * @param topVer Topology version.
      */
     public GridCacheAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
-        GridDiscoveryEvent discoEvt, long topVer, int backups) {
+        IgniteDiscoveryEvent discoEvt, long topVer, int backups) {
         this.topSnapshot = topSnapshot;
         this.prevAssignment = prevAssignment;
         this.discoEvt = discoEvt;
@@ -64,7 +64,7 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDiscoveryEvent discoveryEvent() {
+    @Nullable @Override public IgniteDiscoveryEvent discoveryEvent() {
         return discoEvt;
     }
 

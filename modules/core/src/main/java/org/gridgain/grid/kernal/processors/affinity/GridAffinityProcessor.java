@@ -65,7 +65,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (affMap.isEmpty())
                 return; // Skip empty affinity map.
 
-            final GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            final IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
             // Clean up affinity functions if such cache no more exists.
             if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {

@@ -1157,7 +1157,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-            UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
+            UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
 
             lock.readLock();
 

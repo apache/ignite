@@ -1053,7 +1053,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             try {
                 depExe.submit(new BusyRunnable() {
                     @Override public void run0() {
-                        long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
+                        long topVer = ((IgniteDiscoveryEvent)evt).topologyVersion();
 
                         ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 

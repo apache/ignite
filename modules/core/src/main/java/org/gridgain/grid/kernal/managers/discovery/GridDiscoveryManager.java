@@ -143,7 +143,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridFutureAdapterEx<GridDiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
+    private GridFutureAdapterEx<IgniteDiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
 
     /** GC CPU load. */
     private volatile double gcCpuLoad;
@@ -273,7 +273,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
-                    GridDiscoveryEvent discoEvt = new GridDiscoveryEvent();
+                    IgniteDiscoveryEvent discoEvt = new IgniteDiscoveryEvent();
 
                     discoEvt.node(ctx.discovery().localNode());
                     discoEvt.eventNode(node);
@@ -1168,7 +1168,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     }
 
     /** @return Event that represents a local node joined to topology. */
-    public GridDiscoveryEvent localJoinEvent() {
+    public IgniteDiscoveryEvent localJoinEvent() {
         try {
             return locJoinEvt.get();
         }
@@ -1304,7 +1304,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         /**
          * Method is called when any discovery event occurs.
          *
-         * @param type Discovery event type. See {@link GridDiscoveryEvent} for more details.
+         * @param type Discovery event type. See {@link org.apache.ignite.events.IgniteDiscoveryEvent} for more details.
          * @param topVer Topology version.
          * @param node Remote node this event is connected with.
          * @param topSnapshot Topology snapshot.
@@ -1313,7 +1313,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             assert node != null;
 
             if (ctx.event().isRecordable(type)) {
-                GridDiscoveryEvent evt = new GridDiscoveryEvent();
+                IgniteDiscoveryEvent evt = new IgniteDiscoveryEvent();
 
                 evt.node(ctx.discovery().localNode());
                 evt.eventNode(node);
@@ -1706,7 +1706,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
             if (discoEvt.topologyVersion() >= awaitVer)
                 onDone(discoEvt.topologyVersion());

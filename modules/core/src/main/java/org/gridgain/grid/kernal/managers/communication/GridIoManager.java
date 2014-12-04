@@ -198,9 +198,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         discoLsnr = new GridLocalEventListener() {
             @SuppressWarnings({"TooBroadScope", "fallthrough"})
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent : "Invalid event: " + evt;
+                assert evt instanceof IgniteDiscoveryEvent : "Invalid event: " + evt;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 UUID nodeId = discoEvt.eventNode().id();
 

@@ -369,11 +369,11 @@ class GridDeploymentCommunication {
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent;
+                assert evt instanceof IgniteDiscoveryEvent;
 
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 UUID nodeId = discoEvt.eventNode().id();
 

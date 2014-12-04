@@ -12,11 +12,11 @@ package org.gridgain.grid.cache.query;
 /**
  * Cache query type.
  * <p>
- * Used in {@link org.apache.ignite.events.GridCacheQueryExecutedEvent} and {@link org.apache.ignite.events.GridCacheQueryReadEvent}
+ * Used in {@link org.apache.ignite.events.IgniteCacheQueryExecutedEvent} and {@link org.apache.ignite.events.IgniteCacheQueryReadEvent}
  * to identify the type of query for which an event was fired.
  *
- * @see org.apache.ignite.events.GridCacheQueryExecutedEvent#queryType()
- * @see org.apache.ignite.events.GridCacheQueryReadEvent#queryType()
+ * @see org.apache.ignite.events.IgniteCacheQueryExecutedEvent#queryType()
+ * @see org.apache.ignite.events.IgniteCacheQueryReadEvent#queryType()
  */
 public enum GridCacheQueryType {
     /** SQL query. */

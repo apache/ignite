@@ -51,7 +51,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private final boolean reassign;
 
     /** Discovery event. */
-    private volatile GridDiscoveryEvent discoEvt;
+    private volatile IgniteDiscoveryEvent discoEvt;
 
     /** */
     @GridToStringInclude
@@ -139,7 +139,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, GridDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, IgniteDiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = true;
@@ -163,7 +163,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, GridDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, IgniteDiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = false;
@@ -330,7 +330,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
      */
-    public void onEvent(GridDhtPartitionExchangeId exchId, GridDiscoveryEvent discoEvt) {
+    public void onEvent(GridDhtPartitionExchangeId exchId, IgniteDiscoveryEvent discoEvt) {
         assert exchId.equals(this.exchId);
 
         this.discoEvt = discoEvt;
@@ -341,7 +341,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Discovery event.
      */
-    public GridDiscoveryEvent discoveryEvent() {
+    public IgniteDiscoveryEvent discoveryEvent() {
         return discoEvt;
     }
 

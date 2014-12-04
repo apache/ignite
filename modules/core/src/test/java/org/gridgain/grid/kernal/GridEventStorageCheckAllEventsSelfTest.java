@@ -322,9 +322,9 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
                     return taskName.equals(((GridTaskEvent)evt).taskName());
                 else if (evt instanceof GridJobEvent)
                     return taskName.equals(((GridJobEvent)evt).taskName());
-                else if (evt instanceof GridDeploymentEvent)
-                    return taskName.equals(((GridDeploymentEvent)evt).alias());
-                else if (evt instanceof GridCheckpointEvent)
+                else if (evt instanceof IgniteDeploymentEvent)
+                    return taskName.equals(((IgniteDeploymentEvent)evt).alias());
+                else if (evt instanceof IgniteCheckpointEvent)
                     return true;
             }
 

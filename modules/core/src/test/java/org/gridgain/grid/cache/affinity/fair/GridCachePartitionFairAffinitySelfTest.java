@@ -101,7 +101,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
 
             nodes.add(node);
 
-            GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(node, "", IgniteEventType.EVT_NODE_JOINED,
+            IgniteDiscoveryEvent discoEvt = new IgniteDiscoveryEvent(node, "", IgniteEventType.EVT_NODE_JOINED,
                 node);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
@@ -125,7 +125,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
 
             ClusterNode rmv = nodes.remove(nodes.size() - 1);
 
-            GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(rmv, "", IgniteEventType.EVT_NODE_LEFT, rmv);
+            IgniteDiscoveryEvent discoEvt = new IgniteDiscoveryEvent(rmv, "", IgniteEventType.EVT_NODE_LEFT, rmv);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
                 new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
@@ -180,19 +180,19 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
                     add = rnd.nextInt(3) == 0; // 33% to add, 66% to remove.
             }
 
-            GridDiscoveryEvent discoEvt;
+            IgniteDiscoveryEvent discoEvt;
 
             if (add) {
                 ClusterNode addedNode = new GridTestNode(UUID.randomUUID());
 
                 nodes.add(addedNode);
 
-                discoEvt = new GridDiscoveryEvent(addedNode, "", IgniteEventType.EVT_NODE_JOINED, addedNode);
+                discoEvt = new IgniteDiscoveryEvent(addedNode, "", IgniteEventType.EVT_NODE_JOINED, addedNode);
             }
             else {
                 ClusterNode rmvNode = nodes.remove(rnd.nextInt(nodes.size()));
 
-                discoEvt = new GridDiscoveryEvent(rmvNode, "", IgniteEventType.EVT_NODE_LEFT, rmvNode);
+                discoEvt = new IgniteDiscoveryEvent(rmvNode, "", IgniteEventType.EVT_NODE_LEFT, rmvNode);
             }
 
             info("======================================");

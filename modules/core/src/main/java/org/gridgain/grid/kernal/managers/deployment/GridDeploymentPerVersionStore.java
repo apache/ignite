@@ -76,11 +76,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     @Override public void start() throws GridException {
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent;
+                assert evt instanceof IgniteDiscoveryEvent;
 
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 Collection<SharedDeployment> undeployed = new LinkedList<>();
 
@@ -1199,7 +1199,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             int type = isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED;
 
             if (ctx.event().isRecordable(type)) {
-                GridDeploymentEvent evt = new GridDeploymentEvent();
+                IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
 
                 evt.node(ctx.discovery().localNode());
                 evt.message(msg);
@@ -1230,7 +1230,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 int type = isTask ? EVT_TASK_UNDEPLOYED : EVT_CLASS_UNDEPLOYED;
 
                 if (ctx.event().isRecordable(type)) {
-                    GridDeploymentEvent evt = new GridDeploymentEvent();
+                    IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
 
                     evt.node(ctx.discovery().localNode());
                     evt.message(msg);

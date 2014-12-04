@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.alert
 
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.{IgniteEvent, GridDiscoveryEvent, IgniteEventType}
+import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.grid._
 import org.gridgain.grid.events._
@@ -349,7 +349,7 @@ class VisorAlertCommand {
 
             lsnr = new IgnitePredicate[IgniteEvent] {
                 override def apply(evt: IgniteEvent): Boolean = {
-                    val discoEvt = evt.asInstanceOf[GridDiscoveryEvent]
+                    val discoEvt = evt.asInstanceOf[IgniteDiscoveryEvent]
 
                     val node = grid.node(discoEvt.eventNode().id())
 

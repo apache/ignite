@@ -807,10 +807,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         GridLocalEventListener evtLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent;
+                assert evt instanceof IgniteDiscoveryEvent;
 
                 synchronized (qryMux) {
-                    uids.remove(((GridDiscoveryEvent)evt).eventNode().id());
+                    uids.remove(((IgniteDiscoveryEvent)evt).eventNode().id());
 
                     if (uids.isEmpty())
                         qryMux.notifyAll();

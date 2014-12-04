@@ -339,7 +339,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
                     case EVT_NODE_FAILED:
                     case EVT_NODE_JOINED:
                     case EVT_NODE_LEFT: {
-                        GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                         rwLock.writeLock().lock();
 

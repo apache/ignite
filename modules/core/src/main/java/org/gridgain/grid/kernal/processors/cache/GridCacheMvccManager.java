@@ -147,10 +147,10 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     /** Discovery listener. */
     @GridToStringExclude private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(IgniteEvent evt) {
-            assert evt instanceof GridDiscoveryEvent;
+            assert evt instanceof IgniteDiscoveryEvent;
             assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-            GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
             if (log.isDebugEnabled())
                 log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");

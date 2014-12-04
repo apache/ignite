@@ -77,7 +77,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 checkLaunchCoordinator(discoEvt);
             }
@@ -98,7 +98,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
     @Override protected void onKernalStart0() throws GridException {
         if (ggfsCtx.configuration().isFragmentizerEnabled()) {
             // Check at startup if this node is a fragmentizer coordinator.
-            GridDiscoveryEvent locJoinEvt = ggfsCtx.kernalContext().discovery().localJoinEvent();
+            IgniteDiscoveryEvent locJoinEvt = ggfsCtx.kernalContext().discovery().localJoinEvent();
 
             checkLaunchCoordinator(locJoinEvt);
         }
@@ -177,7 +177,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      *
      * @param discoEvt Discovery event.
      */
-    private void checkLaunchCoordinator(GridDiscoveryEvent discoEvt) {
+    private void checkLaunchCoordinator(IgniteDiscoveryEvent discoEvt) {
         rw.readLock();
 
         try {
@@ -426,7 +426,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
             if (log.isDebugEnabled())
                 log.debug("Processing node leave event: " + discoEvt);

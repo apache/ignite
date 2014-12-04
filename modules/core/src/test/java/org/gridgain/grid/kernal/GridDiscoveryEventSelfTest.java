@@ -90,7 +90,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
-                    evts.put(cnt.getAndIncrement(), ((GridDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -153,7 +153,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_LEFT;
 
-                    evts.put(cnt.getAndIncrement(), ((GridDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -216,7 +216,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT;
 
-                    evts.put(cnt.getAndIncrement(), ((GridDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -331,10 +331,10 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
-                    X.println(">>>>>>> Joined " + F.viewReadOnly(((GridDiscoveryEvent) evt).topologyNodes(),
+                    X.println(">>>>>>> Joined " + F.viewReadOnly(((IgniteDiscoveryEvent) evt).topologyNodes(),
                         NODE_2ID));
 
-                    evts.put(cnt.getAndIncrement(), ((GridDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -382,7 +382,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
                 g.events().localListen(new IgnitePredicate<IgniteEvent>() {
                     @Override public boolean apply(IgniteEvent evt) {
-                        GridDiscoveryEvent discoEvt = (GridDiscoveryEvent) evt;
+                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent) evt;
 
                         if (discoEvt.topologyNodes().size() != 3)
                             err.compareAndSet(null, new GridException("Invalid discovery event [evt=" + discoEvt +
@@ -397,7 +397,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             GridKernal daemon = (GridKernal)startGrid(3);
 
-            GridDiscoveryEvent join = daemon.context().discovery().localJoinEvent();
+            IgniteDiscoveryEvent join = daemon.context().discovery().localJoinEvent();
 
             assertEquals(3, join.topologyNodes().size());
 

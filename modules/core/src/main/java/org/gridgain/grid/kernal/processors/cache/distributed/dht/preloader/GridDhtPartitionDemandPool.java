@@ -240,7 +240,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param type Type.
      * @param discoEvt Discovery event.
      */
-    private void preloadEvent(int type, GridDiscoveryEvent discoEvt) {
+    private void preloadEvent(int type, IgniteDiscoveryEvent discoEvt) {
         preloadEvent(-1, type, discoEvt);
     }
 
@@ -249,7 +249,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param type Type.
      * @param discoEvt Discovery event.
      */
-    private void preloadEvent(int part, int type, GridDiscoveryEvent discoEvt) {
+    private void preloadEvent(int part, int type, IgniteDiscoveryEvent discoEvt) {
         assert discoEvt != null;
 
         cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());

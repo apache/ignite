@@ -59,9 +59,9 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent;
+                assert evt instanceof IgniteDiscoveryEvent;
 
-                UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
 
                 if (evt.type() == EVT_NODE_LEFT ||
                     evt.type() == EVT_NODE_FAILED) {
@@ -436,7 +436,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
             String msg = (isTask ? "Task" : "Class") + " was deployed in Private or Isolated mode: " + cls;
 
             if (recordEvt && ctx.event().isRecordable(isTask(cls) ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED)) {
-                GridDeploymentEvent evt = new GridDeploymentEvent();
+                IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
 
                 // Record task event.
                 evt.type(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED);
@@ -469,7 +469,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                         "[cls=" + depCls.getValue() + ", alias=" + depCls.getKey() + ']';
 
                     if (evts.isRecordable(!isTask ? EVT_CLASS_UNDEPLOYED : EVT_TASK_UNDEPLOYED)) {
-                        GridDeploymentEvent evt = new GridDeploymentEvent();
+                        IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
 
                         evt.node(sndNode);
                         evt.message(msg);

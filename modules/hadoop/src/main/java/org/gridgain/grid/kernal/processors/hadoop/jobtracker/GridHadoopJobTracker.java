@@ -161,7 +161,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     // Must process discovery callback in a separate thread to avoid deadlock.
                     evtProcSvc.submit(new EventHandler() {
                         @Override protected void body() {
-                            processNodeLeft((GridDiscoveryEvent)evt);
+                            processNodeLeft((IgniteDiscoveryEvent)evt);
                         }
                     });
                 }
@@ -507,7 +507,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param evt Discovery event.
      */
     @SuppressWarnings("ConstantConditions")
-    private void processNodeLeft(GridDiscoveryEvent evt) {
+    private void processNodeLeft(IgniteDiscoveryEvent evt) {
         if (log.isDebugEnabled())
             log.debug("Processing discovery event [locNodeId=" + ctx.localNodeId() + ", evt=" + evt + ']');
 

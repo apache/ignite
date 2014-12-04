@@ -59,7 +59,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
         @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
-            GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
             ClusterNode node = cctx.discovery().node(discoEvt.node().id());
 

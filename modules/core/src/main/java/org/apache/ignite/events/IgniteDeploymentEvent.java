@@ -13,7 +13,7 @@ import org.apache.ignite.cluster.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Grid checkpoint event.
+ * Grid deployment event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -43,69 +43,65 @@ import org.gridgain.grid.util.typedef.internal.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_CHECKPOINT_LOADED
- * @see IgniteEventType#EVT_CHECKPOINT_REMOVED
- * @see IgniteEventType#EVT_CHECKPOINT_SAVED
- * @see IgniteEventType#EVTS_CHECKPOINT
+ * @see IgniteEventType#EVT_CLASS_DEPLOY_FAILED
+ * @see IgniteEventType#EVT_CLASS_DEPLOYED
+ * @see IgniteEventType#EVT_CLASS_UNDEPLOYED
+ * @see IgniteEventType#EVT_TASK_DEPLOY_FAILED
+ * @see IgniteEventType#EVT_TASK_DEPLOYED
+ * @see IgniteEventType#EVT_TASK_UNDEPLOYED
+ * @see IgniteEventType#EVTS_DEPLOYMENT
  */
-public class GridCheckpointEvent extends GridEventAdapter {
+public class IgniteDeploymentEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String cpKey;
+    private String alias;
+
+    /** {@inheritDoc} */
+    @Override public String shortDisplay() {
+        return name() + (alias != null ? ": " + alias : "");
+    }
 
     /**
      * No-arg constructor.
      */
-    public GridCheckpointEvent() {
+    public IgniteDeploymentEvent() {
         // No-op.
     }
 
     /**
-     * Creates new checkpoint event with given parameters.
+     * Creates deployment event with given parameters.
      *
-     * @param node Local node.
+     * @param node Node.
      * @param msg Optional event message.
      * @param type Event type.
-     * @param cpKey Checkpoint key associated with this event.
      */
-    public GridCheckpointEvent(ClusterNode node, String msg, int type, String cpKey) {
+    public IgniteDeploymentEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
-
-        this.cpKey = cpKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String shortDisplay() {
-        return name() + ": cpKey=" + cpKey;
     }
 
     /**
-     * Gets checkpoint key associated with this event.
+     * Gets deployment alias for this event.
      *
-     * @return Checkpoint key associated with this event.
+     * @return Deployment alias.
      */
-    public String key() {
-        assert cpKey != null;
-
-        return cpKey;
+    public String alias() {
+        return alias;
     }
 
     /**
-     * Sets checkpoint key.
+     * Sets deployment alias for this event.
      *
-     * @param cpKey Checkpoint key to set.
+     * @param alias Deployment alias.
      */
-    public void key(String cpKey) {
-        assert cpKey != null;
-
-        this.cpKey = cpKey;
+    public void alias(String alias) {
+        this.alias = alias;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCheckpointEvent.class, this,
+        return S.toString(IgniteDeploymentEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

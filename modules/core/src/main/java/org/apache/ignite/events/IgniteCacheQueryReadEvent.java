@@ -53,7 +53,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_CACHE_QUERY_OBJECT_READ
  * @see IgniteEventType#EVTS_CACHE_QUERY
  */
-public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
+public class IgniteCacheQueryReadEvent<K, V> extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = -1984731272984397445L;
 
@@ -117,7 +117,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
      * @param val Value.
      * @param oldVal Old value.
      */
-    public GridCacheQueryReadEvent(
+    public IgniteCacheQueryReadEvent(
         ClusterNode node,
         String msg,
         int type,
@@ -282,7 +282,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryReadEvent.class, this,
+        return S.toString(IgniteCacheQueryReadEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

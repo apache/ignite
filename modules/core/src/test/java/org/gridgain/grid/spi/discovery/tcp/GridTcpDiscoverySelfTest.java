@@ -312,7 +312,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                     @Override public boolean apply(IgniteEvent evt) {
                         info("Node joined: " + evt.message());
 
-                        GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                         GridTcpDiscoveryNode node = ((GridTcpDiscoveryNode)discoMap.get(g1.name()).
                             getNode(discoEvt.eventNode().id()));
@@ -524,7 +524,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         info(evt.message());
 
-                        UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
+                        UUID id = ((IgniteDiscoveryEvent) evt).eventNode().id();
 
                         if (id.equals(g1.cluster().localNode().id()))
                             latch2_1.countDown();
@@ -546,7 +546,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     info(evt.message());
 
-                    UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
+                    UUID id = ((IgniteDiscoveryEvent) evt).eventNode().id();
 
                     if (id.equals(g1.cluster().localNode().id()))
                         latch1_1.countDown();

@@ -151,7 +151,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version to calculate affinity for.
      * @param discoEvt Discovery event that causes this topology change.
      */
-    public List<List<ClusterNode>> calculateAffinity(long topVer, GridDiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculateAffinity(long topVer, IgniteDiscoveryEvent discoEvt) {
         assert !cctx.isLocal();
 
         return aff.calculate(topVer, discoEvt);

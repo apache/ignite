@@ -123,7 +123,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         GridCacheContinuousQueryListener<K, V> lsnr = new GridCacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    ctx.event().record(new GridCacheQueryExecutedEvent<>(
+                    ctx.event().record(new IgniteCacheQueryExecutedEvent<>(
                         ctx.discovery().localNode(),
                         "Continuous query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
@@ -183,7 +183,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     }
 
                     if (recordEvt) {
-                        ctx.event().record(new GridCacheQueryReadEvent<>(
+                        ctx.event().record(new IgniteCacheQueryReadEvent<>(
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
                             EVT_CACHE_QUERY_OBJECT_READ,

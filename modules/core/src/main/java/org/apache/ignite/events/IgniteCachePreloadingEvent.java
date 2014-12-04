@@ -121,7 +121,7 @@ public class IgniteCachePreloadingEvent extends GridEventAdapter {
      * Gets type of discovery event that triggered this preloading event.
      *
      * @return Type of discovery event that triggered this preloading event.
-     * @see GridDiscoveryEvent#type()
+     * @see IgniteDiscoveryEvent#type()
      */
     public int discoveryEventType() {
         return discoEvtType;
@@ -131,7 +131,7 @@ public class IgniteCachePreloadingEvent extends GridEventAdapter {
      * Gets name of discovery event that triggered this preloading event.
      *
      * @return Name of discovery event that triggered this preloading event.
-     * @see GridDiscoveryEvent#name()
+     * @see IgniteDiscoveryEvent#name()
      */
     public String discoveryEventName() {
         return U.gridEventName(discoEvtType);

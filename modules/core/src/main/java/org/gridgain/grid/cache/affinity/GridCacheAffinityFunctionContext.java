@@ -59,5 +59,5 @@ public interface GridCacheAffinityFunctionContext {
      * @return Discovery event caused latest topology change or {@code null} if this information is
      *      not available.
      */
-    @Nullable public GridDiscoveryEvent discoveryEvent();
+    @Nullable public IgniteDiscoveryEvent discoveryEvent();
 }

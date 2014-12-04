@@ -221,8 +221,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                 return containsInTaskName(je.taskName(), je.taskName(), taskName);
             }
 
-            if (e.getClass().equals(GridDeploymentEvent.class)) {
-                GridDeploymentEvent de = (GridDeploymentEvent)e;
+            if (e.getClass().equals(IgniteDeploymentEvent.class)) {
+                IgniteDeploymentEvent de = (IgniteDeploymentEvent)e;
 
                 return de.alias().toLowerCase().contains(taskName);
             }
@@ -299,8 +299,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                     res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
                         je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
                 }
-                else if (e instanceof GridDeploymentEvent) {
-                    GridDeploymentEvent de = (GridDeploymentEvent)e;
+                else if (e instanceof IgniteDeploymentEvent) {
+                    IgniteDeploymentEvent de = (IgniteDeploymentEvent)e;
 
                     res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
                 }
@@ -309,8 +309,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                     res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
                 }
-                else if (e instanceof GridDiscoveryEvent) {
-                    GridDiscoveryEvent de = (GridDiscoveryEvent)e;
+                else if (e instanceof IgniteDiscoveryEvent) {
+                    IgniteDiscoveryEvent de = (IgniteDiscoveryEvent)e;
 
                     ClusterNode node = de.eventNode();
 

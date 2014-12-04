@@ -115,7 +115,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to calculate affinity cache for.
      * @param discoEvt Discovery event that caused this topology version change.
      */
-    public List<List<ClusterNode>> calculate(long topVer, GridDiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculate(long topVer, IgniteDiscoveryEvent discoEvt) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');

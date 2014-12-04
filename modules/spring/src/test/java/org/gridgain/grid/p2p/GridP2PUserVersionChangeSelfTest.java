@@ -134,7 +134,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
+                        ((IgniteDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
 
                     return true;
@@ -183,7 +183,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
+                        ((IgniteDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
 
                     return true;
@@ -229,7 +229,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
+                        ((IgniteDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
 
                     return true;

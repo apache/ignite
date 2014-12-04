@@ -383,7 +383,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      */
     private IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> createCopy(
         GridCacheAffinityFunctionContext ctx, Iterable<ClusterNode> topSnapshot) {
-        GridDiscoveryEvent discoEvt = ctx.discoveryEvent();
+        IgniteDiscoveryEvent discoEvt = ctx.discoveryEvent();
 
         UUID leftNodeId = discoEvt.type() == IgniteEventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
 

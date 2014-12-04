@@ -53,7 +53,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_CACHE_QUERY_EXECUTED
  * @see IgniteEventType#EVTS_CACHE_QUERY
  */
-public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
+public class IgniteCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 3738753361235304496L;
 
@@ -99,7 +99,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
      * @param args Query arguments.
      * @param subjId Security subject ID.
      */
-    public GridCacheQueryExecutedEvent(
+    public IgniteCacheQueryExecutedEvent(
         ClusterNode node,
         String msg,
         int type,
@@ -220,7 +220,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryExecutedEvent.class, this,
+        return S.toString(IgniteCacheQueryExecutedEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

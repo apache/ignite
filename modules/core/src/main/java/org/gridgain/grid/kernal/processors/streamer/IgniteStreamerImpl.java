@@ -277,7 +277,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 for (GridStreamerStageExecutionFuture fut : stageFuts.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());

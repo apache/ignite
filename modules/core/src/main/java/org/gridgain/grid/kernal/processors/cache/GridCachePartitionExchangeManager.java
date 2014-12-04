@@ -88,7 +88,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (!enterBusy())
                 return;
 
-            GridDiscoveryEvent e = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent e = (IgniteDiscoveryEvent)evt;
 
             try {
                 ClusterNode loc = cctx.localNode();
@@ -192,7 +192,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
 
         // Generate dummy discovery event for local node joining.
-        GridDiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+        IgniteDiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
         assert discoEvt != null;
 
@@ -525,7 +525,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange future.
      */
     GridDhtPartitionsExchangeFuture<K, V> exchangeFuture(GridDhtPartitionExchangeId exchId,
-        @Nullable GridDiscoveryEvent discoEvt) {
+        @Nullable IgniteDiscoveryEvent discoEvt) {
         GridDhtPartitionsExchangeFuture<K, V> fut;
 
         GridDhtPartitionsExchangeFuture<K, V> old = exchFuts.addx(
@@ -792,7 +792,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 // Preload event notification.
                                 if (cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
-                                        GridDiscoveryEvent discoEvt = exchFut.discoveryEvent();
+                                        IgniteDiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
                                         cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
                                             discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());

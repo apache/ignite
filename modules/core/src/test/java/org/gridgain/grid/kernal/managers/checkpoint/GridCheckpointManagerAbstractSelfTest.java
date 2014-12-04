@@ -173,9 +173,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof GridCheckpointEvent;
+                    assert evt instanceof IgniteCheckpointEvent;
 
-                    GridCheckpointEvent e = (GridCheckpointEvent) evt;
+                    IgniteCheckpointEvent e = (IgniteCheckpointEvent) evt;
 
                     info("Checkpoint event: " + e);
 

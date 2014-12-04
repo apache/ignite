@@ -90,7 +90,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
             @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_JOINED;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
                     checkLaunchCoordinator(discoEvt);
@@ -118,7 +118,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         srv.afterStart();
 
         // Check at startup if this node is a fragmentizer coordinator.
-        GridDiscoveryEvent locJoinEvt = ctx.discovery().localJoinEvent();
+        IgniteDiscoveryEvent locJoinEvt = ctx.discovery().localJoinEvent();
 
         checkLaunchCoordinator(locJoinEvt);
     }
@@ -202,7 +202,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
      *
      * @param discoEvt Discovery event.
      */
-    private void checkLaunchCoordinator(GridDiscoveryEvent discoEvt) {
+    private void checkLaunchCoordinator(IgniteDiscoveryEvent discoEvt) {
         rw.readLock();
 
         try {
@@ -324,7 +324,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
          *
          * @param evt Discovery event on which this node became a coordinator.
          */
-        protected TimeCoordinator(GridDiscoveryEvent evt) {
+        protected TimeCoordinator(IgniteDiscoveryEvent evt) {
             super(ctx.gridName(), "grid-time-coordinator", log);
 
             lastSnapshot = new GridDiscoveryTopologySnapshot(evt.topologyVersion(), evt.topologyNodes());
@@ -378,7 +378,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         /**
          * @param evt Discovery event.
          */
-        public void onDiscoveryEvent(GridDiscoveryEvent evt) {
+        public void onDiscoveryEvent(IgniteDiscoveryEvent evt) {
             if (log.isDebugEnabled())
                 log.debug("Processing discovery event: " + evt);
 

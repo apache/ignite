@@ -1704,7 +1704,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * Notify external listener on discovery event.
      *
-     * @param type Discovery event type. See {@link org.apache.ignite.events.GridDiscoveryEvent} for more details.
+     * @param type Discovery event type. See {@link org.apache.ignite.events.IgniteDiscoveryEvent} for more details.
      * @param topVer Topology version.
      * @param node Remote node this event is connected with.
      */

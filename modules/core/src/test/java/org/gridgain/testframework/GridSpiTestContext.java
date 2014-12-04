@@ -159,7 +159,7 @@ public class GridSpiTestContext implements GridSpiContext {
                 if (!nodes.contains(node)) {
                     iter.remove();
 
-                    notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
+                    notifyListener(new IgniteDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
                 }
             }
         }
@@ -179,7 +179,7 @@ public class GridSpiTestContext implements GridSpiContext {
     public void addNode(ClusterNode node) {
         rmtNodes.add(node);
 
-        notifyListener(new GridDiscoveryEvent(locNode, "Node joined", EVT_NODE_JOINED, node));
+        notifyListener(new IgniteDiscoveryEvent(locNode, "Node joined", EVT_NODE_JOINED, node));
     }
 
     /**
@@ -187,7 +187,7 @@ public class GridSpiTestContext implements GridSpiContext {
      */
     public void removeNode(ClusterNode node) {
         if (rmtNodes.remove(node))
-            notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
+            notifyListener(new IgniteDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
     }
 
     /**
@@ -200,7 +200,7 @@ public class GridSpiTestContext implements GridSpiContext {
             if (node.id().equals(nodeId)) {
                 iter.remove();
 
-                notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
+                notifyListener(new IgniteDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
             }
         }
     }
@@ -210,7 +210,7 @@ public class GridSpiTestContext implements GridSpiContext {
      */
     public void failNode(ClusterNode node) {
         if (rmtNodes.remove(node))
-            notifyListener(new GridDiscoveryEvent(locNode, "Node failed", EVT_NODE_FAILED, node));
+            notifyListener(new IgniteDiscoveryEvent(locNode, "Node failed", EVT_NODE_FAILED, node));
     }
 
     /**
@@ -218,15 +218,15 @@ public class GridSpiTestContext implements GridSpiContext {
      */
     public void updateMetrics(ClusterNode node) {
         if (locNode.equals(node) || rmtNodes.contains(node))
-            notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
+            notifyListener(new IgniteDiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
     }
 
     /** */
     public void updateAllMetrics() {
-        notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
+        notifyListener(new IgniteDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
 
         for (ClusterNode node : rmtNodes) {
-            notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
+            notifyListener(new IgniteDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
         }
     }
 

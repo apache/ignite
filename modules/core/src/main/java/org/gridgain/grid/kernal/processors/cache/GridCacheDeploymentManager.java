@@ -89,7 +89,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 @Override public void onEvent(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT : "Unexpected event: " + evt;
 
-                    UUID id = ((GridDiscoveryEvent)evt).eventNode().id();
+                    UUID id = ((IgniteDiscoveryEvent)evt).eventNode().id();
 
                     if (log.isDebugEnabled())
                         log.debug("Processing node departure: " + id);

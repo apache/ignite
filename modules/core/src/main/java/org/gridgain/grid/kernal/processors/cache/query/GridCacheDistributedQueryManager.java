@@ -81,7 +81,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         cctx.events().addListener(new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 for (GridCacheDistributedQueryFuture fut : futs.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());

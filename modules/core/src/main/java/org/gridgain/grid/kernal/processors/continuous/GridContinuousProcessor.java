@@ -118,9 +118,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @SuppressWarnings({"fallthrough", "TooBroadScope"})
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent;
+                assert evt instanceof IgniteDiscoveryEvent;
 
-                UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
 
                 Collection<GridContinuousMessage> reqs;
 

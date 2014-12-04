@@ -69,7 +69,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             if (!enterBusy())
                 return;
 
-            GridDiscoveryEvent e = (GridDiscoveryEvent)evt;
+            IgniteDiscoveryEvent e = (IgniteDiscoveryEvent)evt;
 
             try {
                 ClusterNode loc = cctx.localNode();
@@ -168,7 +168,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         topVer.setIfGreater(startTopVer);
 
         // Generate dummy discovery event for local node joining.
-        GridDiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+        IgniteDiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
         assert discoEvt != null;
 

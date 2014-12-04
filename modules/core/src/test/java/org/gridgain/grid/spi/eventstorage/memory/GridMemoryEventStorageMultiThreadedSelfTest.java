@@ -28,7 +28,7 @@ public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstract
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < 100000; i++)
-                    getSpi().record(new GridDiscoveryEvent(null, "Test event", 1, null));
+                    getSpi().record(new IgniteDiscoveryEvent(null, "Test event", 1, null));
 
                 return null;
             }

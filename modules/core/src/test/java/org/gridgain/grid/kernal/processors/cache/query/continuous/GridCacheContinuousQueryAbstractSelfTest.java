@@ -1409,9 +1409,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof GridCacheQueryReadEvent;
+                assert evt instanceof IgniteCacheQueryReadEvent;
 
-                GridCacheQueryReadEvent qe = (GridCacheQueryReadEvent)evt;
+                IgniteCacheQueryReadEvent qe = (IgniteCacheQueryReadEvent)evt;
 
                 assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());
@@ -1433,9 +1433,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         IgnitePredicate<IgniteEvent> execLsnr = new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof GridCacheQueryExecutedEvent;
+                assert evt instanceof IgniteCacheQueryExecutedEvent;
 
-                GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
+                IgniteCacheQueryExecutedEvent qe = (IgniteCacheQueryExecutedEvent)evt;
 
                 assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());

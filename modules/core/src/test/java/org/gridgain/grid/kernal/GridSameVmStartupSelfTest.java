@@ -65,12 +65,12 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
                     assert evt.type() != EVT_NODE_FAILED :
                         "Node1 did not exit gracefully.";
 
-                    if (evt instanceof GridDiscoveryEvent) {
+                    if (evt instanceof IgniteDiscoveryEvent) {
                         // Local node can send METRICS_UPDATED event.
-                        assert ((GridDiscoveryEvent) evt).eventNode().id().equals(grid1LocNodeId) ||
+                        assert ((IgniteDiscoveryEvent) evt).eventNode().id().equals(grid1LocNodeId) ||
                             evt.type() == EVT_NODE_METRICS_UPDATED :
                             "Received event about invalid node [received=" +
-                                ((GridDiscoveryEvent) evt).eventNode().id() + ", expected=" + grid1LocNodeId +
+                                ((IgniteDiscoveryEvent) evt).eventNode().id() + ", expected=" + grid1LocNodeId +
                                 ", type=" + evt.type() + ']';
 
                         if (evt.type() == EVT_NODE_LEFT)

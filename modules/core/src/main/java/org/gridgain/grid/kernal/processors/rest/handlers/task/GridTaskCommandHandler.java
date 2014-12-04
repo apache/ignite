@@ -426,10 +426,10 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent &&
+                assert evt instanceof IgniteDiscoveryEvent &&
                     (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) : "Unexpected event: " + evt;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 if (resHolderId.equals(discoEvt.eventNode().id())) {
                     lock.lock();

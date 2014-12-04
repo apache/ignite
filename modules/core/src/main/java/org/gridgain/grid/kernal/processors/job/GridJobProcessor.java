@@ -429,10 +429,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridDiscoveryEvent &&
+                assert evt instanceof IgniteDiscoveryEvent &&
                     (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) : "Unexpected event: " + evt;
 
-                GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                 if (taskNodeId.equals(discoEvt.eventNode().id())) {
                     lock.lock();
@@ -1733,11 +1733,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("fallthrough")
         @Override public void onEvent(IgniteEvent evt) {
-            assert evt instanceof GridDiscoveryEvent;
+            assert evt instanceof IgniteDiscoveryEvent;
 
             boolean handleCollisions = false;
 
-            UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
+            UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
 
             // We should always process discovery events (even on stop,
             // since we wait for jobs to complete if processor is stopped

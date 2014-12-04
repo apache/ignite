@@ -440,9 +440,9 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
             discoLsnr = new GridLocalEventListener() {
                 @SuppressWarnings("fallthrough")
                 @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof GridDiscoveryEvent;
+                    assert evt instanceof IgniteDiscoveryEvent;
 
-                    GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+                    IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
                     UUID evtNodeId = discoEvt.eventNode().id();
 

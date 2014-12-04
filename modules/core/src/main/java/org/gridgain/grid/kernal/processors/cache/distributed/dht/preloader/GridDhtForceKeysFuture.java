@@ -144,7 +144,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param evt Discovery event.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onDiscoveryEvent(GridDiscoveryEvent evt) {
+    public void onDiscoveryEvent(IgniteDiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
         int type = evt.type();

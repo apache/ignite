@@ -146,10 +146,10 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         if (check) {
             spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
                 @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof GridDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
+                    assert evt instanceof IgniteDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
                         ", actual=" + evt.type() + ", evt=" + evt + ']';
 
-                    ClusterNode node = spiCtx.node(((GridDiscoveryEvent)evt).eventNode().id());
+                    ClusterNode node = spiCtx.node(((IgniteDiscoveryEvent)evt).eventNode().id());
 
                     if (node != null)
                         try {

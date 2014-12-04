@@ -13,7 +13,7 @@ package org.gridgain.visor
 
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.{IgniteEvent, GridDiscoveryEvent, IgniteEventType}
+import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
@@ -1623,7 +1623,7 @@ object visor extends VisorTag {
         nodeJoinLsnr = new IgnitePredicate[IgniteEvent]() {
             override def apply(e: IgniteEvent): Boolean = {
                 e match {
-                    case de: GridDiscoveryEvent =>
+                    case de: IgniteDiscoveryEvent =>
                         setVarIfAbsent(nid8(de.eventNode()), "n")
 
                         val node = grid.node(de.eventNode().id())
@@ -1652,7 +1652,7 @@ object visor extends VisorTag {
         nodeLeftLsnr = new IgnitePredicate[IgniteEvent]() {
             override def apply(e: IgniteEvent): Boolean = {
                 e match {
-                    case (de: GridDiscoveryEvent) =>
+                    case (de: IgniteDiscoveryEvent) =>
                         val nv = mfind(nid8(de.eventNode()))
 
                         if (nv.isDefined)
@@ -1683,7 +1683,7 @@ object visor extends VisorTag {
         nodeSegLsnr = new IgnitePredicate[IgniteEvent] {
             override def apply(e: IgniteEvent): Boolean = {
                 e match {
-                    case de: GridDiscoveryEvent =>
+                    case de: IgniteDiscoveryEvent =>
                         if (de.eventNode().id() == grid.localNode.id) {
                             warn("Closing Visor console due to topology segmentation.")
                             warn("Contact your system administrator.")

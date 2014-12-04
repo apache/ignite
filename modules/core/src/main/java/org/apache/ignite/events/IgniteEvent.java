@@ -69,9 +69,9 @@ import java.io.*;
  * @see IgniteCacheEvent
  * @see IgniteCachePreloadingEvent
  * @see GridSwapSpaceEvent
- * @see GridCheckpointEvent
- * @see GridDeploymentEvent
- * @see GridDiscoveryEvent
+ * @see IgniteCheckpointEvent
+ * @see IgniteDeploymentEvent
+ * @see IgniteDiscoveryEvent
  * @see GridTaskEvent
  * @see org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)
  */

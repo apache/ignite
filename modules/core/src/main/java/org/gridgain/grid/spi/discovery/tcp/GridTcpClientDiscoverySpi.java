@@ -603,7 +603,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                             joinTopology(false);
 
-                            getSpiContext().recordEvent(new GridDiscoveryEvent(locNode,
+                            getSpiContext().recordEvent(new IgniteDiscoveryEvent(locNode,
                                 "Client node reconnected: " + locNode,
                                 EVT_CLIENT_NODE_RECONNECTED, locNode));
                         }
@@ -1122,7 +1122,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                     joinErr = null;
                     reconFailed = true;
 
-                    getSpiContext().recordEvent(new GridDiscoveryEvent(locNode,
+                    getSpiContext().recordEvent(new IgniteDiscoveryEvent(locNode,
                         "Client node disconnected: " + locNode,
                         EVT_CLIENT_NODE_DISCONNECTED, locNode));
 
