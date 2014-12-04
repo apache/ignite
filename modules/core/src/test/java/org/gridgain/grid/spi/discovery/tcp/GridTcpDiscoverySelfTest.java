@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
@@ -281,7 +281,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                     return true;
                 }
             },
-            GridEventType.EVT_NODE_FAILED
+            IgniteEventType.EVT_NODE_FAILED
         );
 
         info("Nodes were started");
@@ -324,7 +324,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return true;
                     }
                 },
-                GridEventType.EVT_NODE_JOINED
+                IgniteEventType.EVT_NODE_JOINED
             );
 
             startGrid(2);
@@ -438,7 +438,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return true;
                     }
                 },
-                GridEventType.EVT_NODE_FAILED
+                IgniteEventType.EVT_NODE_FAILED
             );
 
             info("Nodes were started");
@@ -469,7 +469,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }, GridEventType.EVT_NODE_FAILED);
+            }, IgniteEventType.EVT_NODE_FAILED);
 
             info("Nodes were started");
 

@@ -17,7 +17,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests for {@link GridEventStorageManager}.
@@ -103,7 +103,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
         Ignite ignite = grid();
 
         try {
-            ignite.events().recordLocal(new GridEventAdapter(null, "Test message.", GridEventType.EVT_NODE_FAILED) {
+            ignite.events().recordLocal(new GridEventAdapter(null, "Test message.", IgniteEventType.EVT_NODE_FAILED) {
                 // No-op.
             });
 

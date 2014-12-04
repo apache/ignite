@@ -43,10 +43,10 @@ import org.gridgain.grid.util.typedef.internal.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_CHECKPOINT_LOADED
- * @see GridEventType#EVT_CHECKPOINT_REMOVED
- * @see GridEventType#EVT_CHECKPOINT_SAVED
- * @see GridEventType#EVTS_CHECKPOINT
+ * @see IgniteEventType#EVT_CHECKPOINT_LOADED
+ * @see IgniteEventType#EVT_CHECKPOINT_REMOVED
+ * @see IgniteEventType#EVT_CHECKPOINT_SAVED
+ * @see IgniteEventType#EVTS_CHECKPOINT
  */
 public class GridCheckpointEvent extends GridEventAdapter {
     /** */

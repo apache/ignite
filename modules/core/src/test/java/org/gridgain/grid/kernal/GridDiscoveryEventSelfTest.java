@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests discovery event topology snapshots.
@@ -390,7 +390,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
                         return true;
                     }
-                }, GridEventType.EVT_NODE_JOINED);
+                }, IgniteEventType.EVT_NODE_JOINED);
             }
 
             daemon = true;

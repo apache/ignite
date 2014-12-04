@@ -21,7 +21,7 @@ import org.jdk8.backport.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * In-memory {@link GridEventStorageSpi} implementation. All events are

@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.loadtests.util.GridLoadTestArgs.*;
 import static org.gridgain.testframework.GridLoadTestUtils.*;
 import static org.gridgain.testframework.GridTestUtils.*;

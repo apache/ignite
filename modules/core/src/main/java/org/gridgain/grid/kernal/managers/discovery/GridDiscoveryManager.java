@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.*;
 import java.util.zip.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 

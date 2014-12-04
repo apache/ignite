@@ -13,7 +13,7 @@ package org.gridgain.visor
 
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.{IgniteEvent, GridDiscoveryEvent, GridEventType}
+import org.apache.ignite.events.{IgniteEvent, GridDiscoveryEvent, IgniteEventType}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
@@ -25,7 +25,7 @@ import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
 import org.gridgain.grid.GridSystemProperties._
-import GridEventType._
+import IgniteEventType._
 import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._

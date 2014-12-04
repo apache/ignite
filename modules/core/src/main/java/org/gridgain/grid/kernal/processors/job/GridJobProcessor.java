@@ -38,7 +38,7 @@ import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;

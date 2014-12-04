@@ -42,7 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 

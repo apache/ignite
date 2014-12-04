@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
@@ -665,7 +665,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                     removeLocalEventListener(this);
                 }
             }
-        }, F.isEmpty(types) ? GridEventType.EVTS_ALL : types);
+        }, F.isEmpty(types) ? IgniteEventType.EVTS_ALL : types);
 
         return fut;
     }

@@ -67,7 +67,7 @@ import java.util.regex.*;
 import java.util.zip.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
@@ -436,7 +436,7 @@ public abstract class GridUtils {
         }
 
         // Event names initialization.
-        for (Field field : GridEventType.class.getFields()) {
+        for (Field field : IgniteEventType.class.getFields()) {
             if (field.getType().equals(int.class)) {
                 try {
                     assert field.getName().startsWith("EVT_") : "Invalid event name (should start with 'EVT_': " +
@@ -466,8 +466,8 @@ public abstract class GridUtils {
         // because they may have been initialized to null before GRID_EVTS were initialized.
         if (EVTS_ALL == null || EVTS_ALL_MINUS_METRIC_UPDATE == null) {
             try {
-                Field f1 = GridEventType.class.getDeclaredField("EVTS_ALL");
-                Field f2 = GridEventType.class.getDeclaredField("EVTS_ALL_MINUS_METRIC_UPDATE");
+                Field f1 = IgniteEventType.class.getDeclaredField("EVTS_ALL");
+                Field f2 = IgniteEventType.class.getDeclaredField("EVTS_ALL_MINUS_METRIC_UPDATE");
 
                 assert f1 != null;
                 assert f2 != null;

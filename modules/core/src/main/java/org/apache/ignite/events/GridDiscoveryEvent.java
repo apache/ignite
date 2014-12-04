@@ -46,13 +46,13 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_NODE_METRICS_UPDATED
- * @see GridEventType#EVT_NODE_FAILED
- * @see GridEventType#EVT_NODE_JOINED
- * @see GridEventType#EVT_NODE_LEFT
- * @see GridEventType#EVT_NODE_SEGMENTED
- * @see GridEventType#EVTS_DISCOVERY_ALL
- * @see GridEventType#EVTS_DISCOVERY
+ * @see IgniteEventType#EVT_NODE_METRICS_UPDATED
+ * @see IgniteEventType#EVT_NODE_FAILED
+ * @see IgniteEventType#EVT_NODE_JOINED
+ * @see IgniteEventType#EVT_NODE_LEFT
+ * @see IgniteEventType#EVT_NODE_SEGMENTED
+ * @see IgniteEventType#EVTS_DISCOVERY_ALL
+ * @see IgniteEventType#EVTS_DISCOVERY
  */
 public class GridDiscoveryEvent extends GridEventAdapter {
     /** */

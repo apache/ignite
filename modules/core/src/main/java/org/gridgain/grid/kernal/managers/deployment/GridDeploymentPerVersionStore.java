@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Deployment storage for {@link GridDeploymentMode#SHARED} and

@@ -25,7 +25,7 @@ import org.gridgain.grid.util.worker.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
@@ -382,7 +382,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Processing discovery event: " + evt);
 
-            if (evt.type() == GridEventType.EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT)
+            if (evt.type() == IgniteEventType.EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT)
                 onNodeLeft(evt.eventNode().id());
 
             synchronized (this) {

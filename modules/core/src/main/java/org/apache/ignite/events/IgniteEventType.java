@@ -50,7 +50,7 @@ import java.util.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  */
-public interface GridEventType {
+public interface IgniteEventType {
     /**
      * Built-in event type: checkpoint was saved.
      * <p>

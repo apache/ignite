@@ -47,13 +47,13 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_TASK_FAILED
- * @see GridEventType#EVT_TASK_FINISHED
- * @see GridEventType#EVT_TASK_REDUCED
- * @see GridEventType#EVT_TASK_STARTED
- * @see GridEventType#EVT_TASK_SESSION_ATTR_SET
- * @see GridEventType#EVT_TASK_TIMEDOUT
- * @see GridEventType#EVTS_TASK_EXECUTION
+ * @see IgniteEventType#EVT_TASK_FAILED
+ * @see IgniteEventType#EVT_TASK_FINISHED
+ * @see IgniteEventType#EVT_TASK_REDUCED
+ * @see IgniteEventType#EVT_TASK_STARTED
+ * @see IgniteEventType#EVT_TASK_SESSION_ATTR_SET
+ * @see IgniteEventType#EVT_TASK_TIMEDOUT
+ * @see IgniteEventType#EVTS_TASK_EXECUTION
  */
 public class GridTaskEvent extends GridEventAdapter {
     /** */

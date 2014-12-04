@@ -101,7 +101,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
 
             nodes.add(node);
 
-            GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(node, "", GridEventType.EVT_NODE_JOINED,
+            GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(node, "", IgniteEventType.EVT_NODE_JOINED,
                 node);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
@@ -125,7 +125,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
 
             ClusterNode rmv = nodes.remove(nodes.size() - 1);
 
-            GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(rmv, "", GridEventType.EVT_NODE_LEFT, rmv);
+            GridDiscoveryEvent discoEvt = new GridDiscoveryEvent(rmv, "", IgniteEventType.EVT_NODE_LEFT, rmv);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
                 new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
@@ -187,12 +187,12 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
 
                 nodes.add(addedNode);
 
-                discoEvt = new GridDiscoveryEvent(addedNode, "", GridEventType.EVT_NODE_JOINED, addedNode);
+                discoEvt = new GridDiscoveryEvent(addedNode, "", IgniteEventType.EVT_NODE_JOINED, addedNode);
             }
             else {
                 ClusterNode rmvNode = nodes.remove(rnd.nextInt(nodes.size()));
 
-                discoEvt = new GridDiscoveryEvent(rmvNode, "", GridEventType.EVT_NODE_LEFT, rmvNode);
+                discoEvt = new GridDiscoveryEvent(rmvNode, "", IgniteEventType.EVT_NODE_LEFT, rmvNode);
             }
 
             info("======================================");

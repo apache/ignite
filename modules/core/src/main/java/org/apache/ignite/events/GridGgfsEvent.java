@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * GGFS event.
@@ -51,9 +51,9 @@ import static org.apache.ignite.events.GridEventType.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @see GridEventType#EVT_GGFS_FILE_CREATED
- * @see GridEventType#EVT_GGFS_FILE_RENAMED
- * @see GridEventType#EVT_GGFS_FILE_DELETED
+ * @see IgniteEventType#EVT_GGFS_FILE_CREATED
+ * @see IgniteEventType#EVT_GGFS_FILE_RENAMED
+ * @see IgniteEventType#EVT_GGFS_FILE_DELETED
  */
 public class GridGgfsEvent extends GridEventAdapter {
     /** */
@@ -87,8 +87,8 @@ public class GridGgfsEvent extends GridEventAdapter {
 
     /**
      * Constructs an event instance for path modification event
-     * ({@link GridEventType#EVT_GGFS_FILE_RENAMED},
-     * {@link GridEventType#EVT_GGFS_DIR_RENAMED}).
+     * ({@link IgniteEventType#EVT_GGFS_FILE_RENAMED},
+     * {@link IgniteEventType#EVT_GGFS_DIR_RENAMED}).
      *
      * @param path File or directory path.
      * @param newPath New file or directory path.
@@ -103,8 +103,8 @@ public class GridGgfsEvent extends GridEventAdapter {
 
     /**
      * Constructs an event instance for close events:
-     * ({@link GridEventType#EVT_GGFS_FILE_CLOSED_READ},
-     * {@link GridEventType#EVT_GGFS_FILE_CLOSED_WRITE}).
+     * ({@link IgniteEventType#EVT_GGFS_FILE_CLOSED_READ},
+     * {@link IgniteEventType#EVT_GGFS_FILE_CLOSED_WRITE}).
      *
      * @param path File path.
      * @param node Node.
@@ -119,7 +119,7 @@ public class GridGgfsEvent extends GridEventAdapter {
 
     /**
      * Constructs an event instance for file metadata update events
-     * ({@link GridEventType#EVT_GGFS_META_UPDATED}).
+     * ({@link IgniteEventType#EVT_GGFS_META_UPDATED}).
      *
      * @param path File path.
      * @param node Node.
@@ -143,7 +143,7 @@ public class GridGgfsEvent extends GridEventAdapter {
 
     /**
      * New file or directory path for this event (used in
-     * {@link GridEventType#EVT_GGFS_FILE_RENAMED} event).
+     * {@link IgniteEventType#EVT_GGFS_FILE_RENAMED} event).
      *
      * @return New file or directory path or {@code null},
      *         if not relevant for this event.

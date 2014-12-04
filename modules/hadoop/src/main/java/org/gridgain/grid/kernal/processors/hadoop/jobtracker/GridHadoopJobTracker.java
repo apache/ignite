@@ -169,7 +169,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     busyLock.readUnlock();
                 }
             }
-        }, GridEventType.EVT_NODE_FAILED, GridEventType.EVT_NODE_LEFT);
+        }, IgniteEventType.EVT_NODE_FAILED, IgniteEventType.EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */

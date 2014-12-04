@@ -19,7 +19,7 @@ import org.gridgain.grid.resources.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Demonstrates event consume API that allows to register event listeners on remote nodes.

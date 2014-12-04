@@ -22,7 +22,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests that preload start/preload stop events are fired only once for replicated cache.

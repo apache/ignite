@@ -42,8 +42,8 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_AUTHENTICATION_FAILED
- * @see GridEventType#EVT_AUTHENTICATION_SUCCEEDED
+ * @see IgniteEventType#EVT_AUTHENTICATION_FAILED
+ * @see IgniteEventType#EVT_AUTHENTICATION_SUCCEEDED
  */
 public class GridAuthenticationEvent extends GridEventAdapter {
     /** */

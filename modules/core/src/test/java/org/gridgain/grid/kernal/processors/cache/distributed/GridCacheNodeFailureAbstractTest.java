@@ -28,7 +28,7 @@ import static org.apache.ignite.IgniteState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests for node failure in transactions.

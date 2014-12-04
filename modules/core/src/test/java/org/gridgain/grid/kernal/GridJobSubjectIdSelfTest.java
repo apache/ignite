@@ -71,7 +71,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
 
                 return false;
             }
-        }, GridEventType.EVT_JOB_STARTED);
+        }, IgniteEventType.EVT_JOB_STARTED);
 
         node1.compute().execute(new Task(node2.cluster().localNode().id()), null);
 

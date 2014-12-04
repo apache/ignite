@@ -40,7 +40,7 @@ import java.util.concurrent.locks.Lock;
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.jdk8.backport.ConcurrentLinkedDeque8.*;

@@ -50,8 +50,8 @@ import java.util.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @see GridEventType#EVT_CACHE_QUERY_EXECUTED
- * @see GridEventType#EVTS_CACHE_QUERY
+ * @see IgniteEventType#EVT_CACHE_QUERY_EXECUTED
+ * @see IgniteEventType#EVTS_CACHE_QUERY
  */
 public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
     /** */

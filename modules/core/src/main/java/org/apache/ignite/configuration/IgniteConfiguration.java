@@ -3163,7 +3163,7 @@ public class IgniteConfiguration {
      * Each listener is mapped to array of event types.
      *
      * @return Pre-configured event listeners map.
-     * @see GridEventType
+     * @see org.apache.ignite.events.IgniteEventType
      */
     public Map<IgnitePredicate<? extends IgniteEvent>, int[]> getLocalEventListeners() {
         return lsnrs;

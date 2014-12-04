@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests for fields queries.

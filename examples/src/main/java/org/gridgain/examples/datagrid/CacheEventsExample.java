@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * This examples demonstrates events API. Note that grid events are disabled by default and

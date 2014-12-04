@@ -15,7 +15,7 @@ import org.gridgain.grid.util.tostring.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Exchange ID.

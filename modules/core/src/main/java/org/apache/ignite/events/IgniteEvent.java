@@ -51,11 +51,11 @@ import java.io.*;
  * <p>
  * All discovery events are internal:
  * <ul>
- *     <li>{@link GridEventType#EVT_NODE_FAILED}</li>
- *     <li>{@link GridEventType#EVT_NODE_LEFT}</li>
- *     <li>{@link GridEventType#EVT_NODE_JOINED}</li>
- *     <li>{@link GridEventType#EVT_NODE_METRICS_UPDATED}</li>
- *     <li>{@link GridEventType#EVT_NODE_SEGMENTED}</li>
+ *     <li>{@link IgniteEventType#EVT_NODE_FAILED}</li>
+ *     <li>{@link IgniteEventType#EVT_NODE_LEFT}</li>
+ *     <li>{@link IgniteEventType#EVT_NODE_JOINED}</li>
+ *     <li>{@link IgniteEventType#EVT_NODE_METRICS_UPDATED}</li>
+ *     <li>{@link IgniteEventType#EVT_NODE_SEGMENTED}</li>
  * </ul>
  * <p>
  * Hidden events are NEVER sent to SPI level. They serve purpose of local
@@ -63,7 +63,7 @@ import java.io.*;
  * <p>
  * Hidden events:
  * <ul>
- *     <li>{@link GridEventType#EVT_NODE_METRICS_UPDATED}</li>
+ *     <li>{@link IgniteEventType#EVT_NODE_METRICS_UPDATED}</li>
  * </ul>
  * @see GridJobEvent
  * @see GridCacheEvent
@@ -111,18 +111,18 @@ public interface IgniteEvent extends Comparable<IgniteEvent>, Serializable {
 
     /**
      * Gets type of this event. All system event types are defined in
-     * {@link GridEventType}.
+     * {@link IgniteEventType}.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
      * @return Event's type.
-     * @see GridEventType
+     * @see IgniteEventType
      */
     public int type();
 
     /**
-     * Gets name of this event. All events are defined in {@link GridEventType} class.
+     * Gets name of this event. All events are defined in {@link IgniteEventType} class.
      *
      * @return Name of this event.
      */

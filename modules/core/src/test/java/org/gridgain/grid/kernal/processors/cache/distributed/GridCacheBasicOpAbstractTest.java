@@ -26,7 +26,7 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Simple cache test.

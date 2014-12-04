@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;

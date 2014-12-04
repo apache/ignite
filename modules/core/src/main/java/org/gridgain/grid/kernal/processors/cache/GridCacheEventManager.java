@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Cache event manager.

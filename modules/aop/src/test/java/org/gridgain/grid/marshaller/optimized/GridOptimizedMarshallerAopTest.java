@@ -18,7 +18,7 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Test use GridOptimizedMarshaller and AspectJ AOP.

@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -181,8 +181,8 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             }
         };
 
-        ignite2.events().localListen(lsnr, GridEventType.EVT_CACHE_OBJECT_PUT);
-        ignite3.events().localListen(lsnr, GridEventType.EVT_CACHE_OBJECT_PUT);
+        ignite2.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
+        ignite3.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
 
         GridCacheTx tx = cache1.txStart();
 

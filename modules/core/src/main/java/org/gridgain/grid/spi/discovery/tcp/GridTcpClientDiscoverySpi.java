@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeartbeatMessage.*;
 
 /**

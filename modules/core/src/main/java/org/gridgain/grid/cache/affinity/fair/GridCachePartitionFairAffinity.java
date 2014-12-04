@@ -385,7 +385,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
         GridCacheAffinityFunctionContext ctx, Iterable<ClusterNode> topSnapshot) {
         GridDiscoveryEvent discoEvt = ctx.discoveryEvent();
 
-        UUID leftNodeId = discoEvt.type() == GridEventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
+        UUID leftNodeId = discoEvt.type() == IgniteEventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
 
         List<List<ClusterNode>> cp = new ArrayList<>(parts);
 

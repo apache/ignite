@@ -22,7 +22,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Eviction event self test.
@@ -98,7 +98,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
                 return true;
             }
-        }, GridEventType.EVT_CACHE_ENTRY_EVICTED);
+        }, IgniteEventType.EVT_CACHE_ENTRY_EVICTED);
 
         GridCache<String, String> c = g.cache(null);
 

@@ -24,7 +24,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.io.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 
 /**

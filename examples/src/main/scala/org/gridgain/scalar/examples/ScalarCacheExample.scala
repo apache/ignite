@@ -11,13 +11,13 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.events.{GridEventType, IgniteEvent}
+import org.apache.ignite.events.{IgniteEventType, IgniteEvent}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.scalar.scalar
 import scalar._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.events.GridEventType
-import GridEventType._
+import IgniteEventType._
 import collection.JavaConversions._
 
 /**

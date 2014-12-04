@@ -16,7 +16,7 @@ import org.gridgain.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests for {@link GridMemoryEventStorageSpi}.

@@ -64,7 +64,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
                                     return true;
                                 }
                             },
-                            GridEventType.EVT_NODE_JOINED);
+                            IgniteEventType.EVT_NODE_JOINED);
 
                         startLatch.countDown();
 

@@ -44,10 +44,10 @@ import org.gridgain.grid.util.typedef.internal.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_CACHE_PRELOAD_PART_LOADED
- * @see GridEventType#EVT_CACHE_PRELOAD_PART_UNLOADED
- * @see GridEventType#EVT_CACHE_PRELOAD_STARTED
- * @see GridEventType#EVT_CACHE_PRELOAD_STOPPED
+ * @see IgniteEventType#EVT_CACHE_PRELOAD_PART_LOADED
+ * @see IgniteEventType#EVT_CACHE_PRELOAD_PART_UNLOADED
+ * @see IgniteEventType#EVT_CACHE_PRELOAD_STARTED
+ * @see IgniteEventType#EVT_CACHE_PRELOAD_STOPPED
  */
 public class GridCachePreloadingEvent extends GridEventAdapter {
     /** */

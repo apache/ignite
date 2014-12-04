@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests for projection metrics.

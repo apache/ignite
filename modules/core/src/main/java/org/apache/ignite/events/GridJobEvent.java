@@ -46,17 +46,17 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_JOB_CANCELLED
- * @see GridEventType#EVT_JOB_FAILED
- * @see GridEventType#EVT_JOB_FAILED_OVER
- * @see GridEventType#EVT_JOB_FINISHED
- * @see GridEventType#EVT_JOB_MAPPED
- * @see GridEventType#EVT_JOB_QUEUED
- * @see GridEventType#EVT_JOB_REJECTED
- * @see GridEventType#EVT_JOB_RESULTED
- * @see GridEventType#EVT_JOB_STARTED
- * @see GridEventType#EVT_JOB_TIMEDOUT
- * @see GridEventType#EVTS_JOB_EXECUTION
+ * @see IgniteEventType#EVT_JOB_CANCELLED
+ * @see IgniteEventType#EVT_JOB_FAILED
+ * @see IgniteEventType#EVT_JOB_FAILED_OVER
+ * @see IgniteEventType#EVT_JOB_FINISHED
+ * @see IgniteEventType#EVT_JOB_MAPPED
+ * @see IgniteEventType#EVT_JOB_QUEUED
+ * @see IgniteEventType#EVT_JOB_REJECTED
+ * @see IgniteEventType#EVT_JOB_RESULTED
+ * @see IgniteEventType#EVT_JOB_STARTED
+ * @see IgniteEventType#EVT_JOB_TIMEDOUT
+ * @see IgniteEventType#EVTS_JOB_EXECUTION
  */
 public class GridJobEvent extends GridEventAdapter {
     /** */

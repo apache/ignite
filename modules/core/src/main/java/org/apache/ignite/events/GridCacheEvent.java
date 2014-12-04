@@ -48,17 +48,17 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_CACHE_ENTRY_CREATED
- * @see GridEventType#EVT_CACHE_ENTRY_DESTROYED
- * @see GridEventType#EVT_CACHE_ENTRY_EVICTED
- * @see GridEventType#EVT_CACHE_OBJECT_PUT
- * @see GridEventType#EVT_CACHE_OBJECT_READ
- * @see GridEventType#EVT_CACHE_OBJECT_REMOVED
- * @see GridEventType#EVT_CACHE_OBJECT_LOCKED
- * @see GridEventType#EVT_CACHE_OBJECT_UNLOCKED
- * @see GridEventType#EVT_CACHE_OBJECT_SWAPPED
- * @see GridEventType#EVT_CACHE_OBJECT_UNSWAPPED
- * @see GridEventType#EVT_CACHE_OBJECT_EXPIRED
+ * @see IgniteEventType#EVT_CACHE_ENTRY_CREATED
+ * @see IgniteEventType#EVT_CACHE_ENTRY_DESTROYED
+ * @see IgniteEventType#EVT_CACHE_ENTRY_EVICTED
+ * @see IgniteEventType#EVT_CACHE_OBJECT_PUT
+ * @see IgniteEventType#EVT_CACHE_OBJECT_READ
+ * @see IgniteEventType#EVT_CACHE_OBJECT_REMOVED
+ * @see IgniteEventType#EVT_CACHE_OBJECT_LOCKED
+ * @see IgniteEventType#EVT_CACHE_OBJECT_UNLOCKED
+ * @see IgniteEventType#EVT_CACHE_OBJECT_SWAPPED
+ * @see IgniteEventType#EVT_CACHE_OBJECT_UNSWAPPED
+ * @see IgniteEventType#EVT_CACHE_OBJECT_EXPIRED
  */
 public class GridCacheEvent extends GridEventAdapter {
     /** */
@@ -235,7 +235,7 @@ public class GridCacheEvent extends GridEventAdapter {
      * Gets new value for this event.
      *
      * @return New value associated with event (<tt>null</tt> if event is
-     *      {@link GridEventType#EVT_CACHE_OBJECT_REMOVED}.
+     *      {@link IgniteEventType#EVT_CACHE_OBJECT_REMOVED}.
      */
     @Nullable public Object newValue() {
         return newVal;
@@ -274,8 +274,8 @@ public class GridCacheEvent extends GridEventAdapter {
 
     /**
      * Gets security subject ID initiated this cache event, if available. This property is available only for
-     * {@link GridEventType#EVT_CACHE_OBJECT_PUT}, {@link GridEventType#EVT_CACHE_OBJECT_REMOVED} and
-     * {@link GridEventType#EVT_CACHE_OBJECT_READ} cache events.
+     * {@link IgniteEventType#EVT_CACHE_OBJECT_PUT}, {@link IgniteEventType#EVT_CACHE_OBJECT_REMOVED} and
+     * {@link IgniteEventType#EVT_CACHE_OBJECT_READ} cache events.
      * <p>
      * Subject ID will be set either to nodeId initiated cache update or read or client ID initiated
      * cache update or read.

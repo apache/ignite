@@ -38,7 +38,7 @@
 
         <!-- Enable task execution events for examples. -->
         <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.GridEventType.EVTS_TASK_EXECUTION"/>
+            <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_TASK_EXECUTION"/>
         </property>
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->

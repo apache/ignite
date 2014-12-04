@@ -126,7 +126,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, GridEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
 
         g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent evt) {
@@ -134,7 +134,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, GridEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
 
         info("Beginning to wait for cache1 repartition.");
 
@@ -203,7 +203,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, GridEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
 
         g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent evt) {
@@ -211,7 +211,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, GridEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
 
         U.sleep(1000);
 

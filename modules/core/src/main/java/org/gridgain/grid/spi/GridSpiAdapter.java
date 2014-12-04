@@ -33,7 +33,7 @@ import java.text.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * This class provides convenient adapter for SPI implementations.

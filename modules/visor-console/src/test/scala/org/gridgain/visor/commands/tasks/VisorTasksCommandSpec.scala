@@ -15,9 +15,9 @@ import java.util
 
 import org.apache.ignite.compute.{ComputeJobAdapter, ComputeTaskSplitAdapter, ComputeJob, ComputeJobResult}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.GridEventType
+import org.apache.ignite.events.IgniteEventType
 import org.gridgain.grid.compute.GridComputeJobAdapter
-import GridEventType._
+import IgniteEventType._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.tasks.VisorTasksCommand._
 import org.scalatest._

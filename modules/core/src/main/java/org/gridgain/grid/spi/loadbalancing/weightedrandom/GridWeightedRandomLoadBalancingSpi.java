@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Load balancing SPI that picks a random node for job execution. Note that you can

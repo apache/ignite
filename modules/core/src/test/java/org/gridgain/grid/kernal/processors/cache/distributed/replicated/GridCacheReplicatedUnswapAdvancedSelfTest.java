@@ -27,7 +27,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Advanced promote test for replicated cache.

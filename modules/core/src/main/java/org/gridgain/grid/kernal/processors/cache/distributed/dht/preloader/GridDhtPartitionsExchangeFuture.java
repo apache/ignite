@@ -643,7 +643,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 cctx.kernalContext().timeout().removeTimeoutObject(timeoutObj);
 
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                if (exchId.event() == GridEventType.EVT_NODE_FAILED || exchId.event() == GridEventType.EVT_NODE_LEFT)
+                if (exchId.event() == IgniteEventType.EVT_NODE_FAILED || exchId.event() == IgniteEventType.EVT_NODE_LEFT)
                     cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
             }
 

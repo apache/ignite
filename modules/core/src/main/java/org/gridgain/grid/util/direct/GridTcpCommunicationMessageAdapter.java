@@ -21,7 +21,7 @@ import java.io.*;
 import java.nio.*;
 import java.util.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Communication message adapter.

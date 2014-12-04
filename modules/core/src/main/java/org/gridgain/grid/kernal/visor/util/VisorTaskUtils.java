@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
 /**

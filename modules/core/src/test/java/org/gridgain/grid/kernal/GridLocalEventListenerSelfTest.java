@@ -39,7 +39,7 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }, new int[] { GridEventType.EVT_NODE_JOINED } );
+            }, new int[] { IgniteEventType.EVT_NODE_JOINED } );
 
             cfg.setLocalEventListeners(lsnrs);
         }

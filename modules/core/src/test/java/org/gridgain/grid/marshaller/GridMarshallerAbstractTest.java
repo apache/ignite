@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Common test for marshallers.

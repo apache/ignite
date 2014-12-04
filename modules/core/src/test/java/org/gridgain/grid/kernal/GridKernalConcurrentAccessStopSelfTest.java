@@ -13,7 +13,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.apache.ignite.events.GridEventType.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests kernal stop while it is being accessed from asynchronous even listener.
