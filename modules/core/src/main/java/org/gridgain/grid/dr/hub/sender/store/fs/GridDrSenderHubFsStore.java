@@ -87,7 +87,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridDrSenderHubStore
  */
-public class GridDrSenderHubFsStore implements GridDrSenderHubStore, GridLifecycleAware {
+public class GridDrSenderHubFsStore implements GridDrSenderHubStore, LifecycleAware {
     /** Default maximum amount of files which can be used to store data. */
     public static final int DFLT_MAX_FILES_CNT = 10;
 

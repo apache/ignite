@@ -45,7 +45,7 @@ import java.util.concurrent.locks.*;
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
  */
-public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, GridLifecycleAware, GridInteropAware {
+public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, LifecycleAware, GridInteropAware {
     /** Default write cache initial capacity. */
     public static final int DFLT_INITIAL_CAPACITY = 1024;
 
@@ -255,8 +255,8 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
         assert cacheFlushFreq != 0 || cacheMaxSize != 0;
 
         if (stopping.compareAndSet(true, false)) {
-            if (store instanceof GridLifecycleAware)
-                ((GridLifecycleAware)store).start();
+            if (store instanceof LifecycleAware)
+                ((LifecycleAware)store).start();
 
             if (log.isDebugEnabled())
                 log.debug("Starting write-behind store for cache '" + cacheName + '\'');
@@ -342,8 +342,8 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
             if (!graceful)
                 log.warning("Shutdown was aborted");
 
-            if (store instanceof GridLifecycleAware)
-                ((GridLifecycleAware)store).stop();
+            if (store instanceof LifecycleAware)
+                ((LifecycleAware)store).stop();
         }
     }
 

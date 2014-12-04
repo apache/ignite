@@ -69,7 +69,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridDrSenderHubStore
  */
-public class GridDrSenderHubInMemoryStore implements GridDrSenderHubStore, GridLifecycleAware {
+public class GridDrSenderHubInMemoryStore implements GridDrSenderHubStore, LifecycleAware {
     /** */
     private static final int MAX_DATA_CENTERS = 32;
 

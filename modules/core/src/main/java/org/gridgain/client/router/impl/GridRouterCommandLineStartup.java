@@ -33,7 +33,7 @@ public class GridRouterCommandLineStartup {
     private GridLogger log;
 
     /** TCP router. */
-    private GridLifecycleAware tcpRouter;
+    private LifecycleAware tcpRouter;
 
     /**
      * Search given context for required configuration and starts router.

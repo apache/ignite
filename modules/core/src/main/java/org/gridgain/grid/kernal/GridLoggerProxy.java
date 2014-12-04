@@ -26,7 +26,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
 /**
  *
  */
-public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLogger, GridLifecycleAware,
+public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLogger, LifecycleAware,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

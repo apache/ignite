@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Base class for tests against {@link org.gridgain.grid.GridLifecycleAware} support.
+ * Base class for tests against {@link org.gridgain.grid.LifecycleAware} support.
  */
 public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstractTest {
     /** */
@@ -26,7 +26,7 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
     /**
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestLifecycleAware implements GridLifecycleAware {
+    public static class TestLifecycleAware implements LifecycleAware {
         /** */
         private AtomicInteger startCnt = new AtomicInteger();
 
@@ -60,14 +60,14 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         }
 
         /**
-         * @return Number of times {@link GridLifecycleAware#start} was called.
+         * @return Number of times {@link org.gridgain.grid.LifecycleAware#start} was called.
          */
         public int startCount() {
             return startCnt.get();
         }
 
         /**
-         * @return Number of times {@link GridLifecycleAware#stop} was called.
+         * @return Number of times {@link org.gridgain.grid.LifecycleAware#stop} was called.
          */
         public int stopCount() {
             return stopCnt.get();

@@ -8125,30 +8125,30 @@ public abstract class GridUtils {
 
     /**
      * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link GridLifecycleAware} interface and executes {@link GridLifecycleAware#start} method.
+     * {@link org.gridgain.grid.LifecycleAware} interface and executes {@link org.gridgain.grid.LifecycleAware#start} method.
      *
      * @param objs Objects.
-     * @throws GridException If {@link GridLifecycleAware#start} fails.
+     * @throws GridException If {@link org.gridgain.grid.LifecycleAware#start} fails.
      */
     public static void startLifecycleAware(Iterable<?> objs) throws GridException {
         for (Object obj : objs) {
-            if (obj instanceof GridLifecycleAware)
-                ((GridLifecycleAware)obj).start();
+            if (obj instanceof LifecycleAware)
+                ((LifecycleAware)obj).start();
         }
     }
 
     /**
      * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link GridLifecycleAware} interface and executes {@link GridLifecycleAware#stop} method.
+     * {@link org.gridgain.grid.LifecycleAware} interface and executes {@link org.gridgain.grid.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to GridGain configuration.
      */
     public static void stopLifecycleAware(GridLogger log, Iterable<?> objs) {
         for (Object obj : objs) {
-            if (obj instanceof GridLifecycleAware) {
+            if (obj instanceof LifecycleAware) {
                 try {
-                    ((GridLifecycleAware)obj).stop();
+                    ((LifecycleAware)obj).stop();
                 }
                 catch (GridException e) {
                     U.error(log, "Failed to stop component (ignoring): " + obj, e);

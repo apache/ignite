@@ -28,7 +28,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
 /**
- * Test for {@link GridLifecycleAware} support in {@link GridCacheConfiguration}.
+ * Test for {@link org.gridgain.grid.LifecycleAware} support in {@link GridCacheConfiguration}.
  */
 public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */

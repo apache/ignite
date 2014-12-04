@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.streamer;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.index.*;
 import org.gridgain.grid.util.typedef.*;
@@ -21,7 +20,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Test for {@link GridLifecycleAware} support in {@link GridStreamerConfiguration}.
+ * Test for {@link org.gridgain.grid.LifecycleAware} support in {@link GridStreamerConfiguration}.
  */
 public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**

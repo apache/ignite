@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Wrapper class for router process.
  */
-public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, GridLifecycleAware {
+public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, LifecycleAware {
     /** */
     private static final String ENT_NIO_LSNR_CLS = "org.gridgain.client.router.impl.GridTcpRouterNioListenerEntImpl";
 

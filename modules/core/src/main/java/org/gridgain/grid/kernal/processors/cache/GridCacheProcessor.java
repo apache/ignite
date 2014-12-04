@@ -1759,7 +1759,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param ccfg Cache configuration.
      * @param objs Extra components.
-     * @return Components provided in cache configuration which can implement {@link GridLifecycleAware} interface.
+     * @return Components provided in cache configuration which can implement {@link org.gridgain.grid.LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg, Object...objs) {
         Collection<Object> ret = new ArrayList<>(7 + objs.length);

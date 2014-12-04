@@ -21,7 +21,7 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 
 /**
- * Test for {@link GridLifecycleAware} support in {@link org.apache.ignite.configuration.IgniteConfiguration}.
+ * Test for {@link org.gridgain.grid.LifecycleAware} support in {@link org.apache.ignite.configuration.IgniteConfiguration}.
  */
 public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**
@@ -92,7 +92,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestMarshaller extends GridOptimizedMarshaller implements GridLifecycleAware {
+    private static class TestMarshaller extends GridOptimizedMarshaller implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
@@ -116,7 +116,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestLogger extends GridJavaLogger implements GridLifecycleAware {
+    private static class TestLogger extends GridJavaLogger implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
