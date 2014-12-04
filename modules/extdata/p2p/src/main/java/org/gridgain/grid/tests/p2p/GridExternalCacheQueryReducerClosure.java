@@ -18,7 +18,7 @@ import java.util.*;
  * Closure that returns cache query reducer, which uses
  * {@link GridP2PAwareTestUserResource}.
  */
-public class GridExternalCacheQueryReducerClosure implements GridReducer<Map.Entry<Integer, Integer>, Integer> {
+public class GridExternalCacheQueryReducerClosure implements IgniteReducer<Map.Entry<Integer, Integer>, Integer> {
     /** */
     @GridUserResource
     private transient GridP2PAwareTestUserResource rsrc;

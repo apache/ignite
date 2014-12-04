@@ -18,12 +18,12 @@ import java.util.*;
 /**
  * Defines generic reducer that collects multiple values and reduces them into one.
  * Reducers are useful in computations when results from multiple remote jobs need
- * to be reduced into one, e.g. {@link GridCompute#call(Collection, GridReducer)} method.
+ * to be reduced into one, e.g. {@link GridCompute#call(Collection, IgniteReducer)} method.
  *
  * @param <E> Type of collected values.
  * @param <R> Type of reduced value.
  */
-public interface GridReducer<E, R> extends Serializable {
+public interface IgniteReducer<E, R> extends Serializable {
     /**
      * Collects given value. If this method returns {@code false} then {@link #reduce()}
      * will be called right away. Otherwise caller will continue collecting until all

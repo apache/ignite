@@ -100,8 +100,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param rdc Reduce function.
      * @return Entry reducer.
      */
-    private def toEntryReducer[R](rdc: Iterable[(K, V)] => R): GridReducer[java.util.Map.Entry[K, V], R] = {
-        new GridReducer[java.util.Map.Entry[K, V], R] {
+    private def toEntryReducer[R](rdc: Iterable[(K, V)] => R): IgniteReducer[java.util.Map.Entry[K, V], R] = {
+        new IgniteReducer[java.util.Map.Entry[K, V], R] {
             private var seq = Seq.empty[(K, V)]
 
             def collect(e: java.util.Map.Entry[K, V]): Boolean = {

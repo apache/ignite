@@ -266,7 +266,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
         rdcQry.keepAll(true);
 
-        Iterator<Integer> reduceIter = rdcQry.execute(new GridReducer<Map.Entry<CacheKey, CacheValue>, Integer>() {
+        Iterator<Integer> reduceIter = rdcQry.execute(new IgniteReducer<Map.Entry<CacheKey, CacheValue>, Integer>() {
             /** Reducer result. */
             private final AtomicInteger res = new AtomicInteger();
 
@@ -292,7 +292,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
         rdcQry1.keepAll(true);
 
-        Iterator<Object> reduceIter1 = rdcQry1.execute(new GridReducer<Map.Entry<CacheKey, CacheValue>, Object>() {
+        Iterator<Object> reduceIter1 = rdcQry1.execute(new IgniteReducer<Map.Entry<CacheKey, CacheValue>, Object>() {
             @Override public boolean collect(Map.Entry<CacheKey, CacheValue> e) {
                 // No-op.
                 return true;

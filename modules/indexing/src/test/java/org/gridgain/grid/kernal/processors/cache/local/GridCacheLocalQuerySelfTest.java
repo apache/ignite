@@ -76,7 +76,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
 
         Iterator<String> iter2 = rdcQry.
             projection(ignite.cluster().forLocal()).
-            execute(new GridReducer<Map.Entry<Integer, String>, String>() {
+            execute(new IgniteReducer<Map.Entry<Integer, String>, String>() {
                 /** */
                 private String res = "";
 

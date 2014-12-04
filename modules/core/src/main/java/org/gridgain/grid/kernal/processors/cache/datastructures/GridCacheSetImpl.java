@@ -626,7 +626,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /**
      *
      */
-    private static class SumReducer implements GridReducer<Object, Integer>, Externalizable {
+    private static class SumReducer implements IgniteReducer<Object, Integer>, Externalizable {
         /** */
         private static final long serialVersionUID = -3436987759126521204L;
 

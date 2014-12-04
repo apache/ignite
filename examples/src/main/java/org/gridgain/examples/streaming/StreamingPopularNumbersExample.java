@@ -58,8 +58,8 @@ public class StreamingPopularNumbersExample {
         };
 
     /** Reducer selecting first POPULAR_NUMBERS_CNT values. */
-    private static class PopularNumbersReducer implements GridReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
-        Collection<GridStreamerIndexEntry<Integer, Integer, Long>>> {
+    private static class PopularNumbersReducer implements IgniteReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
+            Collection<GridStreamerIndexEntry<Integer, Integer, Long>>> {
         /** */
         private final List<GridStreamerIndexEntry<Integer, Integer, Long>> sorted = new ArrayList<>();
 

@@ -270,7 +270,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class SnapshotReducer implements GridReducer<GridJobMetricsSnapshot, GridJobMetrics> {
+    private static class SnapshotReducer implements IgniteReducer<GridJobMetricsSnapshot, GridJobMetrics> {
         /** */
         private static final long serialVersionUID = 0L;
 

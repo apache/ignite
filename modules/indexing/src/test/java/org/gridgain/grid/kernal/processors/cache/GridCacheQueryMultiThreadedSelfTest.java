@@ -692,8 +692,8 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         rdcQry.includeBackups(true);
         rdcQry.keepAll(true);
 
-        final GridReducer<Map.Entry<Integer, Integer>, Integer> rmtRdc =
-            new GridReducer<Map.Entry<Integer, Integer>, Integer>() {
+        final IgniteReducer<Map.Entry<Integer, Integer>, Integer> rmtRdc =
+            new IgniteReducer<Map.Entry<Integer, Integer>, Integer>() {
                 /** Reducer result. */
                 private int res;
 

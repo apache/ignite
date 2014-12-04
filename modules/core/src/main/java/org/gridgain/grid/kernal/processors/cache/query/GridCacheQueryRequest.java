@@ -67,7 +67,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridReducer<Object, Object> rdc;
+    private IgniteReducer<Object, Object> rdc;
 
     /** */
     private byte[] rdcBytes;
@@ -195,7 +195,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
         GridPredicate<GridCacheEntry<Object, Object>> prjFilter,
-        GridReducer<Object, Object> rdc,
+        IgniteReducer<Object, Object> rdc,
         IgniteClosure<Object, Object> trans,
         int pageSize,
         boolean incBackups,
@@ -301,7 +301,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     void beforeLocalExecution(GridCacheContext<K, V> ctx) throws GridException {
         GridMarshaller marsh = ctx.marshaller();
 
-        rdc = rdc != null ? marsh.<GridReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
+        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
         trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;
     }
 
@@ -376,7 +376,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * @return Reducer.
      */
-    public GridReducer<Object, Object> reducer() {
+    public IgniteReducer<Object, Object> reducer() {
         return rdc;
     }
 

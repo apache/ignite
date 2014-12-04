@@ -998,7 +998,7 @@ public class GridFunc {
      *
      * @return Reducer closure that calculated arithmetic mean.
      */
-    public static <T extends Number> GridReducer<T, Double> avgReducer() {
+    public static <T extends Number> IgniteReducer<T, Double> avgReducer() {
         return new R1<T, Double>() {
             private double sum;
             private int i;
@@ -1056,7 +1056,7 @@ public class GridFunc {
      *
      * @return Reducer closure that calculated quadratic mean.
      */
-    public static <T extends Number> GridReducer<T, Double> qavgReducer() {
+    public static <T extends Number> IgniteReducer<T, Double> qavgReducer() {
         return new R1<T, Double>() {
             private double sum;
             private int i;
@@ -1116,7 +1116,7 @@ public class GridFunc {
      *
      * @return Reducer closure that calculated geometric mean.
      */
-    public static <T extends Number> GridReducer<T, Double> gavgReducer() {
+    public static <T extends Number> IgniteReducer<T, Double> gavgReducer() {
         return new R1<T, Double>() {
             private double sum;
             private int i;
@@ -1205,7 +1205,7 @@ public class GridFunc {
      *
      * @return Reducer closure that collects and returns single value.
      */
-    public static <T> GridReducer<T, T> singleReducer() {
+    public static <T> IgniteReducer<T, T> singleReducer() {
         return new R1<T, T>() {
             private T obj;
 
@@ -1223,15 +1223,15 @@ public class GridFunc {
     }
 
     /**
-     * Gets reducer which always returns {@code true} from {@link GridReducer#collect(Object)}
-     * method and passed in {@code element} from {@link GridReducer#reduce()} method.
+     * Gets reducer which always returns {@code true} from {@link org.gridgain.grid.lang.IgniteReducer#collect(Object)}
+     * method and passed in {@code element} from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
      *
-     * @param elem Element to return from {@link GridReducer#reduce()} method.
+     * @param elem Element to return from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
      * @param <T> Reducer element type.
      * @param <R> Return element type.
      * @return Passed in element.
      */
-    public static <T, R> GridReducer<T, R> continuousReducer(final R elem) {
+    public static <T, R> IgniteReducer<T, R> continuousReducer(final R elem) {
         return new R1<T, R>() {
             @Override public boolean collect(T e) {
                 return true;
@@ -1244,14 +1244,14 @@ public class GridFunc {
     }
 
     /**
-     * Gets reducer which always returns {@code true} from {@link GridReducer#collect(Object)}
-     * method and passed in {@code element} from {@link GridReducer#reduce()} method.
+     * Gets reducer which always returns {@code true} from {@link org.gridgain.grid.lang.IgniteReducer#collect(Object)}
+     * method and passed in {@code element} from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
      *
-     * @param elem Element to return from {@link GridReducer#reduce()} method.
+     * @param elem Element to return from {@link org.gridgain.grid.lang.IgniteReducer#reduce()} method.
      * @param <T> Reducer element type.
      * @return Passed in element.
      */
-    public static <T> GridReducer<T, T> identityReducer(final T elem) {
+    public static <T> IgniteReducer<T, T> identityReducer(final T elem) {
         return new R1<T, T>() {
             @Override public boolean collect(T e) {
                 return true;
@@ -1270,7 +1270,7 @@ public class GridFunc {
      *
      * @return Reducer closure that calculated harmonic mean.
      */
-    public static <T extends Number> GridReducer<T, Double> havgReducer() {
+    public static <T extends Number> IgniteReducer<T, Double> havgReducer() {
         return new R1<T, Double>() {
             private double sum;
             private int i;
@@ -1303,7 +1303,7 @@ public class GridFunc {
      *
      * @return Reducer that calculates sum of integer elements.
      */
-    public static GridReducer<Integer, Integer> sumIntReducer() {
+    public static IgniteReducer<Integer, Integer> sumIntReducer() {
         return new R1<Integer, Integer>() {
             private AtomicInteger sum = new AtomicInteger(0);
 
@@ -1327,7 +1327,7 @@ public class GridFunc {
      *
      * @return Reducer that calculates sum of long integer elements.
      */
-    public static GridReducer<Long, Long> sumLongReducer() {
+    public static IgniteReducer<Long, Long> sumLongReducer() {
         return new R1<Long, Long>() {
             private AtomicLong sum = new AtomicLong(0);
 
@@ -1352,7 +1352,7 @@ public class GridFunc {
      * @return Reducer that calculates sum of all elements.
      */
     @SuppressWarnings("unchecked")
-    public static GridReducer<Double, Double> sumDoubleReducer() {
+    public static IgniteReducer<Double, Double> sumDoubleReducer() {
         return new R1<Double, Double>() {
             private double sum;
 
@@ -1406,7 +1406,7 @@ public class GridFunc {
      * @return Reducer that calculates sum of all elements.
      */
     @SuppressWarnings("unchecked")
-    public static GridReducer<BigDecimal, BigDecimal> sumBigDecimalReducer() {
+    public static IgniteReducer<BigDecimal, BigDecimal> sumBigDecimalReducer() {
         return new R1<BigDecimal, BigDecimal>() {
             private BigDecimal sum = BigDecimal.ZERO;
 
@@ -1437,7 +1437,7 @@ public class GridFunc {
      * @return Reducer that calculates sum of all elements.
      */
     @SuppressWarnings("unchecked")
-    public static GridReducer<BigInteger, BigInteger> sumBigIntegerReducer() {
+    public static IgniteReducer<BigInteger, BigInteger> sumBigIntegerReducer() {
         return new R1<BigInteger, BigInteger>() {
             private BigInteger sum = BigInteger.ZERO;
 
@@ -1466,7 +1466,7 @@ public class GridFunc {
      * @param delim Delimiter (optional).
      * @return Reducer that concatenates strings using provided delimeter.
      */
-    public static GridReducer<String, String> concatReducer(@Nullable final String delim) {
+    public static IgniteReducer<String, String> concatReducer(@Nullable final String delim) {
         return new R1<String, String>() {
             private SB sb = new SB();
 
@@ -5599,7 +5599,7 @@ public class GridFunc {
      * @param <Y> Type of the closure's return value.
      * @return Single value as a result of collection reduction.
      */
-    public static <X, Y> Y reduce(Iterable<? extends X> c, GridReducer<? super X, Y> f) {
+    public static <X, Y> Y reduce(Iterable<? extends X> c, IgniteReducer<? super X, Y> f) {
         A.notNull(c, "c", f, "f");
 
         for (X x : c)
@@ -8616,7 +8616,7 @@ public class GridFunc {
      * @return Reduced result if reducer is provided, {@code null} otherwise.
      * @throws GridException If any of the futures failed.
      */
-    @Nullable public static <T, R> R awaitAll(long timeout, @Nullable GridReducer<T, R> rdc,
+    @Nullable public static <T, R> R awaitAll(long timeout, @Nullable IgniteReducer<T, R> rdc,
         @Nullable Collection<GridFuture<T>> futs) throws GridException {
         if (futs == null || futs.isEmpty())
             return null;

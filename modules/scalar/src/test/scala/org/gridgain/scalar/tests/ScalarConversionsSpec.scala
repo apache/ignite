@@ -30,7 +30,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     behavior of "Scalar mixin"
 
     it should "convert reducer" in {
-        val r = new GridReducer[Int, Int] {
+        val r = new IgniteReducer[Int, Int] {
             var sum = 0
 
             override def collect(e: Int): Boolean = {

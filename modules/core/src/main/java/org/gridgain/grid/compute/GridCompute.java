@@ -276,7 +276,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @return Future with reduced job result for this execution.
      * @throws GridException If execution failed.
      */
-    public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc) throws GridException;
+    public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws GridException;
 
     /**
      * Executes provided closure job on a node in this grid projection. This method is different
@@ -321,7 +321,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @throws GridException If execution failed.
      */
     public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
-        GridReducer<R1, R2> rdc) throws GridException;
+        IgniteReducer<R1, R2> rdc) throws GridException;
 
     /**
      * Gets tasks future for active tasks started on local node.

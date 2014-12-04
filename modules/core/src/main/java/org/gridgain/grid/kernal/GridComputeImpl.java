@@ -300,7 +300,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc)
+    @Override public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc)
         throws GridException {
         A.notEmpty(jobs, "jobs");
         A.notNull(rdc, "rdc");
@@ -317,7 +317,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
-        GridReducer<R1, R2> rdc) throws GridException {
+        IgniteReducer<R1, R2> rdc) throws GridException {
         A.notNull(job, "job");
         A.notNull(rdc, "rdc");
         A.notNull(args, "args");

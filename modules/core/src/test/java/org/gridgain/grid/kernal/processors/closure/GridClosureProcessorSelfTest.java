@@ -517,7 +517,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                g.compute().call(jobs, new GridReducer<Integer, Object>() {
+                g.compute().call(jobs, new IgniteReducer<Integer, Object>() {
                     @Override public boolean collect(@Nullable Integer e) {
                         fail("Expects failed jobs never call 'collect' method.");
 

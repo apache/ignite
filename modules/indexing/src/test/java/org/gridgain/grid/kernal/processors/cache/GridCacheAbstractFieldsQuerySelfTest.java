@@ -1117,9 +1117,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /**
      */
-    private static class RemoteSumReducerFactory implements C1<Object[], GridReducer<List<Object>, Integer>> {
+    private static class RemoteSumReducerFactory implements C1<Object[], IgniteReducer<List<Object>, Integer>> {
         /** {@inheritDoc} */
-        @Override public GridReducer<List<Object>, Integer> apply(Object[] args) {
+        @Override public IgniteReducer<List<Object>, Integer> apply(Object[] args) {
             return new RemoteSumReducer();
         }
     }
@@ -1146,9 +1146,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /**
      */
-    private static class LocalSumReducerFactory implements C1<Object[], GridReducer<Integer, Integer>> {
+    private static class LocalSumReducerFactory implements C1<Object[], IgniteReducer<Integer, Integer>> {
         /** {@inheritDoc} */
-        @Override public GridReducer<Integer, Integer> apply(Object[] args) {
+        @Override public IgniteReducer<Integer, Integer> apply(Object[] args) {
             return new LocalSumReducer();
         }
     }

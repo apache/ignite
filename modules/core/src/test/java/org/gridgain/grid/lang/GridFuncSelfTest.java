@@ -1283,7 +1283,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     public void testReduce() {
         Integer res = F.reduce(Arrays.asList(1, 2, 3),
-            new GridReducer<Integer, Integer>() {
+            new IgniteReducer<Integer, Integer>() {
                 private int sum;
 
                 @Override public boolean collect(Integer e) {
@@ -1299,7 +1299,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         // Always false.
         res = F.reduce(Arrays.asList(1, 2, 3),
-            new GridReducer<Integer, Integer>() {
+            new IgniteReducer<Integer, Integer>() {
                 private int sum;
 
                 @Override public boolean collect(Integer e) {
@@ -3154,7 +3154,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         assert "abc".equals(F.concat(strs, null));
 
-        GridReducer<String, String> r = F.concatReducer("|");
+        IgniteReducer<String, String> r = F.concatReducer("|");
 
         for (String s : strs)
             r.collect(s);

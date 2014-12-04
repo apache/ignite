@@ -85,13 +85,13 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc)
+    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
         throws GridException {
         return delegate.reduce(clo, rdc);
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
+    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
         Collection<ClusterNode> nodes) throws GridException {
         return delegate.reduce(clo, rdc, nodes);
     }

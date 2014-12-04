@@ -138,7 +138,7 @@ public class StreamingPriceBarsExample {
                         },
                         // The reducer will always execute locally, on the same node
                         // that submitted the query.
-                        new GridReducer<Collection<Bar>, Collection<Bar>>() {
+                        new IgniteReducer<Collection<Bar>, Collection<Bar>>() {
                             private final Collection<Bar> res = new ArrayList<>();
 
                             @Override public boolean collect(@Nullable Collection<Bar> col) {

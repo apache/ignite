@@ -75,7 +75,7 @@ public class StreamingRunningAverageExample {
                                     return ctx.<String, Average>localSpace().get("avg");
                                 }
                             },
-                            new GridReducer<Average, Double>() {
+                            new IgniteReducer<Average, Double>() {
                                 private Average avg = new Average();
 
                                 @Override public boolean collect(@Nullable Average a) {

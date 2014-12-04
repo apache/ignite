@@ -80,7 +80,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     };
 
     /** Reducer. */
-    protected GridReducer<String, Object> c4 = new GridReducer<String, Object>() {
+    protected IgniteReducer<String, Object> c4 = new IgniteReducer<String, Object>() {
         @Override public boolean collect(String e) {
             return true;
         }

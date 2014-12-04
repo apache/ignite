@@ -167,6 +167,6 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
         Class<?> redCls = extClsLdr.loadClass("org.gridgain.grid.tests.p2p.GridExternalCacheQueryReducerClosure");
 
         q.projection(g.cluster().forRemotes()).
-            execute((GridReducer<Map.Entry<Integer, Integer>, Integer>)redCls.newInstance()).get();
+            execute((IgniteReducer<Map.Entry<Integer, Integer>, Integer>)redCls.newInstance()).get();
     }
 }

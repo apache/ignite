@@ -299,7 +299,7 @@ trait ScalarConversions {
      *
      * @param r Scala function to convert.
      */
-    implicit def toReducer[E, R](r: Seq[E] => R): GridReducer[E, R] =
+    implicit def toReducer[E, R](r: Seq[E] => R): IgniteReducer[E, R] =
         new ScalarReducer(r)
 
     /**
@@ -307,7 +307,7 @@ trait ScalarConversions {
      *
      * @param r Java `GridReducer` to convert.
      */
-    implicit def fromReducer[E, R](r: GridReducer[E, R]): Seq[E] => R =
+    implicit def fromReducer[E, R](r: IgniteReducer[E, R]): Seq[E] => R =
         new ScalarReducerFunction[E, R](r)
 
     /**
@@ -315,7 +315,7 @@ trait ScalarConversions {
       *
       * @param r Java-side reducer to pimp.
       */
-    implicit def reducerDotScala[E, R](r: GridReducer[E, R]) = new {
+    implicit def reducerDotScala[E, R](r: IgniteReducer[E, R]) = new {
         def scala: Seq[E] => R =
             fromReducer(r)
     }

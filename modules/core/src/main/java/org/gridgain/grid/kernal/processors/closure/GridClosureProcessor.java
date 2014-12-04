@@ -297,7 +297,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public <R1, R2> GridFuture<R2> forkjoinAsync(GridClosureCallMode mode,
         @Nullable Collection<? extends Callable<R1>> jobs,
-        @Nullable GridReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
+        @Nullable IgniteReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
         assert mode != null;
 
         enterBusy();
@@ -630,7 +630,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for execution result.
      */
     public <T, R1, R2> GridFuture<R2> callAsync(IgniteClosure<T, R1> job,
-        Collection<? extends T> args, GridReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
+        Collection<? extends T> args, IgniteReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
@@ -1298,7 +1298,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      * Task that is free of dragged in enclosing context for the method
-     * {@link GridClosureProcessor#forkjoinAsync(GridClosureCallMode, Collection, GridReducer, Collection)}
+     * {@link GridClosureProcessor#forkjoinAsync(GridClosureCallMode, Collection, org.gridgain.grid.lang.IgniteReducer, Collection)}
      */
     private class T3<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
         /** */
@@ -1311,7 +1311,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private GridTuple3<GridClosureCallMode,
             Collection<? extends Callable<R1>>,
-            GridReducer<R1, R2>
+            IgniteReducer<R1, R2>
             > t;
 
         /**
@@ -1320,13 +1320,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param jobs Collection of jobs.
          * @param rdc Reducer.
          */
-        private T3(GridClosureCallMode mode, Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc) {
+        private T3(GridClosureCallMode mode, Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) {
             super(U.peerDeployAware0(jobs));
 
             t = F.<
                 GridClosureCallMode,
                 Collection<? extends Callable<R1>>,
-                GridReducer<R1, R2>
+                IgniteReducer<R1, R2>
                 >t(mode, jobs, rdc);
         }
 
@@ -1637,7 +1637,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Collection<? extends T> args;
 
         /** */
-        private GridReducer<R1, R2> rdc;
+        private IgniteReducer<R1, R2> rdc;
 
         /** */
         @GridLoadBalancerResource
@@ -1648,7 +1648,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param args Job arguments.
          * @param rdc Reducer.
          */
-        private T10(IgniteClosure<T, R1> job, Collection<? extends T> args, GridReducer<R1, R2> rdc) {
+        private T10(IgniteClosure<T, R1> job, Collection<? extends T> args, IgniteReducer<R1, R2> rdc) {
             super(U.peerDeployAware(job));
 
             this.job = job;

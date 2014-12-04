@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.{GridReducer}
+import org.gridgain.grid.lang.{IgniteReducer}
 
 /**
  * Wrapping Scala function for `GridReducer`.
  */
-class ScalarReducerFunction[E1, R](val inner: GridReducer[E1, R]) extends (Seq[E1] => R) {
+class ScalarReducerFunction[E1, R](val inner: IgniteReducer[E1, R]) extends (Seq[E1] => R) {
     assert(inner != null)
 
     /**

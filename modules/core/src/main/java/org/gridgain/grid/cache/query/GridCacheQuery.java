@@ -264,7 +264,7 @@ public interface GridCacheQuery<T> {
      * @param args Optional arguments.
      * @return Future for the query result.
      */
-    public <R> GridCacheQueryFuture<R> execute(GridReducer<T, R> rmtReducer, @Nullable Object... args);
+    public <R> GridCacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
      * Executes the query the same way as {@link #execute(Object...)} method but transforms result remotely.

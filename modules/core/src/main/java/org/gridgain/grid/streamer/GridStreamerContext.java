@@ -115,7 +115,7 @@ public interface GridStreamerContext {
      * @return Reducer result.
      * @throws GridException If query execution failed.
      */
-    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc) throws GridException;
+    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc) throws GridException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes on which
@@ -129,6 +129,6 @@ public interface GridStreamerContext {
      * @return Reducer result.
      * @throws GridException If query execution failed.
      */
-    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, GridReducer<R1, R2> rdc,
+    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
         Collection<ClusterNode> nodes) throws GridException;
 }

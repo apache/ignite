@@ -183,7 +183,7 @@ public class StreamingCheckInExample {
                                 return ret;
                             }
                         },
-                        new GridReducer<Map<String, Place>, Map<String, Place>>() {
+                        new IgniteReducer<Map<String, Place>, Map<String, Place>>() {
                             private Map<String, Place> map;
 
                             @Override public boolean collect(@Nullable Map<String, Place> m) {

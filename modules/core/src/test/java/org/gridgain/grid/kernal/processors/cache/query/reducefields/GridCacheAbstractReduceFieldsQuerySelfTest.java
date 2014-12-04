@@ -375,7 +375,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * Average remote reducer factory.
      */
-    protected static class AverageRemoteReducer implements GridReducer<List<?>, IgniteBiTuple<Integer, Integer>> {
+    protected static class AverageRemoteReducer implements IgniteReducer<List<?>, IgniteBiTuple<Integer, Integer>> {
         /** */
         private int sum;
 
@@ -398,7 +398,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * Average local reducer factory.
      */
-    protected static class AverageLocalReducer implements GridReducer<IgniteBiTuple<Integer, Integer>, Integer> {
+    protected static class AverageLocalReducer implements IgniteReducer<IgniteBiTuple<Integer, Integer>, Integer> {
         /** */
         private int sum;
 

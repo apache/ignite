@@ -62,7 +62,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     };
 
     /** Reducer. */
-    private GridReducer<String, Object> rdc = new GridReducer<String, Object>() {
+    private IgniteReducer<String, Object> rdc = new IgniteReducer<String, Object>() {
         @Override public boolean collect(String e) {
             return true;
         }

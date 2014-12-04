@@ -501,7 +501,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public GridFuture<Boolean> finishTxs(long topVer) {
         GridCompoundFuture<GridCacheTx, Boolean> res =
             new GridCompoundFuture<>(context().kernalContext(),
-                new GridReducer<GridCacheTx, Boolean>() {
+                new IgniteReducer<GridCacheTx, Boolean>() {
                     @Override public boolean collect(GridCacheTx e) {
                         return true;
                     }

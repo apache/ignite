@@ -170,7 +170,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
 
                 GridCacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
-                int totalCnt = F.sumInt(qry.execute(new GridReducer<Map.Entry<Object, MyValue>, Integer>() {
+                int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
                     @GridInstanceResource
                     private Ignite grid;
 

@@ -964,7 +964,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 // Preparing query closures.
                 GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<List<?>, Object> trans = (IgniteClosure<List<?>, Object>)qryInfo.transformer();
-                GridReducer<List<?>, Object> rdc = (GridReducer<List<?>, Object>)qryInfo.reducer();
+                IgniteReducer<List<?>, Object> rdc = (IgniteReducer<List<?>, Object>)qryInfo.reducer();
 
                 injectResources(prjFilter);
                 injectResources(trans);
@@ -1140,7 +1140,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 // Preparing query closures.
                 GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<Map.Entry<K, V>, Object> trans = (IgniteClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
-                GridReducer<Map.Entry<K, V>, Object> rdc = (GridReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
+                IgniteReducer<Map.Entry<K, V>, Object> rdc = (IgniteReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
 
                 injectResources(prjFilter);
                 injectResources(trans);

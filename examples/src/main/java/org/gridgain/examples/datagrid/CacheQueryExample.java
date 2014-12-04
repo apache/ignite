@@ -182,7 +182,7 @@ public class CacheQueryExample {
                 "lower(Organization.name) = lower(?)");
 
         Collection<IgniteBiTuple<Double, Integer>> res = qry.execute(
-            new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, IgniteBiTuple<Double, Integer>>() {
+            new IgniteReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, IgniteBiTuple<Double, Integer>>() {
                 private double sum;
 
                 private int cnt;

@@ -44,7 +44,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
     /** Reducer. */
     @GridToStringInclude
-    private GridReducer<T, R> rdc;
+    private IgniteReducer<T, R> rdc;
 
     /** Initialize flag. */
     private AtomicBoolean init = new AtomicBoolean(false);
@@ -76,7 +76,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * @param ctx Context.
      * @param rdc Reducer.
      */
-    public GridCompoundFuture(GridKernalContext ctx, @Nullable GridReducer<T, R> rdc) {
+    public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc) {
         super(ctx);
 
         this.rdc = rdc;
@@ -87,7 +87,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * @param rdc Reducer to add.
      * @param futs Futures to add.
      */
-    public GridCompoundFuture(GridKernalContext ctx, @Nullable GridReducer<T, R> rdc,
+    public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc,
         @Nullable Iterable<GridFuture<T>> futs) {
         super(ctx);
 
@@ -199,7 +199,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @return Optional reducer.
      */
-    @Nullable public GridReducer<T, R> reducer() {
+    @Nullable public IgniteReducer<T, R> reducer() {
         return rdc;
     }
 
@@ -208,7 +208,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @param rdc Optional reducer.
      */
-    public void reducer(@Nullable GridReducer<T, R> rdc) {
+    public void reducer(@Nullable IgniteReducer<T, R> rdc) {
         this.rdc = rdc;
     }
 

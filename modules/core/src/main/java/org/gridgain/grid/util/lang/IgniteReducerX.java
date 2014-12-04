@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
  * properly wraps {@link GridException} into {@link GridClosureException} instance.
  * @see RX1
  */
-public abstract class GridReducerX<E1, R> implements GridReducer<E1, R> {
+public abstract class IgniteReducerX<E1, R> implements IgniteReducer<E1, R> {
     /** */
     private static final long serialVersionUID = 0L;
 

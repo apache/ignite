@@ -868,8 +868,8 @@ public class GridCacheUtils {
     /**
      * @return Boolean reducer.
      */
-    public static GridReducer<Boolean, Boolean> boolReducer() {
-        return new GridReducer<Boolean, Boolean>() {
+    public static IgniteReducer<Boolean, Boolean> boolReducer() {
+        return new IgniteReducer<Boolean, Boolean>() {
             private final AtomicBoolean bool = new AtomicBoolean(true);
 
             @Override public boolean collect(Boolean b) {
@@ -897,8 +897,8 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Reducer.
      */
-    public static <K, V> GridReducer<Map<K, V>, Map<K, V>> mapsReducer(final int size) {
-        return new GridReducer<Map<K, V>, Map<K, V>>() {
+    public static <K, V> IgniteReducer<Map<K, V>, Map<K, V>> mapsReducer(final int size) {
+        return new IgniteReducer<Map<K, V>, Map<K, V>>() {
             private final Map<K, V> ret = new ConcurrentHashMap8<>(size);
 
             @Override public boolean collect(Map<K, V> map) {
@@ -925,8 +925,8 @@ public class GridCacheUtils {
      * @param <T> Collection element type.
      * @return Reducer.
      */
-    public static <T> GridReducer<Collection<T>, Collection<T>> collectionsReducer() {
-        return new GridReducer<Collection<T>, Collection<T>>() {
+    public static <T> IgniteReducer<Collection<T>, Collection<T>> collectionsReducer() {
+        return new IgniteReducer<Collection<T>, Collection<T>>() {
             private final Collection<T> ret = new ConcurrentLinkedQueue<>();
 
             @Override public boolean collect(Collection<T> c) {
@@ -953,8 +953,8 @@ public class GridCacheUtils {
      * @param <T> Items type.
      * @return Reducer.
      */
-    public static <T> GridReducer<T, Collection<T>> objectsReducer() {
-        return new GridReducer<T, Collection<T>>() {
+    public static <T> IgniteReducer<T, Collection<T>> objectsReducer() {
+        return new IgniteReducer<T, Collection<T>>() {
             private final Collection<T> ret = new ConcurrentLinkedQueue<>();
 
             @Override public boolean collect(T item) {

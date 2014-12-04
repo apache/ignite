@@ -73,7 +73,7 @@ public final class CreditRiskExample {
             // available to cover possible defaults.
 
             double crdRisk = g.compute().call(jobs(g.cluster().nodes().size(), portfolio, horizon, iter, percentile),
-                new GridReducer<Double, Double>() {
+                new IgniteReducer<Double, Double>() {
                     /** Collected values sum. */
                     private double sum;
 

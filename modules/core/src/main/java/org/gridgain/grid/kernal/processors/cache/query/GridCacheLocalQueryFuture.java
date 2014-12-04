@@ -108,8 +108,8 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
             GridMarshaller marsh = cctx.marshaller();
 
-            GridReducer<Object, Object> rdc = qry.reducer() != null ?
-                marsh.<GridReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()), null) : null;
+            IgniteReducer<Object, Object> rdc = qry.reducer() != null ?
+                marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()), null) : null;
 
             IgniteClosure<Object, Object> trans = qry.transform() != null ?
                 marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(qry.transform()), null) : null;

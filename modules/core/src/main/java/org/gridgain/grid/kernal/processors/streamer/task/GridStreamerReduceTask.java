@@ -35,7 +35,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
     private IgniteClosure<GridStreamerContext, R1> clos;
 
     /** Reducer. */
-    private GridReducer<R1, R2> rdc;
+    private IgniteReducer<R1, R2> rdc;
 
     /** Streamer. */
     private String streamer;
@@ -45,7 +45,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
      * @param rdc Query reducer.
      * @param streamer Streamer.
      */
-    public GridStreamerReduceTask(IgniteClosure<GridStreamerContext, R1> clos, GridReducer<R1, R2> rdc,
+    public GridStreamerReduceTask(IgniteClosure<GridStreamerContext, R1> clos, IgniteReducer<R1, R2> rdc,
         @Nullable String streamer) {
         super(U.peerDeployAware(clos));
 

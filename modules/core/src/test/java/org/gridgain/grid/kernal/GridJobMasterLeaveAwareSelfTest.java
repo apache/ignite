@@ -284,7 +284,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 comp.apply(new TestClosure(),
                     Arrays.asList("arg1", "arg2"),
-                    new GridReducer<Void, Object>() {
+                    new IgniteReducer<Void, Object>() {
                         @Override public boolean collect(@Nullable Void aVoid) {
                             return true;
                         }
@@ -369,7 +369,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 comp.call(
                     Arrays.asList(new TestCallable(), new TestCallable()),
-                    new GridReducer<Void, Object>() {
+                    new IgniteReducer<Void, Object>() {
                         @Override public boolean collect(@Nullable Void aVoid) {
                             return true;
                         }

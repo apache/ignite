@@ -56,7 +56,7 @@ public class ComputeReducerExample {
                 Arrays.asList("Count characters using reducer".split(" ")),
 
                 // Reducer to process results as they come.
-                new GridReducer<Integer, Integer>() {
+                new IgniteReducer<Integer, Integer>() {
                     private AtomicInteger sum = new AtomicInteger();
 
                     // Callback for every job result.

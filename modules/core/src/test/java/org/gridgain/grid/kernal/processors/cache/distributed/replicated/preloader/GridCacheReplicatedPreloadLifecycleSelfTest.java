@@ -180,7 +180,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                 qry = qry.projection(grid(j));
 
-                int totalCnt = F.sumInt(qry.execute(new GridReducer<Map.Entry<Object, MyValue>, Integer>() {
+                int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
                     @GridInstanceResource
                     private Ignite grid;
 

@@ -192,7 +192,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         GridPredicate<GridCacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
             F.<GridCacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
 
-        GridReducer<Object, Object> rdc = req.reducer();
+        IgniteReducer<Object, Object> rdc = req.reducer();
         IgniteClosure<Object, Object> trans = req.transformer();
 
         ClusterNode sndNode = cctx.node(sndId);

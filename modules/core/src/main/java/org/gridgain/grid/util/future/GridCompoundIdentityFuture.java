@@ -40,7 +40,7 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
      * @param ctx Context.
      * @param rdc Reducer.
      */
-    public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable GridReducer<T, T> rdc) {
+    public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc) {
         super(ctx, rdc);
     }
 
@@ -49,7 +49,7 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
      * @param rdc  Reducer to add.
      * @param futs Futures to add.
      */
-    public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable GridReducer<T, T> rdc,
+    public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc,
         @Nullable Iterable<GridFuture<T>> futs) {
         super(ctx, rdc, futs);
     }

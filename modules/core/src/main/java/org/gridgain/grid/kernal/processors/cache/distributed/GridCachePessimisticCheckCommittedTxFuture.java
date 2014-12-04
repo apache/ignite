@@ -341,7 +341,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      * Single value reducer.
      */
     private static class SingleReducer<K, V> implements
-        GridReducer<GridCacheCommittedTxInfo<K, V>, GridCacheCommittedTxInfo<K, V>> {
+        IgniteReducer<GridCacheCommittedTxInfo<K, V>, GridCacheCommittedTxInfo<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 

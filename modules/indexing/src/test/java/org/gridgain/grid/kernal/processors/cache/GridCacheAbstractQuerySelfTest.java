@@ -2050,7 +2050,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * Sum remote reducer factory.
      */
-    private static class SumRemoteReducer implements GridReducer<Map.Entry<String, Integer>, Integer> {
+    private static class SumRemoteReducer implements IgniteReducer<Map.Entry<String, Integer>, Integer> {
         /** */
         private int sum;
 
@@ -2068,7 +2068,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * Sum local reducer factory.
      */
-    private static class SumLocalReducer implements GridReducer<Integer, Integer> {
+    private static class SumLocalReducer implements IgniteReducer<Integer, Integer> {
         /** */
         private int sum;
 
