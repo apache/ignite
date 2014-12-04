@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.lang.*;
@@ -36,6 +35,9 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setDefaultTxConcurrency(GridCacheTxConcurrency.OPTIMISTIC);
+        c.getTransactionsConfiguration().setDefaultTxIsolation(GridCacheTxIsolation.READ_COMMITTED);
+
         GridCacheConfiguration cc1 = defaultCacheConfiguration();
 
         cc1.setName("one");
@@ -44,8 +46,6 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
         cc1.setWriteSynchronizationMode(FULL_SYNC);
         cc1.setPreloadMode(preloadMode);
         cc1.setEvictionPolicy(null);
-        cc1.setDefaultTxConcurrency(GridCacheTxConcurrency.OPTIMISTIC);
-        cc1.setDefaultTxIsolation(GridCacheTxIsolation.READ_COMMITTED);
         cc1.setSwapEnabled(false);
         cc1.setStore(null);
         cc1.setEvictionPolicy(null);

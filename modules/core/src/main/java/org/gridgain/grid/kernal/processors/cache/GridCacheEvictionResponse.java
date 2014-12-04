@@ -50,30 +50,34 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      */
-    GridCacheEvictionResponse(long futId) {
-        this(futId, false);
+    GridCacheEvictionResponse(int cacheId, long futId) {
+        this(cacheId, futId, false);
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param err {@code True} if request processing has finished with error.
      */
-    GridCacheEvictionResponse(long futId, boolean err) {
+    GridCacheEvictionResponse(int cacheId, long futId, boolean err) {
+        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         rejectedKeyBytes = marshalCollection(rejectedKeys, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         rejectedKeys = unmarshalCollection(rejectedKeyBytes, ctx, ldr);
@@ -154,19 +158,19 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putBoolean(err))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putLong(futId))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (rejectedKeyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(rejectedKeyBytes.size()))
@@ -207,7 +211,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -215,7 +219,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -223,7 +227,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

@@ -335,8 +335,17 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             else {
                 MiniFuture fut = new MiniFuture(n, mappedKeys, topVer);
 
-                GridCacheMessage<K, V> req = new GridNearGetRequest<>(futId, fut.futureId(), ver, mappedKeys,
-                    reload, topVer, filters, subjId, taskName == null ? 0 : taskName.hashCode());
+                GridCacheMessage<K, V> req = new GridNearGetRequest<>(
+                    cctx.cacheId(),
+                    futId,
+                    fut.futureId(),
+                    ver,
+                    mappedKeys,
+                    reload,
+                    topVer,
+                    filters,
+                    subjId,
+                    taskName == null ? 0 : taskName.hashCode());
 
                 add(fut); // Append new future.
 

@@ -50,6 +50,9 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /** IDs of backup nodes receiving last prepare request during this mapping. */
     private Collection<UUID> lastBackups;
 
+    /** {@code True} if mapping is for near caches, {@code false} otherwise. */
+    private boolean near;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -92,6 +95,20 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      */
     public void last(boolean last) {
         this.last = last;
+    }
+
+    /**
+     * @return {@code True} if mapping is for near caches, {@code false} otherwise.
+     */
+    public boolean near() {
+        return near;
+    }
+
+    /**
+     * @param near {@code True} if mapping is for near caches, {@code false} otherwise.
+     */
+    public void near(boolean near) {
+        this.near = near;
     }
 
     /**
@@ -214,7 +231,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @param keys Keys to evict readers for.
      */
-    public void evictReaders(@Nullable Collection<K> keys) {
+    public void evictReaders(@Nullable Collection<GridCacheTxKey<K>> keys) {
         if (keys == null || keys.isEmpty())
             return;
 
@@ -227,14 +244,14 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param keys Keys to evict readers for.
      * @param entries Entries to check.
      */
-    private void evictReaders(Collection<K> keys, @Nullable Collection<GridCacheTxEntry<K, V>> entries) {
+    private void evictReaders(Collection<GridCacheTxKey<K>> keys, @Nullable Collection<GridCacheTxEntry<K, V>> entries) {
         if (entries == null || entries.isEmpty())
             return;
 
         for (Iterator<GridCacheTxEntry<K, V>> it = entries.iterator(); it.hasNext();) {
             GridCacheTxEntry<K, V> entry = it.next();
 
-            if (keys.contains(entry.key()))
+            if (keys.contains(entry.txKey()))
                 it.remove();
         }
     }

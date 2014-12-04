@@ -28,15 +28,11 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
 
     /** Wrapped transaction. */
     @GridToStringInclude
-    private GridCacheTx tx;
+    private GridCacheTxEx<K, V> tx;
 
     /** Gateway. */
     @GridToStringExclude
-    private GridCacheGateway gate;
-
-    /** Cache adapter. */
-    @GridToStringExclude
-    private GridCacheAdapter<K, V> cache;
+    private GridCacheSharedContext<K, V> cctx;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -47,32 +43,45 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
 
     /**
      * @param tx Transaction.
-     * @param gate Gateway.
      */
-    public GridCacheTxProxyImpl(GridCacheTx tx, GridCacheAdapter<K, V> cache, GridCacheGateway gate) {
+    public GridCacheTxProxyImpl(GridCacheTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx) {
         assert tx != null;
-        assert gate != null;
-        assert cache != null;
+        assert cctx != null;
 
         this.tx = tx;
-        this.cache = cache;
-        this.gate = gate;
+        this.cctx = cctx;
     }
 
     /**
      * Enters a call.
      */
     private void enter() {
-        if (gate != null)
-            gate.enter();
+        if (cctx.deploymentEnabled())
+            cctx.deploy().onEnter();
+
+        try {
+            cctx.kernalContext().gateway().readLock();
+        }
+        catch (IllegalStateException e) {
+            throw e;
+        }
+        catch (RuntimeException | Error e) {
+            cctx.kernalContext().gateway().readUnlock();
+
+            throw e;
+        }
     }
 
     /**
      * Leaves a call.
      */
     private void leave() {
-        if (gate != null)
-            gate.leave();
+        try {
+            CU.unwindEvicts(cctx);
+        }
+        finally {
+            cctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -159,7 +168,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
         enter();
 
         try {
-            tx.commit();
+            cctx.commitTxAsync(tx).get();
         }
         finally {
             leave();
@@ -171,7 +180,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
         enter();
 
         try {
-            cache.endTx(tx);
+            cctx.endTx(tx);
         }
         finally {
             leave();
@@ -183,7 +192,8 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
         enter();
 
         try {
-            return cache.commitTxAsync(tx);
+
+            return cctx.commitTxAsync(tx);
         }
         finally {
             leave();
@@ -195,7 +205,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
         enter();
 
         try {
-            cache.rollbackTx(tx);
+            cctx.rollbackTx(tx);
         }
         finally {
             leave();
@@ -213,49 +223,49 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public <V> V addMeta(String name, V val) {
+    @Override public <V1> V1 addMeta(String name, V1 val) {
         return tx.addMeta(name, val);
     }
 
     /** {@inheritDoc} */
-    @Override public <V> V putMetaIfAbsent(String name, V val) {
+    @Override public <V1> V1 putMetaIfAbsent(String name, V1 val) {
         return tx.putMetaIfAbsent(name, val);
     }
 
     /** {@inheritDoc} */
-    @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
+    @Override public <V1> V1 putMetaIfAbsent(String name, Callable<V1> c) {
         return tx.putMetaIfAbsent(name, c);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <V> V addMetaIfAbsent(String name, V val) {
+    @Nullable @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
         return tx.addMeta(name, val);
     }
 
     /** {@inheritDoc} */
-    @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
+    @Override public <V1> V1 addMetaIfAbsent(String name, @Nullable Callable<V1> c) {
         return tx.addMetaIfAbsent(name, c);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V> V meta(String name) {
-        return tx.<V>meta(name);
+    @Override public <V1> V1 meta(String name) {
+        return tx.<V1>meta(name);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V> V removeMeta(String name) {
-        return tx.<V>removeMeta(name);
+    @Override public <V1> V1 removeMeta(String name) {
+        return tx.<V1>removeMeta(name);
     }
 
     /** {@inheritDoc} */
-    @Override public <V> boolean removeMeta(String name, V val) {
+    @Override public <V1> boolean removeMeta(String name, V1 val) {
         return tx.removeMeta(name, val);
     }
 
     /** {@inheritDoc} */
-    @Override public <V> Map<String, V> allMeta() {
+    @Override public <V1> Map<String, V1> allMeta() {
         return tx.allMeta();
     }
 
@@ -265,12 +275,12 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public <V> boolean hasMeta(String name, V val) {
+    @Override public <V1> boolean hasMeta(String name, V1 val) {
         return tx.hasMeta(name, val);
     }
 
     /** {@inheritDoc} */
-    @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
+    @Override public <V1> boolean replaceMeta(String name, V1 curVal, V1 newVal) {
         return tx.replaceMeta(name, curVal, newVal);
     }
 
@@ -281,9 +291,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (GridCacheTx)in.readObject();
-
-        gate = null;
+        tx = (GridCacheTxAdapter<K, V>)in.readObject();
     }
 
     /** {@inheritDoc} */

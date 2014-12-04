@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Data transfer object for default cache configuration properties.
  */
-public class VisorCacheDefaultConfig implements Serializable {
+public class VisorCacheDefaultConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,13 +43,15 @@ public class VisorCacheDefaultConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for default cache configuration properties.
      */
-    public static VisorCacheDefaultConfig from(GridCacheConfiguration ccfg) {
-        VisorCacheDefaultConfig cfg = new VisorCacheDefaultConfig();
+    public static VisorCacheDefaultConfiguration from(GridCacheConfiguration ccfg) {
+        // TODO GG-9141 Update Visor.
 
-        cfg.txIsolation(ccfg.getDefaultTxIsolation());
-        cfg.txConcurrency(ccfg.getDefaultTxConcurrency());
+        VisorCacheDefaultConfiguration cfg = new VisorCacheDefaultConfiguration();
+
+//        cfg.txIsolation(ccfg.getDefaultTxIsolation());
+//        cfg.txConcurrency(ccfg.getDefaultTxConcurrency());
         cfg.timeToLive(ccfg.getDefaultTimeToLive());
-        cfg.txTimeout(ccfg.getDefaultTxTimeout());
+//        cfg.txTimeout(ccfg.getDefaultTxTimeout());
         cfg.txLockTimeout(ccfg.getDefaultLockTimeout());
         cfg.queryTimeout(ccfg.getDefaultQueryTimeout());
 
@@ -142,6 +144,6 @@ public class VisorCacheDefaultConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheDefaultConfig.class, this);
+        return S.toString(VisorCacheDefaultConfiguration.class, this);
     }
 }

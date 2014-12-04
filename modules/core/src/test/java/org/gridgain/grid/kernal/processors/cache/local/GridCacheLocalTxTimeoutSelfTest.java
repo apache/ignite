@@ -37,6 +37,9 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration() throws Exception {
         GridConfiguration c = super.getConfiguration();
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionsConfiguration().setDefaultTxTimeout(50);
+
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
@@ -46,9 +49,6 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(LOCAL);
-        cc.setTxSerializableEnabled(true);
-
-        cc.setDefaultTxTimeout(50);
 
         c.setCacheConfiguration(cc);
 

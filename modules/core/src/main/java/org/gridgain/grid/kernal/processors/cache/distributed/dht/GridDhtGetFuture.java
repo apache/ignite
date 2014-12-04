@@ -330,7 +330,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 fut = cache().reloadAllAsync(keys.keySet(), true, subjId, taskName, filters);
             else
                 fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
-                    tx.getAllAsync(keys.keySet(), null, deserializePortable, filters);
+                    tx.getAllAsync(cctx, keys.keySet(), null, deserializePortable, filters);
         }
         else {
             // If we are here, then there were active transactions for some entries
@@ -348,7 +348,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         else
                             return tx == null ?
                                 cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
-                                tx.getAllAsync(keys.keySet(), null, deserializePortable, filters);
+                                tx.getAllAsync(cctx, keys.keySet(), null, deserializePortable, filters);
                     }
                 },
                 cctx.kernalContext());

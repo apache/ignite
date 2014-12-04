@@ -43,10 +43,11 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param dhtCnt Key count.
      */
-    public GridDhtUnlockRequest(int dhtCnt) {
-        super(dhtCnt);
+    public GridDhtUnlockRequest(int cacheId, int dhtCnt) {
+        super(cacheId, dhtCnt);
     }
 
     /**
@@ -71,7 +72,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    public void addNearKey(K key, byte[] keyBytes, GridCacheContext<K, V> ctx) throws GridException {
+    public void addNearKey(K key, byte[] keyBytes, GridCacheSharedContext<K, V> ctx) throws GridException {
         if (ctx.deploymentEnabled())
             prepareObject(key, ctx);
 
@@ -82,7 +83,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearKeyBytes != null)
@@ -130,7 +131,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
         }
 
         switch (commState.idx) {
-            case 8:
+            case 9:
                 if (nearKeyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearKeyBytes.size()))
@@ -171,7 +172,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
             return false;
 
         switch (commState.idx) {
-            case 8:
+            case 9:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

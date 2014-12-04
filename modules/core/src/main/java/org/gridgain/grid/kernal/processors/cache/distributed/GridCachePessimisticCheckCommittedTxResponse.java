@@ -82,8 +82,9 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
         return committedTxInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (committedTxInfo != null) {
@@ -94,13 +95,13 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (committedTxInfoBytes != null) {
             committedTxInfo = ctx.marshaller().unmarshal(committedTxInfoBytes, ldr);
 
-            unmarshalTx(committedTxInfo.recoveryWrites(), ctx, ldr);
+            unmarshalTx(committedTxInfo.recoveryWrites(), false, ctx, ldr);
         }
     }
 
@@ -142,19 +143,19 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
         }
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (!commState.putByteArray(committedTxInfoBytes))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
@@ -174,7 +175,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
             return false;
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 byte[] committedTxInfoBytes0 = commState.getByteArray();
 
                 if (committedTxInfoBytes0 == BYTE_ARR_NOT_READ)
@@ -184,7 +185,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -194,7 +195,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)

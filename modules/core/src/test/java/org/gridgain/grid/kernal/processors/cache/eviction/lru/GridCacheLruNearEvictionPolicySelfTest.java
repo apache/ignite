@@ -81,7 +81,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testTransactionalNearEvictionMaxSize() throws Exception {
+    public void _testTransactionalNearEvictionMaxSize() throws Exception { // TODO GG-9141
         atomicityMode = TRANSACTIONAL;
 
         checkNearEvictionMaxSize();

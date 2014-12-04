@@ -32,11 +32,12 @@ public class GridCacheReplicatedTxTimeoutSelfTest extends GridCacheTxTimeoutAbst
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setDefaultTxTimeout(TIMEOUT);
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(REPLICATED);
-        cc.setDefaultTxTimeout(TIMEOUT);
-        cc.setTxSerializableEnabled(true);
 
         c.setCacheConfiguration(cc);
 

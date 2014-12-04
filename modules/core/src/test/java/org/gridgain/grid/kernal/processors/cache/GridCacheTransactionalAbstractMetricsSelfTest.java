@@ -210,7 +210,8 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheMetrics metrics = grid(i).cache(null).metrics();
+            // TODO GG-9141
+            GridCacheTxMetrics metrics = null; //grid(i).cache(null).metrics();
 
             if (i == 0)
                 assertEquals(TX_CNT, metrics.txCommits());
@@ -242,7 +243,8 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheMetrics metrics = grid(i).cache(null).metrics();
+            // TODO GG-9141
+            GridCacheTxMetrics metrics = null;//grid(i).cache(null).metrics();
 
             assertEquals(0, metrics.txCommits());
 

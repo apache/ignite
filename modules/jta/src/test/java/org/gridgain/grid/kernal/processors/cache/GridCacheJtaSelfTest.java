@@ -135,7 +135,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public void testJtaTwoCaches() throws Exception {
+    public void _testJtaTwoCaches() throws Exception { // TODO GG-9141
         UserTransaction jtaTx = jotm.getUserTransaction();
 
         GridCache<String, Integer> cache1 = cache();

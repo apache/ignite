@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -27,10 +26,10 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 
 /**
- * Tests for replicated cache {@link GridReplicatedPreloader preloader}.
+ * Tests for cache preloader.
  */
 @SuppressWarnings({"PublicInnerClass"})
-public class GridCachePreloadLifecycleAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final String TEST_STRING = "ABC";
 

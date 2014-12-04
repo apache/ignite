@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -27,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -41,7 +41,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -77,7 +77,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    public GridNearTxFinishFuture(GridCacheContext<K, V> cctx, GridNearTxLocal<K, V> tx, boolean commit) {
+    public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal<K, V> tx, boolean commit) {
         super(cctx.kernalContext(), F.<GridCacheTx>identityReducer(tx));
 
         assert cctx != null;
@@ -177,7 +177,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 }
             }
 
-
             onComplete();
         }
     }
@@ -186,7 +185,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
         if (!isDone())
             for (GridFuture<GridCacheTx> fut : futures()) {
                 if (isMini(fut)) {
@@ -203,29 +202,38 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /** {@inheritDoc} */
     @Override public boolean onDone(GridCacheTx tx, Throwable err) {
-        if ((initialized() || err != null) && super.onDone(tx, err)) {
-            if (error() instanceof GridCacheTxHeuristicException) {
-                long topVer = this.tx.topologyVersion();
+        if ((initialized() || err != null)) {
+            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
+                this.tx.tmCommit();
 
-                for (GridCacheTxEntry<K, V> e : this.tx.writeMap().values()) {
-                    try {
-                        if (e.op() != NOOP && !cctx.affinity().localNode(e.key(), topVer)) {
-                            GridCacheEntryEx<K, V> cacheEntry = cctx.cache().peekEx(e.key());
+            Throwable th = this.err.get();
 
-                            if (cacheEntry != null)
-                                cacheEntry.invalidate(null, this.tx.xidVersion());
+            if (super.onDone(tx, th != null ? th : err)) {
+                if (error() instanceof GridCacheTxHeuristicException) {
+                    long topVer = this.tx.topologyVersion();
+
+                    for (GridCacheTxEntry<K, V> e : this.tx.writeMap().values()) {
+                        GridCacheContext<K, V> cacheCtx = e.context();
+
+                        try {
+                            if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
+                                GridCacheEntryEx<K, V> cacheEntry = cacheCtx.cache().peekEx(e.key());
+
+                                if (cacheEntry != null)
+                                    cacheEntry.invalidate(null, this.tx.xidVersion());
+                            }
+                        }
+                        catch (Throwable t) {
+                            U.error(log, "Failed to invalidate entry.", t);
                         }
                     }
-                    catch (Throwable t) {
-                        U.error(log, "Failed to invalidate entry.", t);
-                    }
                 }
+
+                // Don't forget to clean up.
+                cctx.mvcc().removeFuture(this);
+
+                return true;
             }
-
-            // Don't forget to clean up.
-            cctx.mvcc().removeFuture(this);
-
-            return true;
         }
 
         return false;
@@ -250,16 +258,26 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @return Synchronous flag.
      */
     private boolean isSync() {
-        return tx.syncCommit() && commit || tx.syncRollback() && !commit;
+        return commit ? tx.syncCommit() : tx.syncRollback();
     }
 
     /**
      * Initializes future.
      */
-    @SuppressWarnings({"unchecked"})
     void finish() {
         if (tx.onePhaseCommit()) {
             // No need to send messages as transaction was already committed on remote node.
+            // Finish local mapping only as we need send commit message to backups.
+            for (GridDistributedTxMapping<K, V> m : mappings.values()) {
+                if (m.node().isLocal()) {
+                    GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+
+                    // Add new future.
+                    if (fut != null)
+                        add(fut);
+                }
+            }
+
             markInitialized();
 
             return;
@@ -319,6 +337,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.threadId(),
             commit,
             tx.isInvalidate(),
+            tx.syncCommit(),
+            tx.syncRollback(),
             m.explicitLock(),
             tx.topologyVersion(),
             null,
@@ -327,7 +347,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.size(),
             commit && tx.pessimistic() ? m.writes() : null,
             commit && tx.pessimistic() ? F.view(tx.writeEntries(), CU.<K, V>transferRequired()) : null,
-            commit ? tx.syncCommit() : tx.syncRollback(),
             tx.subjectId(),
             tx.taskNameHash()
         );
@@ -336,16 +355,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (n.isLocal()) {
             req.miniId(GridUuid.randomUuid());
 
-            if (CU.DHT_ENABLED) {
-                GridFuture<GridCacheTx> fut = commit ?
-                    dht().commitTx(n.id(), req) : dht().rollbackTx(n.id(), req);
+            GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
-                // Add new future.
+            // Add new future.
+            if (fut != null)
                 add(fut);
-            }
-            else
-                // Add done future for testing.
-                add(new GridFinishedFuture<GridCacheTx>(ctx));
         }
         else {
             MiniFuture fut = new MiniFuture(m);
@@ -375,13 +389,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 fut.onResult(e);
             }
         }
-    }
-
-    /**
-     * @return DHT cache.
-     */
-    private GridDhtTransactionalCacheAdapter<K, V> dht() {
-        return cctx.nearTx().dht();
     }
 
     /** {@inheritDoc} */

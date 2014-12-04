@@ -54,12 +54,19 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         return 3;
     }
 
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setPreloadMode(SYNC);
-        cfg.setTxSerializableEnabled(true);
         cfg.setDgcFrequency(0);
 
         return cfg;

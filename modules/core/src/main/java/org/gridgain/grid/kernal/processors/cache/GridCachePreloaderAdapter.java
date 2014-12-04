@@ -11,9 +11,11 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -86,7 +88,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> startFuture() {
+    @Override public GridFuture<Object> startFuture() {
         return finFut;
     }
 
@@ -103,5 +105,29 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     /** {@inheritDoc} */
     @Override public GridFuture<Object> request(Collection<? extends K> keys, long topVer) {
         return new GridFinishedFuture<>(cctx.kernalContext());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onInitialExchangeComplete(@Nullable Throwable err) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onExchangeFutureAdded() {
+        // No-op.
+    }
+
+    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addAssignments(GridDhtPreloaderAssignments<K, V> assignments, boolean forcePreload) {
+        // No-op.
     }
 }

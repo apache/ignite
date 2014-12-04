@@ -22,7 +22,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for affinity configuration properties.
  */
-public class VisorCacheAffinityConfig implements Serializable {
+public class VisorCacheAffinityConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,7 +48,7 @@ public class VisorCacheAffinityConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for affinity configuration properties.
      */
-    public static VisorCacheAffinityConfig from(GridCacheConfiguration ccfg) {
+    public static VisorCacheAffinityConfiguration from(GridCacheConfiguration ccfg) {
         GridCacheAffinityFunction aff = ccfg.getAffinity();
 
         Integer dfltReplicas = null;
@@ -61,7 +61,7 @@ public class VisorCacheAffinityConfig implements Serializable {
             excludeNeighbors = hashAffFunc.isExcludeNeighbors();
         }
 
-        VisorCacheAffinityConfig cfg = new VisorCacheAffinityConfig();
+        VisorCacheAffinityConfiguration cfg = new VisorCacheAffinityConfiguration();
 
         cfg.function(compactClass(aff));
         cfg.mapper(compactClass(ccfg.getAffinityMapper()));
@@ -158,6 +158,6 @@ public class VisorCacheAffinityConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheAffinityConfig.class, this);
+        return S.toString(VisorCacheAffinityConfiguration.class, this);
     }
 }

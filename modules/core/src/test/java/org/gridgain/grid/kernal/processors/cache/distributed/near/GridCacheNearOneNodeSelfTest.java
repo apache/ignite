@@ -135,7 +135,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
-    public void testOptimisticTxWriteThrough() throws Exception {
+    public void _testOptimisticTxWriteThrough() throws Exception { // TODO GG-9141
         GridCache<Integer, String> near = cache();
         GridCache<Integer, String> dht = dht();
 

@@ -38,10 +38,11 @@ public class GridCacheReplicatedTxSingleThreadedSelfTest extends GridCacheTxSing
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(REPLICATED);
-        cc.setTxSerializableEnabled(true);
 
         cc.setEvictionPolicy(null);
 

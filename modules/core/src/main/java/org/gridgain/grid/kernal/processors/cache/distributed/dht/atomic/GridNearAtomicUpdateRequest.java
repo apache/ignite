@@ -123,6 +123,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * Constructor.
      *
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futVer Future version.
      * @param fastMap Fast map scheme flag.
@@ -135,6 +136,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @param filter Optional filter for atomic check.
      */
     public GridNearAtomicUpdateRequest(
+        int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
         boolean fastMap,
@@ -149,6 +151,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         @Nullable UUID subjId,
         int taskNameHash
     ) {
+        this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
         this.fastMap = fastMap;
@@ -474,8 +477,9 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         this.forceTransformBackups = forceTransformBackups;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         keyBytes = marshalCollection(keys, ctx);
@@ -484,7 +488,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         keys = unmarshalCollection(keyBytes, ctx, ldr);
@@ -548,19 +552,19 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putLongList(drExpireTimes))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putLongList(drTtls))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (drVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(drVers.size()))
@@ -587,13 +591,13 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putBoolean(fastMap))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (filterBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(filterBytes.length))
@@ -620,19 +624,19 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (!commState.putCacheVersion(futVer))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (!commState.putBoolean(hasPrimary))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (keyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(keyBytes.size()))
@@ -659,43 +663,43 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (!commState.putEnum(op))
                     return false;
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (!commState.putBoolean(retval))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (!commState.putEnum(syncMode))
                     return false;
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (!commState.putLong(ttl))
                     return false;
 
                 commState.idx++;
 
-            case 15:
+            case 16:
                 if (!commState.putCacheVersion(updateVer))
                     return false;
 
                 commState.idx++;
 
-            case 16:
+            case 17:
                 if (valBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(valBytes.size()))
@@ -722,19 +726,19 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 17:
+            case 18:
                 if (!commState.putBoolean(forceTransformBackups))
                     return false;
 
                 commState.idx++;
 
-            case 18:
+            case 19:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
@@ -754,7 +758,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 GridLongList drExpireTimes0 = commState.getLongList();
 
                 if (drExpireTimes0 == LONG_LIST_NOT_READ)
@@ -764,7 +768,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 GridLongList drTtls0 = commState.getLongList();
 
                 if (drTtls0 == LONG_LIST_NOT_READ)
@@ -774,7 +778,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -803,7 +807,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -811,7 +815,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -840,7 +844,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 GridCacheVersion futVer0 = commState.getCacheVersion();
 
                 if (futVer0 == CACHE_VER_NOT_READ)
@@ -850,7 +854,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -858,7 +862,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -887,7 +891,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -897,7 +901,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -905,7 +909,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -915,7 +919,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -923,7 +927,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -931,7 +935,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 15:
+            case 16:
                 GridCacheVersion updateVer0 = commState.getCacheVersion();
 
                 if (updateVer0 == CACHE_VER_NOT_READ)
@@ -941,7 +945,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 16:
+            case 17:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -970,7 +974,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 17:
+            case 18:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -978,7 +982,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 18:
+            case 19:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -988,7 +992,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 if (buf.remaining() < 4)
                     return false;
 

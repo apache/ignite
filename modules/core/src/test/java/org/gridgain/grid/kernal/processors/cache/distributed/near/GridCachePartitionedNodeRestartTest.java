@@ -27,6 +27,8 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(CACHE_NAME);
@@ -36,7 +38,6 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
         cc.setStartSize(20);
         cc.setPreloadMode(preloadMode);
         cc.setPreloadBatchSize(preloadBatchSize);
-        cc.setDefaultTxConcurrency(PESSIMISTIC);
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, partitions));
         cc.setBackups(backups);
         cc.setDgcFrequency(0);

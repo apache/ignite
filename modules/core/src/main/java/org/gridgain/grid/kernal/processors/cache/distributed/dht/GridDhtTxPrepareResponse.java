@@ -31,7 +31,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> nearEvicted;
+    private Collection<GridCacheTxKey<K>> nearEvicted;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -98,14 +98,14 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /**
      * @return Evicted readers.
      */
-    public Collection<K> nearEvicted() {
+    public Collection<GridCacheTxKey<K>> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<K> nearEvicted) {
+    public void nearEvicted(Collection<GridCacheTxKey<K>> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -165,8 +165,9 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
         preloadEntries.add(info);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (nearEvictedBytes == null)
@@ -177,7 +178,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         // Unmarshal even if deployment is disabled, since we could get bytes initially.
@@ -234,13 +235,13 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
         }
 
         switch (commState.idx) {
-            case 9:
+            case 10:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (invalidParts != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(invalidParts.size()))
@@ -267,13 +268,13 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (nearEvictedBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearEvictedBytes.size()))
@@ -300,7 +301,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (preloadEntriesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(preloadEntriesBytes.size()))
@@ -341,7 +342,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             return false;
 
         switch (commState.idx) {
-            case 9:
+            case 10:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -351,7 +352,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -380,7 +381,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -390,7 +391,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -419,7 +420,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

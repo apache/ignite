@@ -54,11 +54,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /** Keys to lock. */
     private Collection<? extends K> keys;
 
-    /** Keys locked so far. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @GridToStringExclude
-    private List<GridDistributedCacheEntry<K, V>> entries;
-
     /** Future ID. */
     private GridUuid futId;
 
@@ -99,14 +94,19 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
         new AtomicReference<>();
 
-    /** Mutex. */
-    private final Object mux = new Object();
-
     /** Map of current values. */
     private Map<K, GridTuple3<GridCacheVersion, V, byte[]>> valMap;
 
     /** Trackable flag. */
     private boolean trackable = true;
+
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Keys locked so far. */
+    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+    @GridToStringExclude
+    private List<GridDistributedCacheEntry<K, V>> entries;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -295,7 +295,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         );
 
         if (inTx()) {
-            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.key());
+            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
         }
@@ -732,8 +732,12 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 GridNearLockMapping<K, V> updated = map(key, map, topVer);
 
                 // If new mapping was created, add to collection.
-                if (updated != map)
+                if (updated != map) {
                     mappings.add(updated);
+
+                    if (tx != null && updated.node().isLocal())
+                        tx.nearLocallyMapped(true);
+                }
 
                 map = updated;
             }
@@ -764,6 +768,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 boolean explicit = false;
 
                 for (K key : mappedKeys) {
+                    GridCacheTxKey<K> txKey = cctx.txKey(key);
+
                     while (true) {
                         GridNearCacheEntry<K, V> entry = null;
 
@@ -824,6 +830,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 if (!cand.reentry()) {
                                     if (req == null) {
                                         req = new GridNearLockRequest<>(
+                                            cctx.cacheId(),
                                             topVer,
                                             cctx.nodeId(),
                                             threadId,
@@ -836,8 +843,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             isolation(),
                                             isInvalidate(),
                                             timeout,
-                                            syncCommit(),
-                                            syncRollback(),
                                             mappedKeys.size(),
                                             inTx() ? tx.size() : mappedKeys.size(),
                                             inTx() ? tx.groupLockKey() : null,
@@ -850,10 +855,10 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     distributedKeys.add(key);
 
-                                    GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(key) : null;
+                                    GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
 
                                     if (tx != null)
-                                        tx.addKeyMapping(key, mapping.node());
+                                        tx.addKeyMapping(txKey, mapping.node());
 
                                     req.addKeyBytes(
                                         key,
@@ -861,7 +866,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         retval && dhtVer == null,
                                         dhtVer, // Include DHT version to match remote DHT entry.
                                         writeEntry,
-                                        inTx() ? tx.entry(key).drVersion() : null,
+                                        inTx() ? tx.entry(txKey).drVersion() : null,
                                         cctx);
 
                                     // Clear transfer required flag since we are sending message.
@@ -877,7 +882,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 explicit = tx != null && !entry.hasLockCandidate(tx.xidVersion());
 
                             if (explicit)
-                                tx.addKeyMapping(key, mapping.node());
+                                tx.addKeyMapping(txKey, mapping.node());
 
                             break;
                         }
@@ -943,18 +948,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
 
-            GridFuture<GridNearLockResponse<K, V>> fut;
-
-            if (CU.DHT_ENABLED)
-                fut = dht().lockAllAsync(cctx.localNode(), req, filter);
-            else {
-                // Create dummy values for testing.
-                GridNearLockResponse<K, V> res = new GridNearLockResponse<>(lockVer, futId, null, false, 1, null);
-
-                res.addValueBytes(null, null, true, lockVer, lockVer, cctx);
-
-                fut = new GridFinishedFuture<>(ctx, res);
-            }
+            GridFuture<GridNearLockResponse<K, V>> fut = dht().lockAllAsync(cctx, cctx.localNode(), req, filter);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
@@ -1031,14 +1025,24 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                             boolean pass = res.filterResult(i);
 
-                                            tx.entry(k).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
+                                            tx.entry(cctx.txKey(k)).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
                                         }
 
                                         if (record) {
                                             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                                                cctx.events().addEvent(entry.partition(), entry.key(), tx, null,
-                                                    EVT_CACHE_OBJECT_READ, newVal, newVal != null, oldVal, hasBytes,
-                                                    CU.subjectId(tx, cctx), null, inTx() ? tx.resolveTaskName() : null);
+                                                cctx.events().addEvent(
+                                                    entry.partition(),
+                                                    entry.key(),
+                                                    tx,
+                                                    null,
+                                                    EVT_CACHE_OBJECT_READ,
+                                                    newVal,
+                                                    newVal != null,
+                                                    oldVal,
+                                                    hasBytes,
+                                                    CU.subjectId(tx, cctx.shared()),
+                                                    null,
+                                                    inTx() ? tx.resolveTaskName() : null);
 
                                             cctx.cache().metrics0().onRead(oldVal != null);
                                         }
@@ -1379,7 +1383,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                 boolean pass = res.filterResult(i);
 
-                                tx.entry(k).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
+                                tx.entry(cctx.txKey(k)).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
                             }
 
                             entry.readyNearLock(lockVer, mappedVer, res.committedVersions(), res.rolledbackVersions(),
@@ -1387,9 +1391,18 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             if (retval) {
                                 if (readRecordable)
-                                    cctx.events().addEvent(entry.partition(), entry.key(), tx, null,
-                                        EVT_CACHE_OBJECT_READ, newVal, newVal != null || newBytes != null,
-                                        oldVal, hasOldVal, CU.subjectId(tx, cctx), null,
+                                    cctx.events().addEvent(
+                                        entry.partition(),
+                                        entry.key(),
+                                        tx,
+                                        null,
+                                        EVT_CACHE_OBJECT_READ,
+                                        newVal,
+                                        newVal != null || newBytes != null,
+                                        oldVal,
+                                        hasOldVal,
+                                        CU.subjectId(tx, cctx.shared()),
+                                        null,
                                         inTx() ? tx.resolveTaskName() : null);
 
                                 cctx.cache().metrics0().onRead(false);

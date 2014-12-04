@@ -39,7 +39,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
 
     /** Cache. */
     @GridToStringExclude
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Cache transaction. */
     @GridToStringExclude // Need to exclude due to circular dependencies.
@@ -70,7 +70,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
      * @param tx Cache transaction.
      */
     GridLocalTxFuture(
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         GridLocalTx<K, V> tx) {
         super(cctx.kernalContext());
 
@@ -207,7 +207,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in checkLocks method (will retry): " + txEntry);
 
-                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
                 }
             }
         }
@@ -253,7 +253,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in onOwnerChanged method (will retry): " + txEntry);
 
-                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
                 }
             }
         }

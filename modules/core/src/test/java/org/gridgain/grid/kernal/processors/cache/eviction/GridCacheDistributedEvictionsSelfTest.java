@@ -58,6 +58,13 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        GridTransactionsConfiguration tCfg = new GridTransactionsConfiguration();
+
+        tCfg.setDefaultTxConcurrency(PESSIMISTIC);
+        tCfg.setDefaultTxIsolation(READ_COMMITTED);
+
+        c.setTransactionsConfiguration(tCfg);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
@@ -74,9 +81,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         cc.setEvictSynchronized(evictSync);
         cc.setEvictNearSynchronized(evictNearSync);
         cc.setEvictSynchronizedKeyBufferSize(1);
-
-        cc.setDefaultTxConcurrency(PESSIMISTIC);
-        cc.setDefaultTxIsolation(READ_COMMITTED);
 
         cc.setAffinity(new GridCacheModuloAffinityFunction(gridCnt, 1));
 

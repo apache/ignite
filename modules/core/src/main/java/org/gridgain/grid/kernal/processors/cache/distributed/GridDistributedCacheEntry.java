@@ -109,7 +109,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
         // Don't link reentries.
         if (cand != null && !cand.reentry())
             // Link with other candidates in the same thread.
-            cctx.mvcc().addNext(cand);
+            cctx.mvcc().addNext(cctx, cand);
 
         checkOwnerChanged(prev, owner, val);
 
@@ -428,7 +428,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
         GridCacheVersion obsoleteVer = obsoleteVersionExtras();
 
-        if ((obsoleteVer != null && obsoleteVer.equals(ver)) || cctx.mvcc().isRemoved(ver))
+        if ((obsoleteVer != null && obsoleteVer.equals(ver)) || cctx.mvcc().isRemoved(cctx, ver))
             throw new GridDistributedLockCancelledException("Lock has been cancelled [key=" + key +
                 ", ver=" + ver + ']');
     }
@@ -440,7 +440,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     public boolean addRemoved(GridCacheVersion ver) {
         assert Thread.holdsLock(this);
 
-        return cctx.mvcc().addRemoved(ver);
+        return cctx.mvcc().addRemoved(cctx, ver);
     }
 
     /**
@@ -774,7 +774,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
                 tx.timeout(),
                 true,
                 tx.implicitSingle(),
-                tx.ownedVersion(key)
+                tx.ownedVersion(txKey())
             );
 
             return true;
@@ -790,38 +790,6 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     /** {@inheritDoc} */
     @Override public void txUnlock(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
-    }
-
-    /**
-     * Adds remote candidates automatically filtering any local candidates.
-     *
-     * @param cands Candidates to add.
-     * @param baseVer Base version for reordering.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
-     * @throws GridCacheEntryRemovedException If entry is removed.
-     */
-    public void addRemoteCandidates(
-        Collection<GridCacheMvccCandidate<K>> cands,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers) throws GridCacheEntryRemovedException {
-        if (cands != null && !cands.isEmpty())
-            for (GridCacheMvccCandidate<K> cand : cands) {
-                // Filter local nodes.
-                if (!cand.nodeId().equals(cctx.discovery().localNode().id())) {
-                    try {
-                        addRemote(cand);
-                    }
-                    catch (GridDistributedLockCancelledException ignored) {
-                        // Ignore.
-                        if (log.isDebugEnabled())
-                            log.debug("Will not sync up on candidate since lock was canceled: " + cand);
-                    }
-                }
-            }
-
-        orderCompleted(baseVer, committedVers, rolledbackVers);
     }
 
     /**

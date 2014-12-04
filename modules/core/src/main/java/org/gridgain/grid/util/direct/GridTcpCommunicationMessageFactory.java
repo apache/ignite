@@ -93,12 +93,6 @@ public class GridTcpCommunicationMessageFactory {
                     case 13:
                         return new GridEventStorageMessage();
 
-                    case 14:
-                        return new GridCacheDgcRequest();
-
-                    case 15:
-                        return new GridCacheDgcResponse();
-
                     case 16:
                         return new GridCacheEvictionRequest();
 

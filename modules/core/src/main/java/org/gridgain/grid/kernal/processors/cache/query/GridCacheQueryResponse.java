@@ -72,28 +72,33 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param reqId Request id.
      * @param finished Last response or not.
      * @param fields Fields query or not.
      */
-    public GridCacheQueryResponse(long reqId, boolean finished, boolean fields) {
+    public GridCacheQueryResponse(int cacheId, long reqId, boolean finished, boolean fields) {
+        this.cacheId = cacheId;
         this.reqId = reqId;
         this.finished = finished;
         this.fields = fields;
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param reqId Request id.
      * @param err Error.
      */
-    public GridCacheQueryResponse(long reqId, Throwable err) {
+    public GridCacheQueryResponse(int cacheId, long reqId, Throwable err) {
+        this.cacheId = cacheId;
         this.reqId = reqId;
         this.err = err;
         finished = true;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (err != null)
@@ -115,7 +120,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null)
@@ -192,7 +197,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("TypeMayBeWeakened")
     @Nullable private Collection<byte[]> marshalFieldsCollection(@Nullable Collection<Object> col,
-        GridCacheContext<K, V> ctx) throws GridException {
+        GridCacheSharedContext<K, V> ctx) throws GridException {
         assert ctx != null;
 
         if (col == null)
@@ -224,7 +229,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("TypeMayBeWeakened")
     @Nullable private Collection<Object> unmarshalFieldsCollection(@Nullable Collection<byte[]> byteCol,
-        GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         assert ctx != null;
         assert ldr != null;
 
@@ -354,7 +359,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (dataBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(dataBytes.size()))
@@ -381,25 +386,25 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putByteArray(errBytes))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (!commState.putBoolean(fields))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putBoolean(finished))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (metaDataBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(metaDataBytes.size()))
@@ -426,7 +431,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (!commState.putLong(reqId))
                     return false;
 
@@ -446,7 +451,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -475,7 +480,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 byte[] errBytes0 = commState.getByteArray();
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
@@ -485,7 +490,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -493,7 +498,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -501,7 +506,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -530,7 +535,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (buf.remaining() < 8)
                     return false;
 

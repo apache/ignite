@@ -49,6 +49,12 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /** Key bytes. */
     private byte[] keyBytes;
 
+    /** Cache ID. */
+    private int cacheId;
+
+    /** Transient tx key. */
+    private GridCacheTxKey<K> txKey;
+
     /** Cache value. */
     @GridToStringInclude
     private TxEntryValueHolder<K, V> val = new TxEntryValueHolder<>();
@@ -159,6 +165,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         key = entry.key();
         keyBytes = entry.keyBytes();
 
+        cacheId = entry.context().cacheId();
+
         depEnabled = ctx.gridDeploy().enabled();
     }
 
@@ -197,7 +205,16 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         key = entry.key();
         keyBytes = entry.keyBytes();
 
+        cacheId = entry.context().cacheId();
+
         depEnabled = ctx.gridDeploy().enabled();
+    }
+
+    /**
+     * @return Cache context for this tx entry.
+     */
+    public GridCacheContext<K, V> context() {
+        return ctx;
     }
 
     /**
@@ -252,6 +269,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         GridCacheTxEntry<K, V> cp = new GridCacheTxEntry<>();
 
         cp.key = key;
+        cp.cacheId = cacheId;
         cp.ctx = ctx;
 
         cp.val = new TxEntryValueHolder<>();
@@ -365,6 +383,23 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     }
 
     /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
+     * @return Tx key.
+     */
+    public GridCacheTxKey<K> txKey() {
+        if (txKey == null)
+            txKey = new GridCacheTxKey<>(key, cacheId);
+
+        return txKey;
+    }
+
+    /**
      *
      * @return Key bytes.
      */
@@ -400,6 +435,9 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      */
     public void cached(GridCacheEntryEx<K,V> entry, @Nullable byte[] keyBytes) {
         assert entry != null;
+
+        assert entry.context() == ctx : "Invalid entry assigned to tx entry [txEntry=" + this +
+            ", entry=" + entry + ", ctxNear=" + ctx.isNear() + ", ctxDht=" + ctx.isDht() + ']';
 
         this.entry = entry;
 
@@ -673,7 +711,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    public void marshal(GridCacheContext<K, V> ctx) throws GridException {
+    public void marshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         // Do not serialize filters if they are null.
         if (depEnabled) {
             if (keyBytes == null)
@@ -688,7 +726,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
                 filterBytes = CU.marshal(ctx, filters);
         }
 
-        val.marshal(ctx, depEnabled);
+        val.marshal(ctx, context(), depEnabled);
     }
 
     /**
@@ -698,8 +736,17 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param clsLdr Class loader.
      * @throws GridException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
-        this.ctx = ctx;
+    public void unmarshal(GridCacheSharedContext<K, V> ctx, boolean near, ClassLoader clsLdr) throws GridException {
+        if (this.ctx == null) {
+            GridCacheContext<K, V> cacheCtx = ctx.cacheContext(cacheId);
+
+            if (cacheCtx.isNear() && !near)
+                cacheCtx = cacheCtx.near().dht().context();
+            else if (!cacheCtx.isNear() && near)
+                cacheCtx = cacheCtx.dht().near().context();
+
+            this.ctx = cacheCtx;
+        }
 
         if (depEnabled) {
             // Don't unmarshal more than once by checking key for null.
@@ -718,7 +765,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             }
         }
 
-        val.unmarshal(ctx, clsLdr, depEnabled);
+        val.unmarshal(this.ctx, clsLdr, depEnabled);
     }
 
     /** {@inheritDoc} */
@@ -735,6 +782,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             U.writeCollection(out, transformClosCol);
             U.writeArray(out, filters);
         }
+
+        out.writeInt(cacheId);
 
         val.writeTo(out);
 
@@ -761,6 +810,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             transformClosCol = U.readCollection(in);
             filters = U.readEntryFilterArray(in);
         }
+
+        cacheId = in.readInt();
 
         val.readFrom(in);
 
@@ -930,13 +981,14 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
          * @param depEnabled Deployment enabled flag.
          * @throws GridException If marshaling failed.
          */
-        public void marshal(GridCacheContext<K, V> ctx, boolean depEnabled) throws GridException {
+        public void marshal(GridCacheSharedContext<K, V> sharedCtx, GridCacheContext<K, V> ctx, boolean depEnabled)
+            throws GridException {
             boolean valIsByteArr = val != null && val instanceof byte[];
 
             // Do not send write values to remote nodes.
             if (hasWriteVal && val != null && !valIsByteArr && valBytes == null &&
                 (depEnabled || !ctx.isUnmarshalValues()))
-                valBytes = CU.marshal(ctx, val);
+                valBytes = CU.marshal(sharedCtx, val);
 
             valBytesSent = hasWriteVal && !valIsByteArr && valBytes != null && (depEnabled || !ctx.isUnmarshalValues());
         }

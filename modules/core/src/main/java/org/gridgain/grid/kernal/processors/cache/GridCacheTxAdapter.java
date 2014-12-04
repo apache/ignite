@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.receiver.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -90,7 +91,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** Cache registry. */
     @GridToStringExclude
-    protected GridCacheContext<K, V> cctx;
+    protected GridCacheSharedContext<K, V> cctx;
 
     /**
      * End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -117,17 +118,17 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Invalidation flag for system invalidations (not user-based ones). */
     private boolean sysInvalidate;
 
-    /** */
-    protected boolean swapOrOffheapEnabled;
-
-    /** */
-    protected boolean storeEnabled;
-
     /** Internal flag. */
     protected boolean internal;
 
     /** */
     protected boolean onePhaseCommit;
+
+    /** */
+    protected boolean syncCommit;
+
+    /** */
+    protected boolean syncRollback;
 
     /** If this transaction contains transform entries. */
     protected boolean transform;
@@ -165,12 +166,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     protected int txSize;
 
     /** Group lock key, if any. */
-    protected Object grpLockKey;
+    protected GridCacheTxKey grpLockKey;
 
     /** */
     @GridToStringExclude
-    private AtomicReference<GridFutureAdapter<GridCacheTx>> finFut =
-        new AtomicReference<>();
+    private AtomicReference<GridFutureAdapter<GridCacheTx>> finFut = new AtomicReference<>();
 
     /** Topology version. */
     private AtomicLong topVer = new AtomicLong(-1);
@@ -190,6 +190,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Task name. */
     protected String taskName;
 
+    /** Store used flag. */
+    protected boolean storeUsed;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -206,14 +209,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param swapOrOffheapEnabled Whether to use swap storage.
-     * @param storeEnabled Whether to use read/write through.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is group-lock transaction.
      */
     protected GridCacheTxAdapter(
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
@@ -221,11 +221,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -240,9 +237,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
-        this.invalidate = invalidate;
-        this.swapOrOffheapEnabled = swapOrOffheapEnabled;
-        this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
@@ -266,14 +260,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param swapOrOffheapEnabled Swap enabled flag.
-     * @param storeEnabled Store enabled (read/write through) flag.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is group-lock transaction.
      */
     protected GridCacheTxAdapter(
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         UUID nodeId,
         GridCacheVersion xidVer,
         GridCacheVersion startVer,
@@ -281,11 +272,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -297,9 +285,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
-        this.invalidate = invalidate;
-        this.swapOrOffheapEnabled = swapOrOffheapEnabled;
-        this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
@@ -359,7 +344,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      *
      * @return Flag indicating whether near cache should be updated.
      */
-    protected boolean updateNearCache(K key, long topVer) {
+    protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
         return false;
     }
 
@@ -407,6 +392,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         return recoveryWrites;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean storeUsed() {
+        return storeUsed;
+    }
+
     /**
      * This method uses unchecked assignment to cast group lock key entry to transaction generic signature.
      *
@@ -440,7 +430,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         long res = topVer.get();
 
         if (res == -1)
-            return cctx.affinity().affinityTopologyVersion();
+            return cctx.exchange().topologyVersion();
 
         return res;
     }
@@ -525,7 +515,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Object groupLockKey() {
+    @Override public GridCacheTxKey groupLockKey() {
         return grpLockKey;
     }
 
@@ -588,12 +578,26 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public boolean syncCommit() {
-        return false;
+        return syncCommit;
     }
 
     /** {@inheritDoc} */
     @Override public boolean syncRollback() {
-        return false;
+        return syncRollback;
+    }
+
+    /**
+     * @param syncCommit Synchronous commit flag.
+     */
+    public void syncCommit(boolean syncCommit) {
+        this.syncCommit = syncCommit;
+    }
+
+    /**
+     * @param syncRollback Synchronous rollback flag.
+     */
+    public void syncRollback(boolean syncRollback) {
+        this.syncRollback = syncRollback;
     }
 
     /** {@inheritDoc} */
@@ -607,7 +611,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(int part) {
+    @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
         invalidParts.add(part);
 
         if (log.isDebugEnabled())
@@ -615,7 +619,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(K key) {
+    @Override public GridCacheVersion ownedVersion(GridCacheTxKey<K> key) {
         return null;
     }
 
@@ -695,14 +699,16 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** {@inheritDoc} */
     @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean ownsLock(GridCacheEntryEx<K, V> entry) throws GridCacheEntryRemovedException {
-        GridCacheTxEntry<K, V> txEntry = entry(entry.key());
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
+        GridCacheTxEntry<K, V> txEntry = entry(entry.txKey());
 
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         assert !txEntry.groupLockEntry() || groupLock() : "Can not have group-locked tx entries in " +
             "non-group-lock transactions [txEntry=" + txEntry + ", tx=" + this + ']';
 
-        return local() && !cctx.isDht() ?
+        return local() && !cacheCtx.isDht() ?
             entry.lockedByThread(threadId()) || (explicit != null && entry.lockedBy(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
@@ -712,14 +718,16 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** {@inheritDoc} */
     @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean ownsLockUnsafe(GridCacheEntryEx<K, V> entry) {
-        GridCacheTxEntry<K, V> txEntry = entry(entry.key());
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
+        GridCacheTxEntry<K, V> txEntry = entry(entry.txKey());
 
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         assert !txEntry.groupLockEntry() || groupLock() : "Can not have group-locked tx entries in " +
             "non-group-lock transactions [txEntry=" + txEntry + ", tx=" + this + ']';
 
-        return local() && !cctx.isDht() ?
+        return local() && !cacheCtx.isDht() ?
             entry.lockedByThreadUnsafe(threadId()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
@@ -828,8 +836,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param key Key.
      * @return {@code True} if key is internal.
      */
-    protected boolean checkInternal(K key) {
-        if (key instanceof GridCacheInternal) {
+    protected boolean checkInternal(GridCacheTxKey<K> key) {
+        if (key.key() instanceof GridCacheInternal) {
             internal = true;
 
             return true;
@@ -1116,13 +1124,17 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      */
     protected GridTuple3<GridCacheOperation, V, byte[]> applyTransformClosures(GridCacheTxEntry<K, V> txEntry,
         boolean metrics) throws GridCacheEntryRemovedException, GridException {
+        GridCacheContext cacheCtx = txEntry.context();
+
+        assert cacheCtx != null;
+
         if (isSystemInvalidate())
-            return F.t(cctx.isStoreEnabled() ? RELOAD : DELETE, null, null);
+            return F.t(cacheCtx.isStoreEnabled() ? RELOAD : DELETE, null, null);
         if (F.isEmpty(txEntry.transformClosures()))
             return F.t(txEntry.op(), txEntry.value(), txEntry.valueBytes());
         else {
             try {
-                boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
+                boolean recordEvt = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ);
 
                 V val = txEntry.hasValue() ? txEntry.value() :
                     txEntry.cached().innerGet(this,
@@ -1149,7 +1161,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
 
-                return F.t(op, cctx.<V>unwrapTemporary(val), null);
+                return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
             }
             catch (GridCacheFilterFailedException e) {
                 assert false : "Empty filter failed for innerGet: " + e;
@@ -1175,28 +1187,30 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(GridCacheTxEntry<K, V> e, boolean primaryOnly) {
-        if (!near())
+        GridCacheContext<K, V> cacheCtx = e.context();
+
+        if (!cacheCtx.isNear())
             return false;
 
         // Try to take either entry-recorded primary node ID,
         // or transaction node ID from near-local transactions.
         UUID nodeId = e.nodeId() == null ? local() ? this.nodeId :  null : e.nodeId();
 
-        if (nodeId != null && nodeId.equals(cctx.nodeId()))
+        if (nodeId != null && nodeId.equals(cctx.localNodeId()))
             return true;
 
         GridCacheEntryEx<K, V> cached = e.cached();
 
-        int part = cached != null ? cached.partition() : cctx.affinity().partition(e.key());
+        int part = cached != null ? cached.partition() : cacheCtx.affinity().partition(e.key());
 
-        List<GridNode> affNodes = cctx.affinity().nodes(part, topologyVersion());
+        List<GridNode> affNodes = cacheCtx.affinity().nodes(part, topologyVersion());
 
         e.locallyMapped(F.contains(affNodes, cctx.localNode()));
 
         if (primaryOnly) {
             GridNode primary = F.first(affNodes);
 
-            if (primary == null && !isAffinityNode(cctx.config()))
+            if (primary == null && !isAffinityNode(cacheCtx.config()))
                 return false;
 
             assert primary != null : "Primary node is null for affinity nodes: " + affNodes;
@@ -1218,6 +1232,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         if (isNearLocallyMapped(e, primaryOnly)) {
             GridCacheEntryEx<K, V> cached = e.cached();
+
+            assert cached instanceof GridNearCacheEntry : "Invalid cache entry: " + e;
 
             if (log.isDebugEnabled())
                 log.debug("Evicting dht-local entry from near cache [entry=" + cached + ", tx=" + this + ']');

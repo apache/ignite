@@ -20,15 +20,15 @@ import java.util.*;
 /**
  * Grid cache transaction read or write set.
  */
-public class GridCacheTxMap<K, V> extends AbstractMap<K, GridCacheTxEntry<K, V>> implements Externalizable {
+public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Base transaction map. */
-    private Map<K, GridCacheTxEntry<K, V>> txMap;
+    private Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> txMap;
 
     /** Entry set. */
-    private Set<Entry<K, GridCacheTxEntry<K, V>>> entrySet;
+    private Set<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> entrySet;
 
     /** Cached size. */
     private int size = -1;
@@ -53,7 +53,8 @@ public class GridCacheTxMap<K, V> extends AbstractMap<K, GridCacheTxEntry<K, V>>
      * @param txMap Transaction map.
      * @param filter Filter.
      */
-    public GridCacheTxMap(Map<K, GridCacheTxEntry<K, V>> txMap, GridPredicate<GridCacheTxEntry<K, V>> filter) {
+    public GridCacheTxMap(Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> txMap,
+        GridPredicate<GridCacheTxEntry<K, V>> filter) {
         this.txMap = txMap;
         this.filter = filter;
     }
@@ -77,16 +78,16 @@ public class GridCacheTxMap<K, V> extends AbstractMap<K, GridCacheTxEntry<K, V>>
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<K, GridCacheTxEntry<K, V>>> entrySet() {
+    @Override public Set<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> entrySet() {
         if (entrySet == null) {
-            entrySet = new GridSerializableSet<Entry<K, GridCacheTxEntry<K, V>>>() {
-                private Set<Entry<K, GridCacheTxEntry<K, V>>> set = txMap.entrySet();
+            entrySet = new GridSerializableSet<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>>() {
+                private Set<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> set = txMap.entrySet();
 
-                @Override public Iterator<Entry<K, GridCacheTxEntry<K, V>>> iterator() {
-                    return new GridSerializableIterator<Entry<K, GridCacheTxEntry<K, V>>>() {
-                        private Iterator<Entry<K, GridCacheTxEntry<K, V>>> it = set.iterator();
+                @Override public Iterator<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> iterator() {
+                    return new GridSerializableIterator<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>>() {
+                        private Iterator<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> it = set.iterator();
 
-                        private Entry<K, GridCacheTxEntry<K, V>> cur;
+                        private Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> cur;
 
                         // Constructor.
                         {
@@ -97,11 +98,11 @@ public class GridCacheTxMap<K, V> extends AbstractMap<K, GridCacheTxEntry<K, V>>
                             return cur != null;
                         }
 
-                        @Override public Entry<K, GridCacheTxEntry<K, V>> next() {
+                        @Override public Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> next() {
                             if (cur == null)
                                 throw new NoSuchElementException();
 
-                            Entry<K, GridCacheTxEntry<K, V>> e = cur;
+                            Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> e = cur;
 
                             advance();
 
@@ -116,7 +117,7 @@ public class GridCacheTxMap<K, V> extends AbstractMap<K, GridCacheTxEntry<K, V>>
                             cur = null;
 
                             while (cur == null && it.hasNext()) {
-                                Entry<K, GridCacheTxEntry<K, V>> e = it.next();
+                                Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> e = it.next();
 
                                 if (filter.apply(e.getValue()))
                                     cur = e;

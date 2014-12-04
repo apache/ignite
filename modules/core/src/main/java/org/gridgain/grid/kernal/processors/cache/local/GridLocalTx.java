@@ -47,26 +47,20 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param swapEnabled Whether to use swap storage.
-     * @param storeEnabled Whether to use read/write through.
      */
     GridLocalTx(
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean swapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled, txSize, null, false, subjId, taskNameHash);
+        super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, txSize, null,
+            false, subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */
@@ -190,16 +184,6 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         catch (GridException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addLocalCandidates(K key, Collection<GridCacheMvccCandidate<K>> cands) {
-        /* No-op. */
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<K, Collection<GridCacheMvccCandidate<K>>> localCandidates() {
-        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

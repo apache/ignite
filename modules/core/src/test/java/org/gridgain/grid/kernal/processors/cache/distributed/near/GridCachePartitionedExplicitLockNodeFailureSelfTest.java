@@ -41,6 +41,8 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
@@ -51,7 +53,6 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         cc.setCacheMode(PARTITIONED);
         cc.setDgcFrequency(0);
-        cc.setTxSerializableEnabled(true);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(GRID_CNT - 1);
         cc.setAtomicityMode(TRANSACTIONAL);

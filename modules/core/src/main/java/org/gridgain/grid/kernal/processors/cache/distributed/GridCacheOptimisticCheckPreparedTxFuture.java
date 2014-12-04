@@ -37,7 +37,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private boolean trackable = true;
 
     /** Context. */
-    private final GridCacheContext<K, V> cctx;
+    private final GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private final GridUuid futId = GridUuid.randomUuid();
@@ -64,7 +64,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param txNodes Transaction mapping.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheContext<K, V> cctx, GridCacheTxEx<K, V> tx,
+    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, GridCacheTxEx<K, V> tx,
         UUID failedNodeId, Map<UUID, Collection<UUID>> txNodes) {
         super(cctx.kernalContext(), CU.boolReducer());
 

@@ -41,6 +41,9 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        c.getTransactionsConfiguration().setDefaultTxIsolation(READ_COMMITTED);
+
         GridCacheConfiguration cc1 = defaultCacheConfiguration();
 
         cc1.setName("one");
@@ -48,8 +51,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         cc1.setWriteSynchronizationMode(FULL_SYNC);
         cc1.setPreloadMode(preloadMode);
         cc1.setEvictionPolicy(null);
-        cc1.setDefaultTxConcurrency(OPTIMISTIC);
-        cc1.setDefaultTxIsolation(READ_COMMITTED);
         cc1.setSwapEnabled(false);
         cc1.setStore(null);
 

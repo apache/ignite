@@ -39,19 +39,15 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
     /** Read set. */
     @GridToStringInclude
-    protected Map<K, GridCacheTxEntry<K, V>> readMap;
+    protected Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> readMap;
 
     /** Write map. */
     @GridToStringInclude
-    protected Map<K, GridCacheTxEntry<K, V>> writeMap;
+    protected Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> writeMap;
 
     /** Remote thread ID. */
     @GridToStringInclude
     private long rmtThreadId;
-
-    /** Map of lock candidates that need to be synced up. */
-    @GridToStringInclude
-    private Map<K, Collection<GridCacheMvccCandidate<K>>> cands;
 
     /** Explicit versions. */
     @GridToStringInclude
@@ -86,7 +82,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      */
     public GridDistributedTxRemoteAdapter(
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         UUID nodeId,
         long rmtThreadId,
         GridCacheVersion xidVer,
@@ -96,14 +92,26 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, xidVer, ctx.versions().last(), Thread.currentThread().getId(), concurrency, isolation,
-            timeout, invalidate, false, false, txSize, grpLockKey, subjId, taskNameHash);
+        super(
+            ctx,
+            nodeId,
+            xidVer,
+            ctx.versions().last(),
+            Thread.currentThread().getId(),
+            concurrency,
+            isolation,
+            timeout,
+            txSize,
+            grpLockKey,
+            subjId,
+            taskNameHash);
 
         this.rmtThreadId = rmtThreadId;
+        this.invalidate = invalidate;
 
         commitVersion(commitVer);
 
@@ -126,6 +134,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         return nodeId;
     }
 
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> activeCacheIds() {
+        return Collections.emptyList();
+    }
+
     /**
      * @return Checks if transaction has no entries.
      */
@@ -134,7 +147,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removed(K key) {
+    @Override public boolean removed(GridCacheTxKey<K> key) {
         GridCacheTxEntry e = writeMap.get(key);
 
         return e != null && e.op() == DELETE;
@@ -146,12 +159,12 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, GridCacheTxEntry<K, V>> writeMap() {
+    @Override public Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> writeMap() {
         return writeMap;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, GridCacheTxEntry<K, V>> readMap() {
+    @Override public Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> readMap() {
         return readMap;
     }
 
@@ -165,13 +178,13 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      *
      * @param key Key.
      */
-    public void groupLockKey(Object key) {
+    public void groupLockKey(GridCacheTxKey key) {
         if (grpLockKey == null)
             grpLockKey = key;
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple<V> peek(boolean failFast, K key,
+    @Override public GridTuple<V> peek(GridCacheContext<K, V> cacheCtx, boolean failFast, K key,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException {
         assert false : "Method peek can only be called on user transaction: " + this;
 
@@ -179,7 +192,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxEntry<K, V> entry(K key) {
+    @Override public GridCacheTxEntry<K, V> entry(GridCacheTxKey<K> key) {
         GridCacheTxEntry<K, V> e = writeMap == null ? null : writeMap.get(key);
 
         if (e == null)
@@ -193,46 +206,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      *
      * @param key key to be removed.
      */
-    public void clearEntry(K key) {
+    public void clearEntry(GridCacheTxKey<K> key) {
         readMap.remove(key);
         writeMap.remove(key);
-
-        if (cands != null)
-            cands.remove(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addRemoteCandidates(
-        Map<K, Collection<GridCacheMvccCandidate<K>>> cands,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers) {
-        for (GridCacheTxEntry<K, V> txEntry : F.concat(false, writeEntries(), readEntries())) {
-            while (true) {
-                GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
-
-                try {
-                    // Handle explicit locks.
-                    GridCacheVersion base = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
-
-                    Collection<GridCacheMvccCandidate<K>> entryCands =
-                        cands == null ? Collections.<GridCacheMvccCandidate<K>>emptyList() : cands.get(txEntry.key());
-
-                    entry.addRemoteCandidates(entryCands, base, committedVers, rolledbackVers);
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    assert entry.obsoleteVersion() != null;
-
-                    if (log.isDebugEnabled())
-                        log.debug("Replacing obsolete entry in remote transaction [entry=" + entry +
-                            ", tx=" + this + ']');
-
-                    // Replace the entry.
-                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), entry.keyBytes());
-                }
-            }
-        }
     }
 
     /**
@@ -283,7 +259,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                     log.debug("Replacing obsolete entry in remote transaction [entry=" + entry + ", tx=" + this + ']');
 
                 // Replace the entry.
-                txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
             }
         }
     }
@@ -291,7 +267,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
         try {
-            if (hasWriteKey(entry.key())) {
+            if (hasWriteKey(entry.txKey())) {
                 commitIfLocked();
 
                 return true;
@@ -321,11 +297,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      * @param keyBytes Key bytes.
      * @param drVer Data center replication version.
      */
-    public void addRead(K key, byte[] keyBytes, @Nullable GridCacheVersion drVer) {
+    public void addRead(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, byte[] keyBytes, @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, READ, null, 0L, -1L,
-            cctx.cache().entryEx(key), drVer);
+        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, READ, null, 0L, -1L,
+            cacheCtx.cache().entryEx(key.key()), drVer);
 
         txEntry.keyBytes(keyBytes);
 
@@ -340,12 +316,12 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      * @param valBytes Write value bytes.
      * @param drVer Data center replication version.
      */
-    public void addWrite(K key, byte[] keyBytes, GridCacheOperation op, V val, byte[] valBytes,
+    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, byte[] keyBytes, GridCacheOperation op, V val, byte[] valBytes,
         @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, op, val, 0L, -1L,
-            cctx.cache().entryEx(key), drVer);
+        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L,
+            cacheCtx.cache().entryEx(key.key()), drVer);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);
@@ -358,24 +334,24 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      * @return {@code True} if value was set.
      */
     @Override public boolean setWriteValue(GridCacheTxEntry<K, V> e) {
-        checkInternal(e.key());
+        checkInternal(e.txKey());
 
-        GridCacheTxEntry<K, V> entry = writeMap.get(e.key());
+        GridCacheTxEntry<K, V> entry = writeMap.get(e.txKey());
 
         if (entry == null) {
-            GridCacheTxEntry<K, V> rmv = readMap.remove(e.key());
+            GridCacheTxEntry<K, V> rmv = readMap.remove(e.txKey());
 
             if (rmv != null) {
                 e.cached(rmv.cached(), rmv.keyBytes());
 
-                writeMap.put(e.key(), e);
+                writeMap.put(e.txKey(), e);
             }
             // If lock is explicit.
             else {
-                e.cached(cctx.cache().entryEx(e.key()), null);
+                e.cached(e.context().cache().entryEx(e.key()), null);
 
                 // explicit lock.
-                writeMap.put(e.key(), e);
+                writeMap.put(e.txKey(), e);
             }
         }
         else {
@@ -399,12 +375,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasReadKey(K key) {
-        return readMap.containsKey(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasWriteKey(K key) {
+    @Override public boolean hasWriteKey(GridCacheTxKey<K> key) {
         return writeMap.containsKey(key);
     }
 
@@ -415,12 +386,12 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> readSet() {
+    @Override public Set<GridCacheTxKey<K>> readSet() {
         return readMap.keySet();
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> writeSet() {
+    @Override public Set<GridCacheTxKey<K>> writeSet() {
         return writeMap.keySet();
     }
 
@@ -501,7 +472,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry while committing (will retry): " + txEntry);
 
-                        txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
                     }
                 }
             }
@@ -515,21 +486,23 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
 
-                    boolean replicate = cctx.isDrEnabled();
-
                     long topVer = topologyVersion();
 
                     // Node that for near transactions we grab all entries.
                     for (GridCacheTxEntry<K, V> txEntry : (near() ? allEntries() : writeEntries())) {
+                        GridCacheContext<K, V> cacheCtx = txEntry.context();
+
+                        boolean replicate = cacheCtx.isDrEnabled();
+
                         try {
                             while (true) {
                                 try {
                                     GridCacheEntryEx<K, V> cached = txEntry.cached();
 
                                     if (cached == null)
-                                        txEntry.cached(cached = cctx.cache().entryEx(txEntry.key()), null);
+                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key()), null);
 
-                                    if (near() && cctx.dr().receiveEnabled()) {
+                                    if (near() && cacheCtx.dr().receiveEnabled()) {
                                         cached.markObsolete(xidVer);
 
                                         break;
@@ -537,8 +510,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                     GridNearCacheEntry<K, V> nearCached = null;
 
-                                    if (updateNearCache(txEntry.key(), topVer))
-                                        nearCached = cctx.dht().near().peekExx(txEntry.key());
+                                    if (updateNearCache(cacheCtx, txEntry.key(), topVer))
+                                        nearCached = cacheCtx.dht().near().peekExx(txEntry.key());
 
                                     if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
                                         txEntry.cached().unswap(true, false);
@@ -561,7 +534,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         if (explicitVer == null)
                                             explicitVer = writeVersion(); // Force write version to be used.
 
-                                        GridDrResolveResult<V> drRes = cctx.dr().resolveTx(cached,
+                                        GridDrResolveResult<V> drRes = cacheCtx.dr().resolveTx(cached,
                                             txEntry,
                                             explicitVer,
                                             op,
@@ -585,7 +558,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                     if (op == CREATE || op == UPDATE) {
                                         // Invalidate only for near nodes (backups cannot be invalidated).
-                                        if (isSystemInvalidate() || (isInvalidate() && cctx.isNear()))
+                                        if (isSystemInvalidate() || (isInvalidate() && cacheCtx.isNear()))
                                             cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
                                                 topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer, CU.subjectId(this, cctx),
@@ -687,7 +660,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         log.debug("Attempting to commit a removed entry (will retry): " + txEntry);
 
                                     // Renew cached entry.
-                                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
                                 }
                             }
                         }
@@ -786,21 +759,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         rollback();
 
         return new GridFinishedFutureEx<GridCacheTx>(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addLocalCandidates(K key, Collection<GridCacheMvccCandidate<K>> cands) {
-        if (this.cands == null)
-            this.cands = new HashMap<>();
-
-        this.cands.put(key, cands);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<K, Collection<GridCacheMvccCandidate<K>>> localCandidates() {
-        return cands == null ?
-            Collections.<K, Collection<GridCacheMvccCandidate<K>>>emptyMap() :
-            Collections.unmodifiableMap(cands);
     }
 
     /** {@inheritDoc} */

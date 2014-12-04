@@ -92,6 +92,11 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
+        GridTransactionsConfiguration tCfg = cfg.getTransactionsConfiguration();
+
+        tCfg.setDefaultTxConcurrency(txConcurrency);
+        tCfg.setDefaultTxIsolation(txIsolation);
+
         GridCacheConfiguration ccfg = new GridCacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
@@ -100,8 +105,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setDefaultTxConcurrency(txConcurrency);
-        ccfg.setDefaultTxIsolation(txIsolation);
         ccfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
 
         if (cacheMode == PARTITIONED)

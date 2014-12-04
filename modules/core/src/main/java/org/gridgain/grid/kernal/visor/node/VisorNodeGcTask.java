@@ -59,16 +59,12 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridB
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<Long, Long> run(Boolean dgc) throws GridException {
+        @Override protected GridBiTuple<Long, Long> run(Boolean arg) throws GridException {
             GridNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
 
             System.gc();
-
-            if (dgc)
-                for (GridCache<?, ?> cache : g.cachesx())
-                    cache.dgc();
 
             return new GridBiTuple<>(before, freeHeap(locNode));
         }

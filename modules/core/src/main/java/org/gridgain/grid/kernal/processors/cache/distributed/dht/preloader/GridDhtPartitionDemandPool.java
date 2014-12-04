@@ -33,18 +33,16 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
-import static org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Thread pool for requesting partitions from other nodes
  * and populating local cache.
  */
-@SuppressWarnings( {"NonConstantFieldWithUpperCaseName"})
+@SuppressWarnings("NonConstantFieldWithUpperCaseName")
 public class GridDhtPartitionDemandPool<K, V> {
     /** Dummy message to wake up a blocking queue if a node leaves. */
     private final SupplyMessage<K, V> DUMMY_TOP = new SupplyMessage<>();
@@ -65,10 +63,6 @@ public class GridDhtPartitionDemandPool<K, V> {
     @GridToStringInclude
     private final Collection<DemandWorker> dmdWorkers;
 
-    /** */
-    @GridToStringInclude
-    private final ExchangeWorker exchWorker;
-
     /** Preload predicate. */
     private GridPredicate<GridCacheEntryInfo<K, V>> preloadPred;
 
@@ -78,9 +72,6 @@ public class GridDhtPartitionDemandPool<K, V> {
 
     /** Preload timeout. */
     private final AtomicLong timeout;
-
-    /** Last partition refresh. */
-    private final AtomicLong lastRefresh = new AtomicLong(-1);
 
     /** Allows demand threads to synchronize their step. */
     private CyclicBarrier barrier;
@@ -95,14 +86,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
 
     /** Last exchange future. */
-    private AtomicReference<GridDhtPartitionsExchangeFuture<K, V>> lastExchangeFut =
-        new AtomicReference<>();
-
-    /** Atomic reference for pending timeout object. */
-    private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
-
-    /** Partition resend timeout after eviction. */
-    private final long partResendTimeout = getLong(GG_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
+    private volatile GridDhtPartitionsExchangeFuture<K, V> lastExchangeFut;
 
     /**
      * @param cctx Cache context.
@@ -140,38 +124,24 @@ public class GridDhtPartitionDemandPool<K, V> {
             syncFut.onDone();
         }
 
-        exchWorker = new ExchangeWorker();
-
         timeout = new AtomicLong(cctx.config().getPreloadTimeout());
     }
 
     /**
-     * @param exchFut Exchange future for this node.
+     *
      */
-    void start(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
-        assert exchFut.exchangeId().nodeId().equals(cctx.nodeId());
-
+    void start() {
         if (poolSize > 0) {
             for (DemandWorker w : dmdWorkers)
                 new GridThread(cctx.gridName(), "preloader-demand-worker", w).start();
         }
-
-        new GridThread(cctx.gridName(), "exchange-worker", exchWorker).start();
-
-        onDiscoveryEvent(cctx.nodeId(), exchFut);
     }
 
     /**
      *
      */
     void stop() {
-        U.cancel(exchWorker);
         U.cancel(dmdWorkers);
-
-        if (log.isDebugEnabled())
-            log.debug("Before joining on exchange worker: " + exchWorker);
-
-        U.join(exchWorker, log);
 
         if (log.isDebugEnabled())
             log.debug("Before joining on demand workers: " + dmdWorkers);
@@ -181,13 +151,9 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (log.isDebugEnabled())
             log.debug("After joining on demand workers: " + dmdWorkers);
 
-        ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
-
-        if (resendTimeoutObj != null)
-            cctx.time().removeTimeoutObject(resendTimeoutObj);
-
         top = null;
-        lastExchangeFut.set(null);
+        lastExchangeFut = null;
+
         lastTimeoutObj.set(null);
     }
 
@@ -215,6 +181,16 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
+     * Wakes up demand workers when new exchange future was added.
+     */
+    void onExchangeFutureAdded() {
+        synchronized (dmdWorkers) {
+            for (DemandWorker w : dmdWorkers)
+                w.addMessage(DUMMY_TOP);
+        }
+    }
+
+    /**
      * Force preload.
      */
     void forcePreload() {
@@ -223,7 +199,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (obj != null)
             cctx.time().removeTimeoutObject(obj);
 
-        final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut.get();
+        final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut;
 
         if (exchFut != null) {
             if (log.isDebugEnabled())
@@ -231,25 +207,12 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             exchFut.listenAsync(new CI1<GridFuture<Long>>() {
                 @Override public void apply(GridFuture<Long> t) {
-                    exchWorker.addFuture(forcePreloadExchange(exchFut.discoveryEvent(), exchFut.exchangeId()));
+                    cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
             });
         }
         else if (log.isDebugEnabled())
             log.debug("Ignoring force preload request (no topology event happened yet).");
-    }
-
-    /**
-     * Resend partition map.
-     */
-    void resendPartitions() {
-        try {
-            refreshPartitions(0);
-        }
-        catch (GridInterruptedException e) {
-            U.warn(log, "Partitions were not refreshed (thread got interrupted): " + e,
-                "Partitions were not refreshed (thread got interrupted)");
-        }
     }
 
     /**
@@ -307,76 +270,13 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
-     * @param discoEvt Discovery event.
-     * @param exchId Exchange ID.
-     * @param reassign Dummy reassign flag.
-     * @return Dummy partition exchange to handle reassignments if partition topology
-     *      changes after preloading started.
-     */
-    private GridDhtPartitionsExchangeFuture<K, V> dummyExchange(boolean reassign,
-        @Nullable GridDiscoveryEvent discoEvt, GridDhtPartitionExchangeId exchId) {
-        return new GridDhtPartitionsExchangeFuture<>(cctx, reassign, discoEvt, exchId);
-    }
-
-    /**
-     * @param discoEvt Discovery event.
-     * @param exchId Exchange ID.
-     * @return Dummy partition exchange to handle reassignments if partition topology
-     *      changes after preloading started.
-     */
-    private GridDhtPartitionsExchangeFuture<K, V> forcePreloadExchange(
-        @Nullable GridDiscoveryEvent discoEvt, GridDhtPartitionExchangeId exchId) {
-        return new GridDhtPartitionsExchangeFuture<>(cctx, discoEvt, exchId);
-    }
-
-    /**
-     * @param exch Exchange.
-     * @return {@code True} if dummy exchange.
-     */
-    private boolean dummyExchange(GridDhtPartitionsExchangeFuture<K, V> exch) {
-        return exch.dummy();
-    }
-
-    /**
-     * @param exch Exchange.
-     * @return {@code True} if force preload.
-     */
-    private boolean forcePreload(GridDhtPartitionsExchangeFuture<K, V> exch) {
-        return exch.forcePreload();
-    }
-
-    /**
-     * @param exch Exchange.
-     * @return {@code True} if dummy reassign.
-     */
-    private boolean dummyReassign(GridDhtPartitionsExchangeFuture<K, V> exch) {
-        return (exch.dummy() || exch.forcePreload()) && exch.reassign();
-    }
-
-    /**
-     * @param nodeId New node ID.
-     * @param fut Exchange future.
-     */
-    void onDiscoveryEvent(UUID nodeId, GridDhtPartitionsExchangeFuture<K, V> fut) {
-        if (!enterBusy())
-            return;
-
-        try {
-            addFuture(fut);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
      * @param deque Deque to poll from.
      * @param time Time to wait.
      * @param w Worker.
      * @return Polled item.
      * @throws InterruptedException If interrupted.
      */
-    @Nullable private <T> T poll(LinkedBlockingDeque<T> deque, long time, GridWorker w) throws InterruptedException {
+    @Nullable private <T> T poll(BlockingQueue<T> deque, long time, GridWorker w) throws InterruptedException {
         assert w != null;
 
         // There is currently a case where {@code interrupted}
@@ -389,69 +289,6 @@ public class GridDhtPartitionDemandPool<K, V> {
             Thread.currentThread().interrupt();
 
         return deque.poll(time, MILLISECONDS);
-    }
-
-    /**
-     * @param deque Deque to poll from.
-     * @param w Worker.
-     * @return Polled item.
-     * @throws InterruptedException If interrupted.
-     */
-    @Nullable private <T> T take(LinkedBlockingDeque<T> deque, GridWorker w) throws InterruptedException {
-        assert w != null;
-
-        // There is currently a case where {@code interrupted}
-        // flag on a thread gets flipped during stop which causes the pool to hang.  This check
-        // will always make sure that interrupted flag gets reset before going into wait conditions.
-        // The true fix should actually make sure that interrupted flag does not get reset or that
-        // interrupted exception gets propagated. Until we find a real fix, this method should
-        // always work to make sure that there is no hanging during stop.
-        if (w.isCancelled())
-            Thread.currentThread().interrupt();
-
-        return deque.take();
-    }
-
-    /**
-     * @param fut Future.
-     * @return {@code True} if added.
-     */
-    boolean addFuture(GridDhtPartitionsExchangeFuture<K, V> fut) {
-        if (fut.onAdded()) {
-            exchWorker.addFuture(fut);
-
-            synchronized (dmdWorkers) {
-                for (DemandWorker w : dmdWorkers)
-                    w.addMessage(DUMMY_TOP);
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Refresh partitions.
-     *
-     * @param timeout Timeout.
-     * @throws GridInterruptedException If interrupted.
-     */
-    private void refreshPartitions(long timeout) throws GridInterruptedException {
-        long last = lastRefresh.get();
-
-        long now = U.currentTimeMillis();
-
-        if (last != -1 && now - last >= timeout && lastRefresh.compareAndSet(last, now)) {
-            if (log.isDebugEnabled())
-                log.debug("Refreshing partitions [last=" + last + ", now=" + now + ", delta=" + (now - last) +
-                    ", timeout=" + timeout + ", lastRefresh=" + lastRefresh + ']');
-
-            cctx.dht().dhtPreloader().refreshPartitions();
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Partitions were not refreshed [last=" + last + ", now=" + now + ", delta=" + (now - last) +
-                ", timeout=" + timeout + ", lastRefresh=" + lastRefresh + ']');
     }
 
     /**
@@ -493,7 +330,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param assigns Assignments.
      * @param force {@code True} if dummy reassign.
      */
-    private void addAssignments(final Assignments assigns, boolean force) {
+    void addAssignments(final GridDhtPreloaderAssignments<K, V> assigns, boolean force) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
 
@@ -518,7 +355,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (obj != null)
                 cctx.time().removeTimeoutObject(obj);
 
-            final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut.get();
+            final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut;
 
             assert exchFut != null : "Delaying preload process without topology event.";
 
@@ -526,7 +363,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                 @Override public void onTimeout() {
                     exchFut.listenAsync(new CI1<GridFuture<Long>>() {
                         @Override public void apply(GridFuture<Long> f) {
-                            exchWorker.addFuture(forcePreloadExchange(exchFut.discoveryEvent(), exchFut.exchangeId()));
+                            cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }
                     });
                 }
@@ -552,20 +389,6 @@ public class GridDhtPartitionDemandPool<K, V> {
         }
     }
 
-    /**
-     * Schedules next full partitions update.
-     */
-    public void scheduleResendPartitions() {
-        ResendTimeoutObject timeout = pendingResend.get();
-
-        if (timeout == null || timeout.started()) {
-            ResendTimeoutObject update = new ResendTimeoutObject();
-
-            if (pendingResend.compareAndSet(timeout, update))
-                cctx.time().addTimeoutObject(update);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionDemandPool.class, this);
@@ -579,7 +402,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         private int id;
 
         /** Partition-to-node assignments. */
-        private final LinkedBlockingDeque<Assignments> assignQ = new LinkedBlockingDeque<>();
+        private final LinkedBlockingDeque<GridDhtPreloaderAssignments<K, V>> assignQ = new LinkedBlockingDeque<>();
 
         /** Message queue. */
         private final LinkedBlockingDeque<SupplyMessage<K, V>> msgQ =
@@ -602,7 +425,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         /**
          * @param assigns Assignments.
          */
-        void addAssignments(Assignments assigns) {
+        void addAssignments(GridDhtPreloaderAssignments<K, V> assigns) {
             assert assigns != null;
 
             assignQ.offer(assigns);
@@ -615,7 +438,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @return {@code True} if topology changed.
          */
         private boolean topologyChanged() {
-            return !assignQ.isEmpty() || exchWorker.topologyChanged();
+            return !assignQ.isEmpty() || cctx.shared().exchange().topologyChanged();
         }
 
         /**
@@ -1034,7 +857,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     }
 
                     // Sync up all demand threads at this step.
-                    Assignments assigns = null;
+                    GridDhtPreloaderAssignments<K, V> assigns = null;
 
                     while (assigns == null)
                         assigns = poll(assignQ, cctx.gridConfig().getNetworkTimeout(), this);
@@ -1104,8 +927,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                                 assert exchFut.exchangeId() != null;
 
-                                exchWorker.addFuture(dummyExchange(true, exchFut.discoveryEvent(),
-                                    exchFut.exchangeId()));
+                                cctx.shared().exchange().forceDummyExchange(true, exchFut);
                             }
                             else
                                 break; // While.
@@ -1117,7 +939,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         syncFut.onWorkerDone(this);
                     }
 
-                    scheduleResendPartitions();
+                    cctx.shared().exchange().scheduleResendPartitions();
                 }
             }
             finally {
@@ -1133,303 +955,82 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
-     * Partition to node assignments.
+     * Sets last exchange future.
+     *
+     * @param lastFut Last future to set.
      */
-    private class Assignments extends ConcurrentHashMap<GridNode, GridDhtPartitionDemandMessage<K, V>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Exchange future. */
-        @GridToStringExclude
-        private final GridDhtPartitionsExchangeFuture<K, V> exchFut;
-
-        /** Last join order. */
-        private final long topVer;
-
-        /**
-         * @param exchFut Exchange future.
-         * @param topVer Last join order.
-         */
-        Assignments(GridDhtPartitionsExchangeFuture<K, V> exchFut, long topVer) {
-            assert exchFut != null;
-            assert topVer > 0;
-
-            this.exchFut = exchFut;
-            this.topVer = topVer;
-        }
-
-        /**
-         * @return Exchange future.
-         */
-        GridDhtPartitionsExchangeFuture<K, V> exchangeFuture() {
-            return exchFut;
-        }
-
-        /**
-         * @return Topology version.
-         */
-        long topologyVersion() {
-            return topVer;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(Assignments.class, this, "exchId", exchFut.exchangeId(), "super", super.toString());
-        }
+    void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+        lastExchangeFut = lastFut;
     }
 
     /**
-     * Exchange future thread. All exchanges happen only by one thread and next
-     * exchange will not start until previous one completes.
+     * @param exchFut Exchange future.
+     * @return Assignments of partitions to nodes.
      */
-    private class ExchangeWorker extends GridWorker {
-        /** Future queue. */
-        private final LinkedBlockingDeque<GridDhtPartitionsExchangeFuture<K, V>> futQ =
-            new LinkedBlockingDeque<>();
+    GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+        // No assignments for disabled preloader.
+        if (!cctx.preloadEnabled())
+            return new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
 
-        /** Busy flag used as performance optimization to stop current preloading. */
-        private volatile boolean busy;
+        int partCnt = cctx.affinity().partitions();
 
-        /**
-         *
-         */
-        private ExchangeWorker() {
-            super(cctx.gridName(), "partition-exchanger", log);
-        }
+        assert exchFut.forcePreload() || exchFut.dummyReassign() ||
+            exchFut.exchangeId().topologyVersion() == top.topologyVersion() :
+            "Topology version mismatch [exchId=" + exchFut.exchangeId() + ", topVer=" + top.topologyVersion() + ']';
 
-        /**
-         * @param exchFut Exchange future.
-         */
-        void addFuture(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
-            assert exchFut != null;
+        GridDhtPreloaderAssignments<K, V> assigns = new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
 
-            if (!exchFut.dummy() || (futQ.isEmpty() && !busy))
-                futQ.offer(exchFut);
+        long topVer = assigns.topologyVersion();
 
-            if (log.isDebugEnabled())
-                log.debug("Added exchange future to exchange worker: " + exchFut);
-        }
+        for (int p = 0; p < partCnt; p++) {
+            if (cctx.shared().exchange().hasPendingExchange()) {
+                if (log.isDebugEnabled())
+                    log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
+                        exchFut.exchangeId());
 
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
-            long timeout = cctx.gridConfig().getNetworkTimeout();
+                break;
+            }
 
-            long delay = cctx.config().getPreloadPartitionedDelay();
+            // If partition belongs to local node.
+            if (cctx.affinity().localNode(p, topVer)) {
+                GridDhtLocalPartition<K, V> part = top.localPartition(p, topVer, true);
 
-            boolean startEvtFired = false;
+                assert part != null;
+                assert part.id() == p;
 
-            while (!isCancelled()) {
-                GridDhtPartitionsExchangeFuture<K, V> exchFut = null;
-
-                try {
-                    // If not first preloading and no more topology events present,
-                    // then we periodically refresh partition map.
-                    if (futQ.isEmpty() && syncFut.isDone()) {
-                        refreshPartitions(timeout);
-
-                        timeout = cctx.gridConfig().getNetworkTimeout();
-                    }
-
-                    // After workers line up and before preloading starts we initialize all futures.
+                if (part.state() != MOVING) {
                     if (log.isDebugEnabled())
-                        log.debug("Before waiting for exchange futures [futs" +
-                            F.view((cctx.dht().dhtPreloader()).exchangeFutures(), F.unfinishedFutures()) +
-                            ", worker=" + this + ']');
+                        log.debug("Skipping partition assignment (state is not MOVING): " + part);
 
-                    // Take next exchange future.
-                    exchFut = poll(futQ, timeout, this);
+                    continue; // For.
+                }
 
-                    if (exchFut == null)
-                        continue; // Main while loop.
+                Collection<GridNode> picked = pickedOwners(p, topVer);
 
-                    busy = true;
+                if (picked.isEmpty()) {
+                    top.own(part);
 
-                    Assignments assigns = null;
+                    if (log.isDebugEnabled())
+                        log.debug("Owning partition as there are no other owners: " + part);
+                }
+                else {
+                    GridNode n = F.first(picked);
 
-                    boolean dummyReassign = dummyReassign(exchFut);
-                    boolean forcePreload = forcePreload(exchFut);
+                    GridDhtPartitionDemandMessage<K, V> msg = assigns.get(n);
 
-                    try {
-                        if (isCancelled())
-                            break;
-
-                        if (!dummyExchange(exchFut) && !forcePreload(exchFut)) {
-                            lastExchangeFut.set(exchFut);
-
-                            exchFut.init();
-
-                            exchFut.get();
-
-                            if (log.isDebugEnabled())
-                                log.debug("After waiting for exchange future [exchFut=" + exchFut + ", worker=" +
-                                    this + ']');
-
-                            if (exchFut.exchangeId().nodeId().equals(cctx.localNodeId()))
-                                lastRefresh.compareAndSet(-1, U.currentTimeMillis());
-
-                            // Just pick first worker to do this, so we don't
-                            // invoke topology callback more than once for the
-                            // same event.
-                            if (top.afterExchange(exchFut.exchangeId()) && futQ.isEmpty())
-                                resendPartitions(); // Force topology refresh.
-
-                            // Preload event notification.
-                            if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
-                                if (!cctx.isReplicated() || !startEvtFired) {
-                                    preloadEvent(EVT_CACHE_PRELOAD_STARTED, exchFut.discoveryEvent());
-
-                                    startEvtFired = true;
-                                }
-                            }
-                        }
-                        else {
-                            if (log.isDebugEnabled())
-                                log.debug("Got dummy exchange (will reassign)");
-
-                            if (!dummyReassign) {
-                                timeout = 0; // Force refresh.
-
-                                continue;
-                            }
-                        }
-
-                        // Don't delay for dummy reassigns to avoid infinite recursion.
-                        if (delay == 0 || forcePreload)
-                            assigns = assign(exchFut);
-                    }
-                    finally {
-                        // Must flip busy flag before assignments are given to demand workers.
-                        busy = false;
+                    if (msg == null) {
+                        assigns.put(n, msg = new GridDhtPartitionDemandMessage<>(
+                            top.updateSequence(),
+                            exchFut.exchangeId().topologyVersion(),
+                            cctx.cacheId()));
                     }
 
-                    addAssignments(assigns, forcePreload);
-                }
-                catch (GridInterruptedException e) {
-                    throw e;
-                }
-                catch (GridException e) {
-                    U.error(log, "Failed to wait for completion of partition map exchange " +
-                        "(preloading will not start): " + exchFut, e);
+                    msg.addPartition(p);
                 }
             }
         }
 
-        /**
-         * @return {@code True} if another exchange future has been queued up.
-         */
-        boolean topologyChanged() {
-            return !futQ.isEmpty() || busy;
-        }
-
-        /**
-         * @param exchFut Exchange future.
-         * @return Assignments of partitions to nodes.
-         */
-        private Assignments assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
-            // No assignments for disabled preloader.
-            if (!cctx.preloadEnabled())
-                return new Assignments(exchFut, top.topologyVersion());
-
-            int partCnt = cctx.affinity().partitions();
-
-            assert forcePreload(exchFut) || dummyReassign(exchFut) ||
-                exchFut.exchangeId().topologyVersion() == top.topologyVersion() :
-                "Topology version mismatch [exchId=" + exchFut.exchangeId() + ", topVer=" + top.topologyVersion() + ']';
-
-            Assignments assigns = new Assignments(exchFut, top.topologyVersion());
-
-            long topVer = assigns.topologyVersion();
-
-            for (int p = 0; p < partCnt && !isCancelled() && futQ.isEmpty(); p++) {
-                // If partition belongs to local node.
-                if (cctx.affinity().localNode(p, topVer)) {
-                    GridDhtLocalPartition<K, V> part = top.localPartition(p, topVer, true);
-
-                    assert part != null;
-                    assert part.id() == p;
-
-                    if (part.state() != MOVING) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
-
-                        continue; // For.
-                    }
-
-                    Collection<GridNode> picked = pickedOwners(p, topVer);
-
-                    if (picked.isEmpty()) {
-                        top.own(part);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Owning partition as there are no other owners: " + part);
-                    }
-                    else {
-                        GridNode n = F.first(picked);
-
-                        GridDhtPartitionDemandMessage<K, V> msg = assigns.get(n);
-
-                        if (msg == null) {
-                            assigns.put(n, msg = new GridDhtPartitionDemandMessage<>(
-                                top.updateSequence(),
-                                exchFut.exchangeId().topologyVersion()));
-                        }
-
-                        msg.addPartition(p);
-                    }
-                }
-            }
-
-            return assigns;
-        }
-    }
-
-    /**
-     * Partition resend timeout object.
-     */
-    private class ResendTimeoutObject implements GridTimeoutObject {
-        /** Timeout ID. */
-        private final GridUuid timeoutId = GridUuid.randomUuid();
-
-        /** Timeout start time. */
-        private final long createTime = U.currentTimeMillis();
-
-        /** Started flag. */
-        private AtomicBoolean started = new AtomicBoolean();
-
-        /** {@inheritDoc} */
-        @Override public GridUuid timeoutId() {
-            return timeoutId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long endTime() {
-            return createTime + partResendTimeout;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            if (!busyLock.readLock().tryLock())
-                return;
-
-            try {
-                if (started.compareAndSet(false, true))
-                    resendPartitions();
-            }
-            finally {
-                busyLock.readLock().unlock();
-
-                cctx.time().removeTimeoutObject(this);
-
-                pendingResend.compareAndSet(this, null);
-            }
-        }
-
-        /**
-         * @return {@code True} if timeout object started to run.
-         */
-        public boolean started() {
-            return started.get();
-        }
+        return assigns;
     }
 
     /**

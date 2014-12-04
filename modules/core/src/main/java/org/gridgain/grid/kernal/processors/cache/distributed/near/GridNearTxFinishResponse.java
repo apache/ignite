@@ -86,8 +86,9 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
         return nearThreadId;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (err != null)
@@ -95,7 +96,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null)
@@ -140,19 +141,19 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
         }
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 if (!commState.putByteArray(errBytes))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (!commState.putLong(nearThreadId))
                     return false;
 
@@ -172,7 +173,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
             return false;
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 byte[] errBytes0 = commState.getByteArray();
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
@@ -182,7 +183,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -192,7 +193,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (buf.remaining() < 8)
                     return false;
 

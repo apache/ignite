@@ -545,6 +545,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             GridNode primary = F.first(primaryNodes);
 
             GridNearAtomicUpdateRequest<K, V> req = new GridNearAtomicUpdateRequest<>(
+                cctx.cacheId(),
                 primary.id(),
                 futVer,
                 fastMap,
@@ -650,6 +651,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
                     if (mapped == null) {
                         mapped = new GridNearAtomicUpdateRequest<>(
+                            cctx.cacheId(),
                             nodeId,
                             futVer,
                             fastMap,

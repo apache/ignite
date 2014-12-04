@@ -358,12 +358,8 @@ abstract class GridCacheAbstractLoadTest {
 
         cfg.setGridLogger(initLogger(log));
 
-        GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
-
-        for (GridCacheConfiguration cacheCfg : cacheCfgs) {
-            cacheCfg.setDefaultTxIsolation(isolation);
-            cacheCfg.setDefaultTxConcurrency(concurrency);
-        }
+        cfg.getTransactionsConfiguration().setDefaultTxIsolation(isolation);
+        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(concurrency);
 
         return cfg;
     }

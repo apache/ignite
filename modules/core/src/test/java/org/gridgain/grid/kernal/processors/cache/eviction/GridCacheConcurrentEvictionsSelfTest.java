@@ -54,6 +54,9 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionsConfiguration().setDefaultTxIsolation(READ_COMMITTED);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
@@ -66,9 +69,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
         cc.setEvictionPolicy(plc);
         cc.setNearEvictionPolicy(nearPlc);
-
-        cc.setDefaultTxConcurrency(PESSIMISTIC);
-        cc.setDefaultTxIsolation(READ_COMMITTED);
 
         c.setCacheConfiguration(cc);
 

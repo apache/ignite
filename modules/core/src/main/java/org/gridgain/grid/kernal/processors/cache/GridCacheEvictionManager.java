@@ -114,61 +114,6 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     /** First eviction flag. */
     private volatile boolean firstEvictWarn;
 
-    /** Tx listener. */
-    private GridInClosure<GridFuture<GridCacheTx>> txLsnr = new CI1<GridFuture<GridCacheTx>>() {
-        @Override public void apply(GridFuture<GridCacheTx> t) {
-            assert plcEnabled || memoryMode == OFFHEAP_TIERED;
-
-            GridCacheTxEx<K, V> tx;
-
-            try {
-                tx = (GridCacheTxEx<K, V>)t.get();
-            }
-            catch (GridException e) {
-                U.error(log, "Tx finished with error.", e);
-
-                return;
-            }
-
-            assert tx.done();
-
-            if (log.isDebugEnabled())
-                log.debug("Unwinding tx (in listener): " + CU.txString(tx));
-
-            Collection<GridCacheTxEntry<K, V>> txEntries = tx.allEntries();
-
-            for (GridCacheTxEntry<K, V> txe : txEntries) {
-                GridCacheEntryEx<K, V> e = txe.cached();
-
-                if (e.detached() || e.isInternal())
-                    continue;
-
-                try {
-                    if (e.markObsoleteIfEmpty(null) || e.obsolete())
-                        e.context().cache().removeEntry(e);
-                }
-                catch (GridException ex) {
-                    U.error(log, "Failed to evict entry from cache: " + e, ex);
-                }
-
-                if (memoryMode == OFFHEAP_TIERED) {
-                    try {
-                        evict0(cctx.cache(), e, cctx.versions().next(), null, false);
-                    }
-                    catch (GridException ex) {
-                        U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
-                    }
-                }
-                else {
-                    notifyPolicy(e);
-
-                    if (evictSyncAgr)
-                        waitForEvictionFutures();
-                }
-            }
-        }
-    };
-
     /** {@inheritDoc} */
     @Override public void start0() throws GridException {
         GridCacheConfiguration cfg = cctx.config();
@@ -237,13 +182,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             maxActiveFuts = cfg.getEvictSynchronizedConcurrencyLevel();
 
-            cctx.io().addHandler(GridCacheEvictionRequest.class, new CI2<UUID, GridCacheEvictionRequest<K, V>>() {
+            cctx.io().addHandler(cctx.cacheId(), GridCacheEvictionRequest.class, new CI2<UUID, GridCacheEvictionRequest<K, V>>() {
                 @Override public void apply(UUID nodeId, GridCacheEvictionRequest<K, V> msg) {
                     processEvictionRequest(nodeId, msg);
                 }
             });
 
-            cctx.io().addHandler(GridCacheEvictionResponse.class, new CI2<UUID, GridCacheEvictionResponse<K, V>>() {
+            cctx.io().addHandler(cctx.cacheId(), GridCacheEvictionResponse.class, new CI2<UUID, GridCacheEvictionResponse<K, V>>() {
                 @Override public void apply(UUID nodeId, GridCacheEvictionResponse<K, V> msg) {
                     processEvictionResponse(nodeId, msg);
                 }
@@ -380,7 +325,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 if (log.isDebugEnabled())
                     log.debug("Class got undeployed during eviction: " + req.classError());
 
-                sendEvictionResponse(nodeId, new GridCacheEvictionResponse<K, V>(req.futureId(), true));
+                sendEvictionResponse(nodeId, new GridCacheEvictionResponse<K, V>(cctx.cacheId(), req.futureId(), true));
 
                 return;
             }
@@ -393,7 +338,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         log.debug("Topology version is different [locTopVer=" + topVer +
                             ", rmtTopVer=" + req.topologyVersion() + ']');
 
-                    sendEvictionResponse(nodeId, new GridCacheEvictionResponse<K, V>(req.futureId(), true));
+                    sendEvictionResponse(nodeId,
+                        new GridCacheEvictionResponse<K, V>(cctx.cacheId(), req.futureId(), true));
 
                     return;
                 }
@@ -443,7 +389,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 nearEntries.add(t);
         }
 
-        GridCacheEvictionResponse<K, V> res = new GridCacheEvictionResponse<>(req.futureId());
+        GridCacheEvictionResponse<K, V> res = new GridCacheEvictionResponse<>(cctx.cacheId(), req.futureId());
 
         GridCacheVersion obsoleteVer = cctx.versions().next();
 
@@ -720,16 +666,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     }
 
     /**
-     * @param tx Transaction to register for eviction policy notifications.
+     * @param txEntry Transactional entry.
      */
-    public void touch(final GridCacheTxEx<K, V> tx) {
+    public void touch(GridCacheTxEntry<K, V> txEntry, boolean loc) {
         if (!plcEnabled && memoryMode != OFFHEAP_TIERED)
             return;
 
-        if (tx.internal() && !tx.groupLock())
-            return;
-
-        if (!tx.local()) {
+        if (!loc) {
             if (cctx.isNear())
                 return;
 
@@ -737,17 +680,32 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 return;
         }
 
-        if (!busyLock.enterBusy())
+        GridCacheEntryEx<K, V> e = txEntry.cached();
+
+        if (e.detached() || e.isInternal())
             return;
 
         try {
-            if (log.isDebugEnabled())
-                log.debug("Touching transaction [tx=" + CU.txString(tx) + ", localNode=" + cctx.nodeId() + ']');
-
-            tx.finishFuture().listenAsync(txLsnr);
+            if (e.markObsoleteIfEmpty(null) || e.obsolete())
+                e.context().cache().removeEntry(e);
         }
-        finally {
-            busyLock.leaveBusy();
+        catch (GridException ex) {
+            U.error(log, "Failed to evict entry from cache: " + e, ex);
+        }
+
+        if (memoryMode == OFFHEAP_TIERED) {
+            try {
+                evict0(cctx.cache(), e, cctx.versions().next(), null, false);
+            }
+            catch (GridException ex) {
+                U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
+            }
+        }
+        else {
+            notifyPolicy(e);
+
+            if (evictSyncAgr)
+                waitForEvictionFutures();
         }
     }
 
@@ -1688,7 +1646,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         // There are remote participants.
                         for (GridNode node : nodes) {
                             GridCacheEvictionRequest<K, V> req = F.addIfAbsent(reqMap, node.id(),
-                                new GridCacheEvictionRequest<K, V>(id, evictInfos.size(), topVer));
+                                new GridCacheEvictionRequest<K, V>(cctx.cacheId(), id, evictInfos.size(), topVer));
 
                             assert req != null;
 
