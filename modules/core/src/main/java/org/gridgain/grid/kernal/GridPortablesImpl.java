@@ -16,9 +16,9 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * {@link GridPortables} implementation.
+ * {@link org.gridgain.grid.portables.IgnitePortables} implementation.
  */
-public class GridPortablesImpl implements GridPortables {
+public class GridPortablesImpl implements IgnitePortables {
     /** */
     private GridKernalContext ctx;
 

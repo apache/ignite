@@ -245,7 +245,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortables portables() {
+    @Override public IgnitePortables portables() {
         assert g != null;
 
         return g.portables();

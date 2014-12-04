@@ -88,7 +88,7 @@ import java.util.Date;
  *     </li>
  * </ul>
  *
- * @see GridPortables
+ * @see org.gridgain.grid.portables.IgnitePortables
  */
 public interface GridCacheStore<K, V> {
     /**

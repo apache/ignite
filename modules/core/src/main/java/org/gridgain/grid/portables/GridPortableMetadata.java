@@ -15,7 +15,7 @@ import java.util.*;
 
 /**
  * Portable type meta data. Metadata for portable types can be accessed from any of the
- * {@link GridPortables#metadata(String) GridPortables.metadata(...)} methods.
+ * {@link IgnitePortables#metadata(String) GridPortables.metadata(...)} methods.
  * Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */

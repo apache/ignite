@@ -124,7 +124,7 @@ import java.util.Date;
  * <h1 class="header">Portable Metadata</h1>
  * Even though GridGain portable protocol only works with hash codes for type and field names
  * to achieve better performance, GridGain provides metadata for all portable types which
- * can be queried ar runtime via any of the {@link GridPortables#metadata(Class) GridPortables.metadata(...)}
+ * can be queried ar runtime via any of the {@link IgnitePortables#metadata(Class) GridPortables.metadata(...)}
  * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
@@ -276,7 +276,7 @@ import java.util.Date;
  * &lt;/bean&gt;
  * </pre>
  */
-public interface GridPortables {
+public interface IgnitePortables {
     /**
      * Gets type ID for given type name.
      *

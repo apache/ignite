@@ -207,7 +207,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** Portables instance. */
     @GridToStringExclude
-    private GridPortables portables;
+    private IgnitePortables portables;
 
     /** Kernal gateway. */
     @GridToStringExclude
@@ -3181,7 +3181,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortables portables() {
+    @Override public IgnitePortables portables() {
         if (!ctx.isEnterprise())
             throw new UnsupportedOperationException("Portables interface available in Enterprise edition only.");
 

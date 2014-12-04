@@ -197,7 +197,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Instance of {@code GridPortables} interface.
      */
-    public GridPortables portables();
+    public IgnitePortables portables();
 
     /**
      * Gets an instance of Data Center Replication.
