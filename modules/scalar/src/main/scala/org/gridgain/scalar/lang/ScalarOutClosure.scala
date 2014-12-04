@@ -11,8 +11,8 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.IgniteOutClosure
 import java.util.concurrent.Callable
+import org.apache.ignite.lang.IgniteOutClosure
 import org.gridgain.grid.util.lang.GridPeerDeployAwareAdapter
 
 /**

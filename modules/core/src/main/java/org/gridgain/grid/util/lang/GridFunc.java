@@ -661,7 +661,7 @@ public class GridFunc {
      * Creates out closure that will reflectively call a method with the given name on provided
      * object and return result of that call.
      * <p>
-     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteOutClosure} which is {@link CO}.
+     * Method reflects the typedef for {@link org.apache.ignite.lang.IgniteOutClosure} which is {@link CO}.
      *
      * @param o Target object to call the method on.
      * @param mtdName Method name.
@@ -736,7 +736,7 @@ public class GridFunc {
      * Creates out closure that will reflectively call a static method with the given name
      * and return result of that call.
      * <p>
-     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteOutClosure} which is {@link CO}.
+     * Method reflects the typedef for {@link org.apache.ignite.lang.IgniteOutClosure} which is {@link CO}.
      *
      * @param cls Class to call a static method on.
      * @param mtdName Method name.
@@ -3249,9 +3249,9 @@ public class GridFunc {
     }
 
     /**
-     * Returns closure that converts {@link Callable} to {@link org.gridgain.grid.lang.IgniteOutClosure}.
+     * Returns closure that converts {@link Callable} to {@link org.apache.ignite.lang.IgniteOutClosure}.
      *
-     * @return closure that converts {@link Callable} to {@link org.gridgain.grid.lang.IgniteOutClosure}.
+     * @return closure that converts {@link Callable} to {@link org.apache.ignite.lang.IgniteOutClosure}.
      */
     public static <T> IgniteClosure<Callable<T>, IgniteOutClosure<T>> c2c() {
         return new C1<Callable<T>, IgniteOutClosure<T>>() {
@@ -4066,7 +4066,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link List}.
      * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
@@ -4079,7 +4079,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link List}.
      * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<List<T>> newList() {
@@ -4092,7 +4092,7 @@ public class GridFunc {
      * closure but returns a static one.
      *
      * @return Factory closure that creates new {@link AtomicInteger} instance
-     *      initialized to {@code zero} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      initialized to {@code zero} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     public static IgniteCallable<AtomicInteger> newAtomicInt() {
         return ATOMIC_INT_FACTORY;
@@ -4104,7 +4104,7 @@ public class GridFunc {
      * closure but returns a static one.
      *
      * @return Factory closure that creates new {@link AtomicLong} instance
-     *      initialized to {@code zero} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      initialized to {@code zero} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     public static IgniteCallable<AtomicLong> newAtomicLong() {
         return ATOMIC_LONG_FACTORY;
@@ -4117,7 +4117,7 @@ public class GridFunc {
      *
      * @param <T> Type of the atomic reference.
      * @return Factory closure that creates new {@link AtomicReference} instance
-     *      initialized to {@code null} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      initialized to {@code null} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<AtomicReference<T>> newAtomicRef() {
@@ -4130,7 +4130,7 @@ public class GridFunc {
      * closure but returns a static one.
      *
      * @return Factory closure that creates new {@link AtomicBoolean} instance
-     *      initialized to {@code false} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      initialized to {@code false} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     public static IgniteCallable<AtomicBoolean> newAtomicBoolean() {
         return ATOMIC_BOOL_FACTORY;
@@ -4142,7 +4142,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link LinkedList}.
      * @return Factory closure that creates new {@link LinkedList} instance every time its {@link
-     *         org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *         org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<LinkedList<T>> newLinkedList() {
@@ -4155,7 +4155,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link Set}.
      * @return Factory closure that creates new {@link Set} instance every time
-     *      its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<Set<T>> newSet() {
@@ -4169,7 +4169,7 @@ public class GridFunc {
      * @param <K> Type of the key for the created {@link Map}.
      * @param <V> Type of the value for the created {@link Map}.
      * @return Factory closure that creates new {@link Map} instance every
-     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<Map<K, V>> newMap() {
@@ -4183,7 +4183,7 @@ public class GridFunc {
      * @param <K> Type of the key for the created {@link ConcurrentMap}.
      * @param <V> Type of the value for the created {@link ConcurrentMap}.
      * @return Factory closure that creates new {@link Map} instance every
-     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<ConcurrentMap<K, V>> newCMap() {
@@ -4195,7 +4195,7 @@ public class GridFunc {
      * Note that this method does not create a new closure but returns a static one.
      *
      * @return Factory closure that creates new {@link GridConcurrentHashSet} instance every
-     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
+     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <E> IgniteCallable<Set<E>> newCSet() {
