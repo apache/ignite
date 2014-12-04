@@ -15,8 +15,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.dataload.*;
 
 /**
- * Demonstrates how cache can be populated with data utilizing {@link GridDataLoader} API.
- * {@link GridDataLoader} is a lot more efficient to use than standard
+ * Demonstrates how cache can be populated with data utilizing {@link org.gridgain.grid.dataload.IgniteDataLoader} API.
+ * {@link org.gridgain.grid.dataload.IgniteDataLoader} is a lot more efficient to use than standard
  * {@code GridCacheProjection.put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>
@@ -52,7 +52,7 @@ public class CacheDataLoaderExample {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
 
-            try (GridDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
+            try (IgniteDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
 

@@ -50,7 +50,7 @@ public class GridContinuousMapperLoadTest2 {
         try {
             int max = 20000;
 
-            GridDataLoader<Integer, TestObject> ldr = g.dataLoader("replicated");
+            IgniteDataLoader<Integer, TestObject> ldr = g.dataLoader("replicated");
 
             for (int i = 0; i < max; i++)
                 ldr.addData(i, new TestObject(i, "Test object: " + i));

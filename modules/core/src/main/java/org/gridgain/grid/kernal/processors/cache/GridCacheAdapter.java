@@ -3313,7 +3313,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.store().isLocalStore()) {
-            try (final GridDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
                 final Collection<Map.Entry<K, V>> col = new ArrayList<>(ldr.perNodeBufferSize());

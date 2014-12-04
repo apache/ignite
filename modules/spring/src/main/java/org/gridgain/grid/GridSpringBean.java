@@ -282,7 +282,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    @Override public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
         assert g != null;
 
         return g.dataLoader(cacheName);

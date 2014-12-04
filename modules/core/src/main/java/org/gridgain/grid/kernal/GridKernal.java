@@ -3004,7 +3004,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    @Override public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
         guard();
 
         try {

@@ -133,7 +133,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (GridDataLoader<Integer, String> ldr = grid(1).dataLoader(null)) {
+            try (IgniteDataLoader<Integer, String> ldr = grid(1).dataLoader(null)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }

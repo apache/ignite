@@ -80,7 +80,7 @@ import java.util.*;
  *  </li>
  * </ul>
  */
-public interface GridDataLoader<K, V> extends AutoCloseable {
+public interface IgniteDataLoader<K, V> extends AutoCloseable {
     /** Default max concurrent put operations count. */
     public static final int DFLT_MAX_PARALLEL_OPS = 16;
 

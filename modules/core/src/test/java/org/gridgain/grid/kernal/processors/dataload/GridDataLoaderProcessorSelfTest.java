@@ -176,7 +176,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             Ignite g2 = startGrid(2);
             Ignite g3 = startGrid(3);
 
-            final GridDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
+            final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
 
             ldr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
                 GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
@@ -224,7 +224,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             else
                 assertEquals(total, s2 + s3);
 
-            final GridDataLoader<Integer, Integer> rmvLdr = g2.dataLoader(null);
+            final IgniteDataLoader<Integer, Integer> rmvLdr = g2.dataLoader(null);
 
             rmvLdr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
                 GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
@@ -283,7 +283,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 new byte[] {1}, new boolean[] {true, false}, new char[] {2, 3}, new short[] {3, 4},
                 new int[] {4, 5}, new long[] {5, 6}, new float[] {6, 7}, new double[] {7, 8});
 
-            GridDataLoader<Object, Object> dataLdr = g1.dataLoader(null);
+            IgniteDataLoader<Object, Object> dataLdr = g1.dataLoader(null);
 
             for (int i = 0, size = arrays.size(); i < 1000; i++) {
                 Object arr = arrays.get(i % size);
@@ -363,7 +363,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             Ignite g1 = grid(1);
 
             // Get and configure loader.
-            final GridDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
+            final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
 
             ldr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
                 GridDataLoadCacheUpdaters.<Integer, Integer>individual());
@@ -468,7 +468,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g1 = startGrid(1);
 
-            GridDataLoader<Object, Object> ldr = g1.dataLoader(null);
+            IgniteDataLoader<Object, Object> ldr = g1.dataLoader(null);
 
             ldr.close(false);
 
@@ -626,7 +626,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final GridCache<Integer, Integer> c = g.cache(null);
 
-            final GridDataLoader<Integer, Integer> ldr = g.dataLoader(null);
+            final IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
             ldr.perNodeBufferSize(10);
 
@@ -678,7 +678,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             GridCache<Integer, Integer> c = g.cache(null);
 
-            GridDataLoader<Integer, Integer> ldr = g.dataLoader(null);
+            IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
             ldr.perNodeBufferSize(10);
 
@@ -725,7 +725,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             assertTrue(c.isEmpty());
 
-            GridDataLoader<Integer, Integer> ldr = g.dataLoader(null);
+            IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
             ldr.perNodeBufferSize(10);
             ldr.autoFlushFrequency(3000);

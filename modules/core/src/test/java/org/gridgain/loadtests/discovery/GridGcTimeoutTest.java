@@ -35,7 +35,7 @@ public class GridGcTimeoutTest {
     public static void main(String[] args) throws GridException {
         Ignite g = G.start(U.resolveGridGainUrl(CFG_PATH));
 
-        GridDataLoader<Long, String> ldr = g.dataLoader(null);
+        IgniteDataLoader<Long, String> ldr = g.dataLoader(null);
 
         ldr.perNodeBufferSize(16 * 1024);
 

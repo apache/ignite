@@ -47,7 +47,7 @@ import java.util.concurrent.*;
  * In addition to {@link org.apache.ignite.cluster.ClusterGroup} functionality, from here you can get the following:
  * <ul>
  * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
- * <li>{@link GridDataLoader} - functionality for loading data large amounts of data into cache.</li>
+ * <li>{@link org.gridgain.grid.dataload.IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link GridDr} - functionality for WAN-based Data Center Replication of in-memory cache.</li>
  * <li>{@link GridGgfs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link GridStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
@@ -251,12 +251,12 @@ public interface Ignite extends AutoCloseable {
     /**
      * Gets a new instance of data loader associated with given cache name. Data loader
      * is responsible for loading external data into in-memory data grid. For more information
-     * refer to {@link GridDataLoader} documentation.
+     * refer to {@link org.gridgain.grid.dataload.IgniteDataLoader} documentation.
      *
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    public <K, V> GridDataLoader<K, V> dataLoader(@Nullable String cacheName);
+    public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
      * Gets an instance of GGFS - GridGain In-Memory File System, if one is not

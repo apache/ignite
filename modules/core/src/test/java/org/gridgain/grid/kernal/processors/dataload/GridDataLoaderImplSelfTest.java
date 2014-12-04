@@ -94,7 +94,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g4 = grid(4);
 
-            GridDataLoader<Object, Object> dataLdr = g4.dataLoader(null);
+            IgniteDataLoader<Object, Object> dataLdr = g4.dataLoader(null);
 
             dataLdr.perNodeBufferSize(32);
 
@@ -142,7 +142,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
             else
                 fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
 
-            GridDataLoader<Integer, String> dataLdr = g0.dataLoader(null);
+            IgniteDataLoader<Integer, String> dataLdr = g0.dataLoader(null);
 
             Map<Integer, String> map = U.newHashMap(KEYS_COUNT);
 
@@ -192,7 +192,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
             else
                 fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
 
-            GridDataLoader<Integer, TestObject> dataLdr = g0.dataLoader(null);
+            IgniteDataLoader<Integer, TestObject> dataLdr = g0.dataLoader(null);
 
             Map<Integer, TestObject> map = U.newHashMap(KEYS_COUNT);
 

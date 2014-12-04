@@ -86,7 +86,7 @@ public class CachePopularNumbersExample {
      * @throws GridException If failed.
      */
     private static void streamData(final Ignite g) throws GridException {
-        try (GridDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
+        try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
 

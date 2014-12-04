@@ -90,7 +90,7 @@ public abstract class GridCacheTxConsistencyRestartAbstractSelfTest extends Grid
     public void testTxConsistency() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        GridDataLoader<Object, Object> ldr = grid(0).dataLoader(null);
+        IgniteDataLoader<Object, Object> ldr = grid(0).dataLoader(null);
 
         for (int i = 0; i < RANGE; i++) {
             ldr.addData(i, 0);

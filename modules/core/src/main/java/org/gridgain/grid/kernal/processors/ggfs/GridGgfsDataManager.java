@@ -292,8 +292,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
      *
      * @return New instance of data loader.
      */
-    private GridDataLoader<GridGgfsBlockKey, byte[]> dataLoader() {
-        GridDataLoader<GridGgfsBlockKey, byte[]> ldr =
+    private IgniteDataLoader<GridGgfsBlockKey, byte[]> dataLoader() {
+        IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr =
             ggfsCtx.kernalContext().<GridGgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
 
         GridGgfsConfiguration cfg = ggfsCtx.configuration();
@@ -635,7 +635,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 ", cleanNonColocated=" + cleanNonColocated + ", startIdx=" + startIdx + ", endIdx=" + endIdx + ']');
 
         try {
-            try (GridDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader()) {
                 for (long idx = startIdx; idx <= endIdx; idx++) {
                     ldr.removeData(new GridGgfsBlockKey(fileInfo.id(), range.affinityKey(), fileInfo.evictExclude(),
                         idx));
@@ -661,7 +661,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         long endIdx = range.endOffset() / fileInfo.blockSize();
 
         try {
-            try (GridDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader()) {
                 long bytesProcessed = 0;
 
                 for (long idx = startIdx; idx <= endIdx; idx++) {
@@ -1697,7 +1697,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         break;
                     }
 
-                    GridDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader();
+                    IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader();
 
                     try {
                         GridGgfsFileMap map = fileInfo.fileMap();

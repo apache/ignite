@@ -27,7 +27,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
 
     /** Data loader. */
     @GridToStringExclude
-    private GridDataLoader dataLdr;
+    private IgniteDataLoader dataLdr;
 
     /**
      * Default constructor for {@link Externalizable} support.
@@ -40,7 +40,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
      * @param ctx Context.
      * @param dataLdr Data loader.
      */
-    GridDataLoaderFuture(GridKernalContext ctx, GridDataLoader dataLdr) {
+    GridDataLoaderFuture(GridKernalContext ctx, IgniteDataLoader dataLdr) {
         super(ctx);
 
         assert dataLdr != null;

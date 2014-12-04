@@ -16,12 +16,12 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Updates cache with batch of entries. Usually it is enough to configure {@link GridDataLoader#isolated(boolean)}
+ * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataLoader#isolated(boolean)}
  * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
  * performance custom user-defined implementation may help.
  * <p>
  * Data loader can be configured to use custom implementation of updater instead of default one using
- * {@link GridDataLoader#updater(GridDataLoadCacheUpdater)} method.
+ * {@link IgniteDataLoader#updater(GridDataLoadCacheUpdater)} method.
  */
 public interface GridDataLoadCacheUpdater<K, V> extends Serializable {
     /**

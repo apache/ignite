@@ -21,7 +21,7 @@ import org.gridgain.grid._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.cache.query._
 import annotation.meta.field
-import org.gridgain.grid.dataload.GridDataLoader
+import org.gridgain.grid.dataload.IgniteDataLoader
 import org.gridgain.grid.kernal.GridProductImpl
 
 /**
@@ -293,7 +293,7 @@ object scalar extends ScalarConversions {
      */
     @inline def dataLoader$[K, V](
         @Nullable cacheName: String,
-        bufSize: Int): GridDataLoader[K, V] = {
+        bufSize: Int): IgniteDataLoader[K, V] = {
         val dl = grid$.dataLoader[K, V](cacheName)
 
         dl.perNodeBufferSize(bufSize)

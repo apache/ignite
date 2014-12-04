@@ -46,7 +46,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 /**
  * Data loader implementation.
  */
-public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
+public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
     /** */
     public static final GridProductVersion COMPACT_MAP_ENTRIES_SINCE = GridProductVersion.fromString("6.5.6");
 
@@ -139,7 +139,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
-    private final DelayQueue<GridDataLoaderImpl<K, V>> flushQ;
+    private final DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ;
 
     /**
      * @param ctx Grid kernal context.
@@ -148,10 +148,10 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * @param compact If {@code true} data is transferred in compact mode (only keys and values).
      *                Otherwise full map entry will be transferred (this is required by DR internal logic).
      */
-    public GridDataLoaderImpl(
+    public IgniteDataLoaderImpl(
         final GridKernalContext ctx,
         @Nullable final String cacheName,
-        DelayQueue<GridDataLoaderImpl<K, V>> flushQ,
+        DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ,
         boolean compact
     ) {
         assert ctx != null;
@@ -161,7 +161,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         this.flushQ = flushQ;
         this.compact = compact;
 
-        log = U.logger(ctx, logRef, GridDataLoaderImpl.class);
+        log = U.logger(ctx, logRef, IgniteDataLoaderImpl.class);
 
         ClusterNode node = F.first(ctx.grid().forCache(cacheName).nodes());
 
@@ -485,7 +485,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                         if (cancelled) {
                             resFut.onDone(new GridException("Data loader has been cancelled: " +
-                                GridDataLoaderImpl.this, e1));
+                                IgniteDataLoaderImpl.this, e1));
                         }
                         else
                             load0(entriesForNode, resFut, activeKeys, remaps + 1);
@@ -692,7 +692,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDataLoaderImpl.class, this);
+        return S.toString(IgniteDataLoaderImpl.class, this);
     }
 
     /** {@inheritDoc} */
@@ -709,7 +709,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
     /** {@inheritDoc} */
     @Override public int compareTo(Delayed o) {
-        return nextFlushTime() > ((GridDataLoaderImpl)o).nextFlushTime() ? 1 : -1;
+        return nextFlushTime() > ((IgniteDataLoaderImpl)o).nextFlushTime() ? 1 : -1;
     }
 
     /**
@@ -802,7 +802,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 submit(entries0, curFut0);
 
                 if (cancelled)
-                    curFut0.onDone(new GridException("Data loader has been cancelled: " + GridDataLoaderImpl.this));
+                    curFut0.onDone(new GridException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this));
             }
 
             return curFut0;
@@ -1088,7 +1088,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          *
          */
         void cancelAll() {
-            GridException err = new GridException("Data loader has been cancelled: " + GridDataLoaderImpl.this);
+            GridException err = new GridException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this);
 
             for (IgniteFuture<?> f : locFuts) {
                 try {
@@ -1159,7 +1159,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                     }
 
                     if (cls0 == null || U.isJdk(cls0))
-                        cls0 = GridDataLoaderImpl.class;
+                        cls0 = IgniteDataLoaderImpl.class;
                 }
 
                 assert cls0 != null : "Failed to detect deploy class [objs=" + objs + ']';

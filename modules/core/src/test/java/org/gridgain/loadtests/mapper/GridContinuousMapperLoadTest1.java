@@ -28,7 +28,7 @@ public class GridContinuousMapperLoadTest1 {
         try (Ignite g = G.start("examples/config/example-cache.xml")) {
             int max = 30000;
 
-            GridDataLoader<Integer, TestObject> ldr = g.dataLoader("replicated");
+            IgniteDataLoader<Integer, TestObject> ldr = g.dataLoader("replicated");
 
             for (int i = 0; i < max; i++)
                 ldr.addData(i, new TestObject(i, "Test object: " + i));
