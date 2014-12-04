@@ -68,7 +68,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
             info("Caught expected exception: " + e);
         }
 
-        ignite.events().recordLocal(new GridEventAdapter(null, "Test message.", usrType) {
+        ignite.events().recordLocal(new IgniteEventAdapter(null, "Test message.", usrType) {
             // No-op.
         });
 
@@ -103,7 +103,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
         Ignite ignite = grid();
 
         try {
-            ignite.events().recordLocal(new GridEventAdapter(null, "Test message.", IgniteEventType.EVT_NODE_FAILED) {
+            ignite.events().recordLocal(new IgniteEventAdapter(null, "Test message.", IgniteEventType.EVT_NODE_FAILED) {
                 // No-op.
             });
 

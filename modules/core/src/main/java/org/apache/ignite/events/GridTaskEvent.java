@@ -55,7 +55,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_TASK_TIMEDOUT
  * @see IgniteEventType#EVTS_TASK_EXECUTION
  */
-public class GridTaskEvent extends GridEventAdapter {
+public class GridTaskEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

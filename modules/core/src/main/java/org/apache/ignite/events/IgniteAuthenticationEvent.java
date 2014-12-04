@@ -45,7 +45,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_AUTHENTICATION_FAILED
  * @see IgniteEventType#EVT_AUTHENTICATION_SUCCEEDED
  */
-public class IgniteAuthenticationEvent extends GridEventAdapter {
+public class IgniteAuthenticationEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

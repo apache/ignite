@@ -42,7 +42,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @see IgniteEventType#EVT_AUTHORIZATION_FAILED
  * @see IgniteEventType#EVT_AUTHORIZATION_SUCCEEDED
  */
-public class IgniteAuthorizationEvent extends GridEventAdapter {
+public class IgniteAuthorizationEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -51,7 +51,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @see IgniteEventType#EVT_TASK_UNDEPLOYED
  * @see IgniteEventType#EVTS_DEPLOYMENT
  */
-public class IgniteDeploymentEvent extends GridEventAdapter {
+public class IgniteDeploymentEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

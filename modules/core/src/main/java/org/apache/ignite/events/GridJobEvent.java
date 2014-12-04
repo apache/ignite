@@ -58,7 +58,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_JOB_TIMEDOUT
  * @see IgniteEventType#EVTS_JOB_EXECUTION
  */
-public class GridJobEvent extends GridEventAdapter {
+public class GridJobEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

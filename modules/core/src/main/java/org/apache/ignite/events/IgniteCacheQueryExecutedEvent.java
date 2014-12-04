@@ -53,7 +53,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_CACHE_QUERY_EXECUTED
  * @see IgniteEventType#EVTS_CACHE_QUERY
  */
-public class IgniteCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
+public class IgniteCacheQueryExecutedEvent<K, V> extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 3738753361235304496L;
 

@@ -49,7 +49,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_LIC_GRACE_EXPIRED
  * @see IgniteEventType#EVT_LIC_VIOLATION
  */
-public class GridLicenseEvent extends GridEventAdapter {
+public class GridLicenseEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

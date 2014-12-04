@@ -49,7 +49,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_SECURE_SESSION_VALIDATION_FAILED
  * @see IgniteEventType#EVT_SECURE_SESSION_VALIDATION_SUCCEEDED
  */
-public class GridSecureSessionEvent extends GridEventAdapter {
+public class GridSecureSessionEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

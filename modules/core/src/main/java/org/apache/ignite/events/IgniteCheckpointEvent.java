@@ -48,7 +48,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @see IgniteEventType#EVT_CHECKPOINT_SAVED
  * @see IgniteEventType#EVTS_CHECKPOINT
  */
-public class IgniteCheckpointEvent extends GridEventAdapter {
+public class IgniteCheckpointEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

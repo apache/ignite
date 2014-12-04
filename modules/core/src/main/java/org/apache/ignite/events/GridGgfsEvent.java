@@ -55,7 +55,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * @see IgniteEventType#EVT_GGFS_FILE_RENAMED
  * @see IgniteEventType#EVT_GGFS_FILE_DELETED
  */
-public class GridGgfsEvent extends GridEventAdapter {
+public class GridGgfsEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -2857,7 +2857,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     /**
      * Test event.
      */
-    private static class TestEvent extends GridEventAdapter {
+    private static class TestEvent extends IgniteEventAdapter {
         /**
          * @param type Event type.
          */

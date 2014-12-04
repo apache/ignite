@@ -41,7 +41,7 @@ import org.jetbrains.annotations.*;
  * @see IgniteEventType#EVT_SWAP_SPACE_CLEARED
  * @see IgniteEventType#EVT_SWAP_SPACE_DATA_EVICTED
  */
-public class GridSwapSpaceEvent extends GridEventAdapter {
+public class GridSwapSpaceEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
