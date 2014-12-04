@@ -17,9 +17,9 @@ import java.util.*;
  * Listener for asynchronous local node grid events. You can subscribe for local node grid
  * event notifications via {@link GridEventStorageManager#addLocalEventListener(GridLocalEventListener, int...)}.
  * <p>
- * Use {@link GridEventStorageManager#addLocalEventListener(org.gridgain.grid.lang.IgnitePredicate, int...)} to register
+ * Use {@link GridEventStorageManager#addLocalEventListener(org.apache.ignite.lang.IgnitePredicate, int...)} to register
  * this listener with grid.
- * @see GridEvents#localListen(org.gridgain.grid.lang.IgnitePredicate, int...)
+ * @see GridEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)
  */
 public interface GridLocalEventListener extends EventListener {
     /**

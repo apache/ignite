@@ -10,7 +10,7 @@
 package org.gridgain.grid.service;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

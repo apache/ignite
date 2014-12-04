@@ -13,7 +13,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -162,7 +161,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * can get deadlocks.
      *
      * @param filter Key-value filter.
-     * @deprecated Deprecated in favor of {@link #remoteFilter(org.gridgain.grid.lang.IgnitePredicate)} method.
+     * @deprecated Deprecated in favor of {@link #remoteFilter(org.apache.ignite.lang.IgnitePredicate)} method.
      */
     @Deprecated
     public void filter(@Nullable IgniteBiPredicate<K, V> filter);

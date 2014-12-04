@@ -12,9 +12,9 @@
 package org.gridgain.visor.commands.top
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.IgnitePredicate
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.typedef._
 

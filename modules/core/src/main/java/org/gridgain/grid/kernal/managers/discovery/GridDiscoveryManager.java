@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.discovery;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.discovery.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
@@ -21,7 +22,6 @@ import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.service.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;

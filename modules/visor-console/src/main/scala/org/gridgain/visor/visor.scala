@@ -13,6 +13,7 @@ package org.gridgain.visor
 
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 
@@ -30,7 +31,6 @@ import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.gridgain.grid.lang.IgnitePredicate
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.lang.{GridFunc => F}

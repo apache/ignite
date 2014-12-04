@@ -12,7 +12,6 @@ package org.gridgain.grid.events;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -24,12 +23,12 @@ import java.util.*;
  * <pre name="code" class="java">
  * GridEvents evts = GridGain.grid().events();
  * </pre> * <p>
- * Local subscription, defined by {@link #localListen(org.gridgain.grid.lang.IgnitePredicate, int...)} method, will add
+ * Local subscription, defined by {@link #localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method, will add
  * a listener for specified events on local node only. This listener will be notified whenever any
  * of subscribed events happen on local node regardless of whether local node belongs to underlying
  * grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.gridgain.grid.lang.IgnitePredicate, int...)}, will add an
+ * Remote subscription, defined by {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)}, will add an
  * event listener for specified events on all nodes in the projection (possibly including local node if
  * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events.
  * If the events pass the remote event filter, the events will be sent to local node for local listener notification.
@@ -140,8 +139,8 @@ public interface GridEvents extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Operation ID that was returned from
-     *      {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.gridgain.grid.lang.IgnitePredicate, int...)} method.
-     * @see #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.gridgain.grid.lang.IgnitePredicate, int...)
+     *      {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)} method.
+     * @see #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)
      * @throws GridException If failed to stop listeners.
      */
     public void stopRemoteListen(UUID opId) throws GridException;

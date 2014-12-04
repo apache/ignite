@@ -38,8 +38,8 @@ public class GridDataLoadCacheUpdaters {
     private static final GridDataLoadCacheUpdater GROUP_LOCKED = new GroupLocked();
 
     /**
-     * Updates cache using independent {@link GridCache#put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} and
-     * {@link GridCache#remove(Object, org.gridgain.grid.lang.IgnitePredicate[])} operations. Thus it is safe from deadlocks but performance
+     * Updates cache using independent {@link GridCache#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} and
+     * {@link GridCache#remove(Object, org.apache.ignite.lang.IgnitePredicate[])} operations. Thus it is safe from deadlocks but performance
      * is not the best.
      *
      * @return Single updater.
@@ -49,8 +49,8 @@ public class GridDataLoadCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link GridCache#putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} and
-     * {@link GridCache#removeAll(Collection, org.gridgain.grid.lang.IgnitePredicate[])}. Can cause deadlocks if the same keys are getting
+     * Updates cache using batched methods {@link GridCache#putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} and
+     * {@link GridCache#removeAll(Collection, org.apache.ignite.lang.IgnitePredicate[])}. Can cause deadlocks if the same keys are getting
      * updated concurrently. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched updater.
@@ -60,8 +60,8 @@ public class GridDataLoadCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link GridCache#putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} and
-     * {@link GridCache#removeAll(Collection, org.gridgain.grid.lang.IgnitePredicate[])}. Keys are sorted in natural order and if all updates
+     * Updates cache using batched methods {@link GridCache#putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} and
+     * {@link GridCache#removeAll(Collection, org.apache.ignite.lang.IgnitePredicate[])}. Keys are sorted in natural order and if all updates
      * use the same rule deadlock can not happen. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched sorted updater.
@@ -71,8 +71,8 @@ public class GridDataLoadCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link GridCache#putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} and
-     * {@link GridCache#removeAll(Collection, org.gridgain.grid.lang.IgnitePredicate[])} in group lock transaction. Requires that there are no
+     * Updates cache using batched methods {@link GridCache#putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} and
+     * {@link GridCache#removeAll(Collection, org.apache.ignite.lang.IgnitePredicate[])} in group lock transaction. Requires that there are no
      * concurrent updates other than in group lock.
      *
      * @return Updater with group lock.

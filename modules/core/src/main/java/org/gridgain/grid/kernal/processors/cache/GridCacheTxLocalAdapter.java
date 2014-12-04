@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
@@ -985,7 +984,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /**
      * Checks if there is a cached or swapped value for
-     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
      *
      * @param keys Key to enlist.
@@ -1232,7 +1231,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /**
      * Loads all missed keys for
-     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
      * @param map Return map.
      * @param missedMap Missed keys.

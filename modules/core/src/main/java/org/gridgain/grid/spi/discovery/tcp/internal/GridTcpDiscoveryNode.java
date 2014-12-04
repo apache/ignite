@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi.discovery.tcp.internal;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

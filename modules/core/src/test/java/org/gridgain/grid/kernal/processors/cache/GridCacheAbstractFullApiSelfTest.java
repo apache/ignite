@@ -17,7 +17,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.swapspace.inmemory.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.eventstorage.memory;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
@@ -42,7 +42,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <ul>
  * <li>Event queue size (see {@link #setExpireCount(long)})</li>
  * <li>Event time-to-live value (see {@link #setExpireAgeMs(long)})</li>
- * <li>{@link #setFilter(org.gridgain.grid.lang.IgnitePredicate)} - Event filter that should be used for decision to accept event.</li>
+ * <li>{@link #setFilter(org.apache.ignite.lang.IgnitePredicate)} - Event filter that should be used for decision to accept event.</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * GridMemoryEventStorageSpi is used by default and should be explicitly configured only

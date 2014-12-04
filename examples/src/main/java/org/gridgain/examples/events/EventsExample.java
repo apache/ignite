@@ -15,7 +15,6 @@ import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 
 import java.util.*;

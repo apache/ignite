@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.IgnitePredicate
+import org.apache.ignite.lang.IgnitePredicate
 
 /**
  * Peer deploy aware adapter for Java's `GridPredicate`.

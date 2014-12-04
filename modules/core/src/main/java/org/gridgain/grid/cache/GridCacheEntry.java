@@ -11,7 +11,6 @@ package org.gridgain.grid.cache;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -222,32 +221,32 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
     public GridFuture<V> getAsync();
 
     /**
-     * This method has the same semantic as {@link #set(Object, org.gridgain.grid.lang.IgnitePredicate[])} method, however it
+     * This method has the same semantic as {@link #set(Object, org.apache.ignite.lang.IgnitePredicate[])} method, however it
      * wraps {@link GridException} into {@link GridRuntimeException} if failed in order to
      * comply with {@link Entry} interface.
      *
-     * @return See {@link #set(Object, org.gridgain.grid.lang.IgnitePredicate[])}
+     * @return See {@link #set(Object, org.apache.ignite.lang.IgnitePredicate[])}
      */
     @Nullable @Override public V setValue(V val);
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param val See {@link GridCacheProjection#put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}
-     * @param filter See {@link GridCacheProjection#put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param val See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
+     * @param filter See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws GridException See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     @Nullable public V set(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#putAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param val See {@link GridCacheProjection#putAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}
-     * @param filter See {@link GridCacheProjection#putAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#putAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param val See {@link GridCacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
+     * @param filter See {@link GridCacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     public GridFuture<V> setAsync(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
@@ -272,23 +271,23 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param val See {@link GridCacheProjection#putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}
-     * @param filter See {@link GridCacheProjection#putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param val See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
+     * @param filter See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws GridException See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     public boolean setx(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#putxAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param val See {@link GridCacheProjection#putxAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}
-     * @param filter See {@link GridCacheProjection#putxAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#putxAsync(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param val See {@link GridCacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
+     * @param filter See {@link GridCacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     public GridFuture<Boolean> setxAsync(V val,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
@@ -394,39 +393,39 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#remove(Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param filter See {@link GridCacheProjection#remove(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#remove(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#remove(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param filter See {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws GridException See {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     @Nullable public V remove(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#removeAsync(Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#removeAsync(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param filter See {@link GridCacheProjection#removeAsync(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#removeAsync(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param filter See {@link GridCacheProjection#removeAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#removeAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     public GridFuture<V> removeAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#removex(Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param filter See {@link GridCacheProjection#removex(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#removex(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#removex(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param filter See {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws GridException See {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#removexAsync(Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link GridCacheProjection#removexAsync(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
-     * @param filter See {@link GridCacheProjection#removexAsync(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
-     * @return See {@link GridCacheProjection#removexAsync(Object, org.gridgain.grid.lang.IgnitePredicate[])}.
+     * @param filter See {@link GridCacheProjection#removexAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @return See {@link GridCacheProjection#removexAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     public GridFuture<Boolean> removexAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 

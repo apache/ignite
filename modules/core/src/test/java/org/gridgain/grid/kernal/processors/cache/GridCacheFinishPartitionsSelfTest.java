@@ -146,7 +146,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     }
 
     /**
-     * Tests method {@link GridCacheMvccManager#finishLocks(org.gridgain.grid.lang.IgnitePredicate, long)}.
+     * Tests method {@link GridCacheMvccManager#finishLocks(org.apache.ignite.lang.IgnitePredicate, long)}.
      *
      * @throws Exception If failed.
      */

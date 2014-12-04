@@ -15,7 +15,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
@@ -230,7 +229,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * operation passed pre-filtering, this filter will be passed through
      * to cache operations as well.
      * <p>
-     * For example, for {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method only
+     * For example, for {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method only
      * elements that pass the filter will be given to {@code GridCache.putAll(m, filter)}
      * where it will be checked once again prior to put.
      *
@@ -583,7 +582,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage,  {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
@@ -622,7 +621,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage,  {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
@@ -650,7 +649,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method, it does not return previous
+     * Unlike {@link #put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning a value. It
      * should be used whenever return value is not required.
      * <p>
@@ -683,7 +682,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method, it does not return previous
+     * Unlike {@link #put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning of a value. It
      * should always be used whenever return value is not required.
      * <p>
@@ -716,7 +715,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} or {@link #put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}
+     * Unlike {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} or {@link #put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
      * methods, this method will not transfer the whole updated value over the network, but instead will
      * transfer the transforming closure that will be applied on each remote node involved in transaction.
      * It may add significant performance gain when dealing with large values as the value is much larger
@@ -763,7 +762,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
+     * Unlike {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
      * that will be applied on each remote node involved in transaction. It may add significant performance
      * gain when dealing with large values as the value is much larger than the closure itself.
@@ -1087,7 +1086,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closures
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
@@ -1113,7 +1112,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
@@ -1164,7 +1163,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closures
      * that will be applied on each remote node involved in transaction. It may add significant performance
      * gain when dealing with large values as the value is much larger than the closure itself.
@@ -1190,7 +1189,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
@@ -1585,7 +1584,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #removex(Object, org.gridgain.grid.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -1618,7 +1617,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #removex(Object, org.gridgain.grid.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>

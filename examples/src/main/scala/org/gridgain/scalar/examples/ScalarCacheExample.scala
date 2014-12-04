@@ -11,13 +11,13 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.scalar.scalar
 import scalar._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.events.{GridEventType, GridEvent}
 import GridEventType._
 import collection.JavaConversions._
-import org.gridgain.grid.lang.IgnitePredicate
 
 /**
  * Demonstrates basic In-Memory Data Grid operations with Scalar.

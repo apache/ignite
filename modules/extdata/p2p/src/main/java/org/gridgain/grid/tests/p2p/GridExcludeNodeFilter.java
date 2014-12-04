@@ -1,7 +1,7 @@
 package org.gridgain.grid.tests.p2p;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;

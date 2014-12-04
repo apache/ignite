@@ -24,19 +24,19 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#remoteQuery(org.gridgain.grid.lang.IgnitePredicate, long, int...)} -
+ *          {@link GridEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#localQuery(org.gridgain.grid.lang.IgnitePredicate, int...)} -
+ *          {@link GridEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} -
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#localListen(org.gridgain.grid.lang.IgnitePredicate, int...)} -
+ *          {@link GridEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link GridEvents#waitForLocal(org.gridgain.grid.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method {@link GridEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in GridGain are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds

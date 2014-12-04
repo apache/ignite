@@ -9,8 +9,8 @@
 
 package org.gridgain.client.balancer;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.client.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;

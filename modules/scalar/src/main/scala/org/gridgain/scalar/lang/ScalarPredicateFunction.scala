@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.{IgnitePredicate}
+import org.apache.ignite.lang.IgnitePredicate
 
 /**
  * Wrapping Scala function for `GridPredicate`.

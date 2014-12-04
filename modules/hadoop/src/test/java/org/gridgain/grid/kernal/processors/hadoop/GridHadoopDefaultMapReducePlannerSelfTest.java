@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
@@ -21,7 +22,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.kernal.processors.interop.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;

@@ -10,13 +10,13 @@
 package org.gridgain.grid.kernal.managers.eventstorage;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
@@ -1096,7 +1096,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
-     * Wraps user listener predicate provided via {@link GridEvents#localListen(org.gridgain.grid.lang.IgnitePredicate, int...)}.
+     * Wraps user listener predicate provided via {@link GridEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)}.
      */
     private class UserListenerWrapper implements GridLocalEventListener {
         /** */

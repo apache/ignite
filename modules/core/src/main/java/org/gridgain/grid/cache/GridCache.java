@@ -152,7 +152,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * may be modified concurrently with iteration over swap.
      * <p>
      * Returned iterator supports {@code remove} operation which delegates to
-     * {@link #removex(Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
      * {@link GridCacheFlag#SKIP_SWAP}.
@@ -170,7 +170,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * the keys and values deserialized on demand, whenever accessed.
      * <p>
      * Returned iterator supports {@code remove} operation which delegates to
-     * {@link #removex(Object, org.gridgain.grid.lang.IgnitePredicate[])} method.
+     * {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
      * @return Iterator over keys.
      * @throws GridException If failed.

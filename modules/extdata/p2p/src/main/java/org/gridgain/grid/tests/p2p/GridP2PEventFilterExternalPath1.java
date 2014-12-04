@@ -10,9 +10,9 @@
 package org.gridgain.grid.tests.p2p;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 
 /**

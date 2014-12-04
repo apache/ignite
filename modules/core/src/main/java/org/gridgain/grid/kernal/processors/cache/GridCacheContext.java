@@ -34,7 +34,6 @@ import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.portables.*;
@@ -930,7 +929,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Same as {@link GridFunc#isAll(Object, org.gridgain.grid.lang.IgnitePredicate[])}, but safely unwraps
+     * Same as {@link GridFunc#isAll(Object, org.apache.ignite.lang.IgnitePredicate[])}, but safely unwraps
      * exceptions.
      *
      * @param e Element.
@@ -945,7 +944,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Same as {@link GridFunc#isAll(Object, org.gridgain.grid.lang.IgnitePredicate[])}, but safely unwraps
+     * Same as {@link GridFunc#isAll(Object, org.apache.ignite.lang.IgnitePredicate[])}, but safely unwraps
      * exceptions.
      *
      * @param e Element.

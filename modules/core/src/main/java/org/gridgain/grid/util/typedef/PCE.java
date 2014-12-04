@@ -9,16 +9,16 @@
 
 package org.gridgain.grid.util.typedef;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;GridCacheEntry&lt;K, V&gt;&gt;</tt> by extending
- * {@link org.gridgain.grid.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
+ * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link org.gridgain.grid.lang.IgnitePredicate} and {@link GridCacheEntry}.
- * @see org.gridgain.grid.lang.IgnitePredicate
+ * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link GridCacheEntry}.
+ * @see org.apache.ignite.lang.IgnitePredicate
  * @see GridFunc
  * @see GridCacheEntry
  */

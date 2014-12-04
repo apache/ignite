@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.eventstorage.memory;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.spi.*;
 

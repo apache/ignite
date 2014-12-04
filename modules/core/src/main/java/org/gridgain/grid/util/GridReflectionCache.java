@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

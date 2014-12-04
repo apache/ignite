@@ -14,9 +14,9 @@ import org.gridgain.grid.util.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate2&lt;K, V&gt;</tt> by extending
- * {@link org.gridgain.grid.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
+ * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link org.gridgain.grid.lang.IgnitePredicate}.
+ * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate}.
  * @see org.apache.ignite.lang.IgniteBiPredicate
  * @see GridFunc
  */

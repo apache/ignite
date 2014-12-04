@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -575,7 +575,7 @@ public class GridCacheConcurrentMap<K, V> {
     }
 
     /**
-     * Same as {@link #wrappers(org.gridgain.grid.lang.IgnitePredicate[])}
+     * Same as {@link #wrappers(org.apache.ignite.lang.IgnitePredicate[])}
      *
      * @param filter Filter.
      * @return Set of the mappings contained in this map.
