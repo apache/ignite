@@ -71,7 +71,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
     @GridComputeTaskSessionFullSupport
     private static class SessionTestTask extends ComputeTaskAdapter<UUID, Serializable> {
         /** */
-        @GridTaskSessionResource private GridComputeTaskSession taskSes;
+        @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
         @GridLoggerResource private GridLogger log;
@@ -111,7 +111,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
     private static class SessionTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** */
         @GridLoggerResource

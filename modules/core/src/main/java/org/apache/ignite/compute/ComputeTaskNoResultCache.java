@@ -23,11 +23,11 @@ import java.util.*;
  * Note that if this annotation is attached to a task class, then job siblings list is not maintained
  * and always has size of {@code 0}. This is done to make sure that in case if task emits large
  * number of jobs, list of jobs siblings does not grow. This only affects the following methods
- * on {@link GridComputeTaskSession}:
+ * on {@link ComputeTaskSession}:
  * <ul>
- * <li>{@link GridComputeTaskSession#getJobSiblings()}</li>
- * <li>{@link GridComputeTaskSession#getJobSibling(org.apache.ignite.lang.IgniteUuid)}</li>
- * <li>{@link GridComputeTaskSession#refreshJobSiblings()}</li>
+ * <li>{@link ComputeTaskSession#getJobSiblings()}</li>
+ * <li>{@link ComputeTaskSession#getJobSibling(org.apache.ignite.lang.IgniteUuid)}</li>
+ * <li>{@link ComputeTaskSession#refreshJobSiblings()}</li>
  * </ul>
  *
  * Use this annotation when job results are too large to hold in memory and can be discarded
@@ -38,6 +38,6 @@ import java.util.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridComputeTaskNoResultCache {
+public @interface ComputeTaskNoResultCache {
     // No-op.
 }

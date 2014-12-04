@@ -117,7 +117,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     private static class SessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean> {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** */
         @GridLoggerResource
@@ -215,7 +215,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     private static class SessionLoadTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** */
         @GridLoggerResource

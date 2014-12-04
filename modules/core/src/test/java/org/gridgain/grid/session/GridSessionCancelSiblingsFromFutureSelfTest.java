@@ -186,7 +186,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
         @GridLoggerResource private GridLogger log;
 
         /** */
-        @GridTaskSessionResource private GridComputeTaskSession taskSes;
+        @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
         private volatile int taskNum = -1;

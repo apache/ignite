@@ -117,7 +117,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         protected ApplicationContext springCtx;
 
         /** */
-        protected GridComputeTaskSession ses;
+        protected ComputeTaskSession ses;
 
         /** */
         protected ComputeJobContext jobCtx;
@@ -222,7 +222,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          */
         @GridTaskSessionResource
         @SuppressWarnings("unused")
-        public void setSession(GridComputeTaskSession ses) {
+        public void setSession(ComputeTaskSession ses) {
             this.ses = ses;
         }
 

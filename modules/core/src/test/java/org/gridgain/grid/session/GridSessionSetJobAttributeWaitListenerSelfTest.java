@@ -116,7 +116,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         @GridLoggerResource private GridLogger log;
 
         /** */
-        @GridTaskSessionResource private GridComputeTaskSession taskSes;
+        @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {

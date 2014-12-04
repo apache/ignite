@@ -34,7 +34,7 @@ public interface ComputeJobResult {
      * Gets data returned by remote job if it didn't fail. This data is the
      * object returned from {@link ComputeJob#execute()} method.
      * <p>
-     * Note that if task is annotated with {@link GridComputeTaskNoResultCache} annotation,
+     * Note that if task is annotated with {@link ComputeTaskNoResultCache} annotation,
      * then job results will not be cached and will be available only in
      * {@link ComputeTask#result(ComputeJobResult, List)} method for every individual job,
      * but not in {@link ComputeTask#reduce(List)} method. This feature was added to

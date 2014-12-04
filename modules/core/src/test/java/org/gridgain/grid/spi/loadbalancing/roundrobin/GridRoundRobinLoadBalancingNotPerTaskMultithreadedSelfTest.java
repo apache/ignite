@@ -66,7 +66,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
+                ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 
                 Map<UUID, AtomicInteger> nodeCnts = new HashMap<>();
 

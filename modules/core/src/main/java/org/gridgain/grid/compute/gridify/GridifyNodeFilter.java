@@ -16,6 +16,6 @@ import org.apache.ignite.lang.*;
 /**
  * Predicate node filter.
  */
-public interface GridifyNodeFilter extends IgniteBiPredicate<ClusterNode, GridComputeTaskSession> {
+public interface GridifyNodeFilter extends IgniteBiPredicate<ClusterNode, ComputeTaskSession> {
     // No-op.
 }

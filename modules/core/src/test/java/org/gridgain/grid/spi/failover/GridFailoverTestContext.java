@@ -23,7 +23,7 @@ public class GridFailoverTestContext implements GridFailoverContext {
     private static final Random RAND = new Random();
 
     /** Grid task session. */
-    private final GridComputeTaskSession taskSes;
+    private final ComputeTaskSession taskSes;
 
     /** Failed job result. */
     private final ComputeJobResult jobRes;
@@ -40,13 +40,13 @@ public class GridFailoverTestContext implements GridFailoverContext {
      * @param taskSes Grid task session.
      * @param jobRes Failed job result.
      */
-    public GridFailoverTestContext(GridComputeTaskSession taskSes, ComputeJobResult jobRes) {
+    public GridFailoverTestContext(ComputeTaskSession taskSes, ComputeJobResult jobRes) {
         this.taskSes = taskSes;
         this.jobRes = jobRes;
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeTaskSession getTaskSession() {
+    @Override public ComputeTaskSession getTaskSession() {
         return taskSes;
     }
 

@@ -224,7 +224,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private ApplicationContext springCtx;
 
         /** */
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         private ComputeLoadBalancer balancer;
@@ -346,7 +346,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * @param ses Task session.
          */
         @GridTaskSessionResource
-        public void setSession(GridComputeTaskSession ses) {
+        public void setSession(ComputeTaskSession ses) {
             this.ses = ses;
         }
 

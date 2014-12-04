@@ -216,7 +216,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         marsh = ctx.config().getMarshaller();
 
-        resCache = dep.annotation(taskCls, GridComputeTaskNoResultCache.class) == null;
+        resCache = dep.annotation(taskCls, ComputeTaskNoResultCache.class) == null;
 
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 

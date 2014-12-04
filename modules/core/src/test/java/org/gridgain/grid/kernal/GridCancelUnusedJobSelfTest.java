@@ -156,7 +156,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /**
          * @param arg Argument.

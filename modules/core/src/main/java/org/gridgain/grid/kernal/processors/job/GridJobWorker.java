@@ -797,7 +797,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /**
      * If the job implements {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware#onMasterNodeLeft} interface then invoke
-     * {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware#onMasterNodeLeft(GridComputeTaskSession)} method.
+     * {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware#onMasterNodeLeft(org.apache.ignite.compute.ComputeTaskSession)} method.
      *
      * @return {@code True} if master leave has been handled (either by this call or before).
      */

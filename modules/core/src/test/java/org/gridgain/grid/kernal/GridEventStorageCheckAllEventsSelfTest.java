@@ -338,7 +338,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     private static class GridAllEventsSuccessTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override public String execute() throws GridException {
@@ -392,7 +392,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     private static class GridAllCheckpointEventsTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override public String execute() throws GridException {

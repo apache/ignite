@@ -226,7 +226,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     public static class SessionChainTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         @GridTaskContinuousMapperResource
@@ -280,7 +280,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     public static class SessionChainTestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         @GridJobContextResource

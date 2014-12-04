@@ -161,7 +161,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** */
         private volatile int taskNum = -1;

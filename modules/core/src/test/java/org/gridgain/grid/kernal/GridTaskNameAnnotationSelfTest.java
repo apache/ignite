@@ -78,7 +78,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
             @Nullable Void arg) throws GridException {
             return F.asMap(new ComputeJobAdapter() {
                 @GridTaskSessionResource
-                private GridComputeTaskSession ses;
+                private ComputeTaskSession ses;
 
                 @Override public Object execute() {
                     return ses.getTaskName();

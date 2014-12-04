@@ -25,7 +25,7 @@ public interface GridFailoverContext {
      *
      * @return Grid task session.
      */
-    public GridComputeTaskSession getTaskSession();
+    public ComputeTaskSession getTaskSession();
 
     /**
      * Gets failed result of job execution.

@@ -93,7 +93,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
 
         /** Task session. */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         @GridLoggerResource

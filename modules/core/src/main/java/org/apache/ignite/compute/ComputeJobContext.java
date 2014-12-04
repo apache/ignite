@@ -20,7 +20,7 @@ import java.util.concurrent.*;
 
 /**
  * Context attached to every job executed on the grid. Note that unlike
- * {@link GridComputeTaskSession}, which distributes all attributes to all jobs
+ * {@link ComputeTaskSession}, which distributes all attributes to all jobs
  * in the task including the task itself, job context attributes belong
  * to a job and do not get sent over network unless a job moves from one
  * node to another.

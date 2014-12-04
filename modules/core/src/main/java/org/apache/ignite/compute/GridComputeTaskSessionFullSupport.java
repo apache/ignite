@@ -19,15 +19,15 @@ import java.util.*;
  * distribute session attributes between jobs.
  * <p>
  * By default attributes and checkpoints are disabled for performance reasons.
- * @see GridComputeTaskSession
- * @see GridComputeTaskSession#setAttribute(Object, Object)
- * @see GridComputeTaskSession#setAttributes(Map)
- * @see GridComputeTaskSession#addAttributeListener(GridComputeTaskSessionAttributeListener, boolean)
- * @see GridComputeTaskSession#saveCheckpoint(String, Object)
- * @see GridComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)
- * @see GridComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long, boolean)
- * @see GridComputeTaskSession#loadCheckpoint(String)
- * @see GridComputeTaskSession#removeCheckpoint(String)
+ * @see ComputeTaskSession
+ * @see ComputeTaskSession#setAttribute(Object, Object)
+ * @see ComputeTaskSession#setAttributes(Map)
+ * @see ComputeTaskSession#addAttributeListener(GridComputeTaskSessionAttributeListener, boolean)
+ * @see ComputeTaskSession#saveCheckpoint(String, Object)
+ * @see ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)
+ * @see ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long, boolean)
+ * @see ComputeTaskSession#loadCheckpoint(String)
+ * @see ComputeTaskSession#removeCheckpoint(String)
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

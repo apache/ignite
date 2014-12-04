@@ -18,7 +18,7 @@ import org.gridgain.grid.*;
  */
 public class GridTestCollisionJobContext implements GridCollisionJobContext {
     /** Task session. */
-    private GridComputeTaskSession ses;
+    private ComputeTaskSession ses;
 
     /** {@code true} if job was activated. */
     private boolean activated;
@@ -41,7 +41,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
     /**
      * @param ses Session.
      */
-    public GridTestCollisionJobContext(GridComputeTaskSession ses) {
+    public GridTestCollisionJobContext(ComputeTaskSession ses) {
         this.ses = ses;
 
         ctx = new GridTestJobContext();
@@ -53,7 +53,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
      * @param ses Session.
      * @param idx Index.
      */
-    public GridTestCollisionJobContext(GridComputeTaskSession ses, int idx) {
+    public GridTestCollisionJobContext(ComputeTaskSession ses, int idx) {
         this.idx = idx;
         this.ses = ses;
 
@@ -67,7 +67,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
      * @param idx Index in wrapping collection.
      * @param onActivate Closure to be called when current task get activated.
      */
-    public GridTestCollisionJobContext(GridComputeTaskSession ses, int idx,
+    public GridTestCollisionJobContext(ComputeTaskSession ses, int idx,
         IgniteInClosure<GridTestCollisionJobContext> onActivate) {
         this(ses, idx);
 
@@ -78,7 +78,7 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
      * @param ses Task session.
      * @param jobId Job ID.
      */
-    public GridTestCollisionJobContext(GridComputeTaskSession ses, IgniteUuid jobId) {
+    public GridTestCollisionJobContext(ComputeTaskSession ses, IgniteUuid jobId) {
         this.ses = ses;
 
         ctx = new GridTestJobContext(jobId);
@@ -87,14 +87,14 @@ public class GridTestCollisionJobContext implements GridCollisionJobContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeTaskSession getTaskSession() {
+    @Override public ComputeTaskSession getTaskSession() {
         return ses;
     }
 
     /**
      * @param ses Session.
      */
-    public void setTaskSession(GridComputeTaskSession ses) {
+    public void setTaskSession(ComputeTaskSession ses) {
         this.ses = ses;
     }
 

@@ -35,7 +35,7 @@ import java.util.*;
  *      will be auto-deployed first time it gets executed.
  * </li>
  * <li>
- *      System will create new distributed task session (see {@link GridComputeTaskSession}).
+ *      System will create new distributed task session (see {@link ComputeTaskSession}).
  * </li>
  * <li>
  *      System will inject all annotated resources (including task session) into grid task instance.
@@ -109,17 +109,17 @@ import java.util.*;
  * use {@link ComputeTaskContinuousMapper} to continuously stream jobs from task even after {@code map(...)}
  * step is complete. Usually with continuous mapper the number of jobs within task
  * may grow too large - in this case it may make sense to use it in combination with
- * {@link GridComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation.
+ * {@link ComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation.
  * <p>
  * <h1 class="header">Task Result Caching</h1>
  * Sometimes job results are too large or task simply has too many jobs to keep track
  * of which may hinder performance. In such cases it may make sense to disable task
- * result caching by attaching {@link GridComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation to task class, and
+ * result caching by attaching {@link ComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation to task class, and
  * processing all results as they come in {@link #result(ComputeJobResult, List)} method.
  * When GridGain sees this annotation it will disable tracking of job results and
  * list of all job results passed into {@link #result(ComputeJobResult, List)} or
  * {@link #reduce(List)} methods will always be empty. Note that list of
- * job siblings on {@link GridComputeTaskSession} will also be empty to prevent number
+ * job siblings on {@link ComputeTaskSession} will also be empty to prevent number
  * of job siblings from growing as well.
  * <p>
  * <h1 class="header">Resource Injection</h1>
@@ -256,7 +256,7 @@ public interface ComputeTask<T, R> extends Serializable {
      *
      * @param res Received remote grid executable result.
      * @param rcvd All previously received results. Note that if task class has
-     *      {@link GridComputeTaskNoResultCache} annotation, then this list will be empty.
+     *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Result policy that dictates how to process further upcoming
      *       job results.
      * @throws GridException If handling a job result caused an error. This exception will
@@ -273,7 +273,7 @@ public interface ComputeTask<T, R> extends Serializable {
      * results will not be in the list.
      *
      * @param results Received results of broadcasted remote executions. Note that if task class has
-     *      {@link GridComputeTaskNoResultCache} annotation, then this list will be empty.
+     *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Grid job result constructed from results of remote executions.
      * @throws GridException If reduction or results caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.

@@ -150,7 +150,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Current session. */
-    private final GridThreadLocal<GridComputeTaskSession> currentSess = new GridThreadLocal<>();
+    private final GridThreadLocal<ComputeTaskSession> currentSess = new GridThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -371,7 +371,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return Siblings.
      * @throws GridException If failed.
      */
-    public Collection<ComputeJobSibling> requestJobSiblings(final GridComputeTaskSession ses) throws GridException {
+    public Collection<ComputeJobSibling> requestJobSiblings(final ComputeTaskSession ses) throws GridException {
         assert ses != null;
 
         final UUID taskNodeId = ses.getTaskNodeId();
@@ -1120,7 +1120,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      * @param ses Session.
      */
-    public void currentTaskSession(GridComputeTaskSession ses) {
+    public void currentTaskSession(ComputeTaskSession ses) {
         currentSess.set(ses);
     }
 
@@ -1144,7 +1144,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (!ctx.security().enabled())
             return null;
 
-        GridComputeTaskSession ses = currentSess.get();
+        ComputeTaskSession ses = currentSess.get();
 
         if (ses == null)
             return null;

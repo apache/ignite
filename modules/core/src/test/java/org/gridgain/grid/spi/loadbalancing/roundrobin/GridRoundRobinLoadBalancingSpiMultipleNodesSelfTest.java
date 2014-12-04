@@ -51,7 +51,7 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
     public void testMultipleNodes() throws Exception {
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
-        GridComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 
         // Initialize.
         getSpi().getBalancedNode(ses, allNodes, new GridTestJob());
@@ -78,8 +78,8 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
      */
     @SuppressWarnings({"ObjectEquality"})
     public void testMultipleTasks() throws Exception {
-        GridComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
-        GridComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());
 
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 

@@ -51,7 +51,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridComputeTaskNoResultCache
+    @ComputeTaskNoResultCache
     private static class GridResultNoCacheTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {

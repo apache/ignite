@@ -89,7 +89,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
 
         /** Session. */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /**
          * Constructor.
@@ -133,7 +133,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     public static class Job extends ComputeJobAdapter {
         /** Session. */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() throws GridException {

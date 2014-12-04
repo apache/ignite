@@ -22,7 +22,7 @@ import java.util.*;
 public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> {
     /** */
     @GridTaskSessionResource
-    private GridComputeTaskSession taskSes;
+    private ComputeTaskSession taskSes;
 
     /** */
     private UUID stealingNodeId;

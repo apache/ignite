@@ -338,7 +338,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param jobCtx Job context.
      * @throws GridException Thrown in case of any errors.
      */
-    public void inject(GridDeployment dep, Class<?> taskCls, ComputeJob job, GridComputeTaskSession ses,
+    public void inject(GridDeployment dep, Class<?> taskCls, ComputeJob job, ComputeTaskSession ses,
         GridJobContextImpl jobCtx) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + job);
@@ -366,7 +366,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param jobCtx Job context.
      * @throws GridException If failed.
      */
-    private void injectToJob(GridDeployment dep, Class<?> taskCls, Object job, GridComputeTaskSession ses,
+    private void injectToJob(GridDeployment dep, Class<?> taskCls, Object job, ComputeTaskSession ses,
         GridJobContextImpl jobCtx) throws GridException {
         Class<? extends Annotation>[] filtered = ioc.filter(dep, job, JOB_INJECTIONS);
 

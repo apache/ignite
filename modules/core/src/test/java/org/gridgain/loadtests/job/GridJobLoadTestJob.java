@@ -51,7 +51,7 @@ public class GridJobLoadTestJob implements ComputeJob {
 
     /** Task session. */
     @GridTaskSessionResource
-    private GridComputeTaskSession taskSes;
+    private ComputeTaskSession taskSes;
 
     /**
      * @param emitAttrs if {@code true} then this work should emit number sequence into session attribute

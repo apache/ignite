@@ -969,7 +969,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     return job.apply(arg);
                 }
 
-                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
                     ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
                 }
             };
@@ -1004,7 +1004,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
                     ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
                 }
             };
@@ -1054,7 +1054,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
                     ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
                 }
             };
@@ -1099,7 +1099,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     return null;
                 }
 
-                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
                     ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
                 }
             };
@@ -1143,7 +1143,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     return null;
                 }
 
-                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
                     ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
                 }
             };

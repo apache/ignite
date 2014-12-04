@@ -129,7 +129,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
         /** Task session. */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -146,7 +146,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     private UUID nodeId;
 
                     @GridTaskSessionResource
-                    private GridComputeTaskSession ses;
+                    private ComputeTaskSession ses;
 
                     @Override public Object execute() throws GridException {
                         X.println("Executing FailoverTestTask job on node " + nodeId);
@@ -185,7 +185,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
         /** Task session. */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -200,7 +200,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     private UUID nodeId;
 
                     @GridTaskSessionResource
-                    private GridComputeTaskSession ses;
+                    private ComputeTaskSession ses;
 
                     @Override public Object execute() throws GridException {
                         X.println("Executing ReduceTestTask job on node " + nodeId);

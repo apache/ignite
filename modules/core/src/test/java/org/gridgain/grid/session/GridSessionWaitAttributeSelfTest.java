@@ -208,7 +208,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         fut.getTaskSession().mapFuture().get();
 
-        GridComputeTaskSession ses = fut.getTaskSession();
+        ComputeTaskSession ses = fut.getTaskSession();
 
         info("Task job siblings [size=" + ses.getJobSiblings().size() + ", siblings=" + ses.getJobSiblings() + ']');
 
@@ -241,7 +241,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param type Type.
      * @throws GridException If failed.
      */
-    private static void checkSessionAttributes(GridComputeTaskSession ses, String prefix, WaitAttributeType type)
+    private static void checkSessionAttributes(ComputeTaskSession ses, String prefix, WaitAttributeType type)
         throws GridException {
         assert ses != null;
         assert type != null;
@@ -414,7 +414,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     /** */
     public static class TestSessionJob extends ComputeJobAdapter {
         /** */
-        @GridTaskSessionResource private GridComputeTaskSession taskSes;
+        @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
         @GridJobContextResource private ComputeJobContext jobCtx;

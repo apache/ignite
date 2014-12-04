@@ -593,7 +593,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -615,7 +615,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -639,7 +639,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -653,7 +653,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /**
          * Constructor.
@@ -706,7 +706,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws GridException {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }

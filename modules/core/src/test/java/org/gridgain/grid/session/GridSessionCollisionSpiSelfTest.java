@@ -68,7 +68,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
                     @GridTaskSessionResource
-                    private GridComputeTaskSession taskSes;
+                    private ComputeTaskSession taskSes;
 
                     /** */
                     @GridJobContextResource

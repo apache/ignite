@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Streamer query task.
  */
-@GridComputeTaskNoResultCache
+@ComputeTaskNoResultCache
 public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
     /** */
     private static final long serialVersionUID = 0L;

@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Defines a mapper that can be used for asynchronous job sending. Useful for
  * streaming jobs within the same task. Note that if job number within a task
- * grows too large, it is best to attach {@link GridComputeTaskNoResultCache} annotation
+ * grows too large, it is best to attach {@link ComputeTaskNoResultCache} annotation
  * to task to make sure that collection of job results and job siblings does
  * not grow indefinitely.
  * <p>

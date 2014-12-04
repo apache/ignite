@@ -267,7 +267,7 @@ public final class GridSingleExecutionTest {
     /** */
     public static class TestSessionTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridTaskSessionResource private GridComputeTaskSession ses;
+        @GridTaskSessionResource private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

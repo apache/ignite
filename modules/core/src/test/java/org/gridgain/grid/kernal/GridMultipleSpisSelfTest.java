@@ -167,7 +167,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top,
+        @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top,
             ComputeJob job) throws GridException {
             if (getName().equals(expName))
                 isTaskLoadBalancingCalled = true;
@@ -222,7 +222,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     @GridComputeTaskSessionFullSupport
     public static final class GridTestMultipleSpisTask extends ComputeTaskAdapter<UUID, Integer> {
         /** */
-        @GridTaskSessionResource private GridComputeTaskSession taskSes;
+        @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
         @GridInstanceResource private Ignite ignite;
@@ -263,7 +263,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         @GridLocalNodeIdResource private UUID locId;
 
         /** */
-        @GridTaskSessionResource private GridComputeTaskSession jobSes;
+        @GridTaskSessionResource private ComputeTaskSession jobSes;
 
         /**
          * @param arg Job argument.

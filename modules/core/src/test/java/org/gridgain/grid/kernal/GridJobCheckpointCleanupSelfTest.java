@@ -124,7 +124,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
                 if (node.id().equals(arg.id()))
                     return Collections.singletonMap(new ComputeJobAdapter() {
                         @GridTaskSessionResource
-                        private GridComputeTaskSession ses;
+                        private ComputeTaskSession ses;
 
                         @Nullable @Override public Object execute() throws GridException {
                             ses.saveCheckpoint("checkpoint-key", "checkpoint-value");

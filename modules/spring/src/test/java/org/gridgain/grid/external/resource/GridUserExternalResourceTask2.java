@@ -43,7 +43,7 @@ public class GridUserExternalResourceTask2 extends GridComputeTaskSplitAdapter<O
     @GridLoggerResource private GridLogger log;
 
     /** */
-    @GridTaskSessionResource private GridComputeTaskSession ses;
+    @GridTaskSessionResource private ComputeTaskSession ses;
 
     /** {@inheritDoc} */
     @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

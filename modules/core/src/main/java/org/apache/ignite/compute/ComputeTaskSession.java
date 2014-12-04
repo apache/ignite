@@ -94,7 +94,7 @@ import java.util.*;
  * <a href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/session" target="github">HelloWorld Distributed Task Session Example</a>
  * on GitHub.
  */
-public interface GridComputeTaskSession {
+public interface ComputeTaskSession {
     /**
      * Gets task name of the task this session belongs to.
      *

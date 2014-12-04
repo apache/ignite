@@ -23,7 +23,7 @@ import java.util.*;
 public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean> {
     /** */
     @GridTaskSessionResource
-    private GridComputeTaskSession taskSes;
+    private ComputeTaskSession taskSes;
 
     /** */
     @GridLoggerResource

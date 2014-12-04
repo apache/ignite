@@ -25,7 +25,7 @@ public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends GridGgfsTask<T, 
      * Default implementation which will ignore all results sent from execution nodes.
      *
      * @param results Received results of broadcasted remote executions. Note that if task class has
-     *      {@link GridComputeTaskNoResultCache} annotation, then this list will be empty.
+     *      {@link org.apache.ignite.compute.ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Will always return {@code null}.
      */
     @Override public R reduce(List<ComputeJobResult> results) {

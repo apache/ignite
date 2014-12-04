@@ -104,7 +104,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         @GridJobContextResource
@@ -138,7 +138,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
                     /** */
                     @GridTaskSessionResource
-                    private GridComputeTaskSession ses;
+                    private ComputeTaskSession ses;
 
                     /** */
                     @GridJobContextResource

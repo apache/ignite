@@ -126,7 +126,7 @@ public class EventsExample {
             g.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new IgniteRunnable() {
                 // Auto-inject task session.
                 @GridTaskSessionResource
-                private GridComputeTaskSession ses;
+                private ComputeTaskSession ses;
 
                 @Override public void run() {
                     System.out.println("Executing sample job for task: " + ses.getTaskName());

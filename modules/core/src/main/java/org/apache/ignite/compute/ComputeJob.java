@@ -52,7 +52,7 @@ import java.util.*;
  *      </ul>
  * </li>
  * <li>
- *      For activated jobs, an instance of distributed task session (see {@link GridComputeTaskSession})
+ *      For activated jobs, an instance of distributed task session (see {@link ComputeTaskSession})
  *      will be injected.
  * </li>
  * <li>
@@ -108,7 +108,7 @@ import java.util.*;
  * <p>
  * <h1 class="header">Distributed Session Attributes</h1>
  * Jobs can communicate with parent task and with other job siblings from the same
- * task by setting session attributes (see {@link GridComputeTaskSession}). Other jobs
+ * task by setting session attributes (see {@link ComputeTaskSession}). Other jobs
  * can wait for an attribute to be set either synchronously or asynchronously.
  * Such functionality allows jobs to synchronize their execution with other jobs
  * at any point and can be useful when other jobs within task need to be made aware
@@ -117,15 +117,15 @@ import java.util.*;
  * Distributed task session can be injected into {@link ComputeJob} implementation
  * using {@link GridTaskSessionResource @GridTaskSessionResource} annotation.
  * Both, field and method based injections are supported. Refer to
- * {@link GridComputeTaskSession} documentation for more information on session functionality.
+ * {@link ComputeTaskSession} documentation for more information on session functionality.
  * <p>
  * <h1 class="header">Saving Checkpoints</h1>
  * Long running jobs may wish to save intermediate checkpoints to protect themselves
  * from failures. There are three checkpoint management methods:
  * <ul>
- * <li>{@link GridComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}</li>
- * <li>{@link GridComputeTaskSession#loadCheckpoint(String)}</li>
- * <li>{@link GridComputeTaskSession#removeCheckpoint(String)}</li>
+ * <li>{@link ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}</li>
+ * <li>{@link ComputeTaskSession#loadCheckpoint(String)}</li>
+ * <li>{@link ComputeTaskSession#removeCheckpoint(String)}</li>
  * </ul>
  * Jobs that utilize checkpoint functionality should attempt to load a check
  * point at the beginning of execution. If a {@code non-null} value is returned,

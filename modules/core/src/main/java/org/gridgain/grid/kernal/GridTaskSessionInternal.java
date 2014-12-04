@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Internal task session interface.
  */
-public interface GridTaskSessionInternal extends GridComputeTaskSession {
+public interface GridTaskSessionInternal extends ComputeTaskSession {
     /**
      * @return Checkpoint SPI name.
      */

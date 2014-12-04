@@ -64,7 +64,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         private volatile int jobCnt;
@@ -103,7 +103,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     private static class TestJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         @GridLoggerResource

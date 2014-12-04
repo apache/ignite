@@ -62,7 +62,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
     public void testWithName() throws Exception {
         Callable<String> f = new IgniteCallable<String>() {
             @GridTaskSessionResource
-            private GridComputeTaskSession ses;
+            private ComputeTaskSession ses;
 
             @Override public String call() {
                 return ses.getTaskName();
@@ -150,7 +150,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
             return F.asSet(new ComputeJobAdapter() {
                 @GridTaskSessionResource
-                private GridComputeTaskSession ses;
+                private ComputeTaskSession ses;
 
                 @Override public Object execute() throws GridException {
                     CNT.incrementAndGet();

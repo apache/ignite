@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Test collision task session.
  */
-public class GridTestCollisionTaskSession implements GridComputeTaskSession {
+public class GridTestCollisionTaskSession implements ComputeTaskSession {
     /** */
     private Integer pri = 0;
 

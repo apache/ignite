@@ -298,7 +298,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(GridComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) {
+    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) {
         A.notNull(ses, "ses");
         A.notNull(top, "top");
         A.notNull(job, "job");

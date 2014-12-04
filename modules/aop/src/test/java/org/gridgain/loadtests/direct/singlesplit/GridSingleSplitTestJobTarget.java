@@ -26,7 +26,7 @@ public class GridSingleSplitTestJobTarget {
      */
     @SuppressWarnings("unused")
     @Gridify(taskClass = GridifyLoadTestTask.class, timeout = 10000)
-    public int executeLoadTestJob(int level, GridComputeTaskSession jobSes) throws GridException {
+    public int executeLoadTestJob(int level, ComputeTaskSession jobSes) throws GridException {
         assert level > 0;
         assert jobSes != null;
 

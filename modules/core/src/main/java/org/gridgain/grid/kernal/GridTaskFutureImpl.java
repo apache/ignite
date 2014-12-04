@@ -28,7 +28,7 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridComputeTaskSession ses;
+    private ComputeTaskSession ses;
 
     /** */
     private GridKernalContext ctx;
@@ -44,7 +44,7 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
      * @param ses Task session instance.
      * @param ctx Kernal context.
      */
-    public GridTaskFutureImpl(GridComputeTaskSession ses, GridKernalContext ctx) {
+    public GridTaskFutureImpl(ComputeTaskSession ses, GridKernalContext ctx) {
         super(ctx);
 
         assert ses != null;
@@ -59,7 +59,7 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
      *
      * @return Task timeout.
      */
-    @Override public GridComputeTaskSession getTaskSession() {
+    @Override public ComputeTaskSession getTaskSession() {
         if (ses == null)
             throw new IllegalStateException("Cannot access task session after future has been deserialized.");
 

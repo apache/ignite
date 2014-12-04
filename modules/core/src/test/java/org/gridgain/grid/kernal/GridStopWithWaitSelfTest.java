@@ -161,7 +161,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** */
         @GridLocalNodeIdResource

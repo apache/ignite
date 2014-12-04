@@ -73,7 +73,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {

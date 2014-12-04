@@ -292,7 +292,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @SuppressWarnings({"TooBroadScope"})
@@ -409,7 +409,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override public String execute() throws GridException {
@@ -513,7 +513,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private static class GridMultiNodeTestCheckpointConsumerJob extends ComputeJobAdapter {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override public String execute() throws GridException {
@@ -639,7 +639,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private static class GridMultiNodeGlobalConsumerTask extends GridComputeTaskSplitAdapter<Object, Integer> {
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

@@ -57,7 +57,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     public void testMultipleNodes() throws Exception {
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
-        GridComputeTaskSession ses = new GridTestTaskSession();
+        ComputeTaskSession ses = new GridTestTaskSession();
 
         List<UUID> orderedNodes = new ArrayList<>(getSpi().getNodeIds(ses));
 
@@ -70,8 +70,8 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
      * @throws Exception If test failed.
      */
     public void testMultipleTaskSessions() throws Exception {
-        GridComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
-        GridComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());
 
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
@@ -91,7 +91,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
      * @throws Exception If test failed.
      */
     public void testBalancingOneNode() throws Exception {
-        GridComputeTaskSession ses = new GridTestTaskSession();
+        ComputeTaskSession ses = new GridTestTaskSession();
 
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
@@ -105,7 +105,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
 
     /** */
     public void testNodeNotInTopology() {
-        GridComputeTaskSession ses = new GridTestTaskSession();
+        ComputeTaskSession ses = new GridTestTaskSession();
 
         ClusterNode node = new GridTestNode(UUID.randomUUID());
 

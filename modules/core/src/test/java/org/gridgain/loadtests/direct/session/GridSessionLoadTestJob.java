@@ -21,7 +21,7 @@ import java.io.*;
  */
 public class GridSessionLoadTestJob extends ComputeJobAdapter {
     /** */
-    @GridTaskSessionResource private GridComputeTaskSession taskSes;
+    @GridTaskSessionResource private ComputeTaskSession taskSes;
 
     /** */
     @GridLoggerResource private GridLogger log;

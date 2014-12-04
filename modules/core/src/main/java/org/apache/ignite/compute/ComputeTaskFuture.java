@@ -48,5 +48,5 @@ public interface ComputeTaskFuture<R> extends IgniteFuture<R> {
      *
      * @return Task session.
      */
-    public GridComputeTaskSession getTaskSession();
+    public ComputeTaskSession getTaskSession();
 }

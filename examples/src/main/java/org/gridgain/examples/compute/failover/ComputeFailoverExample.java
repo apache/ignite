@@ -58,7 +58,7 @@ public class ComputeFailoverExample {
     private static final class CheckPointJob implements IgniteClosure<String, Integer> {
         /** Injected distributed task session. */
         @GridTaskSessionResource
-        private GridComputeTaskSession jobSes;
+        private ComputeTaskSession jobSes;
 
         /** Injected grid logger. */
         @GridLoggerResource

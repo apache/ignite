@@ -52,7 +52,7 @@ public class GridFailoverContextImpl implements GridFailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeTaskSession getTaskSession() {
+    @Override public ComputeTaskSession getTaskSession() {
         return taskSes;
     }
 

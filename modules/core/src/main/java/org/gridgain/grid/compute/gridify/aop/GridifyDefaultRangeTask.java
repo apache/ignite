@@ -46,7 +46,7 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
 
     /** Grid task session. */
     @GridTaskSessionResource
-    private GridComputeTaskSession ses;
+    private ComputeTaskSession ses;
 
     /** Grid logger. */
     @GridLoggerResource

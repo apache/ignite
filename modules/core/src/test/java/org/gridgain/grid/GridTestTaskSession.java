@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Test task session.
  */
-public class GridTestTaskSession implements GridComputeTaskSession {
+public class GridTestTaskSession implements ComputeTaskSession {
     /** */
     private String taskName;
 

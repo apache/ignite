@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 /**
  * Defines life-time scopes for checkpoint operations. Such operations include:
  * <ul>
- *      <li>{@link GridComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}</li>
+ *      <li>{@link ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}</li>
  * </ul>
  */
 public enum GridComputeTaskSessionScope {
@@ -31,7 +31,7 @@ public enum GridComputeTaskSessionScope {
     /**
      * Data saved with this scope will only be removed automatically
      * if they time out and time out is supported. Currently, only checkpoints support timeouts.
-     * Any data, however, can always be removed programmatically via methods on {@link GridComputeTaskSession}
+     * Any data, however, can always be removed programmatically via methods on {@link ComputeTaskSession}
      * interface.
      */
     GLOBAL_SCOPE;

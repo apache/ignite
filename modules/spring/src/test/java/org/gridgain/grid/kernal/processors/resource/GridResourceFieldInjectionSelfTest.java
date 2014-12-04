@@ -450,7 +450,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession ses;
+        private ComputeTaskSession ses;
 
         /** Job context is job resource, not task resource. */
         @GridJobContextResource

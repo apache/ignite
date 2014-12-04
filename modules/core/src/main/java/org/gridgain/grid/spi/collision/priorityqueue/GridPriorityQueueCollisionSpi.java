@@ -37,7 +37,7 @@ import java.util.*;
  * <li>
  *      Priority attribute session key (see {@link #getPriorityAttributeKey()}). Prior to
  *      returning from {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method, task implementation should
- *      set a value into the task session keyed by this attribute key. See {@link GridComputeTaskSession}
+ *      set a value into the task session keyed by this attribute key. See {@link org.apache.ignite.compute.ComputeTaskSession}
  *      for more information about task session.
  * </li>
  * <li>
@@ -272,7 +272,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
 
     /**
      * Sets task priority attribute key. This key will be used to look up task
-     * priorities from task context (see {@link GridComputeTaskSession#getAttribute(Object)}).
+     * priorities from task context (see {@link org.apache.ignite.compute.ComputeTaskSession#getAttribute(Object)}).
      * <p>
      * If not provided, default value is {@code {@link #DFLT_PRIORITY_ATTRIBUTE_KEY}}.
      *
@@ -511,7 +511,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
         }
 
         if (p == null) {
-            GridComputeTaskSession ses = ctx.getTaskSession();
+            ComputeTaskSession ses = ctx.getTaskSession();
 
             try {
                 p = (Integer)ses.getAttribute(taskPriAttrKey);

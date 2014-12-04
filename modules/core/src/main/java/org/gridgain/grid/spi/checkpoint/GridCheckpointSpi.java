@@ -30,11 +30,11 @@ import org.jetbrains.annotations.*;
  * To manipulate checkpoints from grid job the following public methods are available
  * on task session (that can be injected into grid job):
  * <ul>
- * <li>{@link org.apache.ignite.compute.GridComputeTaskSession#loadCheckpoint(String)}</li>
- * <li>{@link org.apache.ignite.compute.GridComputeTaskSession#removeCheckpoint(String)}</li>
- * <li>{@link org.apache.ignite.compute.GridComputeTaskSession#saveCheckpoint(String, Object)}</li>
- * <li>{@link org.apache.ignite.compute.GridComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.GridComputeTaskSessionScope, long)}</li>
- * <li>{@link org.apache.ignite.compute.GridComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.GridComputeTaskSessionScope, long, boolean)}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTaskSession#loadCheckpoint(String)}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTaskSession#removeCheckpoint(String)}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object)}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.GridComputeTaskSessionScope, long)}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.GridComputeTaskSessionScope, long, boolean)}</li>
  * </ul>
  * <p>
  * GridGain provides the following {@code GridCheckpointSpi} implementations:

@@ -21,7 +21,7 @@ public interface GridCollisionJobContext {
      *
      * @return Grid task session.
      */
-    public GridComputeTaskSession getTaskSession();
+    public ComputeTaskSession getTaskSession();
 
     /**
      * Gets job context. Use this context to set/get attributes that

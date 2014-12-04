@@ -46,7 +46,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
      * @throws Exception If failed.
      */
     public void testTopologyChange() throws Exception {
-        GridComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 
         // Warm up.
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();

@@ -23,7 +23,7 @@ import java.util.*;
 public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer, Integer> {
     /** */
     @GridTaskSessionResource
-    private GridComputeTaskSession taskSes;
+    private ComputeTaskSession taskSes;
 
     /** */
     @GridLoadBalancerResource
@@ -44,7 +44,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
             ComputeJobAdapter job = new ComputeJobAdapter(1) {
                 /** */
                 @GridTaskSessionResource
-                private GridComputeTaskSession jobSes;
+                private ComputeTaskSession jobSes;
 
                 /** {@inheritDoc} */
                 @Override public Serializable execute() throws GridException {

@@ -12,7 +12,7 @@ package org.gridgain.grid.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.GridComputeTaskSession} resource.
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeTaskSession} resource.
  * Task session can be injected into instances of following classes:
  * <p>
  * Distributed Task Session can be injected into instances of following classes:

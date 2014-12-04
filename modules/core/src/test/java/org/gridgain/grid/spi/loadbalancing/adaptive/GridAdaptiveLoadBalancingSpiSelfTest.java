@@ -59,7 +59,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
 
         List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
 
-        GridComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 
         GridTestNode pick1 = (GridTestNode)getSpi().getBalancedNode(ses, nodes, new GridTestJob());
 
@@ -84,7 +84,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Gr
 
         List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
 
-        GridComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
+        ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 
         GridTestNode pick1 = (GridTestNode)getSpi().getBalancedNode(ses, nodes, new GridTestJob());
 

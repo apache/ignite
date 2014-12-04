@@ -128,7 +128,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
         /** */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {

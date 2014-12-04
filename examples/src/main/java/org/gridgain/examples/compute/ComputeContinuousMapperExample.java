@@ -62,12 +62,12 @@ public class ComputeContinuousMapperExample {
      * is split into multiple words and next word is sent out for processing only
      * when the result for the previous word was received.
      * <p>
-     * Note that annotation {@link GridComputeTaskNoResultCache} is optional and tells GridGain
+     * Note that annotation {@link org.apache.ignite.compute.ComputeTaskNoResultCache} is optional and tells GridGain
      * not to accumulate results from individual jobs. In this example we increment
      * total character count directly in {@link #result(org.apache.ignite.compute.ComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.
      */
-    @GridComputeTaskNoResultCache
+    @ComputeTaskNoResultCache
     private static class GridContinuousMapperTask extends ComputeTaskAdapter<String, Integer> {
         /** This field will be injected with task continuous mapper. */
         @GridTaskContinuousMapperResource

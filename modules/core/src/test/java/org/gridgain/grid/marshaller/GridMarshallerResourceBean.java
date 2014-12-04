@@ -43,7 +43,7 @@ class GridMarshallerResourceBean implements Serializable {
     private MBeanServer mbeanSrv;
 
     /** Session. */
-    private GridComputeTaskSession ses;
+    private ComputeTaskSession ses;
 
     /** Executor service. */
     private ExecutorService execSvc;
