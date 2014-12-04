@@ -35,6 +35,12 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /** Last update time. */
     private volatile long writeTime = createTime;
 
+    /** Last commit time. */
+    private volatile long commitTime = createTime;
+
+    /** Last rollback time. */
+    private volatile long rollbackTime = createTime;
+
     /** Number of reads. */
     private volatile int reads;
 
@@ -46,6 +52,12 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
     /** Number of misses. */
     private volatile int misses;
+
+    /** Number of transaction commits. */
+    private volatile int txCommits;
+
+    /** Number of transaction rollbacks. */
+    private volatile int txRollbacks;
 
     /** DR send data node metrics. */
     private GridDrSenderCacheMetricsAdapter drSndMetrics;
@@ -85,10 +97,14 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         createTime = m.createTime();
         readTime = m.readTime();
         writeTime = m.writeTime();
+        commitTime = m.commitTime();
+        rollbackTime = m.rollbackTime();
         reads = m.reads();
         writes = m.writes();
         hits = m.hits();
         misses = m.misses();
+        txCommits = m.txCommits();
+        txRollbacks = m.txRollbacks();
         drSndMetrics = ((GridCacheMetricsAdapter)m).drSndMetrics;
         drRcvMetrics = ((GridCacheMetricsAdapter)m).drRcvMetrics;
     }
@@ -116,6 +132,16 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /** {@inheritDoc} */
+    @Override public long commitTime() {
+        return commitTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rollbackTime() {
+        return rollbackTime;
+    }
+
+    /** {@inheritDoc} */
     @Override public int reads() {
         return reads;
     }
@@ -133,6 +159,16 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /** {@inheritDoc} */
     @Override public int misses() {
         return misses;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int txCommits() {
+        return txCommits;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int txRollbacks() {
+        return txRollbacks;
     }
 
     /** {@inheritDoc} */
@@ -193,6 +229,30 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
         if (delegate != null)
             delegate.onWrite();
+    }
+
+    /**
+     * Transaction commit callback.
+     */
+    public void onTxCommit() {
+        commitTime = U.currentTimeMillis();
+
+        txCommits++;
+
+        if (delegate != null)
+            delegate.onTxCommit();
+    }
+
+    /**
+     * Transaction rollback callback.
+     */
+    public void onTxRollback() {
+        rollbackTime = U.currentTimeMillis();
+
+        txRollbacks++;
+
+        if (delegate != null)
+            delegate.onTxRollback();
     }
 
     /**
@@ -299,11 +359,15 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         out.writeLong(createTime);
         out.writeLong(readTime);
         out.writeLong(writeTime);
+        out.writeLong(commitTime);
+        out.writeLong(rollbackTime);
 
         out.writeInt(reads);
         out.writeInt(writes);
         out.writeInt(hits);
         out.writeInt(misses);
+        out.writeInt(txCommits);
+        out.writeInt(txRollbacks);
 
         out.writeObject(drSndMetrics);
         out.writeObject(drRcvMetrics);
@@ -314,11 +378,15 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         createTime = in.readLong();
         readTime = in.readLong();
         writeTime = in.readLong();
+        commitTime = in.readLong();
+        rollbackTime = in.readLong();
 
         reads = in.readInt();
         writes = in.readInt();
         hits = in.readInt();
         misses = in.readInt();
+        txCommits = in.readInt();
+        txRollbacks = in.readInt();
 
         drSndMetrics = (GridDrSenderCacheMetricsAdapter)in.readObject();
         drRcvMetrics = (GridDrReceiverCacheMetricsAdapter)in.readObject();

@@ -168,7 +168,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Deployment enabled flag.
      */
     public boolean deploymentEnabled() {
-        return gridConfig().isPeerClassLoadingEnabled();
+        return kernalContext().deploy().enabled();
     }
 
     /**
