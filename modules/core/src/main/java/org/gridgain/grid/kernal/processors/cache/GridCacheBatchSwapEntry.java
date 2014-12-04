@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.internal.*;

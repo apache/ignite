@@ -1080,7 +1080,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Gets 8-character substring of {@link org.gridgain.grid.IgniteUuid} (for terse logging).
+     * Gets 8-character substring of {@link org.apache.ignite.lang.IgniteUuid} (for terse logging).
      * The ID8 will be constructed as follows:
      * <ul>
      * <li>Take first 4 digits for global ID, i.e. {@code GridUuid.globalId()}.</li>
@@ -4241,7 +4241,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Writes {@link org.gridgain.grid.IgniteUuid} to output stream. This method is meant to be used by
+     * Writes {@link org.apache.ignite.lang.IgniteUuid} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param out Output stream.
@@ -4261,7 +4261,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Reads {@link org.gridgain.grid.IgniteUuid} from input stream. This method is meant to be used by
+     * Reads {@link org.apache.ignite.lang.IgniteUuid} from input stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param in Input stream.

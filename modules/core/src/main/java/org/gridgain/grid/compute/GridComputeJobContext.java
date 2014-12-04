@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.compute;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.failover.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.direct;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.clock.*;
@@ -800,7 +800,7 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @param uuid {@link org.gridgain.grid.IgniteUuid}.
+     * @param uuid {@link org.apache.ignite.lang.IgniteUuid}.
      * @return Whether value was fully written.
      */
     public final boolean putGridUuid(@Nullable IgniteUuid uuid) {
@@ -818,7 +818,7 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @return {@link org.gridgain.grid.IgniteUuid} or special
+     * @return {@link org.apache.ignite.lang.IgniteUuid} or special
      *      {@link GridTcpCommunicationMessageAdapter#GRID_UUID_NOT_READ}
      *      value if it was not fully read.
      */

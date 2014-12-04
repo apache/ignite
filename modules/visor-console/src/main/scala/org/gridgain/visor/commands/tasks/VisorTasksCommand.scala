@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.tasks
 
+import org.apache.ignite.lang.IgniteUuid
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.kernal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}

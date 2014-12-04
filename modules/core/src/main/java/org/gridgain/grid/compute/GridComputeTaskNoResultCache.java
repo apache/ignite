@@ -26,7 +26,7 @@ import java.util.*;
  * on {@link GridComputeTaskSession}:
  * <ul>
  * <li>{@link GridComputeTaskSession#getJobSiblings()}</li>
- * <li>{@link GridComputeTaskSession#getJobSibling(org.gridgain.grid.IgniteUuid)}</li>
+ * <li>{@link GridComputeTaskSession#getJobSibling(org.apache.ignite.lang.IgniteUuid)}</li>
  * <li>{@link GridComputeTaskSession#refreshJobSiblings()}</li>
  * </ul>
  *

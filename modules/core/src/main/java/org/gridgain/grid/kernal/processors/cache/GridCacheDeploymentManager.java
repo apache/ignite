@@ -133,7 +133,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * Gets distributed class loader. Note that
-     * {@link #p2pContext(UUID, org.gridgain.grid.IgniteUuid, String, GridDeploymentMode, Map, boolean)} must be
+     * {@link #p2pContext(UUID, org.apache.ignite.lang.IgniteUuid, String, GridDeploymentMode, Map, boolean)} must be
      * called from the same thread prior to using this class loader, or the
      * loading may happen for the wrong node or context.
      *

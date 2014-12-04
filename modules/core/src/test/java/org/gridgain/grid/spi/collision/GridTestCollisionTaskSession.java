@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.collision;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 

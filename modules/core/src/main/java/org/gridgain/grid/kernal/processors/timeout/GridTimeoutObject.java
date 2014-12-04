@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.timeout;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 
 /**
  * All objects that can timeout should implement this interface.

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;

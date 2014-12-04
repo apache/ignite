@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -17,7 +17,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Tests for {@link org.gridgain.grid.IgniteUuid}.
+ * Tests for {@link org.apache.ignite.lang.IgniteUuid}.
  */
 @GridCommonTest(group = "Lang")
 public class IgniteUuidSelfTest extends GridCommonAbstractTest {
