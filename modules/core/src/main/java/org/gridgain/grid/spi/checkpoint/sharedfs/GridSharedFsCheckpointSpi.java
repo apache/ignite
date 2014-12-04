@@ -116,7 +116,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
 
     /** Grid marshaller. */
     @IgniteMarshallerResource
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /** List of checkpoint directories where all files are stored. */
     private Queue<String> dirPaths = new LinkedList<>();

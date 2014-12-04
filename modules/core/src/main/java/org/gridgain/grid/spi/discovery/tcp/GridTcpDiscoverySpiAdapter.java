@@ -128,7 +128,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    protected final GridMarshaller marsh = new IgniteJdkMarshaller();
+    protected final IgniteMarshaller marsh = new IgniteJdkMarshaller();
 
     /** Statistics. */
     protected final GridTcpDiscoveryStatistics stats = new GridTcpDiscoveryStatistics();

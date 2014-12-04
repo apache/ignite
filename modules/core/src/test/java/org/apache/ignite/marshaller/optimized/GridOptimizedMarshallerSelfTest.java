@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Marshaller")
 public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridMarshaller createMarshaller() {
+    @Override protected IgniteMarshaller createMarshaller() {
         IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();
 
         m.setRequireSerializable(false);

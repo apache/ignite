@@ -43,7 +43,7 @@ import static org.gridgain.grid.spi.indexing.GridIndexType.*;
  */
 public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /** */
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /** Type descriptors. */
     private final ConcurrentMap<TypeId, TypeDescriptor> types = new ConcurrentHashMap8<>();

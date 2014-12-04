@@ -617,7 +617,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         /** Marshaller. */
         @IgniteMarshallerResource
-        private GridMarshaller marshaller;
+        private IgniteMarshaller marshaller;
 
         /** Executor. */
         @IgniteExecutorServiceResource

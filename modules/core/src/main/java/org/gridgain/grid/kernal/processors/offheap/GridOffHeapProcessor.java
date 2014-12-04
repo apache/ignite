@@ -31,7 +31,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         new ConcurrentHashMap8<>();
 
     /** */
-    private final GridMarshaller marsh;
+    private final IgniteMarshaller marsh;
 
     /**
      * @param ctx Kernal context.

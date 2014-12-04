@@ -44,7 +44,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     private static final long serialVersionUID = 0L;
 
     /** Marshaller. */
-    private static final GridMarshaller MARSHALLER = new IgniteJdkMarshaller();
+    private static final IgniteMarshaller MARSHALLER = new IgniteJdkMarshaller();
 
     /** How long to store future (10 minutes). */
     private static final int RMV_DELAY = 10 * 60;

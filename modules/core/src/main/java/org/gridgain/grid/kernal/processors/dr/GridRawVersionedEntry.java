@@ -121,7 +121,7 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(GridMarshaller marsh) throws GridException {
+    @Override public void unmarshal(IgniteMarshaller marsh) throws GridException {
         unmarshalKey(marsh);
 
         if (valBytes != null && val == null)
@@ -135,13 +135,13 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
      * @param marsh Marshaller.
      * @throws GridException If failed.
      */
-    private void unmarshalKey(GridMarshaller marsh) throws GridException {
+    private void unmarshalKey(IgniteMarshaller marsh) throws GridException {
         if (key == null)
             key = marsh.unmarshal(keyBytes, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(GridMarshaller marsh) throws GridException {
+    @Override public void marshal(IgniteMarshaller marsh) throws GridException {
         if (keyBytes == null)
             keyBytes = marsh.marshal(key);
 

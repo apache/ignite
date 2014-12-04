@@ -552,12 +552,12 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
      */
     private static class IdxMarshaller implements GridIndexingMarshaller {
         /** */
-        private final GridMarshaller marshaller;
+        private final IgniteMarshaller marshaller;
 
         /**
          * @param marshaller Marshaller.
          */
-        private IdxMarshaller(GridMarshaller marshaller) {
+        private IdxMarshaller(IgniteMarshaller marshaller) {
             this.marshaller = marshaller;
         }
 

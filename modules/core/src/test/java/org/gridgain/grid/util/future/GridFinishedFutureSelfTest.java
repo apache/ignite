@@ -58,7 +58,7 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
     private void testExternalizable(@Nullable Object t, @Nullable Throwable ex, boolean syncNotify) throws Exception {
         GridKernalContext ctx = ((GridKernal)grid()).context();
 
-        GridMarshaller m = new IgniteOptimizedMarshaller();
+        IgniteMarshaller m = new IgniteOptimizedMarshaller();
         ClassLoader clsLdr = getClass().getClassLoader();
 
         IgniteFuture<Object> orig = t == null ? new GridFinishedFuture<>(ctx, ex) :

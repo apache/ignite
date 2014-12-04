@@ -1458,7 +1458,7 @@ public class GridGainEx {
 
             MBeanServer mbSrv = cfg.getMBeanServer();
 
-            GridMarshaller marsh = cfg.getMarshaller();
+            IgniteMarshaller marsh = cfg.getMarshaller();
 
             String[] p2pExclude = cfg.getPeerClassLoadingLocalClassPathExclude();
 

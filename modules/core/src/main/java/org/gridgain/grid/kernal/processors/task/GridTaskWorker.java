@@ -76,7 +76,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final IgniteLogger log;
 
     /** */
-    private final GridMarshaller marsh;
+    private final IgniteMarshaller marsh;
 
     /** */
     private final GridTaskSessionImpl ses;

@@ -275,7 +275,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridMarshaller mrsh = ctx.marshaller();
+        IgniteMarshaller mrsh = ctx.marshaller();
 
         if (keyValFilterBytes != null)
             keyValFilter = mrsh.unmarshal(keyValFilterBytes, ldr);
@@ -298,7 +298,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @throws GridException In case of error.
      */
     void beforeLocalExecution(GridCacheContext<K, V> ctx) throws GridException {
-        GridMarshaller marsh = ctx.marshaller();
+        IgniteMarshaller marsh = ctx.marshaller();
 
         rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
         trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;

@@ -83,7 +83,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridMarshaller marsh) throws GridException {
+    @Override public void prepareMarshal(IgniteMarshaller marsh) throws GridException {
         super.prepareMarshal(marsh);
 
         if (err != null)
@@ -91,7 +91,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
         super.finishUnmarshal(marsh, ldr);
 
         if (errBytes != null)

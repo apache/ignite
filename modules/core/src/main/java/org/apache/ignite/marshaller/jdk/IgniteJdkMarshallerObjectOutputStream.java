@@ -30,7 +30,7 @@ class IgniteJdkMarshallerObjectOutputStream extends ObjectOutputStream {
 
     /** {@inheritDoc} */
     @Nullable @Override protected Object replaceObject(Object o) throws IOException {
-        return o == null || GridMarshallerExclusions.isExcluded(o.getClass()) ? null :
+        return o == null || IgniteMarshallerExclusions.isExcluded(o.getClass()) ? null :
             o.getClass().equals(Object.class) ? new IgniteJdkMarshallerDummySerializable() : super.replaceObject(o);
     }
 }

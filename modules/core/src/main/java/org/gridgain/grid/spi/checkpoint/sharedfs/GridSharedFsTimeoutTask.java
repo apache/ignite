@@ -35,7 +35,7 @@ class GridSharedFsTimeoutTask extends GridSpiThread {
     private IgniteLogger log;
 
     /** Messages marshaller. */
-    private GridMarshaller marshaller;
+    private IgniteMarshaller marshaller;
 
     /** */
     private final Object mux = new Object();
@@ -50,7 +50,7 @@ class GridSharedFsTimeoutTask extends GridSpiThread {
      * @param marshaller Messages marshaller.
      * @param log Messages logger.
      */
-    GridSharedFsTimeoutTask(String gridName, GridMarshaller marshaller, IgniteLogger log) {
+    GridSharedFsTimeoutTask(String gridName, IgniteMarshaller marshaller, IgniteLogger log) {
         super(gridName, "grid-sharedfs-timeout-worker", log);
 
         assert marshaller != null;

@@ -87,7 +87,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private long ackTimeout;
 
     /** Marshaller. */
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /**
      * @param ctx Kernal context.
@@ -1303,7 +1303,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param marsh Marshaller.
          * @throws GridException In case of error.
          */
-        void p2pMarshal(GridMarshaller marsh) throws GridException {
+        void p2pMarshal(IgniteMarshaller marsh) throws GridException {
             assert marsh != null;
 
             prjPredBytes = marsh.marshal(prjPred);
@@ -1314,7 +1314,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param ldr Class loader.
          * @throws GridException In case of error.
          */
-        void p2pUnmarshal(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
             assert marsh != null;
 
             assert prjPred == null;

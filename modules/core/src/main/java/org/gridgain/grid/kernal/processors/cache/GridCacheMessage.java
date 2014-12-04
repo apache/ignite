@@ -404,7 +404,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         IgnitePredicate<GridCacheEntry<K, V>>[] filter = new IgnitePredicate[byteCol.length];
 
-        GridMarshaller marsh = ctx.marshaller();
+        IgniteMarshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
             filter[i] = byteCol[i] == null ? null :
@@ -457,7 +457,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         List<T> col = new ArrayList<>(byteCol.size());
 
-        GridMarshaller marsh = ctx.marshaller();
+        IgniteMarshaller marsh = ctx.marshaller();
 
         for (GridCacheValueBytes item : byteCol) {
             assert item == null || item.get() != null;
@@ -510,7 +510,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         List<T> col = new ArrayList<>(byteCol.size());
 
-        GridMarshaller marsh = ctx.marshaller();
+        IgniteMarshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
             col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, ldr));
@@ -561,7 +561,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         LinkedHashMap<K1, Boolean> map = U.newLinkedHashMap(byteMap.size());
 
-        GridMarshaller marsh = ctx.marshaller();
+        IgniteMarshaller marsh = ctx.marshaller();
 
         for (Map.Entry<byte[], Boolean> e : byteMap.entrySet())
             map.put(marsh.<K1>unmarshal(e.getKey(), ldr), e.getValue());

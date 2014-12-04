@@ -256,7 +256,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Marshaller.
      */
-    public GridMarshaller marshaller() {
+    public IgniteMarshaller marshaller() {
         return kernalCtx.config().getMarshaller();
     }
 

@@ -339,7 +339,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** Marshaller. */
     @IgniteMarshallerResource
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /** Local IP address. */
     private String locAddr;

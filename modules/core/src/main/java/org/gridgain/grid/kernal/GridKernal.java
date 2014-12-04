@@ -1980,7 +1980,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             IgniteOptimizedMarshaller.clearCache();
-            GridMarshallerExclusions.clearCache();
+            IgniteMarshallerExclusions.clearCache();
             GridEnumCache.clear();
 
             gw.writeLock();

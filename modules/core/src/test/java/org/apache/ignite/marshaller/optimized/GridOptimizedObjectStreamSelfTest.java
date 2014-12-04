@@ -940,7 +940,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExcludedClass() throws Exception {
-        Class<?>[] exclClasses = U.staticField(GridMarshallerExclusions.class, "EXCL_CLASSES");
+        Class<?>[] exclClasses = U.staticField(IgniteMarshallerExclusions.class, "EXCL_CLASSES");
 
         assertFalse(F.isEmpty(exclClasses));
 

@@ -219,7 +219,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private String locHost;
 
         /** */
-        private GridMarshaller marshaller;
+        private IgniteMarshaller marshaller;
 
         /** */
         private ApplicationContext springCtx;
@@ -331,7 +331,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * @param marshaller Marshaller.
          */
         @IgniteMarshallerResource
-        public void setMarshaller(GridMarshaller marshaller) {
+        public void setMarshaller(IgniteMarshaller marshaller) {
             this.marshaller = marshaller;
         }
 

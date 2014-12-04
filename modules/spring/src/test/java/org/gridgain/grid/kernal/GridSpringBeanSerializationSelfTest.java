@@ -27,7 +27,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Marshaller. */
-    private static final GridMarshaller MARSHALLER = new IgniteOptimizedMarshaller();
+    private static final IgniteMarshaller MARSHALLER = new IgniteOptimizedMarshaller();
 
     /** Attribute key. */
     private static final String ATTR_KEY = "checkAttr";

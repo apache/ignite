@@ -51,7 +51,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
 
         serState = spi.loadCheckpoint(globalKey);
 
-        GridMarshaller marshaller = getTestResources().getMarshaller();
+        IgniteMarshaller marshaller = getTestResources().getMarshaller();
 
         assert marshaller != null;
 
@@ -77,7 +77,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
      * @throws Exception If check failed.
      */
     private static void checkRunningState(String sesKey, String sesState, String globalKey, String globalState,
-        GridMarshaller marsh, ClassLoader cl) throws Exception {
+        IgniteMarshaller marsh, ClassLoader cl) throws Exception {
         assert marsh != null;
         assert cl != null;
 
@@ -144,7 +144,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
 
         /** */
         @IgniteMarshallerResource
-        private GridMarshaller marshaller;
+        private IgniteMarshaller marshaller;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

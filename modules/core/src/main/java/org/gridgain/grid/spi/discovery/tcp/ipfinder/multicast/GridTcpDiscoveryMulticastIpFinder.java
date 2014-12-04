@@ -70,7 +70,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     private static final byte[] MSG_ADDR_REQ_DATA = U.GG_HEADER;
 
     /** */
-    private static final GridMarshaller marsh = new IgniteJdkMarshaller();
+    private static final IgniteMarshaller marsh = new IgniteJdkMarshaller();
 
     /** Grid logger. */
     @IgniteLoggerResource

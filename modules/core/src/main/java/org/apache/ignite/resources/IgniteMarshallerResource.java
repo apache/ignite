@@ -14,7 +14,7 @@ import org.gridgain.grid.spi.*;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.apache.ignite.marshaller.GridMarshaller} resource. Grid marshaller
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.marshaller.IgniteMarshaller} resource. Grid marshaller
  * is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
  * Marshaller can be injected into instances of following classes:

@@ -31,7 +31,7 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
      * @param marsh Marshaller.
      * @throws GridException In case of error.
      */
-    public void prepareMarshal(GridMarshaller marsh) throws GridException {
+    public void prepareMarshal(IgniteMarshaller marsh) throws GridException {
         // No-op.
     }
 
@@ -40,7 +40,7 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
      * @param ldr Class loader.
      * @throws GridException In case of error.
      */
-    public void finishUnmarshal(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
         // No-op.
     }
 

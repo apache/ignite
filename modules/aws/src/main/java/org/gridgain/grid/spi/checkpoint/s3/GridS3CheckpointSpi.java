@@ -101,7 +101,7 @@ public class GridS3CheckpointSpi extends GridSpiAdapter implements GridCheckpoin
 
     /** Marshaller. */
     @IgniteMarshallerResource
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /** Task that takes care about outdated files. */
     private GridS3TimeoutWorker timeoutWrk;

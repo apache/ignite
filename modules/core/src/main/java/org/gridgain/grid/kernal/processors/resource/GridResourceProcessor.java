@@ -90,7 +90,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private GridResourceBasicInjector<Executor> execInjector;
 
     /** Grid marshaller injector. */
-    private GridResourceBasicInjector<GridMarshaller> marshInjector;
+    private GridResourceBasicInjector<IgniteMarshaller> marshInjector;
 
     /** Local node ID injector. */
     private GridResourceBasicInjector<UUID> nodeIdInjector;

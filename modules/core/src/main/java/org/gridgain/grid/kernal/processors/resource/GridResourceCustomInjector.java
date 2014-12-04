@@ -62,7 +62,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     private GridResourceBasicInjector<UUID> nodeIdInjector;
 
     /** Marshaller injector. */
-    private GridResourceBasicInjector<GridMarshaller> marshallerInjector;
+    private GridResourceBasicInjector<IgniteMarshaller> marshallerInjector;
 
     /** Spring application context injector. */
     private GridResourceInjector springCtxInjector;
@@ -158,7 +158,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      *
      * @param marshallerInjector Grid marshaller.
      */
-    public void setMarshallerInjector(GridResourceBasicInjector<GridMarshaller> marshallerInjector) {
+    public void setMarshallerInjector(GridResourceBasicInjector<IgniteMarshaller> marshallerInjector) {
         this.marshallerInjector = marshallerInjector;
     }
 

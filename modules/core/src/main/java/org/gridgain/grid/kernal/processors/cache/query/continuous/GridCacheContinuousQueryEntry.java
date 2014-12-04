@@ -115,7 +115,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      * @param ldr Class loader.
      * @throws GridException In case of error.
      */
-    void initValue(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    void initValue(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
         assert marsh != null;
 
         if (newVal == null && newValBytes != null && !newValBytes.isNull())
@@ -140,7 +140,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      * @param marsh Marshaller.
      * @throws GridException In case of error.
      */
-    void p2pMarshal(GridMarshaller marsh) throws GridException {
+    void p2pMarshal(IgniteMarshaller marsh) throws GridException {
         assert marsh != null;
 
         assert key != null;
@@ -161,7 +161,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      * @param ldr Class loader.
      * @throws GridException In case of error.
      */
-    void p2pUnmarshal(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
         assert marsh != null;
 
         assert key == null : "Key should be null: " + key;

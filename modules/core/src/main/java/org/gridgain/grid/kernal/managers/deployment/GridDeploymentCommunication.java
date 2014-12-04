@@ -53,7 +53,7 @@ class GridDeploymentCommunication {
     private final GridBusyLock busyLock = new GridBusyLock();
 
     /** */
-    private final GridMarshaller marsh;
+    private final IgniteMarshaller marsh;
 
     /**
      * Creates new instance of deployment communication.

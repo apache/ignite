@@ -19,12 +19,12 @@ import org.gridgain.grid.util.nio.*;
  */
 public class GridHadoopMarshallerFilter extends GridNioFilterAdapter {
     /** Marshaller. */
-    private GridMarshaller marshaller;
+    private IgniteMarshaller marshaller;
 
     /**
      * @param marshaller Marshaller to use.
      */
-    public GridHadoopMarshallerFilter(GridMarshaller marshaller) {
+    public GridHadoopMarshallerFilter(IgniteMarshaller marshaller) {
         super("GridHadoopMarshallerFilter");
 
         this.marshaller = marshaller;

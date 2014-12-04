@@ -42,7 +42,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     private final GridRestProtocolHandler hnd;
 
     /** JDK marshaller. */
-    private final GridMarshaller jdkMarshaller = new IgniteJdkMarshaller();
+    private final IgniteMarshaller jdkMarshaller = new IgniteJdkMarshaller();
 
     /** Context. */
     private final GridKernalContext ctx;

@@ -35,7 +35,7 @@ class GridMarshallerResourceBean implements Serializable {
     private IgniteLogger log;
 
     /** Marshaller. */
-    private GridMarshaller marshaller;
+    private IgniteMarshaller marshaller;
 
     /** Load balancer. */
     private ComputeLoadBalancer balancer;

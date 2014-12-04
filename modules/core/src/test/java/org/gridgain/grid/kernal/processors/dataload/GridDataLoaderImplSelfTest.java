@@ -134,7 +134,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = grid(0);
 
-            GridMarshaller marsh = g0.configuration().getMarshaller();
+            IgniteMarshaller marsh = g0.configuration().getMarshaller();
 
             if (marsh instanceof IgniteOptimizedMarshaller)
                 assertTrue(((IgniteOptimizedMarshaller)marsh).isRequireSerializable());
@@ -184,7 +184,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = grid(0);
 
-            GridMarshaller marsh = g0.configuration().getMarshaller();
+            IgniteMarshaller marsh = g0.configuration().getMarshaller();
 
             if (marsh instanceof IgniteOptimizedMarshaller)
                 assertTrue(((IgniteOptimizedMarshaller)marsh).isRequireSerializable());

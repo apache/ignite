@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 @GridCommonTest(group = "Marshaller")
 public class GridJdkMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridMarshaller createMarshaller() {
+    @Override protected IgniteMarshaller createMarshaller() {
         return new IgniteJdkMarshaller();
     }
 }

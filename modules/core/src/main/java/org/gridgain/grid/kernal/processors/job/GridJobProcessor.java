@@ -54,7 +54,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     public static final GridProductVersion SUBJECT_ID_ADDED_SINCE_VER = GridProductVersion.fromString("6.2.1");
 
     /** */
-    private final GridMarshaller marsh;
+    private final IgniteMarshaller marsh;
 
     /** */
     private final boolean jobAlwaysActivate;

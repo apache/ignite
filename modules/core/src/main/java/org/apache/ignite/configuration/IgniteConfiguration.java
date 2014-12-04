@@ -282,7 +282,7 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
@@ -1459,7 +1459,7 @@ public class IgniteConfiguration {
      *
      * @return Marshaller to use in grid.
      */
-    public GridMarshaller getMarshaller() {
+    public IgniteMarshaller getMarshaller() {
         return marsh;
     }
 
@@ -1469,7 +1469,7 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      */
-    public void setMarshaller(GridMarshaller marsh) {
+    public void setMarshaller(IgniteMarshaller marsh) {
         this.marsh = marsh;
     }
 

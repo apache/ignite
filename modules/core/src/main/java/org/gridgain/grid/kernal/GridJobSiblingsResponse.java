@@ -61,7 +61,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
      * @param marsh Marshaller.
      * @throws GridException In case of error.
      */
-    public void unmarshalSiblings(GridMarshaller marsh) throws GridException {
+    public void unmarshalSiblings(IgniteMarshaller marsh) throws GridException {
         assert marsh != null;
 
         if (siblingsBytes != null)

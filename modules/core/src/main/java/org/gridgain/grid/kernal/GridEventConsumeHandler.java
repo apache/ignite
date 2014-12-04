@@ -344,7 +344,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
          * @param marsh Marshaller.
          * @throws GridException In case of error.
          */
-        void p2pMarshal(GridMarshaller marsh) throws GridException {
+        void p2pMarshal(IgniteMarshaller marsh) throws GridException {
             assert marsh != null;
 
             bytes = marsh.marshal(evt);
@@ -355,7 +355,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
          * @param ldr Class loader.
          * @throws GridException In case of error.
          */
-        void p2pUnmarshal(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
             assert marsh != null;
 
             assert evt == null;

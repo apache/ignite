@@ -59,7 +59,7 @@ public interface GridVersionedEntry<K, V> extends Map.Entry<K, V> {
      * @param marsh Marshaller.
      * @throws GridException If failed.
      */
-    public void marshal(GridMarshaller marsh) throws GridException;
+    public void marshal(IgniteMarshaller marsh) throws GridException;
 
     /**
      * Perform internal unmarshal of this entry. It must be performed after entry is deserialized and before
@@ -68,5 +68,5 @@ public interface GridVersionedEntry<K, V> extends Map.Entry<K, V> {
      * @param marsh Marshaller.
      * @throws GridException If failed.
      */
-    public void unmarshal(GridMarshaller marsh) throws GridException;
+    public void unmarshal(IgniteMarshaller marsh) throws GridException;
 }

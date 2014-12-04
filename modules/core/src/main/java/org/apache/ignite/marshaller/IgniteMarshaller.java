@@ -83,7 +83,7 @@ import java.io.*;
  * }
  * </pre>
  */
-public interface GridMarshaller {
+public interface IgniteMarshaller {
     /**
      * Marshals object to the output stream. This method should not close
      * given output stream.

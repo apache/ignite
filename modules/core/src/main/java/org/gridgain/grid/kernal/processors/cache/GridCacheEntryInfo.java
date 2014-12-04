@@ -234,7 +234,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      * @throws GridException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
-        GridMarshaller mrsh = ctx.marshaller();
+        IgniteMarshaller mrsh = ctx.marshaller();
 
         if (key == null)
             key = mrsh.unmarshal(keyBytes, clsLdr);

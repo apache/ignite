@@ -1196,7 +1196,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             if (ctx.localNodeId().equals(node.id())) {
                 if (hadLocNode) {
-                    GridMarshaller marsh = ctx.config().getMarshaller();
+                    IgniteMarshaller marsh = ctx.config().getMarshaller();
 
                     job = marsh.unmarshal(marsh.marshal(job), null);
                 }

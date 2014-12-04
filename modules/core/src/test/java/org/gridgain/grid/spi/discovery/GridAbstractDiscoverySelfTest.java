@@ -464,7 +464,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
      */
     private void writeObject(ClusterNode node) throws Exception {
 
-        GridMarshaller marshaller = getTestResources().getMarshaller();
+        IgniteMarshaller marshaller = getTestResources().getMarshaller();
 
         OutputStream out = new NullOutputStream();
 

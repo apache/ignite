@@ -53,7 +53,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static final String CACHE_NAME = "namedCache";
 
     /** */
-    private static GridMarshaller marsh;
+    private static IgniteMarshaller marsh;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -135,7 +135,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @return Grid marshaller.
      */
-    protected abstract GridMarshaller createMarshaller();
+    protected abstract IgniteMarshaller createMarshaller();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

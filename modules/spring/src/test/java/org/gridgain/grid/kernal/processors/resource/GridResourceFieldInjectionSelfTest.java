@@ -439,7 +439,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteMarshallerResource
-        private GridMarshaller marshaller;
+        private IgniteMarshaller marshaller;
 
         /** */
         @IgniteSpringApplicationContextResource

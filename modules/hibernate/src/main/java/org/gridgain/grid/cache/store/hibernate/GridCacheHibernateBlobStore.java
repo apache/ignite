@@ -181,7 +181,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
 
     /** Marshaller. */
     @IgniteMarshallerResource
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments"})

@@ -44,7 +44,7 @@ public class GridTestResources {
     private final UUID nodeId;
 
     /** */
-    private GridMarshaller marshaller;
+    private IgniteMarshaller marshaller;
 
     /** */
     private final MBeanServer jmx;
@@ -229,7 +229,7 @@ public class GridTestResources {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    public synchronized GridMarshaller getMarshaller() throws GridException {
+    public synchronized IgniteMarshaller getMarshaller() throws GridException {
         if (marshaller == null) {
             String marshallerName = GridTestProperties.getProperty("marshaller.class");
 
@@ -237,7 +237,7 @@ public class GridTestResources {
                 marshaller = new IgniteOptimizedMarshaller();
             else {
                 try {
-                    Class<? extends GridMarshaller> cls = (Class<? extends GridMarshaller>)Class.forName(marshallerName);
+                    Class<? extends IgniteMarshaller> cls = (Class<? extends IgniteMarshaller>)Class.forName(marshallerName);
 
                     marshaller = cls.newInstance();
                 }

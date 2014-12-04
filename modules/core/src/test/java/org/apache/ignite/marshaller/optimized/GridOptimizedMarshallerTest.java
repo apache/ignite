@@ -133,7 +133,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      * @throws GridException If marshalling failed.
      */
     public void testNonSerializable5() throws GridException {
-        GridMarshaller marsh = new IgniteOptimizedMarshaller();
+        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         byte[] bytes = marsh.marshal(true);
 
@@ -148,7 +148,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      * @throws GridException If marshalling failed.
      */
     public void testSerializable() throws GridException {
-        GridMarshaller marsh = new IgniteOptimizedMarshaller();
+        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         SomeSerializable outObj = marsh.unmarshal(marsh.marshal(new SomeSerializable(null)), null);
 
@@ -159,7 +159,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     public void testSerializableAfterChangingValue() throws GridException {
-        GridMarshaller marsh = new IgniteOptimizedMarshaller();
+        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         SomeSimpleSerializable newObj = new SomeSimpleSerializable();
 
@@ -180,7 +180,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      * @throws GridException If marshalling failed.
      */
     public void testExternalizable() throws GridException {
-        GridMarshaller marsh = new IgniteOptimizedMarshaller();
+        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         ExternalizableA outObj = marsh.unmarshal(marsh.marshal(new ExternalizableA(null, true)), null);
         ExternalizableA outObj1 = marsh.unmarshal(marsh.marshal(new ExternalizableA(null, false)), null);
@@ -219,7 +219,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         ((Map)U.staticField(IgniteOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
         IgniteOptimizedClassResolver.userClasses(null, null);
 
-        GridMarshaller marsh = new IgniteOptimizedMarshaller();
+        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         int size1 = marsh.marshal(obj).length;
 
@@ -249,7 +249,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         ((Map)U.staticField(IgniteOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
         IgniteOptimizedClassResolver.userClasses(null, null);
 
-        GridMarshaller marsh = new IgniteOptimizedMarshaller();
+        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         int size1 = marsh.marshal(obj).length;
 
@@ -349,7 +349,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkPerformance(int cnt, int tries) throws Exception {
-        GridMarshaller marsh = new IgniteOptimizedMarshaller();
+        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         for (int j = 0; j < tries; j++) {
             System.gc();

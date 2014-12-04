@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Implementation of {@link GridMarshaller} based on JDK serialization mechanism.
+ * Implementation of {@link org.apache.ignite.marshaller.IgniteMarshaller} based on JDK serialization mechanism.
  * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
@@ -76,7 +76,7 @@ import java.io.*;
  * <br>
  *
  */
-public class IgniteJdkMarshaller extends GridAbstractMarshaller {
+public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
     /** {@inheritDoc} */
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws GridException {
         assert out != null;

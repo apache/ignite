@@ -202,7 +202,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
     /** Grid marshaller. */
     @IgniteMarshallerResource
-    private GridMarshaller gridMarsh;
+    private IgniteMarshaller gridMarsh;
 
     /** Nodes ring. */
     @GridToStringExclude

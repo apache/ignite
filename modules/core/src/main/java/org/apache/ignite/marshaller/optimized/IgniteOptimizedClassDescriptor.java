@@ -200,7 +200,7 @@ class IgniteOptimizedClassDescriptor {
     IgniteOptimizedClassDescriptor(Class<?> cls) throws IOException {
         this.cls = cls;
 
-        excluded = GridMarshallerExclusions.isExcluded(cls);
+        excluded = IgniteMarshallerExclusions.isExcluded(cls);
 
         T2<Integer, Integer> t = IgniteOptimizedClassResolver.writeClassData(cls);
 

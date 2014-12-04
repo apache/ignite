@@ -31,7 +31,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
     /** */
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /**
      * @param ctx Grid kernal context.

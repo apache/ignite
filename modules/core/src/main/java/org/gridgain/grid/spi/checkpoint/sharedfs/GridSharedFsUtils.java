@@ -39,7 +39,7 @@ final class GridSharedFsUtils {
      *    to {@link GridSharedFsCheckpointData} object.
      * @throws IOException Thrown if file read error occurred.
      */
-    static GridSharedFsCheckpointData read(File file, GridMarshaller m, IgniteLogger log)
+    static GridSharedFsCheckpointData read(File file, IgniteMarshaller m, IgniteLogger log)
         throws IOException, GridException {
         assert file != null;
         assert m != null;
@@ -66,7 +66,7 @@ final class GridSharedFsUtils {
      * @throws GridException Thrown if data could not be marshalled.
      * @throws IOException Thrown if file write operation failed.
      */
-    static void write(File file, GridSharedFsCheckpointData data, GridMarshaller m, IgniteLogger log)
+    static void write(File file, GridSharedFsCheckpointData data, IgniteMarshaller m, IgniteLogger log)
         throws IOException, GridException {
         assert file != null;
         assert m != null;

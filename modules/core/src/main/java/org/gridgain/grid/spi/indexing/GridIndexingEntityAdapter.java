@@ -27,7 +27,7 @@ public class GridIndexingEntityAdapter<T> implements GridIndexingEntity<T> {
 
     /**
      * @param val Value.
-     * @param bytes Value marshalled by {@link org.apache.ignite.marshaller.GridMarshaller}.
+     * @param bytes Value marshalled by {@link org.apache.ignite.marshaller.IgniteMarshaller}.
      */
     public GridIndexingEntityAdapter(T val, @Nullable byte[] bytes) {
         this.val = val;

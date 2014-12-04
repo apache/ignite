@@ -238,7 +238,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /** */
     @IgniteMarshallerResource
-    private GridMarshaller gridMarshaller;
+    private IgniteMarshaller igniteMarshaller;
 
     /** */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);

@@ -154,7 +154,7 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
     /** Marshaller. */
     @IgniteMarshallerResource
-    private GridMarshaller marsh;
+    private IgniteMarshaller marsh;
 
     /** {@inheritDoc} */
     @Override public String getBaseDirectory() {
