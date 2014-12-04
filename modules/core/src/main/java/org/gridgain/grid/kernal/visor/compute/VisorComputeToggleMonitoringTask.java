@@ -61,7 +61,7 @@ public class VisorComputeToggleMonitoringTask extends
             if (checkExplicitTaskMonitoring(g))
                 return true;
             else {
-                GridNodeLocalMap<String, VisorComputeMonitoringHolder> storage = g.nodeLocalMap();
+                ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = g.nodeLocalMap();
 
                 VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 

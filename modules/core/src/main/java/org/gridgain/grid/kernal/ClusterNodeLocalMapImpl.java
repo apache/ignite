@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 /**
  *
  */
-public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements GridNodeLocalMap<K, V>,
+public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements ClusterNodeLocalMap<K, V>,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -40,7 +40,7 @@ public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impleme
     /**
      * No-arg constructor is required by externalization.
      */
-    public GridNodeLocalMapImpl() {
+    public ClusterNodeLocalMapImpl() {
         // No-op.
     }
 
@@ -48,7 +48,7 @@ public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impleme
      *
      * @param ctx Kernal context.
      */
-    GridNodeLocalMapImpl(GridKernalContext ctx) {
+    ClusterNodeLocalMapImpl(GridKernalContext ctx) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -168,7 +168,7 @@ public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impleme
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNodeLocalMapImpl.class, this);
+        return S.toString(ClusterNodeLocalMapImpl.class, this);
     }
 }
 

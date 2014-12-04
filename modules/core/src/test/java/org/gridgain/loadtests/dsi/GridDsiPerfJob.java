@@ -82,7 +82,7 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     @Override public Object execute() {
-        GridNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
+        ClusterNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
 
         T2<AtomicLong, AtomicLong> cntrs = nodeLoc.get("cntrs");
 

@@ -30,7 +30,7 @@ public class GridTestMessageListener implements P2<UUID, Object> {
         ignite.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() +
             ", msg=" + msg + ']');
 
-        GridNodeLocalMap<String, AtomicInteger> map = ignite.cluster().nodeLocalMap();
+        ClusterNodeLocalMap<String, AtomicInteger> map = ignite.cluster().nodeLocalMap();
 
         AtomicInteger cnt = map.get("msgCnt");
 

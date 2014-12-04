@@ -330,7 +330,7 @@ public class VisorTaskUtils {
         final boolean all) {
         assert g != null;
 
-        GridNodeLocalMap<String, Long> nl = g.cluster().nodeLocalMap();
+        ClusterNodeLocalMap<String, Long> nl = g.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);

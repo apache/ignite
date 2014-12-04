@@ -202,7 +202,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Node local store. */
     @GridToStringExclude
-    private GridNodeLocalMap nodeLoc;
+    private ClusterNodeLocalMap nodeLoc;
 
     /** Scheduler. */
     @GridToStringExclude
@@ -661,7 +661,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             GridKernalContextImpl ctx =
                 new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, ENT);
 
-            nodeLoc = new GridNodeLocalMapImpl(ctx);
+            nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
             // Set context into rich adapter.
             setKernalContext(ctx);
@@ -2585,7 +2585,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <K, V> GridNodeLocalMap<K, V> nodeLocalMap() {
+    @Override public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap() {
         guard();
 
         try {

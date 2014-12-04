@@ -127,7 +127,7 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
                         for (int i = 0; i < GRID_CNT; i++) {
                             Ignite g = grid(i);
 
-                            GridNodeLocalMap<String, Integer> nodeLoc = g.cluster().nodeLocalMap();
+                            ClusterNodeLocalMap<String, Integer> nodeLoc = g.cluster().nodeLocalMap();
 
                             Integer depCnt = nodeLoc.get(DEPLOY_CNT_KEY);
                             Integer undepCnt = nodeLoc.get(UNDEPLOY_CNT_KEY);

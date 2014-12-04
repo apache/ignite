@@ -1016,7 +1016,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> GridNodeLocalMap<K, V> nodeLocalMap() {
+        @Override public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap() {
             return null;
         }
 

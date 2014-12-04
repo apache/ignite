@@ -56,7 +56,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
         private VisorQueryResult nextSqlPage(GridBiTuple<String, Integer> arg) throws GridException {
             long start = U.currentTimeMillis();
 
-            GridNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = g.nodeLocalMap();
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = g.nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<List<?>> t = storage.get(arg.get1());
 
@@ -79,7 +79,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
         private VisorQueryResult nextScanPage(GridBiTuple<String, Integer> arg) throws GridException {
             long start = U.currentTimeMillis();
 
-            GridNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = g.nodeLocalMap();
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = g.nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.get1());
 

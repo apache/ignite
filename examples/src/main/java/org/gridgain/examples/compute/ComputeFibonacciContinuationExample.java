@@ -116,7 +116,7 @@ public final class ComputeFibonacciContinuationExample {
                         return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
                     // Node-local storage.
-                    GridNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
+                    ClusterNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
 
                     // Check if value is cached in node-local-map first.
                     fut1 = locMap.get(n - 1);

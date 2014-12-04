@@ -59,7 +59,7 @@ public class GridP2PAwareTestUserResource {
      * @param key Key for the value to be incremented.
      */
     private <T> void concurrentIncrement(T key) {
-        GridNodeLocalMap<T, Integer> nodeLoc = ignite.cluster().nodeLocalMap();
+        ClusterNodeLocalMap<T, Integer> nodeLoc = ignite.cluster().nodeLocalMap();
 
         Integer cntr = nodeLoc.get(key);
 

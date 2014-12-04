@@ -54,7 +54,7 @@ public interface IgniteCluster extends GridProjection, IgniteAsyncSupport {
      *
      * @return Node local storage instance for the local node.
      */
-    public <K, V> GridNodeLocalMap<K, V> nodeLocalMap();
+    public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap();
 
     /**
      * Pings a remote node.

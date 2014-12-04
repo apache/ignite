@@ -517,13 +517,13 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link GridNodeLocalMap} instance.
+     * Tests marshal {@link org.gridgain.grid.ClusterNodeLocalMap} instance.
      *
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
     public void testNodeLocalMarshalling() throws Exception {
-        GridNodeLocalMap<String, String> loc = grid().nodeLocalMap();
+        ClusterNodeLocalMap<String, String> loc = grid().nodeLocalMap();
 
         String key = "test-key";
         String val = "test-val";
@@ -539,15 +539,15 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridNodeLocalMapImpl.class);
-        assert outBean.getObjectField().getClass().equals(GridNodeLocalMapImpl.class);
+        assert inBean.getObjectField().getClass().equals(ClusterNodeLocalMapImpl.class);
+        assert outBean.getObjectField().getClass().equals(ClusterNodeLocalMapImpl.class);
 
         assert inBean != outBean;
         assert inBean.equals(outBean);
 
         outBean.checkNullResources();
 
-        loc = (GridNodeLocalMap<String, String>)outBean.getObjectField();
+        loc = (ClusterNodeLocalMap<String, String>)outBean.getObjectField();
 
         assert loc.size() == 1;
         assert val.equals(loc.get(key));

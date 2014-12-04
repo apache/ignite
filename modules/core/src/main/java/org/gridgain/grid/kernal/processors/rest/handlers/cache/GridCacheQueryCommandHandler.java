@@ -334,7 +334,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             else
                 fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());
 
-            GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
+            ClusterNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
                 g.cluster().nodeLocalMap();
 
             QueryFutureWrapper wrapper = new QueryFutureWrapper(fut);
@@ -370,7 +370,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
+            ClusterNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
                 g.cluster().nodeLocalMap();
 
             return fetchQueryResults(req.queryId(), locMap.get(new QueryExecutionKey(req.queryId())),

@@ -257,7 +257,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
             throws GridException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
-            final GridNodeLocalMap<String, Long> nl = g.nodeLocalMap();
+            final ClusterNodeLocalMap<String, Long> nl = g.nodeLocalMap();
 
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;

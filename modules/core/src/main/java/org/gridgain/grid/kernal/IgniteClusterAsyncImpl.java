@@ -46,7 +46,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridNodeLocalMap<K, V> nodeLocalMap() {
+    @Override public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap() {
         return grid.nodeLocalMap();
     }
 

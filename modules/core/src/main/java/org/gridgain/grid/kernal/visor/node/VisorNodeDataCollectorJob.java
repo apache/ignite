@@ -47,7 +47,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 res.taskMonitoringEnabled(arg.taskMonitoringEnabled());
 
                 if (arg.taskMonitoringEnabled()) {
-                    GridNodeLocalMap<String, VisorComputeMonitoringHolder> storage = g.nodeLocalMap();
+                    ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = g.nodeLocalMap();
 
                     VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 
