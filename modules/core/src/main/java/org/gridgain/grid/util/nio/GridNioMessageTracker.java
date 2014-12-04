@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.concurrent.atomic.*;

@@ -11,8 +11,8 @@
 
 package org.gridgain.scalar.lang
 
+import org.apache.ignite.lang.IgniteRunnable
 import org.gridgain.grid.util.lang.GridPeerDeployAwareAdapter
-import org.gridgain.grid.lang.IgniteRunnable
 
 /**
  * Peer deploy aware adapter for Java's `GridRunnable`.

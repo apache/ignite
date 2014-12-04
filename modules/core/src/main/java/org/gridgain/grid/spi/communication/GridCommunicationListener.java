@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.communication;
 
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.util.*;

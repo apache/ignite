@@ -10,10 +10,10 @@
 package org.gridgain.examples.datagrid.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.lang.*;
 
 import java.util.*;
 
