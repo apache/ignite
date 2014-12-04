@@ -344,7 +344,7 @@ public class VisorTaskUtils {
         // Flag for detecting gaps between events.
         final AtomicBoolean lastFound = new AtomicBoolean(lastOrder < 0);
 
-        GridPredicate<GridEvent> p = new GridPredicate<GridEvent>() {
+        IgnitePredicate<GridEvent> p = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 // Detects that events were lost.
                 if (!lastFound.get() && (lastOrder == e.localOrder()))

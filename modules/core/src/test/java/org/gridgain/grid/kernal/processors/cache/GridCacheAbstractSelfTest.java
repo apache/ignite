@@ -444,7 +444,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with keys containing 'key'.
      */
-    protected static GridPredicate<GridCacheEntry<String, Integer>> entryKeyFilter =
+    protected static IgnitePredicate<GridCacheEntry<String, Integer>> entryKeyFilter =
         new P1<GridCacheEntry<String, Integer>>() {
         @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
             return entry.getKey().contains("key");
@@ -454,7 +454,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with keys not containing 'key'.
      */
-    protected static GridPredicate<GridCacheEntry<String, Integer>> entryKeyFilterInv =
+    protected static IgnitePredicate<GridCacheEntry<String, Integer>> entryKeyFilterInv =
         new P1<GridCacheEntry<String, Integer>>() {
         @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
             return !entry.getKey().contains("key");
@@ -464,7 +464,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values less than 50.
      */
-    protected static final GridPredicate<GridCacheEntry<String, Integer>> lt50 =
+    protected static final IgnitePredicate<GridCacheEntry<String, Integer>> lt50 =
         new P1<GridCacheEntry<String, Integer>>() {
             @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                 Integer i = entry.peek();
@@ -476,7 +476,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values greater or equal than 100.
      */
-    protected static final GridPredicate<GridCacheEntry<String, Integer>> gte100 =
+    protected static final IgnitePredicate<GridCacheEntry<String, Integer>> gte100 =
         new P1<GridCacheEntry<String, Integer>>() {
             @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                 Integer i = entry.peek();
@@ -492,7 +492,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values greater or equal than 200.
      */
-    protected static final GridPredicate<GridCacheEntry<String, Integer>> gte200 =
+    protected static final IgnitePredicate<GridCacheEntry<String, Integer>> gte200 =
         new P1<GridCacheEntry<String, Integer>>() {
             @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                 Integer i = entry.peek();

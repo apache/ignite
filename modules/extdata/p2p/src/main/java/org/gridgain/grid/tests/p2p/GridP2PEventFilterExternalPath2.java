@@ -19,7 +19,7 @@ import org.gridgain.grid.resources.*;
  * Simple event filter
  */
 @SuppressWarnings({"ProhibitedExceptionThrown"})
-public class GridP2PEventFilterExternalPath2 implements GridPredicate<GridEvent> {
+public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<GridEvent> {
     /** */
     @GridUserResource
     private transient GridTestUserResource rsrc;

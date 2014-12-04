@@ -89,7 +89,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
             final UUID nodeId = g.cluster().localNode().id();
             final CountDownLatch latch = new CountDownLatch(1);
 
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (((GridDiscoveryEvent) evt).eventNode().id().equals(nodeId))
                         latch.countDown();

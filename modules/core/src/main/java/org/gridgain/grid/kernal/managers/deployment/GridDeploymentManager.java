@@ -154,7 +154,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      */
     @SuppressWarnings("unchecked")
     public Map<String, Class<? extends GridComputeTask<?, ?>>> findAllTasks(
-        @Nullable GridPredicate<? super Class<? extends GridComputeTask<?, ?>>>... p) {
+        @Nullable IgnitePredicate<? super Class<? extends GridComputeTask<?, ?>>>... p) {
         Map<String, Class<? extends GridComputeTask<?, ?>>> map = new HashMap<>();
         if (locDep != null)
             tasks(map, locDep, p);
@@ -174,7 +174,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @param p Predicate.
      */
     private void tasks(Map<String, Class<? extends GridComputeTask<?, ?>>> map, GridDeployment dep,
-        GridPredicate<? super Class<? extends GridComputeTask<?, ?>>>[] p) {
+        IgnitePredicate<? super Class<? extends GridComputeTask<?, ?>>>[] p) {
         assert map != null;
         assert dep != null;
 
@@ -388,7 +388,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         UUID sndNodeId,
         GridUuid clsLdrId,
         Map<UUID, GridUuid> participants,
-        @Nullable GridPredicate<ClusterNode> nodeFilter) {
+        @Nullable IgnitePredicate<ClusterNode> nodeFilter) {
         if (locDep != null)
             return locDep;
 

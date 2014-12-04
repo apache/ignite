@@ -353,7 +353,7 @@ public class GridConsistentHash<N> {
         if (inc == null && exc == null)
             return node(key);
 
-        return node(key, new GridPredicate<N>() {
+        return node(key, new IgnitePredicate<N>() {
             @Override public boolean apply(N n) {
                 return (inc == null || inc.contains(n)) && (exc == null || !exc.contains(n));
             }
@@ -367,7 +367,7 @@ public class GridConsistentHash<N> {
      * @param p Optional predicate for node filtering.
      * @return Node for key, or {@code null} if node was not found.
      */
-    @Nullable public N node(@Nullable Object key, @Nullable GridPredicate<N>... p) {
+    @Nullable public N node(@Nullable Object key, @Nullable IgnitePredicate<N>... p) {
         if (p == null || p.length == 0)
             return node(key);
 
@@ -480,7 +480,7 @@ public class GridConsistentHash<N> {
         if (cnt == 1)
             return F.asList(node(key, inc, exc));
 
-        return nodes(key, cnt, new GridPredicate<N>() {
+        return nodes(key, cnt, new IgnitePredicate<N>() {
             @Override public boolean apply(N n) {
                 return (inc == null || inc.contains(n)) && (exc == null || !exc.contains(n));
             }
@@ -497,7 +497,7 @@ public class GridConsistentHash<N> {
      *      will be skipped.
      * @return List containing adjacent nodes for given key.
      */
-    public List<N> nodes(@Nullable Object key, int cnt, @Nullable GridPredicate<N>... p) {
+    public List<N> nodes(@Nullable Object key, int cnt, @Nullable IgnitePredicate<N>... p) {
         A.ensure(cnt >= 0, "cnt >= 0");
 
         if (cnt == 0)
@@ -568,7 +568,7 @@ public class GridConsistentHash<N> {
      * @param n Node.
      * @return {@code True} if filter passed or empty.
      */
-    private boolean apply(GridPredicate<N>[] p, N n) {
+    private boolean apply(IgnitePredicate<N>[] p, N n) {
         return F.isAll(n, p);
     }
 

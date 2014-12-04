@@ -47,7 +47,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     private final Object topic;
 
     /** Projection predicate */
-    private final GridPredicate<GridCacheEntry<K, V>> prjPred;
+    private final IgnitePredicate<GridCacheEntry<K, V>> prjPred;
 
     /** Logger. */
     private final GridLogger log;
@@ -62,7 +62,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     private volatile IgniteBiPredicate<K, V> filter;
 
     /** Remote filter. */
-    private volatile GridPredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter;
+    private volatile IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter;
 
     /** Buffer size. */
     private volatile int bufSize = DFLT_BUF_SIZE;
@@ -83,7 +83,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
      * @param prjPred Projection predicate.
      */
     GridCacheContinuousQueryAdapter(GridCacheContext<K, V> ctx, Object topic,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred) {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred) {
         assert ctx != null;
         assert topic != null;
 
@@ -145,7 +145,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Override public void remoteFilter(@Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter) {
+    @Override public void remoteFilter(@Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter) {
         if (!guard.enterBusy())
             throw new IllegalStateException("Continuous query can't be changed after it was executed.");
 
@@ -158,7 +158,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPredicate<GridCacheContinuousQueryEntry<K, V>> remoteFilter() {
+    @Nullable @Override public IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> remoteFilter() {
         return rmtFilter;
     }
 
@@ -330,7 +330,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     /**
      * Deprecated filter wrapper.
      */
-    static class FilterWrapper<K, V> implements GridPredicate<GridCacheContinuousQueryEntry<K, V>> {
+    static class FilterWrapper<K, V> implements IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> {
         /** Serialization ID. */
         private static final long serialVersionUID = 0L;
 

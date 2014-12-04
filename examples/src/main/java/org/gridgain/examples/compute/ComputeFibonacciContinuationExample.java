@@ -52,7 +52,7 @@ public final class ComputeFibonacciContinuationExample {
             final UUID exampleNodeId = g.cluster().localNode().id();
 
             // Filter to exclude this node from execution.
-            final GridPredicate<ClusterNode> nodeFilter = new GridPredicate<ClusterNode>() {
+            final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode n) {
                     // Give preference to remote nodes.
                     return g.cluster().forRemotes().nodes().isEmpty() || !n.id().equals(exampleNodeId);
@@ -94,12 +94,12 @@ public final class ComputeFibonacciContinuationExample {
         private Ignite g;
 
         /** Predicate. */
-        private final GridPredicate<ClusterNode> nodeFilter;
+        private final IgnitePredicate<ClusterNode> nodeFilter;
 
         /**
          * @param nodeFilter Predicate to filter nodes.
          */
-        FibonacciClosure(GridPredicate<ClusterNode> nodeFilter) {
+        FibonacciClosure(IgnitePredicate<ClusterNode> nodeFilter) {
             this.nodeFilter = nodeFilter;
         }
 

@@ -545,7 +545,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             // Put either job ID or session ID (they are unique).
             cancelReqs.putIfAbsent(jobId != null ? jobId : sesId, sys);
 
-            GridPredicate<GridJobWorker> idsMatch = new P1<GridJobWorker>() {
+            IgnitePredicate<GridJobWorker> idsMatch = new P1<GridJobWorker>() {
                 @Override public boolean apply(GridJobWorker e) {
                     return sesId != null ?
                         jobId != null ?

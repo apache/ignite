@@ -106,7 +106,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      * Simple event filter.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class CustomEventFilter1 implements GridPredicate<GridEvent> {
+    public static final class CustomEventFilter1 implements IgnitePredicate<GridEvent> {
         /** User resource. */
         @SuppressWarnings("unused")
         @GridUserResource
@@ -127,7 +127,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      * Simple event filter.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class CustomEventFilter2 implements GridPredicate<GridEvent> {
+    public static final class CustomEventFilter2 implements IgnitePredicate<GridEvent> {
         /** User resource. */
         @SuppressWarnings("unused")
         @GridUserResource

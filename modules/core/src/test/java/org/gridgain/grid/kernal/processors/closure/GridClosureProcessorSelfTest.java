@@ -184,7 +184,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws GridException If failed.
      */
-    private GridFuture<?> runAsync(int idx, Runnable job, @Nullable GridPredicate<ClusterNode> p)
+    private GridFuture<?> runAsync(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
         throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -207,7 +207,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws GridException If failed.
      */
-    private GridFuture<?> broadcast(int idx, Runnable job, @Nullable GridPredicate<ClusterNode> p)
+    private GridFuture<?> broadcast(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
         throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -233,7 +233,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws GridException If failed.
      */
-    private GridFuture<?> runAsync(int idx, Collection<TestRunnable> jobs, @Nullable GridPredicate<ClusterNode> p)
+    private GridFuture<?> runAsync(int idx, Collection<TestRunnable> jobs, @Nullable IgnitePredicate<ClusterNode> p)
         throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
@@ -256,7 +256,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws GridException If failed.
      */
-    private GridFuture<Integer> callAsync(int idx, Callable<Integer> job, @Nullable GridPredicate<ClusterNode> p)
+    private GridFuture<Integer> callAsync(int idx, Callable<Integer> job, @Nullable IgnitePredicate<ClusterNode> p)
         throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -280,7 +280,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     private GridFuture<Collection<Integer>> broadcast(int idx, Callable<Integer> job,
-        @Nullable GridPredicate<ClusterNode> p) throws GridException {
+        @Nullable IgnitePredicate<ClusterNode> p) throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
@@ -303,7 +303,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     private GridFuture<Collection<Integer>> callAsync(int idx, Collection<TestCallable> jobs,
-        @Nullable GridPredicate<ClusterNode> p) throws GridException {
+        @Nullable IgnitePredicate<ClusterNode> p) throws GridException {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
 
@@ -322,10 +322,10 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param idx Node index.
      * @return Predicate.
      */
-    private GridPredicate<ClusterNode> singleNodePredicate(final int idx) {
+    private IgnitePredicate<ClusterNode> singleNodePredicate(final int idx) {
         assert idx >= 0 && idx < NODES_CNT;
 
-        return new GridPredicate<ClusterNode>() {
+        return new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode e) { return grid(idx).localNode().id().equals(e.id()); }
         };
     }

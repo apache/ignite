@@ -31,7 +31,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final GridPredicate<GridCacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Base map. */
     private final Map<K, GridCacheEntry<K, V>> map;
@@ -42,7 +42,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
      * @param filter Filter.
      */
     public GridCacheValueCollection(GridCacheContext<K, V> ctx, Collection<? extends GridCacheEntry<K, V>> c,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         map = new HashMap<>(c.size(), 1.0f);
 
         assert ctx != null;

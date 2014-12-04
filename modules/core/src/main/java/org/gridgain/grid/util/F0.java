@@ -33,7 +33,7 @@ public class F0 {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Negated predicate (not peer-deployable).
      */
-    public static <T> GridPredicate<T> not(@Nullable final GridPredicate<? super T>... p) {
+    public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
         return F.isAlwaysFalse(p) ? F.<T>alwaysTrue() : F.isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !F.isAll(t, p);
@@ -50,7 +50,7 @@ public class F0 {
      * @return Predicate (not peer-deployable) that evaluates to {@code true} if its free variable is not equal
      *      to {@code target} or both are {@code null}.
      */
-    public static <T> GridPredicate<T> notEqualTo(@Nullable final T target) {
+    public static <T> IgnitePredicate<T> notEqualTo(@Nullable final T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
                 return !F.eq(t, target);
@@ -68,7 +68,7 @@ public class F0 {
      * @return Predicate (not peer-deployable) that returns {@code true} if its free variable is not
      *      contained in given collection.
      */
-    public static <T> GridPredicate<T> notIn(@Nullable final Collection<? extends T> c) {
+    public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
         return F.isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 assert c != null;
@@ -87,7 +87,7 @@ public class F0 {
      * @return Predicate that evaluates to {@code true} if its free variable is equal to
      *      {@code target} or both are {@code null}.
      */
-    public static <T> GridPredicate<T> equalTo(@Nullable final T target) {
+    public static <T> IgnitePredicate<T> equalTo(@Nullable final T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
                 return F.eq(t, target);
@@ -109,8 +109,8 @@ public class F0 {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> GridPredicate<T> and(@Nullable final GridPredicate<? super T>[] p1,
-        @Nullable final GridPredicate<? super T>... p2) {
+    public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>[] p1,
+        @Nullable final IgnitePredicate<? super T>... p2) {
         if (F.isAlwaysFalse(p1) || F.isAlwaysFalse(p2))
             return F.alwaysFalse();
 
@@ -127,14 +127,14 @@ public class F0 {
             assert p2 != null;
 
             if (p2.length == 1)
-                return (GridPredicate<T>)p2[0];
+                return (IgnitePredicate<T>)p2[0];
         }
 
         if (!e1 && e2) {
             assert p1 != null;
 
             if (p1.length == 1)
-                return (GridPredicate<T>)p1[0];
+                return (IgnitePredicate<T>)p1[0];
         }
 
         if ((e1 || isAllNodePredicates(p1)) && (e2 || isAllNodePredicates(p2))) {
@@ -143,19 +143,19 @@ public class F0 {
             if (!e1) {
                 assert p1 != null;
 
-                for (GridPredicate<? super T> p : p1)
+                for (IgnitePredicate<? super T> p : p1)
                     ids.addAll(((GridNodePredicate)p).nodeIds());
             }
 
             if (!e2) {
                 assert p2 != null;
 
-                for (GridPredicate<? super T> p : p2)
+                for (IgnitePredicate<? super T> p : p2)
                     ids.addAll(((GridNodePredicate)p).nodeIds());
             }
 
             // T must be <T extends GridNode>.
-            return (GridPredicate<T>)new GridNodePredicate(ids);
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
             return new P1<T>() {
@@ -163,7 +163,7 @@ public class F0 {
                     if (!e1) {
                         assert p1 != null;
 
-                        for (GridPredicate<? super T> p : p1)
+                        for (IgnitePredicate<? super T> p : p1)
                             if (p != null && !p.apply(t))
                                 return false;
                     }
@@ -171,7 +171,7 @@ public class F0 {
                     if (!e2) {
                         assert p2 != null;
 
-                        for (GridPredicate<? super T> p : p2)
+                        for (IgnitePredicate<? super T> p : p2)
                             if (p != null && !p.apply(t))
                                 return false;
                     }
@@ -196,9 +196,9 @@ public class F0 {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridPredicate<T> and(
-        @Nullable final GridPredicate<? super T> p,
-        @Nullable final GridPredicate<? super T>... ps
+    public static <T> IgnitePredicate<T> and(
+        @Nullable final IgnitePredicate<? super T> p,
+        @Nullable final IgnitePredicate<? super T>... ps
     ) {
         if (p == null && F.isEmptyOrNulls(ps))
             return F.alwaysTrue();
@@ -214,7 +214,7 @@ public class F0 {
 
             Set<UUID> ids = new GridLeanSet<>();
 
-            for (GridPredicate<? super T> p0 : ps) {
+            for (IgnitePredicate<? super T> p0 : ps) {
                 Collection<UUID> list = ((GridNodePredicate)p0).nodeIds();
 
                 if (ids.isEmpty())
@@ -231,7 +231,7 @@ public class F0 {
                 ids.retainAll(list);
 
             // T must be <T extends GridNode>.
-            return (GridPredicate<T>)new GridNodePredicate(ids);
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
             return new P1<T>() {
@@ -241,7 +241,7 @@ public class F0 {
                     if (p != null && !p.apply(t))
                         return false;
 
-                    for (GridPredicate<? super T> p : ps)
+                    for (IgnitePredicate<? super T> p : ps)
                         if (p != null && !p.apply(t))
                             return false;
 
@@ -261,7 +261,7 @@ public class F0 {
      * @return Predicate (not peer-deployable) that returns {@code true} if its free variable is
      *      contained in given collection.
      */
-    public static <T> GridPredicate<T> in(@Nullable final Collection<? extends T> c) {
+    public static <T> IgnitePredicate<T> in(@Nullable final Collection<? extends T> c) {
         return F.isEmpty(c) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 assert c != null;
@@ -280,7 +280,7 @@ public class F0 {
      * @return Predicate which returns {@code true} if it receives an element
      *  that is contained in the passed in collection.
      */
-    public static <T> GridPredicate<T> contains(@Nullable final Collection<T> c) {
+    public static <T> IgnitePredicate<T> contains(@Nullable final Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return c.contains(t);
@@ -297,7 +297,7 @@ public class F0 {
      * @return Predicate which returns {@code true} if it receives an element
      *  that is not contained in the passed in collection.
      */
-    public static <T> GridPredicate<T> notContains(@Nullable final Collection<T> c) {
+    public static <T> IgnitePredicate<T> notContains(@Nullable final Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !c.contains(t);
@@ -311,13 +311,13 @@ public class F0 {
      * @param ps Collection of predicates to test.
      * @return {@code True} if all passed in predicates are instances of {@link GridNodePredicate} class.
      */
-    public static boolean isAllNodePredicates(@Nullable Iterable<? extends GridPredicate<?>> ps) {
+    public static boolean isAllNodePredicates(@Nullable Iterable<? extends IgnitePredicate<?>> ps) {
         if (F.isEmpty(ps))
             return false;
 
         assert ps != null;
 
-        for (GridPredicate<?> p : ps)
+        for (IgnitePredicate<?> p : ps)
             if (!(p instanceof GridNodePredicate))
                 return false;
 
@@ -330,13 +330,13 @@ public class F0 {
      * @param ps Collection of predicates to test.
      * @return {@code True} if all passed in predicates are instances of {@link GridNodePredicate} class.
      */
-    public static boolean isAllNodePredicates(@Nullable GridPredicate<?>... ps) {
+    public static boolean isAllNodePredicates(@Nullable IgnitePredicate<?>... ps) {
         if (F.isEmpty(ps))
             return false;
 
         assert ps != null;
 
-        for (GridPredicate<?> p : ps)
+        for (IgnitePredicate<?> p : ps)
             if (!(p instanceof GridNodePredicate))
                 return false;
 

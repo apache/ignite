@@ -412,7 +412,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * Event listener.
      */
-    private class CacheEventListener implements GridPredicate<GridEvent> {
+    private class CacheEventListener implements IgnitePredicate<GridEvent> {
         /** */
         @GridToStringExclude
         private final Ignite ignite;

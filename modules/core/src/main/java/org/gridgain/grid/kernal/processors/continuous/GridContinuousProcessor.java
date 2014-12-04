@@ -344,7 +344,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("TooBroadScope")
     public GridFuture<UUID> startRoutine(GridContinuousHandler hnd, int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable GridPredicate<ClusterNode> prjPred) {
+        boolean autoUnsubscribe, @Nullable IgnitePredicate<ClusterNode> prjPred) {
         assert hnd != null;
         assert bufSize > 0;
         assert interval >= 0;
@@ -707,7 +707,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (err == null) {
             try {
-                GridPredicate<ClusterNode> prjPred = data.prjPred;
+                IgnitePredicate<ClusterNode> prjPred = data.prjPred;
 
                 if (prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) {
                     registered = registerHandler(nodeId, routineId, hnd, data.bufSize, data.interval,
@@ -1082,7 +1082,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     @SuppressWarnings("PackageVisibleInnerClass")
     static class LocalRoutineInfo {
         /** Projection predicate. */
-        private final GridPredicate<ClusterNode> prjPred;
+        private final IgnitePredicate<ClusterNode> prjPred;
 
         /** Continuous routine handler. */
         private final GridContinuousHandler hnd;
@@ -1099,7 +1099,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param bufSize Buffer size.
          * @param interval Interval.
          */
-        LocalRoutineInfo(@Nullable GridPredicate<ClusterNode> prjPred, GridContinuousHandler hnd, int bufSize,
+        LocalRoutineInfo(@Nullable IgnitePredicate<ClusterNode> prjPred, GridContinuousHandler hnd, int bufSize,
             long interval) {
             assert hnd != null;
             assert bufSize > 0;
@@ -1250,7 +1250,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** Projection predicate. */
-        private GridPredicate<ClusterNode> prjPred;
+        private IgnitePredicate<ClusterNode> prjPred;
 
         /** Serialized projection predicate. */
         private byte[] prjPredBytes;
@@ -1287,7 +1287,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param interval Time interval.
          * @param autoUnsubscribe Automatic unsubscribe flag.
          */
-        StartRequestData(@Nullable GridPredicate<ClusterNode> prjPred, GridContinuousHandler hnd,
+        StartRequestData(@Nullable IgnitePredicate<ClusterNode> prjPred, GridContinuousHandler hnd,
             int bufSize, long interval, boolean autoUnsubscribe) {
             assert hnd != null;
             assert bufSize > 0;
@@ -1355,7 +1355,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 depInfo = (GridDeploymentInfo)in.readObject();
             }
             else
-                prjPred = (GridPredicate<ClusterNode>)in.readObject();
+                prjPred = (IgnitePredicate<ClusterNode>)in.readObject();
 
             hnd = (GridContinuousHandler)in.readObject();
             bufSize = in.readInt();
@@ -1437,7 +1437,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private UUID routineId;
 
         /** Projection predicate. */
-        private GridPredicate<ClusterNode> prjPred;
+        private IgnitePredicate<ClusterNode> prjPred;
 
         /** Handler. */
         private GridContinuousHandler hnd;
@@ -1465,7 +1465,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param bufSize Buffer size.
          * @param interval Time interval.
          */
-        DiscoveryDataItem(UUID routineId, @Nullable GridPredicate<ClusterNode> prjPred,
+        DiscoveryDataItem(UUID routineId, @Nullable IgnitePredicate<ClusterNode> prjPred,
             GridContinuousHandler hnd, int bufSize, long interval) {
             assert routineId != null;
             assert hnd != null;
@@ -1493,7 +1493,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             routineId = U.readUuid(in);
-            prjPred = (GridPredicate<ClusterNode>)in.readObject();
+            prjPred = (IgnitePredicate<ClusterNode>)in.readObject();
             hnd = (GridContinuousHandler)in.readObject();
             bufSize = in.readInt();
             interval = in.readLong();

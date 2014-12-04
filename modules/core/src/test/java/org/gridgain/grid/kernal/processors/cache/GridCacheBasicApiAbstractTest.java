@@ -525,7 +525,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * Event listener.
      */
-    private class CacheEventListener implements GridPredicate<GridEvent> {
+    private class CacheEventListener implements IgnitePredicate<GridEvent> {
         /** Wait latch. */
         private CountDownLatch latch;
 

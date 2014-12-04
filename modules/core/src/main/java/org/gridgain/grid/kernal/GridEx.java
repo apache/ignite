@@ -61,7 +61,7 @@ public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @param p Predicates. If none provided - all configured caches will be returned.
      * @return Configured cache instances that satisfy all provided predicates.
      */
-    public Collection<GridCache<?, ?>> cachesx(@Nullable GridPredicate<? super GridCache<?, ?>>... p);
+    public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p);
 
     /**
      * Checks if the event type is user-recordable.

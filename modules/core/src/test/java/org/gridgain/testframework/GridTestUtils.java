@@ -252,20 +252,20 @@ public final class GridTestUtils {
      * @param ps Array of predicates (by number of elements in iterable).
      */
     @SuppressWarnings("ConstantConditions")
-    public static <T> void assertOneToOne(Iterable<T> it, GridPredicate<T> ... ps) {
-        Collection<GridPredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
-        Collection<T2<GridPredicate<T>, T>> passed = new ArrayList<>();
+    public static <T> void assertOneToOne(Iterable<T> it, IgnitePredicate<T>... ps) {
+        Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
+        Collection<T2<IgnitePredicate<T>, T>> passed = new ArrayList<>();
 
         for (T elem : it) {
-            for (T2<GridPredicate<T>, T> p : passed) {
+            for (T2<IgnitePredicate<T>, T> p : passed) {
                 if (p.get1().apply(elem))
                     throw new AssertionError("Two elements match one predicate [elem1=" + p.get2() +
                         ", elem2=" + elem + ", pred=" + p.get1() + ']');
             }
 
-            GridPredicate<T> matched = null;
+            IgnitePredicate<T> matched = null;
 
-            for (GridPredicate<T> p : ps0) {
+            for (IgnitePredicate<T> p : ps0) {
                 if (p.apply(elem)) {
                     if (matched != null)
                         throw new AssertionError("Element matches more than one predicate [elem=" + elem +

@@ -1208,7 +1208,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /** Event listener that collects all incoming events. */
-    protected static class CollectingEventListener implements GridPredicate<GridEvent> {
+    protected static class CollectingEventListener implements IgnitePredicate<GridEvent> {
         /** Collected events. */
         private final Collection<Object> affectedKeys = new GridConcurrentLinkedHashSet<>();
 

@@ -198,7 +198,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      * @return Optional projection filter.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private GridPredicate<GridCacheEntry<Object, Object>> filter() {
+    @Nullable private IgnitePredicate<GridCacheEntry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }
 

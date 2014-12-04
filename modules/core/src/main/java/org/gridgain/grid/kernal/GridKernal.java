@@ -245,7 +245,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
      * @param rsrcCtx Optional Spring application context.
      */
     public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
-        super(null, null, null, (GridPredicate<ClusterNode>)null);
+        super(null, null, null, (IgnitePredicate<ClusterNode>)null);
 
         this.rsrcCtx = rsrcCtx;
 
@@ -2992,7 +2992,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> cachesx(GridPredicate<? super GridCache<?, ?>>[] p) {
+    @Override public Collection<GridCache<?, ?>> cachesx(IgnitePredicate<? super GridCache<?, ?>>[] p) {
         guard();
 
         try {

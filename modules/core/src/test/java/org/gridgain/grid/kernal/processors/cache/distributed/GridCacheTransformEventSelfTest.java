@@ -167,7 +167,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
             caches[i] = ignites[i].cache(CACHE_NAME);
 
-            ignites[i].events().localListen(new GridPredicate<GridEvent>() {
+            ignites[i].events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     GridCacheEvent evt0 = (GridCacheEvent)evt;
 
@@ -213,7 +213,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         caches[0].put(key2, 2);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            ignites[i].events().localListen(new GridPredicate<GridEvent>() {
+            ignites[i].events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     GridCacheEvent evt0 = (GridCacheEvent)evt;
 

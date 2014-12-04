@@ -613,7 +613,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestEntryPredicate implements GridPredicate<GridCacheEntry<Integer, Integer>> {
+    public static class TestEntryPredicate implements IgnitePredicate<GridCacheEntry<Integer, Integer>> {
         /** */
         private Integer expVal;
 

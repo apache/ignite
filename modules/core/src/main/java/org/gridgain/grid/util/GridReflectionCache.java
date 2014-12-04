@@ -53,10 +53,10 @@ public class GridReflectionCache implements Externalizable {
         CACHE_SIZE, CACHE_SIZE);
 
     /** Field predicate. */
-    private GridPredicate<Field> fp;
+    private IgnitePredicate<Field> fp;
 
     /** Method predicate. */
-    private GridPredicate<Method> mp;
+    private IgnitePredicate<Method> mp;
 
     /**
      * Reflection cache without any method or field predicates.
@@ -70,7 +70,7 @@ public class GridReflectionCache implements Externalizable {
      * @param fp Field predicate.
      * @param mp Method predicate.
      */
-    public GridReflectionCache(@Nullable GridPredicate<Field> fp, @Nullable GridPredicate<Method> mp) {
+    public GridReflectionCache(@Nullable IgnitePredicate<Field> fp, @Nullable IgnitePredicate<Method> mp) {
         this.fp = fp;
         this.mp = mp;
     }
@@ -236,7 +236,7 @@ public class GridReflectionCache implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        fp = (GridPredicate<Field>)in.readObject();
-        mp = (GridPredicate<Method>)in.readObject();
+        fp = (IgnitePredicate<Field>)in.readObject();
+        mp = (IgnitePredicate<Method>)in.readObject();
     }
 }

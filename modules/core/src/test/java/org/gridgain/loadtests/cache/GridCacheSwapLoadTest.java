@@ -86,7 +86,7 @@ public class GridCacheSwapLoadTest {
         parseArgs(args);
 
         try (Ignite g = G.start("modules/core/src/test/config/spring-cache-swap.xml")) {
-            g.events().localListen(new GridPredicate<GridEvent>() {
+            g.events().localListen(new IgnitePredicate<GridEvent>() {
                 private final AtomicInteger cnt = new AtomicInteger(0);
 
                 private final AtomicBoolean getRmvStartedGuard = new AtomicBoolean(false);

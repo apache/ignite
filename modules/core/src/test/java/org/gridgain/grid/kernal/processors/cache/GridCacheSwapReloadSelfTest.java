@@ -86,7 +86,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         final CountDownLatch swapLatch = new CountDownLatch(1);
         final CountDownLatch unswapLatch = new CountDownLatch(1);
 
-        grid().events().localListen(new GridPredicate<GridEvent>() {
+        grid().events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_DATA_STORED:
@@ -140,7 +140,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         final CountDownLatch swapLatch = new CountDownLatch(2);
         final CountDownLatch unswapLatch = new CountDownLatch(2);
 
-        grid().events().localListen(new GridPredicate<GridEvent>() {
+        grid().events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_DATA_STORED:

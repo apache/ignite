@@ -15,11 +15,11 @@ import org.gridgain.grid.util.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;GridNode&gt;</tt> by extending
- * {@link GridPredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
+ * {@link org.gridgain.grid.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link GridPredicate} and {@link org.apache.ignite.cluster.ClusterNode}.
- * @see GridPredicate
+ * readability. For more information see {@link org.gridgain.grid.lang.IgnitePredicate} and {@link org.apache.ignite.cluster.ClusterNode}.
+ * @see org.gridgain.grid.lang.IgnitePredicate
  * @see org.apache.ignite.cluster.ClusterNode
  * @see GridFunc
  */
-public interface PN extends GridPredicate<ClusterNode> { /* No-op. */ }
+public interface PN extends IgnitePredicate<ClusterNode> { /* No-op. */ }

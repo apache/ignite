@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
  * and properly wraps {@link GridException} into {@link GridClosureException} instance.
  * @see PX1
  */
-public abstract class GridPredicateX<E1> implements GridPredicate<E1> {
+public abstract class IgnitePredicateX<E1> implements IgnitePredicate<E1> {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -714,7 +714,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch latch = new CountDownLatch(9);
 
-            g.events().localListen(new GridPredicate<GridEvent>() {
+            g.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     latch.countDown();
 

@@ -45,7 +45,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Listeners. */
-    private static Collection<GridPredicate<GridEvent>> lsnrs = new ArrayList<>();
+    private static Collection<IgnitePredicate<GridEvent>> lsnrs = new ArrayList<>();
 
     /**
      *
@@ -112,7 +112,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param ignite Grid to remove listeners from.
      */
     private void removeListeners(Ignite ignite) {
-        for (GridPredicate<GridEvent> lsnr : lsnrs)
+        for (IgnitePredicate<GridEvent> lsnr : lsnrs)
             ignite.events().stopLocalListen(lsnr);
     }
 
@@ -120,7 +120,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param ignite Grid
      * @param lsnr Listener.
      */
-    void addListener(Ignite ignite, GridPredicate<GridEvent> lsnr) {
+    void addListener(Ignite ignite, IgnitePredicate<GridEvent> lsnr) {
         if (!lsnrs.contains(lsnr))
             lsnrs.add(lsnr);
 
@@ -640,7 +640,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * Cache unlock listener.
      */
-    private class UnlockListener implements GridPredicate<GridEvent> {
+    private class UnlockListener implements IgnitePredicate<GridEvent> {
         /** Latch. */
         private final CountDownLatch latch;
 

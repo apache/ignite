@@ -187,7 +187,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If swap could not be released.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean invalidate(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter)
+    public boolean invalidate(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridException;
 
     /**
@@ -198,7 +198,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If operation failed.
      * @return {@code true} if entry was not being used and could be removed.
      */
-    public boolean compact(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter)
+    public boolean compact(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridException;
 
     /**
@@ -209,7 +209,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException In case of error.
      */
     public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
@@ -289,7 +289,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         UUID subjId,
         Object transformClo,
         String taskName,
-        GridPredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
         throws GridException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
@@ -300,7 +300,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V innerReload(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
+    @Nullable public V innerReload(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException,
         GridCacheEntryRemovedException;
 
     /**
@@ -338,7 +338,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean evt,
         boolean metrics,
         long topVer,
-        GridPredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -374,7 +374,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean evt,
         boolean metrics,
         long topVer,
-        GridPredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
@@ -427,7 +427,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean metrics,
         boolean primary,
         boolean checkVer,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drTtl,
         long drExpireTime,
@@ -466,7 +466,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long ttl,
         boolean evt,
         boolean metrics,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         boolean intercept,
         @Nullable UUID subjId,
         String taskName
@@ -484,7 +484,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
     public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * This locks is called by transaction manager during prepare step
@@ -566,7 +566,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V peek(GridCachePeekMode mode, GridPredicate<GridCacheEntry<K, V>>... filter)
+    @Nullable public V peek(GridCachePeekMode mode, IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -577,7 +577,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V peek(Collection<GridCachePeekMode> modes, GridPredicate<GridCacheEntry<K, V>>... filter)
+    @Nullable public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -590,7 +590,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridCacheFilterFailedException If {@code failFast} is {@code true} and
      *      filter didn't pass.
      */
-    @Nullable public V peekFailFast(GridCachePeekMode mode, GridPredicate<GridCacheEntry<K, V>>... filter)
+    @Nullable public V peekFailFast(GridCachePeekMode mode, IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
@@ -605,7 +605,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException;
 
     /**

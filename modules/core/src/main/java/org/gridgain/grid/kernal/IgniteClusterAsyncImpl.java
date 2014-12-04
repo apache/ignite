@@ -156,7 +156,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forPredicate(GridPredicate<ClusterNode> p) {
+    @Override public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
         return grid.forPredicate(p);
     }
 
@@ -221,7 +221,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridPredicate<ClusterNode> predicate() {
+    @Override public IgnitePredicate<ClusterNode> predicate() {
         return grid.predicate();
     }
 

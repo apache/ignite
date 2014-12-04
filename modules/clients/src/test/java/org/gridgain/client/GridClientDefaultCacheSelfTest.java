@@ -100,7 +100,7 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         GridClient gridClient = GridClientFactory.start(cfg);
 
-        assert F.exist(gridClient.compute().nodes(), new GridPredicate<GridClientNode>() {
+        assert F.exist(gridClient.compute().nodes(), new IgnitePredicate<GridClientNode>() {
             @Override public boolean apply(GridClientNode n) {
                 return n.nodeId().equals(locNodeId);
             }

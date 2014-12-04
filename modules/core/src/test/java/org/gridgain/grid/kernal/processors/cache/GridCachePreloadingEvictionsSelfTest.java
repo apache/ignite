@@ -130,7 +130,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                 1);
 
             ignite1.events().localListen(
-                new GridPredicate<GridEvent>() {
+                new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         startLatch.countDown();
 

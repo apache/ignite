@@ -170,7 +170,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         try {
             Ignite ignite = startGrid(gridName);
 
-            ignite.events().localListen(new GridPredicate<GridEvent>() {
+            ignite.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCheckpointEvent;
 

@@ -36,7 +36,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     private final GridFuture finFut;
 
     /** Preload predicate. */
-    protected GridPredicate<GridCacheEntryInfo<K, V>> preloadPred;
+    protected IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
 
     /**
      * @param cctx Cache context.
@@ -78,12 +78,12 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPredicate(GridPredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
         this.preloadPred = preloadPred;
     }
 
     /** {@inheritDoc} */
-    @Override public GridPredicate<GridCacheEntryInfo<K, V>> preloadPredicate() {
+    @Override public IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPredicate() {
         return preloadPred;
     }
 

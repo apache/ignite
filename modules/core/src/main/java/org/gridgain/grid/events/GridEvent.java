@@ -11,7 +11,6 @@ package org.gridgain.grid.events;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -22,15 +21,15 @@ import java.io.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#remoteQuery(GridPredicate , long, int...)} - querying
+ *          {@link GridEvents#remoteQuery(org.gridgain.grid.lang.IgnitePredicate, long, int...)} - querying
  *          events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#localQuery(GridPredicate, int...)} - querying only local
+ *          {@link GridEvents#localQuery(org.gridgain.grid.lang.IgnitePredicate, int...)} - querying only local
  *          events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#localListen(GridPredicate, int...)} - listening
+ *          {@link GridEvents#localListen(org.gridgain.grid.lang.IgnitePredicate, int...)} - listening
  *          to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
@@ -74,7 +73,7 @@ import java.io.*;
  * @see GridDeploymentEvent
  * @see GridDiscoveryEvent
  * @see GridTaskEvent
- * @see GridEvents#waitForLocal(GridPredicate, int...)
+ * @see GridEvents#waitForLocal(org.gridgain.grid.lang.IgnitePredicate, int...)
  */
 public interface GridEvent extends Comparable<GridEvent>, Serializable {
     /**

@@ -951,7 +951,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Collection<GridCache<?, ?>> cachesx(@Nullable GridPredicate<? super GridCache<?, ?>>... p) {
+        @Override public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p) {
             return null;
         }
 
@@ -1120,7 +1120,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroup forPredicate(GridPredicate<ClusterNode> p) {
+        @Override public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
             return null;
         }
 
@@ -1185,7 +1185,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridPredicate<ClusterNode> predicate() {
+        @Override public IgnitePredicate<ClusterNode> predicate() {
             return null;
         }
 

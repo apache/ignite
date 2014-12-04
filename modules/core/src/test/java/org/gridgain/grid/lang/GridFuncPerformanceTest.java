@@ -64,12 +64,12 @@ public class GridFuncPerformanceTest extends GridCommonAbstractTest {
             }
         };
 
-        GridPredicate<Integer> p1 = new GridPredicate<Integer>() {
+        IgnitePredicate<Integer> p1 = new IgnitePredicate<Integer>() {
             @Override public boolean apply(Integer e) {
                 return e % 2 == 0;
             }
         };
-        GridPredicate<Integer> p2 = new GridPredicate<Integer>() {
+        IgnitePredicate<Integer> p2 = new IgnitePredicate<Integer>() {
             @Override public boolean apply(Integer e) {
                 return e % 2 != 0;
             }

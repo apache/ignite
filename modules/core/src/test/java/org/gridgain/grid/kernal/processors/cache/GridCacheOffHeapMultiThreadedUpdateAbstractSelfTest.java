@@ -359,7 +359,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
 
     /**
      */
-    protected static class TestFilter implements GridPredicate<GridCacheEntry<Integer, Integer>> {
+    protected static class TestFilter implements IgnitePredicate<GridCacheEntry<Integer, Integer>> {
         /** {@inheritDoc} */
         @Override public boolean apply(GridCacheEntry<Integer, Integer> e) {
             if (e == null) {

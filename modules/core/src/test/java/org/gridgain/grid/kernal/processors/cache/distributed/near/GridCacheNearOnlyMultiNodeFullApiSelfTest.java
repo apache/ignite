@@ -358,7 +358,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     switch (evt.type()) {
                         case EVT_CACHE_OBJECT_LOCKED:

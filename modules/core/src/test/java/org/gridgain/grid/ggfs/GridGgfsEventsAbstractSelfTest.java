@@ -41,7 +41,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     private static GridGgfsImpl ggfs;
 
     /** Event listener. */
-    private GridPredicate<GridEvent> lsnr;
+    private IgnitePredicate<GridEvent> lsnr;
 
     /**
      * Gets cache configuration.
@@ -184,7 +184,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -265,7 +265,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -346,7 +346,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -403,7 +403,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -490,7 +490,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -544,7 +544,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -611,7 +611,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -661,7 +661,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -757,7 +757,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 log.info("Received event [evt=" + evt + ']');
 
@@ -815,7 +815,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * Predicate for matching {@link GridGgfsEvent}.
      */
-    private static class EventPredicate implements GridPredicate<GridEvent> {
+    private static class EventPredicate implements IgnitePredicate<GridEvent> {
         /** */
         private final int evt;
 

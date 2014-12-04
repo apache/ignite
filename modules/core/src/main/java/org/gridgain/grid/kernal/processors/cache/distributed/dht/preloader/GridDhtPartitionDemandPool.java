@@ -65,7 +65,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private final Collection<DemandWorker> dmdWorkers;
 
     /** Preload predicate. */
-    private GridPredicate<GridCacheEntryInfo<K, V>> preloadPred;
+    private IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
 
     /** Future for preload mode {@link GridCachePreloadMode#SYNC}. */
     @GridToStringInclude
@@ -170,7 +170,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      *
      * @param preloadPred Preload predicate.
      */
-    void preloadPredicate(GridPredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
         this.preloadPred = preloadPred;
     }
 

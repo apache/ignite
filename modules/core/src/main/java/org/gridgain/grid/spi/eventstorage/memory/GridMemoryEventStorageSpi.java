@@ -42,7 +42,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <ul>
  * <li>Event queue size (see {@link #setExpireCount(long)})</li>
  * <li>Event time-to-live value (see {@link #setExpireAgeMs(long)})</li>
- * <li>{@link #setFilter(GridPredicate)} - Event filter that should be used for decision to accept event.</li>
+ * <li>{@link #setFilter(org.gridgain.grid.lang.IgnitePredicate)} - Event filter that should be used for decision to accept event.</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * GridMemoryEventStorageSpi is used by default and should be explicitly configured only
@@ -104,14 +104,14 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     private ConcurrentLinkedDeque8<GridEvent> evts = new ConcurrentLinkedDeque8<>();
 
     /** Configured event predicate filter. */
-    private GridPredicate<GridEvent> filter;
+    private IgnitePredicate<GridEvent> filter;
 
     /**
      * Gets filter for events to be recorded.
      *
      * @return Filter to use.
      */
-    public GridPredicate<GridEvent> getFilter() {
+    public IgnitePredicate<GridEvent> getFilter() {
         return filter;
     }
 
@@ -121,7 +121,7 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
      * @param filter Filter to use.
      */
     @GridSpiConfiguration(optional = true)
-    public void setFilter(GridPredicate<GridEvent> filter) {
+    public void setFilter(IgnitePredicate<GridEvent> filter) {
         this.filter = filter;
     }
 
@@ -204,7 +204,7 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p) {
+    @Override public <T extends GridEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
         A.notNull(p, "p");
 
         cleanupQueue();

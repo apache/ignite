@@ -274,7 +274,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
         final CountDownLatch cnt = new CountDownLatch(1);
 
         pingingNode.events().localListen(
-            new GridPredicate<GridEvent>() {
+            new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     cnt.countDown();
 
@@ -308,7 +308,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new GridPredicate<GridEvent>() {
+                new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Node joined: " + evt.message());
 
@@ -351,7 +351,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new GridPredicate<GridEvent>() {
+                new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         cnt.countDown();
 
@@ -385,7 +385,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g2.events().localListen(new GridPredicate<GridEvent>() {
+            g2.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     cnt.countDown();
 
@@ -402,7 +402,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             // Start new grid, ensure that added to topology
             final CountDownLatch cnt2 = new CountDownLatch(1);
 
-            g2.events().localListen(new GridPredicate<GridEvent>() {
+            g2.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     cnt2.countDown();
 
@@ -431,7 +431,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new GridPredicate<GridEvent>() {
+                new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         cnt.countDown();
 
@@ -463,7 +463,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g2.events().localListen(new GridPredicate<GridEvent>() {
+            g2.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     cnt.countDown();
 
@@ -493,7 +493,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final Ignite g1 = startGrid(1);
 
-            GridPredicate<GridEvent> lsnr1 = new GridPredicate<GridEvent>() {
+            IgnitePredicate<GridEvent> lsnr1 = new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     info(evt.message());
 
@@ -517,7 +517,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final Ignite g2 = startGrid(2);
 
             g2.events().localListen(
-                new GridPredicate<GridEvent>() {
+                new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         if (stopping.get())
                             return true;
@@ -539,7 +539,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 EVT_NODE_METRICS_UPDATED
             );
 
-            g1.events().localListen(new GridPredicate<GridEvent>() {
+            g1.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (stopping.get())
                         return true;
@@ -581,7 +581,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch joinCnt = new CountDownLatch(2);
             final CountDownLatch failCnt = new CountDownLatch(1);
 
-            g1.events().localListen(new GridPredicate<GridEvent>() {
+            g1.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_NODE_JOINED)
                         joinCnt.countDown();
@@ -620,7 +620,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g3.events().localListen(new GridPredicate<GridEvent>() {
+            g3.events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     cnt.countDown();
 

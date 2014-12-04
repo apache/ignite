@@ -30,7 +30,7 @@ import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.grid.lang.IgnitePredicate
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.lang.{GridFunc => F}
@@ -140,13 +140,13 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: GridPredicate[GridEvent] = null
+    private var nodeLeftLsnr: IgnitePredicate[GridEvent] = null
 
     /** Node join listener. */
-    private var nodeJoinLsnr: GridPredicate[GridEvent] = null
+    private var nodeJoinLsnr: IgnitePredicate[GridEvent] = null
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: GridPredicate[GridEvent] = null
+    private var nodeSegLsnr: IgnitePredicate[GridEvent] = null
 
     /** Node stop listener. */
     private var nodeStopLsnr: GridGainListener = null
@@ -1619,7 +1619,7 @@ object visor extends VisorTag {
                 setVarIfAbsent(ip.get, "h")
         })
 
-        nodeJoinLsnr = new GridPredicate[GridEvent]() {
+        nodeJoinLsnr = new IgnitePredicate[GridEvent]() {
             override def apply(e: GridEvent): Boolean = {
                 e match {
                     case de: GridDiscoveryEvent =>
@@ -1648,7 +1648,7 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-        nodeLeftLsnr = new GridPredicate[GridEvent]() {
+        nodeLeftLsnr = new IgnitePredicate[GridEvent]() {
             override def apply(e: GridEvent): Boolean = {
                 e match {
                     case (de: GridDiscoveryEvent) =>
@@ -1679,7 +1679,7 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-        nodeSegLsnr = new GridPredicate[GridEvent] {
+        nodeSegLsnr = new IgnitePredicate[GridEvent] {
             override def apply(e: GridEvent): Boolean = {
                 e match {
                     case de: GridDiscoveryEvent =>

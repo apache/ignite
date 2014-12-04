@@ -47,7 +47,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private IgniteBiPredicate<UUID, GridEvent> cb;
 
     /** Filter. */
-    private GridPredicate<GridEvent> filter;
+    private IgnitePredicate<GridEvent> filter;
 
     /** Serialized filter. */
     private byte[] filterBytes;
@@ -76,7 +76,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
      * @param filter Filter.
      * @param types Types.
      */
-    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, GridEvent> cb, @Nullable GridPredicate<GridEvent> filter,
+    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, GridEvent> cb, @Nullable IgnitePredicate<GridEvent> filter,
         @Nullable int[] types) {
         this.cb = cb == null ? DFLT_CALLBACK : cb;
         this.filter = filter;
@@ -301,7 +301,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             depInfo = (GridDeploymentInfo)in.readObject();
         }
         else
-            filter = (GridPredicate<GridEvent>)in.readObject();
+            filter = (IgnitePredicate<GridEvent>)in.readObject();
 
         types = (int[])in.readObject();
     }

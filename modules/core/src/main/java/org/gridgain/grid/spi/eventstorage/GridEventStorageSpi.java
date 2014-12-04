@@ -23,11 +23,11 @@ import java.util.*;
  * performance reasons GridGain is designed to store all locally produced events
  * locally. These events can be later retrieved using either distributed query:
  * <ul>
- *      <li>{@link GridEvents#remoteQuery(GridPredicate, long, int...)}</li>
+ *      <li>{@link GridEvents#remoteQuery(org.gridgain.grid.lang.IgnitePredicate, long, int...)}</li>
  * </ul>
  * or local only query:
  * <ul>
- *      <li>{@link GridEvents#localQuery(GridPredicate, int...)}</li>
+ *      <li>{@link GridEvents#localQuery(org.gridgain.grid.lang.IgnitePredicate, int...)}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -45,7 +45,7 @@ public interface GridEventStorageSpi extends GridSpi {
      * @param p Event predicate filter.
      * @return Collection of events.
      */
-    public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p);
+    public <T extends GridEvent> Collection<T> localEvents(IgnitePredicate<T> p);
 
     /**
      * Records single event.

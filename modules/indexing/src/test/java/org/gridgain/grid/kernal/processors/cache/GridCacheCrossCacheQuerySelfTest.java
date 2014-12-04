@@ -96,7 +96,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testOnProjection() throws Exception {
         GridCacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
-            new GridPredicate<GridCacheEntry<Integer, FactPurchase>>() {
+            new IgnitePredicate<GridCacheEntry<Integer, FactPurchase>>() {
                 @Override public boolean apply(GridCacheEntry<Integer, FactPurchase> e) {
                     return e.getKey() > 12;
                 }

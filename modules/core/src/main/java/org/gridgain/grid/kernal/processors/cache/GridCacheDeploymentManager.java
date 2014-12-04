@@ -38,7 +38,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Node filter. */
-    private GridPredicate<ClusterNode> nodeFilter;
+    private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Cache class loader */
     private volatile ClassLoader globalLdr;

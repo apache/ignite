@@ -27,19 +27,19 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#remoteQuery(GridPredicate, long, int...)} -
+ *          {@link GridEvents#remoteQuery(org.gridgain.grid.lang.IgnitePredicate, long, int...)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#localQuery(GridPredicate, int...)} -
+ *          {@link GridEvents#localQuery(org.gridgain.grid.lang.IgnitePredicate, int...)} -
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#localListen(GridPredicate, int...)} -
+ *          {@link GridEvents#localListen(org.gridgain.grid.lang.IgnitePredicate, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link GridEvents#waitForLocal(GridPredicate, int...)}.
+ * User can also wait for events using method {@link GridEvents#waitForLocal(org.gridgain.grid.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in GridGain are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
@@ -76,7 +76,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
 
     /** Continuous query filter. */
     @GridToStringInclude
-    private final GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter;
+    private final IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter;
 
     /** Query arguments. */
     @GridToStringInclude
@@ -109,7 +109,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<K, V> scanQryFilter,
-        @Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
+        @Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
         @Nullable String taskName) {
@@ -186,7 +186,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
      *
      * @return Continuous query filter.
      */
-    @Nullable public GridPredicate<GridCacheContinuousQueryEntry<K, V>> continuousQueryFilter() {
+    @Nullable public IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> continuousQueryFilter() {
         return contQryFilter;
     }
 

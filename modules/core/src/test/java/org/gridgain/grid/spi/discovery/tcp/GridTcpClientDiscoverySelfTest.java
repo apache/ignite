@@ -528,7 +528,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     private void attachListeners(int srvCnt, int clientCnt) throws Exception {
         if (srvJoinedLatch != null) {
             for (int i = 0; i < srvCnt; i++) {
-                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                G.grid("server-" + i).events().localListen(new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Joined event fired on server: " + evt);
 
@@ -542,7 +542,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (srvLeftLatch != null) {
             for (int i = 0; i < srvCnt; i++) {
-                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                G.grid("server-" + i).events().localListen(new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Left event fired on server: " + evt);
 
@@ -556,7 +556,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (srvFailedLatch != null) {
             for (int i = 0; i < srvCnt; i++) {
-                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                G.grid("server-" + i).events().localListen(new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Failed event fired on server: " + evt);
 
@@ -570,7 +570,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (clientJoinedLatch != null) {
             for (int i = 0; i < clientCnt; i++) {
-                G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                G.grid("client-" + i).events().localListen(new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Joined event fired on client: " + evt);
 
@@ -584,7 +584,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (clientLeftLatch != null) {
             for (int i = 0; i < clientCnt; i++) {
-                G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                G.grid("client-" + i).events().localListen(new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Left event fired on client: " + evt);
 
@@ -598,7 +598,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (clientFailedLatch != null) {
             for (int i = 0; i < clientCnt; i++) {
-                G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                G.grid("client-" + i).events().localListen(new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Failed event fired on client: " + evt);
 

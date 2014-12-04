@@ -48,7 +48,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
     public void testMemoryEventStorage() throws Exception {
         GridMemoryEventStorageSpi spi = getSpi();
 
-        GridPredicate<GridEvent> filter = F.alwaysTrue();
+        IgnitePredicate<GridEvent> filter = F.alwaysTrue();
 
         // Get all events.
         Collection<GridEvent> evts = spi.localEvents(filter);

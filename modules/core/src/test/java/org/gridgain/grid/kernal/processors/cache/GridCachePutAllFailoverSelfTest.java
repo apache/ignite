@@ -62,7 +62,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Filter to include only worker nodes. */
-    private static final GridPredicate<ClusterNode> workerNodesFilter = new PN() {
+    private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
         @SuppressWarnings("unchecked")
         @Override public boolean apply(ClusterNode n) {
              return "worker".equals(n.attribute("segment"));
@@ -76,7 +76,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private final BlockingQueue<GridComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(50);
 
     /** Test failover SPI. */
-    private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((GridPredicate)workerNodesFilter);
+    private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
 
     /**
      * @throws Exception If failed.
@@ -635,7 +635,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         private Set<GridComputeJobContext> failedOverJobs = new HashSet<>();
 
         /** Node filter. */
-        private GridPredicate<? super ClusterNode>[] filter;
+        private IgnitePredicate<? super ClusterNode>[] filter;
 
         /** */
         @GridLoggerResource
@@ -644,7 +644,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         /**
          * @param filter Filter.
          */
-        MasterFailoverSpi(GridPredicate<? super ClusterNode>... filter) {
+        MasterFailoverSpi(IgnitePredicate<? super ClusterNode>... filter) {
             this.filter = filter;
         }
 
@@ -675,7 +675,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             List<ClusterNode> cp = new ArrayList<>(top);
 
             // Keep collection type.
-            F.retain(cp, false, new GridPredicate<ClusterNode>() {
+            F.retain(cp, false, new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     return F.isAll(node, filter);
                 }

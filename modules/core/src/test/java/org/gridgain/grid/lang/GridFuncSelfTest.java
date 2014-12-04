@@ -167,8 +167,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         GridNodePredicate p1 = new GridNodePredicate(id1, id2);
         GridNodePredicate p2 = new GridNodePredicate(id3, id4);
 
-        GridPredicate<ClusterNode> and = F.<ClusterNode>and(p1, p2);
-        GridPredicate<ClusterNode> or = F.<ClusterNode>or(p1, p2);
+        IgnitePredicate<ClusterNode> and = F.<ClusterNode>and(p1, p2);
+        IgnitePredicate<ClusterNode> or = F.<ClusterNode>or(p1, p2);
 
         assert and instanceof GridNodePredicate;
         assert or instanceof GridNodePredicate;
@@ -916,7 +916,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testNot() {
-        GridPredicate<Object> p1 = F.not(F.alwaysFalse());
+        IgnitePredicate<Object> p1 = F.not(F.alwaysFalse());
 
         assert F.alwaysTrue() == p1;
 
@@ -938,13 +938,13 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testEqualTo() {
-        GridPredicate<Object> p1 = F.equalTo(null);
+        IgnitePredicate<Object> p1 = F.equalTo(null);
 
         assert p1 != null;
         assert !p1.apply(new Object());
         assert p1.apply(null);
 
-        GridPredicate<String> p2 = F.equalTo("test");
+        IgnitePredicate<String> p2 = F.equalTo("test");
 
         assert p2 != null;
         assert !p2.apply("test1");
@@ -957,13 +957,13 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testNotEqualTo() {
-        GridPredicate<Object> p1 = F.notEqualTo(null);
+        IgnitePredicate<Object> p1 = F.notEqualTo(null);
 
         assert p1 != null;
         assert p1.apply(new Object());
         assert !p1.apply(null);
 
-        GridPredicate<String> p2 = F.notEqualTo("test");
+        IgnitePredicate<String> p2 = F.notEqualTo("test");
 
         assert p2 != null;
         assert p2.apply("test1");
@@ -976,13 +976,13 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testInstanceOf() {
-        GridPredicate<Object> p1 = F.instanceOf(Object.class);
+        IgnitePredicate<Object> p1 = F.instanceOf(Object.class);
 
         assert p1 != null;
         assert p1.apply(this);
         assert !p1.apply(null);
 
-        GridPredicate<Object> p2 = F.instanceOf(TestCase.class);
+        IgnitePredicate<Object> p2 = F.instanceOf(TestCase.class);
 
         assert p2 != null;
         assert p2.apply(this);
@@ -995,13 +995,13 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testNotInstanceOf() {
-        GridPredicate<Object> p1 = F.notInstanceOf(Object.class);
+        IgnitePredicate<Object> p1 = F.notInstanceOf(Object.class);
 
         assert p1 != null;
         assert !p1.apply(this);
         assert p1.apply(null);
 
-        GridPredicate<Object> p2 = F.notInstanceOf(TestCase.class);
+        IgnitePredicate<Object> p2 = F.notInstanceOf(TestCase.class);
 
         assert p2 != null;
         assert !p2.apply(this);
@@ -1014,21 +1014,21 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "NullableProblems", "NullArgumentToVariableArgMethod"})
     public void testAnd() {
-        Collection<GridPredicate<Object>> ps = Arrays.asList(F.alwaysTrue(), F.alwaysTrue());
+        Collection<IgnitePredicate<Object>> ps = Arrays.asList(F.alwaysTrue(), F.alwaysTrue());
 
-        GridPredicate<Object> p = F.and(ps);
-
-        assert p != null;
-        assert p.apply(new Object());
-        assert p.apply(null);
-
-        p = F.and(ps.toArray(new GridPredicate[2]), ps.toArray(new GridPredicate[2]));
+        IgnitePredicate<Object> p = F.and(ps);
 
         assert p != null;
         assert p.apply(new Object());
         assert p.apply(null);
 
-        p = F.and(ps.toArray(new GridPredicate[2]), F.alwaysTrue(), F.alwaysTrue());
+        p = F.and(ps.toArray(new IgnitePredicate[2]), ps.toArray(new IgnitePredicate[2]));
+
+        assert p != null;
+        assert p.apply(new Object());
+        assert p.apply(null);
+
+        p = F.and(ps.toArray(new IgnitePredicate[2]), F.alwaysTrue(), F.alwaysTrue());
 
         assert p != null;
         assert p.apply(new Object());
@@ -1054,10 +1054,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert !p.apply(new Object());
         assert !p.apply(null);
 
-        Collection<? extends GridPredicate<String>> ps2 =
+        Collection<? extends IgnitePredicate<String>> ps2 =
             Arrays.asList(F.<String>instanceOf(String.class), F.<String>equalTo("test"));
 
-        GridPredicate<String> pred2 = F.and(ps2);
+        IgnitePredicate<String> pred2 = F.and(ps2);
 
         assert pred2 != null;
         assert pred2.apply("test");
@@ -1067,10 +1067,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert F.and(F.alwaysTrue()) == F.alwaysTrue();
 
         assertTrue(F.and(null, null).apply(""));
-        assertTrue(F.and((GridPredicate<? super Object>[])null, F.alwaysTrue()).apply(""));
-        assertFalse(F.and((GridPredicate<? super Object>[])null, F.alwaysFalse()).apply(""));
+        assertTrue(F.and((IgnitePredicate<? super Object>[])null, F.alwaysTrue()).apply(""));
+        assertFalse(F.and((IgnitePredicate<? super Object>[])null, F.alwaysFalse()).apply(""));
 
-        GridPredicate<? super Object> nullPred = null;
+        IgnitePredicate<? super Object> nullPred = null;
         assertTrue(F.and(nullPred).apply(""));
         assertTrue(F.and(nullPred, F.alwaysTrue()).apply(""));
         assertFalse(F.and(nullPred, F.alwaysFalse()).apply(""));
@@ -1081,9 +1081,9 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "NullableProblems"})
     public void testOr() {
-        Collection<? extends GridPredicate<Object>> ps = Arrays.asList(F.alwaysTrue(), F.alwaysTrue());
+        Collection<? extends IgnitePredicate<Object>> ps = Arrays.asList(F.alwaysTrue(), F.alwaysTrue());
 
-        GridPredicate<Object> p = F.or(ps);
+        IgnitePredicate<Object> p = F.or(ps);
 
         assert p != null;
         assert p.apply(new Object());
@@ -1095,13 +1095,13 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert p.apply(new Object());
         assert p.apply(null);
 
-        p = F.or(ps.toArray(new GridPredicate[2]), F.alwaysTrue(), F.alwaysTrue());
+        p = F.or(ps.toArray(new IgnitePredicate[2]), F.alwaysTrue(), F.alwaysTrue());
 
         assert p != null;
         assert p.apply(new Object());
         assert p.apply(null);
 
-        p = F.or(ps.toArray(new GridPredicate[2]), ps.toArray(new GridPredicate[2]));
+        p = F.or(ps.toArray(new IgnitePredicate[2]), ps.toArray(new IgnitePredicate[2]));
 
         assert p != null;
         assert p.apply(new Object());
@@ -1121,10 +1121,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert p.apply(new Object());
         assert p.apply(null);
 
-        Collection<? extends GridPredicate<String>> ps2 =
+        Collection<? extends IgnitePredicate<String>> ps2 =
             Arrays.asList(F.<String>instanceOf(String.class), F.<String>equalTo("test"));
 
-        GridPredicate<String> pred2 = F.or(ps2);
+        IgnitePredicate<String> pred2 = F.or(ps2);
 
         assert pred2 != null;
         assert pred2.apply("test");
@@ -1133,11 +1133,11 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert F.or(F.alwaysFalse()) == F.alwaysFalse();
         assert F.or(F.alwaysTrue()) == F.alwaysTrue();
 
-        assertFalse(F.or(null, (GridPredicate<Object>[])null).apply(""));
-        assertTrue(F.or((GridPredicate<? super Object>[])null, F.alwaysTrue()).apply(""));
-        assertFalse(F.or((GridPredicate<? super Object>[])null, F.alwaysFalse()).apply(""));
+        assertFalse(F.or(null, (IgnitePredicate<Object>[])null).apply(""));
+        assertTrue(F.or((IgnitePredicate<? super Object>[])null, F.alwaysTrue()).apply(""));
+        assertFalse(F.or((IgnitePredicate<? super Object>[])null, F.alwaysFalse()).apply(""));
 
-        GridPredicate<? super Object> nullPred = null;
+        IgnitePredicate<? super Object> nullPred = null;
         assertFalse(F.or(nullPred).apply(""));
         assertFalse(F.or(F.alwaysFalse(), nullPred, nullPred).apply(""));
         assertTrue(F.or(F.alwaysTrue(), nullPred, nullPred).apply(""));
@@ -1154,7 +1154,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridPredicate<String> p = F.compose(F.<Class>equalTo(String.class), c);
+        IgnitePredicate<String> p = F.compose(F.<Class>equalTo(String.class), c);
 
         assert p.apply("test");
 
@@ -1265,7 +1265,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testIn() {
-        GridPredicate<String> p = F.in(Arrays.asList("1", "2", "3"));
+        IgnitePredicate<String> p = F.in(Arrays.asList("1", "2", "3"));
 
         assert p.apply("1");
         assert !p.apply("4");
@@ -1785,7 +1785,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testExist() {
-        GridPredicate<String> pred = new P1<String>() {
+        IgnitePredicate<String> pred = new P1<String>() {
             @Override public boolean apply(String e) { return "2".equals(e); }
         };
 
@@ -1809,7 +1809,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         map.put(2, "2");
         map.put(3, "3");
 
-        GridPredicate<Map.Entry<Integer, String>> predMap = new P1<Map.Entry<Integer, String>>() {
+        IgnitePredicate<Map.Entry<Integer, String>> predMap = new P1<Map.Entry<Integer, String>>() {
             @Override public boolean apply(Map.Entry<Integer, String> entry) {
                 return entry.getKey() == 2 && "2".equals(entry.getValue());
             }
@@ -1822,7 +1822,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert !F.exist(map, F.<Map.Entry<Integer, String>>alwaysFalse(), null);
         assert F.exist(map, (P1<Map.Entry<Integer, String>>[])null);
 
-        GridPredicate<Map.Entry<Integer, String>> nullMapPred = null;
+        IgnitePredicate<Map.Entry<Integer, String>> nullMapPred = null;
 
         assert F.exist(map, nullMapPred);
     }
@@ -1831,7 +1831,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testForAll() {
-        GridPredicate<String> p = new P1<String>() {
+        IgnitePredicate<String> p = new P1<String>() {
             @Override public boolean apply(String e) { return e.contains("2"); }
         };
 
@@ -1845,7 +1845,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert !F.forAll(Arrays.asList("1", "2", "3"), F.<String>alwaysFalse(), null);
         assert F.forAll(Arrays.asList("1", "2", "3"), (P1<String>[])null);
 
-        GridPredicate<String> nullStrPred = null;
+        IgnitePredicate<String> nullStrPred = null;
 
         assert F.forAll(Arrays.asList("1", "2", "3"), nullStrPred);
 
@@ -1862,7 +1862,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         Map<Integer, String> map = F.asMap(21, "21", 22, "22", 23, "23");
 
-        GridPredicate<Map.Entry<Integer, String>> p2 = new P1<Map.Entry<Integer, String>>() {
+        IgnitePredicate<Map.Entry<Integer, String>> p2 = new P1<Map.Entry<Integer, String>>() {
             @Override public boolean apply(Map.Entry<Integer, String> entry) {
                 return entry.getValue().contains("2");
             }
@@ -1875,7 +1875,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert !F.forAll(map, F.<Map.Entry<Integer, String>>alwaysFalse(), null);
         assert F.forAll(map, (P1<Map.Entry<Integer, String>>[])null);
 
-        GridPredicate<Map.Entry<Integer, String>> nullMapPred = null;
+        IgnitePredicate<Map.Entry<Integer, String>> nullMapPred = null;
 
         assert F.forAll(map, nullMapPred);
 
@@ -1892,7 +1892,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"NullArgumentToVariableArgMethod"})
     public void testForAny() {
-        GridPredicate<String> p = new P1<String>() {
+        IgnitePredicate<String> p = new P1<String>() {
             @Override public boolean apply(String e) { return e.contains("2"); }
         };
 
@@ -1915,7 +1915,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert !F.forAny(Collections.<String>emptySet(), F.<Object>alwaysTrue(), null);
         assert !F.forAny(Collections.<String>emptySet(), F.<Object>alwaysFalse(), null);
 
-        GridPredicate<String> truePred = new P1<String>() {
+        IgnitePredicate<String> truePred = new P1<String>() {
             @Override public boolean apply(String e) {
                 return true;
             }
@@ -1923,7 +1923,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         assert !F.forAny(Collections.<String>emptySet(), truePred);
 
-        GridPredicate<String> falsePred = new P1<String>() {
+        IgnitePredicate<String> falsePred = new P1<String>() {
             @Override public boolean apply(String e) {
                 return false;
             }
@@ -1961,7 +1961,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert F.forAny(map);
         assert F.forAny(map, null);
 
-        GridPredicate<Map.Entry<Integer, String>> p2 = new P1<Map.Entry<Integer, String>>() {
+        IgnitePredicate<Map.Entry<Integer, String>> p2 = new P1<Map.Entry<Integer, String>>() {
             @Override public boolean apply(Map.Entry<Integer, String> e) {
                 return e.getValue().contains("1");
             }
@@ -1974,7 +1974,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         assert !F.forAny(map, F.<Map.Entry<Integer, String>>alwaysFalse(), null);
         assert F.forAny(map, (P1<Map.Entry<Integer, String>>[])null);
 
-        GridPredicate<Map.Entry<Integer, String>> nullMapPred = null;
+        IgnitePredicate<Map.Entry<Integer, String>> nullMapPred = null;
 
         assert F.forAny(map, nullMapPred);
 
@@ -2200,7 +2200,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testCollectionView1() {
         Collection<Integer> c = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 
-        GridPredicate<Integer> p = new P1<Integer>() {
+        IgnitePredicate<Integer> p = new P1<Integer>() {
             @Override public boolean apply(Integer e) { return e % 2 == 0; }
         };
 
@@ -2295,7 +2295,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testCollectionViewNullPredicates() {
         Collection<Integer> c = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 
-        GridPredicate<Integer> nullIntPred = null;
+        IgnitePredicate<Integer> nullIntPred = null;
 
         int cSize = c.size();
 
@@ -2507,7 +2507,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i <= 10; i++)
             c.put(i, i);
 
-        GridPredicate<Integer> p = new P1<Integer>() {
+        IgnitePredicate<Integer> p = new P1<Integer>() {
             @Override public boolean apply(Integer e) { return e % 2 == 0; }
         };
 
@@ -2624,11 +2624,11 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i <= 10; i++)
             c.put(i, i);
 
-        GridPredicate<Integer> p = new P1<Integer>() {
+        IgnitePredicate<Integer> p = new P1<Integer>() {
             @Override public boolean apply(Integer e) { return e % 2 == 0; }
         };
 
-        GridPredicate<Integer> nullPred = null;
+        IgnitePredicate<Integer> nullPred = null;
 
         int cSize = c.size();
 
@@ -2879,7 +2879,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"NullArgumentToVariableArgMethod"})
     public void testEventType() {
         // Always false.
-        GridPredicate<GridEvent> p = F.eventType();
+        IgnitePredicate<GridEvent> p = F.eventType();
 
         assert p != null;
 
@@ -2910,7 +2910,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"NullArgumentToVariableArgMethod"})
     public void testEventId() {
         // Always false.
-        GridPredicate<GridEvent> p = F.eventId();
+        IgnitePredicate<GridEvent> p = F.eventId();
 
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
@@ -2940,7 +2940,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testEventAfter() throws Exception {
         GridEvent evt1 = new TestEvent(1);
 
-        GridPredicate<GridEvent> p = F.eventAfter(U.currentTimeMillis() + 100);
+        IgnitePredicate<GridEvent> p = F.eventAfter(U.currentTimeMillis() + 100);
 
         assert p != null;
 
@@ -2960,7 +2960,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     public void testEventNode1() throws Exception {
         // Always false.
-        GridPredicate<GridEvent> p = F.eventNode(null);
+        IgnitePredicate<GridEvent> p = F.eventNode(null);
 
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
@@ -3007,7 +3007,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         GridEvent evt4 = new TestEvent(g2.cluster().localNode());
 
         try {
-            GridPredicate<GridEvent> p = F.eventNode(getTestGridName(1), null);
+            IgnitePredicate<GridEvent> p = F.eventNode(getTestGridName(1), null);
 
             assert p != null;
 
@@ -3016,7 +3016,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             assert p.apply(evt3);
             assert p.apply(evt4);
 
-            p = F.eventNode(getTestGridName(1), new GridPredicate<ClusterNode>() {
+            p = F.eventNode(getTestGridName(1), new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode n) {
                     return n != null && n.id().equals(g1.cluster().localNode().id());
                 }
@@ -3053,7 +3053,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     public void testEventNodeId() {
         // Always false.
-        GridPredicate<GridEvent> p = F.eventNodeId();
+        IgnitePredicate<GridEvent> p = F.eventNodeId();
 
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));

@@ -59,7 +59,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> List<T> remoteQuery(GridPredicate<T> p, long timeout,
+    @Override public <T extends GridEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
         @Nullable int... types) throws GridException {
         A.notNull(p, "p");
 
@@ -75,13 +75,13 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) throws GridException {
+        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws GridException {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
+        boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types) throws GridException {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
@@ -91,7 +91,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
         try {
             return saveOrGet(ctx.continuous().startRoutine(
                 new GridEventConsumeHandler((IgniteBiPredicate<UUID, GridEvent>)locLsnr,
-                    (GridPredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
+                    (IgnitePredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
         finally {
             unguard();
@@ -113,7 +113,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> T waitForLocal(@Nullable GridPredicate<T> filter,
+    @Override public <T extends GridEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter,
         @Nullable int... types) throws GridException {
         guard();
 
@@ -126,7 +126,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> Collection<T> localQuery(GridPredicate<T> p, @Nullable int... types) {
+    @Override public <T extends GridEvent> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
@@ -158,7 +158,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public void localListen(GridPredicate<? extends GridEvent> lsnr, int[] types) {
+    @Override public void localListen(IgnitePredicate<? extends GridEvent> lsnr, int[] types) {
         A.notNull(lsnr, "lsnr");
         A.notEmpty(types, "types");
 
@@ -173,7 +173,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopLocalListen(GridPredicate<? extends GridEvent> lsnr, @Nullable int... types) {
+    @Override public boolean stopLocalListen(IgnitePredicate<? extends GridEvent> lsnr, @Nullable int... types) {
         A.notNull(lsnr, "lsnr");
 
         guard();
@@ -246,11 +246,11 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
      * @param types Event types.
      * @return Compound predicate.
      */
-    private static <T extends GridEvent> GridPredicate<T> compoundPredicate(final GridPredicate<T> p,
+    private static <T extends GridEvent> IgnitePredicate<T> compoundPredicate(final IgnitePredicate<T> p,
         @Nullable final int... types) {
 
         return F.isEmpty(types) ? p :
-            new GridPredicate<T>() {
+            new IgnitePredicate<T>() {
                 @Override public boolean apply(T t) {
                     for (int type : types) {
                         if (type == t.type())

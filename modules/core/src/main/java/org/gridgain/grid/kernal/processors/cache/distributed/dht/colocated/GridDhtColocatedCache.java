@@ -150,7 +150,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
-        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -186,7 +186,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsKey(K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
+    @Override public boolean containsKey(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>> filter) {
         A.notNull(key, "key");
 
         // We need detached entry here because if there is an ongoing transaction,
@@ -213,7 +213,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
         boolean forcePrimary, long topVer, @Nullable UUID subjId, String taskName, boolean deserializePortable,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -317,7 +317,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     @Override public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
         GridNearTxLocal<K, V> txx = (GridNearTxLocal<K, V>)tx;
@@ -345,7 +345,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys.isEmpty())
             return;
 
@@ -543,7 +543,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final Collection<K> keys,
         final boolean txRead,
         final long timeout,
-        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert keys != null;
 
@@ -590,7 +590,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         GridCacheContext<K, V> cacheCtx,
         @Nullable final GridNearTxLocal<K, V> tx, long threadId,
         final GridCacheVersion ver, final long topVer, final Collection<K> keys, final boolean txRead,
-        final long timeout, @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        final long timeout, @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         int cnt = keys.size();
 
         if (tx == null) {

@@ -188,7 +188,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         GridCacheProjection prj;
 
         if (portableEnabled()) {
-            prj = cache.projection(new GridPredicate<GridCacheEntry<GridPortableObject, GridPortableObject>>() {
+            prj = cache.projection(new IgnitePredicate<GridCacheEntry<GridPortableObject, GridPortableObject>>() {
                 @Override public boolean apply(GridCacheEntry<GridPortableObject, GridPortableObject> e) {
                     Key key = e.getKey().deserialize();
                     Person val = e.peek().deserialize();
@@ -202,7 +202,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             });
         }
         else {
-            prj = cache.projection(new GridPredicate<GridCacheEntry<Key, Person>>() {
+            prj = cache.projection(new IgnitePredicate<GridCacheEntry<Key, Person>>() {
                 @Override public boolean apply(GridCacheEntry<Key, Person> e) {
                     Key key = e.getKey();
                     Person val = e.peek();

@@ -117,7 +117,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         G.setDaemon(false);
 
-        ignite.events().localListen(new GridPredicate<GridEvent>() {
+        ignite.events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 info("Received event: " + evt.shortDisplay());
 

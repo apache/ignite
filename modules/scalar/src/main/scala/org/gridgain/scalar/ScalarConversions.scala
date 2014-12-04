@@ -274,7 +274,7 @@ trait ScalarConversions {
      *
      * @param s Sequence of one-argument Scala functions to convert.
      */
-    implicit def toVarArgs[T](s: Seq[T => Boolean]): Seq[GridPredicate[_ >: T]] =
+    implicit def toVarArgs[T](s: Seq[T => Boolean]): Seq[IgnitePredicate[_ >: T]] =
         s.map((f: T => Boolean) => toPredicate(f))
 
     /**
@@ -908,7 +908,7 @@ trait ScalarConversions {
      *
      * @param p Grid predicate to convert.
      */
-    implicit def fromPredicate[T](p: GridPredicate[T]): T => Boolean =
+    implicit def fromPredicate[T](p: IgnitePredicate[T]): T => Boolean =
         new ScalarPredicateFunction[T](p)
 
     /**
@@ -916,7 +916,7 @@ trait ScalarConversions {
      *
      * @param p Grid predicate to convert.
      */
-    implicit def fromPredicateX[T](p: GridPredicateX[T]): T => Boolean =
+    implicit def fromPredicateX[T](p: IgnitePredicateX[T]): T => Boolean =
         new ScalarPredicateXFunction[T](p)
 
     /**
@@ -924,7 +924,7 @@ trait ScalarConversions {
       *
       * @param p Java-side predicate to pimp.
       */
-    implicit def predicateDotScala[T](p: GridPredicate[T]) = new {
+    implicit def predicateDotScala[T](p: IgnitePredicate[T]) = new {
         def scala: T => Boolean =
             fromPredicate(p)
     }
@@ -934,7 +934,7 @@ trait ScalarConversions {
       *
       * @param p Java-side predicate to pimp.
       */
-    implicit def predicateXDotScala[T](p: GridPredicateX[T]) = new {
+    implicit def predicateXDotScala[T](p: IgnitePredicateX[T]) = new {
         def scala: T => Boolean =
             fromPredicateX(p)
     }

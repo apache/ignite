@@ -100,7 +100,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private long topVer;
 
     /** Optional filter. */
-    private final GridPredicate<GridCacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Write synchronization mode. */
     private final GridCacheWriteSynchronizationMode syncMode;
@@ -178,7 +178,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        final GridPredicate<GridCacheEntry<K, V>>[] filter,
+        final IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
     ) {

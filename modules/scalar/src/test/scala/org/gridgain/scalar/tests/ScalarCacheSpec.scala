@@ -20,7 +20,7 @@ import org.gridgain.grid.events.{GridEventType, GridEvent}
 import GridEventType._
 import collection.JavaConversions._
 import org.junit.runner.RunWith
-import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.grid.lang.IgnitePredicate
 
 /**
  * Scalar cache test.
@@ -52,7 +52,7 @@ class ScalarCacheSpec extends FlatSpec with ShouldMatchers {
         val g = grid$
 
         g *< (() => {
-            val lsnr = new GridPredicate[GridEvent]() {
+            val lsnr = new IgnitePredicate[GridEvent]() {
                 override def apply(e: GridEvent): Boolean = {
                     println(e.shortDisplay)
 

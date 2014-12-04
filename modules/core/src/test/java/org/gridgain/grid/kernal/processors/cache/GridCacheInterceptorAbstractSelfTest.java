@@ -1190,7 +1190,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case UPDATE_FILTER: {
-                    Object old = cache.remove(key, new GridPredicate<GridCacheEntry<String, Integer>>() {
+                    Object old = cache.remove(key, new IgnitePredicate<GridCacheEntry<String, Integer>>() {
                         @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                             return true;
                         }

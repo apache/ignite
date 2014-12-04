@@ -283,7 +283,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                         return !localNode().isDaemon() ?
                             all :
-                            F.view(all, new GridPredicate<ClusterNode>() {
+                            F.view(all, new IgnitePredicate<ClusterNode>() {
                                 @Override public boolean apply(ClusterNode n) {
                                     return n.isDaemon();
                                 }

@@ -47,10 +47,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb;
 
     /** Filter. */
-    private GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter;
+    private IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter;
 
     /** Projection predicate */
-    private GridPredicate<GridCacheEntry<K, V>> prjPred;
+    private IgnitePredicate<GridCacheEntry<K, V>> prjPred;
 
     /** Deployable object for filter. */
     private DeployableObject filterDep;
@@ -78,8 +78,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
         IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
-        @Nullable GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
+        @Nullable IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
         assert topic != null;
         assert cb != null;
 
@@ -210,7 +210,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 GridCacheProjectionImpl.FullFilter<K, V> filter = (GridCacheProjectionImpl.FullFilter<K, V>)prjPred;
 
                 GridCacheProjectionImpl.KeyValueFilter<K, V> kvFilter = filter.keyValueFilter();
-                GridPredicate<? super GridCacheEntry<K, V>> entryFilter = filter.entryFilter();
+                IgnitePredicate<? super GridCacheEntry<K, V>> entryFilter = filter.entryFilter();
 
                 boolean ret = true;
 
@@ -384,14 +384,14 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             filterDep = (DeployableObject)in.readObject();
         else
-            filter = (GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
+            filter = (IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
 
         b = in.readBoolean();
 
         if (b)
             prjPredDep = (DeployableObject)in.readObject();
         else
-            prjPred = (GridPredicate<GridCacheEntry<K, V>>)in.readObject();
+            prjPred = (IgnitePredicate<GridCacheEntry<K, V>>)in.readObject();
 
         internal = in.readBoolean();
     }

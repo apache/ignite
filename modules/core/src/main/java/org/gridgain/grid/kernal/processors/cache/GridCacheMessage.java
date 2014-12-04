@@ -163,10 +163,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    protected final void prepareFilter(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
+    protected final void prepareFilter(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         GridCacheSharedContext<K, V> ctx) throws GridException {
         if (filters != null)
-            for (GridPredicate filter : filters)
+            for (IgnitePredicate filter : filters)
                 prepareObject(filter, ctx);
     }
 
@@ -365,7 +365,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @return Marshalled collection.
      * @throws GridException If failed.
      */
-    @Nullable protected final <T> byte[][] marshalFilter(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+    @Nullable protected final <T> byte[][] marshalFilter(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         GridCacheSharedContext<K, V> ctx) throws GridException {
         assert ctx != null;
 
@@ -375,7 +375,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         byte[][] filterBytes = new byte[filter.length][];
 
         for (int i = 0; i < filter.length; i++) {
-            GridPredicate<GridCacheEntry<K, V>> p = filter[i];
+            IgnitePredicate<GridCacheEntry<K, V>> p = filter[i];
 
             if (ctx.deploymentEnabled())
                 prepareObject(p, ctx);
@@ -394,7 +394,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @throws GridException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable protected final <T> GridPredicate<GridCacheEntry<K, V>>[] unmarshalFilter(
+    @Nullable protected final <T> IgnitePredicate<GridCacheEntry<K, V>>[] unmarshalFilter(
         @Nullable byte[][] byteCol, GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         assert ldr != null;
         assert ctx != null;
@@ -402,13 +402,13 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         if (byteCol == null)
             return null;
 
-        GridPredicate<GridCacheEntry<K, V>>[] filter = new GridPredicate[byteCol.length];
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter = new IgnitePredicate[byteCol.length];
 
         GridMarshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
             filter[i] = byteCol[i] == null ? null :
-                marsh.<GridPredicate<GridCacheEntry<K, V>>>unmarshal(byteCol[i], ldr);
+                marsh.<IgnitePredicate<GridCacheEntry<K, V>>>unmarshal(byteCol[i], ldr);
 
         return filter;
     }

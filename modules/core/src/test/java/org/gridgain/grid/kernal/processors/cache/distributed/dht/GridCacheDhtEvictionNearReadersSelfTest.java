@@ -123,7 +123,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     @SuppressWarnings({"unchecked"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            near(grid(i)).removeAll(new GridPredicate[] {F.alwaysTrue()});
+            near(grid(i)).removeAll(new IgnitePredicate[] {F.alwaysTrue()});
 
             assert near(grid(i)).isEmpty() : "Near cache is not empty [idx=" + i + "]";
             assert dht(grid(i)).isEmpty() : "Dht cache is not empty [idx=" + i + "]";
@@ -178,7 +178,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @param nodeId Node id.
      * @return Predicate for events belonging to specified node.
      */
-    private GridPredicate<GridEvent> nodeEvent(final UUID nodeId) {
+    private IgnitePredicate<GridEvent> nodeEvent(final UUID nodeId) {
         assert nodeId != null;
 
         return new P1<GridEvent>() {

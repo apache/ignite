@@ -92,7 +92,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
     protected type Pred3[E1, E2, E3] = (E1, E2, E3) => Boolean
 
     /** Type alias for node filter predicate. */
-    protected type NF = GridPredicate[ClusterNode]
+    protected type NF = IgnitePredicate[ClusterNode]
 
     /**
      * Gets iterator for this projection's nodes.

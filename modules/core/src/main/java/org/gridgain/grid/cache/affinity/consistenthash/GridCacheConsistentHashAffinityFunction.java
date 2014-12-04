@@ -406,7 +406,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
         Collection<NodeInfo> selected;
 
         if (backupFilter != null) {
-            final GridPredicate<NodeInfo> p = new P1<NodeInfo>() {
+            final IgnitePredicate<NodeInfo> p = new P1<NodeInfo>() {
                 @Override public boolean apply(NodeInfo id) {
                     return lookup.containsKey(id);
                 }
@@ -414,7 +414,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
             final NodeInfo primaryId = nodeHash.node(part, p);
 
-            GridPredicate<NodeInfo> backupPrimaryIdFilter = new GridPredicate<NodeInfo>() {
+            IgnitePredicate<NodeInfo> backupPrimaryIdFilter = new IgnitePredicate<NodeInfo>() {
                 @Override public boolean apply(NodeInfo node) {
                     return backupIdFilter.apply(primaryId, node);
                 }

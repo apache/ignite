@@ -129,7 +129,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
             final int part = unloadEvt.partition();
 
             assertNotNull("Unexpected partition: " + part, F.find(parts, null,
-                new GridPredicate<GridDhtLocalPartition<Object, Object>>() {
+                new IgnitePredicate<GridDhtLocalPartition<Object, Object>>() {
                     @Override
                     public boolean apply(GridDhtLocalPartition<Object, Object> e) {
                         return e.id() == part;

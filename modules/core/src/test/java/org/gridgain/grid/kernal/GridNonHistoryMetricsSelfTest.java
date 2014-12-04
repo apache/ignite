@@ -63,7 +63,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        ignite.events().localListen(new GridPredicate<GridEvent>() {
+        ignite.events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 

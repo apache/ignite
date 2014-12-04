@@ -858,7 +858,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param nodeId Node ID.
      * @return Filter.
      */
-    private GridPredicate<GridCacheMvccCandidate<K>> nodeIdFilter(final UUID nodeId) {
+    private IgnitePredicate<GridCacheMvccCandidate<K>> nodeIdFilter(final UUID nodeId) {
         if (nodeId == null)
             return F.alwaysTrue();
 
@@ -947,7 +947,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions will be released.
      */
-    private GridFuture<?> finishLocks(@Nullable final GridPredicate<K> keyFilter, long topVer) {
+    private GridFuture<?> finishLocks(@Nullable final IgnitePredicate<K> keyFilter, long topVer) {
         assert topVer != 0;
 
         if (topVer < 0)
@@ -1058,7 +1058,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         /**
          * @return Filter.
          */
-        private GridPredicate<GridCacheMvccCandidate<K>> versionFilter() {
+        private IgnitePredicate<GridCacheMvccCandidate<K>> versionFilter() {
             assert topVer > 0;
 
             return new P1<GridCacheMvccCandidate<K>>() {

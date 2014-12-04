@@ -491,7 +491,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Deployment listener.
      */
-    private static class DeploymentEventListener implements GridPredicate<GridEvent> {
+    private static class DeploymentEventListener implements IgnitePredicate<GridEvent> {
         /** */
         private int depCnt;
 

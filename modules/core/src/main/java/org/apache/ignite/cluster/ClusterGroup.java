@@ -118,7 +118,7 @@ public interface ClusterGroup {
      * @param p Predicate filter for nodes to include into this projection.
      * @return Grid projection for nodes that passed the predicate filter.
      */
-    public ClusterGroup forPredicate(GridPredicate<ClusterNode> p);
+    public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p);
 
     /**
      * Creates projection for nodes containing given name and value
@@ -240,7 +240,7 @@ public interface ClusterGroup {
      *
      * @return Predicate that defines a subset of nodes for this projection.
      */
-    public GridPredicate<ClusterNode> predicate();
+    public IgnitePredicate<ClusterNode> predicate();
 
     /**
      * Gets a metrics snapshot for this projection.

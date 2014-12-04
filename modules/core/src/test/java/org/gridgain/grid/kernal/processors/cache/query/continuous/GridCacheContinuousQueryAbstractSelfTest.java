@@ -1408,7 +1408,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final CountDownLatch latch = new CountDownLatch(50);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
-        GridPredicate<GridEvent> lsnr = new GridPredicate<GridEvent>() {
+        IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 assert evt instanceof GridCacheQueryReadEvent;
 
@@ -1432,7 +1432,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         };
 
-        GridPredicate<GridEvent> execLsnr = new GridPredicate<GridEvent>() {
+        IgnitePredicate<GridEvent> execLsnr = new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 assert evt instanceof GridCacheQueryExecutedEvent;
 
@@ -1471,7 +1471,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     }
                 });
 
-                qry.remoteFilter(new GridPredicate<GridCacheContinuousQueryEntry<Integer, Integer>>() {
+                qry.remoteFilter(new IgnitePredicate<GridCacheContinuousQueryEntry<Integer, Integer>>() {
                     @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, Integer> e) {
                         return e.getValue() >= 50;
                     }

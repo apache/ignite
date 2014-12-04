@@ -68,7 +68,7 @@ public class GridServiceConfiguration implements Serializable {
 
     /** Node filter. */
     @GridToStringExclude
-    private GridPredicate<ClusterNode> nodeFilter;
+    private IgnitePredicate<ClusterNode> nodeFilter;
 
     /**
      * Gets service name.
@@ -210,7 +210,7 @@ public class GridServiceConfiguration implements Serializable {
      *
      * @return Node filter used to filter nodes on which the service will be deployed, possibly {@code null}.
      */
-    public GridPredicate<ClusterNode> getNodeFilter() {
+    public IgnitePredicate<ClusterNode> getNodeFilter() {
         return nodeFilter;
     }
 
@@ -222,7 +222,7 @@ public class GridServiceConfiguration implements Serializable {
      *
      * @param nodeFilter Node filter used to filter nodes on which the service will be deployed, possibly {@code null}.
      */
-    public void setNodeFilter(GridPredicate<ClusterNode> nodeFilter) {
+    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
     }
 

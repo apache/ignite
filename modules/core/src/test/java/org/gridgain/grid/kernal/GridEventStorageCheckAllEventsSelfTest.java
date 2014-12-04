@@ -249,7 +249,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private List<GridEvent> pullEvents(long since, int evtCnt) throws Exception {
-        GridPredicate<GridEvent> filter = new CustomEventFilter(GridAllEventsTestTask.class.getName(), since);
+        IgnitePredicate<GridEvent> filter = new CustomEventFilter(GridAllEventsTestTask.class.getName(), since);
 
         for (int i = 0; i < 3; i++) {
             List<GridEvent> evts = new ArrayList<>(ignite.events().localQuery((filter)));
@@ -296,7 +296,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      *
      */
-    private static class CustomEventFilter implements GridPredicate<GridEvent> {
+    private static class CustomEventFilter implements IgnitePredicate<GridEvent> {
         /** */
         private final String taskName;
 

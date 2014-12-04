@@ -71,7 +71,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param prjPred Projection predicate.
      * @return New continuous query.
      */
-    public GridCacheContinuousQuery<K, V> createQuery(@Nullable GridPredicate<GridCacheEntry<K, V>> prjPred) {
+    public GridCacheContinuousQuery<K, V> createQuery(@Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred) {
         Object topic = TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement());
 
         return new GridCacheContinuousQueryAdapter<>(cctx, topic, prjPred);

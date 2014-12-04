@@ -20,8 +20,8 @@ import java.util.*;
  */
 public abstract class GridClientBalancerAdapter implements GridClientLoadBalancer {
     /** Selects connectable nodes. */
-    private static final GridPredicate<GridClientNode> CONNECTABLE =
-        new GridPredicate<GridClientNode>() {
+    private static final IgnitePredicate<GridClientNode> CONNECTABLE =
+        new IgnitePredicate<GridClientNode>() {
             @Override public boolean apply(GridClientNode e) {
                 return e.connectable();
             }

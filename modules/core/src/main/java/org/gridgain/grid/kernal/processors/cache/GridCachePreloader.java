@@ -81,13 +81,13 @@ public interface GridCachePreloader<K, V> {
     /**
      * @param p Preload predicate.
      */
-    public void preloadPredicate(GridPredicate<GridCacheEntryInfo<K, V>> p);
+    public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> p);
 
     /**
      * @return Preload predicate. If not {@code null}, will evaluate each preloaded entry during
      *      send and receive, and if predicate evaluates to {@code false}, entry will be skipped.
      */
-    public GridPredicate<GridCacheEntryInfo<K, V>> preloadPredicate();
+    public IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPredicate();
 
     /**
      * @return Future which will complete when preloader is safe to use.

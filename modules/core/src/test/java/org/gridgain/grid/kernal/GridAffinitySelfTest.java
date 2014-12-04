@@ -102,7 +102,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
      * @return Non-system caches.
      */
     private Collection<GridCacheConfiguration> caches(Ignite g) {
-        return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new GridPredicate<GridCacheConfiguration>() {
+        return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<GridCacheConfiguration>() {
             @Override public boolean apply(GridCacheConfiguration c) {
                 return c.getName() == null || !c.getName().equals(CU.UTILITY_CACHE_NAME);
             }

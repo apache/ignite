@@ -171,7 +171,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         final AtomicInteger unswapEvts = new AtomicInteger(0);
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     info("Received event: " + evt);
 

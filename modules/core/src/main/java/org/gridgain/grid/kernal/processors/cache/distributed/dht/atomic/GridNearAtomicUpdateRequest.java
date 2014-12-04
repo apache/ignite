@@ -94,7 +94,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** Filter. */
     @GridDirectTransient
-    private GridPredicate<GridCacheEntry<K, V>>[] filter;
+    private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Filter bytes. */
     private byte[][] filterBytes;
@@ -148,7 +148,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         boolean retval,
         boolean forceTransformBackups,
         long ttl,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -257,7 +257,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Filter.
      */
-    @Nullable public GridPredicate<GridCacheEntry<K, V>>[] filter() {
+    @Nullable public IgnitePredicate<GridCacheEntry<K, V>>[] filter() {
         return filter;
     }
 

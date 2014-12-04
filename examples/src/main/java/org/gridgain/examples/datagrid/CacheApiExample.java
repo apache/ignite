@@ -95,7 +95,7 @@ public class CacheApiExample {
 
         // Put-with-predicate, will succeed if predicate evaluates to true.
         cache.putx(5, "5");
-        cache.putx(5, "55", new GridPredicate<GridCacheEntry<Integer, String>>() {
+        cache.putx(5, "55", new IgnitePredicate<GridCacheEntry<Integer, String>>() {
             @Override public boolean apply(GridCacheEntry<Integer, String> e) {
                 return "5".equals(e.peek()); // Update only if previous value is "5".
             }
@@ -131,7 +131,7 @@ public class CacheApiExample {
 
         // Iterate over cache projection for all keys below 5.
         GridCacheProjection<Integer, String> keysBelow5 = cache.projection(
-            new GridPredicate<GridCacheEntry<Integer, String>>() {
+            new IgnitePredicate<GridCacheEntry<Integer, String>>() {
                 @Override public boolean apply(GridCacheEntry<Integer, String> e) {
                     return e.getKey() < 5;
                 }
@@ -149,7 +149,7 @@ public class CacheApiExample {
         });
 
         // Search cache for element with value "1" using 'forAll' construct.
-        cache.forAll(new GridPredicate<GridCacheEntry<Integer, String>>() {
+        cache.forAll(new IgnitePredicate<GridCacheEntry<Integer, String>>() {
             @Override public boolean apply(GridCacheEntry<Integer, String> e) {
                 String v = e.peek();
 

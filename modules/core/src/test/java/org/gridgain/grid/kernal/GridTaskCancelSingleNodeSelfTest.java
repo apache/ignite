@@ -66,7 +66,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cancelled = new AtomicInteger();
         final AtomicInteger rejected = new AtomicInteger();
 
-        grid().events().localListen(new GridPredicate<GridEvent>() {
+        grid().events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 info("Received event: " + evt);
 

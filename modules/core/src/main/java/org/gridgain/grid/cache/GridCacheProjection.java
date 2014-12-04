@@ -230,7 +230,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * operation passed pre-filtering, this filter will be passed through
      * to cache operations as well.
      * <p>
-     * For example, for {@link #putAll(Map, GridPredicate[])} method only
+     * For example, for {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method only
      * elements that pass the filter will be given to {@code GridCache.putAll(m, filter)}
      * where it will be checked once again prior to put.
      *
@@ -250,7 +250,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      will be {@code 'anded'}.
      * @return Projection based on given filter.
      */
-    public GridCacheProjection<K, V> projection(@Nullable GridPredicate<GridCacheEntry<K, V>> filter);
+    public GridCacheProjection<K, V> projection(@Nullable IgnitePredicate<GridCacheEntry<K, V>> filter);
 
     /**
      * Gets cache projection base on this one, but with the specified flags turned on.
@@ -367,7 +367,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param vis Predicate to test for each cache entry.
      * @return {@code True} if the given predicate holds for all visited entries, {@code false} otherwise.
      */
-    public boolean forAll(GridPredicate<GridCacheEntry<K, V>> vis);
+    public boolean forAll(IgnitePredicate<GridCacheEntry<K, V>> vis);
 
     /**
      * Reloads a single key from persistent storage. This method
@@ -583,7 +583,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage,  {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putx(Object, Object, GridPredicate[])} should
+     * If the returned value is not needed, method {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
@@ -606,7 +606,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    @Nullable public V put(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
+    @Nullable public V put(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -622,7 +622,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage,  {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putx(Object, Object, GridPredicate[])} should
+     * If the returned value is not needed, method {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
@@ -642,7 +642,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> putAsync(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+    public GridFuture<V> putAsync(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -650,7 +650,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #put(Object, Object, GridPredicate[])} method, it does not return previous
+     * Unlike {@link #put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning a value. It
      * should be used whenever return value is not required.
      * <p>
@@ -674,7 +674,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean putx(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
+    public boolean putx(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -683,7 +683,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #put(Object, Object, GridPredicate[])} method, it does not return previous
+     * Unlike {@link #put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning of a value. It
      * should always be used whenever return value is not required.
      * <p>
@@ -706,7 +706,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+    public GridFuture<Boolean> putxAsync(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores result of applying {@code valTransform} closure to the previous value associated with
@@ -716,7 +716,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putx(Object, Object, GridPredicate[])} or {@link #put(Object, Object, GridPredicate[])}
+     * Unlike {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} or {@link #put(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])}
      * methods, this method will not transfer the whole updated value over the network, but instead will
      * transfer the transforming closure that will be applied on each remote node involved in transaction.
      * It may add significant performance gain when dealing with large values as the value is much larger
@@ -763,7 +763,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putx(Object, Object, GridPredicate[])} method, this method will not transfer
+     * Unlike {@link #putx(Object, Object, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
      * that will be applied on each remote node involved in transaction. It may add significant performance
      * gain when dealing with large values as the value is much larger than the closure itself.
@@ -1077,7 +1077,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public void putAll(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Stores result of applying transform closures from the given map to previous values associated
@@ -1087,7 +1087,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closures
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
@@ -1113,7 +1113,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
@@ -1154,7 +1154,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public GridFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores result of applying transform closures from the given map to previous values associated
@@ -1164,7 +1164,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closures
      * that will be applied on each remote node involved in transaction. It may add significant performance
      * gain when dealing with large values as the value is much larger than the closure itself.
@@ -1190,7 +1190,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
      * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
-     * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
+     * Unlike {@link #putAll(Map, org.gridgain.grid.lang.IgnitePredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
@@ -1585,7 +1585,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #removex(Object, GridPredicate[])} should
+     * If the returned value is not needed, method {@link #removex(Object, org.gridgain.grid.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -1607,7 +1607,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If remove operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    @Nullable public V remove(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
+    @Nullable public V remove(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1618,7 +1618,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #removex(Object, GridPredicate[])} should
+     * If the returned value is not needed, method {@link #removex(Object, org.gridgain.grid.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -1638,7 +1638,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException if the key is {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> removeAsync(K key, GridPredicate<GridCacheEntry<K, V>>... filter);
+    public GridFuture<V> removeAsync(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Removes given key mapping from cache.
@@ -1664,7 +1664,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If remove failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean removex(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
+    public boolean removex(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1692,7 +1692,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public GridFuture<Boolean> removexAsync(K key,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -1760,7 +1760,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public void removeAll(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Asynchronously removes given key mappings from cache for entries for which the optionally
@@ -1783,7 +1783,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public GridFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Removes mappings from cache for entries for which the optionally passed in filters do
@@ -1809,7 +1809,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If remove failed.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void removeAll(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
+    public void removeAll(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1835,7 +1835,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      remove operation completes.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public GridFuture<?> removeAllAsync(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+    public GridFuture<?> removeAllAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Synchronously acquires lock on a cached object with given
@@ -1860,7 +1860,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If lock acquisition resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public boolean lock(K key, long timeout, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
+    public boolean lock(K key, long timeout, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1887,7 +1887,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public GridFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1913,7 +1913,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1939,7 +1939,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public GridFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Unlocks given key only if current thread owns the lock. If optional filter
@@ -1959,7 +1959,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If unlock execution resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void unlock(K key, GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+    public void unlock(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Unlocks given keys only if current thread owns the locks. Only the keys
@@ -1982,7 +1982,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Checks if any node owns a lock for this key.

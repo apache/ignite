@@ -463,7 +463,7 @@ public class IgniteConfiguration {
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
-    private Map<GridPredicate<? extends GridEvent>, int[]> lsnrs;
+    private Map<IgnitePredicate<? extends GridEvent>, int[]> lsnrs;
 
     /** TCP host. */
     private String restTcpHost;
@@ -3166,7 +3166,7 @@ public class IgniteConfiguration {
      * @return Pre-configured event listeners map.
      * @see GridEventType
      */
-    public Map<GridPredicate<? extends GridEvent>, int[]> getLocalEventListeners() {
+    public Map<IgnitePredicate<? extends GridEvent>, int[]> getLocalEventListeners() {
         return lsnrs;
     }
 
@@ -3176,7 +3176,7 @@ public class IgniteConfiguration {
      *
      * @param lsnrs Pre-configured event listeners map.
      */
-    public void setLocalEventListeners(Map<GridPredicate<? extends GridEvent>, int[]> lsnrs) {
+    public void setLocalEventListeners(Map<IgnitePredicate<? extends GridEvent>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
     }
 

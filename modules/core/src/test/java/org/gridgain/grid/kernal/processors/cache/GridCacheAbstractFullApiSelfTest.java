@@ -3129,7 +3129,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     switch (evt.type()) {
                         case EVT_CACHE_OBJECT_LOCKED:
@@ -4439,7 +4439,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     info("Received event: " + evt);
 
@@ -4903,11 +4903,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @return Projection.
      */
     private GridCacheProjection<String, Integer> projection(GridCacheProjection<String, Integer> cache,
-        @Nullable GridPredicate<GridCacheEntry<String, Integer>>... filters) {
+        @Nullable IgnitePredicate<GridCacheEntry<String, Integer>>... filters) {
         GridCacheProjection<String, Integer> res = cache;
 
         if (filters != null) {
-            for (GridPredicate<GridCacheEntry<String, Integer>> filter : filters)
+            for (IgnitePredicate<GridCacheEntry<String, Integer>> filter : filters)
                 res = res.projection(filter);
         }
 
@@ -4943,7 +4943,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkProjectionContainsKey(boolean exp, String key,
-        GridPredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
+        IgnitePredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
         if (nearEnabled())
             assertEquals(exp, projection(cache(), f).containsKey(key));
         else {
@@ -4993,7 +4993,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkProjectionContainsValue(boolean exp, Integer val,
-        GridPredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
+        IgnitePredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
         if (nearEnabled())
             assertEquals(exp, projection(cache(), f).containsValue(val));
         else {

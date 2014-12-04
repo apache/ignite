@@ -593,7 +593,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
         for (int i = 0; i < GRID_CNT - 1; i++) {
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     latch.countDown();
 

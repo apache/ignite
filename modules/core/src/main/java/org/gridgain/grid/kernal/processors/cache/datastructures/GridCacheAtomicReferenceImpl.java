@@ -155,8 +155,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param val Value.
      * @return Predicate.
      */
-    private GridPredicate<T> wrapperPredicate(final T val) {
-        return new GridPredicate<T>() {
+    private IgnitePredicate<T> wrapperPredicate(final T val) {
+        return new IgnitePredicate<T>() {
             @Override public boolean apply(T e) {
                 return val != null && val.equals(e);
             }
@@ -222,7 +222,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param newValClos Closure which generates new value.
      * @return Callable for execution in async and sync mode.
      */
-    private Callable<Boolean> internalCompareAndSet(final GridPredicate<T> expValPred,
+    private Callable<Boolean> internalCompareAndSet(final IgnitePredicate<T> expValPred,
         final IgniteClosure<T, T> newValClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {

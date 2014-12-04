@@ -226,7 +226,7 @@ public class GridAtomicInteger extends AtomicInteger {
      * @param update Value to set.
      * @return {@code True} if value was set.
      */
-    public boolean checkAndSet(GridPredicate<Integer> p, int update) {
+    public boolean checkAndSet(IgnitePredicate<Integer> p, int update) {
         while (true) {
             int cur = get();
 

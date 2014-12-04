@@ -25,7 +25,7 @@ import java.util.concurrent.locks.*;
  */
 public class GridTcpDiscoveryNodesRing {
     /** Visible nodes filter. */
-    private static final GridPredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
+    private static final IgnitePredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
         @Override public boolean apply(GridTcpDiscoveryNode node) {
             return node.visible();
         }
@@ -594,7 +594,7 @@ public class GridTcpDiscoveryNodesRing {
      * @param p Filters.
      * @return Unmodifiable collection of nodes.
      */
-    private Collection<GridTcpDiscoveryNode> nodes(GridPredicate<? super GridTcpDiscoveryNode>... p) {
+    private Collection<GridTcpDiscoveryNode> nodes(IgnitePredicate<? super GridTcpDiscoveryNode>... p) {
         rwLock.readLock().lock();
 
         try {

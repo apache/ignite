@@ -645,8 +645,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                GridPredicate<GridCacheEntry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                GridPredicate<GridCacheEntry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                IgnitePredicate<GridCacheEntry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
+                IgnitePredicate<GridCacheEntry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -676,8 +676,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                GridPredicate<GridCacheEntry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                GridPredicate<GridCacheEntry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                IgnitePredicate<GridCacheEntry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
+                IgnitePredicate<GridCacheEntry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -712,8 +712,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                GridPredicate<GridCacheEntry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                GridPredicate<GridCacheEntry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                IgnitePredicate<GridCacheEntry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
+                IgnitePredicate<GridCacheEntry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -756,7 +756,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * Local event listener.
      */
-    private static class TestEventListener implements GridPredicate<GridEvent> {
+    private static class TestEventListener implements IgnitePredicate<GridEvent> {
         /** Events count map. */
         private static ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 

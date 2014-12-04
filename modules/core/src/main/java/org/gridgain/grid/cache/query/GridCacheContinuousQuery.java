@@ -162,7 +162,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * can get deadlocks.
      *
      * @param filter Key-value filter.
-     * @deprecated Deprecated in favor of {@link #remoteFilter(GridPredicate)} method.
+     * @deprecated Deprecated in favor of {@link #remoteFilter(org.gridgain.grid.lang.IgnitePredicate)} method.
      */
     @Deprecated
     public void filter(@Nullable IgniteBiPredicate<K, V> filter);
@@ -216,14 +216,14 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      *
      * @param filter Key-value filter.
      */
-    public void remoteFilter(@Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> filter);
+    public void remoteFilter(@Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> filter);
 
     /**
      * Gets key-value filter. See {@link #filter(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
      *
      * @return Key-value filter.
      */
-    @Nullable public GridPredicate<GridCacheContinuousQueryEntry<K, V>> remoteFilter();
+    @Nullable public IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> remoteFilter();
 
     /**
      * Sets buffer size.

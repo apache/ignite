@@ -159,7 +159,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
-        return F.view(attrs, new GridPredicate<String>() {
+        return F.view(attrs, new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
                 return !GridNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
             }

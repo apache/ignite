@@ -30,7 +30,7 @@ public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware
     private String name = getClass().getSimpleName();
 
     /** Filter predicate. */
-    private GridPredicate<Object> filter;
+    private IgnitePredicate<Object> filter;
 
     /** Indexes. */
     private Map<String, GridStreamerIndexProvider<E, ?, ?>> idxsAsMap;
@@ -344,7 +344,7 @@ public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware
      *
      * @return Optional event filter.
      */
-    @Nullable public GridPredicate<Object> getFilter() {
+    @Nullable public IgnitePredicate<Object> getFilter() {
         return filter;
     }
 
@@ -353,7 +353,7 @@ public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware
      *
      * @param filter Event filter.
      */
-    public void setFilter(@Nullable GridPredicate<Object> filter) {
+    public void setFilter(@Nullable IgnitePredicate<Object> filter) {
         this.filter = filter;
     }
 

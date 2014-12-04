@@ -66,7 +66,7 @@ public class EventsExample {
 
         Ignite g = GridGain.grid();
 
-        GridPredicate<GridTaskEvent> lsnr = new GridPredicate<GridTaskEvent>() {
+        IgnitePredicate<GridTaskEvent> lsnr = new IgnitePredicate<GridTaskEvent>() {
             @Override public boolean apply(GridTaskEvent evt) {
                 System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
 
@@ -111,7 +111,7 @@ public class EventsExample {
         };
 
         // Remote filter which only accepts tasks whose name begins with "good-task" prefix.
-        GridPredicate<GridTaskEvent> rmtLsnr = new GridPredicate<GridTaskEvent>() {
+        IgnitePredicate<GridTaskEvent> rmtLsnr = new IgnitePredicate<GridTaskEvent>() {
             @Override public boolean apply(GridTaskEvent evt) {
                 return evt.taskName().startsWith("good-task");
             }

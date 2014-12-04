@@ -88,7 +88,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
     /**
      * Unwraps sequence of functions to sequence of GridGain predicates.
      */
-    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[GridPredicate[GridCacheEntry[K, V]]] =
+    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[IgnitePredicate[GridCacheEntry[K, V]]] =
         if (p == null)
             null
         else

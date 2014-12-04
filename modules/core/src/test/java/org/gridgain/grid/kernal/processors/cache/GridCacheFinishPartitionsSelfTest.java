@@ -13,7 +13,6 @@ import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
@@ -147,7 +146,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     }
 
     /**
-     * Tests method {@link GridCacheMvccManager#finishLocks(GridPredicate, long)}.
+     * Tests method {@link GridCacheMvccManager#finishLocks(org.gridgain.grid.lang.IgnitePredicate, long)}.
      *
      * @throws Exception If failed.
      */

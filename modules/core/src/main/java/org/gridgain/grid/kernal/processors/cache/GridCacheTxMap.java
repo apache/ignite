@@ -40,7 +40,7 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
     private boolean sealed;
 
     /** Filter. */
-    private GridPredicate<GridCacheTxEntry<K, V>> filter;
+    private IgnitePredicate<GridCacheTxEntry<K, V>> filter;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -54,7 +54,7 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
      * @param filter Filter.
      */
     public GridCacheTxMap(Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> txMap,
-        GridPredicate<GridCacheTxEntry<K, V>> filter) {
+        IgnitePredicate<GridCacheTxEntry<K, V>> filter) {
         this.txMap = txMap;
         this.filter = filter;
     }

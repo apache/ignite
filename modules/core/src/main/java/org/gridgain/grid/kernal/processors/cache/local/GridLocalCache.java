@@ -87,13 +87,13 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public GridFuture<Boolean> txLockAsync(Collection<? extends K> keys, long timeout,
         GridCacheTxLocalEx<K, V> tx, boolean isRead,
         boolean retval, GridCacheTxIsolation isolation, boolean invalidate,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return lockAllAsync(keys, timeout, tx, filter);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         GridCacheTxLocalEx<K, V> tx = ctx.tm().localTx();
 
         return lockAllAsync(keys, timeout, tx, filter);
@@ -107,7 +107,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Future.
      */
     public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable GridCacheTxLocalEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridCacheTxLocalEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -159,7 +159,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {

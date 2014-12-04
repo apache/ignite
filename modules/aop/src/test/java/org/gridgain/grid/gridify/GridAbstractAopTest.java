@@ -703,7 +703,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
     /**
      * Event listener.
      */
-    private static final class TestEventListener implements GridPredicate<GridEvent> {
+    private static final class TestEventListener implements IgnitePredicate<GridEvent> {
         /** */
         private static final long serialVersionUID = 0L;
 

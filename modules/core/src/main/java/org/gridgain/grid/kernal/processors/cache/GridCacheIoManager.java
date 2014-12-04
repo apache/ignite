@@ -406,7 +406,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     @SuppressWarnings( {"BusyWait"})
     public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage<K, V> msg,
-        @Nullable GridPredicate<ClusterNode> fallback) throws GridException {
+        @Nullable IgnitePredicate<ClusterNode> fallback) throws GridException {
         assert nodes != null;
         assert msg != null;
 

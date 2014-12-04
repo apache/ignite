@@ -182,7 +182,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TaskFailedEventFilter implements GridPredicate<GridEvent> {
+    private static class TaskFailedEventFilter implements IgnitePredicate<GridEvent> {
         /** */
         private GridUuid sesId;
 

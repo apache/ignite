@@ -226,7 +226,7 @@ public class GridAtomicLong extends AtomicLong {
      * @param update Value to set.
      * @return {@code True} if value was set.
      */
-    public boolean checkAndSet(GridPredicate<Long> p, long update) {
+    public boolean checkAndSet(IgnitePredicate<Long> p, long update) {
         while (true) {
             long cur = get();
 

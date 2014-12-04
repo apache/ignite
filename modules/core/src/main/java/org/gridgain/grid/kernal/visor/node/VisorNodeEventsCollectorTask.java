@@ -262,7 +262,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;
 
-            Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
+            Collection<GridEvent> evts = g.events().localQuery(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent event) {
                     return event.localOrder() > startEvtOrder &&
                         (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&

@@ -122,7 +122,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     private Collection<LocalRoutineInfo> localRoutines(GridContinuousProcessor proc) {
         return F.view(U.<Map<UUID, LocalRoutineInfo>>field(proc, "locInfos").values(),
-            new GridPredicate<LocalRoutineInfo>() {
+            new IgnitePredicate<LocalRoutineInfo>() {
                 @Override public boolean apply(LocalRoutineInfo info) {
                     return info.handler().isForEvents();
                 }
@@ -764,8 +764,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         ClassLoader ldr = getExternalClassLoader();
 
-        GridPredicate<ClusterNode> prjPred = (GridPredicate<ClusterNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
-        GridPredicate<GridEvent> filter = (GridPredicate<GridEvent>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
+        IgnitePredicate<ClusterNode> prjPred = (IgnitePredicate<ClusterNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
+        IgnitePredicate<GridEvent> filter = (IgnitePredicate<GridEvent>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
 
         UUID consumeId = events(grid(0).forPredicate(prjPred)).remoteListen(new P2<UUID, GridEvent>() {
             @Override public boolean apply(UUID nodeId, GridEvent evt) {
@@ -865,7 +865,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (nodeId.equals(((GridDiscoveryEvent) evt).eventNode().id()))
                         latch.countDown();
@@ -900,7 +900,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch discoLatch = new CountDownLatch(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (nodeId.equals(((GridDiscoveryEvent) evt).eventNode().id()))
                         discoLatch.countDown();

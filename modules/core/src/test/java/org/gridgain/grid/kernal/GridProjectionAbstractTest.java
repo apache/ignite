@@ -242,17 +242,17 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     public void testExecution() throws Exception {
         String name = "oneMoreGrid";
 
-        Collection<IgniteBiTuple<Ignite, GridPredicate<GridEvent>>> lsnrs = new LinkedList<>();
+        Collection<IgniteBiTuple<Ignite, IgnitePredicate<GridEvent>>> lsnrs = new LinkedList<>();
 
         try {
             final AtomicInteger cnt = new AtomicInteger();
 
             Ignite g = startGrid(name);
 
-            GridPredicate<GridEvent> lsnr;
+            IgnitePredicate<GridEvent> lsnr;
 
             if (!Ignite.class.isAssignableFrom(projection().getClass())) {
-                g.events().localListen(lsnr = new GridPredicate<GridEvent>() {
+                g.events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         assert evt.type() == EVT_JOB_STARTED;
 
@@ -268,7 +268,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             for (ClusterNode node : prj.nodes()) {
                 g = G.grid(node.id());
 
-                g.events().localListen(lsnr = new GridPredicate<GridEvent>() {
+                g.events().localListen(lsnr = new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         assert evt.type() == EVT_JOB_STARTED;
 
@@ -305,7 +305,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             checkActiveFutures();
         }
         finally {
-            for (IgniteBiTuple<Ignite, GridPredicate<GridEvent>> t : lsnrs)
+            for (IgniteBiTuple<Ignite, IgnitePredicate<GridEvent>> t : lsnrs)
                 t.get1().events().stopLocalListen(t.get2(), EVT_JOB_STARTED);
 
             stopGrid(name);

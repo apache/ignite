@@ -174,7 +174,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** Listener that will wait for specified number of events received. */
-    private class CollectingEventListener implements GridPredicate<GridEvent> {
+    private class CollectingEventListener implements IgnitePredicate<GridEvent> {
         /** Registered events count. */
         private int evtCnt;
 

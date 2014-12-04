@@ -60,7 +60,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReject() throws Exception {
-        grid(1).events().localListen(new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 X.println("Task event: " + evt);
 
@@ -68,7 +68,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
             }
         }, EVTS_TASK_EXECUTION);
 
-        grid(1).events().localListen(new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 X.println("Job event: " + evt);
 
@@ -78,7 +78,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch startedLatch = new CountDownLatch(1);
 
-        grid(1).events().localListen(new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 startedLatch.countDown();
 
@@ -88,7 +88,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger failedOver = new AtomicInteger(0);
 
-        grid(1).events().localListen(new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 failedOver.incrementAndGet();
 
@@ -98,7 +98,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch finishedLatch = new CountDownLatch(1);
 
-        grid(1).events().localListen(new GridPredicate<GridEvent>() {
+        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 finishedLatch.countDown();
 

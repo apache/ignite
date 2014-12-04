@@ -109,7 +109,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     };
 
     /** */
-    private GridPredicate<GridCacheEntry<String, Integer>> entryFilter = new P1<GridCacheEntry<String, Integer>>() {
+    private IgnitePredicate<GridCacheEntry<String, Integer>> entryFilter = new P1<GridCacheEntry<String, Integer>>() {
         @Override public boolean apply(GridCacheEntry<String, Integer> e) {
             Integer val = e.peek();
 

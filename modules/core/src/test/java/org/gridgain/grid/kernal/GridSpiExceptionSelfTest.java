@@ -97,7 +97,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p) {
+        @Override public <T extends GridEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
             throw new GridRuntimeException(TEST_MSG);
         }
 

@@ -120,7 +120,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testTwoJobsPartiallyNullPredicate() throws GridException {
-        GridPredicate<ClusterNode> topPred =  new GridPredicate<ClusterNode>() {
+        IgnitePredicate<ClusterNode> topPred =  new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode e) {
                     return ignite2.cluster().localNode().id().equals(e.id()); // Limit projection with only grid2.
                 }
@@ -165,7 +165,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicateInternalStealing() throws Exception {
         final Ignite ignite3 = startGrid(3);
 
-        GridPredicate<ClusterNode> p = new P1<ClusterNode>() {
+        IgnitePredicate<ClusterNode> p = new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode e) {
                 return ignite1.cluster().localNode().id().equals(e.id()) ||
                     ignite3.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
@@ -186,7 +186,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleNodeTopology() throws Exception {
-        GridPredicate<ClusterNode> p = new GridPredicate<ClusterNode>() {
+        IgnitePredicate<ClusterNode> p = new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode e) {
                 return ignite1.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 node.
             }
@@ -253,7 +253,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         Class taskCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.JobStealingTask");
         Class nodeFilterCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridExcludeNodeFilter");
 
-        GridPredicate<ClusterNode> nodeFilter = (GridPredicate<ClusterNode>)nodeFilterCls
+        IgnitePredicate<ClusterNode> nodeFilter = (IgnitePredicate<ClusterNode>)nodeFilterCls
             .getConstructor(UUID.class).newInstance(ignite2.cluster().localNode().id());
 
         Map<UUID, Integer> ret = (Map<UUID, Integer>)executeAsync(compute(ignite1.cluster().forPredicate(nodeFilter)),

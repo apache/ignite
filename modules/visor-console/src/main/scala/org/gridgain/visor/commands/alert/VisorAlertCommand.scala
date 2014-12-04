@@ -15,7 +15,7 @@ import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.grid.lang.IgnitePredicate
 import org.gridgain.grid.util.lang.{GridFunc => F}
 
 import java.util.UUID
@@ -139,7 +139,7 @@ class VisorAlertCommand {
     private val guard = new AtomicBoolean(false)
 
     /** Node metric update listener. */
-    private var lsnr: GridPredicate[GridEvent] = null
+    private var lsnr: IgnitePredicate[GridEvent] = null
 
     /**
      * Prints error message and advise.
@@ -346,7 +346,7 @@ class VisorAlertCommand {
         if (guard.compareAndSet(false, true)) {
             assert(lsnr == null)
 
-            lsnr = new GridPredicate[GridEvent] {
+            lsnr = new IgnitePredicate[GridEvent] {
                 override def apply(evt: GridEvent): Boolean = {
                     val discoEvt = evt.asInstanceOf[GridDiscoveryEvent]
 

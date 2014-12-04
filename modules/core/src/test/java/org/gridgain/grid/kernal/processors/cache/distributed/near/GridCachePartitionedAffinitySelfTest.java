@@ -458,7 +458,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         @Override public void run() {
             printAffinity(ignite, keyCnt);
 
-            GridPredicate<GridEvent> lsnr = new GridPredicate<GridEvent>() {
+            IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     GridCacheEvent e = (GridCacheEvent)evt;
 

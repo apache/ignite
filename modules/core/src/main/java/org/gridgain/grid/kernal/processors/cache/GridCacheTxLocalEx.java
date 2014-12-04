@@ -70,7 +70,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean deserializePortable,
-        GridPredicate<GridCacheEntry<K, V>>[] filter);
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param map Map to put.
@@ -86,7 +86,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
         boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        GridPredicate<GridCacheEntry<K, V>>[] filter);
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param map Map to put.
@@ -111,7 +111,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean retval,
-        GridPredicate<GridCacheEntry<K, V>>[] filter);
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param drMap DR map to put.

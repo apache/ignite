@@ -63,7 +63,7 @@ public class CacheEventsExample {
 
             // Remote listener which only accepts events for keys that are
             // greater or equal than 10 and if event node is primary for this key.
-            GridPredicate<GridCacheEvent> rmtLsnr = new GridPredicate<GridCacheEvent>() {
+            IgnitePredicate<GridCacheEvent> rmtLsnr = new IgnitePredicate<GridCacheEvent>() {
                 @Override public boolean apply(GridCacheEvent evt) {
                     System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
 

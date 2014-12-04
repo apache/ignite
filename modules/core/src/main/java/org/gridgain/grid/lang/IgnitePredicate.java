@@ -17,11 +17,11 @@ import java.io.*;
  * Defines a predicate which accepts a parameter and returns {@code true} or {@code false}. In
  * GridGain, predicates are generally used for filtering nodes within grid projections, or for
  * providing atomic filters when performing cache operation, like in
- * {@link GridCache#put(Object, Object, GridPredicate[])} method.
+ * {@link GridCache#put(Object, Object, IgnitePredicate[])} method.
  *
  * @param <E> Type of predicate parameter.
  */
-public interface GridPredicate<E> extends Serializable {
+public interface IgnitePredicate<E> extends Serializable {
     /**
      * Predicate body.
      *

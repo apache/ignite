@@ -1184,17 +1184,17 @@ public abstract class GridUtils {
      * @throws ClassNotFoundException If class not found.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
+    @Nullable public static <K, V> IgnitePredicate<GridCacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
-        GridPredicate<GridCacheEntry<K, V>>[] arr = null;
+        IgnitePredicate<GridCacheEntry<K, V>>[] arr = null;
 
         if (len > 0) {
-            arr = new GridPredicate[len];
+            arr = new IgnitePredicate[len];
 
             for (int i = 0; i < len; i++)
-                arr[i] = (GridPredicate<GridCacheEntry<K, V>>)in.readObject();
+                arr[i] = (IgnitePredicate<GridCacheEntry<K, V>>)in.readObject();
         }
 
         return arr;
@@ -6182,7 +6182,7 @@ public abstract class GridUtils {
      * @param p Optional predicate array.
      * @return List of integers.
      */
-    public static List<Integer> toIntList(@Nullable int[] arr, GridPredicate<Integer>... p) {
+    public static List<Integer> toIntList(@Nullable int[] arr, IgnitePredicate<Integer>... p) {
         if (arr == null || arr.length == 0)
             return Collections.emptyList();
 
@@ -8571,7 +8571,7 @@ public abstract class GridUtils {
      * @param c Collection of nodes.
      * @return Oldest node.
      */
-    public static ClusterNode oldest(Collection<ClusterNode> c, @Nullable GridPredicate<ClusterNode> p) {
+    public static ClusterNode oldest(Collection<ClusterNode> c, @Nullable IgnitePredicate<ClusterNode> p) {
         ClusterNode oldest = null;
 
         long minOrder = Long.MAX_VALUE;
@@ -8593,7 +8593,7 @@ public abstract class GridUtils {
      * @param c Collection of nodes.
      * @return Youngest node.
      */
-    public static ClusterNode youngest(Collection<ClusterNode> c, @Nullable GridPredicate<ClusterNode> p) {
+    public static ClusterNode youngest(Collection<ClusterNode> c, @Nullable IgnitePredicate<ClusterNode> p) {
         ClusterNode youngest = null;
 
         long maxOrder = Long.MIN_VALUE;
@@ -8982,7 +8982,7 @@ public abstract class GridUtils {
      * @param p Optional filters.
      * @return Resulting array list.
      */
-    public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable GridPredicate<? super T>... p) {
+    public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
         return GridUtils.<T, R>arrayList(c, c.size(), p);
@@ -8995,7 +8995,7 @@ public abstract class GridUtils {
      * @return Resulting array list.
      */
     public static <T extends R, R> List<R> arrayList(Iterable<T> c, int cap,
-        @Nullable GridPredicate<? super T>... p) {
+        @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
         assert cap >= 0;
 

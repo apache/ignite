@@ -191,7 +191,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     }
 
     it should "convert predicate" in {
-        val p = new GridPredicate[Int] {
+        val p = new IgnitePredicate[Int] {
             override def apply(e: Int): Boolean =
                 e > 5
         }

@@ -90,7 +90,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
-        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -120,7 +120,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return Future.
      */
     GridFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx, @Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, boolean deserializePortable) {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean deserializePortable) {
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
@@ -371,7 +371,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     /** {@inheritDoc} */
     @Override protected GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx, keys, (GridNearTxLocal<K, V>)tx, isRead,
             retval, timeout, filter);
 
@@ -415,7 +415,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys.isEmpty())
             return;
 

@@ -71,8 +71,8 @@ public class GridDsiClient implements Callable {
      *
      * @return {@code true} if node segment is 'server'.
      */
-    public static GridPredicate<ClusterNode> serverNode() {
-        return new GridPredicate<ClusterNode>() {
+    public static IgnitePredicate<ClusterNode> serverNode() {
+        return new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
                 return "server".equals(node.attribute("segment"));
             }
@@ -84,8 +84,8 @@ public class GridDsiClient implements Callable {
      *
      * @return {@code true} if node segment is 'client'.
      */
-    public static GridPredicate<ClusterNode> clientNode() {
-        return new GridPredicate<ClusterNode>() {
+    public static IgnitePredicate<ClusterNode> clientNode() {
+        return new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
                 return "client".equals(node.attribute("segment"));
             }

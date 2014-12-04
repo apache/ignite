@@ -22,7 +22,7 @@ import java.util.*;
  * class's state when predicates are created as anonymous classes in stateful enclosing context.
  * This class is also optimized for evaluation of large number of nodes.
  */
-public class GridNodePredicate implements GridPredicate<ClusterNode>, Iterable<UUID> {
+public class GridNodePredicate implements IgnitePredicate<ClusterNode>, Iterable<UUID> {
     /** */
     private static final long serialVersionUID = 0L;
 

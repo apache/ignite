@@ -417,7 +417,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, GridPredicate[])}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, org.gridgain.grid.lang.IgnitePredicate[])}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -434,14 +434,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable,
             forcePrimary, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
+    @Override public V reload(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws GridException {
         try {
             return super.reload(key, filter);
@@ -457,7 +457,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return {@inheritDoc}
      */
     GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
-        String taskName, boolean deserializePortable, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        String taskName, boolean deserializePortable, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable, false,
             filter);
     }
@@ -473,7 +473,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader, long msgId,
         LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer, @Nullable UUID subjId,
-        int taskNameHash, boolean deserializePortable, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        int taskNameHash, boolean deserializePortable, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx, msgId, reader, keys, reload, /*tx*/null,
             topVer, filter, subjId, taskNameHash, deserializePortable);
 
@@ -527,7 +527,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         assert false;
     }
 

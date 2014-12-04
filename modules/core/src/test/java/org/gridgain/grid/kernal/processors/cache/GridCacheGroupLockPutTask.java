@@ -69,7 +69,7 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
         assert !subgrid.isEmpty();
 
         // Give preference to wanted node. Otherwise, take the first one.
-        ClusterNode targetNode = F.find(subgrid, subgrid.get(0), new GridPredicate<ClusterNode>() {
+        ClusterNode targetNode = F.find(subgrid, subgrid.get(0), new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode e) {
                 return preferredNode.equals(e.id());
             }

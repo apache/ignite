@@ -103,8 +103,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @return Predicate.
      */
-    private GridPredicate<ClusterNode> excludeLastPredicate() {
-        return new GridPredicate<ClusterNode>() {
+    private IgnitePredicate<ClusterNode> excludeLastPredicate() {
+        return new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode e) {
                 return !e.id().equals(grid(GRID_CNT - 1).localNode().id());
             }

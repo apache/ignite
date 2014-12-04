@@ -62,7 +62,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private static final GridAtomicLong lastPrint = new GridAtomicLong();
 
     /** */
-    private static final GridPredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             String gridName = G.grid(n.id()).name();
 
@@ -71,7 +71,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     };
 
     /** */
-    private static final GridPredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             String gridName = G.grid(n.id()).name();
 

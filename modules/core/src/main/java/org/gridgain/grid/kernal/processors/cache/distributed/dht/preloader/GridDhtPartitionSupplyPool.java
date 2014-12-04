@@ -58,7 +58,7 @@ class GridDhtPartitionSupplyPool<K, V> {
     private final boolean depEnabled;
 
     /** Preload predicate. */
-    private GridPredicate<GridCacheEntryInfo<K, V>> preloadPred;
+    private IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
 
     /**
      * @param cctx Cache context.
@@ -112,7 +112,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      *
      * @param preloadPred Preload predicate.
      */
-    void preloadPredicate(GridPredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
         this.preloadPred = preloadPred;
     }
 

@@ -65,7 +65,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Filter to include only worker nodes. */
-    private static final GridPredicate<ClusterNode> workerNodesFilter = new PN() {
+    private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
         @SuppressWarnings("unchecked")
         @Override public boolean apply(ClusterNode n) {
             return "worker".equals(n.attribute("segment"));
@@ -417,7 +417,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         if (gridName.startsWith("master")) {
             cfg.setUserAttributes(ImmutableMap.of("segment", "master"));
 
-            GridTestFailoverSpi failoverSpi = new GridTestFailoverSpi(true, (GridPredicate)workerNodesFilter);
+            GridTestFailoverSpi failoverSpi = new GridTestFailoverSpi(true, (IgnitePredicate)workerNodesFilter);
 
             // For sure.
             failoverSpi.setMaximumFailoverAttempts(50);
@@ -466,14 +466,14 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         private Set<GridComputeJobContext> failedOverJobs = new HashSet<>();
 
         /** Node filter. */
-        private GridPredicate<? super ClusterNode>[] filter;
+        private IgnitePredicate<? super ClusterNode>[] filter;
 
         /**
          * @param master Master flag.
          * @param filter Filters.
          */
         @SafeVarargs
-        GridTestFailoverSpi(boolean master, GridPredicate<? super ClusterNode>... filter) {
+        GridTestFailoverSpi(boolean master, IgnitePredicate<? super ClusterNode>... filter) {
             this.master = master;
             this.filter = filter;
         }
@@ -507,7 +507,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
                 cp = new ArrayList<>(top);
 
                 // Keep collection type.
-                F.retain(cp, false, new GridPredicate<ClusterNode>() {
+                F.retain(cp, false, new IgnitePredicate<ClusterNode>() {
                     @Override public boolean apply(ClusterNode node) {
                         return F.isAll(node, filter);
                     }

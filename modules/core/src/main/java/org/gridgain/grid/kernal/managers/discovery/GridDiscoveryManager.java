@@ -81,7 +81,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     protected static final int DISCOVERY_HISTORY_SIZE = 100;
 
     /** Predicate filtering out daemon nodes. */
-    private static final GridPredicate<ClusterNode> daemonFilter = new P1<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> daemonFilter = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             return !n.isDaemon();
         }
@@ -898,7 +898,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param p Filter for IDs.
      * @return Collection with all alive nodes for given IDs.
      */
-    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids, GridPredicate<UUID>... p) {
+    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids, IgnitePredicate<UUID>... p) {
         return F.isEmpty(ids) ? Collections.<ClusterNode>emptyList() :
             F.view(
                 F.viewReadOnly(ids, U.id2Node(ctx), p),
@@ -2097,7 +2097,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param exclNode Node to exclude.
          */
         private void filterNodeMap(ConcurrentMap<String, Collection<ClusterNode>> map, final ClusterNode exclNode) {
-            GridPredicate<ClusterNode> p = new P1<ClusterNode>() {
+            IgnitePredicate<ClusterNode> p = new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode e) {
                     return exclNode.equals(e);
                 }

@@ -69,7 +69,7 @@ public class GridCacheUtils {
     };
 
     /** Empty predicate array. */
-    private static final GridPredicate[] EMPTY = new GridPredicate[0];
+    private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 
     /** Partition to state transformer. */
     private static final IgniteClosure PART2STATE =
@@ -80,7 +80,7 @@ public class GridCacheUtils {
         };
 
     /** Not evicted partitions. */
-    private static final GridPredicate PART_NOT_EVICTED = new P1<GridDhtLocalPartition>() {
+    private static final IgnitePredicate PART_NOT_EVICTED = new P1<GridDhtLocalPartition>() {
         @Override public boolean apply(GridDhtLocalPartition p) {
             return p.state() != GridDhtPartitionState.EVICTED;
         }
@@ -95,10 +95,10 @@ public class GridCacheUtils {
         };
 
     /** Empty predicate array. */
-    private static final GridPredicate[] EMPTY_FILTER = new GridPredicate[0];
+    private static final IgnitePredicate[] EMPTY_FILTER = new IgnitePredicate[0];
 
     /** Always false predicat array. */
-    private static final GridPredicate[] ALWAYS_FALSE = new GridPredicate[] {
+    private static final IgnitePredicate[] ALWAYS_FALSE = new IgnitePredicate[] {
         new P1() {
             @Override public boolean apply(Object e) {
                 return false;
@@ -107,7 +107,7 @@ public class GridCacheUtils {
     };
 
     /** Read filter. */
-    private static final GridPredicate READ_FILTER = new P1<Object>() {
+    private static final IgnitePredicate READ_FILTER = new P1<Object>() {
         @Override public boolean apply(Object e) {
             return ((GridCacheTxEntry)e).op() == READ;
         }
@@ -118,7 +118,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    private static final GridPredicate WRITE_FILTER = new P1<Object>() {
+    private static final IgnitePredicate WRITE_FILTER = new P1<Object>() {
         @Override public boolean apply(Object e) {
             return ((GridCacheTxEntry)e).op() != READ;
         }
@@ -129,7 +129,7 @@ public class GridCacheUtils {
     };
 
     /** Transfer required predicate. */
-    private static final GridPredicate TRANSFER_REQUIRED_PREDICATE = new P1<GridCacheTxEntry>() {
+    private static final IgnitePredicate TRANSFER_REQUIRED_PREDICATE = new P1<GridCacheTxEntry>() {
         @Override public boolean apply(GridCacheTxEntry e) {
             return e.transferRequired();
         }
@@ -291,7 +291,7 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Filter for entries with meta.
      */
-    public static <K, V> GridPredicate<K> keyHasMeta(final GridCacheContext<K, V> ctx, final String meta) {
+    public static <K, V> IgnitePredicate<K> keyHasMeta(final GridCacheContext<K, V> ctx, final String meta) {
         return new P1<K>() {
             @Override public boolean apply(K k) {
                 GridCacheEntryEx<K, V> e = ctx.cache().peekEx(k);
@@ -334,11 +334,11 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Factory instance.
      */
-    public static <K, V> IgniteClosure<Integer, GridPredicate<GridCacheEntry<K, V>>[]> factory() {
-        return new IgniteClosure<Integer, GridPredicate<GridCacheEntry<K, V>>[]>() {
+    public static <K, V> IgniteClosure<Integer, IgnitePredicate<GridCacheEntry<K, V>>[]> factory() {
+        return new IgniteClosure<Integer, IgnitePredicate<GridCacheEntry<K, V>>[]>() {
             @SuppressWarnings({"unchecked"})
-            @Override public GridPredicate<GridCacheEntry<K, V>>[] apply(Integer len) {
-                return (GridPredicate<GridCacheEntry<K, V>>[])(len == 0 ? EMPTY : new GridPredicate[len]);
+            @Override public IgnitePredicate<GridCacheEntry<K, V>>[] apply(Integer len) {
+                return (IgnitePredicate<GridCacheEntry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
             }
         };
     }
@@ -417,7 +417,7 @@ public class GridCacheUtils {
      * @return Not evicted partitions.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> GridPredicate<GridDhtLocalPartition<K, V>> notEvicted() {
+    public static <K, V> IgnitePredicate<GridDhtLocalPartition<K, V>> notEvicted() {
         return PART_NOT_EVICTED;
     }
 
@@ -745,16 +745,16 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] empty() {
-        return (GridPredicate<GridCacheEntry<K, V>>[])EMPTY_FILTER;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>>[] empty() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>[])EMPTY_FILTER;
     }
 
     /**
      * @return Always false filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] alwaysFalse() {
-        return (GridPredicate<GridCacheEntry<K, V>>[])ALWAYS_FALSE;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>>[] alwaysFalse() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>[])ALWAYS_FALSE;
     }
 
     /**
@@ -824,7 +824,7 @@ public class GridCacheUtils {
      * @return Filter for transaction reads.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheTxEntry<K, V>> reads() {
+    public static <K, V> IgnitePredicate<GridCacheTxEntry<K, V>> reads() {
         return READ_FILTER;
     }
 
@@ -832,7 +832,7 @@ public class GridCacheUtils {
      * @return Filter for transaction writes.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheTxEntry<K, V>> writes() {
+    public static <K, V> IgnitePredicate<GridCacheTxEntry<K, V>> writes() {
         return WRITE_FILTER;
     }
 
@@ -840,7 +840,7 @@ public class GridCacheUtils {
      * @return Transfer required predicate.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> GridPredicate<GridCacheTxEntry<K, V>> transferRequired() {
+    public static <K, V> IgnitePredicate<GridCacheTxEntry<K, V>> transferRequired() {
         return TRANSFER_REQUIRED_PREDICATE;
     }
 

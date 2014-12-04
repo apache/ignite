@@ -189,7 +189,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
         throws ClassNotFoundException {
-        GridPredicate<GridCacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
+        IgnitePredicate<GridCacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
             F.<GridCacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
 
         IgniteReducer<Object, Object> rdc = req.reducer();

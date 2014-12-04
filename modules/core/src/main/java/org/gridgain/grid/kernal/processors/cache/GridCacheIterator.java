@@ -42,7 +42,7 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
      */
     public GridCacheIterator(Iterable<? extends GridCacheEntry<K, V>> c,
         IgniteClosure<GridCacheEntry<K, V>, T> trans,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         it = F.iterator0(c, false, filter);
 
         this.trans = trans;

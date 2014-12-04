@@ -67,14 +67,14 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate<Boolean> IDENTITY_PRED = new P1<Boolean>() {
+    private static final IgnitePredicate<Boolean> IDENTITY_PRED = new P1<Boolean>() {
         @Override public boolean apply(Boolean e) {
             return e;
         }
     };
 
     /** */
-    private static final GridPredicate<Object> ALWAYS_TRUE = new P1<Object>() {
+    private static final IgnitePredicate<Object> ALWAYS_TRUE = new P1<Object>() {
         @Override public boolean apply(Object e) {
             return true;
         }
@@ -85,7 +85,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate<Object> ALWAYS_FALSE = new P1<Object>() {
+    private static final IgnitePredicate<Object> ALWAYS_FALSE = new P1<Object>() {
         @Override public boolean apply(Object e) {
             return false;
         }
@@ -107,42 +107,42 @@ public class GridFunc {
     };
 
     /** */
-    public static final GridPredicate<Object> IS_NULL = new P1<Object>() {
+    public static final IgnitePredicate<Object> IS_NULL = new P1<Object>() {
         @Override public boolean apply(Object o) {
             return o == null;
         }
     };
 
     /** */
-    public static final GridPredicate<Object> IS_NOT_NULL = new P1<Object>() {
+    public static final IgnitePredicate<Object> IS_NOT_NULL = new P1<Object>() {
         @Override public boolean apply(Object o) {
             return o != null;
         }
     };
 
     /** */
-    public static final GridPredicate<String> EMPTY_STRING = new P1<String>() {
+    public static final IgnitePredicate<String> EMPTY_STRING = new P1<String>() {
         @Override public boolean apply(String s) {
             return isEmpty(s);
         }
     };
 
     /** */
-    public static final GridPredicate<String> NOT_EMPTY_STRING = new P1<String>() {
+    public static final IgnitePredicate<String> NOT_EMPTY_STRING = new P1<String>() {
         @Override public boolean apply(String s) {
             return !isEmpty(s);
         }
     };
 
     /** */
-    public static final GridPredicate EMPTY_COLLECTION = new P1<Collection>() {
+    public static final IgnitePredicate EMPTY_COLLECTION = new P1<Collection>() {
         @Override public boolean apply(Collection c) {
             return isEmpty(c);
         }
     };
 
     /** */
-    public static final GridPredicate NOT_EMPTY_COLLECTION = new P1<Collection>() {
+    public static final IgnitePredicate NOT_EMPTY_COLLECTION = new P1<Collection>() {
         @Override public boolean apply(Collection c) {
             return !isEmpty(c);
         }
@@ -303,9 +303,9 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgniteClosure<ClusterGroup, GridPredicate<ClusterNode>> P2P =
-        new C1<ClusterGroup, GridPredicate<ClusterNode>>() {
-            @Override public GridPredicate<ClusterNode> apply(ClusterGroup e) {
+    private static final IgniteClosure<ClusterGroup, IgnitePredicate<ClusterNode>> P2P =
+        new C1<ClusterGroup, IgnitePredicate<ClusterNode>>() {
+            @Override public IgnitePredicate<ClusterNode> apply(ClusterGroup e) {
                 return e.predicate();
             }
 
@@ -377,7 +377,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate CACHE_ENTRY_HAS_GET_VAL = new GridPredicate() {
+    private static final IgnitePredicate CACHE_ENTRY_HAS_GET_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             try {
@@ -394,7 +394,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate CACHE_ENTRY_NO_GET_VAL = new GridPredicate() {
+    private static final IgnitePredicate CACHE_ENTRY_NO_GET_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             try {
@@ -411,7 +411,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate CACHE_ENTRY_HAS_PEEK_VAL = new GridPredicate() {
+    private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             return ((GridCacheEntry)o).peek() != null;
@@ -423,7 +423,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate CACHE_ENTRY_NO_PEEK_VAL = new GridPredicate() {
+    private static final IgnitePredicate CACHE_ENTRY_NO_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             return ((GridCacheEntry)o).peek() == null;
@@ -435,7 +435,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate CACHE_ENTRY_PRIMARY = new GridPredicate() {
+    private static final IgnitePredicate CACHE_ENTRY_PRIMARY = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             return ((GridCacheEntry)o).primary();
@@ -447,7 +447,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate CACHE_ENTRY_BACKUP = new GridPredicate() {
+    private static final IgnitePredicate CACHE_ENTRY_BACKUP = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             return ((GridCacheEntry)o).backup();
@@ -492,14 +492,14 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridPredicate<GridFuture<?>> FINISHED_FUTURE = new GridPredicate<GridFuture<?>>() {
+    private static final IgnitePredicate<GridFuture<?>> FINISHED_FUTURE = new IgnitePredicate<GridFuture<?>>() {
         @Override public boolean apply(GridFuture<?> f) {
             return f.isDone();
         }
     };
 
     /** */
-    private static final GridPredicate<GridFuture<?>> UNFINISHED_FUTURE = new GridPredicate<GridFuture<?>>() {
+    private static final IgnitePredicate<GridFuture<?>> UNFINISHED_FUTURE = new IgnitePredicate<GridFuture<?>>() {
         @Override public boolean apply(GridFuture<?> f) {
             return !f.isDone();
         }
@@ -514,8 +514,8 @@ public class GridFunc {
      * @param <T> Predicate type.
      * @return Breaker predicate.
      */
-    public static <T> GridPredicate<T> breaker(final boolean firstVal) {
-        return new GridPredicate<T>() {
+    public static <T> IgnitePredicate<T> breaker(final boolean firstVal) {
+        return new IgnitePredicate<T>() {
             private boolean b = true;
 
             @Override public boolean apply(T e) {
@@ -539,7 +539,7 @@ public class GridFunc {
      *
      * @return Closure transforming a grid projection into its predicate.
      */
-    public static IgniteClosure<ClusterGroup, GridPredicate<ClusterNode>> predicate() {
+    public static IgniteClosure<ClusterGroup, IgnitePredicate<ClusterNode>> predicate() {
         return P2P;
     }
 
@@ -550,7 +550,7 @@ public class GridFunc {
      * @param <T> Type of the node.
      * @return Return {@code true} only for the node with given local node ID.
      */
-    public static <T extends ClusterNode> GridPredicate<T> localNode(final UUID locNodeId) {
+    public static <T extends ClusterNode> IgnitePredicate<T> localNode(final UUID locNodeId) {
         return new P1<T>() {
             @Override public boolean apply(T n) {
                 return n.id().equals(locNodeId);
@@ -565,7 +565,7 @@ public class GridFunc {
      * @param <T> Type of the node.
      * @return Return {@code false} for the given local node ID.
      */
-    public static <T extends ClusterNode> GridPredicate<T> remoteNodes(final UUID locNodeId) {
+    public static <T extends ClusterNode> IgnitePredicate<T> remoteNodes(final UUID locNodeId) {
         return new P1<T>() {
             @Override public boolean apply(T n) {
                 return !n.id().equals(locNodeId);
@@ -2104,7 +2104,7 @@ public class GridFunc {
      * @param <T> Type of collections.
      * @return Collection of remaining elements.
      */
-    public static <T> Collection<T> lose(Collection<T> c, boolean cp, @Nullable GridPredicate<? super T>... p) {
+    public static <T> Collection<T> lose(Collection<T> c, boolean cp, @Nullable IgnitePredicate<? super T>... p) {
         A.notNull(c, "c");
 
         Collection<T> res;
@@ -2198,7 +2198,7 @@ public class GridFunc {
      */
     @SuppressWarnings({"unchecked"})
     public static <K, V> Map<K, V> lose(Map<K, V> m, boolean cp,
-        @Nullable GridPredicate<? super Map.Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         Map<K, V> res;
@@ -2239,7 +2239,7 @@ public class GridFunc {
      * @return Filtered map.
      */
     public static <K, V> Map<K, V> loseKeys(Map<K, V> m, boolean cp,
-        @Nullable final GridPredicate<? super K>... p) {
+        @Nullable final IgnitePredicate<? super K>... p) {
         return lose(m, cp, new P1<Map.Entry<K, V>>() {
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return isAll(e.getKey(), p);
@@ -2261,7 +2261,7 @@ public class GridFunc {
      * @return Filtered map.
      */
     public static <K, V> Map<K, V> loseValues(Map<K, V> m, boolean cp,
-        @Nullable final GridPredicate<? super V>... p) {
+        @Nullable final IgnitePredicate<? super V>... p) {
         return lose(m, cp, new P1<Map.Entry<K, V>>() {
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return isAll(e.getValue(), p);
@@ -2313,7 +2313,7 @@ public class GridFunc {
      * @param <T> Type of list.
      * @return List of remaining elements
      */
-    public static <T> List<T> filterList(List<T> c, boolean cp, @Nullable GridPredicate<T>... p) {
+    public static <T> List<T> filterList(List<T> c, boolean cp, @Nullable IgnitePredicate<T>... p) {
         A.notNull(c, "c");
 
         List<T> res;
@@ -2382,7 +2382,7 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Input collection with some elements potentially removed.
      */
-    public static <T> Iterable<T> drop(Iterable<T> c, @Nullable GridPredicate<? super T>... p) {
+    public static <T> Iterable<T> drop(Iterable<T> c, @Nullable IgnitePredicate<? super T>... p) {
         A.notNull(c, "c");
 
         if (isEmpty(p) || isAlwaysFalse(p))
@@ -2430,7 +2430,7 @@ public class GridFunc {
      * @see #idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static <T extends ClusterNode> GridPredicate<T> nodeForNodeId(final UUID nodeId) {
+    public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeId(final UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
         return new P1<T>() {
@@ -2448,7 +2448,7 @@ public class GridFunc {
      * @see #idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static <T extends ClusterNode> GridPredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
+    public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
         nodeIds) {
         if (isEmpty(nodeIds))
             return alwaysFalse();
@@ -2470,7 +2470,7 @@ public class GridFunc {
      * @see #idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static <T extends ClusterNode> GridPredicate<T> nodeForNodeIds(@Nullable final UUID... nodeIds) {
+    public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeIds(@Nullable final UUID... nodeIds) {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
@@ -2499,7 +2499,7 @@ public class GridFunc {
      * @see #nodeForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static GridPredicate<UUID> idForNodeId(final UUID nodeId) {
+    public static IgnitePredicate<UUID> idForNodeId(final UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
         return new P1<UUID>() {
@@ -2517,7 +2517,7 @@ public class GridFunc {
      * @see #nodeForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static GridPredicate<UUID> idForNodeIds(@Nullable final Collection<UUID> nodeIds) {
+    public static IgnitePredicate<UUID> idForNodeIds(@Nullable final Collection<UUID> nodeIds) {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
@@ -2538,7 +2538,7 @@ public class GridFunc {
      * @see #nodeForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
-    public static GridPredicate<UUID> idForNodeIds(@Nullable final UUID... nodeIds) {
+    public static IgnitePredicate<UUID> idForNodeIds(@Nullable final UUID... nodeIds) {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
@@ -2568,7 +2568,7 @@ public class GridFunc {
      *      return {@code false}.
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
-    public static GridPredicate<ClusterNode> nodeForNodes(@Nullable Collection<? extends ClusterNode> nodes) {
+    public static IgnitePredicate<ClusterNode> nodeForNodes(@Nullable Collection<? extends ClusterNode> nodes) {
         return new GridNodePredicate(nodeIds(nodes));
     }
 
@@ -2581,7 +2581,7 @@ public class GridFunc {
      *      return {@code false}.
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
-    public static GridPredicate<ClusterNode> nodeForNodes(ClusterNode... nodes) {
+    public static IgnitePredicate<ClusterNode> nodeForNodes(ClusterNode... nodes) {
         return new GridNodePredicate(nodes);
     }
 
@@ -2615,7 +2615,7 @@ public class GridFunc {
      * @param <T> Type of collections.
      * @return Collection of retain elements.
      */
-    public static <T> Collection<T> retain(Collection<T> c, boolean cp, @Nullable GridPredicate<? super T>... p) {
+    public static <T> Collection<T> retain(Collection<T> c, boolean cp, @Nullable IgnitePredicate<? super T>... p) {
         A.notNull(c, "c");
 
         return lose(c, cp, not(p));
@@ -2678,7 +2678,7 @@ public class GridFunc {
      * @return Filtered map.
      */
     public static <K, V> Map<K, V> retain(Map<K, V> m, boolean cp,
-        @Nullable GridPredicate<? super Map.Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
         return lose(m, cp, F.not(p));
     }
 
@@ -2695,7 +2695,7 @@ public class GridFunc {
      * @param <V> Type of map's values.
      * @return Filtered map.
      */
-    public static <K, V> Map<K, V> retainKeys(Map<K, V> m, boolean cp, @Nullable GridPredicate<? super K>... p) {
+    public static <K, V> Map<K, V> retainKeys(Map<K, V> m, boolean cp, @Nullable IgnitePredicate<? super K>... p) {
         return loseKeys(m, cp, F.not(p));
     }
 
@@ -2712,7 +2712,7 @@ public class GridFunc {
      * @param <V> Type of map's values.
      * @return Filtered map.
      */
-    public static <K, V> Map<K, V> retainValues(Map<K, V> m, boolean cp, @Nullable GridPredicate<? super V>... p) {
+    public static <K, V> Map<K, V> retainValues(Map<K, V> m, boolean cp, @Nullable IgnitePredicate<? super V>... p) {
         return loseValues(m, cp, F.not(p));
     }
 
@@ -2748,7 +2748,7 @@ public class GridFunc {
      * @param <E2> Type of the 2nd value.
      * @return Converted predicate.
      */
-    public static <E1, E2> GridPredicate<IgniteBiTuple<E1, E2>> as0(final IgniteBiPredicate<? super E1, ? super E2> p) {
+    public static <E1, E2> IgnitePredicate<IgniteBiTuple<E1, E2>> as0(final IgniteBiPredicate<? super E1, ? super E2> p) {
         return new P1<IgniteBiTuple<E1, E2>>() {
             @Override public boolean apply(IgniteBiTuple<E1, E2> e) {
                 return p.apply(e.get1(), e.get2());
@@ -2881,7 +2881,7 @@ public class GridFunc {
      * @param <T> Input type.
      * @return Curried closure.
      */
-    public static <T> GridAbsPredicate curry(final GridPredicate<? super T> f, final T e) {
+    public static <T> GridAbsPredicate curry(final IgnitePredicate<? super T> f, final T e) {
         return new GridAbsPredicate() {
             @Override public boolean apply() {
                 return f.apply(e);
@@ -3293,7 +3293,7 @@ public class GridFunc {
      * @return Number of elements in the array for which all given predicates
      *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
      */
-    public static <T> int size(T[] c, @Nullable GridPredicate<? super T>... p) {
+    public static <T> int size(T[] c, @Nullable IgnitePredicate<? super T>... p) {
         A.notNull(c, "c");
 
         return size(asList(c), p);
@@ -3308,7 +3308,7 @@ public class GridFunc {
      * @return Number of elements in the collection for which all given predicates
      *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
      */
-    public static <T> int size(@Nullable Collection<? extends T> c, @Nullable GridPredicate<? super T>... p) {
+    public static <T> int size(@Nullable Collection<? extends T> c, @Nullable IgnitePredicate<? super T>... p) {
         return c == null || c.isEmpty() ? 0 : isEmpty(p) || isAlwaysTrue(p) ? c.size() : size(c.iterator(), p);
     }
 
@@ -3322,7 +3322,7 @@ public class GridFunc {
      * @return Number of elements in the iterator for which all given predicates
      *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
      */
-    public static <T> int size(@Nullable Iterator<? extends T> it, @Nullable GridPredicate<? super T>... p) {
+    public static <T> int size(@Nullable Iterator<? extends T> it, @Nullable IgnitePredicate<? super T>... p) {
         if (it == null)
             return 0;
 
@@ -3351,7 +3351,7 @@ public class GridFunc {
      * @return Light-weight view on given collection with provided predicate.
      */
     public static <T> Collection<T> view(@Nullable final Collection<T> c,
-        @Nullable final GridPredicate<? super T>... p) {
+        @Nullable final IgnitePredicate<? super T>... p) {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
@@ -3394,7 +3394,7 @@ public class GridFunc {
      */
     @SuppressWarnings("RedundantTypeArguments")
     public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans, @Nullable final GridPredicate<? super T1>... p) {
+        final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
         A.notNull(trans, "trans");
 
         if (isEmpty(c) || isAlwaysFalse(p))
@@ -3470,7 +3470,7 @@ public class GridFunc {
      * @return View on given list with provided predicate.
      */
     public static <T1, T2> List<T2> transformList(Collection<? extends T1> c,
-        IgniteClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
+        IgniteClosure<? super T1, T2> trans, @Nullable IgnitePredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -3490,7 +3490,7 @@ public class GridFunc {
      * @return View on given set with provided predicate.
      */
     public static <T1, T2> Set<T2> transformSet(Collection<? extends T1> c,
-        IgniteClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
+        IgniteClosure<? super T1, T2> trans, @Nullable IgnitePredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -3513,7 +3513,7 @@ public class GridFunc {
      * @return Light-weight view on given map with provided predicate.
      */
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> view(@Nullable final Map<K, V> m,
-        @Nullable final GridPredicate<? super K>... p) {
+        @Nullable final IgnitePredicate<? super K>... p) {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
@@ -3521,7 +3521,7 @@ public class GridFunc {
 
         return isEmpty(p) || isAlwaysTrue(p) ? m : new GridSerializableMap<K, V>() {
             /** Entry predicate. */
-            private GridPredicate<Map.Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
+            private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
                     return isAll(e.getKey(), p);
                 }
@@ -3596,7 +3596,7 @@ public class GridFunc {
      * @return Light-weight view on given map with provided predicate and transformer.
      */
     public static <K0, K extends K0, V0, V extends V0, V1> Map<K, V1> viewReadOnly(@Nullable final Map<K, V> m,
-        final IgniteClosure<V, V1> trans, @Nullable final GridPredicate<? super K>... p) {
+        final IgniteClosure<V, V1> trans, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(trans, "trans");
 
         if (isEmpty(m) || isAlwaysFalse(p))
@@ -3606,7 +3606,7 @@ public class GridFunc {
 
         return new GridSerializableMap<K, V1>() {
             /** Entry predicate. */
-            private GridPredicate<Map.Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
+            private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
                     return isAll(e.getKey(), p);
                 }
@@ -3715,7 +3715,7 @@ public class GridFunc {
      * @return Light-weight view on given map with provided predicate and transformer.
      */
     public static <K0, K extends K0, V0, V extends V0, V1> Map<K, V1> viewReadOnly(@Nullable final Map<K, V> m,
-        final IgniteBiClosure<K, V, V1> trans, @Nullable final GridPredicate<? super K>... p) {
+        final IgniteBiClosure<K, V, V1> trans, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(trans, "trans");
 
         if (isEmpty(m) || isAlwaysFalse(p))
@@ -3725,7 +3725,7 @@ public class GridFunc {
 
         return new GridSerializableMap<K, V1>() {
             /** Entry predicate. */
-            private GridPredicate<Map.Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
+            private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
                     return isAll(e.getKey(), p);
                 }
@@ -3837,7 +3837,7 @@ public class GridFunc {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
-        final IgniteClosure<? super K, V> mapClo, @Nullable final GridPredicate<? super K>... p) {
+        final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
 
         if (isEmpty(c) || isAlwaysFalse(p))
@@ -3847,7 +3847,7 @@ public class GridFunc {
 
         return new GridSerializableMap<K, V>() {
             /** Entry predicate. */
-            private GridPredicate<K> ep = new P1<K>() {
+            private IgnitePredicate<K> ep = new P1<K>() {
                 @Override public boolean apply(K e) {
                     return isAll(e, p);
                 }
@@ -4214,7 +4214,7 @@ public class GridFunc {
      * @param <T> Type of the collection elements.
      * @return Iterable from given collection and optional filtering predicates.
      */
-    public static <T> GridIterable<T> iterable(Iterable<? extends T> c, GridPredicate<? super T>... p) {
+    public static <T> GridIterable<T> iterable(Iterable<? extends T> c, IgnitePredicate<? super T>... p) {
         return new GridIterableAdapter<>(F.iterator0(c, false, p));
     }
 
@@ -4234,7 +4234,7 @@ public class GridFunc {
      */
     @SuppressWarnings({"unchecked"})
     public static <T> GridIterator<T> iterator0(Iterable<? extends T> c, boolean readOnly,
-        GridPredicate<? super T>... p) {
+        IgnitePredicate<? super T>... p) {
         return F.iterator(c, IDENTITY, readOnly, p);
     }
 
@@ -4256,7 +4256,7 @@ public class GridFunc {
      */
     public static <T1, T2> GridIterator<T2> iterator(final Iterable<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans, final boolean readOnly,
-        @Nullable final GridPredicate<? super T1>... p) {
+        @Nullable final IgnitePredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -4289,7 +4289,7 @@ public class GridFunc {
 
                             boolean isAll = true;
 
-                            for (GridPredicate<? super T1> r : p)
+                            for (IgnitePredicate<? super T1> r : p)
                                 if (r != null && !r.apply(elem)) {
                                     isAll = false;
 
@@ -4342,8 +4342,8 @@ public class GridFunc {
      * @return Predicate that always returns {@code true}.
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    public static <T> GridPredicate<T> alwaysTrue() {
-        return (GridPredicate<T>)ALWAYS_TRUE;
+    public static <T> IgnitePredicate<T> alwaysTrue() {
+        return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
 
     /**
@@ -4354,8 +4354,8 @@ public class GridFunc {
      * @return Predicate that always returns {@code false}.
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    public static <T> GridPredicate<T> alwaysFalse() {
-        return (GridPredicate<T>)ALWAYS_FALSE;
+    public static <T> IgnitePredicate<T> alwaysFalse() {
+        return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
 
     /**
@@ -4365,7 +4365,7 @@ public class GridFunc {
      * @param p Predicate to check.
      * @return {@code true} if given predicate is {@code ALWAYS_TRUE} predicate.
      */
-    public static boolean isAlwaysTrue(GridPredicate p) {
+    public static boolean isAlwaysTrue(IgnitePredicate p) {
         return p == ALWAYS_TRUE;
     }
 
@@ -4376,7 +4376,7 @@ public class GridFunc {
      * @param p Predicate to check.
      * @return {@code true} if given contains only {@code ALWAYS_TRUE} predicate.
      */
-    public static boolean isAlwaysTrue(@Nullable GridPredicate[] p) {
+    public static boolean isAlwaysTrue(@Nullable IgnitePredicate[] p) {
         return p != null && p.length == 1 && isAlwaysTrue(p[0]);
     }
 
@@ -4387,7 +4387,7 @@ public class GridFunc {
      * @param p Predicate to check.
      * @return {@code true} if given predicate is {@code ALWAYS_FALSE} predicate.
      */
-    public static boolean isAlwaysFalse(GridPredicate p) {
+    public static boolean isAlwaysFalse(IgnitePredicate p) {
         return p == ALWAYS_FALSE;
     }
 
@@ -4398,7 +4398,7 @@ public class GridFunc {
      * @param p Predicate to check.
      * @return {@code true} if given contains only {@code ALWAYS_FALSE} predicate.
      */
-    public static boolean isAlwaysFalse(@Nullable GridPredicate[] p) {
+    public static boolean isAlwaysFalse(@Nullable IgnitePredicate[] p) {
         return p != null && p.length == 1 && isAlwaysFalse(p[0]);
     }
 
@@ -4408,8 +4408,8 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that evaluates to {@code true} if its free variable is {@code null}.
      */
-    public static <T> GridPredicate<T> isNull() {
-        return (GridPredicate<T>) IS_NULL;
+    public static <T> IgnitePredicate<T> isNull() {
+        return (IgnitePredicate<T>) IS_NULL;
     }
 
     /**
@@ -4418,8 +4418,8 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that evaluates to {@code true} if its free variable is not {@code null}.
      */
-    public static <T> GridPredicate<T> notNull() {
-        return (GridPredicate<T>) IS_NOT_NULL;
+    public static <T> IgnitePredicate<T> notNull() {
+        return (IgnitePredicate<T>) IS_NOT_NULL;
     }
 
     /**
@@ -4427,7 +4427,7 @@ public class GridFunc {
      *
      * @return Predicate which checks if string is {@code null} or empty.
      */
-    public static GridPredicate<String> isEmptyString() {
+    public static IgnitePredicate<String> isEmptyString() {
         return EMPTY_STRING;
     }
 
@@ -4436,7 +4436,7 @@ public class GridFunc {
      *
      * @return Predicate which checks if string is not {@code null} or empty.
      */
-    public static GridPredicate<String> isNotEmptyString() {
+    public static IgnitePredicate<String> isNotEmptyString() {
         return NOT_EMPTY_STRING;
     }
 
@@ -4446,8 +4446,8 @@ public class GridFunc {
      * @param <T> Type of collection element.
      * @return Predicate which checks if collection is empty.
      */
-    public static <T> GridPredicate<Collection<T>> isEmptyCollection() {
-        return (GridPredicate<Collection<T>>)EMPTY_COLLECTION;
+    public static <T> IgnitePredicate<Collection<T>> isEmptyCollection() {
+        return (IgnitePredicate<Collection<T>>)EMPTY_COLLECTION;
     }
 
     /**
@@ -4456,8 +4456,8 @@ public class GridFunc {
      * @param <T> Type of collection element.
      * @return Predicate which checks if collection is not {@code null} or empty.
      */
-    public static <T> GridPredicate<Collection<T>> isNotEmptyCollection() {
-        return (GridPredicate<Collection<T>>)NOT_EMPTY_COLLECTION;
+    public static <T> IgnitePredicate<Collection<T>> isNotEmptyCollection() {
+        return (IgnitePredicate<Collection<T>>)NOT_EMPTY_COLLECTION;
     }
 
     /**
@@ -4471,7 +4471,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Negated predicate.
      */
-    public static <T> GridPredicate<T> not(@Nullable final GridPredicate<? super T>... p) {
+    public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
         return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !isAll(t, p);
@@ -4488,7 +4488,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is equal to
      *      {@code target} or both are {@code null}.
      */
-    public static <T> GridPredicate<T> equalTo(@Nullable final T target) {
+    public static <T> IgnitePredicate<T> equalTo(@Nullable final T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
                 return eq(t, target);
@@ -4505,7 +4505,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is not equal
      *      to {@code target} or both are {@code null}.
      */
-    public static <T> GridPredicate<T> notEqualTo(@Nullable final T target) {
+    public static <T> IgnitePredicate<T> notEqualTo(@Nullable final T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
                 return !eq(t, target);
@@ -4521,7 +4521,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is instance
      *      of the given class.
      */
-    public static <T> GridPredicate<T> instanceOf(final Class<?> cls) {
+    public static <T> IgnitePredicate<T> instanceOf(final Class<?> cls) {
         A.notNull(cls, "cls");
 
         return new P1<T>() {
@@ -4540,7 +4540,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is not an instance
      *      of the given class.
      */
-    public static <T> GridPredicate<T> notInstanceOf(final Class<?> cls) {
+    public static <T> IgnitePredicate<T> notInstanceOf(final Class<?> cls) {
         A.notNull(cls, "cls");
 
         return new P1<T>() {
@@ -4664,7 +4664,7 @@ public class GridFunc {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridPredicate<T> and(@Nullable final Collection<? extends GridPredicate<? super T>> ps) {
+    public static <T> IgnitePredicate<T> and(@Nullable final Collection<? extends IgnitePredicate<? super T>> ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
 
@@ -4673,7 +4673,7 @@ public class GridFunc {
         if (F0.isAllNodePredicates(ps)) {
             Set<UUID> ids = new GridLeanSet<>();
 
-            for (GridPredicate<? super T> p : ps) {
+            for (IgnitePredicate<? super T> p : ps) {
                 Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
 
                 if (ids.isEmpty())
@@ -4683,12 +4683,12 @@ public class GridFunc {
             }
 
             // T must be <T extends GridNode>.
-            return (GridPredicate<T>)new GridNodePredicate(ids);
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
             return new P1<T>() {
                 @Override public boolean apply(T t) {
-                    for (GridPredicate<? super T> p : ps) {
+                    for (IgnitePredicate<? super T> p : ps) {
                         if (!p.apply(t))
                             return false;
                     }
@@ -4713,8 +4713,8 @@ public class GridFunc {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> GridPredicate<T> and(@Nullable final GridPredicate<? super T>[] p1,
-        @Nullable final GridPredicate<? super T>... p2) {
+    public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>[] p1,
+        @Nullable final IgnitePredicate<? super T>... p2) {
         if (isAlwaysFalse(p1) || isAlwaysFalse(p2))
             return F.alwaysFalse();
 
@@ -4731,14 +4731,14 @@ public class GridFunc {
             assert p2 != null;
 
             if (p2.length == 1)
-                return (GridPredicate<T>)p2[0];
+                return (IgnitePredicate<T>)p2[0];
         }
 
         if (!e1 && e2) {
             assert p1 != null;
 
             if (p1.length == 1)
-                return (GridPredicate<T>)p1[0];
+                return (IgnitePredicate<T>)p1[0];
         }
 
         if ((e1 || F0.isAllNodePredicates(p1)) && (e2 || F0.isAllNodePredicates(p2))) {
@@ -4747,7 +4747,7 @@ public class GridFunc {
             if (!e1) {
                 assert p1 != null;
 
-                for (GridPredicate<? super T> p : p1) {
+                for (IgnitePredicate<? super T> p : p1) {
                     ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
@@ -4755,13 +4755,13 @@ public class GridFunc {
             if (!e2) {
                 assert p2 != null;
 
-                for (GridPredicate<? super T> p : p2) {
+                for (IgnitePredicate<? super T> p : p2) {
                     ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
 
             // T must be <T extends GridNode>.
-            return (GridPredicate<T>)new GridNodePredicate(ids);
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
             return new P1<T>() {
@@ -4769,7 +4769,7 @@ public class GridFunc {
                     if (!e1) {
                         assert p1 != null;
 
-                        for (GridPredicate<? super T> p : p1) {
+                        for (IgnitePredicate<? super T> p : p1) {
                             if (p != null && !p.apply(t))
                                 return false;
                         }
@@ -4778,7 +4778,7 @@ public class GridFunc {
                     if (!e2) {
                         assert p2 != null;
 
-                        for (GridPredicate<? super T> p : p2) {
+                        for (IgnitePredicate<? super T> p : p2) {
                             if (p != null && !p.apply(t))
                                 return false;
                         }
@@ -4804,7 +4804,7 @@ public class GridFunc {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridPredicate<T> and(@Nullable final GridPredicate<? super T>... ps) {
+    public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
 
@@ -4819,7 +4819,7 @@ public class GridFunc {
 
             Set<UUID> ids = new HashSet<>();
 
-            for (GridPredicate<? super T> p : ps) {
+            for (IgnitePredicate<? super T> p : ps) {
                 if (p != null) {
                     Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
 
@@ -4831,14 +4831,14 @@ public class GridFunc {
             }
 
             // T must be <T extends GridNode>.
-            return (GridPredicate<T>)new GridNodePredicate(ids);
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
             return new P1<T>() {
                 @Override public boolean apply(T t) {
                     assert ps != null;
 
-                    for (GridPredicate<? super T> p : ps)
+                    for (IgnitePredicate<? super T> p : ps)
                         if (p != null && !p.apply(t))
                             return false;
 
@@ -4861,7 +4861,7 @@ public class GridFunc {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridPredicate<T> or(@Nullable final Collection<? extends GridPredicate<? super T>> ps) {
+    public static <T> IgnitePredicate<T> or(@Nullable final Collection<? extends IgnitePredicate<? super T>> ps) {
         if (isEmpty(ps))
             return F.alwaysFalse();
         else {
@@ -4870,18 +4870,18 @@ public class GridFunc {
             if (F0.isAllNodePredicates(ps)) {
                 Set<UUID> ids = new GridLeanSet<>();
 
-                for (GridPredicate<? super T> p : ps) {
+                for (IgnitePredicate<? super T> p : ps) {
                     if (p != null)
                         ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
 
                 // T must be <T extends GridNode>.
-                return (GridPredicate<T>)new GridNodePredicate(ids);
+                return (IgnitePredicate<T>)new GridNodePredicate(ids);
             }
             else {
                 return new P1<T>() {
                     @Override public boolean apply(T t) {
-                        for (GridPredicate<? super T> p : ps) {
+                        for (IgnitePredicate<? super T> p : ps) {
                             if (p != null && p.apply(t))
                                 return true;
                         }
@@ -4907,8 +4907,8 @@ public class GridFunc {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridPredicate<T> or(@Nullable final GridPredicate<? super T>[] p1,
-        @Nullable final GridPredicate<? super T>... p2) {
+    public static <T> IgnitePredicate<T> or(@Nullable final IgnitePredicate<? super T>[] p1,
+        @Nullable final IgnitePredicate<? super T>... p2) {
         if (isEmpty(p1) && isEmpty(p2))
             return F.alwaysFalse();
 
@@ -4928,14 +4928,14 @@ public class GridFunc {
             assert p2 != null;
 
             if (p2.length == 1)
-                return (GridPredicate<T>)p2[0];
+                return (IgnitePredicate<T>)p2[0];
         }
 
         if (!e1 && e2) {
             assert p1 != null;
 
             if (p1.length == 1)
-                return (GridPredicate<T>)p1[0];
+                return (IgnitePredicate<T>)p1[0];
         }
 
         if ((e1 || F0.isAllNodePredicates(p1)) && (e2 || F0.isAllNodePredicates(p2))) {
@@ -4944,7 +4944,7 @@ public class GridFunc {
             if (!e1) {
                 assert p1 != null;
 
-                for (GridPredicate<? super T> p : p1) {
+                for (IgnitePredicate<? super T> p : p1) {
                     ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
@@ -4952,13 +4952,13 @@ public class GridFunc {
             if (!e2) {
                 assert p2 != null;
 
-                for (GridPredicate<? super T> p : p2) {
+                for (IgnitePredicate<? super T> p : p2) {
                     ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
 
             // T must be <T extends GridNode>.
-            return (GridPredicate<T>)new GridNodePredicate(ids);
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
             return new P1<T>() {
@@ -4966,7 +4966,7 @@ public class GridFunc {
                     if (!e1) {
                         assert p1 != null;
 
-                        for (GridPredicate<? super T> p : p1) {
+                        for (IgnitePredicate<? super T> p : p1) {
                             if (p != null && p.apply(t))
                                 return true;
                         }
@@ -4975,7 +4975,7 @@ public class GridFunc {
                     if (!e2) {
                         assert p2 != null;
 
-                        for (GridPredicate<? super T> p : p2) {
+                        for (IgnitePredicate<? super T> p : p2) {
                             if (p != null && !p.apply(t))
                                 return true;
                         }
@@ -5000,7 +5000,7 @@ public class GridFunc {
      * to {@code true}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridPredicate<T> or(@Nullable final GridPredicate<? super T>... ps) {
+    public static <T> IgnitePredicate<T> or(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps) || isAlwaysFalse(ps))
             return F.alwaysFalse();
         else {
@@ -5012,19 +5012,19 @@ public class GridFunc {
 
                     assert ps != null;
 
-                    for (GridPredicate<? super T> p : ps) {
+                    for (IgnitePredicate<? super T> p : ps) {
                         ids.addAll(((GridNodePredicate)p).nodeIds());
                     }
 
                     // T must be <T extends GridNode>.
-                    return (GridPredicate<T>)new GridNodePredicate(ids);
+                    return (IgnitePredicate<T>)new GridNodePredicate(ids);
                 }
                 else {
                     return new P1<T>() {
                         @Override public boolean apply(T t) {
                             assert ps != null;
 
-                            for (GridPredicate<? super T> p : ps) {
+                            for (IgnitePredicate<? super T> p : ps) {
                                 if (p != null && p.apply(t))
                                     return true;
                             }
@@ -5049,7 +5049,7 @@ public class GridFunc {
      * @return Predicate that is composed of given predicate and closure.
      */
     @SuppressWarnings({"JavaDoc"})
-    public static <X, Y> GridPredicate<X> compose(final GridPredicate<? super Y> p,
+    public static <X, Y> IgnitePredicate<X> compose(final IgnitePredicate<? super Y> p,
         final IgniteClosure<? super X, ? extends Y> f) {
         A.notNull(p, "p", f, "f");
 
@@ -5164,7 +5164,7 @@ public class GridFunc {
      *
      * @return Identity predicate.
      */
-    public static GridPredicate<Boolean> identityPredicate() {
+    public static IgnitePredicate<Boolean> identityPredicate() {
         return IDENTITY_PRED;
     }
 
@@ -5195,7 +5195,7 @@ public class GridFunc {
      * @param c Closure to convert.
      * @return Closure converted to predicate.
      */
-    public static <T> GridPredicate<T> as(final IgniteClosure<? super T, Boolean> c) {
+    public static <T> IgnitePredicate<T> as(final IgniteClosure<? super T, Boolean> c) {
         A.notNull(c, "c");
 
         return new P1<T>() {
@@ -5261,7 +5261,7 @@ public class GridFunc {
      * @param <X> Type of the free variable for the predicate.
      * @return Predicate converted to closure.
      */
-    public static <X> IgniteClosure<X, Boolean> as(final GridPredicate<? super X> p) {
+    public static <X> IgniteClosure<X, Boolean> as(final IgnitePredicate<? super X> p) {
         A.notNull(p, "p");
 
         return new C1<X, Boolean>() {
@@ -5401,7 +5401,7 @@ public class GridFunc {
      * @return Predicate that returns {@code true} if its free variable is
      *      contained in given collection.
      */
-    public static <T> GridPredicate<T> in(@Nullable final Collection<? extends T> c) {
+    public static <T> IgnitePredicate<T> in(@Nullable final Collection<? extends T> c) {
         return isEmpty(c) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 assert c != null;
@@ -5421,7 +5421,7 @@ public class GridFunc {
      * @return Predicate that returns {@code true} if its free variable is not
      *      contained in given collection.
      */
-    public static <T> GridPredicate<T> notIn(@Nullable final Collection<? extends T> c) {
+    public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
         return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 assert c != null;
@@ -5571,7 +5571,7 @@ public class GridFunc {
      * @return Predicate that returns {@code true} if its free variable is
      *      contained in given array.
      */
-    public static <T> GridPredicate<T> in(@Nullable T[] c) {
+    public static <T> IgnitePredicate<T> in(@Nullable T[] c) {
         return isEmpty(c) ? GridFunc.<T>alwaysFalse() : in(asList(c));
     }
 
@@ -5585,7 +5585,7 @@ public class GridFunc {
      * @return Predicate that returns {@code true} if its free variable is not
      *      contained in given array.
      */
-    public static <T> GridPredicate<T> notIn(@Nullable T[] c) {
+    public static <T> IgnitePredicate<T> notIn(@Nullable T[] c) {
         return isEmpty(c) ? GridFunc.<T>alwaysTrue() : notIn(asList(c));
     }
 
@@ -5644,7 +5644,7 @@ public class GridFunc {
      *      collection elements.
      */
     public static <X> void forEach(Iterable<? extends X> c, IgniteInClosure<? super X> f,
-        @Nullable GridPredicate<? super X>... p) {
+        @Nullable IgnitePredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
 
         for (X x : c)
@@ -5665,7 +5665,7 @@ public class GridFunc {
      *      elements.
      */
     @SuppressWarnings("RedundantTypeArguments")
-    public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable GridPredicate<? super X>... p) {
+    public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable IgnitePredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
 
         F.<X>forEach(asList(c), f, p);
@@ -5683,7 +5683,7 @@ public class GridFunc {
      * @see #meta(Iterable)
      * @see #meta(String, Object)
      */
-    public static <T extends GridMetadataAware> GridPredicate<T> metaEntry(@Nullable Map.Entry<String, ?>... meta) {
+    public static <T extends GridMetadataAware> IgnitePredicate<T> metaEntry(@Nullable Map.Entry<String, ?>... meta) {
         return metaEntry(isEmpty(meta) ? Collections.<Map.Entry<String, ?>>emptyList() : asList(meta));
     }
 
@@ -5699,7 +5699,7 @@ public class GridFunc {
      * @see #meta(Iterable)
      * @see #meta(String, Object)
      */
-    public static <T extends GridMetadataAware> GridPredicate<T> metaEntry(
+    public static <T extends GridMetadataAware> IgnitePredicate<T> metaEntry(
         @Nullable final Collection<? extends Map.Entry<String, ?>> meta) {
         return isEmpty(meta) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T e) {
@@ -5729,7 +5729,7 @@ public class GridFunc {
      * @see #metaEntry(Entry[])
      * @see #metaEntry(Collection)
      */
-    public static <T extends GridMetadataAware> GridPredicate<T> meta(@Nullable Map<String, ?> meta) {
+    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(@Nullable Map<String, ?> meta) {
         if (isEmpty(meta))
             return metaEntry(Collections.<Entry<String, ?>>emptySet());
         else {
@@ -5752,7 +5752,7 @@ public class GridFunc {
      * @see #meta(String...)
      * @see #meta(Iterable)
      */
-    public static <T extends GridMetadataAware> GridPredicate<T> meta(String name, Object val) {
+    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(String name, Object val) {
         A.notNull(name, "name", val, "val");
 
         return metaEntry(F.t(name, val));
@@ -5767,7 +5767,7 @@ public class GridFunc {
      * @return Predicate that accepts subclass of {@link GridMetadataAware} interface and
      *      evaluates to {@code true} if it contains given metadata names (values are ignored).
      */
-    public static <T extends GridMetadataAware> GridPredicate<T> meta(@Nullable String... names) {
+    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(@Nullable String... names) {
         return meta(isEmpty(names) ? Collections.<String>emptyList() : asList(names));
     }
 
@@ -5780,7 +5780,7 @@ public class GridFunc {
      * @return Predicate that accepts subclass of {@link GridMetadataAware} interface and
      *      evaluates to {@code true} if it contains given metadata names (values are ignored).
      */
-    public static <T extends GridMetadataAware> GridPredicate<T> meta(@Nullable final Iterable<String> names) {
+    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(@Nullable final Iterable<String> names) {
         return isEmpty(names) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T e) {
                 assert names != null;
@@ -5821,7 +5821,7 @@ public class GridFunc {
      * @return Collection to copy to.
      */
     public static <T> Collection<T> copy(Collection<T> to, Iterable<? extends T> from,
-        @Nullable GridPredicate<? super T>... p) {
+        @Nullable IgnitePredicate<? super T>... p) {
         A.notNull(to, "to", from, "from");
 
         if (!isAlwaysFalse(p)) {
@@ -5848,7 +5848,7 @@ public class GridFunc {
      * @return Destination collection.
      */
     public static <X, Y> Collection<Y> transform(Collection<Y> to, Iterable<? extends X> from,
-        IgniteClosure<? super X, Y> f, @Nullable GridPredicate<? super X>... p) {
+        IgniteClosure<? super X, Y> f, @Nullable IgnitePredicate<? super X>... p) {
         A.notNull(to, "to", from, "from", f, "f");
 
         if (!isAlwaysFalse(p)) {
@@ -5874,7 +5874,7 @@ public class GridFunc {
      * @param <V> Type of the closure's return value and type of the map values.
      */
     public static <K, V> void forEach(Map<? extends K, ? extends V> m, IgniteInClosure<? super IgniteBiTuple<K, V>> f,
-        @Nullable GridPredicate<? super IgniteBiTuple<K, V>>... p) {
+        @Nullable IgnitePredicate<? super IgniteBiTuple<K, V>>... p) {
         A.notNull(m, "m");
 
         if (!isAlwaysFalse(p)) {
@@ -5948,9 +5948,9 @@ public class GridFunc {
      * @return Returns {@code true} if given set of predicates is {@code null}, is empty, or all predicates
      *      evaluate to {@code true} for given value, {@code false} otherwise.
      */
-    public static <T> boolean isAll(@Nullable T t, @Nullable GridPredicate<? super T>... p) {
+    public static <T> boolean isAll(@Nullable T t, @Nullable IgnitePredicate<? super T>... p) {
         if (p != null)
-            for (GridPredicate<? super T> r : p)
+            for (IgnitePredicate<? super T> r : p)
                 if (r != null && !r.apply(t))
                     return false;
 
@@ -5967,9 +5967,9 @@ public class GridFunc {
      * @return Returns {@code true} if given set of predicates is {@code null}, is empty, or all predicates
      *      evaluate to {@code true} for given value, {@code false} otherwise.
      */
-    public static <T> boolean isAll(@Nullable T t, @Nullable Iterable<? extends GridPredicate<? super T>> p) {
+    public static <T> boolean isAll(@Nullable T t, @Nullable Iterable<? extends IgnitePredicate<? super T>> p) {
         if (p != null)
-            for (GridPredicate<? super T> r : p)
+            for (IgnitePredicate<? super T> r : p)
                 if (r != null && !r.apply(t))
                     return false;
 
@@ -6101,9 +6101,9 @@ public class GridFunc {
      *      value, {@code false} otherwise. Returns {@code false} if given set of predicates
      *      is {@code null} or empty.
      */
-    public static <T> boolean isAny(@Nullable T t, @Nullable GridPredicate<? super T>... p) {
+    public static <T> boolean isAny(@Nullable T t, @Nullable IgnitePredicate<? super T>... p) {
         if (p != null)
-            for (GridPredicate<? super T> r : p)
+            for (IgnitePredicate<? super T> r : p)
                 if (r != null && r.apply(t))
                     return true;
 
@@ -6122,9 +6122,9 @@ public class GridFunc {
      *      value, {@code false} otherwise. Returns {@code false} if given set of predicates
      *      is {@code null} or empty.
      */
-    public static <T> boolean isAny(@Nullable T t, @Nullable Iterable<? extends GridPredicate<? super T>> p) {
+    public static <T> boolean isAny(@Nullable T t, @Nullable Iterable<? extends IgnitePredicate<? super T>> p) {
         if (p != null)
-            for (GridPredicate<? super T> r : p)
+            for (IgnitePredicate<? super T> r : p)
                 if (r != null && r.apply(t))
                     return true;
 
@@ -6239,7 +6239,7 @@ public class GridFunc {
      * @return Transformed newly created collection.
      */
     public static <X, Y> Collection<Y> transform(Collection<? extends X> c, IgniteClosure<? super X, Y> f,
-        GridPredicate<? super X>... p) {
+        IgnitePredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
 
         Collection<Y> d = new ArrayList<>(c.size());
@@ -6293,7 +6293,7 @@ public class GridFunc {
      *      {@code true} - or {@code null} if such element cannot be found.
      */
     @Nullable public static <V> V find(Iterable<? extends V> c, @Nullable V dfltVal,
-        @Nullable GridPredicate<? super V>... p) {
+        @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         if (!isEmpty(p) && !isAlwaysFalse(p)) {
@@ -6317,7 +6317,7 @@ public class GridFunc {
      * @return First element in given array for which predicate evaluates to
      *      {@code true} - or {@code null} if such element cannot be found.
      */
-    @Nullable public static <V> V find(V[] c, @Nullable V dfltVal, @Nullable GridPredicate<? super V>... p) {
+    @Nullable public static <V> V find(V[] c, @Nullable V dfltVal, @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         return find(asList(c), dfltVal, p);
@@ -6336,7 +6336,7 @@ public class GridFunc {
      *      {@code true} - or {@code null} if such element cannot be found.
      */
     public static <V, Y> Y find(Iterable<? extends V> c, @Nullable Y dfltVal, IgniteClosure<? super V, Y> f,
-        @Nullable GridPredicate<? super V>... p) {
+        @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c", f, "f");
 
         if (isAlwaysTrue(p) && c.iterator().hasNext())
@@ -6366,7 +6366,7 @@ public class GridFunc {
      */
     @SuppressWarnings("RedundantTypeArguments")
     public static <V, Y> Y find(V[] c, @Nullable Y dfltVal, IgniteClosure<? super V, Y> f,
-        @Nullable GridPredicate<? super V>... p) {
+        @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c", f, "f");
 
         return F.<V, Y>find(asList(c), dfltVal, f, p);
@@ -6442,7 +6442,7 @@ public class GridFunc {
      * @return Pair of two collections.
      */
     public static <T0, T extends T0> IgnitePair<Collection<T>> split(@Nullable Collection<T> c,
-        @Nullable GridPredicate<? super T>... p) {
+        @Nullable IgnitePredicate<? super T>... p) {
         if (c == null)
             return pair(null, null);
 
@@ -6509,7 +6509,7 @@ public class GridFunc {
      *      evaluates to {@code false}.
      */
     public static <V> IgniteBiTuple<Collection<V>, Collection<V>> partition(Iterable<? extends V> c,
-        GridPredicate<? super V> p) {
+        IgnitePredicate<? super V> p) {
         A.notNull(c, "c", p, "p");
 
         Collection<V> c1 = new LinkedList<>();
@@ -6537,7 +6537,7 @@ public class GridFunc {
      *      evaluates to {@code true} - and second containing the elements for which predicate
      *      evaluates to {@code false}.
      */
-    public static <V> IgniteBiTuple<Collection<V>, Collection<V>> partition(V[] c, GridPredicate<? super V> p) {
+    public static <V> IgniteBiTuple<Collection<V>, Collection<V>> partition(V[] c, IgnitePredicate<? super V> p) {
         A.notNull(c, "c", p, "p");
 
         return partition(asList(c), p);
@@ -6581,7 +6581,7 @@ public class GridFunc {
      * @return {@code true} if input collection contains element for which all the provided
      *      predicates evaluates to {@code true} - otherwise returns {@code false}.
      */
-    public static <V> boolean exist(Iterable<? extends V> c, @Nullable GridPredicate<? super V>... p) {
+    public static <V> boolean exist(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         if (isAlwaysFalse(p))
@@ -6608,7 +6608,7 @@ public class GridFunc {
      * @return {@code true} if input array contains element for which all the provided predicates
      *      valuates to {@code true} - otherwise returns {@code false}.
      */
-    public static <V> boolean exist(V[] c, @Nullable GridPredicate<? super V>... p) {
+    public static <V> boolean exist(V[] c, @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         return exist(asList(c), p);
@@ -6625,7 +6625,7 @@ public class GridFunc {
      * @return Returns {@code true} if all given predicates evaluate to {@code true} for
      *      all elements. Returns {@code false} otherwise.
      */
-    public static <V> boolean forAll(Iterable<? extends V> c, @Nullable GridPredicate<? super V>... p) {
+    public static <V> boolean forAll(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         if (isAlwaysFalse(p))
@@ -6652,7 +6652,7 @@ public class GridFunc {
      * @return Returns {@code true} if all given predicates evaluate to {@code true} for all elements.
      *      Returns {@code false} otherwise.
      */
-    public static <V> boolean forAll(V[] c, @Nullable GridPredicate<? super V>... p) {
+    public static <V> boolean forAll(V[] c, @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         return forAll(asList(c), p);
@@ -6670,7 +6670,7 @@ public class GridFunc {
      *      evaluate to {@code true} - otherwise returns {@code false}.
      */
     public static <K1, K extends K1, V1, V extends V1> boolean exist(Map<K, V> m,
-        @Nullable GridPredicate<? super Map.Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         if (isAlwaysFalse(p))
@@ -6699,7 +6699,7 @@ public class GridFunc {
      *      entries. Returns {@code false} otherwise.
      */
     public static <K1, K extends K1, V1, V extends V1> boolean forAll(Map<K, V> m,
-        @Nullable GridPredicate<? super Map.Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         if (isAlwaysFalse(p))
@@ -6726,7 +6726,7 @@ public class GridFunc {
      * @return Returns {@code true} if all given predicates evaluate to {@code true} for
      *      at least one element. Returns {@code false} otherwise.
      */
-    public static <V> boolean forAny(Iterable<? extends V> c, @Nullable GridPredicate<? super V>... p) {
+    public static <V> boolean forAny(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         if (!c.iterator().hasNext())
@@ -6758,7 +6758,7 @@ public class GridFunc {
      * @return Returns {@code true} if all given predicates evaluate to {@code true} for at
      *      least one element. Returns {@code false} otherwise.
      */
-    public static <V> boolean forAny(V[] c, @Nullable GridPredicate<? super V>... p) {
+    public static <V> boolean forAny(V[] c, @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");
 
         return forAny(asList(c), p);
@@ -6778,7 +6778,7 @@ public class GridFunc {
      *      least one entry. Returns {@code false} otherwise.
      */
     public static <K1, K extends K1, V1, V extends V1> boolean forAny(Map<K, V> m,
-        @Nullable GridPredicate<? super Map.Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         if (isAlwaysFalse(p))
@@ -7283,7 +7283,7 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if it receives an element
      *  that is contained in the passed in collection.
      */
-    public static <T> GridPredicate<T> contains(@Nullable final Collection<T> c) {
+    public static <T> IgnitePredicate<T> contains(@Nullable final Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return c.contains(t);
@@ -7300,7 +7300,7 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if it receives an element
      *  that is not contained in the passed in collection.
      */
-    public static <T> GridPredicate<T> notContains(@Nullable final Collection<T> c) {
+    public static <T> IgnitePredicate<T> notContains(@Nullable final Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !c.contains(t);
@@ -7363,7 +7363,7 @@ public class GridFunc {
      * @return Predicate that accepts {@link Entry} value and compares its value
      *      to the given value.
      */
-    public static <K, V> GridPredicate<Map.Entry<K, V>> mapValue(@Nullable final V val) {
+    public static <K, V> IgnitePredicate<Entry<K, V>> mapValue(@Nullable final V val) {
         return new P1<Map.Entry<K, V>>() {
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return e.getValue().equals(val);
@@ -7381,7 +7381,7 @@ public class GridFunc {
      * @return Predicate that accepts {@code Map.Entry} value and compares its key
      *      to the given value.
      */
-    public static <K, V> GridPredicate<Map.Entry<K, V>> mapKey(@Nullable final K key) {
+    public static <K, V> IgnitePredicate<Entry<K, V>> mapKey(@Nullable final K key) {
         return new P1<Map.Entry<K, V>>() {
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return e.getKey().equals(key);
@@ -7900,10 +7900,10 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if entry's key is contained in given collection.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheHasKeys(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasKeys(
         @Nullable final Collection<? extends K> keys) {
         return isEmpty(keys) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     return keys != null && keys.contains(e.getKey());
                 }
@@ -7921,7 +7921,7 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if entry's key
      *      is equal to any of provided keys.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheHasKeys(@Nullable K... keys) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasKeys(@Nullable K... keys) {
         if (isEmpty(keys))
             return alwaysFalse();
 
@@ -7938,10 +7938,10 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if entry
      *      expires on or before given time.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheExpireBefore(final long msec) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheExpireBefore(final long msec) {
         A.ensure(msec >= 0, "msec >= 0");
 
-        return new GridPredicate<GridCacheEntry<K, V>>() {
+        return new IgnitePredicate<GridCacheEntry<K, V>>() {
             @Override public boolean apply(GridCacheEntry<K, V> e) {
                 return e.expirationTime() <= msec;
             }
@@ -7958,10 +7958,10 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if entry
      *      expires on or after given time.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheExpireAfter(final long msec) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheExpireAfter(final long msec) {
         A.ensure(msec >= 0, "msec >= 0");
 
-        return new GridPredicate<GridCacheEntry<K, V>>() {
+        return new IgnitePredicate<GridCacheEntry<K, V>>() {
             @Override public boolean apply(GridCacheEntry<K, V> e) {
                 return e.expirationTime() >= msec;
             }
@@ -7978,8 +7978,8 @@ public class GridFunc {
      *      method returns {@code non-null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheHasGetValue() {
-        return (GridPredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasGetValue() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
     }
 
     /**
@@ -7992,8 +7992,8 @@ public class GridFunc {
      *      method returns {@code null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheNoGetValue() {
-        return (GridPredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheNoGetValue() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
     }
 
     /**
@@ -8008,8 +8008,8 @@ public class GridFunc {
      *      method returns {@code non-null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheHasPeekValue() {
-        return (GridPredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasPeekValue() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }
 
     /**
@@ -8024,8 +8024,8 @@ public class GridFunc {
      *      method returns {@code null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheNoPeekValue() {
-        return (GridPredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_NO_PEEK_VAL;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheNoPeekValue() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_NO_PEEK_VAL;
     }
 
     /**
@@ -8038,8 +8038,8 @@ public class GridFunc {
      *      method returns {@code true}.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cachePrimary() {
-        return (GridPredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_PRIMARY;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cachePrimary() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_PRIMARY;
     }
 
     /**
@@ -8052,8 +8052,8 @@ public class GridFunc {
      *      method returns {@code false}.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheBackup() {
-        return (GridPredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_BACKUP;
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheBackup() {
+        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_BACKUP;
     }
 
     /**
@@ -8068,10 +8068,10 @@ public class GridFunc {
      * @return Predicate which returns true if {@link GridCacheEntry#get()} methods returns
      *      value that is contained in given collection.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsGet(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsGet(
         @Nullable final Collection<? extends V> vals) {
         return isEmpty(vals) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     try {
                         V v = e.get();
@@ -8099,7 +8099,7 @@ public class GridFunc {
      * @return Predicate which returns true if {@link GridCacheEntry#get()} methods returns
      *      value that is contained among given values.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable V... vals) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable V... vals) {
         if (isEmpty(vals))
             return alwaysFalse();
 
@@ -8118,10 +8118,10 @@ public class GridFunc {
      * @return Predicate which returns true if {@link GridCacheEntry#peek()} methods returns
      *      value that is contained in given collection.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsPeek(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsPeek(
         @Nullable final Collection<? extends V> vals) {
         return isEmpty(vals) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     V v = e.peek();
 
@@ -8148,7 +8148,7 @@ public class GridFunc {
      * @return Predicate which returns true if {@link GridCacheEntry#peek()} methods returns
      *      value that is contained among given values.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsPeek(@Nullable V... vals) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsPeek(@Nullable V... vals) {
         if (isEmpty(vals))
             return alwaysFalse();
 
@@ -8165,9 +8165,9 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache contains all given key-value pairs.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable final Map<K, V> map) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable final Map<K, V> map) {
         return isEmpty(map) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     assert map != null;
 
@@ -8191,10 +8191,10 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsPeek(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsPeek(
         @Nullable final Map<K, V> map) {
         return isEmpty(map) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     assert map != null;
 
@@ -8217,10 +8217,10 @@ public class GridFunc {
      */
     // cacheEntryPredicateForContainsEntriesGet
     // ptCacheContainsEntriesGet
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsEntriesGet(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesGet(
         @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
         return isEmpty(entries) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     try {
                         K k = e.getKey();
@@ -8254,10 +8254,10 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsEntriesPeek(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesPeek(
         @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
         return isEmpty(entries) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     K k = e.getKey();
                     V v = e.peek();
@@ -8286,7 +8286,7 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsEntriesGet(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesGet(
         @Nullable Map.Entry<K, V>... entries) {
         if (isEmpty(entries))
             return alwaysFalse();
@@ -8306,7 +8306,7 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsEntriesPeek(
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesPeek(
         @Nullable Map.Entry<K, V>... entries) {
         if (isEmpty(entries))
             return alwaysFalse();
@@ -8322,11 +8322,11 @@ public class GridFunc {
      * @param ps Key filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheKeys(
-        @Nullable final GridPredicate<? super K>... ps) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheKeys(
+        @Nullable final IgnitePredicate<? super K>... ps) {
         return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
             isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     return F.isAll(e.getKey(), ps);
                 }
@@ -8341,11 +8341,11 @@ public class GridFunc {
      * @param ps Value filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheValuesGet(
-        @Nullable final GridPredicate<? super V>... ps) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheValuesGet(
+        @Nullable final IgnitePredicate<? super V>... ps) {
         return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
             isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     try {
                         V v = e.get();
@@ -8367,11 +8367,11 @@ public class GridFunc {
      * @param ps Value filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheValuesPeek(
-        @Nullable final GridPredicate<? super V>... ps) {
+    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheValuesPeek(
+        @Nullable final IgnitePredicate<? super V>... ps) {
         return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
             isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new GridPredicate<GridCacheEntry<K, V>>() {
+            new IgnitePredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     V v = e.peek();
 
@@ -8389,7 +8389,7 @@ public class GridFunc {
      * @return Predicate which returns {@code true} for all nodes which have given cache names
      *      started.
      */
-    public static GridPredicate<ClusterNode> cacheNodesForNames(@Nullable final String... cacheNames) {
+    public static IgnitePredicate<ClusterNode> cacheNodesForNames(@Nullable final String... cacheNames) {
         if (cacheNames == null)
             return alwaysFalse();
 
@@ -8418,8 +8418,8 @@ public class GridFunc {
      * @param types Event types.
      * @return Event predicate.
      */
-    public static GridPredicate<GridEvent> eventType(@Nullable final int... types) {
-        return isEmpty(types) ? F.<GridEvent>alwaysFalse() : new GridPredicate<GridEvent>() {
+    public static IgnitePredicate<GridEvent> eventType(@Nullable final int... types) {
+        return isEmpty(types) ? F.<GridEvent>alwaysFalse() : new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 
@@ -8443,9 +8443,9 @@ public class GridFunc {
      * @param ids Event ids.
      * @return Event predicate.
      */
-    public static GridPredicate<GridEvent> eventId(@Nullable final GridUuid... ids) {
+    public static IgnitePredicate<GridEvent> eventId(@Nullable final GridUuid... ids) {
         return isEmpty(ids) ? F.<GridEvent>alwaysFalse() :
-            new GridPredicate<GridEvent>() {
+            new IgnitePredicate<GridEvent>() {
                 // Don't set peer deploy aware as UUID is loaded by
                 // system class loader.
 
@@ -8464,10 +8464,10 @@ public class GridFunc {
      * @param tstamp Timestamp.
      * @return Event predicate.
      */
-    public static GridPredicate<GridEvent> eventAfter(final long tstamp) {
+    public static IgnitePredicate<GridEvent> eventAfter(final long tstamp) {
         A.ensure(tstamp > 0, "tstamp > 0");
 
-        return new GridPredicate<GridEvent>() {
+        return new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 
@@ -8484,8 +8484,8 @@ public class GridFunc {
      * @param nodeIds Node ids.
      * @return Event predicate.
      */
-    public static GridPredicate<GridEvent> eventNodeId(@Nullable final UUID... nodeIds) {
-        return isEmpty(nodeIds) ? F.<GridEvent>alwaysFalse() : new GridPredicate<GridEvent>() {
+    public static IgnitePredicate<GridEvent> eventNodeId(@Nullable final UUID... nodeIds) {
+        return isEmpty(nodeIds) ? F.<GridEvent>alwaysFalse() : new IgnitePredicate<GridEvent>() {
             // Don't set peer deploy aware as UUID is loaded by
             // system class loader.
 
@@ -8507,10 +8507,10 @@ public class GridFunc {
      * @param p Node predicates.
      * @return Event predicate.
      */
-    public static GridPredicate<GridEvent> eventNode(@Nullable final String gridName,
-        @Nullable final GridPredicate<ClusterNode>... p) {
+    public static IgnitePredicate<GridEvent> eventNode(@Nullable final String gridName,
+        @Nullable final IgnitePredicate<ClusterNode>... p) {
         return isEmpty(p) || isAlwaysTrue(p) ? F.<GridEvent>alwaysTrue() : isAlwaysFalse(p) ? F.<GridEvent>alwaysFalse() :
-            new GridPredicate<GridEvent>() {
+            new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent e) {
                     assert e != null;
 
@@ -8534,8 +8534,8 @@ public class GridFunc {
      * @param nodes Nodes.
      * @return Event predicate.
      */
-    public static GridPredicate<GridEvent> eventNode(@Nullable final Collection<? extends ClusterNode> nodes) {
-        return isEmpty(nodes) ? F.<GridEvent>alwaysFalse() : new GridPredicate<GridEvent>() {
+    public static IgnitePredicate<GridEvent> eventNode(@Nullable final Collection<? extends ClusterNode> nodes) {
+        return isEmpty(nodes) ? F.<GridEvent>alwaysFalse() : new IgnitePredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 
@@ -8732,7 +8732,7 @@ public class GridFunc {
      *
      * @return Predicate for filtering finished futures.
      */
-    public static GridPredicate<GridFuture<?>> finishedFutures() {
+    public static IgnitePredicate<GridFuture<?>> finishedFutures() {
         return FINISHED_FUTURE;
     }
 
@@ -8741,7 +8741,7 @@ public class GridFunc {
      *
      * @return Predicate for filtering unfinished futures.
      */
-    public static GridPredicate<GridFuture<?>> unfinishedFutures() {
+    public static IgnitePredicate<GridFuture<?>> unfinishedFutures() {
         return UNFINISHED_FUTURE;
     }
 }

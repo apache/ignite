@@ -238,7 +238,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             startGrids(1);
 
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     info("Received event: " + evt);
 
@@ -296,7 +296,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(1);
 
-            grid(0).events().localListen(new GridPredicate<GridEvent>() {
+            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt != null;
 
@@ -668,7 +668,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class SwapListener implements GridPredicate<GridEvent> {
+    private class SwapListener implements IgnitePredicate<GridEvent> {
         /** */
         private final CountDownLatch swapLatch = new CountDownLatch(1);
 

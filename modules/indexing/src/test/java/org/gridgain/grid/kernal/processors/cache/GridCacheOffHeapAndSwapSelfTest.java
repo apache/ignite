@@ -67,7 +67,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     private final Map<Long, Object> versions = new HashMap<>();
 
     /** Listener on swap events. Updates counters. */
-    private final GridPredicate<GridEvent> swapLsnr = new GridPredicate<GridEvent>() {
+    private final IgnitePredicate<GridEvent> swapLsnr = new IgnitePredicate<GridEvent>() {
         @Override public boolean apply(GridEvent evt) {
             assert evt != null;
 

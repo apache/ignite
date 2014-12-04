@@ -10,18 +10,16 @@
 package org.gridgain.grid.kernal.managers.eventstorage;
 
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.lang.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Listener for asynchronous local node grid events. You can subscribe for local node grid
  * event notifications via {@link GridEventStorageManager#addLocalEventListener(GridLocalEventListener, int...)}.
  * <p>
- * Use {@link GridEventStorageManager#addLocalEventListener(GridPredicate, int...)} to register
+ * Use {@link GridEventStorageManager#addLocalEventListener(org.gridgain.grid.lang.IgnitePredicate, int...)} to register
  * this listener with grid.
- * @see GridEvents#localListen(GridPredicate, int...)
+ * @see GridEvents#localListen(org.gridgain.grid.lang.IgnitePredicate, int...)
  */
 public interface GridLocalEventListener extends EventListener {
     /**

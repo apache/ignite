@@ -57,7 +57,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     private volatile CountDownLatch latch;
 
     /** */
-    private final GridPredicate<GridEvent> lsnr = new GridPredicate<GridEvent>() {
+    private final IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
         @Override public boolean apply(GridEvent evt) {
             assertNotNull("Topology lost nodes before stopTempNodes() was called.", latch);
 
@@ -167,14 +167,14 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
             for (long v = currVer; v > currVer - GridDiscoveryManager.DISCOVERY_HISTORY_SIZE && v > 0; v--) {
                 F.forAll(discoMgr.aliveCacheNodes(null, v),
-                    new GridPredicate<ClusterNode>() {
+                    new IgnitePredicate<ClusterNode>() {
                         @Override public boolean apply(ClusterNode e) {
                             return currTop.contains(e);
                         }
                     });
 
                 F.forAll(discoMgr.aliveRemoteCacheNodes(null, v),
-                    new GridPredicate<ClusterNode>() {
+                    new IgnitePredicate<ClusterNode>() {
                         @Override public boolean apply(ClusterNode e) {
                             return currTop.contains(e) || g.cluster().localNode().equals(e);
                         }

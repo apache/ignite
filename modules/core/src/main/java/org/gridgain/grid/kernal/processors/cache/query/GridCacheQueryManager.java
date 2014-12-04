@@ -697,7 +697,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws GridException {
-        GridPredicate<GridCacheEntry<K, V>> filter = null;
+        IgnitePredicate<GridCacheEntry<K, V>> filter = null;
 
         if (qry.projectionFilter() != null) {
             filter = new P1<GridCacheEntry<K, V>>() {
@@ -822,7 +822,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private GridIterator<GridIndexingKeyValueRow<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
         throws GridException {
-        GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+        IgnitePredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
@@ -836,7 +836,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Offheap iterator.
      */
     private GridIterator<GridIndexingKeyValueRow<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
-        GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+        IgnitePredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
@@ -861,7 +861,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private GridIteratorAdapter<GridIndexingKeyValueRow<K, V>> scanIterator(
         @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
-        @Nullable final GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        @Nullable final IgnitePredicate<GridCacheEntry<Object, Object>> prjPred,
         @Nullable final IgniteBiPredicate<K, V> filter,
         final boolean keepPortable) {
         if (it == null)
@@ -962,7 +962,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                IgnitePredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<List<?>, Object> trans = (IgniteClosure<List<?>, Object>)qryInfo.transformer();
                 IgniteReducer<List<?>, Object> rdc = (IgniteReducer<List<?>, Object>)qryInfo.reducer();
 
@@ -1138,7 +1138,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                IgnitePredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<Map.Entry<K, V>, Object> trans = (IgniteClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
                 IgniteReducer<Map.Entry<K, V>, Object> rdc = (IgniteReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
 
@@ -1751,7 +1751,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
-        final GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
+        final IgnitePredicate<GridCacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
 
         if (prjFilter == null || F.isAlwaysTrue(prjFilter))
             return null;
@@ -2393,7 +2393,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private static final long serialVersionUID = 7410163202728985912L;
 
         /** */
-        private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
+        private IgnitePredicate<GridCacheEntry<Object, Object>> prjPred;
 
         /** */
         private IgniteBiPredicate<K, V> filter;
@@ -2407,7 +2407,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param keepPortable Keep portable flag.
          */
         private OffheapIteratorClosure(
-            @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+            @Nullable IgnitePredicate<GridCacheEntry<Object, Object>> prjPred,
             @Nullable IgniteBiPredicate<K, V> filter,
             boolean keepPortable) {
             assert prjPred != null || filter != null;
@@ -2618,12 +2618,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V set(V val, GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Nullable @Override public V set(V val, IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<V> setAsync(V val, GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public GridFuture<V> setAsync(V val, IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
@@ -2638,12 +2638,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean setx(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public boolean setx(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<Boolean> setxAsync(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public GridFuture<Boolean> setxAsync(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
@@ -2698,22 +2698,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V remove(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Nullable @Override public V remove(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<V> removeAsync(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public GridFuture<V> removeAsync(IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public boolean removex(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public boolean removex(IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<Boolean> removexAsync(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public GridFuture<Boolean> removexAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
@@ -2743,18 +2743,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean lock(long timeout, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public boolean lock(long timeout, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
         @Override public GridFuture<Boolean> lockAsync(long timeout,
-            @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void unlock(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 

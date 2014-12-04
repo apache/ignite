@@ -283,7 +283,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class JobFinishLock implements GridPredicate<GridEvent> {
+    private static class JobFinishLock implements IgnitePredicate<GridEvent> {
         /** Latch. */
         private final CountDownLatch latch = new CountDownLatch(NODES_CNT);
 
@@ -309,7 +309,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class MetricsUpdateLock implements GridPredicate<GridEvent> {
+    private static class MetricsUpdateLock implements IgnitePredicate<GridEvent> {
         /** Latch. */
         private final CountDownLatch latch = new CountDownLatch(NODES_CNT * 2);
 

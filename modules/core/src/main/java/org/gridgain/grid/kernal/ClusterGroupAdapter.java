@@ -60,7 +60,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private UUID subjId;
 
     /** Projection predicate. */
-    protected GridPredicate<ClusterNode> p;
+    protected IgnitePredicate<ClusterNode> p;
 
     /** Node IDs. */
     private Set<UUID> ids;
@@ -78,7 +78,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param p Predicate.
      */
     protected ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                  @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p) {
+                                  @Nullable UUID subjId, @Nullable IgnitePredicate<ClusterNode> p) {
         this.parent = parent;
 
         if (ctx != null)
@@ -117,7 +117,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param ids Node IDs.
      */
     private ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                @Nullable UUID subjId, @Nullable GridPredicate<ClusterNode> p, Set<UUID> ids) {
+                                @Nullable UUID subjId, @Nullable IgnitePredicate<ClusterNode> p, Set<UUID> ids) {
         this.parent = parent;
 
         if (ctx != null)
@@ -328,12 +328,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final GridPredicate<ClusterNode> predicate() {
+    @Override public final IgnitePredicate<ClusterNode> predicate() {
         return p != null ? p : F.<ClusterNode>alwaysTrue();
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forPredicate(GridPredicate<ClusterNode> p) {
+    @Override public final ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
         A.notNull(p, "p");
 
         guard();
@@ -624,7 +624,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         if (in.readBoolean())
             ids = (Set<UUID>)in.readObject();
         else
-            p = (GridPredicate<ClusterNode>)in.readObject();
+            p = (IgnitePredicate<ClusterNode>)in.readObject();
     }
 
     /**
@@ -647,7 +647,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      */
-    private static class CachesFilter implements GridPredicate<ClusterNode> {
+    private static class CachesFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -682,7 +682,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      */
-    private static class StreamersFilter implements GridPredicate<ClusterNode> {
+    private static class StreamersFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -717,7 +717,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      */
-    private static class AttributeFilter implements GridPredicate<ClusterNode> {
+    private static class AttributeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -744,7 +744,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      */
-    private static class DaemonFilter implements GridPredicate<ClusterNode> {
+    private static class DaemonFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -756,7 +756,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      */
-    private static class OthersFilter implements GridPredicate<ClusterNode> {
+    private static class OthersFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 

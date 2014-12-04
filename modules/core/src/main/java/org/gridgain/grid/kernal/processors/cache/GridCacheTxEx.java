@@ -310,7 +310,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
          GridCacheContext<K, V> ctx,
          boolean failFast,
          K key,
-         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
+         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.

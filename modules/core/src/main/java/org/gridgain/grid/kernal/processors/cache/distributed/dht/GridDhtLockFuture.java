@@ -100,7 +100,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private GridLogger log;
 
     /** Filter. */
-    private GridPredicate<GridCacheEntry<K, V>>[] filter;
+    private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Transaction. */
     private GridDhtTxLocalAdapter<K, V> tx;
@@ -149,7 +149,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         long timeout,
         GridDhtTxLocalAdapter<K, V> tx,
         long threadId,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert cctx != null;

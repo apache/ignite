@@ -1316,7 +1316,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryReadEvent;
 
@@ -1341,7 +1341,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryExecutedEvent;
 
@@ -1410,7 +1410,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryReadEvent;
 
@@ -1435,7 +1435,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryExecutedEvent;
 
@@ -1508,7 +1508,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryReadEvent;
 
@@ -1533,7 +1533,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryExecutedEvent;
 
@@ -1602,7 +1602,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryReadEvent;
 
@@ -1629,7 +1629,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new GridPredicate<GridEvent>() {
+            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCacheQueryExecutedEvent;
 

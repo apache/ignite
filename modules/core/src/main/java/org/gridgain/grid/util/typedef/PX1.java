@@ -12,14 +12,14 @@ package org.gridgain.grid.util.typedef;
 import org.gridgain.grid.util.lang.*;
 
 /**
- * Defines {@code alias} for {@link GridPredicateX} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link org.gridgain.grid.util.lang.IgnitePredicateX} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link GridPredicateX}.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link org.gridgain.grid.util.lang.IgnitePredicateX}.
  * @param <E1> Type of the free variable, i.e. the element the predicate is called on.
  * @see GridFunc
- * @see GridPredicateX
+ * @see org.gridgain.grid.util.lang.IgnitePredicateX
  */
-public abstract class PX1<E1> extends GridPredicateX<E1> {
+public abstract class PX1<E1> extends IgnitePredicateX<E1> {
     /** */
     private static final long serialVersionUID = 0L;
  /* No-op. */ }

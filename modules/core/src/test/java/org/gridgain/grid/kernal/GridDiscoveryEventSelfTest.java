@@ -85,7 +85,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new GridPredicate<GridEvent>() {
+            g0.events().localListen(new IgnitePredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(GridEvent evt) {
@@ -148,7 +148,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new GridPredicate<GridEvent>() {
+            g0.events().localListen(new IgnitePredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(GridEvent evt) {
@@ -211,7 +211,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new GridPredicate<GridEvent>() {
+            g0.events().localListen(new IgnitePredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(GridEvent evt) {
@@ -326,7 +326,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new GridPredicate<GridEvent>() {
+            g0.events().localListen(new IgnitePredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(GridEvent evt) {
@@ -381,7 +381,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 3; i++) {
                 Ignite g = grid(i);
 
-                g.events().localListen(new GridPredicate<GridEvent>() {
+                g.events().localListen(new IgnitePredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         GridDiscoveryEvent discoEvt = (GridDiscoveryEvent) evt;
 

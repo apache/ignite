@@ -31,9 +31,9 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
         int idx = getTestGridIndex(gridName);
 
         if (idx == 0) {
-            Map<GridPredicate<? extends GridEvent>, int[]> lsnrs = new HashMap<>();
+            Map<IgnitePredicate<? extends GridEvent>, int[]> lsnrs = new HashMap<>();
 
-            lsnrs.put(new GridPredicate<GridEvent>() {
+            lsnrs.put(new IgnitePredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     fired.countDown();
 

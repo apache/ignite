@@ -70,7 +70,7 @@ public class CacheContinuousQueryExample {
 
                 // This filter will be evaluated remotely on all nodes
                 // Entry that pass this filter will be sent to the caller.
-                qry.remoteFilter(new GridPredicate<GridCacheContinuousQueryEntry<Integer, String>>() {
+                qry.remoteFilter(new IgnitePredicate<GridCacheContinuousQueryEntry<Integer, String>>() {
                     @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, String> e) {
                         return e.getKey() > 15;
                     }

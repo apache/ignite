@@ -214,10 +214,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
-        Map<GridPredicate<? extends GridEvent>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+        Map<IgnitePredicate<? extends GridEvent>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
-            for (GridPredicate<? extends GridEvent> lsnr : evtLsnrs.keySet())
+            for (IgnitePredicate<? extends GridEvent> lsnr : evtLsnrs.keySet())
                 addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
         }
 
@@ -509,7 +509,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param lsnr User listener to add.
      * @param types Event types to subscribe listener for.
      */
-    public void addLocalEventListener(GridPredicate<? extends GridEvent> lsnr, int[] types) {
+    public void addLocalEventListener(IgnitePredicate<? extends GridEvent> lsnr, int[] types) {
         try {
             ctx.resource().injectGeneric(lsnr);
         }
@@ -611,7 +611,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param types Event types.
      * @return Returns {@code true} if removed.
      */
-    public boolean removeLocalEventListener(GridPredicate<? extends GridEvent> lsnr, @Nullable int... types) {
+    public boolean removeLocalEventListener(IgnitePredicate<? extends GridEvent> lsnr, @Nullable int... types) {
         return removeLocalEventListener(new UserListenerWrapper(lsnr), types);
     }
 
@@ -653,7 +653,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param types Event types to wait for.
      * @return Event future.
      */
-    public <T extends GridEvent> GridFuture<T> waitForEvent(@Nullable final GridPredicate<T> p,
+    public <T extends GridEvent> GridFuture<T> waitForEvent(@Nullable final IgnitePredicate<T> p,
         @Nullable int... types) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<>(ctx);
 
@@ -680,7 +680,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @throws GridException Thrown in case of any errors.
      */
     public GridEvent waitForEvent(long timeout, @Nullable Runnable c,
-        @Nullable final GridPredicate<? super GridEvent> p, int... types) throws GridException {
+        @Nullable final IgnitePredicate<? super GridEvent> p, int... types) throws GridException {
         assert timeout >= 0;
 
         final GridFutureAdapter<GridEvent> fut = new GridFutureAdapter<>(ctx);
@@ -740,7 +740,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
-    public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p) {
+    public <T extends GridEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
         return getSpi().localEvents(p);
@@ -752,7 +752,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param timeout Maximum time to wait for result, if {@code 0}, then wait until result is received.
      * @return Collection of events.
      */
-    public <T extends GridEvent> GridFuture<List<T>> remoteEventsAsync(final GridPredicate<T> p,
+    public <T extends GridEvent> GridFuture<List<T>> remoteEventsAsync(final IgnitePredicate<T> p,
         final Collection<? extends ClusterNode> nodes, final long timeout) {
         assert p != null;
         assert nodes != null;
@@ -781,7 +781,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
-    private <T extends GridEvent> List<T> query(GridPredicate<T> p, Collection<? extends ClusterNode> nodes,
+    private <T extends GridEvent> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
         long timeout) throws GridException {
         assert p != null;
         assert nodes != null;
@@ -1024,7 +1024,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
                 Throwable ex = null;
 
-                GridPredicate<GridEvent> filter = null;
+                IgnitePredicate<GridEvent> filter = null;
 
                 Collection<GridEvent> evts;
 
@@ -1096,23 +1096,23 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
-     * Wraps user listener predicate provided via {@link GridEvents#localListen(GridPredicate, int...)}.
+     * Wraps user listener predicate provided via {@link GridEvents#localListen(org.gridgain.grid.lang.IgnitePredicate, int...)}.
      */
     private class UserListenerWrapper implements GridLocalEventListener {
         /** */
-        private final GridPredicate<GridEvent> lsnr;
+        private final IgnitePredicate<GridEvent> lsnr;
 
         /**
          * @param lsnr User listener predicate.
          */
-        private UserListenerWrapper(GridPredicate<? extends GridEvent> lsnr) {
-            this.lsnr = (GridPredicate<GridEvent>)lsnr;
+        private UserListenerWrapper(IgnitePredicate<? extends GridEvent> lsnr) {
+            this.lsnr = (IgnitePredicate<GridEvent>)lsnr;
         }
 
         /**
          * @return User listener.
          */
-        private GridPredicate<? extends GridEvent> listener() {
+        private IgnitePredicate<? extends GridEvent> listener() {
             return lsnr;
         }
 

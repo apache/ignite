@@ -105,7 +105,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
      * @param nodeId Node id.
      * @return Predicate for events belonging to specified node.
      */
-    private GridPredicate<GridEvent> nodeEvent(final UUID nodeId) {
+    private IgnitePredicate<GridEvent> nodeEvent(final UUID nodeId) {
         assert nodeId != null;
 
         return new P1<GridEvent>() {

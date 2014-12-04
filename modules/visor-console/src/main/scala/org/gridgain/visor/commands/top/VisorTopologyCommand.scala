@@ -14,7 +14,7 @@ package org.gridgain.visor.commands.top
 import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.grid.lang.IgnitePredicate
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.typedef._
 
@@ -219,7 +219,7 @@ class VisorTopologyCommand {
         assert(f != null)
         assert(hosts != null)
 
-        var nodes = grid.forPredicate(new GridPredicate[ClusterNode] {
+        var nodes = grid.forPredicate(new IgnitePredicate[ClusterNode] {
             override def apply(e: ClusterNode) = f(e)
         }).nodes()
 
