@@ -94,7 +94,7 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTest(final GridClientConfiguration cfg) throws Exception {
-        GridTestUtils.runAsync(new GridCallable<Object>() {
+        GridTestUtils.runAsync(new IgniteCallable<Object>() {
             @Override public Object call() {
                 try {
                     startGrid();

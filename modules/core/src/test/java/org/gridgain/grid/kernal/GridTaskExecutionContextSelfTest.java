@@ -60,7 +60,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithName() throws Exception {
-        Callable<String> f = new GridCallable<String>() {
+        Callable<String> f = new IgniteCallable<String>() {
             @GridTaskSessionResource
             private GridComputeTaskSession ses;
 

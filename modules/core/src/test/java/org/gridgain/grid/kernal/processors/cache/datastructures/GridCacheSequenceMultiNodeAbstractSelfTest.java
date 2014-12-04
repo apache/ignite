@@ -171,7 +171,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     /**
      * Test job with method cache name annotation.
      */
-    private static class IncrementAndGetJob implements GridCallable<Set<Long>> {
+    private static class IncrementAndGetJob implements IgniteCallable<Set<Long>> {
         /** */
         @GridInstanceResource
         private Ignite ignite;
@@ -225,7 +225,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     /**
      * Test job with method cache name annotation.
      */
-    private static class GetAndIncrementJob implements GridCallable<Set<Long>> {
+    private static class GetAndIncrementJob implements IgniteCallable<Set<Long>> {
         /** */
         @GridInstanceResource
         private Ignite ignite;

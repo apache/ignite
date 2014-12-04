@@ -219,7 +219,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
         // GridCacheQueue<Integer> newQueue = newGrid.cache().queue(queueName);
         // assertTrue(CollectionUtils.isEqualCollection(queue0, newQueue));
 
-        Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(new GridCallable<Collection<Integer>>() {
+        Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(new IgniteCallable<Collection<Integer>>() {
             @GridInstanceResource
             private Ignite grid;
 

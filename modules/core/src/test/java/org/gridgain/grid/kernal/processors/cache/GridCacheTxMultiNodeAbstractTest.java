@@ -811,7 +811,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      * Test job putting data to queue.
      */
-    protected class PutTwoEntriesInTxJob implements GridCallable<Integer> {
+    protected class PutTwoEntriesInTxJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -838,7 +838,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      * Test job putting data to cache.
      */
-    protected class PutOneEntryInTxJob implements GridCallable<Integer> {
+    protected class PutOneEntryInTxJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -865,7 +865,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      * Test job removing data from cache using query.
      */
-    protected class RemoveInTxJobQueried implements GridCallable<Integer> {
+    protected class RemoveInTxJobQueried implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -892,7 +892,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      * Test job removing data from cache.
      */
-    protected class RemoveInTxJobSimple implements GridCallable<Integer> {
+    protected class RemoveInTxJobSimple implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource

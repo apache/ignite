@@ -41,7 +41,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean finish = new AtomicBoolean();
 
-        GridFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new GridCallable<Void>() {
+        GridFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();

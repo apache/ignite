@@ -17,7 +17,7 @@ import org.gridgain.grid.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates using of {@link GridCallable} job execution on the grid.
+ * Demonstrates using of {@link org.gridgain.grid.lang.IgniteCallable} job execution on the grid.
  * <p>
  * This example takes a sentence composed of multiple words and counts number of non-space
  * characters in the sentence by having each compute job count characters in each individual
@@ -41,11 +41,11 @@ public class ComputeCallableExample {
             System.out.println();
             System.out.println(">>> Compute callable example started.");
 
-            Collection<GridCallable<Integer>> calls = new ArrayList<>();
+            Collection<IgniteCallable<Integer>> calls = new ArrayList<>();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Count characters using callable".split(" ")) {
-                calls.add(new GridCallable<Integer>() {
+                calls.add(new IgniteCallable<Integer>() {
                     @Override public Integer call() throws Exception {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");

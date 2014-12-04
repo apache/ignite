@@ -19,5 +19,5 @@ import java.util.concurrent.*;
  * to {@link Callable} object. Use this class for executing distributed computations on the grid,
  * like in {@link GridCompute#call(Callable)} method.
  */
-public interface GridCallable<V> extends Callable<V>, Serializable {
+public interface IgniteCallable<V> extends Callable<V>, Serializable {
 }

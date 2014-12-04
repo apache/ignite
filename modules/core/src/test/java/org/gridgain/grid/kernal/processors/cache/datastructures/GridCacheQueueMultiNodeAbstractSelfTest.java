@@ -526,7 +526,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         Collection<ClusterNode> nodes = grid(0).nodes();
 
         for (ClusterNode node : nodes) {
-            Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new GridCallable<Collection<Integer>>() {
+            Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
                 @GridInstanceResource
                 private Ignite grid;
 
@@ -620,7 +620,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting data to queue.
      */
-    protected static class PutJob implements GridCallable<Integer> {
+    protected static class PutJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -667,7 +667,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting data to queue.
      */
-    protected static class AddAllJob implements GridCallable<Integer> {
+    protected static class AddAllJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -718,7 +718,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting data to queue.
      */
-    protected static class GetJob implements GridCallable<Integer> {
+    protected static class GetJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -775,7 +775,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting and taking data to/from queue.
      */
-    protected static class PutTakeJob implements GridCallable<Integer> {
+    protected static class PutTakeJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource

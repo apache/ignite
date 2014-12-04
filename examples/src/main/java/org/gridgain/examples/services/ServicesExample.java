@@ -138,7 +138,7 @@ public class ServicesExample {
     /**
      * Simple closure to demonstrate auto-injection of the service proxy.
      */
-    private static class SimpleClosure implements GridCallable<Integer> {
+    private static class SimpleClosure implements IgniteCallable<Integer> {
         // Auto-inject service proxy.
         @GridServiceResource(serviceName = "myClusterSingletonService", proxyInterface = SimpleMapService.class)
         private transient SimpleMapService mapSvc;

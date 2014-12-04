@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.schedule;
 import it.sauronsoftware.cron4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.util.*;
@@ -46,7 +45,7 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
 
         GridScheduleFutureImpl<Object> fut = new GridScheduleFutureImpl<>(sched, ctx, pattern);
 
-        fut.schedule(new GridCallable<Object>() {
+        fut.schedule(new IgniteCallable<Object>() {
             @Nullable @Override public Object call() {
                 c.run();
 

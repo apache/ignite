@@ -112,7 +112,7 @@ public final class CreditRiskExample {
      * @param percentile Percentile.
      * @return Collection of closures.
      */
-    private static Collection<GridCallable<Double>> jobs(int gridSize, final Credit[] portfolio,
+    private static Collection<IgniteCallable<Double>> jobs(int gridSize, final Credit[] portfolio,
         final int horizon, int iter, final double percentile) {
         // Number of iterations should be done by each node.
         int iterPerNode = Math.round(iter / (float)gridSize);
@@ -120,7 +120,7 @@ public final class CreditRiskExample {
         // Number of iterations for the last/the only node.
         int lastNodeIter = iter - (gridSize - 1) * iterPerNode;
 
-        Collection<GridCallable<Double>> clos = new ArrayList<>(gridSize);
+        Collection<IgniteCallable<Double>> clos = new ArrayList<>(gridSize);
 
         // Note that for the purpose of this example we perform a simple homogeneous
         // (non weighted) split assuming that all computing resources in this split
@@ -132,7 +132,7 @@ public final class CreditRiskExample {
         for (int i = 0; i < gridSize; i++) {
             final int nodeIter = i == gridSize - 1 ? lastNodeIter : iterPerNode;
 
-            clos.add(new GridCallable<Double>() {
+            clos.add(new IgniteCallable<Double>() {
                 /** {@inheritDoc} */
                 @Override public Double call() {
                     return new CreditRiskManager().calculateCreditRiskMonteCarlo(

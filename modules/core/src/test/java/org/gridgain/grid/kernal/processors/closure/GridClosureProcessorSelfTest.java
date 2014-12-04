@@ -112,7 +112,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Base class for test callables.
      */
-    private abstract static class AbstractTestCallable implements GridCallable<Integer> {
+    private abstract static class AbstractTestCallable implements IgniteCallable<Integer> {
         /** */
         @GridInstanceResource
         protected Ignite ignite;
@@ -508,7 +508,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         final Collection<Callable<Integer>> jobs = new ArrayList<>();
 
         for (int i = 0; i < g.cluster().nodes().size(); i++) {
-            jobs.add(new GridCallable<Integer>() {
+            jobs.add(new IgniteCallable<Integer>() {
                 @Override public Integer call() throws Exception {
                     throw new RuntimeException("Test exception.");
                 }

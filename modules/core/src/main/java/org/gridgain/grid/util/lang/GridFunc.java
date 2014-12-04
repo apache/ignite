@@ -96,7 +96,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> DEQUE_FACTORY = new GridCallable<ConcurrentLinkedDeque8>() {
+    private static final IgniteCallable<?> DEQUE_FACTORY = new IgniteCallable<ConcurrentLinkedDeque8>() {
         @Override public ConcurrentLinkedDeque8 call() {
             return new ConcurrentLinkedDeque8();
         }
@@ -149,7 +149,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> LIST_FACTORY = new GridCallable<List>() {
+    private static final IgniteCallable<?> LIST_FACTORY = new IgniteCallable<List>() {
         @Override public List call() {
             return new ArrayList();
         }
@@ -160,7 +160,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> LINKED_LIST_FACTORY = new GridCallable<LinkedList>() {
+    private static final IgniteCallable<?> LINKED_LIST_FACTORY = new IgniteCallable<LinkedList>() {
         @Override public LinkedList call() {
             return new LinkedList();
         }
@@ -171,7 +171,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> SET_FACTORY = new GridCallable<Set>() {
+    private static final IgniteCallable<?> SET_FACTORY = new IgniteCallable<Set>() {
         @Override public Set call() {
             return new HashSet();
         }
@@ -182,7 +182,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<AtomicInteger> ATOMIC_INT_FACTORY = new GridCallable<AtomicInteger>() {
+    private static final IgniteCallable<AtomicInteger> ATOMIC_INT_FACTORY = new IgniteCallable<AtomicInteger>() {
         @Override public AtomicInteger call() {
             return new AtomicInteger(0);
         }
@@ -193,7 +193,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<AtomicLong> ATOMIC_LONG_FACTORY = new GridCallable<AtomicLong>() {
+    private static final IgniteCallable<AtomicLong> ATOMIC_LONG_FACTORY = new IgniteCallable<AtomicLong>() {
         @Override public AtomicLong call() {
             return new AtomicLong(0);
         }
@@ -204,7 +204,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<AtomicBoolean> ATOMIC_BOOL_FACTORY = new GridCallable<AtomicBoolean>() {
+    private static final IgniteCallable<AtomicBoolean> ATOMIC_BOOL_FACTORY = new IgniteCallable<AtomicBoolean>() {
         @Override public AtomicBoolean call() {
             return new AtomicBoolean();
         }
@@ -215,7 +215,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> ATOMIC_REF_FACTORY = new GridCallable<AtomicReference>() {
+    private static final IgniteCallable<?> ATOMIC_REF_FACTORY = new IgniteCallable<AtomicReference>() {
         @Override public AtomicReference call() {
             return new AtomicReference();
         }
@@ -226,7 +226,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> MAP_FACTORY = new GridCallable<Map>() {
+    private static final IgniteCallable<?> MAP_FACTORY = new IgniteCallable<Map>() {
         @Override public Map call() {
             return new HashMap();
         }
@@ -237,7 +237,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> CONCURRENT_MAP_FACTORY = new GridCallable<ConcurrentMap>() {
+    private static final IgniteCallable<?> CONCURRENT_MAP_FACTORY = new IgniteCallable<ConcurrentMap>() {
         @Override public ConcurrentMap call() {
             return new ConcurrentHashMap8();
         }
@@ -248,7 +248,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridCallable<?> CONCURRENT_SET_FACTORY = new GridCallable<GridConcurrentHashSet>() {
+    private static final IgniteCallable<?> CONCURRENT_SET_FACTORY = new IgniteCallable<GridConcurrentHashSet>() {
         @Override public GridConcurrentHashSet call() {
             return new GridConcurrentHashSet();
         }
@@ -4069,8 +4069,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridCallable<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (GridCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
+    public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
+        return (IgniteCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
     }
 
     /**
@@ -4082,8 +4082,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridCallable<List<T>> newList() {
-        return (GridCallable<List<T>>)LIST_FACTORY;
+    public static <T> IgniteCallable<List<T>> newList() {
+        return (IgniteCallable<List<T>>)LIST_FACTORY;
     }
 
     /**
@@ -4094,7 +4094,7 @@ public class GridFunc {
      * @return Factory closure that creates new {@link AtomicInteger} instance
      *      initialized to {@code zero} every time its {@link GridOutClosure#apply()} method is called.
      */
-    public static GridCallable<AtomicInteger> newAtomicInt() {
+    public static IgniteCallable<AtomicInteger> newAtomicInt() {
         return ATOMIC_INT_FACTORY;
     }
 
@@ -4106,7 +4106,7 @@ public class GridFunc {
      * @return Factory closure that creates new {@link AtomicLong} instance
      *      initialized to {@code zero} every time its {@link GridOutClosure#apply()} method is called.
      */
-    public static GridCallable<AtomicLong> newAtomicLong() {
+    public static IgniteCallable<AtomicLong> newAtomicLong() {
         return ATOMIC_LONG_FACTORY;
     }
 
@@ -4120,8 +4120,8 @@ public class GridFunc {
      *      initialized to {@code null} every time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridCallable<AtomicReference<T>> newAtomicRef() {
-        return (GridCallable<AtomicReference<T>>)ATOMIC_REF_FACTORY;
+    public static <T> IgniteCallable<AtomicReference<T>> newAtomicRef() {
+        return (IgniteCallable<AtomicReference<T>>)ATOMIC_REF_FACTORY;
     }
 
     /**
@@ -4132,7 +4132,7 @@ public class GridFunc {
      * @return Factory closure that creates new {@link AtomicBoolean} instance
      *      initialized to {@code false} every time its {@link GridOutClosure#apply()} method is called.
      */
-    public static GridCallable<AtomicBoolean> newAtomicBoolean() {
+    public static IgniteCallable<AtomicBoolean> newAtomicBoolean() {
         return ATOMIC_BOOL_FACTORY;
     }
 
@@ -4145,8 +4145,8 @@ public class GridFunc {
      *         GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridCallable<LinkedList<T>> newLinkedList() {
-        return (GridCallable<LinkedList<T>>)LINKED_LIST_FACTORY;
+    public static <T> IgniteCallable<LinkedList<T>> newLinkedList() {
+        return (IgniteCallable<LinkedList<T>>)LINKED_LIST_FACTORY;
     }
 
     /**
@@ -4158,8 +4158,8 @@ public class GridFunc {
      *      its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridCallable<Set<T>> newSet() {
-        return (GridCallable<Set<T>>)SET_FACTORY;
+    public static <T> IgniteCallable<Set<T>> newSet() {
+        return (IgniteCallable<Set<T>>)SET_FACTORY;
     }
 
     /**
@@ -4172,8 +4172,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> GridCallable<Map<K, V>> newMap() {
-        return (GridCallable<Map<K, V>>)MAP_FACTORY;
+    public static <K, V> IgniteCallable<Map<K, V>> newMap() {
+        return (IgniteCallable<Map<K, V>>)MAP_FACTORY;
     }
 
     /**
@@ -4186,8 +4186,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> GridCallable<ConcurrentMap<K, V>> newCMap() {
-        return (GridCallable<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
+    public static <K, V> IgniteCallable<ConcurrentMap<K, V>> newCMap() {
+        return (IgniteCallable<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
     }
 
     /**
@@ -4198,8 +4198,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <E> GridCallable<Set<E>> newCSet() {
-        return (GridCallable<Set<E>>)CONCURRENT_SET_FACTORY;
+    public static <E> IgniteCallable<Set<E>> newCSet() {
+        return (IgniteCallable<Set<E>>)CONCURRENT_SET_FACTORY;
     }
 
     /**

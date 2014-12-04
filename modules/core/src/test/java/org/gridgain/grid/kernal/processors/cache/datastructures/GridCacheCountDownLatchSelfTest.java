@@ -205,7 +205,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         GridCompute comp = grid(0).compute().enableAsync();
 
-        comp.call(new GridCallable<Object>() {
+        comp.call(new IgniteCallable<Object>() {
             @GridInstanceResource
             private Ignite ignite;
 

@@ -375,7 +375,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * Test callable job.
      */
-    private static class TestCallable implements GridCallable<Integer> {
+    private static class TestCallable implements IgniteCallable<Integer> {
         /** */
         @GridInstanceResource
         private Ignite ignite;

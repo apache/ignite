@@ -204,7 +204,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     /**
      * Test job putting data to queue.
      */
-    protected class TakeJob implements GridCallable<Integer> {
+    protected class TakeJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource

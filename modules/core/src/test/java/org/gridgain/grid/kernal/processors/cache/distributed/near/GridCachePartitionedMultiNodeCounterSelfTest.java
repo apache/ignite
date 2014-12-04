@@ -582,7 +582,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /** Job incrementing counter. */
-    private static class IncrementItemJob implements GridCallable<Boolean> {
+    private static class IncrementItemJob implements IgniteCallable<Boolean> {
         /** */
         @GridInstanceResource
         private Ignite ignite;

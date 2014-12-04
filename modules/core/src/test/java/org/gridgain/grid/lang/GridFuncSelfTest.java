@@ -1239,7 +1239,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         map.put("test-null-key", null);
 
-        c = F.forMap(map, new GridCallable<String>() {
+        c = F.forMap(map, new IgniteCallable<String>() {
             @Override public String call() { return "default-value"; }
         });
 

@@ -813,7 +813,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             }
         };
 
-        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+        GridTestUtils.assertThrows(log, new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
                 startGrid(2);
 
@@ -852,7 +852,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             }
         };
 
-        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+        GridTestUtils.assertThrows(log, new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
                 startGrid(2);
 
@@ -891,7 +891,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             }
         };
 
-        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+        GridTestUtils.assertThrows(log, new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
                 startGrid(2);
 

@@ -293,7 +293,7 @@ class GridServiceProxy<T> implements Serializable {
     /**
      * Callable proxy class.
      */
-    private static class ServiceProxyCallable implements GridCallable<Object>, Externalizable {
+    private static class ServiceProxyCallable implements IgniteCallable<Object>, Externalizable {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 

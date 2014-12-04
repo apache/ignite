@@ -264,7 +264,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with field annotation.
      */
-    private static class FieldAffinityJob implements GridCallable<Boolean> {
+    private static class FieldAffinityJob implements IgniteCallable<Boolean> {
         /** Affinity key. */
         @GridCacheAffinityKeyMapped
         @GridToStringInclude
@@ -313,7 +313,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with method annotation.
      */
-    private static class MethodAffinityJob implements GridCallable<Boolean> {
+    private static class MethodAffinityJob implements IgniteCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         private Object affKey;
@@ -369,7 +369,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with field cache name annotation.
      */
-    private static class FieldCacheNameAffinityJob implements GridCallable<Boolean> {
+    private static class FieldCacheNameAffinityJob implements IgniteCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         private Object affKey;
@@ -429,7 +429,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with method cache name annotation.
      */
-    private static class MethodCacheNameAffinityJob implements GridCallable<Boolean> {
+    private static class MethodCacheNameAffinityJob implements IgniteCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         private Object affKey;
@@ -493,7 +493,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with method cache name annotation.
      */
-    private static class MultipleAnnotationsJob implements GridCallable<Boolean> {
+    private static class MultipleAnnotationsJob implements IgniteCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         @GridCacheAffinityKeyMapped
@@ -646,7 +646,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test callable.
      */
-    private static class CheckCallable implements GridCallable<Object> {
+    private static class CheckCallable implements IgniteCallable<Object> {
         /** Affinity key. */
         private final Object affKey;
 

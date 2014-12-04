@@ -77,7 +77,7 @@ public class ComputeBroadcastExample {
     private static void gatherSystemInfo(Ignite g) throws GridException {
         // Gather system info from all nodes.
         Collection<String> res = g.compute().broadcast(
-            new GridCallable<String>() {
+            new IgniteCallable<String>() {
                 // Automatically inject grid instance.
                 @GridInstanceResource
                 private Ignite grid;

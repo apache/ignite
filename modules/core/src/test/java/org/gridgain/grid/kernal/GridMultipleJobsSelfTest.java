@@ -115,7 +115,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
      * @param jobCls Job class.
      * @throws Exception If failed.
      */
-    private void runTest(final int jobsNum, int threadNum, final Class<? extends GridCallable<Boolean>> jobCls)
+    private void runTest(final int jobsNum, int threadNum, final Class<? extends IgniteCallable<Boolean>> jobCls)
         throws Exception {
         final Ignite ignite1 = grid(1);
 
@@ -133,7 +133,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                     if (cnt > jobsNum)
                         break;
 
-                    GridCallable<Boolean> job;
+                    IgniteCallable<Boolean> job;
 
                     try {
                         job = jobCls.newInstance();
@@ -177,7 +177,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
      * Test not affinity job.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class NotAffinityJob implements GridCallable<Boolean> {
+    public static class NotAffinityJob implements IgniteCallable<Boolean> {
         /** */
         private static AtomicInteger cnt = new AtomicInteger();
 
@@ -198,7 +198,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
      * Test affinity routed job.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class AffinityJob implements GridCallable<Boolean> {
+    public static class AffinityJob implements IgniteCallable<Boolean> {
         /** */
         private static AtomicInteger cnt = new AtomicInteger();
 

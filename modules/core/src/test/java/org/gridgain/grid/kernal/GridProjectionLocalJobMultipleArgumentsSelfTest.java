@@ -81,7 +81,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
         Collection<Integer> res = new ArrayList<>();
 
         for (int i : F.asList(1, 2, 3)) {
-            res.add(grid().compute().affinityCall(null, i, new GridCallable<Integer>() {
+            res.add(grid().compute().affinityCall(null, i, new IgniteCallable<Integer>() {
                 @Override public Integer call() {
                     ids.add(System.identityHashCode(this));
 

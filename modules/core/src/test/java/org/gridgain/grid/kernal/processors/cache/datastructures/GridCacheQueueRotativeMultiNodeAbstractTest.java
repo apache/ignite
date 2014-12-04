@@ -187,7 +187,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Test job putting data to queue.
      */
-    protected static class PutJob implements GridCallable<Integer> {
+    protected static class PutJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -234,7 +234,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Test job putting data to queue.
      */
-    protected static class GetJob implements GridCallable<Integer> {
+    protected static class GetJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -291,7 +291,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Test job putting and taking data to/from queue.
      */
-    protected static class PutTakeJob implements GridCallable<Integer> {
+    protected static class PutTakeJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -345,7 +345,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Test job taking data from queue.
      */
-    protected static class TakeJob implements GridCallable<Boolean> {
+    protected static class TakeJob implements IgniteCallable<Boolean> {
         /** */
         @GridInstanceResource
         private Ignite ignite;
@@ -393,7 +393,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Job removing queue.
      */
-    protected static class RemoveQueueJob implements GridCallable<Boolean> {
+    protected static class RemoveQueueJob implements IgniteCallable<Boolean> {
         /** */
         @GridInstanceResource
         private Ignite ignite;

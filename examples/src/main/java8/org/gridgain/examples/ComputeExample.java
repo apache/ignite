@@ -12,7 +12,7 @@ package org.gridgain.examples;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.GridCallable;
+import org.gridgain.grid.lang.IgniteCallable;
 
 /**
  * Demonstrates broadcasting and unicasting computations within grid projection.
@@ -39,7 +39,7 @@ public class ComputeExample {
             ignite.compute().run((IgniteRunnable)() -> System.out.println("Hello World")).get();
 
             // Unicast closure to some grid node picked by load balancer and return result.
-            int length = ignite.compute().call((GridCallable<Integer>)"Hello World"::length).get();
+            int length = ignite.compute().call((IgniteCallable<Integer>)"Hello World"::length).get();
 
             System.out.println();
             System.out.println(">>> Computed length: " + length);
