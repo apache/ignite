@@ -13,7 +13,6 @@ import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
 
@@ -40,7 +39,7 @@ public class CacheSetExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache set example started.");
 
@@ -65,7 +64,7 @@ public class CacheSetExample {
      * @return Set.
      * @throws GridException If execution failed.
      */
-    private static GridCacheSet<String> initializeSet(Grid g, String setName) throws GridException {
+    private static GridCacheSet<String> initializeSet(Ignite g, String setName) throws GridException {
         // Initialize new set.
         GridCacheSet<String> set = g.cache(CACHE_NAME).dataStructures().set(setName, false, true);
 
@@ -84,7 +83,7 @@ public class CacheSetExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void writeToSet(Grid g) throws GridException {
+    private static void writeToSet(Ignite g) throws GridException {
         final String setName = set.name();
 
         // Write set items on each node.
@@ -122,7 +121,7 @@ public class CacheSetExample {
      * @param g Grid.
      * @throws GridException If execution failed.
      */
-    private static void clearAndRemoveSet(Grid g) throws GridException {
+    private static void clearAndRemoveSet(Ignite g) throws GridException {
         System.out.println("Set size before clearing: " + set.size());
 
         // Clear set.

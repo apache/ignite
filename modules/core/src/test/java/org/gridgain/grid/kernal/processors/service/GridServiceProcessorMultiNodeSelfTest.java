@@ -30,7 +30,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     public void testSingletonUpdateTopology() throws Exception {
         String name = "serviceSingletonUpdateTopology";
 
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -74,7 +74,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
      * @throws Exception If failed.
      */
     public void testAffinityDeployUpdateTopology() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         final Integer affKey = 1;
 
@@ -116,7 +116,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
         String name = "serviceOnEachNodeUpdateTopology";
 
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 

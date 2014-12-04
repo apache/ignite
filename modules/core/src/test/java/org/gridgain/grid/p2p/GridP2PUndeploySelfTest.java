@@ -60,8 +60,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
         try {
             this.depMode = depMode;
 
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             ClassLoader tstClsLdr = new GridTestClassLoader(GridP2PTestTask.class.getName(),
                 GridP2PTestJob.class.getName());
@@ -69,24 +69,24 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> task1 =
                 (Class<? extends GridComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PTestTask.class.getName());
 
-            grid1.compute().localDeployTask(task1, tstClsLdr);
+            ignite1.compute().localDeployTask(task1, tstClsLdr);
 
-            grid1.compute().execute(task1.getName(), 1);
+            ignite1.compute().execute(task1.getName(), 1);
 
-            grid2.compute().localDeployTask(task1, tstClsLdr);
+            ignite2.compute().localDeployTask(task1, tstClsLdr);
 
-            grid2.compute().execute(task1.getName(), 2);
+            ignite2.compute().execute(task1.getName(), 2);
 
-            GridLocalDeploymentSpi spi1 = spis.get(grid1.name());
-            GridLocalDeploymentSpi spi2 = spis.get(grid2.name());
+            GridLocalDeploymentSpi spi1 = spis.get(ignite1.name());
+            GridLocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
             assert spi1.findResource(task1.getName()) != null;
             assert spi2.findResource(task1.getName()) != null;
 
-            assert grid1.compute().localTasks().containsKey(task1.getName());
-            assert grid2.compute().localTasks().containsKey(task1.getName());
+            assert ignite1.compute().localTasks().containsKey(task1.getName());
+            assert ignite2.compute().localTasks().containsKey(task1.getName());
 
-            grid2.compute().undeployTask(task1.getName());
+            ignite2.compute().undeployTask(task1.getName());
 
             // Wait for undeploy.
             Thread.sleep(1000);
@@ -94,8 +94,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             assert spi1.findResource(task1.getName()) == null;
             assert spi2.findResource(task1.getName()) == null;
 
-            assert !grid1.compute().localTasks().containsKey(task1.getName());
-            assert !grid2.compute().localTasks().containsKey(task1.getName());
+            assert !ignite1.compute().localTasks().containsKey(task1.getName());
+            assert !ignite2.compute().localTasks().containsKey(task1.getName());
         }
         finally {
             stopGrid(2);
@@ -112,8 +112,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
         try {
             this.depMode = depMode;
 
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             ClassLoader ldr = new URLClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))},
                 GridP2PSameClassLoaderSelfTest.class.getClassLoader());
@@ -121,21 +121,21 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> task1 =
                 (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(TEST_TASK_NAME);
 
-            grid1.compute().localDeployTask(task1, ldr);
+            ignite1.compute().localDeployTask(task1, ldr);
 
-            grid1.compute().execute(task1.getName(), grid2.cluster().localNode().id());
+            ignite1.compute().execute(task1.getName(), ignite2.cluster().localNode().id());
 
-            GridLocalDeploymentSpi spi1 = spis.get(grid1.name());
-            GridLocalDeploymentSpi spi2 = spis.get(grid2.name());
+            GridLocalDeploymentSpi spi1 = spis.get(ignite1.name());
+            GridLocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
             assert spi1.findResource(task1.getName()) != null;
 
-            assert grid1.compute().localTasks().containsKey(task1.getName());
+            assert ignite1.compute().localTasks().containsKey(task1.getName());
 
             // P2P deployment will not deploy task into the SPI.
             assert spi2.findResource(task1.getName()) == null;
 
-            grid1.compute().undeployTask(task1.getName());
+            ignite1.compute().undeployTask(task1.getName());
 
             // Wait for undeploy.
             Thread.sleep(1000);
@@ -143,8 +143,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             assert spi1.findResource(task1.getName()) == null;
             assert spi2.findResource(task1.getName()) == null;
 
-            assert !grid1.compute().localTasks().containsKey(task1.getName());
-            assert !grid2.compute().localTasks().containsKey(task1.getName());
+            assert !ignite1.compute().localTasks().containsKey(task1.getName());
+            assert !ignite2.compute().localTasks().containsKey(task1.getName());
 
             spis = null;
         }

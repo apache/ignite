@@ -128,7 +128,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
 
-        Grid g = G.start(cfg);
+        Ignite g = G.start(cfg);
 
         ggfsPrimary = (GridGgfsImpl)g.ggfs(GGFS_PRIMARY);
 
@@ -186,7 +186,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
 
-        Grid g = G.start(cfg);
+        Ignite g = G.start(cfg);
 
         secondaryFs = g.ggfs(GGFS_SECONDARY);
     }

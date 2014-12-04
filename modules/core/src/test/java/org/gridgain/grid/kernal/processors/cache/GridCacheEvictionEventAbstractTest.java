@@ -21,7 +21,6 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
@@ -82,7 +81,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testEvictionEvent() throws Exception {
-        Grid g = grid();
+        Ignite g = grid();
 
         final CountDownLatch latch = new CountDownLatch(1);
 

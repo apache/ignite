@@ -87,11 +87,11 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @return Affinity.
      */
-    static GridCacheAffinity<Object> affinity(Grid grid) {
-        return grid.cache(null).affinity();
+    static GridCacheAffinity<Object> affinity(Ignite ignite) {
+        return ignite.cache(null).affinity();
     }
 
     /**
@@ -351,7 +351,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param g Grid.
      * @param keyCnt Key count.
      */
-    private static synchronized void printAffinity(Grid g, int keyCnt) {
+    private static synchronized void printAffinity(Ignite g, int keyCnt) {
         X.println(">>>");
         X.println(">>> Printing affinity for node: " + g.name());
 
@@ -368,7 +368,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @param g Grid. */
-    private static void partitionMap(Grid g) {
+    private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
         X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
     }
@@ -383,7 +383,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     public void testAffinityWithPut() throws Exception {
         waitTopologyUpdate();
 
-        Grid mg = grid(0);
+        Ignite mg = grid(0);
 
         GridCache<Integer, String> mc = mg.cache(null);
 
@@ -420,7 +420,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     private static class ListenerJob implements Runnable, Serializable {
         /** Grid. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Logger. */
         @GridLoggerResource
@@ -453,7 +453,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public void run() {
-            printAffinity(grid, keyCnt);
+            printAffinity(ignite, keyCnt);
 
             GridPredicate<GridEvent> lsnr = new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
@@ -464,25 +464,25 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 //                            new Exception("Dumping stack on grid [" + grid.name() + ", evtHash=" +
 //                                System.identityHashCode(evt) + ']').printStackTrace(System.out);
 
-                            log.info(">>> Grid cache event [grid=" + grid.name() + ", name=" + e.name() +
+                            log.info(">>> Grid cache event [grid=" + ignite.name() + ", name=" + e.name() +
                                 ", key=" + e.key() + ", oldVal=" + e.oldValue() + ", newVal=" + e.newValue() +
                                 ']');
 
                             evtCnt.incrementAndGet();
 
-                            if (!grid.name().equals(master) && evtCnt.get() > keyCnt * (BACKUPS + 1)) {
+                            if (!ignite.name().equals(master) && evtCnt.get() > keyCnt * (BACKUPS + 1)) {
                                 failFlag.set(true);
 
                                 fail("Invalid put event count on grid [cnt=" + evtCnt.get() + ", grid=" +
-                                    grid.name() + ']');
+                                    ignite.name() + ']');
                             }
 
-                            Collection<? extends GridNode> affNodes = nodes(affinity(grid), e.<Object>key());
+                            Collection<? extends GridNode> affNodes = nodes(affinity(ignite), e.<Object>key());
 
-                            if (!affNodes.contains(grid.cluster().localNode())) {
+                            if (!affNodes.contains(ignite.cluster().localNode())) {
                                 failFlag.set(true);
 
-                                fail("Key should not be mapped to node [key=" + e.key() + ", node=" + grid.name() + ']');
+                                fail("Key should not be mapped to node [key=" + e.key() + ", node=" + ignite.name() + ']');
                             }
 
                             break;
@@ -490,14 +490,14 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
                         default:
                             failFlag.set(true);
 
-                            fail("Invalid cache event [grid=" + grid + ", evt=" + evt + ']');
+                            fail("Invalid cache event [grid=" + ignite + ", evt=" + evt + ']');
                     }
 
                     return true;
                 }
             };
 
-            grid.events().localListen(lsnr,
+            ignite.events().localListen(lsnr,
                 EVT_CACHE_OBJECT_PUT,
                 EVT_CACHE_OBJECT_READ,
                 EVT_CACHE_OBJECT_REMOVED);

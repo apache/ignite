@@ -120,7 +120,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
             key3, "val3")
         );
 
-        Grid reader = null;
+        Ignite reader = null;
 
         for (int i = 0; i < gridCount(); i++) {
             if (!grid(i).cache(null).affinity().isPrimaryOrBackup(grid(i).localNode(), affinityKey))

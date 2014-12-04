@@ -115,7 +115,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
      */
     private void runTest(final int jobsNum, int threadNum, final Class<? extends GridCallable<Boolean>> jobCls)
         throws Exception {
-        final Grid grid1 = grid(1);
+        final Ignite ignite1 = grid(1);
 
         final CountDownLatch latch = new CountDownLatch(jobsNum);
 
@@ -140,7 +140,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         throw new GridException("Could not instantiate a job.", e);
                     }
 
-                    GridCompute comp = grid1.compute().enableAsync();
+                    GridCompute comp = ignite1.compute().enableAsync();
 
                     comp.call(job);
 

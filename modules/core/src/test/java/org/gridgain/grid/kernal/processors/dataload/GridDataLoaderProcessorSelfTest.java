@@ -167,12 +167,12 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("ErrorNotRethrown")
     private void checkDataLoader() throws Exception {
         try {
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
 
             useCache = true;
 
-            Grid g2 = startGrid(2);
-            Grid g3 = startGrid(3);
+            Ignite g2 = startGrid(2);
+            Ignite g3 = startGrid(3);
 
             final GridDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
 
@@ -274,7 +274,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             useCache = true;
             mode = PARTITIONED;
 
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
             startGrid(2); // Reproduced only for several nodes in topology (if marshalling is used).
 
             List<Object> arrays = Arrays.<Object>asList(
@@ -358,7 +358,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < nodesCntCache; i++)
                 startGrid(idx++);
 
-            Grid g1 = grid(1);
+            Ignite g1 = grid(1);
 
             // Get and configure loader.
             final GridDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
@@ -419,7 +419,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                     @Override public Object call() throws Exception {
                         try {
                             for (int i = 0; i < 5; i++) {
-                                Grid g = startGrid(restartNodeIdx);
+                                Ignite g = startGrid(restartNodeIdx);
 
                                 UUID id = g.cluster().localNode().id();
 
@@ -464,7 +464,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         useCache = true;
 
         try {
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
 
             GridDataLoader<Object, Object> ldr = g1.dataLoader(null);
 
@@ -620,7 +620,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         useCache = true;
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             final GridCache<Integer, Integer> c = g.cache(null);
 
@@ -672,7 +672,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         useCache = true;
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             GridCache<Integer, Integer> c = g.cache(null);
 
@@ -707,7 +707,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         useCache = true;
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             final CountDownLatch latch = new CountDownLatch(9);
 

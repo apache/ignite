@@ -199,7 +199,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @param g Grid.
      * @return Affinity nodes.
      */
-    private Set<UUID> affinityNodes(Iterable<Map.Entry<Integer, Integer>> entries, Grid g) {
+    private Set<UUID> affinityNodes(Iterable<Map.Entry<Integer, Integer>> entries, Ignite g) {
         Set<UUID> nodes = new HashSet<>();
 
         for (Map.Entry<Integer, Integer> entry : entries)
@@ -219,7 +219,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         final GridCache<Integer, String> c = g.cache(null);
@@ -299,7 +299,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         final GridCache<Integer, Long> c = g.cache(null);
@@ -381,7 +381,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         final GridCache<Integer, Object> c = g.cache(null);
@@ -464,7 +464,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final int keyCnt = 4000;
         final int valCnt = 10000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         final GridCache<Integer, TestValue> c = g.cache(null);
@@ -545,7 +545,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final int keyCnt = 10;
         final int logMod = 5000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         GridCache<Integer, Integer> c = g.cache(null);
@@ -613,7 +613,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final int keyCnt = 10;
         final int logMod = 5000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         final GridCache<Integer, Integer> c = g.cache(null);
@@ -676,7 +676,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         int keyCnt = 10;
         final int logMod = 5000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         GridCache<Integer, Integer> c = g.cache(null);
@@ -765,7 +765,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final int keyCnt = 500;
         final int logMod = 5000;
 
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         // Put test values into cache.
         GridCache<Integer, Integer> c = g.cache(null);

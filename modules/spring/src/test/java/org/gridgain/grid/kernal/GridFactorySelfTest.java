@@ -83,9 +83,9 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
                 GridTestUtils.resolveGridGainPath("/modules/core/src/test/config/default-spring-url-testing.xml"));
 
-            Grid grid = G.start(srv.getBaseUrl());
+            Ignite ignite = G.start(srv.getBaseUrl());
 
-            assert gridName.equals(grid.name()) : "Unexpected grid name: " + grid.name();
+            assert gridName.equals(ignite.name()) : "Unexpected grid name: " + ignite.name();
         }
         finally {
             if (srv != null)
@@ -106,9 +106,9 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
                 GridTestUtils.resolveGridGainPath("modules/core/src/test/config/default-spring-url-testing.xml"));
 
-            Grid grid = G.start(new URL(srv.getBaseUrl()));
+            Ignite ignite = G.start(new URL(srv.getBaseUrl()));
 
-            assert gridName.equals(grid.name()) : "Unexpected grid name: " + grid.name();
+            assert gridName.equals(ignite.name()) : "Unexpected grid name: " + ignite.name();
         }
         finally {
             if (srv != null)
@@ -147,7 +147,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         cfg.setRestEnabled(false);
 
-        try (Grid g = GridGainSpring.start(cfg, new GenericApplicationContext())) {
+        try (Ignite g = GridGainSpring.start(cfg, new GenericApplicationContext())) {
             bean1.checkState(gridName, true);
             bean2.checkState(gridName, true);
         }
@@ -641,7 +641,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Lifecycle events. */
         private final List<GridLifecycleEventType> evts = new ArrayList<>();
@@ -656,10 +656,10 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         @Override public void onLifecycleEvent(GridLifecycleEventType evt) {
             evts.add(evt);
 
-            gridNames.add(grid.name());
+            gridNames.add(ignite.name());
 
             try {
-                checkState(grid.name(),
+                checkState(ignite.name(),
                     evt == GridLifecycleEventType.AFTER_GRID_START || evt == GridLifecycleEventType.BEFORE_GRID_STOP);
             }
             catch (Throwable e) {
@@ -771,9 +771,9 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         cfg.setRestEnabled(false);
 
-        Grid grid = G.start(cfg);
+        Ignite ignite = G.start(cfg);
 
-        grid.compute().execute(TestTask.class, null);
+        ignite.compute().execute(TestTask.class, null);
 
         G.stop(true);
     }

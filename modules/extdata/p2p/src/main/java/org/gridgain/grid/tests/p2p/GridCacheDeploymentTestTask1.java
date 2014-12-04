@@ -31,13 +31,13 @@ public class GridCacheDeploymentTestTask1 extends GridComputeTaskAdapter<GridNod
         return F.asMap(
             new GridComputeJobAdapter() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object execute() throws GridException {
                     X.println("Executing GridCacheDeploymentTestTask1 job on node " +
-                        grid.cluster().localNode().id());
+                        ignite.cluster().localNode().id());
 
-                    GridCache<String, GridCacheDeploymentTestValue> cache = grid.cache(null);
+                    GridCache<String, GridCacheDeploymentTestValue> cache = ignite.cache(null);
 
                     for (int i = 0; i < PUT_CNT; i++)
                         cache.putx("1" + i, new GridCacheDeploymentTestValue());

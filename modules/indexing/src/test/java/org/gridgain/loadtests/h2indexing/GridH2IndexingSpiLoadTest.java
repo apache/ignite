@@ -12,7 +12,6 @@ package org.gridgain.loadtests.h2indexing;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -136,7 +135,7 @@ public class GridH2IndexingSpiLoadTest {
         c.setCacheConfiguration(cc);
         c.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
-        final Grid g = G.start(c);
+        final Ignite g = G.start(c);
 
         final GridCache<Long, GridTestEntity> cache = g.cache("local");
 

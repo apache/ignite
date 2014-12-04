@@ -25,7 +25,7 @@ public class GridGgfsNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid ignored = G.start("config/hadoop/default-config.xml")) {
+        try (Ignite ignored = G.start("config/hadoop/default-config.xml")) {
             // Wait until Ok is pressed.
             JOptionPane.showMessageDialog(
                 null,

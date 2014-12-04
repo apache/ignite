@@ -21,7 +21,6 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
@@ -1822,7 +1821,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** Grid */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Indexing SPI name. */
         private final String spiName;
@@ -1836,7 +1835,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
-            final GridKernalContext ctx = ((GridKernal)grid).context();
+            final GridKernalContext ctx = ((GridKernal) ignite).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
                 new C1<GridCache<?, ?>, String>() {

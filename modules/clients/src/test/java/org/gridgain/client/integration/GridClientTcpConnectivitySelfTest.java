@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
  */
 public class GridClientTcpConnectivitySelfTest extends GridClientAbstractConnectivitySelfTest {
     /** {@inheritDoc} */
-    @Override protected Grid startRestNode(String name, @Nullable String addr, @Nullable Integer port)
+    @Override protected Ignite startRestNode(String name, @Nullable String addr, @Nullable Integer port)
         throws Exception {
         GridConfiguration cfg = getConfiguration(name);
 

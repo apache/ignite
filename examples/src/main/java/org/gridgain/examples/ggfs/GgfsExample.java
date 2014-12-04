@@ -35,7 +35,7 @@ public final class GgfsExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Grid g = GridGain.start("examples/config/filesystem/example-ggfs.xml");
+        Ignite g = GridGain.start("examples/config/filesystem/example-ggfs.xml");
 
         System.out.println();
         System.out.println(">>> GGFS example started.");

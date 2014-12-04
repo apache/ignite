@@ -45,9 +45,9 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCollisionSessionAttribute() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().execute(GridSessionTestTask.class, null);
+        ignite.compute().execute(GridSessionTestTask.class, null);
 
         info("Executed session collision test task.");
     }

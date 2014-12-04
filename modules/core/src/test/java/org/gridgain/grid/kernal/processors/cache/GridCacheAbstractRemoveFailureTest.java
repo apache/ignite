@@ -285,9 +285,9 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         Collection<Integer> failedKeys = new HashSet<>();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Grid grid = grid(i);
+            Ignite ignite = grid(i);
 
-            GridCache<Integer, Integer> cache = grid.cache(null);
+            GridCache<Integer, Integer> cache = ignite.cache(null);
 
             for (Map.Entry<Integer, GridTuple<Integer>> expVal : expVals.entrySet()) {
                 Integer val = cache.get(expVal.getKey());
@@ -295,11 +295,11 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
                 if (!F.eq(expVal.getValue().get(), val)) {
                     failedKeys.add(expVal.getKey());
 
-                    boolean primary = cache.affinity().isPrimary(grid.cluster().localNode(), expVal.getKey());
-                    boolean backup = cache.affinity().isBackup(grid.cluster().localNode(), expVal.getKey());
+                    boolean primary = cache.affinity().isPrimary(ignite.cluster().localNode(), expVal.getKey());
+                    boolean backup = cache.affinity().isBackup(ignite.cluster().localNode(), expVal.getKey());
 
                     log.error("Unexpected cache data [exp=" + expVal + ", actual=" + val + ", nodePrimary=" + primary +
-                        ", nodeBackup=" + backup + ", nodeId=" + grid.cluster().localNode().id() + ']');
+                        ", nodeBackup=" + backup + ", nodeId=" + ignite.cluster().localNode().id() + ']');
                 }
             }
         }

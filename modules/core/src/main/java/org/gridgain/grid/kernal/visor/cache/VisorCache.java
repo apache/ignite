@@ -88,7 +88,7 @@ public class VisorCache implements Serializable {
      * @return Data transfer object for given cache.
      * @throws GridException
      */
-    public static VisorCache from(Grid g, GridCache c, int sample) throws GridException {
+    public static VisorCache from(Ignite g, GridCache c, int sample) throws GridException {
         assert g != null;
         assert c != null;
 

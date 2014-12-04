@@ -197,7 +197,7 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
      * @return Grid.
      * @throws Exception If failed.
      */
-    @Override protected Grid startGrid() throws Exception {
+    @Override protected Ignite startGrid() throws Exception {
         System.setProperty(GG_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         try {

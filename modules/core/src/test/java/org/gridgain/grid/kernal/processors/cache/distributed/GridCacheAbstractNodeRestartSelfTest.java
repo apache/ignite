@@ -167,9 +167,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                 info("Starting node: " + idx);
 
-                Grid grid = startGrid(idx);
+                Ignite ignite = startGrid(idx);
 
-                c = grid.cache(CACHE_NAME);
+                c = ignite.cache(CACHE_NAME);
 
                 checkGet(c, j);
             }
@@ -600,11 +600,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             info("Starting put thread...");
 
-                            Grid grid = grid(gridIdx);
+                            Ignite ignite = grid(gridIdx);
 
-                            UUID locNodeId = grid.cluster().localNode().id();
+                            UUID locNodeId = ignite.cluster().localNode().id();
 
-                            GridCache<Integer, String> cache = grid.cache(CACHE_NAME);
+                            GridCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -750,11 +750,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             info("Starting put thread...");
 
-                            Grid grid = grid(gridIdx);
+                            Ignite ignite = grid(gridIdx);
 
-                            UUID locNodeId = grid.cluster().localNode().id();
+                            UUID locNodeId = ignite.cluster().localNode().id();
 
-                            GridCache<Integer, String> cache = grid.cache(CACHE_NAME);
+                            GridCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 

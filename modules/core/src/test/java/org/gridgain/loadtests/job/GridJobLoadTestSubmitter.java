@@ -11,7 +11,6 @@ package org.gridgain.loadtests.job;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.future.*;
 
 import java.util.*;
 
@@ -23,7 +22,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
     public static final int TIMEOUT = 120000;
 
     /** Grid where all tasks should be submitted. */
-    private final Grid grid;
+    private final Ignite ignite;
 
     /** Params of simulated jobs. */
     private final GridJobLoadTestParams params;
@@ -41,13 +40,13 @@ public class GridJobLoadTestSubmitter implements Runnable {
     private int iteration;
 
     /**
-     * @param grid Grid where all tasks should be submitted.
+     * @param ignite Grid where all tasks should be submitted.
      * @param params Params of simulated jobs.
      * @param cancelRate Submission/cancel ratio.
      * @param submitDelay Time to sleep between task submissions.
      */
-    public GridJobLoadTestSubmitter(Grid grid, GridJobLoadTestParams params, int cancelRate, long submitDelay) {
-        this.grid = grid;
+    public GridJobLoadTestSubmitter(Ignite ignite, GridJobLoadTestParams params, int cancelRate, long submitDelay) {
+        this.ignite = ignite;
         this.params = params;
         this.cancelRate = cancelRate;
         this.submitDelay = submitDelay;
@@ -56,7 +55,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void run() {
-        GridCompute comp = grid.compute().enableAsync();
+        GridCompute comp = ignite.compute().enableAsync();
 
         while (true) {
             checkCompletion();
@@ -96,13 +95,13 @@ public class GridJobLoadTestSubmitter implements Runnable {
                     assert res == params.getJobsCount() :
                         "Task returned wrong result [taskIs=" + fut.getTaskSession().getId() + ", result=" + res + "]";
 
-                    grid.log().info(">>> Task completed successfully. Task id: " + fut.getTaskSession().getId());
+                    ignite.log().info(">>> Task completed successfully. Task id: " + fut.getTaskSession().getId());
                 }
                 catch (GridFutureCancelledException ignored) {
-                    grid.log().info(">>> Task cancelled: " + fut.getTaskSession().getId());
+                    ignite.log().info(">>> Task cancelled: " + fut.getTaskSession().getId());
                 }
                 catch (GridException e) {
-                    grid.log().warning(
+                    ignite.log().warning(
                         ">>> Get operation for completed task failed: " + fut.getTaskSession().getId(), e);
                 }
                 finally {
@@ -124,10 +123,10 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
             try {
                 futToCancel.cancel();
-                grid.log().info("Task canceled: " + futToCancel.getTaskSession().getId());
+                ignite.log().info("Task canceled: " + futToCancel.getTaskSession().getId());
             }
             catch (GridException e) {
-                grid.log().warning(">>> Future cancellation failed: " + futToCancel.getTaskSession().getId(), e);
+                ignite.log().warning(">>> Future cancellation failed: " + futToCancel.getTaskSession().getId(), e);
             }
         }
     }

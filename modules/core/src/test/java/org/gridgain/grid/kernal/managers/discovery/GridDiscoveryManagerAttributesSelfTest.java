@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
@@ -79,7 +78,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
             System.setProperty(PREFER_IPV4, "true");
 
             for (int i = 0; i < 2; i++) {
-                Grid g = startGrid(i);
+                Ignite g = startGrid(i);
 
                 assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
             }
@@ -151,7 +150,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
             System.setProperty(PREFER_IPV4, val);
 
             for (int i = 0; i < 2; i++) {
-                Grid g = startGrid(i);
+                Ignite g = startGrid(i);
 
                 assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
             }

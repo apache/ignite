@@ -113,7 +113,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         log.info("Start one more grid.");
 
-        Grid joined = startGrid(GRID_CNT);
+        Ignite joined = startGrid(GRID_CNT);
 
         // We expect at least one item to be taken.
         TakeJob joinedJob = new TakeJob(queueName, 1, 1);
@@ -144,7 +144,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -161,13 +161,13 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         /** {@inheritDoc} */
         @Override public void run() {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            log.info("Running job [node=" + grid.cluster().localNode().id() +
+            log.info("Running job [node=" + ignite.cluster().localNode().id() +
                 ", job=" + getClass().getSimpleName() + "]");
 
             try {
-                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, false);
+                GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
 
                 assertNotNull(queue);
 
@@ -205,7 +205,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -253,15 +253,15 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         /** {@inheritDoc} */
         @Nullable @Override public Integer call() {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            log.info("Running job [node=" + grid.cluster().localNode().id() +
+            log.info("Running job [node=" + ignite.cluster().localNode().id() +
                 ", job=" + getClass().getSimpleName() + "]");
 
             Integer lastPolled = null;
 
             try {
-                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, false);
+                GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
 
                 assertNotNull(queue);
 

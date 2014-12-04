@@ -58,11 +58,11 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCancelledJobs() throws Exception {
-        final Grid grid = G.grid(getTestGridName());
+        final Ignite ignite = G.grid(getTestGridName());
 
         Collection<GridComputeTaskFuture<?>> futs = new ArrayList<>();
 
-        GridCompute comp = grid.compute().enableAsync();
+        GridCompute comp = ignite.compute().enableAsync();
 
         for (int i = 1; i <= 10; i++) {
             comp.execute(CancelledTask.class, null);
@@ -73,7 +73,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         // Wait to be sure that metrics were updated.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return grid.cluster().localNode().metrics().getTotalCancelledJobs() > 0;
+                return ignite.cluster().localNode().metrics().getTotalCancelledJobs() > 0;
             }
         }, 5000);
 
@@ -94,7 +94,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         // Job was cancelled and now we need to calculate metrics.
-        int totalCancelledJobs = grid.cluster().localNode().metrics().getTotalCancelledJobs();
+        int totalCancelledJobs = ignite.cluster().localNode().metrics().getTotalCancelledJobs();
 
         assert totalCancelledJobs == 10 : "Metrics were not updated. Expected 10 got " + totalCancelledJobs;
     }

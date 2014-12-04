@@ -48,11 +48,11 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWaitForEvent() throws Exception {
-        Grid grid = grid();
+        Ignite ignite = grid();
 
         final int usrType = Integer.MAX_VALUE - 1;
 
-        GridFuture<GridEvent> fut = waitForLocalEvent(grid.events(), new GridPredicate<GridEvent>() {
+        GridFuture<GridEvent> fut = waitForLocalEvent(ignite.events(), new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 return e.type() == usrType;
             }
@@ -67,7 +67,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
             info("Caught expected exception: " + e);
         }
 
-        grid.events().recordLocal(new GridEventAdapter(null, "Test message.", usrType) {
+        ignite.events().recordLocal(new GridEventAdapter(null, "Test message.", usrType) {
             // No-op.
         });
 
@@ -80,13 +80,13 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWaitForEventContinuationTimeout() throws Exception {
-        Grid grid = grid();
+        Ignite ignite = grid();
 
         try {
             // We'll never wait for nonexistent type of event.
             int usrType = Integer.MAX_VALUE - 1;
 
-            waitForLocalEvent(grid.events(), F.<GridEvent>alwaysTrue(), usrType).get(1000);
+            waitForLocalEvent(ignite.events(), F.<GridEvent>alwaysTrue(), usrType).get(1000);
 
             fail("GridFutureTimeoutException must have been thrown.");
         }
@@ -99,10 +99,10 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUserEvent() throws Exception {
-        Grid grid = grid();
+        Ignite ignite = grid();
 
         try {
-            grid.events().recordLocal(new GridEventAdapter(null, "Test message.", GridEventType.EVT_NODE_FAILED) {
+            ignite.events().recordLocal(new GridEventAdapter(null, "Test message.", GridEventType.EVT_NODE_FAILED) {
                 // No-op.
             });
 

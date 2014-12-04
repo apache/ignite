@@ -334,7 +334,7 @@ public interface GridComputeTaskSession {
      * The life time of the checkpoint is determined by its timeout and scope.
      * If {@link GridComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
      * its session, and can only be removed by calling {@link GridCheckpointSpi#removeCheckpoint(String)}
-     * from {@link Grid} or another task or job.
+     * from {@link org.gridgain.grid.Ignite} or another task or job.
      *
      * @param key Key to be used to load this checkpoint in future.
      * @param state Intermediate job state to save.
@@ -364,7 +364,7 @@ public interface GridComputeTaskSession {
      * The life time of the checkpoint is determined by its timeout and scope.
      * If {@link GridComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
      * its session, and can only be removed by calling {@link GridCheckpointSpi#removeCheckpoint(String)}
-     * from {@link Grid} or another task or job.
+     * from {@link org.gridgain.grid.Ignite} or another task or job.
      *
      * @param key Key to be used to load this checkpoint in future.
      * @param state Intermediate job state to save.

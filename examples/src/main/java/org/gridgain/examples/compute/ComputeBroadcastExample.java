@@ -33,15 +33,15 @@ public class ComputeBroadcastExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute broadcast example started.");
 
             // Print hello message on all nodes.
-            hello(grid);
+            hello(ignite);
 
             // Gather system info from all nodes.
-            gatherSystemInfo(grid);
+            gatherSystemInfo(ignite);
        }
     }
 
@@ -51,7 +51,7 @@ public class ComputeBroadcastExample {
      * @param g Grid instance.
      * @throws GridException If failed.
      */
-    private static void hello(Grid g) throws GridException {
+    private static void hello(Ignite g) throws GridException {
         // Print out hello message on all nodes.
         g.compute().broadcast(
             new GridRunnable() {
@@ -72,13 +72,13 @@ public class ComputeBroadcastExample {
      * @param g Grid instance.
      * @throws GridException if failed.
      */
-    private static void gatherSystemInfo(Grid g) throws GridException {
+    private static void gatherSystemInfo(Ignite g) throws GridException {
         // Gather system info from all nodes.
         Collection<String> res = g.compute().broadcast(
             new GridCallable<String>() {
                 // Automatically inject grid instance.
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite grid;
 
                 @Override public String call() {
                     System.out.println();

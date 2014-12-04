@@ -42,20 +42,20 @@ public class GridStreamerCacheAffinityEventRouter extends GridStreamerEventRoute
 
     /** Grid instance. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
         if (evt instanceof CacheAffinityEvent) {
             CacheAffinityEvent e = (CacheAffinityEvent)evt;
 
-            GridCache<Object, Object> c = ((GridEx)grid).cachex(e.cacheName());
+            GridCache<Object, Object> c = ((GridEx) ignite).cachex(e.cacheName());
 
             assert c != null;
 
             return c.affinity().mapKeyToNode(e.affinityKey());
         }
 
-        return grid.cluster().localNode();
+        return ignite.cluster().localNode();
     }
 }

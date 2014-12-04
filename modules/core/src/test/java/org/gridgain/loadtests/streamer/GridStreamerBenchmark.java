@@ -47,14 +47,14 @@ public class GridStreamerBenchmark {
         Collection<GridStreamerLoad> loads = worker ? null : loads(cfgPath);
 
         // Start the grid.
-        Grid grid = G.start(cfgPath);
+        Ignite ignite = G.start(cfgPath);
 
         // Start load threads.
         Collection<Thread> loadThreads = new HashSet<>();
 
         if (loads != null && !loads.isEmpty()) {
             for (GridStreamerLoad load : loads) {
-                final GridStreamer streamer = grid.streamer(load.getName());
+                final GridStreamer streamer = ignite.streamer(load.getName());
 
                 if (streamer == null)
                     throw new Exception("Steamer is not found: " + load.getName());

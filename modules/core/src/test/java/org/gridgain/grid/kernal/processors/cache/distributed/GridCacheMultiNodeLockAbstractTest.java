@@ -34,10 +34,10 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstractTest {
     /** Grid 1. */
-    private static Grid grid1;
+    private static Ignite ignite1;
 
     /** Grid 2. */
-    private static Grid grid2;
+    private static Ignite ignite2;
 
     /** */
     private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
@@ -76,8 +76,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid1 = startGrid(1);
-        grid2 = startGrid(2);
+        ignite1 = startGrid(1);
+        ignite2 = startGrid(2);
 
         startGrid(3);
     }
@@ -86,14 +86,14 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        grid1 = null;
-        grid2 = null;
+        ignite1 = null;
+        ignite2 = null;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        removeListeners(grid1);
-        removeListeners(grid2);
+        removeListeners(ignite1);
+        removeListeners(ignite2);
 
         lsnrs.clear();
 
@@ -107,22 +107,22 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * @param grid Grid to remove listeners from.
+     * @param ignite Grid to remove listeners from.
      */
-    private void removeListeners(Grid grid) {
+    private void removeListeners(Ignite ignite) {
         for (GridPredicate<GridEvent> lsnr : lsnrs)
-            grid.events().stopLocalListen(lsnr);
+            ignite.events().stopLocalListen(lsnr);
     }
 
     /**
-     * @param grid Grid
+     * @param ignite Grid
      * @param lsnr Listener.
      */
-    void addListener(Grid grid, GridPredicate<GridEvent> lsnr) {
+    void addListener(Ignite ignite, GridPredicate<GridEvent> lsnr) {
         if (!lsnrs.contains(lsnr))
             lsnrs.add(lsnr);
 
-        grid.events().localListen(lsnr, EVTS_CACHE);
+        ignite.events().localListen(lsnr, EVTS_CACHE);
     }
 
     /**
@@ -203,7 +203,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test failed.
      */
     public void testBasicLock() throws Exception {
-        GridCache<Integer, String> cache = grid1.cache(null);
+        GridCache<Integer, String> cache = ignite1.cache(null);
 
         assert cache.lock(1, 0L);
 
@@ -233,15 +233,15 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                 ", de2=" + dht2.peekEx(key) + ']';
         }
 
-        return "Entries [e1=" + grid1.cache(null).entry(key) + ", e2=" + grid2.cache(null).entry(key) + ']';
+        return "Entries [e1=" + ignite1.cache(null).entry(key) + ", e2=" + ignite2.cache(null).entry(key) + ']';
     }
 
     /**
      * @throws Exception If test fails.
      */
     public void testMultiNodeLock() throws Exception {
-        GridCache<Integer, String> cache1 = grid1.cache(null);
-        GridCache<Integer, String> cache2 = grid2.cache(null);
+        GridCache<Integer, String> cache1 = ignite1.cache(null);
+        GridCache<Integer, String> cache2 = ignite2.cache(null);
 
         assert cache1.lock(1, 0L);
 
@@ -273,7 +273,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        addListener(grid1, new UnlockListener(latch, 1));
+        addListener(ignite1, new UnlockListener(latch, 1));
 
         try {
             assert !cache1.lock(1, -1L);
@@ -295,8 +295,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLockAsync() throws Exception {
-        GridCache<Integer, String> cache1 = grid1.cache(null);
-        GridCache<Integer, String> cache2 = grid2.cache(null);
+        GridCache<Integer, String> cache1 = ignite1.cache(null);
+        GridCache<Integer, String> cache2 = ignite2.cache(null);
 
         assert cache1.lockAsync(1, 0L).get();
 
@@ -319,7 +319,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        addListener(grid1, new UnlockListener(latch, 1));
+        addListener(ignite1, new UnlockListener(latch, 1));
 
         try {
             assert cache1.isLocked(1);
@@ -347,8 +347,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLockWithKeyLists() throws Exception {
-        GridCache<Integer, String> cache1 = grid1.cache(null);
-        GridCache<Integer, String> cache2 = grid2.cache(null);
+        GridCache<Integer, String> cache1 = ignite1.cache(null);
+        GridCache<Integer, String> cache2 = ignite2.cache(null);
 
         Collection<Integer> keys1 = new ArrayList<>();
         Collection<Integer> keys2 = new ArrayList<>();
@@ -387,8 +387,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         CountDownLatch latch1 = new CountDownLatch(keys2.size());
         CountDownLatch latch2 = new CountDownLatch(1);
 
-        addListener(grid2, new UnlockListener(latch2, 1));
-        addListener(grid1, (new UnlockListener(latch1, keys2)));
+        addListener(ignite2, new UnlockListener(latch2, 1));
+        addListener(ignite1, (new UnlockListener(latch1, keys2)));
 
         try {
             checkLocked(cache2, keys2);
@@ -422,8 +422,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLockAsyncWithKeyLists() throws Exception {
-        GridCache<Integer, String> cache1 = grid1.cache(null);
-        GridCache<Integer, String> cache2 = grid2.cache(null);
+        GridCache<Integer, String> cache1 = ignite1.cache(null);
+        GridCache<Integer, String> cache2 = ignite2.cache(null);
 
         Collection<Integer> keys1 = new ArrayList<>();
         Collection<Integer> keys2 = new ArrayList<>();
@@ -459,7 +459,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         CountDownLatch latch = new CountDownLatch(keys2.size());
 
-        addListener(grid1, new UnlockListener(latch, keys2));
+        addListener(ignite1, new UnlockListener(latch, keys2));
 
         GridFuture<Boolean> f2 = cache2.lockAllAsync(keys2, 0);
 
@@ -499,7 +499,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws GridException If test failed.
      */
     public void testLockReentry() throws GridException {
-        GridCache<Integer, String> cache = grid1.cache(null);
+        GridCache<Integer, String> cache = ignite1.cache(null);
 
         assert cache.lock(1, 0L);
 
@@ -525,7 +525,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test failed.
      */
     public void testLockMultithreaded() throws Exception {
-        final GridCache<Integer, String> cache = grid1.cache(null);
+        final GridCache<Integer, String> cache = ignite1.cache(null);
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);

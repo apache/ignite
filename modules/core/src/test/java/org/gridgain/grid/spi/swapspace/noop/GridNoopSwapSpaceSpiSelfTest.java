@@ -37,9 +37,9 @@ public class GridNoopSwapSpaceSpiSelfTest extends GridCommonAbstractTest {
      */
     public void testWithoutCacheUseNoopSwapSapce() throws Exception {
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
-            GridSwapSpaceSpi spi = grid.configuration().getSwapSpaceSpi();
+            GridSwapSpaceSpi spi = ignite.configuration().getSwapSpaceSpi();
 
             assertNotNull(spi);
 

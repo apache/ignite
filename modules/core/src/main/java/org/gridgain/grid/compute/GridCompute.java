@@ -82,7 +82,7 @@ import java.util.concurrent.*;
  * <li>{@link GridSpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
- * Here is an example of how to inject instance of {@link Grid} into a computation:
+ * Here is an example of how to inject instance of {@link org.gridgain.grid.Ignite} into a computation:
  * <pre name="code" class="java">
  * public class MyGridJob extends GridRunnable {
  *      ...

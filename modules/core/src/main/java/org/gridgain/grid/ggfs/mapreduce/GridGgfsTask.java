@@ -71,16 +71,16 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
 
     /** Injected grid. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Nullable @Override public final Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable GridGgfsTaskArgs<T> args) throws GridException {
-        assert grid != null;
+        assert ignite != null;
         assert args != null;
 
-        GridGgfs ggfs = grid.ggfs(args.ggfsName());
-        GridGgfsProcessorAdapter ggfsProc = ((GridKernal)grid).context().ggfs();
+        GridGgfs ggfs = ignite.ggfs(args.ggfsName());
+        GridGgfsProcessorAdapter ggfsProc = ((GridKernal) ignite).context().ggfs();
 
         Map<GridComputeJob, GridNode> splitMap = new HashMap<>();
 

@@ -67,14 +67,14 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testSetAttribute() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
         for (int i = 0; i < 5; i++) {
             refreshInitialData();
 
-            GridCompute comp = grid.compute().enableAsync();
+            GridCompute comp = ignite.compute().enableAsync();
 
             comp.execute(GridTaskSessionTestTask.class.getName(), null);
 

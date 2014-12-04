@@ -95,9 +95,9 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         plc = new GridCacheFifoEvictionPolicy<Object, Object>(500);
 
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = grid.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             final Random rnd = new Random();
 
@@ -147,9 +147,9 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         plc = new GridCacheFifoEvictionPolicy<Object, Object>(500);
 
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = grid.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -174,9 +174,9 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         plc = new GridCacheFifoEvictionPolicy<Object, Object>(500);
 
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = grid.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             Collection<Integer> keys = new ArrayList<>(100);
 
@@ -205,7 +205,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         plc = new GridCacheFifoEvictionPolicy<>(100);
 
         try {
-            Grid g = startGrid(1);
+            Ignite g = startGrid(1);
 
             Integer affKey = 1;
 
@@ -251,7 +251,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         plc = new GridCacheFifoEvictionPolicy<>(100);
 
         try {
-            Grid g = startGrid(1);
+            Ignite g = startGrid(1);
 
             Integer affKey = 1;
 
@@ -298,9 +298,9 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         plc = new GridCacheFifoEvictionPolicy<Object, Object>(100);
 
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = grid.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             for (int i = 0; i < 10000; i++)
                 cache.reload(i);

@@ -189,15 +189,15 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     private void checkWaitAttributeMethod(WaitAttributeType type) throws Exception {
         assert type != null;
 
-        Grid grid1 = G.grid(getTestGridName() + '1');
-        Grid grid2 = G.grid(getTestGridName() + '2');
+        Ignite ignite1 = G.grid(getTestGridName() + '1');
+        Ignite ignite2 = G.grid(getTestGridName() + '2');
 
-        assert grid1 != null;
-        assert grid2 != null;
+        assert ignite1 != null;
+        assert ignite2 != null;
 
-        grid1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
+        ignite1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
 
-        GridCompute comp = grid1.compute().enableAsync();
+        GridCompute comp = ignite1.compute().enableAsync();
 
         comp.execute(TestSessionTask.class.getName(), type);
 

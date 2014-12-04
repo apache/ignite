@@ -28,10 +28,10 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
      */
     public void testContinuousMapperMethods() throws Exception {
         try {
-            Grid grid = startGrid(0);
+            Ignite ignite = startGrid(0);
             startGrid(1);
 
-            grid.compute().execute(TestAllMethodsTask.class, null);
+            ignite.compute().execute(TestAllMethodsTask.class, null);
         }
         finally {
             stopGrid(0);
@@ -44,9 +44,9 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
      */
     public void testContinuousMapperLifeCycle() throws Exception {
         try {
-            Grid grid = startGrid(0);
+            Ignite ignite = startGrid(0);
 
-            grid.compute().execute(TestLifeCycleTask.class, null);
+            ignite.compute().execute(TestLifeCycleTask.class, null);
         }
         finally {
             stopGrid(0);
@@ -58,9 +58,9 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
      */
     public void testContinuousMapperNegative() throws Exception {
         try {
-            Grid grid = startGrid(0);
+            Ignite ignite = startGrid(0);
 
-            grid.compute().execute(TestNegativeTask.class, null);
+            ignite.compute().execute(TestNegativeTask.class, null);
         }
         finally {
             stopGrid(0);

@@ -48,12 +48,12 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     public void testFailoverTask() throws Exception {
         isFailoverCalled = false;
 
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTestFailoverTask.class, GridTestFailoverTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTestFailoverTask.class, GridTestFailoverTask.class.getClassLoader());
 
         try {
-            grid.compute().execute(GridTestFailoverTask.class.getName(),
+            ignite.compute().execute(GridTestFailoverTask.class.getName(),
                 new GridComputeExecutionRejectedException("Task should be failed over"));
 
             assert false;
@@ -72,12 +72,12 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     public void testNoneFailoverTask() throws Exception {
         isFailoverCalled = false;
 
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTestFailoverTask.class, GridTestFailoverTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTestFailoverTask.class, GridTestFailoverTask.class.getClassLoader());
 
         try {
-            grid.compute().execute(GridTestFailoverTask.class.getName(),
+            ignite.compute().execute(GridTestFailoverTask.class.getName(),
                 new GridException("Task should NOT be failed over"));
 
             assert false;

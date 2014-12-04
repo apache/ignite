@@ -109,7 +109,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
 
-        Grid g = G.start(cfg);
+        Ignite g = G.start(cfg);
 
         ggfs = (GridGgfsEx)g.ggfs("ggfs");
 

@@ -83,11 +83,11 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Grid grid = G.grid(getTestGridName());
+        final Ignite ignite = G.grid(getTestGridName());
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
-        grid.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
+        ignite.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
         info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
         info("Thread count: " + getThreadCount());
@@ -104,7 +104,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
                         // info("Deploying class: " + cls);
 
-                        grid.compute().localDeployTask(cls, cls.getClassLoader());
+                        ignite.compute().localDeployTask(cls, cls.getClassLoader());
 
                         Thread.sleep(1000);
                     }
@@ -130,7 +130,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
                         // info("Executing task: " + TASK_NAME);
 
-                        GridComputeTaskFuture<Integer> fut = grid.compute().execute(TASK_NAME, levels);
+                        GridComputeTaskFuture<Integer> fut = ignite.compute().execute(TASK_NAME, levels);
 
                         int res = fut.get();
 

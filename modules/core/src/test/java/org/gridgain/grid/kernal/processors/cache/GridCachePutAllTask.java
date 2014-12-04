@@ -54,12 +54,12 @@ class GridCachePutAllTask extends GridComputeTaskAdapter<Collection<Integer>, Vo
                 private GridLogger log;
 
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object execute() throws GridException {
                     log.info("Going to put data: " + data);
 
-                    GridCacheProjection<Object, Object> cache = grid.cache(cacheName);
+                    GridCacheProjection<Object, Object> cache = ignite.cache(cacheName);
 
                     assert cache != null;
 

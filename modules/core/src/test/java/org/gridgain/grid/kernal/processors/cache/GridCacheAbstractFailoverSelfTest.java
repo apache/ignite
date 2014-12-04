@@ -206,7 +206,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         else
             put(cache(), ENTRY_CNT);
 
-        Grid g = startGrid(NEW_GRID_NAME);
+        Ignite g = startGrid(NEW_GRID_NAME);
 
         check(cache(g), ENTRY_CNT);
 
@@ -255,7 +255,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                         String name = UUID.randomUUID().toString();
 
                         try {
-                            final Grid g = startGrid(name);
+                            final Ignite g = startGrid(name);
 
                             for (int k = half; k < ENTRY_CNT; k++)
                                 assertNotNull("Failed to get key: 'key" + k + "'", cache(g).get("key" + k));
@@ -388,7 +388,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         if (cacheMode() == PARTITIONED) {
             Collection<Integer> res = compute(cache.gridProjection()).broadcast(new GridCallable<Integer>() {
                 @GridInstanceResource
-                private Grid g;
+                private Ignite g;
 
                 @Override public Integer call() {
                     return cache(g).projection(F.<String, Integer>cachePrimary()).size();
@@ -414,7 +414,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param g Grid.
      * @return Cache.
      */
-    private GridCacheProjection<String,Integer> cache(Grid g) {
+    private GridCacheProjection<String,Integer> cache(Ignite g) {
         return g.cache(null);
     }
 }

@@ -36,10 +36,10 @@ public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapte
 
         return F.asSet(new GridComputeJobAdapter() {
             @GridInstanceResource
-            private Grid grid;
+            private Ignite ignite;
 
             @Override public Object execute() {
-                for (GridNode n : grid.cluster().nodes())
+                for (GridNode n : ignite.cluster().nodes())
                     if (U.hasCache(n, cacheName))
                         return true;
 

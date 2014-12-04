@@ -22,7 +22,7 @@ import java.util.*;
 public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], int[]> {
     /** Injected Grid instance. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /**
      * Receives the array to sort, splits it into 2 arrays, and returns 2
@@ -59,7 +59,7 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
                     // Future is null before holdcc() is called and
                     // not null after callcc() is called.
                     if (fut == null) {
-                        GridCompute comp = grid.compute().enableAsync();
+                        GridCompute comp = ignite.compute().enableAsync();
 
                         // Launch the recursive child task asynchronously.
                         comp.execute(new GridMergeSortLoadTask(), arr);

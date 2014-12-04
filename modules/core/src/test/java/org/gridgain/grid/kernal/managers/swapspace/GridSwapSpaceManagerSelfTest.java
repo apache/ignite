@@ -52,27 +52,27 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
     /**
      * Returns swap space manager instance for given Grid.
      *
-     * @param grid Grid instance.
+     * @param ignite Grid instance.
      * @return Swap space manager.
      */
-    private GridSwapSpaceManager getSwapSpaceManager(Grid grid) {
-        assert grid != null;
+    private GridSwapSpaceManager getSwapSpaceManager(Ignite ignite) {
+        assert ignite != null;
 
-        return ((GridKernal)grid).context().swap();
+        return ((GridKernal) ignite).context().swap();
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testSize() throws Exception {
-        final Grid grid = grid();
+        final Ignite ignite = grid();
 
         final CountDownLatch clearCnt = new CountDownLatch(1);
         final CountDownLatch readCnt = new CountDownLatch(1);
         final CountDownLatch storeCnt = new CountDownLatch(2);
         final CountDownLatch rmvCnt = new CountDownLatch(1);
 
-        grid.events().localListen(new GridPredicate<GridEvent>() {
+        ignite.events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 assert evt instanceof GridSwapSpaceEvent;
 
@@ -81,7 +81,7 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
                 GridSwapSpaceEvent e = (GridSwapSpaceEvent) evt;
 
                 assert spaceName.equals(e.space());
-                assert grid.cluster().localNode().id().equals(e.node().id());
+                assert ignite.cluster().localNode().id().equals(e.node().id());
 
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_CLEARED:
@@ -112,7 +112,7 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
             }
         }, EVTS_SWAPSPACE);
 
-        GridSwapSpaceManager mgr = getSwapSpaceManager(grid);
+        GridSwapSpaceManager mgr = getSwapSpaceManager(ignite);
 
         assert mgr != null;
 

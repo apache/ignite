@@ -46,7 +46,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
 
     /** Grid instance. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** */
     private final GridConsistentHash<UUID> nodeHash = new GridConsistentHash<>();

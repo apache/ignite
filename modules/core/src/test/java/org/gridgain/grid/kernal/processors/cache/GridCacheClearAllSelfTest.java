@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -129,12 +128,12 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         cachesReplicated = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Grid grid = startGrid(i);
+            Ignite ignite = startGrid(i);
 
-            cachesLoc[i] = grid.cache(CACHE_LOCAL);
-            cachesPartitioned[i] = grid.cache(CACHE_PARTITIONED);
-            cachesColocated[i] = grid.cache(CACHE_COLOCATED);
-            cachesReplicated[i] = grid.cache(CACHE_REPLICATED);
+            cachesLoc[i] = ignite.cache(CACHE_LOCAL);
+            cachesPartitioned[i] = ignite.cache(CACHE_PARTITIONED);
+            cachesColocated[i] = ignite.cache(CACHE_COLOCATED);
+            cachesReplicated[i] = ignite.cache(CACHE_REPLICATED);
         }
     }
 

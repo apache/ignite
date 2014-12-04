@@ -266,9 +266,9 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    Grid grid = G.grid(nodeName(0));
+                    Ignite ignite = G.grid(nodeName(0));
 
-                    GridCache<Integer, Integer> cache = grid.cache(CACHE_NAME);
+                    GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
                     int startKey = keysPerThread * idx;
                     int endKey = keysPerThread * (idx + 1);

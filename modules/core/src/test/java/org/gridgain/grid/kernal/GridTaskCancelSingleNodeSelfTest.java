@@ -150,7 +150,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
                 /** */
                 @GridInstanceResource
-                private Grid g;
+                private Ignite g;
 
                 /** {@inheritDoc} */
                 @Override public Object execute() {

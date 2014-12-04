@@ -87,8 +87,8 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         int keyCnt = 1000;
         int retries = 20;
 
-        Grid g0 = startGrid(0);
-        Grid g1 = startGrid(1);
+        Ignite g0 = startGrid(0);
+        Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
             g0.cache(null).putx(i, i);
@@ -99,7 +99,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         for (int n = 0; n < retries; n++) {
             info("Starting additional grid node...");
 
-            Grid g2 = startGrid(2);
+            Ignite g2 = startGrid(2);
 
             assertEquals(keyCnt, g2.cache(null).size());
 
@@ -118,8 +118,8 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         final int retries = 300;
         int threadCnt = 5;
 
-        Grid g0 = startGrid(0);
-        Grid g1 = startGrid(1);
+        Ignite g0 = startGrid(0);
+        Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
             g0.cache(null).putx(i, i);

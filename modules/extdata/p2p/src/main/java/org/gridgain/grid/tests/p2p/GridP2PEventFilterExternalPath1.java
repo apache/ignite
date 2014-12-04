@@ -25,7 +25,7 @@ public class GridP2PEventFilterExternalPath1 implements GridPredicate<GridEvent>
 
     /** Instance of grid. Used for save class loader and injected resource. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public boolean apply(GridEvent evt) {
@@ -35,7 +35,7 @@ public class GridP2PEventFilterExternalPath1 implements GridPredicate<GridEvent>
                 System.identityHashCode(getClass().getClassLoader())
             };
 
-            grid.message(grid.cluster().forRemotes()).send(null, res);
+            ignite.message(ignite.cluster().forRemotes()).send(null, res);
         }
         catch (GridException e) {
             throw new RuntimeException(e);

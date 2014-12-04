@@ -2,7 +2,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -138,10 +137,10 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     private void doTest() throws Exception {
-        Grid grid = startGrid();
+        Ignite ignite = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = grid.cache(CACHE_NAME);
+            GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < N_ENTRIES; i++)
                 cache.reload(i);

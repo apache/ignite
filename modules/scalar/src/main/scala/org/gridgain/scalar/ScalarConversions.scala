@@ -374,7 +374,7 @@ trait ScalarConversions {
      *
      * @param impl Grid to convert.
      */
-    implicit def toScalarGrid(impl: Grid): ScalarGridPimp =
+    implicit def toScalarGrid(impl: Ignite): ScalarGridPimp =
         ScalarGridPimp(impl)
 
     /**

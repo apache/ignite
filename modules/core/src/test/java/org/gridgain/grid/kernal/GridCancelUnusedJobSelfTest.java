@@ -78,11 +78,11 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testCancel() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridCancelTestTask.class, U.detectClassLoader(GridCancelTestTask.class));
+        ignite.compute().localDeployTask(GridCancelTestTask.class, U.detectClassLoader(GridCancelTestTask.class));
 
-        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridCancelTestTask.class.getName(), null);
+        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridCancelTestTask.class.getName(), null);
 
         // Wait until jobs begin execution.
         boolean await = startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS);

@@ -133,15 +133,15 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected Grid grid1;
+    protected Ignite ignite1;
 
     /** */
-    protected Grid grid2;
+    protected Ignite ignite2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid1 = startGrid(1);
-        grid2 = startGrid(2);
+        ignite1 = startGrid(1);
+        ignite2 = startGrid(2);
     }
 
     /** {@inheritDoc} */
@@ -176,12 +176,12 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
-        grid1.message().localListen(null, new P2<UUID, Object>() {
+        ignite1.message().localListen(null, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
-                    if (!nodeId.equals(grid2.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite2.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -199,7 +199,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection rNode1 = grid2.cluster().forRemotes();
+        GridProjection rNode1 = ignite2.cluster().forRemotes();
 
         message(rNode1).send(null, MSG_1);
         message(rNode1).send(null, MSG_2);
@@ -259,11 +259,11 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         final String topic2 = "top1";
         final String topic3 = "top3";
 
-        grid1.message().localListen(topic1, lsnr1);
-        grid1.message().localListen(topic2, lsnr2);
-        grid1.message().localListen(topic3, lsnr3);
+        ignite1.message().localListen(topic1, lsnr1);
+        ignite1.message().localListen(topic2, lsnr2);
+        ignite1.message().localListen(topic3, lsnr3);
 
-        GridProjection rNode1 = grid2.cluster().forRemotes();
+        GridProjection rNode1 = ignite2.cluster().forRemotes();
 
         message(rNode1).send(topic1, "msg1-1");
         message(rNode1).send(topic2, "msg1-2");
@@ -279,7 +279,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertEquals(1, msgCnt2.get());
         assertEquals(1, msgCnt3.get());
 
-        grid1.message().stopLocalListen(topic2, lsnr2);
+        ignite1.message().stopLocalListen(topic2, lsnr2);
 
         message(rNode1).send(topic1, "msg2-1");
         message(rNode1).send(topic2, "msg2-2");
@@ -295,7 +295,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertEquals(1, msgCnt2.get());
         assertEquals(2, msgCnt3.get());
 
-        grid1.message().stopLocalListen(topic2, lsnr1); // Try to use wrong topic for lsnr1 removing.
+        ignite1.message().stopLocalListen(topic2, lsnr1); // Try to use wrong topic for lsnr1 removing.
 
         message(rNode1).send(topic1, "msg3-1");
         message(rNode1).send(topic2, "msg3-2");
@@ -311,8 +311,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertEquals(1, msgCnt2.get());
         assertEquals(3, msgCnt3.get());
 
-        grid1.message().stopLocalListen(topic1, lsnr1);
-        grid1.message().stopLocalListen(topic3, lsnr3);
+        ignite1.message().stopLocalListen(topic1, lsnr1);
+        ignite1.message().stopLocalListen(topic3, lsnr3);
 
         message(rNode1).send(topic1, "msg4-1");
         message(rNode1).send(topic2, "msg4-2");
@@ -337,13 +337,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
-        grid1.message().localListen(S_TOPIC_1, new P2<UUID, Object>() {
+        ignite1.message().localListen(S_TOPIC_1, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=" + S_TOPIC_1 + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -369,13 +369,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        grid1.message().localListen(S_TOPIC_2, new P2<UUID, Object>() {
+        ignite1.message().localListen(S_TOPIC_2, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=" + S_TOPIC_2 + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -401,13 +401,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        grid1.message().localListen(null, new P2<UUID, Object>() {
+        ignite1.message().localListen(null, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=default]");
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -433,7 +433,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection rNode1 = grid1.cluster().forLocal();
+        GridProjection rNode1 = ignite1.cluster().forLocal();
 
         message(rNode1).send(S_TOPIC_1, MSG_1);
         message(rNode1).send(S_TOPIC_2, MSG_2);
@@ -460,13 +460,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
-        grid1.message().localListen(TestTopic.TOPIC_1, new P2<UUID, Object>() {
+        ignite1.message().localListen(TestTopic.TOPIC_1, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=" + TestTopic.TOPIC_1 + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -492,13 +492,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        grid1.message().localListen(TestTopic.TOPIC_2, new P2<UUID, Object>() {
+        ignite1.message().localListen(TestTopic.TOPIC_2, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=" + TestTopic.TOPIC_2 + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -524,13 +524,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        grid1.message().localListen(null, new P2<UUID, Object>() {
+        ignite1.message().localListen(null, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=default]");
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -556,7 +556,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection rNode1 = grid1.cluster().forLocal();
+        GridProjection rNode1 = ignite1.cluster().forLocal();
 
         message(rNode1).send(TestTopic.TOPIC_1, MSG_1);
         message(rNode1).send(TestTopic.TOPIC_2, MSG_2);
@@ -582,7 +582,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch rcvLatch = new CountDownLatch(4);
 
-        grid2.message().remoteListen(null, new P2<UUID, Object>() {
+        ignite2.message().remoteListen(null, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
@@ -597,11 +597,11 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection prj2 = grid1.cluster().forRemotes(); // Includes node from grid2.
+        GridProjection prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
 
         message(prj2).send(null, MSG_1);
         message(prj2).send(null, MSG_2);
-        message(grid2.cluster().forLocal()).send(null, MSG_3);
+        message(ignite2.cluster().forLocal()).send(null, MSG_3);
 
         assertFalse(rcvLatch.await(3, TimeUnit.SECONDS)); // We should get only 3 message.
 
@@ -625,7 +625,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         final String topic2 = "top2";
         final String topic3 = "top3";
 
-        UUID id1 = grid2.message().remoteListen(topic1, new P2<UUID, Object>() {
+        UUID id1 = ignite2.message().remoteListen(topic1, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 System.out.println(Thread.currentThread().getName() + " Listener1 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
@@ -635,7 +635,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        UUID id2 = grid2.message().remoteListen(topic2, new P2<UUID, Object>() {
+        UUID id2 = ignite2.message().remoteListen(topic2, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 System.out.println(Thread.currentThread().getName() + " Listener2 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
@@ -645,7 +645,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        UUID id3 = grid2.message().remoteListen(topic3, new P2<UUID, Object>() {
+        UUID id3 = ignite2.message().remoteListen(topic3, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 System.out.println(Thread.currentThread().getName() + " Listener3 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
@@ -655,9 +655,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        message(grid1.cluster().forRemotes()).send(topic1, "msg1-1");
-        message(grid1.cluster().forRemotes()).send(topic2, "msg1-2");
-        message(grid1.cluster().forRemotes()).send(topic3, "msg1-3");
+        message(ignite1.cluster().forRemotes()).send(topic1, "msg1-1");
+        message(ignite1.cluster().forRemotes()).send(topic2, "msg1-2");
+        message(ignite1.cluster().forRemotes()).send(topic3, "msg1-3");
 
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -669,11 +669,11 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertEquals(1, msgCnt2.get());
         assertEquals(1, msgCnt3.get());
 
-        grid2.message().stopRemoteListen(id2);
+        ignite2.message().stopRemoteListen(id2);
 
-        message(grid1.cluster().forRemotes()).send(topic1, "msg2-1");
-        message(grid1.cluster().forRemotes()).send(topic2, "msg2-2");
-        message(grid1.cluster().forRemotes()).send(topic3, "msg2-3");
+        message(ignite1.cluster().forRemotes()).send(topic1, "msg2-1");
+        message(ignite1.cluster().forRemotes()).send(topic2, "msg2-2");
+        message(ignite1.cluster().forRemotes()).send(topic3, "msg2-3");
 
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -685,14 +685,14 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertEquals(1, msgCnt2.get());
         assertEquals(2, msgCnt3.get());
 
-        grid2.message().stopRemoteListen(id2); // Try remove one more time.
+        ignite2.message().stopRemoteListen(id2); // Try remove one more time.
 
-        grid2.message().stopRemoteListen(id1);
-        grid2.message().stopRemoteListen(id3);
+        ignite2.message().stopRemoteListen(id1);
+        ignite2.message().stopRemoteListen(id3);
 
-        message(grid1.cluster().forRemotes()).send(topic1, "msg3-1");
-        message(grid1.cluster().forRemotes()).send(topic2, "msg3-2");
-        message(grid1.cluster().forRemotes()).send(topic3, "msg3-3");
+        message(ignite1.cluster().forRemotes()).send(topic1, "msg3-1");
+        message(ignite1.cluster().forRemotes()).send(topic2, "msg3-2");
+        message(ignite1.cluster().forRemotes()).send(topic3, "msg3-3");
 
         U.sleep(1000);
 
@@ -719,13 +719,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
-        grid2.message().remoteListen(S_TOPIC_1, new P2<UUID, Object>() {
+        ignite2.message().remoteListen(S_TOPIC_1, new P2<UUID, Object>() {
             @Override
             public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -743,7 +743,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection prj2 = grid1.cluster().forRemotes(); // Includes node from grid2.
+        GridProjection prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
 
         for (TestMessage msg : msgs)
             message(prj2).sendOrdered(S_TOPIC_1, msg, 15000);
@@ -769,18 +769,18 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
-        grid2.message().remoteListen(I_TOPIC_1, new P2<UUID, Object>() {
+        ignite2.message().remoteListen(I_TOPIC_1, new P2<UUID, Object>() {
             @GridInstanceResource
-            private transient Grid g;
+            private transient Ignite g;
 
             @Override public boolean apply(UUID nodeId, Object msg) {
-                assertEquals(grid2, g);
+                assertEquals(ignite2, g);
 
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=" + I_TOPIC_1 + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -806,18 +806,18 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        grid2.message().remoteListen(I_TOPIC_2, new P2<UUID, Object>() {
+        ignite2.message().remoteListen(I_TOPIC_2, new P2<UUID, Object>() {
             @GridInstanceResource
-            private transient Grid g;
+            private transient Ignite g;
 
             @Override public boolean apply(UUID nodeId, Object msg) {
-                assertEquals(grid2, g);
+                assertEquals(ignite2, g);
 
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=" + I_TOPIC_2 + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -843,18 +843,18 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        grid2.message().remoteListen(null, new P2<UUID, Object>() {
+        ignite2.message().remoteListen(null, new P2<UUID, Object>() {
             @GridInstanceResource
-            private transient Grid g;
+            private transient Ignite g;
 
             @Override public boolean apply(UUID nodeId, Object msg) {
-                assertEquals(grid2, g);
+                assertEquals(ignite2, g);
 
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId +
                         ", topic=default]");
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -880,7 +880,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridProjection prj2 = grid1.cluster().forRemotes(); // Includes node from grid2.
+        GridProjection prj2 = ignite1.cluster().forRemotes(); // Includes node from grid2.
 
         message(prj2).send(I_TOPIC_1, MSG_1);
         message(prj2).send(I_TOPIC_2, MSG_2);
@@ -912,12 +912,12 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch rcvLatch = new CountDownLatch(1);
 
-        grid2.message().remoteListen(S_TOPIC_1, new P2<UUID, Object>() {
+        ignite2.message().remoteListen(S_TOPIC_1, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -933,7 +933,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        message(grid1.cluster().forRemotes()).send(S_TOPIC_1, Collections.singleton(rcCls.newInstance()));
+        message(ignite1.cluster().forRemotes()).send(S_TOPIC_1, Collections.singleton(rcCls.newInstance()));
 
         assertTrue(rcvLatch.await(3, TimeUnit.SECONDS));
 
@@ -949,7 +949,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     public void testNullMessages() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                grid1.message().send(null, null);
+                ignite1.message().send(null, null);
 
                 return null;
             }
@@ -957,7 +957,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                grid1.message().send(null, Collections.emptyList());
+                ignite1.message().send(null, Collections.emptyList());
 
                 return null;
             }
@@ -965,7 +965,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                grid1.message().send(null, (Object)null);
+                ignite1.message().send(null, (Object)null);
 
                 return null;
             }
@@ -973,7 +973,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                grid1.message().send(null, Arrays.asList(null, new Object()));
+                ignite1.message().send(null, Arrays.asList(null, new Object()));
 
                 return null;
             }
@@ -986,13 +986,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     public void testAsync() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
-        assertFalse(grid2.message().isAsync());
+        assertFalse(ignite2.message().isAsync());
 
-        final GridMessaging msg = grid2.message().enableAsync();
+        final GridMessaging msg = ignite2.message().enableAsync();
 
         assertTrue(msg.isAsync());
 
-        assertFalse(grid2.message().isAsync());
+        assertFalse(ignite2.message().isAsync());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1033,7 +1033,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         Assert.assertNotNull(id);
 
-        message(grid1.cluster().forRemotes()).send(topic, "msg1");
+        message(ignite1.cluster().forRemotes()).send(topic, "msg1");
 
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -1059,7 +1059,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         stopFut.get();
 
-        message(grid1.cluster().forRemotes()).send(topic, "msg2");
+        message(ignite1.cluster().forRemotes()).send(topic, "msg2");
 
         U.sleep(1000);
 

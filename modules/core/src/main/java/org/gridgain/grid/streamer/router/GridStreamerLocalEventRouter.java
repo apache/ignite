@@ -22,16 +22,16 @@ import java.util.*;
 public class GridStreamerLocalEventRouter implements GridStreamerEventRouter {
     /** Grid instance. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public <T> GridNode route(GridStreamerContext ctx, String stageName, T evt) {
-        return grid.cluster().localNode();
+        return ignite.cluster().localNode();
     }
 
     /** {@inheritDoc} */
     @Override public <T> Map<GridNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
         Collection<T> evts) {
-        return F.asMap(grid.cluster().localNode(), evts);
+        return F.asMap(ignite.cluster().localNode(), evts);
     }
 }

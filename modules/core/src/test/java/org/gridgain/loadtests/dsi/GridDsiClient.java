@@ -30,7 +30,7 @@ public class GridDsiClient implements Callable {
     private static final int UPDATE_INTERVAL_SEC = 10;
 
     /** Grid. */
-    private static Grid g;
+    private static Ignite g;
 
     /** Transaction count. */
     private static AtomicLong txCnt = new AtomicLong();

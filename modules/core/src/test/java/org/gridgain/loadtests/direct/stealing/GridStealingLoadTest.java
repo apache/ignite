@@ -83,17 +83,17 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testStealingLoad() throws Exception {
-        final Grid grid = grid(0);
+        final Ignite ignite = grid(0);
 
-        assert grid != null;
+        assert ignite != null;
 
-        assert !grid.cluster().forRemotes().nodes().isEmpty() : "Test requires at least 2 nodes.";
+        assert !ignite.cluster().forRemotes().nodes().isEmpty() : "Test requires at least 2 nodes.";
 
-        final UUID stealingNodeId = grid.cluster().forRemotes().nodes().iterator().next().id();
+        final UUID stealingNodeId = ignite.cluster().forRemotes().nodes().iterator().next().id();
 
         info("Set stealing node id to: " + stealingNodeId);
 
-        grid.compute().localDeployTask(GridStealingLoadTestTask.class, GridStealingLoadTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridStealingLoadTestTask.class, GridStealingLoadTestTask.class.getClassLoader());
 
         final long end = 2 * 60 * 1000 + System.currentTimeMillis();
 
@@ -114,7 +114,7 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
                         long start = System.currentTimeMillis();
 
                         // Pass stealing node id.
-                        GridComputeTaskFuture<?> fut = grid.compute().withTimeout(20000).
+                        GridComputeTaskFuture<?> fut = ignite.compute().withTimeout(20000).
                             execute(GridStealingLoadTestTask.class.getName(), stealingNodeId);
 
                         stolen.addAndGet((Integer)fut.get());

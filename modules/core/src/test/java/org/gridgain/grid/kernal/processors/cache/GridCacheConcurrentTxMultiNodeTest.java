@@ -133,7 +133,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         try {
             cacheOn = true;
 
-            Grid srvr1 = startGrid("server1");
+            Ignite srvr1 = startGrid("server1");
 
             srvr1.cache(null).dataStructures().atomicSequence("ID", 0, true);
 
@@ -270,7 +270,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
 
         /** */
-        private Grid g;
+        private Ignite g;
 
         /** */
         private String terminalId;
@@ -283,7 +283,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param terminalId Terminal ID.
          * @param nodeId Node ID.
          */
-        private Client(Grid g, String terminalId, UUID nodeId) {
+        private Client(Ignite g, String terminalId, UUID nodeId) {
             this.g = g;
             this.terminalId = terminalId;
             this.nodeId = nodeId;
@@ -389,7 +389,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /**
          * @param msg Message.
@@ -415,7 +415,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object execute() {
-            GridNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = grid.cluster().nodeLocalMap();
+            GridNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
 
             T2<AtomicLong, AtomicLong> cntrs = nodeLoc.get("cntrs");
 
@@ -431,7 +431,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             doWork();
 
-            GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal)grid).internalCache();
+            GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal) ignite).internalCache();
             GridDhtCacheAdapter dht = near.dht();
 
             long start = cntrs.get2().get();
@@ -556,7 +556,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                 }
 
                 if (!F.isEmpty(keys)) {
-                    for (Grid g : G.allGrids()) {
+                    for (Ignite g : G.allGrids()) {
                         if (g.name().contains("server")) {
                             GridNearCacheAdapter<GridCacheAffinityKey<String>, Object> near =
                                 (GridNearCacheAdapter<GridCacheAffinityKey<String>, Object>)((GridKernal)g).
@@ -600,7 +600,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          *
          */
         private void doWork()  {
-            GridCache cache = grid.cache(null);
+            GridCache cache = ignite.cache(null);
 
             Session ses = new Session(terminalId());
 
@@ -653,7 +653,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws GridException If failed.
          */
         private long getId() throws GridException {
-            GridCacheAtomicSequence seq = grid.cache(null).dataStructures().atomicSequence("ID", 0, true);
+            GridCacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence("ID", 0, true);
             return seq.incrementAndGet();
         }
 
@@ -662,7 +662,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @return Request.
          */
         private Request findRequestWithMessageId(Long msgId) {
-            GridCacheProjection<Object, Request> cache = grid.cache(null).projection(Object.class, Request.class);
+            GridCacheProjection<Object, Request> cache = ignite.cache(null).projection(Object.class, Request.class);
 
             GridCacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
                 Request.class, "messageId = ?");
@@ -671,7 +671,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                 // taking out localNode() doesn't change the eviction timeout future
                 // problem
                 Map.Entry<Object, Request> entry =
-                    F.first(qry.projection(grid.cluster().forLocal()).execute(msgId).get());
+                    F.first(qry.projection(ignite.cluster().forLocal()).execute(msgId).get());
 
                 if (entry == null)
                     return null;
@@ -692,7 +692,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws GridException If failed.
          */
         private void put(Object o, String cacheKey, String terminalId) throws GridException {
-            GridCache<GridCacheAffinityKey<String>, Object> cache = grid.cache(null);
+            GridCache<GridCacheAffinityKey<String>, Object> cache = ignite.cache(null);
 
             GridCacheAffinityKey<String> affinityKey = new GridCacheAffinityKey<>(cacheKey, terminalId);
 
@@ -711,7 +711,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) throws GridException {
             Object key = new GridCacheAffinityKey<>(cacheKey, terminalId);
 
-            return (T)grid.cache(null).get(key);
+            return (T) ignite.cache(null).get(key);
         }
     }
 

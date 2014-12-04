@@ -87,13 +87,13 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSameTask() throws Exception {
-        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+        Ignite ignite = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         try {
             // Execute the same task twice.
             // 1 resource created locally
-            grid.compute().execute(SharedResourceTask1.class, null);
-            grid.compute().execute(SharedResourceTask1.class, null);
+            ignite.compute().execute(SharedResourceTask1.class, null);
+            ignite.compute().execute(SharedResourceTask1.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 2);
             checkUsageCount(createClss, UserResource2.class, 2);
@@ -102,7 +102,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             checkUsageCount(deployClss, UserResource2.class, 2);
         }
         finally {
-            GridTestUtils.close(grid, log());
+            GridTestUtils.close(ignite, log());
         }
 
         checkUsageCount(undeployClss, UserResource1.class, 2);
@@ -114,16 +114,16 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ObjectEquality"})
     public void testDifferentTasks() throws Exception {
-        Grid grid1 = null;
-        Grid grid2 = null;
+        Ignite ignite1 = null;
+        Ignite ignite2 = null;
 
         try {
-            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute different tasks.
-            grid1.compute().execute(SharedResourceTask1.class, null);
-            grid1.compute().execute(SharedResourceTask2.class, null);
+            ignite1.compute().execute(SharedResourceTask1.class, null);
+            ignite1.compute().execute(SharedResourceTask2.class, null);
 
             // In ISOLATED_TASK mode tasks should have different class
             // loaders and different resources.
@@ -140,8 +140,8 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             checkUsageCount(deployClss, UserResource2.class, 8);
         }
         finally {
-            GridTestUtils.close(grid1, log());
-            GridTestUtils.close(grid2, log());
+            GridTestUtils.close(ignite1, log());
+            GridTestUtils.close(ignite2, log());
         }
 
         checkUsageCount(undeployClss, UserResource1.class, 8);
@@ -153,16 +153,16 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ObjectEquality"})
     public void testUndeployedTask() throws Exception {
-        Grid grid1 = null;
-        Grid grid2 = null;
+        Ignite ignite1 = null;
+        Ignite ignite2 = null;
 
         try {
-            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute tasks.
-            grid1.compute().execute(SharedResourceTask1.class, null);
-            grid1.compute().undeployTask(SharedResourceTask1.class.getName());
+            ignite1.compute().execute(SharedResourceTask1.class, null);
+            ignite1.compute().undeployTask(SharedResourceTask1.class.getName());
 
             // Wait until resources get undeployed remotely
             // because undeploy is asynchronous apply.
@@ -174,7 +174,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             checkUsageCount(undeployClss, UserResource1.class, 4);
 
             // Execute the same tasks.
-            grid1.compute().execute(SharedResourceTask1.class, null);
+            ignite1.compute().execute(SharedResourceTask1.class, null);
 
             // In ISOLATED_TASK mode being undeployed task will
             // loose all resources. After redeploy new one should be created.
@@ -182,8 +182,8 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             checkUsageCount(deployClss, UserResource1.class, 8);
         }
         finally {
-            GridTestUtils.close(grid1, log());
-            GridTestUtils.close(grid2, log());
+            GridTestUtils.close(ignite1, log());
+            GridTestUtils.close(ignite2, log());
         }
 
         checkUsageCount(undeployClss, UserResource1.class, 8);
@@ -194,12 +194,12 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testRedeployedTask() throws Exception {
-        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+        Ignite ignite = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         try {
             // Execute the same task twice.
             // 1 resource created locally
-            grid.compute().execute(SharedResourceTask1.class, null);
+            ignite.compute().execute(SharedResourceTask1.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 2);
             checkUsageCount(createClss, UserResource2.class, 2);
@@ -217,7 +217,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
                 (Class<? extends GridComputeTask<Object, Object>>)tstClsLdr.loadClass(
                     SharedResourceTask1.class.getName());
 
-            grid.compute().execute(taskCls, null);
+            ignite.compute().execute(taskCls, null);
 
             // Old resources should be undeployed at this point.
             checkUsageCount(undeployClss, UserResource1.class, 2);
@@ -231,7 +231,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             checkUsageCount(deployClss, UserResource2.class, 4);
         }
         finally {
-            GridTestUtils.close(grid, log());
+            GridTestUtils.close(ignite, log());
         }
 
         checkUsageCount(undeployClss, UserResource1.class, 4);
@@ -242,14 +242,14 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDuplicateTaskName() throws Exception {
-        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+        Ignite ignite = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         // Execute different tasks but with the same name and version.
         // 2 resource created locally
-        grid.compute().execute(SharedResourceTask3.class, null);
+        ignite.compute().execute(SharedResourceTask3.class, null);
 
         try {
-            grid.compute().execute(SharedResourceTask4.class, null);
+            ignite.compute().execute(SharedResourceTask4.class, null);
 
             assert false : "SharedResourceTask4 should not be allowed to deploy.";
         }
@@ -257,7 +257,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             info("Received expected exception: " + e);
         }
         finally {
-            GridTestUtils.close(grid, log());
+            GridTestUtils.close(ignite, log());
         }
     }
 

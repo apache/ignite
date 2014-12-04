@@ -355,7 +355,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     private static class TestRunnable implements GridRunnable {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -363,9 +363,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         /** @{inheritDoc} */
         @Override public void run() {
-            log.info("Runnable job executed on node: " + grid.cluster().localNode().id());
+            log.info("Runnable job executed on node: " + ignite.cluster().localNode().id());
 
-            assert grid != null;
+            assert ignite != null;
 
             execCntr.incrementAndGet();
         }
@@ -376,7 +376,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     private static class TestCallable implements GridCallable<Integer> {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -384,9 +384,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
+            log.info("Callable job executed on node: " + ignite.cluster().localNode().id());
 
-            assert grid != null;
+            assert ignite != null;
 
             return execCntr.incrementAndGet();
         }

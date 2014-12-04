@@ -27,7 +27,7 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
     private static Collection<UUID> ids;
 
     /** */
-    private static Grid grid;
+    private static Ignite ignite;
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
@@ -37,12 +37,12 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
         ids = new LinkedList<>();
 
         for (int i = 0; i < NODES_CNT; i++) {
-            Grid g = startGrid(i);
+            Ignite g = startGrid(i);
 
             ids.add(g.cluster().localNode().id());
 
             if (i == 0)
-                grid = g;
+                ignite = g;
         }
     }
 
@@ -66,20 +66,20 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandom() throws Exception {
-        assertTrue(grid.cluster().nodes().contains(grid.cluster().forRandom().node()));
+        assertTrue(ignite.cluster().nodes().contains(ignite.cluster().forRandom().node()));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOldest() throws Exception {
-        GridProjection oldest = grid.cluster().forOldest();
+        GridProjection oldest = ignite.cluster().forOldest();
 
         GridNode node = null;
 
         long minOrder = Long.MAX_VALUE;
 
-        for (GridNode n : grid.cluster().nodes()) {
+        for (GridNode n : ignite.cluster().nodes()) {
             if (n.order() < minOrder) {
                 node = n;
 
@@ -87,20 +87,20 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
             }
         }
 
-        assertEquals(oldest.node(), grid.cluster().forNode(node).node());
+        assertEquals(oldest.node(), ignite.cluster().forNode(node).node());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testYoungest() throws Exception {
-        GridProjection youngest = grid.cluster().forYoungest();
+        GridProjection youngest = ignite.cluster().forYoungest();
 
         GridNode node = null;
 
         long maxOrder = Long.MIN_VALUE;
 
-        for (GridNode n : grid.cluster().nodes()) {
+        for (GridNode n : ignite.cluster().nodes()) {
             if (n.order() > maxOrder) {
                 node = n;
 
@@ -108,22 +108,22 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
             }
         }
 
-        assertEquals(youngest.node(), grid.cluster().forNode(node).node());
+        assertEquals(youngest.node(), ignite.cluster().forNode(node).node());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNewNodes() throws Exception {
-        GridProjection youngest = grid.cluster().forYoungest();
-        GridProjection oldest = grid.cluster().forOldest();
+        GridProjection youngest = ignite.cluster().forYoungest();
+        GridProjection oldest = ignite.cluster().forOldest();
 
         GridNode old = oldest.node();
         GridNode last = youngest.node();
 
         assertNotNull(last);
 
-        try (Grid g = startGrid(NODES_CNT)) {
+        try (Ignite g = startGrid(NODES_CNT)) {
             GridNode n = g.cluster().localNode();
 
             GridNode latest = youngest.node();

@@ -22,11 +22,11 @@ public class GridHibernateTimestampsRegion extends GridHibernateGeneralDataRegio
     /**
      * @param factory Region factory.
      * @param name Region name.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Region cache.
      */
     public GridHibernateTimestampsRegion(GridHibernateRegionFactory factory, String name,
-        Grid grid, GridCache<Object, Object> cache) {
-        super(factory, name, grid, cache);
+        Ignite ignite, GridCache<Object, Object> cache) {
+        super(factory, name, ignite, cache);
     }
 }

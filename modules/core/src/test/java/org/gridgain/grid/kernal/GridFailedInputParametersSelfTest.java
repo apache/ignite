@@ -22,7 +22,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /** */
-    private static Grid grid;
+    private static Ignite ignite;
 
     /** */
     public GridFailedInputParametersSelfTest() {
@@ -31,7 +31,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid = G.grid(getTestGridName());
+        ignite = G.grid(getTestGridName());
     }
 
     /**
@@ -39,7 +39,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testAddEventLocalListener() throws Exception {
         try {
-            grid.events().localListen(null, EVTS_ALL);
+            ignite.events().localListen(null, EVTS_ALL);
 
             assert false : "Null listener can't be added.";
         }
@@ -53,7 +53,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testRemoveEventLocalListener() throws Exception {
         try {
-            grid.events().stopLocalListen(null);
+            ignite.events().stopLocalListen(null);
 
             assert false : "Null listener can't be removed.";
         }
@@ -67,7 +67,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testAddDiscoveryListener() throws Exception {
         try {
-            grid.events().localListen(null, EVTS_ALL);
+            ignite.events().localListen(null, EVTS_ALL);
 
             assert false : "Null listener can't be added.";
         }
@@ -81,7 +81,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testRemoveDiscoveryListener() throws Exception {
         try {
-            grid.events().stopLocalListen(null);
+            ignite.events().stopLocalListen(null);
 
             assert false : "Null listener can't be removed.";
         }
@@ -95,7 +95,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testGetNode() throws Exception {
         try {
-            grid.cluster().node(null);
+            ignite.cluster().node(null);
 
             assert false : "Null nodeId can't be entered.";
         }
@@ -109,7 +109,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testPingNode() throws Exception {
         try {
-            grid.cluster().pingNode(null);
+            ignite.cluster().pingNode(null);
 
             assert false : "Null nodeId can't be entered.";
         }
@@ -123,7 +123,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
      */
     public void testDeployTask() throws Exception {
         try {
-            grid.compute().localDeployTask(null, null);
+            ignite.compute().localDeployTask(null, null);
 
             assert false : "Null task can't be entered.";
         }
@@ -132,7 +132,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
         }
 
         try {
-            grid.compute().localDeployTask(null, null);
+            ignite.compute().localDeployTask(null, null);
 
             assert false : "Null task can't be entered.";
         }
@@ -141,6 +141,6 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
         }
 
         // Check for exceptions.
-        grid.compute().localDeployTask(GridTestTask.class, U.detectClassLoader(GridTestTask.class));
+        ignite.compute().localDeployTask(GridTestTask.class, U.detectClassLoader(GridTestTask.class));
     }
 }

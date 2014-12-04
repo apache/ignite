@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.*;
  */
 public class GridCacheEmptyEntriesLocalSelfTest extends GridCacheEmptyEntriesAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected Grid startGrids() throws Exception {
+    @Override protected Ignite startGrids() throws Exception {
         return startGrid();
     }
 

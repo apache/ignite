@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -121,7 +120,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(2);
 
         try {
-            Grid g = grid(0);
+            Ignite g = grid(0);
 
             GridCache<Object, Object> c = g.cache(null);
 
@@ -176,7 +175,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         filter = new EvictionFilter();
 
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         GridCache<Object, Object> cache = g.cache(null);
 

@@ -92,13 +92,13 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Grid grid = startGrid(getTestGridName());
+        final Ignite ignite = startGrid(getTestGridName());
 
         try {
             final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
             // Warm up.
-            grid.compute().execute(GridSingleSplitNewNodesTestTask.class.getName(), 3);
+            ignite.compute().execute(GridSingleSplitNewNodesTestTask.class.getName(), 3);
 
             info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
             info("Thread count: " + getThreadCount());
@@ -138,7 +138,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    GridCompute comp = grid.compute().enableAsync();
+                    GridCompute comp = ignite.compute().enableAsync();
 
                     while (end - System.currentTimeMillis() > 0
                         && !Thread.currentThread().isInterrupted()) {

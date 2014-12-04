@@ -82,11 +82,11 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     protected abstract GridCacheAffinityFunction affinityFunction();
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @return Affinity.
      */
-    static GridCacheAffinity<Object> affinity(Grid grid) {
-        return grid.cache(null).affinity();
+    static GridCacheAffinity<Object> affinity(Ignite ignite) {
+        return ignite.cache(null).affinity();
     }
 
     /**
@@ -112,7 +112,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
             int copies = backups + 1;
 
             for (int i = 0; i < grids; i++) {
-                final Grid g = grid(i);
+                final Ignite g = grid(i);
 
                 GridCacheAffinity<Object> aff = affinity(g);
 
@@ -156,7 +156,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testAffinitySingleNode() throws Exception {
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         try {
             Object key = 12345;

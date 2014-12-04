@@ -57,7 +57,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
         cfg.setRestEnabled(false);
         cfg.setCacheConfiguration(new GridCacheConfiguration());
 
-        final Grid g0 = G.start(cfg);
+        final Ignite g0 = G.start(cfg);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

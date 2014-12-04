@@ -53,14 +53,14 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleTaskMetrics() throws Exception {
-        final Grid grid = grid();
+        final Ignite ignite = grid();
 
-        grid.compute().execute(new TestTask(), "testArg");
+        ignite.compute().execute(new TestTask(), "testArg");
 
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        grid.events().localListen(new GridPredicate<GridEvent>() {
+        ignite.events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
@@ -74,13 +74,13 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                GridNodeMetrics metrics = grid.cluster().localNode().metrics();
+                GridNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
                 return metrics.getTotalExecutedJobs() == 5;
             }
         }, 5000);
 
-        GridNodeMetrics metrics = grid.cluster().localNode().metrics();
+        GridNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 

@@ -56,7 +56,7 @@ import java.util.concurrent.*;
  * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link GridProjection}).</li>
  * </ul>
  */
-public interface Grid extends AutoCloseable {
+public interface Ignite extends AutoCloseable {
     /**
      * Gets the name of the grid this grid instance (and correspondingly its local node) belongs to.
      * Note that single Java VM can have multiple grid instances all belonging to different grids. Grid

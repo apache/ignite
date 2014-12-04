@@ -125,17 +125,17 @@ public class GridJobLoadTest implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        List<Grid> clientGrids = runGrid();
+        List<Ignite> clientIgnites = runGrid();
 
-        assert clientGrids.size() == clientNodes;
+        assert clientIgnites.size() == clientNodes;
 
         int threadsCnt = clientNodes * threadsPerClient;
 
         Executor e = Executors.newFixedThreadPool(threadsCnt);
 
-        for (Grid grid: clientGrids) {
+        for (Ignite ignite : clientIgnites) {
             for (int j = 0; j < threadsPerClient; j++)
-                e.execute(new GridJobLoadTestSubmitter(grid, taskParams, cancelRate, submitDelay));
+                e.execute(new GridJobLoadTestSubmitter(ignite, taskParams, cancelRate, submitDelay));
         }
     }
 
@@ -144,8 +144,8 @@ public class GridJobLoadTest implements Runnable {
      *
      * @return list of run nodes.
      */
-    private List<Grid> runGrid() {
-        List<Grid> clientGrids = new ArrayList<>(clientNodes);
+    private List<Ignite> runGrid() {
+        List<Ignite> clientIgnites = new ArrayList<>(clientNodes);
 
         try {
             loadTestConfiguration();
@@ -155,13 +155,13 @@ public class GridJobLoadTest implements Runnable {
 
             // Start clients in the second order to cache a client node in GridGain.
             for (int i = 0; i < clientNodes; i++)
-                clientGrids.add(startNode("client", CLIENT_NODE_CONFIGURATION));
+                clientIgnites.add(startNode("client", CLIENT_NODE_CONFIGURATION));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        return clientGrids;
+        return clientIgnites;
     }
 
     /**
@@ -172,7 +172,7 @@ public class GridJobLoadTest implements Runnable {
      * @return a grid instance local to new node {@link GridGain#start(GridConfiguration)}.
      * @throws Exception if node run failed.
      */
-    protected Grid startNode(String gridName, File springCfg) throws Exception {
+    protected Ignite startNode(String gridName, File springCfg) throws Exception {
         assert springCfg != null;
 
         ListableBeanFactory springCtx = new FileSystemXmlApplicationContext(

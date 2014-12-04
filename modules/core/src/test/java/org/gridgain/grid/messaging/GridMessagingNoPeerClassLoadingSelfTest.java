@@ -50,12 +50,12 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
 
         final CountDownLatch rcvLatch = new CountDownLatch(1);
 
-        grid2.message().remoteListen("", new P2<UUID, Object>() {
+        ignite2.message().remoteListen("", new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
-                    if (!nodeId.equals(grid1.cluster().localNode().id())) {
+                    if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
 
                         error.set(true);
@@ -71,7 +71,7 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
             }
         });
 
-        message(grid1.cluster().forRemotes()).send(null, Collections.singleton(rcCls.newInstance()));
+        message(ignite1.cluster().forRemotes()).send(null, Collections.singleton(rcCls.newInstance()));
 
         /*
             We shouldn't get a message, because remote node won't be able to

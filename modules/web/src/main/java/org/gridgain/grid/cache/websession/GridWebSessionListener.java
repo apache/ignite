@@ -36,18 +36,18 @@ class GridWebSessionListener {
     private final GridLogger log;
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      * @param retries Maximum retries.
      */
-    GridWebSessionListener(Grid grid, GridCache<String, GridWebSession> cache, int retries) {
-        assert grid != null;
+    GridWebSessionListener(Ignite ignite, GridCache<String, GridWebSession> cache, int retries) {
+        assert ignite != null;
         assert cache != null;
 
         this.cache = cache;
         this.retries = retries > 0 ? retries : 1;
 
-        log = grid.log();
+        log = ignite.log();
     }
 
     /**

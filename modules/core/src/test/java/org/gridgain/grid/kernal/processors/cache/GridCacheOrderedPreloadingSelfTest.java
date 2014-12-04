@@ -114,7 +114,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         firstCacheMode = first;
         secondCacheMode = second;
 
-        Grid g = startGrid(0);
+        Ignite g = startGrid(0);
 
         try {
             GridCache<Object, Object> cache = g.cache("first");

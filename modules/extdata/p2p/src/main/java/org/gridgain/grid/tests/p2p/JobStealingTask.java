@@ -19,7 +19,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
 
     /** Grid. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** Logger. */
     @GridLoggerResource
@@ -63,7 +63,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
     private static final class GridJobStealingJob extends GridComputeJobAdapter {
         /** Injected grid. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Logger. */
         @GridLoggerResource
@@ -78,7 +78,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
 
         /** {@inheritDoc} */
         @Override public Serializable execute() throws GridException {
-            log.info("Started job on node: " + grid.cluster().localNode().id());
+            log.info("Started job on node: " + ignite.cluster().localNode().id());
 
             try {
                 Long sleep = argument(0);
@@ -88,15 +88,15 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                log.info("Job got interrupted on node: " + grid.cluster().localNode().id());
+                log.info("Job got interrupted on node: " + ignite.cluster().localNode().id());
 
                 throw new GridException("Job got interrupted.", e);
             }
             finally {
-                log.info("Job finished on node: " + grid.cluster().localNode().id());
+                log.info("Job finished on node: " + ignite.cluster().localNode().id());
             }
 
-            return grid.cluster().localNode().id();
+            return ignite.cluster().localNode().id();
         }
     }
 }

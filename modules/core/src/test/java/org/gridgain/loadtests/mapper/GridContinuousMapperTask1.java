@@ -34,7 +34,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
 
     /** Grid. */
     @GridInstanceResource
-    private Grid g;
+    private Ignite g;
 
     /** Blocking queue. */
     private final transient LinkedBlockingQueue<Integer> queue = new LinkedBlockingQueue<>(10);
@@ -72,7 +72,7 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
 
             mapper.send(new GridComputeJobAdapter(jobId) {
                 @GridInstanceResource
-                private Grid g;
+                private Ignite g;
 
                 @Override public Object execute() {
                     Integer jobId = argument(0);

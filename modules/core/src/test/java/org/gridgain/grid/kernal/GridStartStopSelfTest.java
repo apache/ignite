@@ -49,7 +49,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < COUNT; i++) {
             info("Starting grid.");
 
-            try (Grid g = G.start(cfg)) {
+            try (Ignite g = G.start(cfg)) {
                 assert g != null;
 
                 info("Stopping grid " + g.cluster().localNode().id());
@@ -74,7 +74,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cc);
 
-        final Grid g0 = G.start(cfg);
+        final Ignite g0 = G.start(cfg);
 
         cfg = new GridConfiguration();
 
@@ -88,7 +88,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        Grid g1 = G.start(cfg);
+        Ignite g1 = G.start(cfg);
 
         Thread stopper = new Thread(new Runnable() {
             @Override public void run() {
@@ -128,21 +128,21 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setRestEnabled(false);
 
-        Grid grid = G.start(cfg);
+        Ignite ignite = G.start(cfg);
 
-        assert grid != null;
+        assert ignite != null;
 
-        G.stop(grid.name(), true);
+        G.stop(ignite.name(), true);
 
         try {
-            grid.cluster().localNode();
+            ignite.cluster().localNode();
         }
         catch (Exception e) {
             assert e instanceof IllegalStateException : "Wrong exception type.";
         }
 
         try {
-            grid.cluster().nodes();
+            ignite.cluster().nodes();
 
             assert false;
         }
@@ -151,7 +151,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         }
 
         try {
-            grid.cluster().forRemotes();
+            ignite.cluster().forRemotes();
 
             assert false;
         }
@@ -160,7 +160,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         }
 
         try {
-            grid.compute().localTasks();
+            ignite.compute().localTasks();
 
             assert false;
         }

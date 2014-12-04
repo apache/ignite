@@ -76,14 +76,14 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
      */
     public void testContinuousMode() throws Exception {
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            node2Id = grid2.cluster().localNode().id();
+            node2Id = ignite2.cluster().localNode().id();
 
-            grid1.compute().execute(SharedResourceTask1.class, null);
-            grid1.compute().execute(SharedResourceTask2.class, null);
+            ignite1.compute().execute(SharedResourceTask1.class, null);
+            ignite1.compute().execute(SharedResourceTask2.class, null);
 
             // 2 instances: one instance of resource for task and one instance for
             // job, because job execute on remote node.
@@ -92,8 +92,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
             assertEquals(clsLdr1, clsLdr2);
 
-            grid3.compute().execute(SharedResourceTask1.class, null);
-            grid3.compute().execute(SharedResourceTask2.class, null);
+            ignite3.compute().execute(SharedResourceTask1.class, null);
+            ignite3.compute().execute(SharedResourceTask2.class, null);
 
             // 3 instances: one instance for each nodes.
             GridP2PAbstractUserResource.checkCreateCount(UserResource1.class, 3);
@@ -116,14 +116,14 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
      */
     public void testContinuousModeNodeRestart() throws Exception {
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            node2Id = grid2.cluster().localNode().id();
+            node2Id = ignite2.cluster().localNode().id();
 
-            grid1.compute().execute(SharedResourceTask1.class, null);
-            grid1.compute().execute(SharedResourceTask2.class, null);
+            ignite1.compute().execute(SharedResourceTask1.class, null);
+            ignite1.compute().execute(SharedResourceTask2.class, null);
 
             GridP2PAbstractUserResource.checkCreateCount(UserResource1.class, 2);
             GridP2PAbstractUserResource.checkCreateCount(UserResource2.class, 2);
@@ -137,8 +137,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             GridP2PAbstractUserResource.checkUndeployCount(UserResource1.class, 1);
             GridP2PAbstractUserResource.checkUndeployCount(UserResource2.class, 1);
 
-            grid3.compute().execute(SharedResourceTask1.class, null);
-            grid3.compute().execute(SharedResourceTask2.class, null);
+            ignite3.compute().execute(SharedResourceTask1.class, null);
+            ignite3.compute().execute(SharedResourceTask2.class, null);
 
             // 3 instances: one instance for each nodes.
             GridP2PAbstractUserResource.checkCreateCount(UserResource1.class, 3);
@@ -185,7 +185,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
         /** Grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Object arg) throws GridException {
@@ -196,7 +196,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             assert rsrc2 != null;
 
             return Collections.<GridComputeJob, GridNode>singletonMap(
-                new GridSharedJob1(), grid.cluster().node(node2Id));
+                new GridSharedJob1(), ignite.cluster().node(node2Id));
         }
 
         /** {@inheritDoc} */
@@ -257,7 +257,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
         /** Grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Object arg) throws GridException {
@@ -268,7 +268,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             assert rsrc2 != null;
 
             return Collections.<GridComputeJob, GridNode>singletonMap(
-                new GridSharedJob2(), grid.cluster().node(node2Id));
+                new GridSharedJob2(), ignite.cluster().node(node2Id));
         }
 
         /** {@inheritDoc} */

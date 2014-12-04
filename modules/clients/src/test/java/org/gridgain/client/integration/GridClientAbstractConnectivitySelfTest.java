@@ -55,7 +55,7 @@ public abstract class GridClientAbstractConnectivitySelfTest extends GridCommonA
      * @return Started node.
      * @throws Exception If case of configuration or startup error.
      */
-    protected abstract Grid startRestNode(String name, @Nullable String addr, @Nullable Integer port) throws Exception;
+    protected abstract Ignite startRestNode(String name, @Nullable String addr, @Nullable Integer port) throws Exception;
 
     /**
      * @return Default REST port.

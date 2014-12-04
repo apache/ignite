@@ -213,7 +213,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         listen(grid(0), null, true);
 
         try {
-            Grid g = startGrid("anotherGrid");
+            Ignite g = startGrid("anotherGrid");
 
             send();
 
@@ -247,7 +247,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         try {
             include = true;
 
-            Grid g = startGrid("anotherGrid1");
+            Ignite g = startGrid("anotherGrid1");
 
             include = false;
 
@@ -327,7 +327,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         grid(0).message().remoteListen(null, new Actor(grid(0)));
 
         try {
-            Grid g = startGrid("anotherGrid");
+            Ignite g = startGrid("anotherGrid");
 
             send();
 
@@ -388,7 +388,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      * @return If check passed.
      */
     private boolean checkDeployedListeners(int expCnt) {
-        for (Grid g : G.allGrids()) {
+        for (Ignite g : G.allGrids()) {
             AtomicInteger cnt = g.cluster().<String, AtomicInteger>nodeLocalMap().get("msgCnt");
 
             if (cnt == null || cnt.get() != expCnt)
@@ -419,7 +419,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLocalNodeIdResource
@@ -440,11 +440,11 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(UUID nodeId, Object msg) {
-            assertNotNull(grid);
+            assertNotNull(ignite);
             assertNotNull(locNodeId);
             assertNotNull(exec);
 
-            X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.cluster().localNode().id() + ']');
+            X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() + ']');
 
             assertEquals(prj.grid().cluster().localNode().id(), nodeId);
             assertEquals(MSG, msg);

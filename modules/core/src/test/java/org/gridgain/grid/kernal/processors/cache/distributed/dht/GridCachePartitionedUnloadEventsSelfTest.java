@@ -61,7 +61,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @throws Exception if failed.
      */
     public void testUnloadEvents() throws Exception {
-        final Grid g1 = startGrid("g1");
+        final Ignite g1 = startGrid("g1");
 
         Collection<Integer> allKeys = new ArrayList<>(100);
 
@@ -72,7 +72,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
             allKeys.add(i);
         }
 
-        Grid g2 = startGrid("g2");
+        Ignite g2 = startGrid("g2");
 
         Map<GridNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(allKeys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
@@ -98,7 +98,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @param g Grid.
      * @param keys Keys.
      */
-    private void checkObjectUnloadEvents(Collection<GridEvent> evts, Grid g, Collection<?> keys) {
+    private void checkObjectUnloadEvents(Collection<GridEvent> evts, Ignite g, Collection<?> keys) {
         assertEquals(keys.size(), evts.size());
 
         for (GridEvent evt : evts) {
@@ -117,7 +117,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @param g Grid.
      * @param parts Parts.
      */
-    private void checkPartitionUnloadEvents(Collection<GridEvent> evts, Grid g,
+    private void checkPartitionUnloadEvents(Collection<GridEvent> evts, Ignite g,
         Collection<GridDhtLocalPartition<Object, Object>> parts) {
         assertEquals(parts.size(), evts.size());
 

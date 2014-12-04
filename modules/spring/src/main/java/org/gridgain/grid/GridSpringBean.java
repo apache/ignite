@@ -75,13 +75,13 @@ import java.util.concurrent.*;
  * </pre>
  * <p>
  */
-public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, DisposableBean, InitializingBean,
+public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, DisposableBean, InitializingBean,
     ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Grid g;
+    private Ignite g;
 
     /** */
     private GridConfiguration cfg;
@@ -338,7 +338,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        g = (Grid)in.readObject();
+        g = (Ignite)in.readObject();
 
         cfg = g.configuration();
     }

@@ -83,7 +83,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
             cfg.setDiscoverySpi(disc);
             cfg.setRestEnabled(false);
 
-            try (Grid g = G.start(cfg)) {
+            try (Ignite g = G.start(cfg)) {
                 assert g != null;
 
                 ggHome0 = U.getGridGainHome();

@@ -27,11 +27,11 @@ public class GridCacheDeploymentTestTask2 extends GridComputeTaskAdapter<GridNod
         return F.asMap(
             new GridComputeJobAdapter() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object execute() {
                     X.println("Executing GridCacheDeploymentTestTask2 job on node " +
-                        grid.cluster().localNode().id());
+                        ignite.cluster().localNode().id());
 
                     return null;
                 }

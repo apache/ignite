@@ -42,8 +42,8 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
      * @throws Exception in the case of failures.
      */
     public void testFieldResourceOverride() throws Exception {
-        Grid grid1 = null;
-        Grid grid2 = null;
+        Ignite ignite1 = null;
+        Ignite ignite2 = null;
 
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
@@ -56,17 +56,17 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
             ctx.refresh();
 
-            grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
-            grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
+            ignite1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
+            ignite2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
 
-            grid1.compute().execute(ResourceOverrideTask.class, null);
+            ignite1.compute().execute(ResourceOverrideTask.class, null);
 
             checkUsageCount(createClss, UserResource.class, 2);
             checkUsageCount(deployClss, UserResource.class, 2);
         }
         finally {
-            GridTestUtils.close(grid1, log());
-            GridTestUtils.close(grid2, log());
+            GridTestUtils.close(ignite1, log());
+            GridTestUtils.close(ignite2, log());
         }
 
         checkUsageCount(undeployClss, UserResource.class, 2);

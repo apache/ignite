@@ -51,7 +51,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         g.events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {

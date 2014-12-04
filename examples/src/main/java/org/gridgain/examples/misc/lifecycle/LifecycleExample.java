@@ -40,7 +40,7 @@ public final class LifecycleExample {
         // Provide lifecycle bean to configuration.
         cfg.setLifecycleBeans(bean);
 
-        try (Grid g  = GridGain.start(cfg)) {
+        try (Ignite g  = GridGain.start(cfg)) {
             // Make sure that lifecycle bean was notified about grid startup.
             assert bean.isStarted();
         }
@@ -55,7 +55,7 @@ public final class LifecycleExample {
     public static class LifecycleExampleBean implements GridLifecycleBean {
         /** Auto-inject grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Started flag. */
         private boolean isStarted;
@@ -64,7 +64,7 @@ public final class LifecycleExample {
         @Override public void onLifecycleEvent(GridLifecycleEventType evt) {
             System.out.println();
             System.out.println(">>> Grid lifecycle event occurred: " + evt);
-            System.out.println(">>> Grid name: " + grid.name());
+            System.out.println(">>> Grid name: " + ignite.name());
 
             if (evt == AFTER_GRID_START)
                 isStarted = true;

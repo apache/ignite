@@ -79,7 +79,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
 
         /** Injected grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** Closure. */
         private GridInClosure<GridStreamerContext> clo;

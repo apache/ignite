@@ -40,7 +40,7 @@ public final class ComputeFibonacciContinuationExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Compute Fibonacci continuation example started.");
 
@@ -88,7 +88,7 @@ public final class ComputeFibonacciContinuationExample {
 
         /** Auto-inject grid instance. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** Predicate. */
         private final GridPredicate<GridNode> nodeFilter;

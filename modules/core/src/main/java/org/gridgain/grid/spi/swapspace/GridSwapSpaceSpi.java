@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.swapspace;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.file.*;
@@ -21,7 +20,7 @@ import java.util.*;
 /**
  * Provides a mechanism in grid for storing data on disk. GridGain cache uses swap space to overflow
  * data to disk if it cannot fit in memory. It's also possible to use swap space directly
- * by calling {@link Grid} API swap-related methods. Logically storage is organized into
+ * by calling {@link org.gridgain.grid.Ignite} API swap-related methods. Logically storage is organized into
  * independent 'spaces' in which data is stored.
  * <p>
  * All swap space implementations can be configured to prevent infinite growth and evict oldest entries.
@@ -43,7 +42,7 @@ import java.util.*;
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
- * via {@link Grid#configuration()} method to check its configuration properties or call other non-SPI
+ * via {@link org.gridgain.grid.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */

@@ -108,10 +108,10 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(new Callable<Object>() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    GridCache<Integer, String> c = grid.cache(null);
+                    GridCache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.putx(i, Integer.toString(i));
@@ -142,10 +142,10 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(new Callable<Object>() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    GridCache<Integer, String> c = grid.cache(null);
+                    GridCache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.putx(i, Integer.toString(i));
@@ -155,7 +155,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
             });
 
             for (int i = 0; i < gridCnt; i++) {
-                final Grid g = grid(i);
+                final Ignite g = grid(i);
 
                 // Repeatedly check cache sizes because of concurrent cache updates.
                 assertTrue(GridTestUtils.waitForCondition(new PA() {

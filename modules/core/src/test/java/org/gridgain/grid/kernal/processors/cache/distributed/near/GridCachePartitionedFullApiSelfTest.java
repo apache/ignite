@@ -102,7 +102,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
             String key = F.first(vals);
 
             for (int i = 0; i < gridCount(); i++) {
-                Grid g = grid(i);
+                Ignite g = grid(i);
 
                 // This node has the partition.
                 GridCache<String, Integer> nodeCache = g.cache(null);
@@ -144,7 +144,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
             String key = F.first(vals);
 
             for (int i = 0; i < gridCount(); i++) {
-                Grid g = grid(i);
+                Ignite g = grid(i);
 
                 // This node has the partition.
                 GridCache<String, Integer> nodeCache = g.cache(null);
@@ -212,7 +212,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
             String key = F.first(vals);
 
             for (int i = 0; i < gridCount(); i++) {
-                Grid g = grid(i);
+                Ignite g = grid(i);
 
                 // This node has the partition.
                 GridCache<String, Integer> nodeCache = g.cache(null);

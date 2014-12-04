@@ -91,9 +91,9 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
      */
     public void testSynchronousCommit() throws Exception {
         try {
-            Grid firstGrid = startGrid("1");
+            Ignite firstIgnite = startGrid("1");
 
-            GridCache<Integer, String> firstCache = firstGrid.cache(null);
+            GridCache<Integer, String> firstCache = firstIgnite.cache(null);
 
             for (int i = 0; i < ADDITION_CACHE_NUMBER; i++)
                 startGrid(String.valueOf(i + 2));
@@ -117,14 +117,14 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
      */
     public void testSynchronousCommitNodeLeave() throws Exception {
         try {
-            Grid grid1 = startGrid("1");
+            Ignite ignite1 = startGrid("1");
 
             startGrid(NO_COMMIT);
 
-            Grid grid3 = startGrid("3");
+            Ignite ignite3 = startGrid("3");
 
-            GridCache<Integer, String> cache1 = grid1.cache(null);
-            GridCache<Integer, String> cache3 = grid3.cache(null);
+            GridCache<Integer, String> cache1 = ignite1.cache(null);
+            GridCache<Integer, String> cache3 = ignite3.cache(null);
 
             GridFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {

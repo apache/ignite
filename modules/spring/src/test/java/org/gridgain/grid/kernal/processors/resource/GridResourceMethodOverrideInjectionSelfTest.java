@@ -39,14 +39,14 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
      * @throws Exception in the case of failures.
      */
     public void testMethodResourceOverride() throws Exception {
-        Grid grid1 = null;
-        Grid grid2 = null;
+        Ignite ignite1 = null;
+        Ignite ignite2 = null;
 
         try {
-            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            grid1.compute().execute(MethodResourceOverrideTask.class, null);
+            ignite1.compute().execute(MethodResourceOverrideTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 4);
             checkUsageCount(createClss, UserResource2.class, 4);
@@ -55,8 +55,8 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             checkUsageCount(deployClss, UserResource2.class, 4);
         }
         finally {
-            GridTestUtils.close(grid1, log());
-            GridTestUtils.close(grid2, log());
+            GridTestUtils.close(ignite1, log());
+            GridTestUtils.close(ignite2, log());
         }
 
         checkUsageCount(undeployClss, UserResource1.class, 4);
@@ -95,7 +95,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         protected GridLogger log;
 
         /** */
-        protected Grid grid;
+        protected Ignite ignite;
 
         /** */
         protected UUID nodeId;
@@ -167,11 +167,11 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         @GridLoggerResource private void setLog(GridLogger log) { this.log = log; }
 
         /**
-         * @param grid Grid.
+         * @param ignite Grid.
          */
         @GridInstanceResource
         @SuppressWarnings("unused")
-        void setGrid(Grid grid) { this.grid = grid; }
+        void setIgnite(Ignite ignite) { this.ignite = ignite; }
 
         /**
          * @param nodeId UUID.
@@ -290,11 +290,11 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         }
 
         /**
-         * @param grid Grid.
+         * @param ignite Grid.
          */
         @GridInstanceResource
-        @Override public void setGrid(Grid grid) {
-            this.grid = grid;
+        @Override public void setIgnite(Ignite ignite) {
+            this.ignite = ignite;
         }
 
         /**
@@ -314,7 +314,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             assert rsrc3 != null;
             assert rsrc4 != null;
             assert log != null;
-            assert grid != null;
+            assert ignite != null;
             assert nodeId != null;
             assert mbeanSrv != null;
             assert exec != null;
@@ -333,7 +333,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             log.info("Injected shared resource3 into task: " + rsrc3);
             log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
-            log.info("Injected grid resource into task: " + grid);
+            log.info("Injected grid resource into task: " + ignite);
             log.info("Injected nodeId resource into task: " + nodeId);
             log.info("Injected mbean server resource into task: " + mbeanSrv);
             log.info("Injected executor service resource into task: " + exec);
@@ -404,7 +404,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                         assert rsrc3 != null;
                         assert rsrc4 != null;
                         assert log != null;
-                        assert grid != null;
+                        assert ignite != null;
                         assert nodeId != null;
                         assert mbeanSrv != null;
                         assert exec != null;
@@ -432,7 +432,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                         log.info("Injected shared resource7 into job: " + rsrc7);
                         log.info("Injected shared resource8 into job: " + rsrc8);
                         log.info("Injected log resource into job: " + log);
-                        log.info("Injected grid resource into job: " + grid);
+                        log.info("Injected grid resource into job: " + ignite);
                         log.info("Injected nodeId resource into job: " + nodeId);
                         log.info("Injected mbean server resource into job: " + mbeanSrv);
                         log.info("Injected executor service resource into job: " + exec);
@@ -457,7 +457,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             assert rsrc3 != null;
             assert rsrc4 != null;
             assert log != null;
-            assert grid != null;
+            assert ignite != null;
             assert nodeId != null;
             assert mbeanSrv != null;
             assert exec != null;

@@ -56,12 +56,12 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testStartStopEvents() throws Exception {
-        Grid grid = startGrid(0);
+        Ignite ignite = startGrid(0);
 
         final AtomicInteger preloadStartCnt = new AtomicInteger();
         final AtomicInteger preloadStopCnt = new AtomicInteger();
 
-        grid.events().localListen(new GridPredicate<GridEvent>() {
+        ignite.events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
                 if (e.type() == EVT_CACHE_PRELOAD_STARTED)
                     preloadStartCnt.incrementAndGet();

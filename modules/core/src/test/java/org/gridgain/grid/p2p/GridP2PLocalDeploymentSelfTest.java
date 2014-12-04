@@ -60,10 +60,10 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         this.depMode = depMode;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            grid1.compute().execute(TestTask.class, grid2.cluster().localNode().id());
+            ignite1.compute().execute(TestTask.class, ignite2.cluster().localNode().id());
 
             assert jobRsrc != taskRsrc;
 
@@ -73,7 +73,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             ClassLoader saveTaskLdr = taskLdr;
             ClassLoader saveJobLdr = jobLdr;
 
-            grid2.compute().execute(TestTask.class, grid1.cluster().localNode().id());
+            ignite2.compute().execute(TestTask.class, ignite1.cluster().localNode().id());
 
             assert saveJobRsrc == taskRsrc;
             assert saveTaskRsrc == jobRsrc;
@@ -95,9 +95,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         depMode = GridDeploymentMode.PRIVATE;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
-            Grid grid3 = startGrid(3);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
+            Ignite ignite3 = startGrid(3);
 
             ClassLoader ldr1 = new URLClassLoader(
                 new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) }, getClass().getClassLoader());
@@ -108,15 +108,15 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
             Class taskCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            grid1.compute().execute(taskCls, grid1.cluster().localNode().id());
+            ignite1.compute().execute(taskCls, ignite1.cluster().localNode().id());
 
             taskCls = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[])grid2.compute().execute(taskCls, grid1.cluster().localNode().id());
+            int[] res1 = (int[]) ignite2.compute().execute(taskCls, ignite1.cluster().localNode().id());
 
             taskCls = ldr3.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res2 = (int[])grid3.compute().execute(taskCls, grid1.cluster().localNode().id());
+            int[] res2 = (int[]) ignite3.compute().execute(taskCls, ignite1.cluster().localNode().id());
 
             assert res1[0] != res2[0]; // Resources are not same.
             assert res1[1] != res2[1]; // Class loaders are not same.
@@ -138,8 +138,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         this.depMode = depMode;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             ClassLoader ldr1 = new URLClassLoader(
                 new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) }, getClass().getClassLoader());
@@ -149,9 +149,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             Class task1 = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
             Class task2 = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
-            int[] res2 = (int[])grid2.compute().execute(task2, grid1.cluster().localNode().id());
+            int[] res2 = (int[]) ignite2.compute().execute(task2, ignite1.cluster().localNode().id());
 
             assert res1[1] != res2[1]; // Class loaders are not same.
             assert res1[0] != res2[0]; // Resources are not same.

@@ -390,15 +390,15 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
         final ConcurrentMap<String, T2<UUID, String>> puts = new ConcurrentHashMap<>();
 
-        final Map<UUID, Grid> gridMap = new HashMap<>();
+        final Map<UUID, Ignite> gridMap = new HashMap<>();
 
         for (int i = 0; i < NODES_CNT; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             gridMap.put(g.cluster().localNode().id(), g);
         }
 
-        final Grid grid = F.first(gridMap.values());
+        final Ignite ignite = F.first(gridMap.values());
 
         assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
 
@@ -416,7 +416,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
                         String key = String.valueOf(rawKey);
 
                         UUID nodeId = cache.affinity(key);
-                        UUID srvNodeId = grid.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
+                        UUID srvNodeId = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
 
                         if (!nodeId.equals(srvNodeId)) {
                             //GridClientDataAffinity clAff =
@@ -456,7 +456,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
         for (long i = 0; i < cachePutCount(); i++) {
             String key = String.valueOf(i);
 
-            GridNode node = grid.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
+            GridNode node = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
 
             if (!puts.get(key).get2().equals(gridMap.get(node.id()).cache(PARTITIONED_CACHE_NAME).peek(key))) {
                 // printAffinityState(gridMap.values());
@@ -486,15 +486,15 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
                 assertNull("Got value in near cache.", gridMap.get(id).cache(PARTITIONED_CACHE_NAME).peek(key));
         }
 
-        for (Grid g : gridMap.values())
+        for (Ignite g : gridMap.values())
             g.cache(PARTITIONED_CACHE_NAME).clearAll();
     }
 
     /**
      * @param grids Collection for Grids to print affinity info.
      */
-    private void printAffinityState(Iterable<Grid> grids) {
-        for (Grid g : grids) {
+    private void printAffinityState(Iterable<Ignite> grids) {
+        for (Ignite g : grids) {
             GridAffinityAssignmentCache affCache = getFieldValue(
                 ((GridKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
                 "aff");
@@ -556,7 +556,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
     private static class TestTask extends GridComputeTaskSplitAdapter<Object, String> {
         /** Injected grid. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Count of tasks this job was split to. */
         private int gridSize;
@@ -568,7 +568,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
             this.gridSize = gridSize;
 
-            final String locNodeId = grid.cluster().localNode().id().toString();
+            final String locNodeId = ignite.cluster().localNode().id().toString();
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new GridComputeJobAdapter() {

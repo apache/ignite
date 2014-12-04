@@ -12,7 +12,6 @@ package org.gridgain.loadtests.cache;
 import com.beust.jcommander.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
@@ -122,7 +121,7 @@ public class GridCachePutRemoveLoadTest {
             G.start(cfg);
         }
 
-        Grid g = G.grid("g0");
+        Ignite g = G.grid("g0");
 
         assert g != null;
 

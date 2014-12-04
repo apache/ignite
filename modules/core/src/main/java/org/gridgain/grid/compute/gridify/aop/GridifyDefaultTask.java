@@ -40,7 +40,7 @@ public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, 
 
     /** Grid instance. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** Load balancer. */
     @GridLoadBalancerResource
@@ -73,12 +73,12 @@ public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, 
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, GridifyArgument arg) throws GridException {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
-        assert grid != null : "Grid instance could not be injected";
+        assert ignite != null : "Grid instance could not be injected";
         assert balancer != null : "Load balancer could not be injected";
 
         GridComputeJob job = new GridifyJobAdapter(arg);
 
-        GridNode node = balancer.getBalancedNode(job, Collections.<GridNode>singletonList(grid.cluster().localNode()));
+        GridNode node = balancer.getBalancedNode(job, Collections.<GridNode>singletonList(ignite.cluster().localNode()));
 
         if (node != null) {
             // Give preference to remote nodes.

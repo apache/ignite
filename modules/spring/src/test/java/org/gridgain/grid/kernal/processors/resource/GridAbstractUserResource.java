@@ -36,7 +36,7 @@ abstract class GridAbstractUserResource {
     @GridLoggerResource private GridLogger log;
 
     /** */
-    @GridInstanceResource private Grid grid;
+    @GridInstanceResource private Ignite ignite;
 
     /** */
     @GridLocalNodeIdResource private UUID nodeId;
@@ -86,7 +86,7 @@ abstract class GridAbstractUserResource {
         addUsage(deployClss);
 
         assert log != null;
-        assert grid != null;
+        assert ignite != null;
         assert nodeId != null;
         assert mbeanSrv != null;
         assert exec != null;
@@ -103,7 +103,7 @@ abstract class GridAbstractUserResource {
         addUsage(undeployClss);
 
         assert log != null;
-        assert grid != null;
+        assert ignite != null;
         assert nodeId != null;
         assert mbeanSrv != null;
         assert exec != null;

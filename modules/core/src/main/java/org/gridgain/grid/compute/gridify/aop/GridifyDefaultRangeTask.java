@@ -40,7 +40,7 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
 
     /** Grid instance. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** Grid task session. */
     @GridTaskSessionResource
@@ -106,7 +106,7 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
         throws GridException {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
-        assert grid != null : "Grid instance could not be injected";
+        assert ignite != null : "Grid instance could not be injected";
 
         if (splitSize < threshold && splitSize != 0 && threshold != 0) {
             throw new GridException("Incorrect Gridify annotation parameters. Value for parameter " +

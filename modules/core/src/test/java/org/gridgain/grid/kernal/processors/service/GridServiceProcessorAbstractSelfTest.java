@@ -120,7 +120,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @return Random grid.
      */
-    protected Grid randomGrid() {
+    protected Ignite randomGrid() {
         return grid(RAND.nextInt(nodeCount()));
     }
 
@@ -192,7 +192,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testGetServiceByName() throws Exception {
         String name = "serviceByName";
 
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         g.services().deployNodeSingleton(name, new DummyService());
 
@@ -211,7 +211,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testGetServicesByName() throws Exception {
         final String name = "servicesByName";
 
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
@@ -236,7 +236,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testDeployOnEachNode() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         String name = "serviceOnEachNode";
 
@@ -268,7 +268,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testDeploySingleton() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         String name = "serviceSingleton";
 
@@ -300,7 +300,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testAffinityDeploy() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         final Integer affKey = 1;
 
@@ -329,7 +329,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testDeployMultiple1() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         String name = "serviceMultiple1";
 
@@ -361,7 +361,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testDeployMultiple2() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         String name = "serviceMultiple2";
 
@@ -395,7 +395,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testCancelSingleton() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         String name = "serviceCancel";
 
@@ -430,7 +430,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testCancelEachNode() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         String name = "serviceCancelEachNode";
 
@@ -520,7 +520,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         /** Grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /**
          * @param affKey Affinity key.
@@ -556,7 +556,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     protected static class CounterServiceImpl implements CounterService, GridService {
         /** Auto-injected grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         private GridCache<String, Value> cache;
@@ -622,7 +622,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             key = ctx.name();
 
-            cache = grid.cache(CACHE_NAME);
+            cache = ignite.cache(CACHE_NAME);
         }
 
         /** {@inheritDoc} */

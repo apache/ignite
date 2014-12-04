@@ -64,8 +64,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testUnswapAdvanced() throws Exception {
-        Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
+        Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
 
         assert g1.cluster().nodes().size() > 1 : "This test needs at least two grid nodes started.";
 

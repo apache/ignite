@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.managers.discovery;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -50,7 +49,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     private int gridCntr;
 
     /** */
-    private List<Grid> alive = new ArrayList<>(PERM_NODES_CNT + TMP_NODES_CNT);
+    private List<Ignite> alive = new ArrayList<>(PERM_NODES_CNT + TMP_NODES_CNT);
 
     /** */
     private volatile CountDownLatch latch;
@@ -92,7 +91,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < PERM_NODES_CNT; i++) {
-            Grid g = startGrid(gridCntr++);
+            Ignite g = startGrid(gridCntr++);
 
             g.events().localListen(lsnr, GridEventType.EVT_NODE_LEFT);
 
@@ -141,7 +140,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("BusyWait")
     private void awaitDiscovery(long nodesCnt) throws InterruptedException {
-        for (Grid g : alive) {
+        for (Ignite g : alive) {
             while (g.cluster().nodes().size() != nodesCnt)
                 Thread.sleep(10);
         }
@@ -152,10 +151,10 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("SuspiciousMethodCalls")
     private void validateAlives() {
-        for (Grid g : alive)
+        for (Ignite g : alive)
             assertEquals(PERM_NODES_CNT, g.cluster().nodes().size());
 
-        for (final Grid g : alive) {
+        for (final Ignite g : alive) {
             GridKernal k = (GridKernal)g;
 
             GridDiscoveryManager discoMgr = k.context().discovery();
@@ -192,7 +191,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      */
     private void startTempNodes() throws Exception {
         for (int j = 0; j < TMP_NODES_CNT; j++) {
-            Grid newNode = startGrid(gridCntr++);
+            Ignite newNode = startGrid(gridCntr++);
 
             info("New node started: " + newNode.name());
 
@@ -208,9 +207,9 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     private void stopTempNodes() {
         int rmv = 0;
 
-        Collection<Grid> toRmv = new ArrayList<>(TMP_NODES_CNT);
+        Collection<Ignite> toRmv = new ArrayList<>(TMP_NODES_CNT);
 
-        for (Iterator<Grid> iter = alive.iterator(); iter.hasNext() && rmv < TMP_NODES_CNT;) {
+        for (Iterator<Ignite> iter = alive.iterator(); iter.hasNext() && rmv < TMP_NODES_CNT;) {
             toRmv.add(iter.next());
 
             iter.remove();
@@ -219,10 +218,10 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         }
 
         // Remove listeners to avoid receiving events from stopping nodes.
-        for (Grid g : toRmv)
+        for (Ignite g : toRmv)
             g.events().stopLocalListen(lsnr, GridEventType.EVT_NODE_LEFT);
 
-        for (Grid g : toRmv)
+        for (Ignite g : toRmv)
             G.stop(g.name(), false);
     }
 }

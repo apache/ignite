@@ -53,11 +53,11 @@ public class GridSessionLoadTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testSessionLoad() throws Exception {
-        final Grid grid = G.grid(getTestGridName());
+        final Ignite ignite = G.grid(getTestGridName());
 
-        assert grid != null;
+        assert ignite != null;
 
-        grid.compute().localDeployTask(GridSessionLoadTestTask.class, GridSessionLoadTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridSessionLoadTestTask.class, GridSessionLoadTestTask.class.getClassLoader());
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
@@ -75,8 +75,8 @@ public class GridSessionLoadTest extends GridCommonAbstractTest {
                     while (end - System.currentTimeMillis() > 0) {
                         long start = System.currentTimeMillis();
 
-                        GridComputeTaskFuture<?> fut = grid.compute().withTimeout(10000).
-                            execute(GridSessionLoadTestTask.class.getName(), grid.cluster().nodes().size());
+                        GridComputeTaskFuture<?> fut = ignite.compute().withTimeout(10000).
+                            execute(GridSessionLoadTestTask.class.getName(), ignite.cluster().nodes().size());
 
                         Object res = fut.get();
 

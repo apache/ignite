@@ -56,7 +56,7 @@ public class CacheStarSchemaExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Grid g = GridGain.start("examples/config/example-cache.xml");
+        Ignite g = GridGain.start("examples/config/example-cache.xml");
 
         System.out.println();
         System.out.println(">>> Cache star schema example started.");

@@ -45,7 +45,7 @@ public class GridContinuousMapperLoadTest2 {
             }
         };
 
-        Grid g = G.start("examples/config/example-cache.xml");
+        Ignite g = G.start("examples/config/example-cache.xml");
 
         try {
             int max = 20000;

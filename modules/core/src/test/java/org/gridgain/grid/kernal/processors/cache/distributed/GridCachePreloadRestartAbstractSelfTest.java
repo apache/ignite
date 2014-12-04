@@ -258,9 +258,9 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
                 info("Starting node: " + idx);
 
-                Grid grid = startGrid(idx);
+                Ignite ignite = startGrid(idx);
 
-                c = grid.cache(CACHE_NAME);
+                c = ignite.cache(CACHE_NAME);
 
                 affinityAfterStart(c);
 

@@ -122,7 +122,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     private static class FailoverTestTask extends GridComputeTaskAdapter<Void, Void> {
         /** Grid. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Task session. */
         @GridTaskSessionResource
@@ -131,9 +131,9 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
             @Nullable Void arg) throws GridException {
-            assert grid.cluster().nodes().size() == 2;
+            assert ignite.cluster().nodes().size() == 2;
 
-            GridNode rmt = F.first(grid.cluster().forRemotes().nodes());
+            GridNode rmt = F.first(ignite.cluster().forRemotes().nodes());
 
             ses.saveCheckpoint(CP_KEY, true);
 
@@ -178,7 +178,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     private static class ReduceTestTask extends GridComputeTaskAdapter<Void, Void> {
         /** Grid. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Task session. */
         @GridTaskSessionResource
@@ -187,9 +187,9 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
             @Nullable Void arg) throws GridException {
-            assert grid.cluster().nodes().size() == 2;
+            assert ignite.cluster().nodes().size() == 2;
 
-            GridNode rmt = F.first(grid.cluster().forRemotes().nodes());
+            GridNode rmt = F.first(ignite.cluster().forRemotes().nodes());
 
             return F.asMap(
                 new GridComputeJobAdapter() {

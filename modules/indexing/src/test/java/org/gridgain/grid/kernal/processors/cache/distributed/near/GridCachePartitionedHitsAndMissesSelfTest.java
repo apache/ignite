@@ -97,7 +97,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         startGrids(GRID_CNT);
 
         try {
-            final Grid g = grid(0);
+            final Ignite g = grid(0);
 
             realTimePopulate(g);
 
@@ -126,7 +126,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void realTimePopulate(final Grid g) throws GridException {
+    private static void realTimePopulate(final Ignite g) throws GridException {
         try (GridDataLoader<Integer, Long> ldr = g.dataLoader(null)) {
             // Sets max values to 1 so cache metrics have correct values.
             ldr.perNodeParallelLoadOperations(1);

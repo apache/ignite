@@ -12,7 +12,7 @@ package org.gridgain.grid.ggfs;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.*;
-import org.gridgain.grid.Grid;
+import org.gridgain.grid.Ignite;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -218,12 +218,12 @@ public class GridFileSystemLoad {
         if (minFileSize > maxFileSize)
             throw new IllegalArgumentException();
 
-        Grid grid = null;
+        Ignite ignite = null;
 
         if (startNode) {
             X.println("Starting node using configuration: " + nodeCfg);
 
-            grid = G.start(U.resolveGridGainUrl(nodeCfg));
+            ignite = G.start(U.resolveGridGainUrl(nodeCfg));
         }
 
         try {
@@ -231,7 +231,7 @@ public class GridFileSystemLoad {
                 deletesNum, minFileSize, maxFileSize, delay);
         }
         finally {
-            if (grid != null)
+            if (ignite != null)
                 G.stop(true);
         }
     }

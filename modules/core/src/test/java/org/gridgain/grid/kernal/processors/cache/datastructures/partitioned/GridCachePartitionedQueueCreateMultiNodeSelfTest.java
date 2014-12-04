@@ -79,13 +79,13 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
         GridFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Grid grid = startGrid(idx.getAndIncrement());
+                    Ignite ignite = startGrid(idx.getAndIncrement());
 
-                    UUID locNodeId = grid.cluster().localNode().id();
+                    UUID locNodeId = ignite.cluster().localNode().id();
 
                     info("Started grid: " + locNodeId);
 
-                    GridCache<String, ?> cache = grid.cache(null);
+                    GridCache<String, ?> cache = ignite.cache(null);
 
                     info("Creating queue: " + locNodeId);
 
@@ -131,7 +131,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
         GridFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Grid grid = startGrid(idx.getAndIncrement());
+                    Ignite ignite = startGrid(idx.getAndIncrement());
 
                     boolean wait = false;
 
@@ -144,7 +144,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    GridCache<Integer, String> cache = grid.cache(null);
+                    GridCache<Integer, String> cache = ignite.cache(null);
 
                     info("Partition: " + cache.affinity().partition(1));
 
@@ -170,7 +170,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
                             assert "val".equals(s) : "String: " + s;
                     }
 
-                    info("Thread finished for grid: " + grid.name());
+                    info("Thread finished for grid: " + ignite.name());
 
                     return null;
                 }

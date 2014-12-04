@@ -65,7 +65,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             final LongAdder execCnt = new LongAdder();
 
             try {
-                final Grid g = G.start("modules/tests/config/grid-job-load.xml");
+                final Ignite g = G.start("modules/tests/config/grid-job-load.xml");
 
                 X.println("Thread count: " + threadCnt);
                 X.println("Task count: " + taskCnt);
@@ -150,7 +150,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
      * @param dur Test duration.
      * @param iterCntr Iteration counter.
      */
-    private static void runTest(final Grid g, int threadCnt, int taskCnt, long dur,
+    private static void runTest(final Ignite g, int threadCnt, int taskCnt, long dur,
         final LongAdder iterCntr) {
         final Semaphore sem = new Semaphore(taskCnt);
 

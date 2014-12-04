@@ -59,7 +59,7 @@ public class GridCacheLoadPopulationTask extends GridComputeTaskSplitAdapter<Voi
 
         /** Injected grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /**
          * Creates chunk population job.

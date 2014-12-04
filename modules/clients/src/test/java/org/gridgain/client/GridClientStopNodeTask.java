@@ -33,7 +33,7 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
 
     /** */
     @GridInstanceResource
-    private transient Grid grid;
+    private transient Ignite ignite;
 
     /** {@inheritDoc} */
     @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
@@ -80,7 +80,7 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         private StopJob(String gridType) {
@@ -89,14 +89,14 @@ public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, 
 
         /** {@inheritDoc} */
         @Override public Object execute() {
-            log.info(">>> Stop node [nodeId=" + grid.cluster().localNode().id() + ", name='" + grid.name() + "']");
+            log.info(">>> Stop node [nodeId=" + ignite.cluster().localNode().id() + ", name='" + ignite.name() + "']");
 
             String prefix = GridClientStartNodeTask.getConfig(gridType).getGridName() + " (";
 
-            if (!grid.name().startsWith(prefix)) {
+            if (!ignite.name().startsWith(prefix)) {
                 int stoppedCnt = 0;
 
-                for (Grid g : G.allGrids())
+                for (Ignite g : G.allGrids())
                     if (g.name().startsWith(prefix)) {
                         try {
                             log.info(">>> Grid stopping [nodeId=" + g.cluster().localNode().id() +

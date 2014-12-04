@@ -66,7 +66,7 @@ public class GridJobExecutionSingleNodeLoadTest {
             Thread timer = null;
 
             try {
-                final Grid g = G.start("modules/core/src/test/config/grid-job-load.xml");
+                final Ignite g = G.start("modules/core/src/test/config/grid-job-load.xml");
 
                 X.println("Warming up...");
 

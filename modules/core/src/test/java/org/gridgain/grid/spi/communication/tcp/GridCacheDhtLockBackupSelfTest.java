@@ -95,22 +95,22 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     public void testLock() throws Exception {
         final int kv = 1;
 
-        Grid grid1 = startGridWithSpi(1, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
+        Ignite ignite1 = startGridWithSpi(1, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
 
-        Grid grid2  = startGridWithSpi(2, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
+        Ignite ignite2 = startGridWithSpi(2, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
 
-        if (!grid1.cluster().mapKeyToNode(null, kv).id().equals(grid1.cluster().localNode().id())) {
-            Grid tmp = grid1;
-            grid1 = grid2;
-            grid2 = tmp;
+        if (!ignite1.cluster().mapKeyToNode(null, kv).id().equals(ignite1.cluster().localNode().id())) {
+            Ignite tmp = ignite1;
+            ignite1 = ignite2;
+            ignite2 = tmp;
         }
 
         // Now, grid1 is always primary node for key 1.
-        final GridCache<Integer, String> cache1 = grid1.cache(null);
-        final GridCache<Integer, String> cache2 = grid2.cache(null);
+        final GridCache<Integer, String> cache1 = ignite1.cache(null);
+        final GridCache<Integer, String> cache2 = ignite2.cache(null);
 
-        info(">>> Primary: " + grid1.cluster().localNode().id());
-        info(">>>  Backup: " + grid2.cluster().localNode().id());
+        info(">>> Primary: " + ignite1.cluster().localNode().id());
+        info(">>>  Backup: " + ignite2.cluster().localNode().id());
 
         final CountDownLatch l1 = new CountDownLatch(1);
 
@@ -209,7 +209,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
      * @return Started grid.
      * @throws Exception If grid start failed.
      */
-    private Grid startGridWithSpi(int idx, GridCommunicationSpi commSpi) throws Exception {
+    private Ignite startGridWithSpi(int idx, GridCommunicationSpi commSpi) throws Exception {
         this.commSpi = commSpi;
 
         try {

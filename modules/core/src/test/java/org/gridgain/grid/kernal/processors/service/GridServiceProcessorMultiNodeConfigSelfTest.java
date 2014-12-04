@@ -122,7 +122,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     public void testAffinityUpdateTopology() throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         checkCount(AFFINITY, g.services().deployedServices(), 1);
 
@@ -143,7 +143,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     private void checkSingletonUpdateTopology(String name) throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         int nodeCnt = 2;
 
@@ -167,7 +167,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     private void checkDeployOnEachNodeUpdateTopology(String name) throws Exception {
-        Grid g = randomGrid();
+        Ignite g = randomGrid();
 
         int newNodes = 2;
 

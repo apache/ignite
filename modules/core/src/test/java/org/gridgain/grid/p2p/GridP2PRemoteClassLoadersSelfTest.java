@@ -56,10 +56,10 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
 
             GridP2PTestStaticVariable.staticVar = 0;
 
-            Grid grid1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
             startGrid(2);
 
-            waitForRemoteNodes(grid1, 1);
+            waitForRemoteNodes(ignite1, 1);
 
             ClassLoader tstClsLdr =
                 new GridTestClassLoader(
@@ -72,9 +72,9 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> task2 =
                 (Class<? extends GridComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PTestTask1.class.getName());
 
-            Object res1 = grid1.compute().execute(task1.newInstance(), null);
+            Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 
-            Object res2 = grid1.compute().execute(task2.newInstance(), null);
+            Object res2 = ignite1.compute().execute(task2.newInstance(), null);
 
             info("Check results.");
 
@@ -107,10 +107,10 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
 
             GridP2PTestStaticVariable.staticVar = 0;
 
-            Grid grid1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
             startGrid(2);
 
-            waitForRemoteNodes(grid1, 1);
+            waitForRemoteNodes(ignite1, 1);
 
             ClassLoader tstClsLdr1 =
                 new GridTestClassLoader(
@@ -129,9 +129,9 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> task2 =
                 (Class<? extends GridComputeTask<?, ?>>) tstClsLdr2.loadClass(GridP2PTestTask1.class.getName());
 
-            Object res1 = grid1.compute().execute(task1.newInstance(), null);
+            Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 
-            Object res2 = grid1.compute().execute(task2.newInstance(), null);
+            Object res2 = ignite1.compute().execute(task2.newInstance(), null);
 
             info("Check results.");
 

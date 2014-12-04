@@ -20,10 +20,10 @@ import java.util.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
     /** Grid instance. */
-    private Grid grid;
+    private Ignite ignite;
 
     /** Remote instance. */
-    private Grid rmtGrid;
+    private Ignite rmtIgnite;
 
     /** */
     public GridNodeFilterSelfTest() {
@@ -32,9 +32,9 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid = startGrid(1);
+        ignite = startGrid(1);
 
-        rmtGrid = startGrid(2);
+        rmtIgnite = startGrid(2);
         startGrid(3);
     }
 
@@ -44,24 +44,24 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
         stopGrid(2);
         stopGrid(3);
 
-        grid = null;
-        rmtGrid = null;
+        ignite = null;
+        rmtIgnite = null;
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        UUID nodeId = grid.cluster().localNode().id();
+        UUID nodeId = ignite.cluster().localNode().id();
 
-        UUID rmtNodeId = rmtGrid.cluster().localNode().id();
+        UUID rmtNodeId = rmtIgnite.cluster().localNode().id();
 
-        Collection<GridNode> locNodes = grid.cluster().forNodeId(nodeId).nodes();
+        Collection<GridNode> locNodes = ignite.cluster().forNodeId(nodeId).nodes();
 
         assert locNodes.size() == 1;
         assert locNodes.iterator().next().id().equals(nodeId);
 
-        Collection<GridNode> rmtNodes = grid.cluster().forNodeId(rmtNodeId).nodes();
+        Collection<GridNode> rmtNodes = ignite.cluster().forNodeId(rmtNodeId).nodes();
 
         assert rmtNodes.size() == 1;
         assert rmtNodes.iterator().next().id().equals(rmtNodeId);

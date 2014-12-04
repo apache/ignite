@@ -55,7 +55,7 @@ public class GridMergeSortLoadTest {
         try {
             String outputFileName = args.length >= 1 ? args[0] : null;
 
-            try (Grid g = G.start(args.length >= 2 ? args[1] : "modules/core/src/test/config/load/merge-sort-base.xml")) {
+            try (Ignite g = G.start(args.length >= 2 ? args[1] : "modules/core/src/test/config/load/merge-sort-base.xml")) {
                 int arrRealSize = args.length > 1 ? Integer.parseInt(args[1]) : ARR_SIZE;
 
                 int arrWarmupSize = args.length > 2 ? Integer.parseInt(args[2]) : ARR_SIZE;
@@ -100,7 +100,7 @@ public class GridMergeSortLoadTest {
      * @return Sort execution time in milliseconds.
      * @throws GridException If failed.
      */
-    private static long sort(Grid g, int size) throws GridException {
+    private static long sort(Ignite g, int size) throws GridException {
         int[] bigArr = generateRandomArray(size);
 
         X.println("Array is generated.");

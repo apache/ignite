@@ -26,7 +26,7 @@ public class GridP2PAwareTestUserResource {
 
     /** Grid instance. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** Grid logger. */
     @GridLoggerResource
@@ -58,7 +58,7 @@ public class GridP2PAwareTestUserResource {
      * @param key Key for the value to be incremented.
      */
     private <T> void concurrentIncrement(T key) {
-        GridNodeLocalMap<T, Integer> nodeLoc = grid.cluster().nodeLocalMap();
+        GridNodeLocalMap<T, Integer> nodeLoc = ignite.cluster().nodeLocalMap();
 
         Integer cntr = nodeLoc.get(key);
 

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -122,7 +121,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
             cache = false;
 
-            Grid compute = startGrid(4);
+            Ignite compute = startGrid(4);
 
             for (int i = 0; i < 100; i++) {
                 GridNode node = compute.cluster().mapKeyToNode(null, i);

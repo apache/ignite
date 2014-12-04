@@ -13,16 +13,14 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.grid.service.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Defines grid projection which represents a common functionality over a group of nodes.
- * The {@link Grid} interface itself also extends {@code GridProjection} which makes
- * an instance of {@link Grid} a projection over all grid nodes.
+ * The {@link Ignite} interface itself also extends {@code GridProjection} which makes
+ * an instance of {@link Ignite} a projection over all grid nodes.
  * <h1 class="header">Clustering</h1>
  * Grid projection allows to group grid nodes into various subgroups to perform distributed
  * operations on them. All {@code 'forXXX(...)'} methods will create a child grid projection
@@ -58,7 +56,7 @@ public interface GridProjection {
      *
      * @return Grid instance.
      */
-    public Grid grid();
+    public Ignite grid();
 
     /**
      * Creates a grid projection over a given set of nodes.

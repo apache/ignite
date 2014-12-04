@@ -13,7 +13,7 @@ package org.gridgain.scalar.examples
 
 import org.gridgain.scalar.scalar
 import scalar._
-import org.gridgain.grid.Grid
+import org.gridgain.grid.Ignite
 
 /**
  * Demonstrates various starting and stopping ways of grid using Scalar.
@@ -60,7 +60,7 @@ object ScalarStartStopExample {
      * One way to start GridGain.
      */
     def way3() {
-        scalar { g: Grid =>
+        scalar { g: Ignite =>
             println("Hurrah - local node ID is: " + g.cluster().localNode.id)
         }
     }

@@ -329,18 +329,18 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
 
             if (endpoint.grid() == null) {
                 try {
-                    Grid grid = G.grid();
+                    Ignite ignite = G.grid();
 
-                    ggfs = (GridGgfsEx)grid.ggfs(endpoint.ggfs());
+                    ggfs = (GridGgfsEx) ignite.ggfs(endpoint.ggfs());
                 }
                 catch (Exception e) {
                     err = e;
                 }
             }
             else {
-                for (Grid grid : G.allGrids()) {
+                for (Ignite ignite : G.allGrids()) {
                     try {
-                        ggfs = (GridGgfsEx)grid.ggfs(endpoint.ggfs());
+                        ggfs = (GridGgfsEx) ignite.ggfs(endpoint.ggfs());
 
                         break;
                     }

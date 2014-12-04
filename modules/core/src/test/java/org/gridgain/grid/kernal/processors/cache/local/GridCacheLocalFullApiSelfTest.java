@@ -58,7 +58,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
 
         assert map.size() == 1;
 
-        Collection<String> keys = map.get(dfltGrid.cluster().localNode());
+        Collection<String> keys = map.get(dfltIgnite.cluster().localNode());
 
         assert keys != null;
         assert keys.size() == 2;
@@ -70,7 +70,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
 
         assert map.size() == 1;
 
-        keys = map.get(dfltGrid.cluster().localNode());
+        keys = map.get(dfltIgnite.cluster().localNode());
 
         assert keys != null;
         assert keys.size() == 2;

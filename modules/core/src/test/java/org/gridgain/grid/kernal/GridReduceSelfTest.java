@@ -33,13 +33,13 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
 
         try {
-            Grid grid = grid(0);
+            Ignite ignite = grid(0);
 
-            assert grid.cluster().nodes().size() == GRID_CNT;
+            assert ignite.cluster().nodes().size() == GRID_CNT;
 
-            List<ReducerTestClosure> closures = closures(grid.cluster().nodes().size());
+            List<ReducerTestClosure> closures = closures(ignite.cluster().nodes().size());
 
-            Long res = compute(grid.cluster().forLocal()).call(closures, new R1<Long, Long>() {
+            Long res = compute(ignite.cluster().forLocal()).call(closures, new R1<Long, Long>() {
                 private long sum;
 
                 @Override public boolean collect(Long e) {
@@ -75,13 +75,13 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
 
         try {
-            Grid grid = grid(0);
+            Ignite ignite = grid(0);
 
-            assert grid.cluster().nodes().size() == GRID_CNT;
+            assert ignite.cluster().nodes().size() == GRID_CNT;
 
-            List<ReducerTestClosure> closures = closures(grid.cluster().nodes().size());
+            List<ReducerTestClosure> closures = closures(ignite.cluster().nodes().size());
 
-            GridCompute comp = compute(grid.cluster().forLocal()).enableAsync();
+            GridCompute comp = compute(ignite.cluster().forLocal()).enableAsync();
 
             comp.call(closures, new R1<Long, Long>() {
                 private long sum;

@@ -174,7 +174,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final Grid grid() {
+    @Override public final Ignite grid() {
         assert ctx != null;
 
         guard();

@@ -90,16 +90,16 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedCatchParameter"})
     public void testFailoverTask() throws Exception {
         // Start local and remote grids.
-        Grid grid1 = startGrid(1);
+        Ignite ignite1 = startGrid(1);
         startGrid(2);
 
         try {
             // Say grid1 is a local one. Deploy task and execute it.
-            grid1.compute().localDeployTask(GridTestMultipleSpisTask.class,
+            ignite1.compute().localDeployTask(GridTestMultipleSpisTask.class,
                 GridTestMultipleSpisTask.class.getClassLoader());
 
             try {
-                grid1.compute().execute(GridTestMultipleSpisTask.class.getName(), grid1.cluster().localNode().id());
+                ignite1.compute().execute(GridTestMultipleSpisTask.class.getName(), ignite1.cluster().localNode().id());
             }
             catch (GridException e) {
                 e.printStackTrace();
@@ -222,19 +222,19 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         @GridTaskSessionResource private GridComputeTaskSession taskSes;
 
         /** */
-        @GridInstanceResource private Grid grid;
+        @GridInstanceResource private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, UUID arg) throws GridException {
             assert subgrid.size() == 2;
             assert taskSes != null;
-            assert grid != null;
-            assert grid.cluster().localNode().id().equals(arg);
+            assert ignite != null;
+            assert ignite.cluster().localNode().id().equals(arg);
 
             taskSes.saveCheckpoint("test", arg);
 
             // Always map job to the local node where it will fail.
-            return Collections.singletonMap(new GridTestMultipleSpisJob(arg), grid.cluster().localNode());
+            return Collections.singletonMap(new GridTestMultipleSpisJob(arg), ignite.cluster().localNode());
         }
 
         /** {@inheritDoc} */

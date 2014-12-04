@@ -92,9 +92,9 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
      */
     @SuppressWarnings({"ErrorNotRethrown", "InfiniteLoopStatement"})
     private void memoryTest() {
-        Grid grid = G.grid();
+        Ignite ignite = G.grid();
 
-        final GridCache<Integer, byte[]> cache = grid.cache(null);
+        final GridCache<Integer, byte[]> cache = ignite.cache(null);
 
         assert cache != null;
 
@@ -136,7 +136,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
 
         final GridCacheLoadTest test = new GridCacheLoadTest();
 
-        try (Grid g = GridGain.start(test.configuration(cfg, log))) {
+        try (Ignite g = GridGain.start(test.configuration(cfg, log))) {
             System.gc();
 
             if (LOAD)

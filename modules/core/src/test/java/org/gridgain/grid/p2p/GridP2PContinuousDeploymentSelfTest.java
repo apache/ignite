@@ -11,7 +11,6 @@ package org.gridgain.grid.p2p;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -91,19 +90,19 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      */
     @SuppressWarnings("unchecked")
     public void testDeployment() throws Exception {
-        Grid grid = startGrid(GRID_NAME);
+        Ignite ignite = startGrid(GRID_NAME);
 
         Class cls = getExternalClassLoader().loadClass(TEST_TASK_1);
 
-        compute(grid.cluster().forRemotes()).execute(cls, null);
+        compute(ignite.cluster().forRemotes()).execute(cls, null);
 
         stopGrid(GRID_NAME);
 
-        grid = startGrid(GRID_NAME);
+        ignite = startGrid(GRID_NAME);
 
         cls = getExternalClassLoader().loadClass(TEST_TASK_2);
 
-        compute(grid.cluster().forRemotes()).execute(cls, null);
+        compute(ignite.cluster().forRemotes()).execute(cls, null);
 
         stopGrid(GRID_NAME);
     }

@@ -1447,7 +1447,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         /** Injected grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         private String cacheName;
@@ -1473,7 +1473,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         /** {@inheritDoc} */
         @Override public Void call() throws GridException {
-            GridCacheAdapter cache = ((GridKernal)grid).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = ((GridKernal) ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;
 
@@ -1510,7 +1510,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         /** Injected grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         private String cacheName;
@@ -1541,7 +1541,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         /** {@inheritDoc} */
         @Override public Void call() throws GridException {
-            GridCacheAdapter cache = ((GridKernal)grid).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = ((GridKernal) ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;
 

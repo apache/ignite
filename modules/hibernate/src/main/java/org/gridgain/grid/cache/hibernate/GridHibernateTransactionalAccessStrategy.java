@@ -48,11 +48,11 @@ import org.jetbrains.annotations.*;
  */
 public class GridHibernateTransactionalAccessStrategy extends GridHibernateAccessStrategyAdapter {
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      */
-    public GridHibernateTransactionalAccessStrategy(Grid grid, GridCache<Object, Object> cache) {
-        super(grid, cache);
+    public GridHibernateTransactionalAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
+        super(ignite, cache);
     }
 
     /** {@inheritDoc} */

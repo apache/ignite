@@ -46,14 +46,14 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
         this.depMode = depMode;
 
         try {
-            Grid grid1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
             startGrid(2);
 
-            long res = grid1.compute().execute(FactorialTask.class, 3L);
+            long res = ignite1.compute().execute(FactorialTask.class, 3L);
 
             assert res == factorial(3);
 
-            res = grid1.compute().execute(FactorialTask.class, 3L);
+            res = ignite1.compute().execute(FactorialTask.class, 3L);
 
             assert res == factorial(3);
         }
@@ -155,7 +155,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     private static class FactorialJob extends GridComputeJobAdapter {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /**
          * Constructor.
@@ -175,9 +175,9 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
             if (arg == 1)
                 return 1L;
 
-            grid.compute().localDeployTask(FactorialTask.class, FactorialTask.class.getClassLoader());
+            ignite.compute().localDeployTask(FactorialTask.class, FactorialTask.class.getClassLoader());
 
-            return grid.compute().execute(FactorialTask.class, arg);
+            return ignite.compute().execute(FactorialTask.class, arg);
         }
     }
 }

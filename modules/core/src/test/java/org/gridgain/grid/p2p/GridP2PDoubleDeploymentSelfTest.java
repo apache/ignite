@@ -62,8 +62,8 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             this.depMode = depMode;
 
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             ClassLoader ldr = new GridTestClassLoader(
                 Collections.singletonMap("org/gridgain/grid/p2p/p2p.properties", "resource=loaded"),
@@ -74,19 +74,19 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> taskCls =
                 (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(GridP2PTestTask.class.getName());
 
-            grid1.compute().localDeployTask(taskCls, ldr);
+            ignite1.compute().localDeployTask(taskCls, ldr);
 
-            Integer res1 = (Integer)grid1.compute().execute(taskCls.getName(), 1);
+            Integer res1 = (Integer) ignite1.compute().execute(taskCls.getName(), 1);
 
-            grid1.compute().undeployTask(taskCls.getName());
+            ignite1.compute().undeployTask(taskCls.getName());
 
             // Wait here 1 sec before the deployment as we have async undeploy.
             Thread.sleep(1000);
 
-            grid1.compute().localDeployTask(taskCls, ldr);
-            grid2.compute().localDeployTask(taskCls, ldr);
+            ignite1.compute().localDeployTask(taskCls, ldr);
+            ignite2.compute().localDeployTask(taskCls, ldr);
 
-            Integer res2 = (Integer)grid2.compute().execute(taskCls.getName(), 2);
+            Integer res2 = (Integer) ignite2.compute().execute(taskCls.getName(), 2);
 
             info("Checking results...");
 

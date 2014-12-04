@@ -77,11 +77,11 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @return Affinity.
      */
-    static GridCacheAffinity<Object> affinity(Grid grid) {
-        return grid.cache(null).affinity();
+    static GridCacheAffinity<Object> affinity(Ignite ignite) {
+        return ignite.cache(null).affinity();
     }
 
     /**
@@ -125,7 +125,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         startGridsMultiThreaded(GRIDS);
 
         try {
-            Grid g = grid(0);
+            Ignite g = grid(0);
 
             // Warmup.
             checkCountPerformance0(g, 10000);
@@ -156,7 +156,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @return Result.
      * @throws Exception If failed.
      */
-    private long checkCountPerformance0(Grid g, int cnt) throws Exception {
+    private long checkCountPerformance0(Ignite g, int cnt) throws Exception {
         GridCacheAffinity<Object> aff = affinity(g);
 
         GridTimer timer = new GridTimer("test");
@@ -206,7 +206,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         startGridsMultiThreaded(GRIDS);
 
         try {
-            Grid g = grid(0);
+            Ignite g = grid(0);
 
             GridCacheAffinity<Object> aff = affinity(g);
 

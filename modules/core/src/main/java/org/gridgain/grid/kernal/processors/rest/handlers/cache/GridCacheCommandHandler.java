@@ -588,13 +588,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * @param grid Grid instance.
+     * @param ignite Grid instance.
      * @param cacheName Name of the cache.
      * @return Instance on the named cache.
      * @throws GridException If cache not found.
      */
-    private static GridCacheProjectionEx<Object, Object> cache(Grid grid, String cacheName) throws GridException {
-        GridCache<Object, Object> cache = grid.cache(cacheName);
+    private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws GridException {
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         if (cache == null)
             throw new GridException(
@@ -678,7 +678,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /**
          * @param clientId Client ID.
@@ -735,7 +735,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /**
          * @param clientId Client ID.

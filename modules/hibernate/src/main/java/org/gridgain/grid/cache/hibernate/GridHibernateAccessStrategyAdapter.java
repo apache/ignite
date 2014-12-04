@@ -11,7 +11,6 @@ package org.gridgain.grid.cache.hibernate;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -79,20 +78,20 @@ public abstract class GridHibernateAccessStrategyAdapter {
     protected final GridCache<Object, Object> cache;
 
     /** Grid. */
-    protected final Grid grid;
+    protected final Ignite ignite;
 
     /** */
     protected final GridLogger log;
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      */
-    protected GridHibernateAccessStrategyAdapter(Grid grid, GridCache<Object, Object> cache) {
+    protected GridHibernateAccessStrategyAdapter(Ignite ignite, GridCache<Object, Object> cache) {
         this.cache = cache;
-        this.grid = grid;
+        this.ignite = ignite;
 
-        log = grid.log();
+        log = ignite.log();
     }
 
     /**
@@ -221,7 +220,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
      * @throws CacheException If failed.
      */
     protected void evict(Object key) throws CacheException {
-        evict(grid, cache, key);
+        evict(ignite, cache, key);
     }
 
     /**
@@ -271,14 +270,14 @@ public abstract class GridHibernateAccessStrategyAdapter {
     /**
      * Called to remove object from cache without regard to transaction.
      *
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      * @param key Key.
      * @throws CacheException If failed.
      */
-    static void evict(Grid grid, GridCacheProjection<Object,Object> cache, Object key) throws CacheException {
+    static void evict(Ignite ignite, GridCacheProjection<Object,Object> cache, Object key) throws CacheException {
         try {
-            grid.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
+            ignite.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
         }
         catch (GridException e) {
             throw new CacheException(e);
@@ -309,7 +308,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         private Object key;
@@ -335,7 +334,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
 
         /** {@inheritDoc} */
         @Override public Void call() throws GridException {
-            GridCache<Object, Object> cache = grid.cache(cacheName);
+            GridCache<Object, Object> cache = ignite.cache(cacheName);
 
             assert cache != null;
 

@@ -43,7 +43,7 @@ public class CacheQueueExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache queue example started.");
 
@@ -70,7 +70,7 @@ public class CacheQueueExample {
      * @return Queue.
      * @throws GridException If execution failed.
      */
-    private static GridCacheQueue<String> initializeQueue(Grid g, String queueName) throws GridException {
+    private static GridCacheQueue<String> initializeQueue(Ignite g, String queueName) throws GridException {
         // Initialize new FIFO queue.
         GridCacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
 
@@ -90,7 +90,7 @@ public class CacheQueueExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void readFromQueue(Grid g) throws GridException {
+    private static void readFromQueue(Ignite g) throws GridException {
         final String queueName = queue.name();
 
         // Read queue items on each node.
@@ -105,7 +105,7 @@ public class CacheQueueExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void writeToQueue(Grid g) throws GridException {
+    private static void writeToQueue(Ignite g) throws GridException {
         final String queueName = queue.name();
 
         // Write queue items on each node.
@@ -127,7 +127,7 @@ public class CacheQueueExample {
      * @param g Grid.
      * @throws GridException If execution failed.
      */
-    private static void clearAndRemoveQueue(Grid g) throws GridException {
+    private static void clearAndRemoveQueue(Ignite g) throws GridException {
         System.out.println("Queue size before clearing: " + queue.size());
 
         // Clear queue.

@@ -151,7 +151,7 @@ object scalar extends ScalarConversions {
      * @param g Grid instance.
      * @param body Closure with grid instance as body's parameter.
      */
-    private def init[T](g: Grid, body: Grid => T): T = {
+    private def init[T](g: Ignite, body: Ignite => T): T = {
         assert(g != null, body != null)
 
         try {
@@ -168,7 +168,7 @@ object scalar extends ScalarConversions {
      * @param g Grid instance.
      * @param body Passed by name body.
      */
-    private def init0[T](g: Grid, body: => T): T = {
+    private def init0[T](g: Ignite, body: => T): T = {
         assert(g != null)
 
         try {
@@ -186,7 +186,7 @@ object scalar extends ScalarConversions {
      *
      * @param body Closure to execute within automatically managed default grid instance.
      */
-    def apply(body: Grid => Unit) {
+    def apply(body: Ignite => Unit) {
         if (!isStarted) init(GridGain.start, body) else body(grid$)
     }
 
@@ -197,7 +197,7 @@ object scalar extends ScalarConversions {
      *
      * @param body Closure to execute within automatically managed default grid instance.
      */
-    def apply[T](body: Grid => T): T =
+    def apply[T](body: Ignite => T): T =
         if (!isStarted) init(GridGain.start, body) else body(grid$)
 
     /**
@@ -301,7 +301,7 @@ object scalar extends ScalarConversions {
     /**
      * Gets default grid instance.
      */
-    @inline def grid$: Grid = GridGain.grid
+    @inline def grid$: Ignite = GridGain.grid
 
     /**
      * Gets node ID as ID8 string.
@@ -313,7 +313,7 @@ object scalar extends ScalarConversions {
      *
      * @param name Grid name.
      */
-    @inline def grid$(@Nullable name: String): Option[Grid] =
+    @inline def grid$(@Nullable name: String): Option[Ignite] =
         try {
             Option(GridGain.grid(name))
         }
@@ -326,7 +326,7 @@ object scalar extends ScalarConversions {
      *
      * @param locNodeId Local node ID for which to get grid instance option.
      */
-    @inline def grid$(locNodeId: UUID): Option[Grid] = {
+    @inline def grid$(locNodeId: UUID): Option[Ignite] = {
         assert(locNodeId != null)
 
         try {
@@ -413,7 +413,7 @@ object scalar extends ScalarConversions {
      *
      *  @return Started grid.
      */
-    def start(): Grid = {
+    def start(): Ignite = {
         if (!isStarted) GridGain.start else grid$
     }
 
@@ -424,7 +424,7 @@ object scalar extends ScalarConversions {
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      */
-    def start(@Nullable springCfgPath: String): Grid = {
+    def start(@Nullable springCfgPath: String): Ignite = {
         GridGain.start(springCfgPath)
     }
 
@@ -434,7 +434,7 @@ object scalar extends ScalarConversions {
      * @param cfg Grid configuration. This cannot be `null`.
      * @return Started grid.
      */
-    def start(cfg: GridConfiguration): Grid = {
+    def start(cfg: GridConfiguration): Ignite = {
         GridGain.start(cfg)
     }
 
@@ -444,7 +444,7 @@ object scalar extends ScalarConversions {
      * @param springCfgUrl Spring XML configuration file URL.
      * @return Started grid.
      */
-    def start(springCfgUrl: URL): Grid = {
+    def start(springCfgUrl: URL): Ignite = {
         GridGain.start(springCfgUrl)
     }
 }

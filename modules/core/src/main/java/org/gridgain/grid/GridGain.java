@@ -263,7 +263,7 @@ public class GridGain {
      * @throws GridException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Grid start() throws GridException {
+    public static Ignite start() throws GridException {
         return GridGainEx.start();
     }
 
@@ -276,7 +276,7 @@ public class GridGain {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Grid start(GridConfiguration cfg) throws GridException {
+    public static Ignite start(GridConfiguration cfg) throws GridException {
         return GridGainEx.start(cfg);
     }
 
@@ -296,7 +296,7 @@ public class GridGain {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(@Nullable String springCfgPath) throws GridException {
+    public static Ignite start(@Nullable String springCfgPath) throws GridException {
         return GridGainEx.start(springCfgPath);
     }
 
@@ -316,7 +316,7 @@ public class GridGain {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(URL springCfgUrl) throws GridException {
+    public static Ignite start(URL springCfgUrl) throws GridException {
         return GridGainEx.start(springCfgUrl);
     }
 
@@ -332,7 +332,7 @@ public class GridGain {
      * @throws GridIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Grid grid() throws GridIllegalStateException {
+    public static Ignite grid() throws GridIllegalStateException {
         return GridGainEx.grid();
     }
 
@@ -341,7 +341,7 @@ public class GridGain {
      *
      * @return List of all grids started so far.
      */
-    public static List<Grid> allGrids() {
+    public static List<Ignite> allGrids() {
         return GridGainEx.allGrids();
     }
 
@@ -357,7 +357,7 @@ public class GridGain {
      * @throws GridIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Grid grid(UUID locNodeId) throws GridIllegalStateException {
+    public static Ignite grid(UUID locNodeId) throws GridIllegalStateException {
         return GridGainEx.grid(locNodeId);
     }
 
@@ -377,7 +377,7 @@ public class GridGain {
      * @throws GridIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Grid grid(@Nullable String name) throws GridIllegalStateException {
+    public static Ignite grid(@Nullable String name) throws GridIllegalStateException {
         return GridGainEx.grid(name);
     }
 

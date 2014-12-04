@@ -31,8 +31,8 @@ import java.util.*;
  */
 public class ServicesExample {
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
-            GridProjection rmts = grid.cluster().forRemotes();
+        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
+            GridProjection rmts = ignite.cluster().forRemotes();
 
             if (rmts.nodes().isEmpty()) {
                 System.err.println(">>>");
@@ -43,7 +43,7 @@ public class ServicesExample {
                 return;
             }
 
-            GridServices svcs = grid.services(rmts);
+            GridServices svcs = ignite.services(rmts);
 
             try {
                 // Deploy cluster singleton.
@@ -57,15 +57,15 @@ public class ServicesExample {
 
                 // Example for using a service proxy
                 // to access a remotely deployed service.
-                serviceProxyExample(grid);
+                serviceProxyExample(ignite);
 
                 // Example for auto-injecting service proxy
                 // into remote closure execution.
-                serviceInjectionExample(grid);
+                serviceInjectionExample(ignite);
             }
             finally {
                 // Undeploy all services.
-                grid.services().cancelAll();
+                ignite.services().cancelAll();
             }
         }
     }
@@ -73,16 +73,16 @@ public class ServicesExample {
     /**
      * Simple example to demonstrate service proxy invocation of a remotely deployed service.
      *
-     * @param grid Grid instance.
+     * @param ignite Grid instance.
      * @throws Exception If failed.
      */
-    private static void serviceProxyExample(Grid grid) throws Exception {
+    private static void serviceProxyExample(Ignite ignite) throws Exception {
         System.out.println(">>>");
         System.out.println(">>> Starting service proxy example.");
         System.out.println(">>>");
 
         // Get a sticky proxy for node-singleton map service.
-        SimpleMapService<Integer, String> mapSvc = grid.services().serviceProxy("myNodeSingletonService", SimpleMapService.class, true);
+        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myNodeSingletonService", SimpleMapService.class, true);
 
         int cnt = 10;
 
@@ -103,16 +103,16 @@ public class ServicesExample {
     /**
      * Simple example to demonstrate how to inject service proxy into distributed closures.
      *
-     * @param grid Grid instance.
+     * @param ignite Grid instance.
      * @throws Exception If failed.
      */
-    private static void serviceInjectionExample(Grid grid) throws Exception {
+    private static void serviceInjectionExample(Ignite ignite) throws Exception {
         System.out.println(">>>");
         System.out.println(">>> Starting service injection example.");
         System.out.println(">>>");
 
         // Get a sticky proxy for cluster-singleton map service.
-        SimpleMapService<Integer, String> mapSvc = grid.services().serviceProxy("myClusterSingletonService", SimpleMapService.class, true);
+        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myClusterSingletonService", SimpleMapService.class, true);
 
         int cnt = 10;
 
@@ -121,7 +121,7 @@ public class ServicesExample {
             mapSvc.put(i, Integer.toString(i));
 
         // Broadcast closure to every node.
-        final Collection<Integer> mapSizes = grid.compute().broadcast(new SimpleClosure());
+        final Collection<Integer> mapSizes = ignite.compute().broadcast(new SimpleClosure());
 
         System.out.println("Closure execution result: " + mapSizes);
 

@@ -27,10 +27,10 @@ import java.util.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTest {
     /** */
-    private static Grid grid1;
+    private static Ignite ignite1;
 
     /** */
-    private static Grid grid2;
+    private static Ignite ignite2;
 
     /** */
     public GridJobStealingZeroActiveJobsSelfTest() {
@@ -39,13 +39,13 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid1 = startGrid(1);
-        grid2 = startGrid(2);
+        ignite1 = startGrid(1);
+        ignite2 = startGrid(2);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid1 = null;
+        ignite1 = null;
 
         stopGrid(1);
         stopGrid(2);
@@ -57,7 +57,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
      * @throws GridException If test failed.
      */
     public void testTwoJobs() throws GridException {
-        grid1.compute().execute(JobStealingTask.class, null);
+        ignite1.compute().execute(JobStealingTask.class, null);
     }
 
     /** {@inheritDoc} */
@@ -86,7 +86,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     public static class JobStealingTask extends GridComputeTaskAdapter<Object, Object> {
         /** Grid. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Logger. */
         @GridLoggerResource
@@ -100,7 +100,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
 
             // Put all jobs onto local node.
             for (Iterator iter = subgrid.iterator(); iter.hasNext(); iter.next())
-                map.put(new GridJobStealingJob(5000L), grid.cluster().localNode());
+                map.put(new GridJobStealingJob(5000L), ignite.cluster().localNode());
 
             return map;
         }
@@ -118,8 +118,8 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
 
             assert name1.equals(name2);
 
-            assert !name1.equals(grid1.name());
-            assert name1.equals(grid2.name());
+            assert !name1.equals(ignite1.name());
+            assert name1.equals(ignite2.name());
 
             return null;
         }
@@ -132,7 +132,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     public static final class GridJobStealingJob extends GridComputeJobAdapter {
         /** Injected grid. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /**
          * @param arg Job argument.
@@ -154,7 +154,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
                 throw new GridException("Job got interrupted.", e);
             }
 
-            return grid.name();
+            return ignite.name();
         }
     }
 }

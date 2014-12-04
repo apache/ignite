@@ -54,12 +54,12 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings( {"AssignmentToCatchBlockParameter"})
     public void testCancel() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridCancelTestTask.class, GridCancelTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridCancelTestTask.class, GridCancelTestTask.class.getClassLoader());
 
         GridComputeTaskFuture<?> res0 =
-            executeAsync(grid.compute().withTimeout(maxJobExecTime * 2), GridCancelTestTask.class.getName(), null);
+            executeAsync(ignite.compute().withTimeout(maxJobExecTime * 2), GridCancelTestTask.class.getName(), null);
 
         try {
             Object res = res0.get();

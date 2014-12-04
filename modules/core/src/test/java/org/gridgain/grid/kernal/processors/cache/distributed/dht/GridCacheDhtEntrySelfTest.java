@@ -110,7 +110,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Near cache.
      */
-    private GridCacheProjection<Integer, String> near(Grid g) {
+    private GridCacheProjection<Integer, String> near(Ignite g) {
         return g.cache(null);
     }
 
@@ -119,7 +119,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+    private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
         return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 
@@ -127,7 +127,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param nodeId Node ID.
      * @return Grid.
      */
-    private Grid grid(UUID nodeId) {
+    private Ignite grid(UUID nodeId) {
         return G.grid(nodeId);
     }
 

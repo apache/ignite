@@ -49,9 +49,9 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @param execId Execution ID.
      */
     private void checkTimedOutEvents(final GridUuid execId) {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        Collection<GridEvent> evts = grid.events().localQuery(new PE() {
+        Collection<GridEvent> evts = ignite.events().localQuery(new PE() {
             @Override public boolean apply(GridEvent evt) {
                 return ((GridTaskEvent) evt).taskSessionId().equals(execId);
             }
@@ -64,11 +64,11 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousTimeout() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = executeAsync(grid.compute().withTimeout(TIMEOUT),
+        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute().withTimeout(TIMEOUT),
             GridTaskTimeoutTestTask.class.getName(), null);
 
         try {
@@ -89,11 +89,11 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAsynchronousTimeout() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = executeAsync(grid.compute().withTimeout(TIMEOUT),
+        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute().withTimeout(TIMEOUT),
             GridTaskTimeoutTestTask.class.getName(), null);
 
         // Allow timed out events to be executed.
@@ -106,7 +106,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousTimeoutMultithreaded() throws Exception {
-        final Grid grid = G.grid(getTestGridName());
+        final Ignite ignite = G.grid(getTestGridName());
 
         final AtomicBoolean finish = new AtomicBoolean();
 
@@ -135,7 +135,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
                 while (!finish.get()) {
                     try {
                         GridComputeTaskFuture<?> fut = executeAsync(
-                            grid.compute().withTimeout(TIMEOUT), GridTaskTimeoutTestTask.class.getName(), null);
+                            ignite.compute().withTimeout(TIMEOUT), GridTaskTimeoutTestTask.class.getName(), null);
 
                         fut.get();
 

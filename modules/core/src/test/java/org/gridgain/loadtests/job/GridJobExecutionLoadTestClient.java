@@ -33,7 +33,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     public static final int WARM_UP_DURATION = 60 * 1000;
 
     /** Grid. */
-    private static Grid g;
+    private static Ignite g;
 
     /** Transaction count. */
     private static LongAdder txCnt = new LongAdder();

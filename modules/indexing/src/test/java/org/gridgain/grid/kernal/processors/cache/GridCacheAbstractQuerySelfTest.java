@@ -59,7 +59,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     private static final UUID subjId = UUID.fromString("8EB3B06D-0885-4B4A-9A54-02C93EF09B65");
 
     /** */
-    protected Grid grid;
+    protected Ignite ignite;
 
     /**
      * @return Grid count.
@@ -138,7 +138,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = startGridsMultiThreaded(gridCount());
+        ignite = startGridsMultiThreaded(gridCount());
     }
 
     /** {@inheritDoc} */
@@ -147,7 +147,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         store.reset();
 
-        grid = null;
+        ignite = null;
     }
 
     /**
@@ -156,7 +156,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testDifferentKeyTypes() throws Exception {
-        GridCache<Object, Object> cache = grid.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         cache.putx("key", "value");
 
@@ -171,7 +171,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testDifferentValueTypes() throws Exception {
-        GridCache<Object, Object> cache = grid.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         cache.putx("key", "value");
 
@@ -186,7 +186,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testStringType() throws Exception {
-        GridCache<String, String> cache = grid.cache(null);
+        GridCache<String, String> cache = ignite.cache(null);
 
         cache.putx("tst", "test");
 
@@ -203,7 +203,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testIntegerType() throws Exception {
-        GridCache<String, Integer> cache = grid.cache(null);
+        GridCache<String, Integer> cache = ignite.cache(null);
 
         String key = "k";
 
@@ -228,8 +228,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     public void testUserDefinedFunction() throws GridException {
         // Without alias.
-        GridCacheQuery<List<?>> qry = grid.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
-            projection(grid.cluster());
+        GridCacheQuery<List<?>> qry = ignite.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
+            projection(ignite.cluster());
 
         GridCacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -243,7 +243,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(4, row.get(1));
 
         // With alias.
-        qry = grid.cache(null).queries().createSqlFieldsQuery("select _cube_(1), _cube_(2)").projection(grid.cluster());
+        qry = ignite.cache(null).queries().createSqlFieldsQuery("select _cube_(1), _cube_(2)").projection(ignite.cluster());
 
         fut = qry.execute();
 
@@ -257,7 +257,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(8, row.get(1));
 
         // Not registered.
-        final GridCacheQuery<List<?>> qry3 = grid.cache(null).queries().createSqlFieldsQuery("select no()");
+        final GridCacheQuery<List<?>> qry3 = ignite.cache(null).queries().createSqlFieldsQuery("select no()");
 
         GridTestUtils.assertThrows(
             log,
@@ -279,7 +279,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testExpiration() throws Exception {
-        GridCache<String, Integer> cache = grid.cache(null);
+        GridCache<String, Integer> cache = ignite.cache(null);
 
         GridCacheEntry<String, Integer> entry = cache.entry("key1");
 
@@ -308,7 +308,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testIllegalBounds() throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         cache.put(1, 1);
         cache.put(2, 2);
@@ -325,7 +325,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testComplexType() throws Exception {
-        GridCache<Key, GridCacheQueryTestValue> cache = grid.cache(null);
+        GridCache<Key, GridCacheQueryTestValue> cache = ignite.cache(null);
 
         GridCacheQueryTestValue val1 = new GridCacheQueryTestValue();
 
@@ -395,7 +395,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testSelectQuery() throws Exception {
-        GridCache<String, String> cache = grid.cache(null);
+        GridCache<String, String> cache = ignite.cache(null);
 
         cache.putx("key", "value");
 
@@ -414,7 +414,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testObjectQuery() throws Exception {
-        GridCache<Integer, ObjectValue> cache = grid.cache(null);
+        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
 
         ObjectValue val = new ObjectValue("test", 0);
 
@@ -452,7 +452,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testTextQueryOnProjection() throws Exception {
-        GridCache<Integer, ObjectValue> cache = grid.cache(null);
+        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
 
         cache.putx(1, new ObjectValue("test", 1));
         cache.putx(2, new ObjectValue("test", 2));
@@ -486,7 +486,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testObjectQueryWithSwap() throws Exception {
-        GridCache<Integer, ObjectValue> cache = grid.cache(null);
+        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
 
         boolean partitioned = cache.configuration().getCacheMode() == PARTITIONED;
 
@@ -495,7 +495,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         for (int i = 0; i < cnt; i++)
             cache.putx(i, new ObjectValue("test" + i, i));
 
-        for (Grid g : G.allGrids()) {
+        for (Ignite g : G.allGrids()) {
             GridCache<Integer, ObjectValue> c = g.cache(null);
 
             for (int i = 0; i < cnt; i++) {
@@ -576,7 +576,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testFullTextSearch() throws Exception {
-        GridCache<Integer, ObjectValue> cache = grid.cache(null);
+        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
 
         // Try to execute on empty cache first.
         GridCacheQuery<Map.Entry<Integer, ObjectValue>> qry = cache.queries().createFullTextQuery(ObjectValue.class,
@@ -623,8 +623,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testRemoveIndex() throws Exception {
-        GridCache<Integer, ObjectValue> cache = grid.cache(null);
-        GridCache<Integer, ObjectValue> cache1 = grid.cache("c1");
+        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
+        GridCache<Integer, ObjectValue> cache1 = ignite.cache("c1");
 
         ObjectValue val = new ObjectValue("test full text", 0);
 
@@ -633,8 +633,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         cache.putx(key, val);
         cache1.putx(key, val);
 
-        GridCacheQueryManager<Object, Object> qryMgr = ((GridKernal)grid).internalCache().context().queries();
-        GridCacheQueryManager<Object, Object> qryMgr1 = ((GridKernal)grid).internalCache("c1").context().queries();
+        GridCacheQueryManager<Object, Object> qryMgr = ((GridKernal) ignite).internalCache().context().queries();
+        GridCacheQueryManager<Object, Object> qryMgr1 = ((GridKernal) ignite).internalCache("c1").context().queries();
 
         assert hasIndexTable(ObjectValue.class, qryMgr);
         assert hasIndexTable(ObjectValue.class, qryMgr1);
@@ -659,7 +659,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testScanQuery() throws Exception {
-        GridCache<String, String> c1 = grid.cache(null);
+        GridCache<String, String> c1 = ignite.cache(null);
 
         c1.putx("key", "value");
 
@@ -687,7 +687,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testTwoObjectsTextSearch() throws Exception {
-        GridCache<Object, Object> c = grid.cache(null);
+        GridCache<Object, Object> c = ignite.cache(null);
 
         c.put(1, new ObjectValue("ObjectValue str", 1));
         c.put("key", new ObjectValueOther("ObjectValueOther str"));
@@ -724,7 +724,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testTransformQuery() throws Exception {
-        GridCache<UUID, Person> c = grid.cache(null);
+        GridCache<UUID, Person> c = ignite.cache(null);
 
         final Person p1 = new Person("Bob", 100);
         final Person p2 = new Person("Tom", 200);
@@ -814,7 +814,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testReduceQuery() throws Exception {
-        GridCache<String, Integer> c = grid.cache(null);
+        GridCache<String, Integer> c = ignite.cache(null);
 
         assert c.putx("key1", 1);
         assert c.putx("key2", 2);
@@ -835,7 +835,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testReduceQueryOnProjection() throws Exception {
-        GridCacheProjection<String, Integer> c = grid.cache(null);
+        GridCacheProjection<String, Integer> c = ignite.cache(null);
 
         assert c.putx("key1", 1);
         assert c.putx("key2", 2);
@@ -850,7 +850,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         };
 
-        GridCacheProjection<String, Integer> cachePrj = grid.<String, Integer>cache(null).projection(p);
+        GridCacheProjection<String, Integer> cachePrj = ignite.<String, Integer>cache(null).projection(p);
 
         GridCacheQuery<Map.Entry<String, Integer>> q = cachePrj.queries().createSqlQuery(Integer.class, "_val > 2");
 
@@ -863,7 +863,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testEmptyObject() throws Exception {
-        GridCache<EmptyObject, EmptyObject> cache = grid.cache(null);
+        GridCache<EmptyObject, EmptyObject> cache = ignite.cache(null);
 
         cache.putx(new EmptyObject(1), new EmptyObject(2));
 
@@ -879,7 +879,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testPrimitiveType() throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         assert cache.putx(1, 1);
         assert cache.putx(2, 2);
@@ -915,13 +915,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(cacheName);
+        GridCache<Integer, Integer> cache = ignite.cache(cacheName);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
 
         GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
-            "_key >= 0").projection(grid.cluster());
+            "_key >= 0").projection(ignite.cluster());
 
         q.pageSize(10);
         q.enableDedup(true);
@@ -952,7 +952,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testPaginationIteratorKeepAll() throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
@@ -1015,7 +1015,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void testPaginationGet(@Nullable String cacheName) throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(cacheName);
+        GridCache<Integer, Integer> cache = ignite.cache(cacheName);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
@@ -1045,7 +1045,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testScanFilters() throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
@@ -1084,7 +1084,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testEmptyGrid() throws Exception {
-        GridCache<String, Integer> cache = grid.cache(null);
+        GridCache<String, Integer> cache = ignite.cache(null);
 
         String key = "k";
 
@@ -1106,7 +1106,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws GridException if failed.
      */
     public void testBadHashObjectKey() throws GridException {
-        GridCache<BadHashKeyObject, Integer> cache = grid.cache(null);
+        GridCache<BadHashKeyObject, Integer> cache = ignite.cache(null);
 
         cache.put(new BadHashKeyObject("test_key1"), 9);
         cache.put(new BadHashKeyObject("test_key0"), 1005001);
@@ -1120,7 +1120,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws GridException if failed.
      */
     public void testTextIndexedKey() throws GridException {
-        GridCache<ObjectValue, Integer> cache = grid.cache(null);
+        GridCache<ObjectValue, Integer> cache = ignite.cache(null);
 
         cache.put(new ObjectValue("test_key1", 10), 19);
         cache.put(new ObjectValue("test_key0", 11), 11005);
@@ -1135,7 +1135,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testAnonymousClasses() throws Exception {
-        GridCache<Integer, Object> cache = grid.cache(null);
+        GridCache<Integer, Object> cache = ignite.cache(null);
 
         Object val = new Object() {
             @GridCacheQuerySqlField
@@ -1177,7 +1177,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testTwoAnonymousClasses() throws Exception {
-        GridCache<Integer, Object> cache = grid.cache(null);
+        GridCache<Integer, Object> cache = ignite.cache(null);
 
         Object val1 = new Object() {
             @Override public String toString() {
@@ -1207,7 +1207,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testOrderByOnly() throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 10; i++)
             assertTrue(cache.putx(i, i));
@@ -1238,7 +1238,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLimitOnly() throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 10; i++)
             assertTrue(cache.putx(i, i));
@@ -1269,7 +1269,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testArray() throws Exception {
-        GridCache<Integer, ArrayObject> cache = grid.cache(null);
+        GridCache<Integer, ArrayObject> cache = ignite.cache(null);
 
         assertTrue(cache.putx(1, new ArrayObject(new Long[] {1L, null, 3L})));
         assertTrue(cache.putx(2, new ArrayObject(new Long[] {4L, 5L, 6L})));
@@ -1362,7 +1362,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 20; i++)
             assertTrue(cache.putx(i, i));
@@ -1456,7 +1456,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 20; i++)
             assertTrue(cache.putx(i, i));
@@ -1554,7 +1554,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Person> cache = grid.cache(null);
+        GridCache<Integer, Person> cache = ignite.cache(null);
 
         assertTrue(cache.putx(1, new Person("Bob White", 1000)));
         assertTrue(cache.putx(2, new Person("Tom White", 1000)));
@@ -1650,7 +1650,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Person> cache = grid.cache(null);
+        GridCache<Integer, Person> cache = ignite.cache(null);
 
         for (int i = 1; i <= 20; i++)
             assertTrue(cache.putx(i, new Person("Person " + i, i)));

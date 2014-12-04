@@ -53,7 +53,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
         private static final long serialVersionUID = 0L;
 
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         @SuppressWarnings("UnusedDeclaration")
         @GridJobContextResource
@@ -78,7 +78,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() throws GridException {
-            return run(jobCtx, grid.hadoop(), args);
+            return run(jobCtx, ignite.hadoop(), args);
         }
     }
 

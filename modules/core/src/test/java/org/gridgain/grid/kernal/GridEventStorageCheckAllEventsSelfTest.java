@@ -32,7 +32,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTest {
     /** */
-    private static Grid grid;
+    private static Ignite ignite;
 
     /**
      *
@@ -43,11 +43,11 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid = G.grid(getTestGridName());
+        ignite = G.grid(getTestGridName());
 
         long tstamp = startTimestamp();
 
-        grid.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
 
         List<GridEvent> evts = pullEvents(tstamp, 1);
 
@@ -56,7 +56,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        grid = null;
+        ignite = null;
     }
 
     /**
@@ -100,8 +100,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         generateEvents(null, new GridAllEventsSuccessTestJob()).get();
 
-        grid.compute().undeployTask(GridAllEventsTestTask.class.getName());
-        grid.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
+        ignite.compute().undeployTask(GridAllEventsTestTask.class.getName());
+        ignite.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
 
         List<GridEvent> evts = pullEvents(tstamp, 12);
 
@@ -251,7 +251,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         GridPredicate<GridEvent> filter = new CustomEventFilter(GridAllEventsTestTask.class.getName(), since);
 
         for (int i = 0; i < 3; i++) {
-            List<GridEvent> evts = new ArrayList<>(grid.events().localQuery((filter)));
+            List<GridEvent> evts = new ArrayList<>(ignite.events().localQuery((filter)));
 
             info("Filtered events [size=" + evts.size() + ", evts=" + evts + ']');
 
@@ -282,7 +282,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private GridComputeTaskFuture<?> generateEvents(@Nullable Long timeout, GridComputeJob job) throws Exception {
-        GridCompute comp = grid.compute().enableAsync();
+        GridCompute comp = ignite.compute().enableAsync();
 
         if (timeout == null)
             comp.execute(GridAllEventsTestTask.class.getName(), job);

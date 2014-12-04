@@ -91,7 +91,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
                 }
             }, 1);
 
-            Grid g4 = grid(4);
+            Ignite g4 = grid(4);
 
             GridDataLoader<Object, Object> dataLdr = g4.dataLoader(null);
 
@@ -132,7 +132,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             startGrids(2);
 
-            Grid g0 = grid(0);
+            Ignite g0 = grid(0);
 
             GridMarshaller marsh = g0.configuration().getMarshaller();
 
@@ -182,7 +182,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             startGrids(2);
 
-            Grid g0 = grid(0);
+            Ignite g0 = grid(0);
 
             GridMarshaller marsh = g0.configuration().getMarshaller();
 

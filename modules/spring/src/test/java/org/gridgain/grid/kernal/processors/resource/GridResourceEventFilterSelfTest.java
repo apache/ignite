@@ -38,13 +38,13 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         resetResourceCounters();
 
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
             startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Executes task and creates events
-            grid1.compute().execute(TestTask.class, null);
+            ignite1.compute().execute(TestTask.class, null);
 
-            List<GridEvent> evts = grid1.events().remoteQuery(new CustomEventFilter1(), 0);
+            List<GridEvent> evts = ignite1.events().remoteQuery(new CustomEventFilter1(), 0);
 
             assert !F.isEmpty(evts);
 
@@ -66,13 +66,13 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         resetResourceCounters();
 
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
             startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Executes task and creates events.
-            grid1.compute().execute(TestTask.class, null);
+            ignite1.compute().execute(TestTask.class, null);
 
-            List<GridEvent> evts = grid1.events().remoteQuery(new CustomEventFilter2(), 0);
+            List<GridEvent> evts = ignite1.events().remoteQuery(new CustomEventFilter2(), 0);
 
             assert evts != null;
             assert evts.size() == 3;

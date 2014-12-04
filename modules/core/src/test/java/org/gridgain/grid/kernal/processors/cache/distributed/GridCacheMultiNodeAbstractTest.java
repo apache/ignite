@@ -32,13 +32,13 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** Grid 1. */
-    private static Grid grid1;
+    private static Ignite ignite1;
 
     /** Grid 2. */
-    private static Grid grid2;
+    private static Ignite ignite2;
 
     /** Grid 3. */
-    private static Grid grid3;
+    private static Ignite ignite3;
 
     /** Cache 1. */
     private static GridCache<Integer, String> cache1;
@@ -70,13 +70,13 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid1 = startGrid(1);
-        grid2 = startGrid(2);
-        grid3 = startGrid(3);
+        ignite1 = startGrid(1);
+        ignite2 = startGrid(2);
+        ignite3 = startGrid(3);
 
-        cache1 = grid1.cache(null);
-        cache2 = grid2.cache(null);
-        cache3 = grid3.cache(null);
+        cache1 = ignite1.cache(null);
+        cache2 = ignite2.cache(null);
+        cache3 = ignite3.cache(null);
     }
 
     /** {@inheritDoc} */
@@ -87,93 +87,93 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache2 = null;
         cache3 = null;
 
-        grid1 = null;
-        grid2 = null;
-        grid3 = null;
+        ignite1 = null;
+        ignite2 = null;
+        ignite3 = null;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        removeListeners(grid1);
-        removeListeners(grid2);
-        removeListeners(grid3);
+        removeListeners(ignite1);
+        removeListeners(ignite2);
+        removeListeners(ignite3);
 
         lsnrs.clear();
     }
 
     /**
-     * @param grid Grid to remove listeners from.
+     * @param ignite Grid to remove listeners from.
      */
-    private void removeListeners(Grid grid) {
-        if (grid != null)
+    private void removeListeners(Ignite ignite) {
+        if (ignite != null)
             for (CacheEventListener lsnr : lsnrs) {
                 assert lsnr.latch.getCount() == 0;
 
-                grid.events().stopLocalListen(lsnr);
+                ignite.events().stopLocalListen(lsnr);
             }
     }
 
     /**
      *
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param lsnr Listener.
      * @param type Event types.
      */
-    private void addListener(Grid grid, CacheEventListener lsnr, int... type) {
+    private void addListener(Ignite ignite, CacheEventListener lsnr, int... type) {
         if (!lsnrs.contains(lsnr))
             lsnrs.add(lsnr);
 
-        grid.events().localListen(lsnr, type.length == 0 ? EVTS_CACHE : type);
+        ignite.events().localListen(lsnr, type.length == 0 ? EVTS_CACHE : type);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testBasicPut() throws Exception {
-        checkPuts(3, grid1);
+        checkPuts(3, ignite1);
     }
 
     /**
      * @throws Exception If test fails.
      */
     public void testMultiNodePut() throws Exception {
-        checkPuts(1, grid1, grid2, grid3);
-        checkPuts(1, grid2, grid1, grid3);
-        checkPuts(1, grid3, grid1, grid2);
+        checkPuts(1, ignite1, ignite2, ignite3);
+        checkPuts(1, ignite2, ignite1, ignite3);
+        checkPuts(1, ignite3, ignite1, ignite2);
     }
 
     /**
      * @throws Exception If test fails.
      */
     public void testMultiValuePut() throws Exception {
-        checkPuts(1, grid1);
+        checkPuts(1, ignite1);
     }
 
     /**
      * @throws Exception If test fails.
      */
     public void testMultiValueMultiNodePut() throws Exception {
-        checkPuts(3, grid1, grid2, grid3);
-        checkPuts(3, grid2, grid1, grid3);
-        checkPuts(3, grid3, grid1, grid2);
+        checkPuts(3, ignite1, ignite2, ignite3);
+        checkPuts(3, ignite2, ignite1, ignite3);
+        checkPuts(3, ignite3, ignite1, ignite2);
     }
 
     /**
      * Checks cache puts.
      *
      * @param cnt Count of puts.
-     * @param grids Grids.
+     * @param ignites Grids.
      * @throws Exception If check fails.
      */
-    private void checkPuts(int cnt, Grid... grids) throws Exception {
-        CountDownLatch latch = new CountDownLatch(grids.length * cnt);
+    private void checkPuts(int cnt, Ignite... ignites) throws Exception {
+        CountDownLatch latch = new CountDownLatch(ignites.length * cnt);
 
         CacheEventListener lsnr = new CacheEventListener(latch, EVT_CACHE_OBJECT_PUT);
 
-        for (Grid grid : grids)
-            addListener(grid, lsnr);
+        for (Ignite ignite : ignites)
+            addListener(ignite, lsnr);
 
-        GridCache<Integer, String> cache1 = grids[0].cache(null);
+        GridCache<Integer, String> cache1 = ignites[0].cache(null);
 
         for (int i = 1; i <= cnt; i++)
             cache1.put(i, "val" + i);
@@ -187,8 +187,8 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
         latch.await(10, SECONDS);
 
-        for (Grid grid : grids) {
-            GridCache<Integer, String> cache = grid.cache(null);
+        for (Ignite ignite : ignites) {
+            GridCache<Integer, String> cache = ignite.cache(null);
 
             if (cache == cache1)
                 continue;
@@ -205,23 +205,23 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         assert !cache1.isLocked(2);
         assert !cache1.isLocked(3);
 
-        for (Grid grid : grids)
-            grid.events().stopLocalListen(lsnr);
+        for (Ignite ignite : ignites)
+            ignite.events().stopLocalListen(lsnr);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testLockUnlock() throws Exception {
-        CacheEventListener lockLsnr1 = new CacheEventListener(grid1, new CountDownLatch(1), EVT_CACHE_OBJECT_LOCKED);
+        CacheEventListener lockLsnr1 = new CacheEventListener(ignite1, new CountDownLatch(1), EVT_CACHE_OBJECT_LOCKED);
 
-        addListener(grid1, lockLsnr1, EVT_CACHE_OBJECT_LOCKED);
+        addListener(ignite1, lockLsnr1, EVT_CACHE_OBJECT_LOCKED);
 
         CacheEventListener unlockLsnr = new CacheEventListener(new CountDownLatch(3), EVT_CACHE_OBJECT_UNLOCKED);
 
-        addListener(grid1, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
-        addListener(grid2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
-        addListener(grid3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
+        addListener(ignite1, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
+        addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
+        addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
 
         GridFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
 
@@ -261,9 +261,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     public void testConcurrentLockAsync() throws Exception {
         CacheEventListener unlockLsnr = new CacheEventListener(new CountDownLatch(9), EVT_CACHE_OBJECT_UNLOCKED);
 
-        addListener(grid1, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
-        addListener(grid2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
-        addListener(grid3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
+        addListener(ignite1, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
+        addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
+        addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
 
         GridFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
         GridFuture<Boolean> f2 = cache2.lockAsync(1, 0L);
@@ -348,9 +348,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
         CacheEventListener lsnr = new CacheEventListener(latch, EVT_CACHE_OBJECT_PUT);
 
-        addListener(grid1, lsnr);
-        addListener(grid2, lsnr);
-        addListener(grid3, lsnr);
+        addListener(ignite1, lsnr);
+        addListener(ignite2, lsnr);
+        addListener(ignite3, lsnr);
 
         GridFuture<String> f1 = cache1.putAsync(2, "val1");
         GridFuture<String> f2 = cache2.putAsync(2, "val2");
@@ -413,7 +413,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     private class CacheEventListener implements GridPredicate<GridEvent> {
         /** */
         @GridToStringExclude
-        private final Grid grid;
+        private final Ignite ignite;
 
         /** Wait latch. */
         @GridToStringExclude
@@ -429,7 +429,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         CacheEventListener(CountDownLatch latch, Integer... evts) {
             this.latch = latch;
 
-            grid = null;
+            ignite = null;
 
             assert evts.length > 0;
 
@@ -437,12 +437,12 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         }
 
         /**
-         * @param grid Grid.
+         * @param ignite Grid.
          * @param latch Wait latch.
          * @param evts Events.
          */
-        CacheEventListener(Grid grid, CountDownLatch latch, Integer... evts) {
-            this.grid = grid;
+        CacheEventListener(Ignite ignite, CountDownLatch latch, Integer... evts) {
+            this.ignite = ignite;
             this.latch = latch;
 
             assert evts.length > 0;
@@ -462,7 +462,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
             info("Grid cache event [type=" + evt.type() + ", latch=" + latch.getCount() + ", evt=" + evt + ']');
 
             if (evts.contains(evt.type()))
-                if (grid == null || evt.node().id().equals(grid.cluster().localNode().id())) {
+                if (ignite == null || evt.node().id().equals(ignite.cluster().localNode().id())) {
                     if (latch.getCount() > 0)
                         latch.countDown();
                     else
@@ -475,7 +475,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CacheEventListener.class, this, "latchCount", latch.getCount(),
-                "grid", grid != null ? grid.name() : "N/A", "evts", evts);
+                "grid", ignite != null ? ignite.name() : "N/A", "evts", evts);
         }
     }
 }

@@ -52,7 +52,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     };
 
     /** Dflt grid. */
-    protected Grid dfltGrid;
+    protected Ignite dfltIgnite;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -120,7 +120,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, cache().globalSize());
         assertEquals(0, cache().globalPrimarySize());
 
-        dfltGrid = grid(0);
+        dfltIgnite = grid(0);
     }
 
     /** {@inheritDoc} */
@@ -132,7 +132,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, cache().globalSize());
         assertEquals(0, cache().globalPrimarySize());
 
-        dfltGrid = null;
+        dfltIgnite = null;
     }
 
     /**
@@ -3240,7 +3240,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache().isLocked("key");
             assert cache().isLockedByThread("key");
 
-            assert !forLocal(dfltGrid).call(new Callable<Boolean>() {
+            assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
                 @Override public Boolean call() throws GridException {
                     return cache().lock("key", 100);
                 }
@@ -3268,7 +3268,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert e.isLocked();
 
-            assert !forLocal(dfltGrid).call(new Callable<Boolean>() {
+            assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
                 @Override public Boolean call() throws GridException {
                     return e.lock(100);
                 }
@@ -3295,7 +3295,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            GridCompute comp = forLocal(dfltGrid).enableAsync();
+            GridCompute comp = forLocal(dfltIgnite).enableAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override
@@ -3373,7 +3373,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
-            GridCompute comp = forLocal(dfltGrid).enableAsync();
+            GridCompute comp = forLocal(dfltIgnite).enableAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {

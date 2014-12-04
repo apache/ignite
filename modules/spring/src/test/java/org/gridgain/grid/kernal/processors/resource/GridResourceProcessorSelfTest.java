@@ -14,7 +14,6 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
@@ -322,7 +321,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
             final GridOutClosure<Object> callable = new GridOutClosure<Object>() {
                 /** Should be injected despite this is a {@link Callable} instance nested in a job. */
-                @GridInstanceResource private Grid grid;
+                @GridInstanceResource private Ignite grid;
 
                 /** Runnable object nested inside callable. */
                 private Runnable run = new GridRunnable() {
@@ -361,7 +360,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInjectResourceGridTaskAndJob() throws Exception {
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         try {
             // Should not be null if task has been completed successfully (meaning all resources have been injected).

@@ -36,7 +36,7 @@ public final class CacheAtomicStampedExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic stamped example started.");
 

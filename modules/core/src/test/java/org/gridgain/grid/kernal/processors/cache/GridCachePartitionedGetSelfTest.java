@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -211,7 +210,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("deprecation")
     private void prepare() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCacheEntry<String, Integer> e = g.<String, Integer>cache(null).entry(KEY);
 

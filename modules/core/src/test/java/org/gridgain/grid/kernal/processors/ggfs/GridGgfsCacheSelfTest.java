@@ -97,7 +97,7 @@ public class GridGgfsCacheSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCache() throws Exception {
-        final Grid g = grid();
+        final Ignite g = grid();
 
         assert g.caches().size() == 1;
 

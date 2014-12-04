@@ -231,10 +231,10 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
                 compute(G.grid(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @GridInstanceResource
-                    private Grid grid;
+                    private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = grid.cache(null);
+                        GridCache<Integer, String> cache = ignite.cache(null);
 
                         assertNotNull(cache);
 
@@ -248,7 +248,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
         }
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assertEquals(fullFailure ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
         }
     }
@@ -362,10 +362,10 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
                 compute(G.grid(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @GridInstanceResource
-                    private Grid grid;
+                    private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = grid.cache(null);
+                        GridCache<Integer, String> cache = ignite.cache(null);
 
                         assertNotNull(cache);
 
@@ -379,7 +379,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
         }
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assertEquals(!commmit ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
         }
     }

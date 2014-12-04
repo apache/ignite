@@ -29,7 +29,7 @@ public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
     private static final int GRID_COUNT = 2;
 
     /** Grid instances. */
-    private static final List<Grid> grids = new ArrayList<>();
+    private static final List<Ignite> IGNITEs = new ArrayList<>();
 
     /** Transaction timeout. */
     private static final long TIMEOUT = 50;
@@ -39,7 +39,7 @@ public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
      */
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < GRID_COUNT; i++)
-            grids.add(startGrid(i));
+            IGNITEs.add(startGrid(i));
     }
 
     /**
@@ -48,7 +48,7 @@ public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        grids.clear();
+        IGNITEs.clear();
     }
 
     /**
@@ -56,7 +56,7 @@ public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> GridCache<K, V> cache(int i) {
-        return grids.get(i).cache(null);
+        return IGNITEs.get(i).cache(null);
     }
 
     /**

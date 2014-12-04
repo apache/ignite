@@ -90,7 +90,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testLuceneIndex() throws Exception {
-        final Grid g = startGrid(0);
+        final Ignite g = startGrid(0);
 
         final GridCache<Integer, ObjectValue> cache1 = g.cache("local1");
         final GridCache<Integer, ObjectValue> cache2 = g.cache("local2");
@@ -147,7 +147,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testLuceneIndex1() throws Exception {
-        final Grid g = startGrid(0);
+        final Ignite g = startGrid(0);
 
         final GridCache<Integer, ObjectValue> cache1 = g.cache("local1");
         final GridCache<Integer, ObjectValue> cache2 = g.cache("local2");
@@ -218,7 +218,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testLuceneIndex2() throws Exception {
-        final Grid g = startGrid(0);
+        final Ignite g = startGrid(0);
 
         final GridCache<Integer, ObjectValue> cache1 = g.cache("local1");
         final GridCache<Integer, ObjectValue> cache2 = g.cache("local2");
@@ -291,7 +291,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testLuceneIndex3() throws Exception {
-        final Grid g = startGrid(0);
+        final Ignite g = startGrid(0);
 
         final GridCache<ObjectKey, ObjectValue> cache1 = g.cache("local1");
         final GridCache<ObjectKey, ObjectValue> cache2 = g.cache("local2");

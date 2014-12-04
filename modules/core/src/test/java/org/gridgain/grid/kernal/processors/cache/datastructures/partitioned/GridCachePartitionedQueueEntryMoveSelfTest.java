@@ -91,9 +91,9 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
             GridFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws GridException {
-                    Grid grid = grid(0);
+                    Ignite ignite = grid(0);
 
-                    GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
+                    GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
                         true, true);
 
                     for (int i = 0; i < QUEUE_CAP * 2; i++) {
@@ -131,9 +131,9 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
             GridFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws GridException {
-                    Grid grid = grid(GRID_CNT);
+                    Ignite ignite = grid(GRID_CNT);
 
-                    GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().
+                    GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().
                         queue(queueName, Integer.MAX_VALUE, true, true);
 
                     int cnt = 0;

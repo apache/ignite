@@ -235,9 +235,9 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
                     int g = rnd.nextInt(gridCount());
 
-                    Grid grid = grid(g);
+                    Ignite ignite = grid(g);
 
-                    GridCache<Object, Object> cache = grid.cache(null);
+                    GridCache<Object, Object> cache = ignite.cache(null);
 
                     int k = rnd.nextInt(range);
 
@@ -289,7 +289,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @param g Grid to check.
      */
-    private void checkKeySet(Grid g) {
+    private void checkKeySet(Ignite g) {
         GridCache<Object, Object> cache = g.cache(null);
 
         Set<Object> keys = cache.keySet();

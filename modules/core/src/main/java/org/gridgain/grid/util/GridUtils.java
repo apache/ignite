@@ -7226,9 +7226,9 @@ public abstract class GridUtils {
      * @param grids Grids.
      * @return Node IDs.
      */
-    public static Collection<UUID> gridIds(@Nullable Collection<? extends Grid> grids) {
-        return F.viewReadOnly(grids, new C1<Grid, UUID>() {
-            @Override public UUID apply(Grid g) {
+    public static Collection<UUID> gridIds(@Nullable Collection<? extends Ignite> grids) {
+        return F.viewReadOnly(grids, new C1<Ignite, UUID>() {
+            @Override public UUID apply(Ignite g) {
                 return g.cluster().localNode().id();
             }
         });
@@ -7240,9 +7240,9 @@ public abstract class GridUtils {
      * @param grids Grids.
      * @return Grid names.
      */
-    public static Collection<String> grids2names(@Nullable Collection<? extends Grid> grids) {
-        return F.viewReadOnly(grids, new C1<Grid, String>() {
-            @Override public String apply(Grid g) {
+    public static Collection<String> grids2names(@Nullable Collection<? extends Ignite> grids) {
+        return F.viewReadOnly(grids, new C1<Ignite, String>() {
+            @Override public String apply(Ignite g) {
                 return g.name();
             }
         });

@@ -174,13 +174,13 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
         while (checkIdx == idx)
             checkIdx = RAND.nextInt(GRID_CNT);
 
-        Grid checkGrid = grid(checkIdx);
+        Ignite checkIgnite = grid(checkIdx);
 
-        int msgCnt = ioSpi.getMessagesCount(checkGrid.cluster().localNode().id());
+        int msgCnt = ioSpi.getMessagesCount(checkIgnite.cluster().localNode().id());
 
-        info("Checked node: " + checkGrid.cluster().localNode().id());
+        info("Checked node: " + checkIgnite.cluster().localNode().id());
 
-        assertEquals("Invalid message count for grid: " + checkGrid.cluster().localNode().id(), 2, msgCnt);
+        assertEquals("Invalid message count for grid: " + checkIgnite.cluster().localNode().id(), 2, msgCnt);
     }
 
     /**

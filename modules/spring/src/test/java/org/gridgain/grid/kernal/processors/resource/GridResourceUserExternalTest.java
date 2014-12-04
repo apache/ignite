@@ -49,12 +49,12 @@ public class GridResourceUserExternalTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testExternalResources() throws Exception {
-        Grid grid1 = null;
-        Grid grid2 = null;
+        Ignite ignite1 = null;
+        Ignite ignite2 = null;
 
         try {
-            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             GridTestClassLoader tstClsLdr = new GridTestClassLoader(null, getClass().getClassLoader(),
                 GridUserExternalResourceTask1.class.getName(),
@@ -74,12 +74,12 @@ public class GridResourceUserExternalTest extends GridCommonAbstractTest {
                 GridUserExternalResourceTask2.class.getName());
 
             // Execute the same task twice.
-            grid1.compute().execute(taskCls1, null);
-            grid1.compute().execute(taskCls2, null);
+            ignite1.compute().execute(taskCls1, null);
+            ignite1.compute().execute(taskCls2, null);
         }
         finally {
-            GridTestUtils.close(grid1, log());
-            GridTestUtils.close(grid2, log());
+            GridTestUtils.close(ignite1, log());
+            GridTestUtils.close(ignite2, log());
         }
     }
 }

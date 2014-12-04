@@ -208,8 +208,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected final Grid startGridsMultiThreaded(int cnt) throws Exception {
-        Grid g = super.startGridsMultiThreaded(cnt);
+    @Override protected final Ignite startGridsMultiThreaded(int cnt) throws Exception {
+        Ignite g = super.startGridsMultiThreaded(cnt);
 
         awaitPartitionMapExchange();
 
@@ -221,7 +221,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
-        for (Grid g : G.allGrids()) {
+        for (Ignite g : G.allGrids()) {
             for (GridCache<?, ?> c : ((GridEx)g).cachesx()) {
                 GridCacheConfiguration cfg = c.configuration();
 
@@ -505,11 +505,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @return {@link GridCompute} for given grid's local node.
      */
-    protected GridCompute forLocal(Grid grid) {
-        return grid.compute(grid.cluster().forLocal());
+    protected GridCompute forLocal(Ignite ignite) {
+        return ignite.compute(ignite.cluster().forLocal());
     }
 
     /**

@@ -33,10 +33,10 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 @SuppressWarnings({"FieldCanBeLocal"})
 public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** Grid1. */
-    private static Grid grid1;
+    private static Ignite ignite1;
 
     /** Grid2. */
-    private static Grid grid2;
+    private static Ignite ignite2;
 
     /** (for convenience). */
     private static GridCache<Integer, String> cache1;
@@ -91,11 +91,11 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid1 = startGrid(1);
-        grid2 = startGrid(2);
+        ignite1 = startGrid(1);
+        ignite2 = startGrid(2);
 
-        cache1 = grid1.cache(null);
-        cache2 = grid2.cache(null);
+        cache1 = ignite1.cache(null);
+        cache2 = ignite2.cache(null);
     }
 
     /** {@inheritDoc} */

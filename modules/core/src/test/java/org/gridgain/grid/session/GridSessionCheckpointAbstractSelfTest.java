@@ -99,12 +99,12 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
      * @throws Exception If check failed.
      */
     protected void checkCheckpoints(GridConfiguration cfg) throws Exception {
-        Grid grid = G.start(cfg);
+        Ignite ignite = G.start(cfg);
 
         try {
-            grid.compute().localDeployTask(GridCheckpointTestTask.class, GridCheckpointTestTask.class.getClassLoader());
+            ignite.compute().localDeployTask(GridCheckpointTestTask.class, GridCheckpointTestTask.class.getClassLoader());
 
-            GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), "GridCheckpointTestTask", null);
+            GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), "GridCheckpointTestTask", null);
 
             fut.getTaskSession().saveCheckpoint("future:session:key", "future:session:testval");
             fut.getTaskSession().saveCheckpoint("future:global:key", "future:global:testval",

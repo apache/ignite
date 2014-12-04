@@ -137,11 +137,11 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
         if (partial)
             ignoreMessages(grid(1).localNode().id(), ignoreMessageClass());
 
-        final Grid txGridNode = G.grid(txNode.id());
+        final Ignite txIgniteNode = G.grid(txNode.id());
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridCache<Integer, String> cache = txGridNode.cache(null);
+                GridCache<Integer, String> cache = txIgniteNode.cache(null);
 
                 assertNotNull(cache);
 
@@ -199,10 +199,10 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
                 compute(G.grid(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @GridInstanceResource
-                    private Grid grid;
+                    private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = grid.cache(null);
+                        GridCache<Integer, String> cache = ignite.cache(null);
 
                         assertNotNull(cache);
 
@@ -215,7 +215,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
         }
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
-            for (Grid g : G.allGrids()) {
+            for (Ignite g : G.allGrids()) {
                 UUID locNodeId = g.cluster().localNode().id();
 
                 assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),

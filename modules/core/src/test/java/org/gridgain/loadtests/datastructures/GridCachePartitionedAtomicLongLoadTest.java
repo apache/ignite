@@ -90,9 +90,9 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     private class AtomicCallable implements Callable<Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
-            Grid grid = grid();
+            Ignite ignite = grid();
 
-            GridCache cache = grid.cache(null);
+            GridCache cache = ignite.cache(null);
 
             assert cache != null;
 

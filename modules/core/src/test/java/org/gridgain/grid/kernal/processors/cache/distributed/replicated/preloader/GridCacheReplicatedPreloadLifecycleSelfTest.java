@@ -71,15 +71,15 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     private GridLifecycleBean lifecycleBean(final Object[] keys) {
         return new GridLifecycleBean() {
             @GridInstanceResource
-            private Grid grid;
+            private Ignite ignite;
 
             @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
                 switch (evt) {
                     case AFTER_GRID_START: {
-                        GridCache<Object, MyValue> c1 = grid.cache("one");
-                        GridCache<Object, MyValue> c2 = grid.cache("two");
+                        GridCache<Object, MyValue> c1 = ignite.cache("one");
+                        GridCache<Object, MyValue> c2 = ignite.cache("two");
 
-                        if (!grid.name().contains("Test0")) {
+                        if (!ignite.name().contains("Test0")) {
                             if (!quiet) {
                                 info("Keys already in cache:");
 
@@ -180,7 +180,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                 int totalCnt = F.sumInt(qry.execute(new GridReducer<Map.Entry<Object, MyValue>, Integer>() {
                     @GridInstanceResource
-                    private Grid grid;
+                    private Ignite grid;
 
                     @GridLoggerResource
                     private GridLogger log0;

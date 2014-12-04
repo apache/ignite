@@ -118,7 +118,7 @@ public class GridClusterAsyncImpl extends IgniteAsyncSupportAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public Grid grid() {
+    @Override public Ignite grid() {
         return grid.grid();
     }
 

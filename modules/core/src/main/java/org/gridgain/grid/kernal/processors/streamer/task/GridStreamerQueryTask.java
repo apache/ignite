@@ -84,7 +84,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
 
         /** Injected grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** Query closure. */
         private GridClosure<GridStreamerContext, R> qryClos;

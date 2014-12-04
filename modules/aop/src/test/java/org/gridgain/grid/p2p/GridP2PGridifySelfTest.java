@@ -50,7 +50,7 @@ public class GridP2PGridifySelfTest extends GridCommonAbstractTest {
         try {
             this.depMode = depMode;
 
-            Grid grid1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
             startGrid(2);
 
             GridTestClassLoader tstClsLdr = new GridTestClassLoader(
@@ -62,11 +62,11 @@ public class GridP2PGridifySelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> taskCls1 = (Class<? extends GridComputeTask<?, ?>>)tstClsLdr.loadClass(
                 GridP2PTestTask.class.getName());
 
-            grid1.compute().localDeployTask(taskCls1, taskCls1.getClassLoader());
+            ignite1.compute().localDeployTask(taskCls1, taskCls1.getClassLoader());
 
             res = executeGridify(1);
 
-            grid1.compute().undeployTask(taskCls1.getName());
+            ignite1.compute().undeployTask(taskCls1.getName());
         }
         finally {
             stopGrid(2);

@@ -81,7 +81,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
 
-        Grid g = G.start(cfg);
+        Ignite g = G.start(cfg);
 
         ggfs = g.ggfs("ggfs");
     }

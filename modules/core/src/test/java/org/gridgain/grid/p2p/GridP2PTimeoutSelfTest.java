@@ -50,8 +50,8 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
         this.depMode = depMode;
 
         try {
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
             String path = GridTestProperties.getProperty("p2p.uri.cls");
 
@@ -89,11 +89,11 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
         this.depMode = depMode;
 
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
             startGrid(2);
 
-            grid.compute().execute(GridP2PTestTask.class, 777); // Create events.
+            ignite.compute().execute(GridP2PTestTask.class, 777); // Create events.
 
             String path = GridTestProperties.getProperty("p2p.uri.cls");
 
@@ -104,12 +104,12 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
 
             ldr.setTimeout(100);
 
-            grid.events().remoteQuery((GridPredicate<GridEvent>) filter1.newInstance(), 0);
+            ignite.events().remoteQuery((GridPredicate<GridEvent>) filter1.newInstance(), 0);
 
             ldr.setTimeout(2000);
 
             try {
-                grid.events().remoteQuery((GridPredicate<GridEvent>) filter2.newInstance(), 0);
+                ignite.events().remoteQuery((GridPredicate<GridEvent>) filter2.newInstance(), 0);
 
                 assert false; // Timeout exception must be thrown.
             }

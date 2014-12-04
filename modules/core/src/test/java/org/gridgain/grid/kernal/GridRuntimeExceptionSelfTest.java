@@ -63,12 +63,12 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExecuteFailed() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
         GridComputeTaskFuture<?> fut =
-            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
+            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
 
         try {
             fut.get();
@@ -82,7 +82,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         info("Job failed event: " + evts.get(0));
 
@@ -93,12 +93,12 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMapFailed() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
         GridComputeTaskFuture<?> fut =
-            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.MAP);
+            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.MAP);
 
         try {
             fut.get();
@@ -112,7 +112,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -123,12 +123,12 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testResultFailed() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
         GridComputeTaskFuture<?> fut =
-            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {
             fut.get();
@@ -142,7 +142,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -153,12 +153,12 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReduceFailed() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
         GridComputeTaskFuture<?> fut =
-            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {
             fut.get();
@@ -172,7 +172,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         GridUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = grid.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 

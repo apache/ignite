@@ -82,7 +82,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testAutomaticPreload() throws Exception {
-        Grid g0 = startGrid(0);
+        Ignite g0 = startGrid(0);
 
         int cnt = KEY_CNT;
 
@@ -91,8 +91,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
 
-        Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
+        Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
 
         U.sleep(1000);
 
@@ -117,7 +117,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
      * @param keyCnt Key count.
      */
     private void checkCache(GridCache<String, Integer> c, int keyCnt) {
-        Grid g = c.gridProjection().grid();
+        Ignite g = c.gridProjection().grid();
 
         for (int i = 0; i < keyCnt; i++) {
             String key = Integer.toString(i);

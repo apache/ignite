@@ -181,16 +181,16 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        final Grid master = startGrid(MASTER);
+        final Ignite master = startGrid(MASTER);
 
-        List<Grid> workers = new ArrayList<>(workerCnt);
+        List<Ignite> workers = new ArrayList<>(workerCnt);
 
         for (int i = 1; i <= workerCnt; i++)
             workers.add(startGrid("worker" + i));
 
         info("Master: " + master.cluster().localNode().id());
 
-        List<Grid> runningWorkers = new ArrayList<>(workerCnt);
+        List<Ignite> runningWorkers = new ArrayList<>(workerCnt);
 
         for (int i = 1; i <= workerCnt; i++) {
             UUID id = workers.get(i - 1).cluster().localNode().id();
@@ -269,7 +269,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                             if (failoverPushGap > 0)
                                 failoverPushGap--;
                             else {
-                                Grid victim = runningWorkers.remove(0);
+                                Ignite victim = runningWorkers.remove(0);
 
                                 info("Shutting down node: " + victim.cluster().localNode().id());
 
@@ -320,7 +320,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             // Actual primary cache size.
             int primaryCacheSize = 0;
 
-            for (Grid g : runningWorkers) {
+            for (Ignite g : runningWorkers) {
                 info(">>>>> " + g.cache(CACHE_NAME).size());
 
                 primaryCacheSize += g.cache(CACHE_NAME).primarySize();
@@ -350,16 +350,16 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        final Grid master = startGrid(MASTER);
+        final Ignite master = startGrid(MASTER);
 
-        List<Grid> workers = new ArrayList<>(workerCnt);
+        List<Ignite> workers = new ArrayList<>(workerCnt);
 
         for (int i = 1; i <= workerCnt; i++)
             workers.add(startGrid("worker" + i));
 
         info("Master: " + master.cluster().localNode().id());
 
-        List<Grid> runningWorkers = new ArrayList<>(workerCnt);
+        List<Ignite> runningWorkers = new ArrayList<>(workerCnt);
 
         for (int i = 1; i <= workerCnt; i++) {
             UUID id = workers.get(i - 1).cluster().localNode().id();
@@ -442,7 +442,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                             if (failoverPushGap > 0)
                                 failoverPushGap--;
                             else {
-                                Grid victim = runningWorkers.remove(0);
+                                Ignite victim = runningWorkers.remove(0);
 
                                 info("Shutting down node: " + victim.cluster().localNode().id());
 
@@ -520,7 +520,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             // Actual primary cache size.
             int primaryCacheSize = 0;
 
-            for (Grid g : runningWorkers) {
+            for (Ignite g : runningWorkers) {
                 info(">>>>> " + g.cache(CACHE_NAME).size());
 
                 primaryCacheSize += g.cache(CACHE_NAME).primarySize();
@@ -541,7 +541,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      * @return List of absent keys. If no keys are absent, the list is empty.
      * @throws GridException If error occurs.
      */
-    private Collection<Integer> findAbsentKeys(Grid workerNode,
+    private Collection<Integer> findAbsentKeys(Ignite workerNode,
         Collection<Integer> keys) throws GridException {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());

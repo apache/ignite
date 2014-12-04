@@ -163,7 +163,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Near cache.
      */
-    private GridCacheProjection<Integer, String> cache(Grid g) {
+    private GridCacheProjection<Integer, String> cache(Ignite g) {
         return g.cache(null);
     }
 
@@ -172,7 +172,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+    private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
         return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 
@@ -181,7 +181,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridNearCacheAdapter<Integer, String> near(Grid g) {
+    private GridNearCacheAdapter<Integer, String> near(Ignite g) {
         return (GridNearCacheAdapter)((GridKernal)g).internalCache();
     }
 
@@ -265,7 +265,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Primary node for the key.
      */
-    @Nullable private Grid primaryGrid(Integer key) {
+    @Nullable private Ignite primaryGrid(Integer key) {
         GridNode n = affinity(0).mapKeyToNode(key);
 
         assert n != null;
@@ -277,14 +277,14 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Primary node for the key.
      */
-    @Nullable private Collection<Grid> backupGrids(Integer key) {
+    @Nullable private Collection<Ignite> backupGrids(Integer key) {
         Collection<GridNode> nodes = affinity(0).mapKeyToPrimaryAndBackups(key);
 
         Collection<GridNode> backups = CU.backups(nodes);
 
         return F.viewReadOnly(backups,
-            new C1<GridNode, Grid>() {
-                @Override public Grid apply(GridNode node) {
+            new C1<GridNode, Ignite>() {
+                @Override public Ignite apply(GridNode node) {
                     return G.grid(node.id());
                 }
             });
@@ -294,8 +294,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     public void testReadThroughAndPut() throws Exception {
         Integer key = 100000;
 
-        Grid primary;
-        Grid backup;
+        Ignite primary;
+        Ignite backup;
 
         if (grid(0) == primaryGrid(key)) {
             primary = grid(0);
@@ -431,25 +431,25 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("3", near.peek(3));
         assertEquals("3", near.get(3));
 
-        Grid primaryGrid = primaryGrid(3);
+        Ignite primaryIgnite = primaryGrid(3);
 
-        assert primaryGrid != null;
+        assert primaryIgnite != null;
 
-        info("Primary grid for key 3: " + U.toShortString(primaryGrid.cluster().localNode()));
+        info("Primary grid for key 3: " + U.toShortString(primaryIgnite.cluster().localNode()));
 
-        assertEquals("3", dht(primaryGrid).peek(3));
+        assertEquals("3", dht(primaryIgnite).peek(3));
 
         assertEquals(1, near.size());
         assertEquals(1, near.size());
 
-        assertEquals(1, dht(primaryGrid).size());
+        assertEquals(1, dht(primaryIgnite).size());
 
         // Check backup nodes.
-        Collection<Grid> backups = backupGrids(3);
+        Collection<Ignite> backups = backupGrids(3);
 
         assert backups != null;
 
-        for (Grid b : backups) {
+        for (Ignite b : backups) {
             info("Backup grid for key 3: " + U.toShortString(b.cluster().localNode()));
 
             assertEquals("3", dht(b).peek(3));

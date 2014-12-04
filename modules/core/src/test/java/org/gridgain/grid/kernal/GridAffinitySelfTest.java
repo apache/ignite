@@ -71,8 +71,8 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     public void testAffinity() throws GridException {
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
 
         assert caches(g1).size() == 0;
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
@@ -98,7 +98,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Non-system caches.
      */
-    private Collection<GridCacheConfiguration> caches(Grid g) {
+    private Collection<GridCacheConfiguration> caches(Ignite g) {
         return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new GridPredicate<GridCacheConfiguration>() {
             @Override public boolean apply(GridCacheConfiguration c) {
                 return c.getName() == null || !c.getName().equals(CU.UTILITY_CACHE_NAME);

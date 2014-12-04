@@ -118,8 +118,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
      */
     private void checkRedeployVersionChange() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(
                 new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) },
@@ -129,7 +129,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            grid2.events().localListen(new GridPredicate<GridEvent>() {
+            ignite2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
                         ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
@@ -139,15 +139,15 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
             ldr.setResourceMap(Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("2").getBytes()));
 
-            grid1 = startGrid(1);
+            ignite1 = startGrid(1);
 
-            int[] res2 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res2 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             assert res1[0] != res2[0];
             assert res1[1] != res2[1];
@@ -168,8 +168,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         depMode = GridDeploymentMode.CONTINUOUS;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(
                 new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) });
@@ -178,7 +178,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            grid2.events().localListen(new GridPredicate<GridEvent>() {
+            ignite2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
                         ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
@@ -188,13 +188,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
-            grid1 = startGrid(1);
+            ignite1 = startGrid(1);
 
-            int[] res2 = (int[]) grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res2 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             assert !undeployed.await(3000, MILLISECONDS);
 
@@ -214,8 +214,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         depMode = GridDeploymentMode.SHARED;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(
                 new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) });
@@ -224,7 +224,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            grid2.events().localListen(new GridPredicate<GridEvent>() {
+            ignite2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
                         ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
@@ -236,7 +236,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch discoLatch = new CountDownLatch(1);
 
-            grid2.events().localListen(new GridPredicate<GridEvent>() {
+            ignite2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_NODE_LEFT)
                         discoLatch.countDown();
@@ -245,7 +245,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_LEFT);
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
@@ -253,9 +253,9 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             assert undeployed.await(1000, MILLISECONDS);
 
-            grid1 = startGrid(1);
+            ignite1 = startGrid(1);
 
-            int[] res2 = (int[]) grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res2 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             assert res1[0] != res2[0];
             assert res1[1] != res2[1];
@@ -274,8 +274,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         depMode = GridDeploymentMode.CONTINUOUS;
 
         try {
-            Grid grid1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
-            Grid grid2 = startGrid("testCacheRedeployVersionChangeContinuousMode2");
+            Ignite ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
+            Ignite ignite2 = startGrid("testCacheRedeployVersionChangeContinuousMode2");
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(
                 new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) },
@@ -283,13 +283,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
-            GridCache<Long, Object> cache1 = grid1.cache(null);
+            GridCache<Long, Object> cache1 = ignite1.cache(null);
 
             assertNotNull(cache1);
 
             cache1.put(1L, rcrsCls.newInstance());
 
-            final GridCache<Long, Object> cache2 = grid2.cache(null);
+            final GridCache<Long, Object> cache2 = ignite2.cache(null);
 
             assertNotNull(cache2);
 
@@ -307,9 +307,9 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             // Increase the user version of the test class.
             ldr.setResourceMap(Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("2").getBytes()));
 
-            grid1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
+            ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
-            cache1 = grid1.cache(null);
+            cache1 = ignite1.cache(null);
 
             assertNotNull(cache1);
 

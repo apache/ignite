@@ -159,9 +159,9 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      */
     private void checkPolicyConsistency() throws Exception {
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = grid.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             long start = System.currentTimeMillis();
 

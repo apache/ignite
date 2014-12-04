@@ -52,7 +52,7 @@ public class GridSwapEvictAllBenchmark {
         try {
             String outputFileName = args.length > 0 ? args[0] : null;
 
-            Grid g = start(new GridCacheStoreAdapter<Long, String>() {
+            Ignite g = start(new GridCacheStoreAdapter<Long, String>() {
                 @Nullable @Override public String load(@Nullable GridCacheTx tx, Long key) {
                     return null;
                 }
@@ -238,7 +238,7 @@ public class GridSwapEvictAllBenchmark {
      * @return Started grid.
      * @throws GridException If failed.
      */
-    private static Grid start(GridCacheStore<Long, String> store) throws GridException {
+    private static Ignite start(GridCacheStore<Long, String> store) throws GridException {
         GridConfiguration cfg = new GridConfiguration();
 
         cfg.setLocalHost("127.0.0.1");

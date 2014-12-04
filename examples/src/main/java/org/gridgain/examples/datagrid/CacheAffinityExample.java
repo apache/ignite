@@ -41,7 +41,7 @@ public final class CacheAffinityExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
@@ -68,7 +68,7 @@ public final class CacheAffinityExample {
      * @throws GridException If failed.
      */
     private static void visitUsingAffinityRun() throws GridException {
-        Grid g = GridGain.grid();
+        Ignite g = GridGain.grid();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
@@ -96,7 +96,7 @@ public final class CacheAffinityExample {
      * @throws GridException If failed.
      */
     private static void visitUsingMapKeysToNodes() throws GridException {
-        final Grid g = GridGain.grid();
+        final Ignite g = GridGain.grid();
 
         Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 

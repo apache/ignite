@@ -35,22 +35,22 @@ public class GridDeploymentMultiThreadedSelfTest extends GridCommonAbstractTest 
      */
     public void testDeploy() throws Exception {
         try {
-            final Grid grid = startGrid(0);
+            final Ignite ignite = startGrid(0);
 
-            grid.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
+            ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
-            assert grid.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
+            assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
-            grid.compute().undeployTask(GridDeploymentTestTask.class.getName());
+            ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
             final CyclicBarrier barrier = new CyclicBarrier(THREAD_CNT, new Runnable() {
                 private int iterCnt;
 
                 @Override public void run() {
                     try {
-                        grid.compute().undeployTask(GridDeploymentTestTask.class.getName());
+                        ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
-                        assert grid.compute().localTasks().get(GridDeploymentTestTask.class.getName()) == null;
+                        assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) == null;
 
                         if (++iterCnt % 100 == 0)
                             info("Iterations count: " + iterCnt);
@@ -69,10 +69,10 @@ public class GridDeploymentMultiThreadedSelfTest extends GridCommonAbstractTest 
                         for (int i = 0; i < EXEC_CNT; i++) {
                             barrier.await(2000, MILLISECONDS);
 
-                            grid.compute().localDeployTask(GridDeploymentTestTask.class,
+                            ignite.compute().localDeployTask(GridDeploymentTestTask.class,
                                 GridDeploymentTestTask.class.getClassLoader());
 
-                            assert grid.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
+                            assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
                         }
                     }
                     catch (Exception e) {

@@ -18,7 +18,7 @@ import java.util.*;
  * Grid security facade. This facade contains information about authenticated subjects
  * currently logged in to grid together with their permission sets.
  * <p>
- * You can get an instance of security facade from {@link Grid#security()} method.
+ * You can get an instance of security facade from {@link org.gridgain.grid.Ignite#security()} method.
  * <h1 class="header">Grid Nodes vs Remote Clients</h1>
  * When security is enabled, both grid nodes and remote clients must be authenticated.
  * For grid nodes, authentication parameters are specified in grid configuration via

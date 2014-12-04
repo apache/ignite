@@ -64,7 +64,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < NODE_CNT; i++) {
-            Grid g = G.start(config(i));
+            Ignite g = G.start(config(i));
 
             if (i + 1 == NODE_CNT)
                 ggfs = g.ggfs("ggfs");
@@ -256,7 +256,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
      */
     private static class Job implements GridGgfsJob, Serializable {
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         @GridTaskSessionResource
         private GridComputeTaskSession ses;
@@ -267,7 +267,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Object execute(GridGgfs ggfs, GridGgfsFileRange range, GridGgfsInputStream in)
             throws GridException, IOException {
-            assert grid != null;
+            assert ignite != null;
             assert ses != null;
             assert ctx != null;
 

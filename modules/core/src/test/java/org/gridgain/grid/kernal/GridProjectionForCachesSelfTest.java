@@ -34,7 +34,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -92,14 +92,14 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = grid(0);
+        ignite = grid(0);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        GridProjection prj = grid.cluster().forCache(null);
+        GridProjection prj = ignite.cluster().forCache(null);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -114,7 +114,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForNamedCache() throws Exception {
-        GridProjection prj = grid.cluster().forCache(CACHE_NAME);
+        GridProjection prj = ignite.cluster().forCache(CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -129,7 +129,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForBothCaches() throws Exception {
-        GridProjection prj = grid.cluster().forCache(null, CACHE_NAME);
+        GridProjection prj = ignite.cluster().forCache(null, CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 2;
@@ -144,7 +144,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForWrongCacheName() throws Exception {
-        GridProjection prj = grid.cluster().forCache("wrong");
+        GridProjection prj = ignite.cluster().forCache("wrong");
 
         assert prj != null;
         assert prj.nodes().isEmpty();
@@ -154,90 +154,90 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjections() throws Exception {
-        GridNode locNode = grid.cluster().localNode();
+        GridNode locNode = ignite.cluster().localNode();
         UUID locId = locNode.id();
 
         assertNotNull(locId);
 
-        assertEquals(5, grid.cluster().nodes().size());
+        assertEquals(5, ignite.cluster().nodes().size());
 
-        GridProjection prj = grid.cluster().forLocal();
+        GridProjection prj = ignite.cluster().forLocal();
 
         assertEquals(1, prj.nodes().size());
         assertEquals(locNode, F.first(prj.nodes()));
 
-        prj = grid.cluster().forHost(locNode);
-        assertEquals(grid.cluster().nodes().size(), prj.nodes().size());
-        assertTrue(grid.cluster().nodes().containsAll(prj.nodes()));
+        prj = ignite.cluster().forHost(locNode);
+        assertEquals(ignite.cluster().nodes().size(), prj.nodes().size());
+        assertTrue(ignite.cluster().nodes().containsAll(prj.nodes()));
         try {
-            grid.cluster().forHost(null);
+            ignite.cluster().forHost(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.cluster().forNode(locNode);
+        prj = ignite.cluster().forNode(locNode);
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.cluster().forNode(locNode, locNode);
+        prj = ignite.cluster().forNode(locNode, locNode);
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.cluster().forNode(null);
+            ignite.cluster().forNode(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.cluster().forNodes(F.asList(locNode));
+        prj = ignite.cluster().forNodes(F.asList(locNode));
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.cluster().forNodes(F.asList(locNode, locNode));
+        prj = ignite.cluster().forNodes(F.asList(locNode, locNode));
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.cluster().forNodes(null);
+            ignite.cluster().forNodes(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.cluster().forNodeId(locId);
+        prj = ignite.cluster().forNodeId(locId);
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.cluster().forNodeId(locId, locId);
+        prj = ignite.cluster().forNodeId(locId, locId);
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.cluster().forNodeId(null);
+            ignite.cluster().forNodeId(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.cluster().forNodeIds(F.asList(locId));
+        prj = ignite.cluster().forNodeIds(F.asList(locId));
         assertEquals(1, prj.nodes().size());
 
-        prj = grid.cluster().forNodeIds(F.asList(locId, locId));
+        prj = ignite.cluster().forNodeIds(F.asList(locId, locId));
         assertEquals(1, prj.nodes().size());
 
         try {
-            grid.cluster().forNodeIds(null);
+            ignite.cluster().forNodeIds(null);
         }
         catch (NullPointerException ignored) {
             // No-op.
         }
 
-        prj = grid.cluster().forOthers(locNode);
+        prj = ignite.cluster().forOthers(locNode);
 
         assertEquals(4, prj.nodes().size());
         assertFalse(prj.nodes().contains(locNode));
 
-        assertEquals(4, grid.cluster().forRemotes().nodes().size());
-        assertTrue(prj.nodes().containsAll(grid.cluster().forRemotes().nodes()));
+        assertEquals(4, ignite.cluster().forRemotes().nodes().size());
+        assertTrue(prj.nodes().containsAll(ignite.cluster().forRemotes().nodes()));
 
         try {
-            grid.cluster().forOthers((GridNode)null);
+            ignite.cluster().forOthers((GridNode)null);
         }
         catch (NullPointerException ignored) {
             // No-op.

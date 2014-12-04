@@ -295,7 +295,7 @@ public class VisorTaskUtils {
      * @param g Grid instance.
      * @return {@code true} if all task events explicitly specified in configuration.
      */
-    public static boolean checkExplicitTaskMonitoring(Grid g) {
+    public static boolean checkExplicitTaskMonitoring(Ignite g) {
         int[] evts = g.configuration().getIncludeEventTypes();
 
         if (F.isEmpty(evts))
@@ -325,7 +325,7 @@ public class VisorTaskUtils {
      * @param all If {@code true} then collect all events otherwise collect only non task events.
      * @return Collections of node events
      */
-    public static Collection<VisorGridEvent> collectEvents(Grid g, String evtOrderKey, String evtThrottleCntrKey,
+    public static Collection<VisorGridEvent> collectEvents(Ignite g, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
         assert g != null;
 

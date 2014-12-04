@@ -25,10 +25,10 @@ import java.util.concurrent.*;
 
 /**
  * An {@link ExecutorService} that executes each submitted task in grid
- * through {@link Grid} instance, normally configured using
- * {@link Grid#executorService()} method.
+ * through {@link org.gridgain.grid.Ignite} instance, normally configured using
+ * {@link org.gridgain.grid.Ignite#executorService()} method.
  * {@code GridExecutorService} delegates commands execution to already
- * started {@link Grid} instance. Every submitted task will be serialized and
+ * started {@link org.gridgain.grid.Ignite} instance. Every submitted task will be serialized and
  * transferred to any node in grid.
  * <p>
  * All submitted tasks must implement {@link Serializable} interface.

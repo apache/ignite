@@ -78,7 +78,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @param task Task to execute.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void executeFail(Grid g1, Grid g2, Class task) {
+    private void executeFail(Ignite g1, Ignite g2, Class task) {
         try {
             g1.compute().execute(task, g2.cluster().localNode().id());
 
@@ -120,8 +120,8 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
         missedRsrcCacheSize = 0;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             String path = GridTestProperties.getProperty("p2p.uri.cls");
 
@@ -133,15 +133,15 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
             Class task = ldr.loadClass(TASK_NAME1);
 
-            grid1.compute().localDeployTask(task, task.getClassLoader());
+            ignite1.compute().localDeployTask(task, task.getClassLoader());
 
             ldr.setExcludeClassNames(TASK_NAME1);
 
-            executeFail(grid1, grid2, task);
+            executeFail(ignite1, ignite2, task);
 
             ldr.setExcludeClassNames();
 
-            grid1.compute().execute(task, grid2.cluster().localNode().id());
+            ignite1.compute().execute(task, ignite2.cluster().localNode().id());
         }
         finally {
             stopGrid(1);

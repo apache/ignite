@@ -156,7 +156,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
             cfg.setLocalHost("127.0.0.1");
             cfg.setPeerClassLoadingEnabled(false);
 
-            Grid secG = G.start(cfg);
+            Ignite secG = G.start(cfg);
 
             return secG.ggfs("ggfs-secondary");
         }

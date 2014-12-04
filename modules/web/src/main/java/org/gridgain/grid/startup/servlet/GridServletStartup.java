@@ -144,11 +144,11 @@ public class GridServletStartup extends HttpServlet {
 
                 GridConfiguration adapter = new GridConfiguration(cfg);
 
-                Grid grid = GridGainEx.start(adapter, t.get2());
+                Ignite ignite = GridGainEx.start(adapter, t.get2());
 
                 // Test if grid is not null - started properly.
-                if (grid != null)
-                    gridNames.add(grid.name());
+                if (ignite != null)
+                    gridNames.add(ignite.name());
             }
         }
         catch (GridException e) {

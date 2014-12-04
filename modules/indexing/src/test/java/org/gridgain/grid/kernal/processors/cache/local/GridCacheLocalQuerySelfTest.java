@@ -37,7 +37,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
      * @throws GridException If test failed.
      */
     public void testQueryLocal() throws Exception {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         cache.put(1, "value1");
         cache.put(2, "value2");
@@ -75,7 +75,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
             "_val like 'value%' and _key != 2 and _val != 'value3' order by _val");
 
         Iterator<String> iter2 = rdcQry.
-            projection(grid.cluster().forLocal()).
+            projection(ignite.cluster().forLocal()).
             execute(new GridReducer<Map.Entry<Integer, String>, String>() {
                 /** */
                 private String res = "";

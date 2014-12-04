@@ -46,7 +46,7 @@ object ScalarCacheQueryExample {
      *
      * @param g Grid instance to use.
      */
-    private def example(g: Grid) {
+    private def example(g: Ignite) {
         // Populate cache.
         initialize()
 

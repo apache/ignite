@@ -34,7 +34,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -60,14 +60,14 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = startGridsMultiThreaded(3);
+        ignite = startGridsMultiThreaded(3);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        grid = null;
+        ignite = null;
     }
 
     /**
@@ -94,7 +94,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOnProjection() throws Exception {
-        GridCacheProjection<Integer, FactPurchase> prj = grid.<Integer, FactPurchase>cache("partitioned").projection(
+        GridCacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
             new GridPredicate<GridCacheEntry<Integer, FactPurchase>>() {
                 @Override public boolean apply(GridCacheEntry<Integer, FactPurchase> e) {
                     return e.getKey() > 12;
@@ -117,7 +117,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         throws Exception {
         int idGen = 0;
 
-        GridCache<Integer, Object> dimCache = grid.cache("replicated");
+        GridCache<Integer, Object> dimCache = ignite.cache("replicated");
 
         for (int i = 0; i < 2; i++) {
             int id = idGen++;
@@ -134,7 +134,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         GridCacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
         GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
-        GridCache<Integer, FactPurchase> factCache = grid.cache("partitioned");
+        GridCache<Integer, FactPurchase> factCache = ignite.cache("partitioned");
 
         List<DimStore> dimStores = new ArrayList<>(stores.values());
         Collections.sort(dimStores, new Comparator<DimStore>() {

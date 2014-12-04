@@ -2706,7 +2706,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheExpire() throws Exception {
-        Grid g = startGrid(1);
+        Ignite g = startGrid(1);
 
         try {
             GridCache<String, String> cache = g.cache(null);
@@ -2728,7 +2728,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheContainsGet() throws Exception {
-        Grid g = startGrid(1);
+        Ignite g = startGrid(1);
 
         try {
             GridCache<String, String> cache = g.cache(null);
@@ -2765,7 +2765,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheContainsEntriesGet1() throws Exception {
-        Grid g = startGrid(1);
+        Ignite g = startGrid(1);
 
         try {
             GridCache<String, String> cache = g.cache(null);
@@ -2796,7 +2796,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheValuesGet() throws Exception {
-        Grid g = startGrid(1);
+        Ignite g = startGrid(1);
 
         try {
             GridCache<String, String> cache = g.cache(null);
@@ -2961,9 +2961,9 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
 
-        Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
-        Grid g3 = startGrid(3);
+        Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
+        Ignite g3 = startGrid(3);
 
         try {
             GridEvent evt1 = new TestEvent(g1.cluster().localNode());
@@ -2994,8 +2994,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"NullArgumentToVariableArgMethod"})
     public void testEventNode2() throws Exception {
-        final Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
+        final Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
 
         GridEvent evt1 = new TestEvent(g1.cluster().localNode());
         GridEvent evt2 = new TestEvent(g1.cluster().localNode());

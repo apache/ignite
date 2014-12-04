@@ -31,7 +31,7 @@ import static org.gridgain.grid.ggfs.GridGgfs.*;
 public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePlanner {
     /** Injected grid. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** Logger. */
     @SuppressWarnings("UnusedDeclaration")
@@ -149,8 +149,8 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
                 GridGgfsEx ggfs = null;
 
-                if (F.eq(grid.name(), endpoint.grid()))
-                    ggfs = (GridGgfsEx) ((GridEx)grid).ggfsx(endpoint.ggfs());
+                if (F.eq(ignite.name(), endpoint.grid()))
+                    ggfs = (GridGgfsEx) ((GridEx) ignite).ggfsx(endpoint.ggfs());
 
                 if (ggfs != null && !ggfs.isProxy(split0.file())) {
                     Collection<GridGgfsBlockLocation> blocks = ggfs.affinity(new GridGgfsPath(split0.file()),

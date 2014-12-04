@@ -72,23 +72,23 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
         this.depMode = depMode;
 
         try {
-            final Grid grid1 = startGrid(1);
-            final Grid grid2 = startGrid(2);
-            final Grid grid3 = startGrid(3);
+            final Ignite ignite1 = startGrid(1);
+            final Ignite ignite2 = startGrid(2);
+            final Ignite ignite3 = startGrid(3);
 
             for (int i = 0; i < ITERATIONS; i++) {
-                grid1.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
-                grid2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
+                ignite1.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
+                ignite2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
-                GridComputeTaskFuture<int[]> fut1 = executeAsync(grid1.compute(), TASK_NAME, Arrays.<UUID>asList(
-                    grid1.cluster().localNode().id(),
-                    grid2.cluster().localNode().id(),
-                    grid3.cluster().localNode().id()));
+                GridComputeTaskFuture<int[]> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.<UUID>asList(
+                    ignite1.cluster().localNode().id(),
+                    ignite2.cluster().localNode().id(),
+                    ignite3.cluster().localNode().id()));
 
-                GridComputeTaskFuture<int[]> fut2 = executeAsync(grid2.compute(), TASK_NAME, Arrays.<UUID>asList(
-                    grid1.cluster().localNode().id(),
-                    grid2.cluster().localNode().id(),
-                    grid3.cluster().localNode().id()));
+                GridComputeTaskFuture<int[]> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.<UUID>asList(
+                    ignite1.cluster().localNode().id(),
+                    ignite2.cluster().localNode().id(),
+                    ignite3.cluster().localNode().id()));
 
                 int[] res1 = fut1.get();
                 int[] res2 = fut2.get();

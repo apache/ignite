@@ -76,7 +76,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         ggfsPrimary = new GridGgfs[NODES_CNT];
 
         for (int i = 0; i < NODES_CNT; i++) {
-            Grid g = G.start(primaryConfiguration(i));
+            Ignite g = G.start(primaryConfiguration(i));
 
             ggfsPrimary[i] = g.ggfs(GGFS_PRIMARY);
         }
@@ -191,7 +191,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setLocalHost("127.0.0.1");
 
-        Grid g = G.start(cfg);
+        Ignite g = G.start(cfg);
 
         ggfsSecondary = g.ggfs(GGFS_SECONDARY);
     }
@@ -461,7 +461,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         ggfs.delete(fileRemote, false);
 
         U.sleep(300);
-        
+
         assert ggfs.metrics().secondarySpaceSize() == 0;
 
         // Write partial block to the first file.

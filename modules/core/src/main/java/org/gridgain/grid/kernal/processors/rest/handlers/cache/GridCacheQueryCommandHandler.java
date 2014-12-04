@@ -254,7 +254,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         /** Injected grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** Query request. */
         private GridRestCacheQueryRequest req;
@@ -355,7 +355,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         /** Injected grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** Query request. */
         private GridRestCacheQueryRequest req;
@@ -386,7 +386,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         /** Injected grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** Cache name. */
         private String cacheName;

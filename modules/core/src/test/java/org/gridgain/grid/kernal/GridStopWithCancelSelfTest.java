@@ -51,9 +51,9 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
         cnt = new CountDownLatch(1);
 
         try {
-            Grid grid = startGrid("testGrid");
+            Ignite ignite = startGrid("testGrid");
 
-            executeAsync(grid.compute(), CancelledTask.class, null);
+            executeAsync(ignite.compute(), CancelledTask.class, null);
 
             cnt.await();
         }
@@ -79,7 +79,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
                 if (node.id().equals(locId)) {
                     return Collections.singletonMap(new GridComputeJobAdapter() {
                         @GridInstanceResource
-                        private Grid grid;
+                        private Ignite ignite;
 
                         @Override public void cancel() {
                             cancelCorrect = true;

@@ -21,7 +21,7 @@ import java.io.*;
 public class GridLoadTestJob extends GridComputeJobAdapter {
     /** */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /**
      * Constructor.
@@ -41,10 +41,10 @@ public class GridLoadTestJob extends GridComputeJobAdapter {
         if (i == 1)
             return new GridLoadTestJobTarget().executeLoadTestJob(1);
 
-        assert grid != null;
+        assert ignite != null;
 
-        grid.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
 
-        return (Integer)grid.compute().execute(GridLoadTestTask.class.getName(), i);
+        return (Integer) ignite.compute().execute(GridLoadTestTask.class.getName(), i);
     }
 }

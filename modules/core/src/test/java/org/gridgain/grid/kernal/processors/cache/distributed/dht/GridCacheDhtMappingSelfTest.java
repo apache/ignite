@@ -78,7 +78,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
         int cnt = 0;
 
         for (int i = 0; i < nodeCnt; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)
                 ((GridKernal)g).<Integer, Integer>internalCache()).dht();

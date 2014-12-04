@@ -82,9 +82,9 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     public void testMappedAffinity() throws GridException {
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
-        Grid g3 = grid(3);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
+        Ignite g3 = grid(3);
 
         assert g1.configuration().getCacheConfiguration().length == 0;
         assert g2.configuration().getCacheConfiguration()[0].getCacheMode() == PARTITIONED;

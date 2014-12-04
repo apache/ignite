@@ -114,7 +114,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         long prev = 0;
 
-        for (Grid g : G.allGrids()) {
+        for (Ignite g : G.allGrids()) {
             GridKernal kernal = (GridKernal)g;
 
             long ver = kernal.context().discovery().topologyVersion();

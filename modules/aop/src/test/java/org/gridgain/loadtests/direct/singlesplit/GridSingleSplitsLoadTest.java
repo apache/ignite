@@ -75,12 +75,12 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Grid grid = G.grid(getTestGridName());
+        final Ignite ignite = G.grid(getTestGridName());
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
         // Warm up.
-        grid.compute().withTimeout(5000).execute(GridSingleSplitTestTask.class.getName(), 3);
+        ignite.compute().withTimeout(5000).execute(GridSingleSplitTestTask.class.getName(), 3);
 
         info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
         info("Thread count: " + getThreadCount());
@@ -96,7 +96,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
                     try {
                         int levels = 20;
 
-                        GridCompute comp = grid.compute().enableAsync();
+                        GridCompute comp = ignite.compute().enableAsync();
 
                         comp.execute(new GridSingleSplitTestTask(), levels);
 

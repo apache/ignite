@@ -34,10 +34,10 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     private static volatile UUID evtSubjId;
 
     /** First node. */
-    private Grid node1;
+    private Ignite node1;
 
     /** Second node. */
-    private Grid node2;
+    private Ignite node2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

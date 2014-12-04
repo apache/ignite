@@ -55,7 +55,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
      */
     public void testDeadlock() throws Exception {
         try {
-            Grid g = startGrid(1);
+            Ignite g = startGrid(1);
 
             final CountDownLatch latch = new CountDownLatch(1);
 

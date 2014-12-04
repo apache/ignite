@@ -11,7 +11,6 @@ package org.gridgain.testframework.junits.common;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -76,9 +75,9 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
 
     /**
      * After grid start callback.
-     * @param grid Grid.
+     * @param ignite Grid.
      */
-    protected void afterGridStart(Grid grid) {
+    protected void afterGridStart(Ignite ignite) {
         // No-op.
     }
 
@@ -86,9 +85,9 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLifecycleAware() throws Exception {
-        Grid grid = startGrid();
+        Ignite ignite = startGrid();
 
-        afterGridStart(grid);
+        afterGridStart(ignite);
 
         assertFalse(lifecycleAwares.isEmpty());
 

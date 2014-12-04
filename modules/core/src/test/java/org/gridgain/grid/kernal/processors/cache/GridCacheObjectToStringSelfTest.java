@@ -141,7 +141,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     private void checkToString() throws Exception {
-        Grid g = startGrid(0);
+        Ignite g = startGrid(0);
 
         try {
             GridCache<Object, Object> cache = g.cache(null);

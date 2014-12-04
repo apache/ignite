@@ -85,7 +85,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
      * @throws Exception if failed.
      */
     public void testPreloadEvents() throws Exception {
-        Grid g1 = startGrid("g1");
+        Ignite g1 = startGrid("g1");
 
         GridCache<Integer, String> cache = g1.cache(null);
 
@@ -93,7 +93,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
         cache.put(2, "val2");
         cache.put(3, "val3");
 
-        Grid g2 = startGrid("g2");
+        Ignite g2 = startGrid("g2");
 
         Collection<GridEvent> evts = g2.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
@@ -105,7 +105,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
      * @param g Grid.
      * @param keys Keys.
      */
-    protected void checkPreloadEvents(Collection<GridEvent> evts, Grid g, Collection<? extends Object> keys) {
+    protected void checkPreloadEvents(Collection<GridEvent> evts, Ignite g, Collection<? extends Object> keys) {
         assertEquals(keys.size(), evts.size());
 
         for (GridEvent evt : evts) {

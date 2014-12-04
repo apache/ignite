@@ -143,14 +143,14 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param list List of started grids.
      * @throws Exception If failed.
      */
-    private void startGrids(int cnt, int startIdx, Collection<Grid> list) throws Exception {
+    private void startGrids(int cnt, int startIdx, Collection<Ignite> list) throws Exception {
         for (int i = 0; i < cnt; i++)
             list.add(startGrid(startIdx++));
     }
 
     /** @param grids Grids to stop. */
-    private void stopGrids(Iterable<Grid> grids) {
-        for (Grid g : grids)
+    private void stopGrids(Iterable<Ignite> grids) {
+        for (Ignite g : grids)
             stopGrid(g.name());
     }
 
@@ -158,15 +158,15 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     public void testDeadlock() throws Exception {
         info("Testing deadlock...");
 
-        Collection<Grid> grids = new LinkedList<>();
+        Collection<Ignite> ignites = new LinkedList<>();
 
         int gridCnt = 3;
 
-        startGrids(gridCnt, 1, grids);
+        startGrids(gridCnt, 1, ignites);
 
         info("Grids started: " + gridCnt);
 
-        stopGrids(grids);
+        stopGrids(ignites);
     }
 
     /**
@@ -176,19 +176,19 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      */
     private void checkNodes(int keyCnt, int nodeCnt) throws Exception {
         try {
-            Grid g1 = startGrid(0);
+            Ignite g1 = startGrid(0);
 
             GridCache<Integer, String> c1 = g1.cache(null);
 
             putKeys(c1, keyCnt);
             checkKeys(c1, keyCnt);
 
-            Collection<Grid> grids = new LinkedList<>();
+            Collection<Ignite> ignites = new LinkedList<>();
 
-            startGrids(nodeCnt, 1, grids);
+            startGrids(nodeCnt, 1, ignites);
 
             // Check all nodes.
-            for (Grid g : grids) {
+            for (Ignite g : ignites) {
                 GridCache<Integer, String> c = g.cache(null);
 
                 checkKeys(c, keyCnt);
@@ -196,7 +196,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ']');
 
-            stopGrids(grids);
+            stopGrids(ignites);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c1);
 
@@ -245,13 +245,13 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
         boolean sync = isSync(c);
 
-        Grid grid = c.gridProjection().grid();
+        Ignite ignite = c.gridProjection().grid();
 
         for (int i = 0; i < cnt; i++) {
-            if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(grid.cluster().localNode())) {
+            if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(ignite.cluster().localNode())) {
                 String val = sync ? c.peek(i) : c.get(i);
 
-                assertEquals("Key check failed [grid=" + grid.name() + ", cache=" + c.name() + ", key=" + i + ']',
+                assertEquals("Key check failed [grid=" + ignite.name() + ", cache=" + c.name() + ", key=" + i + ']',
                     Integer.toString(i), val);
             }
         }

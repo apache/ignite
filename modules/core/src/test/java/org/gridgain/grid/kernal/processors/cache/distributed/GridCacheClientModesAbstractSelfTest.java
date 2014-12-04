@@ -132,7 +132,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      */
     public void testNearOnlyAffinity() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             if (F.eq(g.name(), nearOnlyGridName)) {
                 for (int k = 0; k < 10000; k++) {

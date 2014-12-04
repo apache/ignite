@@ -118,7 +118,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @param g Grid.
      * @return Near cache.
      */
-    private static GridNearCacheAdapter<String, Integer> near(Grid g) {
+    private static GridNearCacheAdapter<String, Integer> near(Ignite g) {
         return (GridNearCacheAdapter<String, Integer>)((GridKernal)g).<String, Integer>internalCache();
     }
 
@@ -126,7 +126,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @param g Grid.
      * @return DHT cache.
      */
-    private static GridDhtCacheAdapter<String, Integer> dht(Grid g) {
+    private static GridDhtCacheAdapter<String, Integer> dht(Ignite g) {
         return near(g).dht();
     }
 
@@ -138,7 +138,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @param v2 V2.
      * @return String for assertion.
      */
-    private static String invalid(String msg, Grid g, boolean primary, int v1, int v2) {
+    private static String invalid(String msg, Ignite g, boolean primary, int v1, int v2) {
         return msg + " [grid=" + g.name() + ", primary=" + primary + ", v1=" + v1 + ", v2=" + v2 +
             (!primary ?
                 ", nearEntry=" + near(g).peekEx(CNTR_KEY) :
@@ -151,17 +151,17 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @param exclude Exlude array.
      * @return List of grids.
      */
-    public List<Grid> grids(int max, Grid... exclude) {
-        List<Grid> grids = new ArrayList<>();
+    public List<Ignite> grids(int max, Ignite... exclude) {
+        List<Ignite> ignites = new ArrayList<>();
 
         for (int i = 0; i < max; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             if (!U.containsObjectArray(exclude, g))
-                grids.add(g);
+                ignites.add(g);
         }
 
-        return grids;
+        return ignites;
     }
 
     /** @throws Exception If failed. */
@@ -244,9 +244,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assert first != null;
 
-        final Grid pri = G.grid(first.id());
+        final Ignite pri = G.grid(first.id());
 
-        List<Grid> nears = grids(gridCnt, pri);
+        List<Ignite> nears = grids(gridCnt, pri);
 
         final UUID priId = pri.cluster().localNode().id();
 
@@ -365,7 +365,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             final AtomicInteger logCntr = new AtomicInteger();
 
-            for (final Grid near : nears) {
+            for (final Ignite near : nears) {
                 for (int i = 0; i < nearThreads; i++) {
                     info("*** Starting near thread: " + i);
 
@@ -473,7 +473,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         Map<String, Integer> cntrs = new HashMap<>();
 
         for (int i = 0; i < gridCnt; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             dht(g).context().tm().printMemoryStats();
             near(g).context().tm().printMemoryStats();
@@ -539,7 +539,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertEquals(1 + backups, affNodes.size());
 
-        Grid pri = G.grid(F.first(affNodes).id());
+        Ignite pri = G.grid(F.first(affNodes).id());
 
         // Initialize.
         pri.cache(null).put(CNTR_KEY, 0);
@@ -564,7 +564,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         info("*** ");
 
         for (int i = 0; i < gridCnt; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<String, Integer> cache = grid(i).cache(null);
 
@@ -582,7 +582,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     private static class IncrementItemJob implements GridCallable<Boolean> {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -598,12 +598,12 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public Boolean call() throws GridException, InterruptedException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
             startLatchMultiNode.countDown();
             startLatchMultiNode.await();
 
-            if (pid.equals(grid.name()))
+            if (pid.equals(ignite.name()))
                 onPrimary();
             else
                 onNear();
@@ -613,9 +613,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         /** Near node. */
         private void onNear() {
-            Grid near = grid;
+            Ignite near = ignite;
 
-            UUID nearId = grid.cluster().localNode().id();
+            UUID nearId = ignite.cluster().localNode().id();
 
             GridCacheEntryEx<String, Integer> nearEntry = near(near).peekEx(CNTR_KEY);
 
@@ -687,7 +687,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         /** Primary node. */
         private void onPrimary() {
             try {
-                Grid pri = grid;
+                Ignite pri = ignite;
 
                 for (int i = 0; i < RETRIES; i++) {
                     if (DEBUG)

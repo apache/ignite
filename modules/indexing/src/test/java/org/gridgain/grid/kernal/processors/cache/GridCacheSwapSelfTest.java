@@ -99,9 +99,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         swapEnabled = false;
 
         try {
-            Grid grid = startGrids(1);
+            Ignite ignite = startGrids(1);
 
-            GridSwapSpaceSpi swapSpi = grid.configuration().getSwapSpaceSpi();
+            GridSwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
 
             assertNotNull(swapSpi);
 
@@ -117,9 +117,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      */
     public void testEnabledSwap() throws Exception {
         try {
-            Grid grid = startGrids(1);
+            Ignite ignite = startGrids(1);
 
-            GridSwapSpaceSpi swapSpi = grid.configuration().getSwapSpaceSpi();
+            GridSwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
 
             assertNotNull(swapSpi);
 
@@ -136,11 +136,11 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("BusyWait")
     public void testSwapDeployment() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = grid1.cache(null);
-            GridCache<Integer, Object> cache2 = grid2.cache(null);
+            GridCache<Integer, Object> cache1 = ignite1.cache(null);
+            GridCache<Integer, Object> cache2 = ignite2.cache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -160,7 +160,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             SwapListener lsnr = new SwapListener();
 
-            grid2.events().localListen(lsnr, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
+            ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
             cache2.evictAll();
 
@@ -170,11 +170,11 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             assert lsnr.awaitUnswap();
 
-            grid2.events().stopLocalListen(lsnr);
+            ignite2.events().stopLocalListen(lsnr);
 
             lsnr = new SwapListener();
 
-            grid2.events().localListen(lsnr, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
+            ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
             cache2.evictAll();
 

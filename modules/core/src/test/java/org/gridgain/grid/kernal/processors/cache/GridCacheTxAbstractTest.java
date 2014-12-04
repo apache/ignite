@@ -157,10 +157,10 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
     protected void checkCommit(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
         int gridIdx = RAND.nextInt(gridCount());
 
-        Grid grid = grid(gridIdx);
+        Ignite ignite = grid(gridIdx);
 
         if (isTestDebug())
-            debug("Checking commit on grid: " + grid.cluster().localNode().id());
+            debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
             GridCache<Integer, String> cache = cache(gridIdx);
@@ -294,10 +294,10 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
         GridCacheTxIsolation isolation) throws Exception {
         int gridIdx = RAND.nextInt(gridCount());
 
-        Grid grid = grid(gridIdx);
+        Ignite ignite = grid(gridIdx);
 
         if (isTestDebug())
-            debug("Checking commit on grid: " + grid.cluster().localNode().id());
+            debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
             GridCache<Integer, String> cache = cache(gridIdx);

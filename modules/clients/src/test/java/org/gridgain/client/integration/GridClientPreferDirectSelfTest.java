@@ -136,7 +136,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends GridComputeTaskSplitAdapter<Object, String> {
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Count of tasks this job was split to. */
         private int gridSize;
@@ -178,7 +178,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
             assert gridSize == sum;
 
-            return grid.cluster().localNode().id().toString();
+            return ignite.cluster().localNode().id().toString();
         }
     }
 }

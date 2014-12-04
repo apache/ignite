@@ -235,8 +235,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3);
 
         try {
-            final Grid g0 = grid(0);
-            Grid g1 = grid(1);
+            final Ignite g0 = grid(0);
+            Ignite g1 = grid(1);
 
             final Collection<Integer> keys = new ConcurrentLinkedQueue<>();
 
@@ -350,8 +350,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3);
 
         try {
-            final Grid g0 = grid(0);
-            Grid g1 = grid(1);
+            final Ignite g0 = grid(0);
+            Ignite g1 = grid(1);
 
             final Integer key = forPrimary(loc ? g0 : g1);
 
@@ -410,7 +410,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Grid g0 = grid(0);
+        Ignite g0 = grid(0);
 
         try {
             for (int i = 0; i < 100; i++)
@@ -518,9 +518,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
 
         try {
             Integer k0 = forPrimary(g0);
@@ -608,9 +608,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
 
         try {
             Integer k1 = forPrimary(g1);
@@ -687,9 +687,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
 
         try {
             // Check local commit.
@@ -719,9 +719,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkStoreWithValues(Map<Integer, String> map) throws Exception {
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
 
         g0.cache(null).putAll(map);
 
@@ -745,12 +745,12 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param grid Grid to take store from.
+     * @param ignite Grid to take store from.
      * @param map Expected values in store.
      * @throws Exception If failed.
      */
-    private void checkStore(Grid grid, Map<Integer, String> map) throws Exception {
-        GridCacheStore store = grid.configuration().getCacheConfiguration()[0].getStore();
+    private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
+        GridCacheStore store = ignite.configuration().getCacheConfiguration()[0].getStore();
 
         assertEquals(map, ((GridCacheTestStore)store).getMap());
     }
@@ -781,9 +781,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
 
         try {
             Integer k0 = forPrimary(g0);
@@ -887,9 +887,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
-        Grid g2 = grid(2);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
 
         try {
             Integer k0 = forPrimary(g0);
@@ -925,7 +925,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Key.
      */
-    private static Integer forPrimary(Grid g) {
+    private static Integer forPrimary(Ignite g) {
         return forPrimary(g, -1);
     }
 
@@ -936,7 +936,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param prev Previous key.
      * @return Key.
      */
-    private static Integer forPrimary(Grid g, int prev) {
+    private static Integer forPrimary(Ignite g, int prev) {
         for (int i = prev + 1; i < 10000; i++) {
             if (g.cache(null).affinity().mapKeyToNode(i).id().equals(g.cluster().localNode().id()))
                 return i;

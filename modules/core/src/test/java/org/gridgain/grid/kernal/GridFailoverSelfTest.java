@@ -46,13 +46,13 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
      */
     public void testJobFail() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            assert grid1 != null;
-            assert grid2 != null;
+            assert ignite1 != null;
+            assert ignite2 != null;
 
-            Integer res = grid1.compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1");
+            Integer res = ignite1.compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1");
 
             assert res != null;
             assert res == 1;

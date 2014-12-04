@@ -45,13 +45,13 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     private static final boolean TEST_DEBUG = false;
 
     /** Grid1. */
-    private static Grid grid1;
+    private static Ignite ignite1;
 
     /** Grid2. */
-    private static Grid grid2;
+    private static Ignite ignite2;
 
     /** Grid3. */
-    private static Grid grid3;
+    private static Ignite ignite3;
 
     /** Cache1. */
     private static GridCache<CacheKey, CacheValue> cache1;
@@ -88,13 +88,13 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        grid1 = grid(0);
-        grid2 = grid(1);
-        grid3 = grid(2);
+        ignite1 = grid(0);
+        ignite2 = grid(1);
+        ignite3 = grid(2);
 
-        cache1 = grid1.cache(null);
-        cache2 = grid2.cache(null);
-        cache3 = grid3.cache(null);
+        cache1 = ignite1.cache(null);
+        cache2 = ignite2.cache(null);
+        cache3 = ignite3.cache(null);
     }
 
     /**
@@ -113,7 +113,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         assertEquals(keyCnt, cache3.size());
 
         GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry = cache1.queries().createSqlQuery(CacheValue.class,
-            "select * from CacheValue").projection(grid.cluster());
+            "select * from CacheValue").projection(ignite.cluster());
 
         qry.pageSize(10);
         qry.enableDedup(false);
@@ -158,9 +158,9 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             throw e;
         }
 
-        checkQueryResults(grid1, cache1);
-        checkQueryResults(grid2, cache2);
-        checkQueryResults(grid3, cache3);
+        checkQueryResults(ignite1, cache1);
+        checkQueryResults(ignite2, cache2);
+        checkQueryResults(ignite3, cache3);
     }
 
     /**
@@ -179,8 +179,8 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             }
         };
 
-        grid2.events().localListen(lsnr, GridEventType.EVT_CACHE_OBJECT_PUT);
-        grid3.events().localListen(lsnr, GridEventType.EVT_CACHE_OBJECT_PUT);
+        ignite2.events().localListen(lsnr, GridEventType.EVT_CACHE_OBJECT_PUT);
+        ignite3.events().localListen(lsnr, GridEventType.EVT_CACHE_OBJECT_PUT);
 
         GridCacheTx tx = cache1.txStart();
 
@@ -201,7 +201,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         latch.await();
 
         GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry = cache1.queries().createSqlQuery(
-            CacheValue.class, "val > 1 and val < 4").projection(grid.cluster());
+            CacheValue.class, "val > 1 and val < 4").projection(ignite.cluster());
 
         qry.enableDedup(false);
 
@@ -213,7 +213,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         // Create new query, old query cannot be modified after it has been executed.
         qry = cache1.queries().createSqlQuery(CacheValue.class, "val > 1 and val < 4");
 
-        qry = qry.projection(grid3.cluster().forLocal());
+        qry = qry.projection(ignite3.cluster().forLocal());
 
         // Tests execute on node.
         Iterator<Map.Entry<CacheKey, CacheValue>> iter = qry.execute().get().iterator();
@@ -238,7 +238,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      */
     private ConcurrentMap<UUID,
         Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<CacheKey, CacheValue>>>>>
-        distributedQueryManagerQueryItersMap(Grid g) {
+        distributedQueryManagerQueryItersMap(Ignite g) {
         GridCacheContext ctx = ((GridKernal)g).internalCache().context();
 
         Field qryItersField = ReflectionUtils.findField(ctx.queries().getClass(), "qryIters");
@@ -318,7 +318,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
         // Create query with key filter.
         GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry =
-            cache1.queries().createSqlQuery(CacheValue.class, "val > 0").projection(grid.cluster());
+            cache1.queries().createSqlQuery(CacheValue.class, "val > 0").projection(ignite.cluster());
 
         qry.keepAll(true);
 
@@ -333,7 +333,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        GridCache<Integer, Integer> cache = grid.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 1000; i++)
             assertTrue(cache.putx(i, i));
@@ -342,7 +342,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
         for (int i = 0; i < cache.configuration().getMaximumQueryIteratorCount() + 1; i++) {
             GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
-                "_key >= 0 order by _key").projection(grid.cluster());
+                "_key >= 0 order by _key").projection(ignite.cluster());
 
             q.pageSize(200);
             q.enableDedup(true);
@@ -376,7 +376,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      */
     public void testNodeLeft() throws Exception {
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             GridCache<Integer, Integer> cache = g.cache(null);
 
@@ -384,7 +384,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
                 assertTrue(cache.putx(i, i));
 
             GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
-                "_key >= 0 order by _key").projection(grid.cluster());
+                "_key >= 0 order by _key").projection(ignite.cluster());
 
             q.pageSize(50);
 
@@ -444,15 +444,15 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      * @throws Exception If check failed.
      */
-    private void checkQueryResults(Grid grid, GridCacheProjection<CacheKey, CacheValue> cache) throws Exception {
+    private void checkQueryResults(Ignite ignite, GridCacheProjection<CacheKey, CacheValue> cache) throws Exception {
         GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry =
             cache.queries().createSqlQuery(CacheValue.class, "val > 1 and val < 4");
 
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> q = qry.projection(grid.cluster().forLocal());
+        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> q = qry.projection(ignite.cluster().forLocal());
 
         Iterator<Map.Entry<CacheKey, CacheValue>> iter = q.execute().get().iterator();
 
@@ -470,8 +470,8 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         assert entry.getKey().equals(new CacheKey(2)) || entry.getKey().equals(new CacheKey(3));
         assert !iter.hasNext();
 
-        for (GridNode node : grid.cluster().forRemotes().nodes()) {
-            q = qry.projection(grid1.cluster().forNode(node));
+        for (GridNode node : ignite.cluster().forRemotes().nodes()) {
+            q = qry.projection(ignite1.cluster().forNode(node));
 
             iter = q.execute().get().iterator();
 

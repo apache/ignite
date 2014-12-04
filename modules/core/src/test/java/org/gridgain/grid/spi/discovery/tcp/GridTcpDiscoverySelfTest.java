@@ -161,7 +161,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testNodeConnectMessageSize() throws Exception {
         try {
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
 
             final AtomicInteger gridNameIdx = new AtomicInteger(1);
 
@@ -201,7 +201,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             for (Map.Entry<String, GridTcpDiscoverySpi> e : discoMap.entrySet()) {
                 GridDiscoverySpi spi = e.getValue();
 
-                for (Grid g : G.allGrids()) {
+                for (Ignite g : G.allGrids()) {
                     boolean res = spi.pingNode(g.cluster().localNode().id());
 
                     assert res : e.getKey() + " failed to ping " + g.cluster().localNode().id() + " of " + g.name();
@@ -222,9 +222,9 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testFailureDetectionOnNodePing1() throws Exception {
         try {
-            Grid g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
+            Ignite g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
             startGrid("testFailureDetectionOnNodePing2");
-            Grid g3 = startGrid("testFailureDetectionOnNodePing3");
+            Ignite g3 = startGrid("testFailureDetectionOnNodePing3");
 
             testFailureDetectionOnNodePing(g1, g3);
         }
@@ -239,8 +239,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     public void testFailureDetectionOnNodePing2() throws Exception {
         try {
             startGrid("testFailureDetectionOnNodePingCoordinator");
-            Grid g2 = startGrid("testFailureDetectionOnNodePing2");
-            Grid g3 = startGrid("testFailureDetectionOnNodePing3");
+            Ignite g2 = startGrid("testFailureDetectionOnNodePing2");
+            Ignite g3 = startGrid("testFailureDetectionOnNodePing3");
 
             testFailureDetectionOnNodePing(g3, g2);
         }
@@ -254,8 +254,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testFailureDetectionOnNodePing3() throws Exception {
         try {
-            Grid g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
-            Grid g2 = startGrid("testFailureDetectionOnNodePing2");
+            Ignite g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
+            Ignite g2 = startGrid("testFailureDetectionOnNodePing2");
             startGrid("testFailureDetectionOnNodePing3");
 
             testFailureDetectionOnNodePing(g2, g1);
@@ -268,7 +268,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    private void testFailureDetectionOnNodePing(Grid pingingNode, Grid failedNode) throws Exception {
+    private void testFailureDetectionOnNodePing(Ignite pingingNode, Ignite failedNode) throws Exception {
         final CountDownLatch cnt = new CountDownLatch(1);
 
         pingingNode.events().localListen(
@@ -301,7 +301,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testNodeAdded() throws Exception {
         try {
-            final Grid g1 = startGrid(1);
+            final Ignite g1 = startGrid(1);
 
             final CountDownLatch cnt = new CountDownLatch(2);
 
@@ -342,7 +342,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testOrdinaryNodeLeave() throws Exception {
         try {
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
             startGrid(2);
             startGrid(3);
 
@@ -379,7 +379,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     public void testCoordinatorNodeLeave() throws Exception {
         try {
             startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g2 = startGrid(2);
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
@@ -422,9 +422,9 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testOrdinaryNodeFailure() throws Exception {
         try {
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
-            Grid g3 = startGrid(3);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
+            Ignite g3 = startGrid(3);
 
             final CountDownLatch cnt = new CountDownLatch(2);
 
@@ -456,8 +456,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testCoordinatorNodeFailure() throws Exception {
         try {
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
@@ -489,7 +489,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final CountDownLatch latch1 = new CountDownLatch(1);
 
-            final Grid g1 = startGrid(1);
+            final Ignite g1 = startGrid(1);
 
             GridPredicate<GridEvent> lsnr1 = new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
@@ -512,7 +512,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch latch2_1 = new CountDownLatch(1);
             final CountDownLatch latch2_2 = new CountDownLatch(1);
 
-            final Grid g2 = startGrid(2);
+            final Ignite g2 = startGrid(2);
 
             g2.events().localListen(
                 new GridPredicate<GridEvent>() {
@@ -574,7 +574,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testFailBeforeNodeAddedSent() throws Exception {
         try {
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
 
             final CountDownLatch joinCnt = new CountDownLatch(2);
             final CountDownLatch failCnt = new CountDownLatch(1);
@@ -614,7 +614,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid("FailBeforeNodeLeftSentSpi");
 
-            Grid g3 = startGrid(3);
+            Ignite g3 = startGrid(3);
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
@@ -643,7 +643,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             ipFinder.registerAddresses(Arrays.asList(new InetSocketAddress("host1", 1024),
                 new InetSocketAddress("host2", 1024)));
 
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
 
             long timeout = (long)(discoMap.get(g1.name()).getIpFinderCleanFrequency() * 1.5);
 
@@ -680,7 +680,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             }, 1, "grid-starter");
 
             // This node should wait until any node "from ipFinder" appears, see log messages.
-            Grid g = startGrid("NonSharedIpFinder-1");
+            Ignite g = startGrid("NonSharedIpFinder-1");
 
             assert g.cluster().localNode().order() == 2;
         }
@@ -695,7 +695,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     public void testMulticastIpFinder() throws Exception {
         try {
             for (int i = 0; i < 5; i++) {
-                Grid g = startGrid("MulticastIpFinder-" + i);
+                Ignite g = startGrid("MulticastIpFinder-" + i);
 
                 assertEquals(i + 1, g.cluster().nodes().size());
 
@@ -932,7 +932,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    private Grid startGridNoOptimize(int idx) throws Exception {
+    private Ignite startGridNoOptimize(int idx) throws Exception {
         return startGridNoOptimize(getTestGridName(idx));
     }
 
@@ -943,7 +943,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    private Grid startGridNoOptimize(String gridName) throws Exception {
+    private Ignite startGridNoOptimize(String gridName) throws Exception {
         return G.start(getConfiguration(gridName));
     }
 

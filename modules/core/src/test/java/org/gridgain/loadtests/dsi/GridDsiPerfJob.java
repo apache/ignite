@@ -46,7 +46,7 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
 
     /** */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** */
     @GridCacheName
@@ -81,7 +81,7 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     @Override public Object execute() {
-        GridNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = grid.cluster().nodeLocalMap();
+        GridNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
 
         T2<AtomicLong, AtomicLong> cntrs = nodeLoc.get("cntrs");
 
@@ -95,7 +95,7 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
 
         long cnt = cntrs.get1().incrementAndGet();
 
-        GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal)grid).internalCache(cacheName);
+        GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal) ignite).internalCache(cacheName);
         GridDhtCacheAdapter dht = near.dht();
 
         doWork();
@@ -214,7 +214,7 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
      *
      */
     private void doWork() {
-        GridCache cache = grid.cache(cacheName);
+        GridCache cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -294,7 +294,7 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
      * @throws GridException If failed.
      */
     private long getId() throws GridException {
-        GridCache<Object, Object> cache = grid.cache(cacheName);
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -309,7 +309,7 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
      * @throws GridException If failed.
      */
     private void put(Object o, Object cacheKey) throws GridException {
-        GridCache<Object, Object> cache = grid.cache(cacheName);
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -326,6 +326,6 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     private <T> Object get(Object key) throws GridException {
-        return grid.cache(cacheName).get(key);
+        return ignite.cache(cacheName).get(key);
     }
 }

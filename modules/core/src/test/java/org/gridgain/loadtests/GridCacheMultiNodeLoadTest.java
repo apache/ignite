@@ -11,7 +11,6 @@ package org.gridgain.loadtests;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -34,7 +33,7 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
     public static final int ELEMENTS_COUNT = 200000;
 
     /** Grid 1. */
-    private static Grid grid1;
+    private static Ignite ignite1;
 
     /** */
     private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
@@ -71,17 +70,17 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid1 = startGrid(1);
+        ignite1 = startGrid(1);
         startGrid(2);
 
-        grid1.cache(CACHE_NAME);
+        ignite1.cache(CACHE_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        grid1 = null;
+        ignite1 = null;
     }
 
     /** {@inheritDoc} */
@@ -93,6 +92,6 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testMany() throws Exception {
-        grid1.compute().execute(GridCacheLoadPopulationTask.class, null);
+        ignite1.compute().execute(GridCacheLoadPopulationTask.class, null);
     }
 }

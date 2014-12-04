@@ -95,7 +95,7 @@ object ScalarCacheAffinityExample1 {
      * @param g Grid.
      * @param keys Keys to populate.
      */
-    private def populateCache(g: Grid, keys: Seq[String]) {
+    private def populateCache(g: Ignite, keys: Seq[String]) {
         var prj = g.cluster().forCache(NAME)
 
         // Give preference to local node.

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
@@ -206,7 +205,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         comp.call(new GridCallable<Object>() {
             @GridInstanceResource
-            private Grid grid;
+            private Ignite ignite;
 
             @GridLoggerResource
             private GridLogger log;
@@ -216,7 +215,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
                 GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
-                            GridCacheCountDownLatch latch = grid.cache(cacheName).dataStructures()
+                            GridCacheCountDownLatch latch = ignite.cache(cacheName).dataStructures()
                                 .countDownLatch("latch", 2, false, true);
 
                             assert latch != null && latch.count() == 2;
@@ -385,7 +384,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
         grid(RND.nextInt(NODES_CNT)).cache(cacheName).dataStructures().removeCountDownLatch(latchName);
 
         // Ensure latch is removed on all nodes.
-        for (Grid g : G.allGrids())
+        for (Ignite g : G.allGrids())
             assert ((GridKernal)g).internalCache(cacheName).context().dataStructures().
                 countDownLatch(latchName, 10, true, false) == null;
 

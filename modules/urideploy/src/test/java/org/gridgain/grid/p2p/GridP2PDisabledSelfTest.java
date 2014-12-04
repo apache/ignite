@@ -85,13 +85,13 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
         initGar = false;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             Class task = extLdr.loadClass(TASK_NAME);
 
             try {
-                grid1.compute().execute(task, grid2.cluster().localNode().id());
+                ignite1.compute().execute(task, ignite2.cluster().localNode().id());
 
                 assert false;
             }
@@ -133,10 +133,10 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
                 garFile = "file:///" + tmpPath.getAbsolutePath();
 
                 try {
-                    Grid grid1 = startGrid(1);
-                    Grid grid2 = startGrid(2);
+                    Ignite ignite1 = startGrid(1);
+                    Ignite ignite2 = startGrid(2);
 
-                    int[] res = grid1.compute().<UUID, int[]>execute(TASK_NAME, grid2.cluster().localNode().id());
+                    int[] res = ignite1.compute().<UUID, int[]>execute(TASK_NAME, ignite2.cluster().localNode().id());
 
                     assert res != null;
                     assert res.length == 2;

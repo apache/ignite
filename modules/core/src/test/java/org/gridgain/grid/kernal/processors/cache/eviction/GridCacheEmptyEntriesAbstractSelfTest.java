@@ -94,7 +94,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @return First grid node.
      * @throws Exception If failed.
      */
-    protected abstract Grid startGrids() throws Exception;
+    protected abstract Ignite startGrids() throws Exception;
 
     /** @return Cache mode for particular test. */
     protected abstract GridCacheMode cacheMode();
@@ -151,7 +151,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
             for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
                 txIsolation = isolation;
 
-                Grid g = startGrids();
+                Ignite g = startGrids();
 
                 GridCache<String, String> cache = g.cache(null);
 

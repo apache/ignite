@@ -599,7 +599,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
             }, EVT_CACHE_PRELOAD_STOPPED);
         }
 
-        Grid g = startGrid(GRID_CNT);
+        Ignite g = startGrid(GRID_CNT);
 
         info("Started grid: " + g.cluster().localNode().id());
 
@@ -720,12 +720,12 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * Get GGfs of the given node.
      *
-     * @param grid Node;
+     * @param ignite Node;
      * @return GGFS.
      * @throws Exception If failed.
      */
-    private GridGgfsImpl ggfs(Grid grid) throws Exception {
-        return (GridGgfsImpl)grid.ggfs(GGFS_NAME);
+    private GridGgfsImpl ggfs(Ignite ignite) throws Exception {
+        return (GridGgfsImpl) ignite.ggfs(GGFS_NAME);
     }
 
     /**

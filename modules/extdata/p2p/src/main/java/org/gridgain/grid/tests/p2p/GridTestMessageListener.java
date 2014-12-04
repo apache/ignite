@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.*;
 public class GridTestMessageListener implements P2<UUID, Object> {
     /** */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public boolean apply(UUID nodeId, Object msg) {
-        grid.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.cluster().localNode().id() +
+        ignite.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() +
             ", msg=" + msg + ']');
 
-        GridNodeLocalMap<String, AtomicInteger> map = grid.cluster().nodeLocalMap();
+        GridNodeLocalMap<String, AtomicInteger> map = ignite.cluster().nodeLocalMap();
 
         AtomicInteger cnt = map.get("msgCnt");
 

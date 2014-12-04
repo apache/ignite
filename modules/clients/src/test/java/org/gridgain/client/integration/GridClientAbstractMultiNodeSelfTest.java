@@ -323,7 +323,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         assertEquals(NODES_CNT, nodes.size());
 
         for (int i = 0; i < NODES_CNT; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             assert g != null;
 
@@ -354,7 +354,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         assertEquals(NODES_CNT, nodes.size());
 
         for (int i = 0; i < NODES_CNT; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             assert g != null;
 
@@ -411,7 +411,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
         d.flagsOn(GridClientCacheFlag.INVALIDATE).put(key, "zzz");
 
-        for (Grid g : G.allGrids()) {
+        for (Ignite g : G.allGrids()) {
             cache = g.cache(PARTITIONED_CACHE_NAME);
 
             if (cache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
@@ -492,7 +492,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         client.addTopologyListener(lsnr);
 
         try {
-            Grid g = startGrid(NODES_CNT + 1);
+            Ignite g = startGrid(NODES_CNT + 1);
 
             UUID id = g.cluster().localNode().id();
 
@@ -521,7 +521,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     public void testDisabledRest() throws Exception {
         restEnabled = false;
 
-        final Grid g = startGrid("disabled-rest");
+        final Ignite g = startGrid("disabled-rest");
 
         try {
             Thread.sleep(2 * TOP_REFRESH_FREQ);
@@ -584,7 +584,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
         assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
 
-        Map<UUID, Grid> gridsByLocNode = new HashMap<>(NODES_CNT);
+        Map<UUID, Ignite> gridsByLocNode = new HashMap<>(NODES_CNT);
 
         GridClientData partitioned = client.data(PARTITIONED_CACHE_NAME);
 
@@ -606,7 +606,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             // primary node only.
             partitioned.put(key, "val" + key);
 
-            for (Map.Entry<UUID, Grid> entry : gridsByLocNode.entrySet()) {
+            for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
                 Object val = entry.getValue().cache(PARTITIONED_CACHE_NAME).peek(key);
 
                 if (primaryNodeId.equals(entry.getKey()))
@@ -628,7 +628,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             partitioned.pinNodes(node).put(pinnedKey, "val" + pinnedKey);
 
-            for (Map.Entry<UUID, Grid> entry : gridsByLocNode.entrySet()) {
+            for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
                 Object val = entry.getValue().cache(PARTITIONED_CACHE_NAME).peek(pinnedKey);
 
                 if (primaryNodeId.equals(entry.getKey()) || pinnedNodeId.equals(entry.getKey()))
@@ -687,7 +687,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     private static class TestTask extends GridComputeTaskSplitAdapter<Object, String> {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Count of tasks this job was split to. */
         private int gridSize;
@@ -699,7 +699,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             this.gridSize = gridSize;
 
-            final String locNodeId = grid.cluster().localNode().id().toString();
+            final String locNodeId = ignite.cluster().localNode().id().toString();
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new GridComputeJobAdapter() {

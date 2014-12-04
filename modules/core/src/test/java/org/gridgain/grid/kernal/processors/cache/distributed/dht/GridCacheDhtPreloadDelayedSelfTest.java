@@ -93,7 +93,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     public void testManualPreload() throws Exception {
         delay = -1;
 
-        Grid g0 = startGrid(0);
+        Ignite g0 = startGrid(0);
 
         int cnt = KEY_CNT;
 
@@ -102,8 +102,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
 
-        Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
+        Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
 
         GridCache<String, Integer> c1 = g1.cache(null);
         GridCache<String, Integer> c2 = g2.cache(null);
@@ -170,7 +170,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     public void _testDelayedPreload() throws Exception { // TODO GG-9141
         delay = PRELOAD_DELAY;
 
-        Grid g0 = startGrid(0);
+        Ignite g0 = startGrid(0);
 
         int cnt = KEY_CNT;
 
@@ -179,8 +179,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
 
-        Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
+        Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
 
         GridCache<String, Integer> c1 = g1.cache(null);
         GridCache<String, Integer> c2 = g2.cache(null);
@@ -240,7 +240,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         delay = 0;
         preloadMode = GridCachePreloadMode.SYNC;
 
-        Grid g0 = startGrid(0);
+        Ignite g0 = startGrid(0);
 
         int cnt = KEY_CNT;
 
@@ -249,8 +249,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
 
-        Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
+        Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
 
         GridCache<String, Integer> c1 = g1.cache(null);
         GridCache<String, Integer> c2 = g2.cache(null);
@@ -272,15 +272,15 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         delay = 0;
 
-        Collection<Grid> grids = new ArrayList<>();
+        Collection<Ignite> ignites = new ArrayList<>();
 
         try {
             for (int i = 0; i < 5; i++) {
-                grids.add(startGrid(i));
+                ignites.add(startGrid(i));
 
                 awaitPartitionMapExchange();
 
-                for (Grid g : grids) {
+                for (Ignite g : ignites) {
                     info(">>> Checking affinity for grid: " + g.name());
 
                     GridDhtPartitionTopology<Integer, String> top = topology(g);
@@ -339,7 +339,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             delay = -1;
             preloadMode = ASYNC;
 
-            Grid g = startGrid(9);
+            Ignite g = startGrid(9);
 
             info(">>> Starting manual preload");
 
@@ -358,7 +358,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Topology.
      */
-    private GridDhtPartitionTopology<Integer, String> topology(Grid g) {
+    private GridDhtPartitionTopology<Integer, String> topology(Ignite g) {
         return ((GridNearCacheAdapter<Integer, String>)((GridKernal)g).<Integer, String>internalCache()).dht().topology();
     }
 
@@ -366,7 +366,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Affinity.
      */
-    private GridCacheAffinity<Object> affinity(Grid g) {
+    private GridCacheAffinity<Object> affinity(Ignite g) {
         return g.cache(null).affinity();
     }
 
@@ -375,7 +375,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param p Partition.
      * @return Affinity nodes.
      */
-    private Collection<GridNode> affinityNodes(Grid g, int p) {
+    private Collection<GridNode> affinityNodes(Ignite g, int p) {
         return affinity(g).mapPartitionToPrimaryAndBackups(p);
     }
 
@@ -386,7 +386,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param keyCnt Key count.
      */
     private void checkCache(GridCache<String, Integer> c, int keyCnt) {
-        Grid g = c.gridProjection().grid();
+        Ignite g = c.gridProjection().grid();
 
         for (int i = 0; i < keyCnt; i++) {
             String key = Integer.toString(i);

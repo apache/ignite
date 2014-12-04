@@ -57,14 +57,14 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleTaskMetrics() throws Exception {
-        Grid grid = grid();
+        Ignite ignite = grid();
 
-        grid.compute().execute(new GridTestTask(), "testArg");
+        ignite.compute().execute(new GridTestTask(), "testArg");
 
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        grid.events().localListen(new GridPredicate<GridEvent>() {
+        ignite.events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
@@ -77,7 +77,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        GridNodeMetrics metrics = grid.cluster().localNode().metrics();
+        GridNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -112,15 +112,15 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInternalTaskMetrics() throws Exception {
-        Grid grid = grid();
+        Ignite ignite = grid();
 
         // Visor task is internal and should not affect metrics.
-        grid.compute().withName("visor-test-task").execute(new TestInternalTask(), "testArg");
+        ignite.compute().withName("visor-test-task").execute(new TestInternalTask(), "testArg");
 
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        grid.events().localListen(new GridPredicate<GridEvent>() {
+        ignite.events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
@@ -133,7 +133,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        GridNodeMetrics metrics = grid.cluster().localNode().metrics();
+        GridNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -168,35 +168,35 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIoMetrics() throws Exception {
-        Grid grid0 = grid();
-        Grid grid1 = startGrid(1);
+        Ignite ignite0 = grid();
+        Ignite ignite1 = startGrid(1);
 
         Object msg = new TestMessage();
 
-        int size = grid0.configuration().getMarshaller().marshal(msg).length;
+        int size = ignite0.configuration().getMarshaller().marshal(msg).length;
 
         assert size > MSG_SIZE;
 
         final CountDownLatch latch = new CountDownLatch(MSG_CNT);
 
-        grid0.message().localListen(null, new GridMessagingListenActor<TestMessage>() {
+        ignite0.message().localListen(null, new GridMessagingListenActor<TestMessage>() {
             @Override protected void receive(UUID nodeId, TestMessage rcvMsg) throws Throwable {
                 latch.countDown();
             }
         });
 
-        grid1.message().localListen(null, new GridMessagingListenActor<TestMessage>() {
+        ignite1.message().localListen(null, new GridMessagingListenActor<TestMessage>() {
             @Override protected void receive(UUID nodeId, TestMessage rcvMsg) throws Throwable {
                 respond(rcvMsg);
             }
         });
 
         for (int i = 0; i < MSG_CNT; i++)
-            message(grid0.cluster().forRemotes()).send(null, msg);
+            message(ignite0.cluster().forRemotes()).send(null, msg);
 
         latch.await();
 
-        GridNodeMetrics metrics = grid0.cluster().localNode().metrics();
+        GridNodeMetrics metrics = ignite0.cluster().localNode().metrics();
 
         info("Node 0 metrics: " + metrics);
 
@@ -206,7 +206,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getReceivedMessagesCount() >= MSG_CNT;
         assert metrics.getReceivedBytesCount() > size * MSG_CNT;
 
-        metrics = grid1.cluster().localNode().metrics();
+        metrics = ignite1.cluster().localNode().metrics();
 
         info("Node 1 metrics: " + metrics);
 

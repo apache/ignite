@@ -37,15 +37,15 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
      */
     public void testJobSetAttribute() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            grid1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
+            ignite1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
 
-            GridCompute comp = grid1.compute().enableAsync();
+            GridCompute comp = ignite1.compute().enableAsync();
 
             for (int i = 0; i < TESTS_COUNT; i++) {
-                comp.withTimeout(100000).execute(SessionTestTask.class.getName(), grid2.cluster().localNode().id());
+                comp.withTimeout(100000).execute(SessionTestTask.class.getName(), ignite2.cluster().localNode().id());
 
                 GridComputeTaskFuture<?> fut = comp.future();
 

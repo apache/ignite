@@ -125,7 +125,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return Grid for the given node.
      */
-    private Grid grid(GridNode node) {
+    private Ignite grid(GridNode node) {
         return G.grid(node.id());
     }
 
@@ -134,7 +134,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @return Near cache.
      */
     @SuppressWarnings({"unchecked"})
-    private GridNearCacheAdapter<Integer, String> near(Grid g) {
+    private GridNearCacheAdapter<Integer, String> near(Ignite g) {
         return (GridNearCacheAdapter)((GridKernal)g).internalCache();
     }
 
@@ -143,7 +143,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+    private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
         return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 
@@ -265,19 +265,19 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     public void testMultipleKeys() throws Exception {
         final int keyCnt = 1000;
 
-        final Grid primaryGrid = grid(0);
-        final Grid backupGrid = grid(1);
+        final Ignite primaryIgnite = grid(0);
+        final Ignite backupIgnite = grid(1);
 
-        GridNearCacheAdapter<Integer, String> nearPrimary = near(primaryGrid);
-        GridDhtCacheAdapter<Integer, String> dhtPrimary = dht(primaryGrid);
+        GridNearCacheAdapter<Integer, String> nearPrimary = near(primaryIgnite);
+        GridDhtCacheAdapter<Integer, String> dhtPrimary = dht(primaryIgnite);
 
-        GridNearCacheAdapter<Integer, String> nearBackup = near(backupGrid);
-        GridDhtCacheAdapter<Integer, String> dhtBackup = dht(backupGrid);
+        GridNearCacheAdapter<Integer, String> nearBackup = near(backupIgnite);
+        GridDhtCacheAdapter<Integer, String> dhtBackup = dht(backupIgnite);
 
         Collection<Integer> keys = new ArrayList<>(keyCnt);
 
         for (int key = 0; keys.size() < keyCnt; key++)
-            if (F.eqNodes(primaryGrid.cluster().localNode(), F.first(keyNodes(key))))
+            if (F.eqNodes(primaryIgnite.cluster().localNode(), F.first(keyNodes(key))))
                 keys.add(key++);
 
         info("Test keys: " + keys);
@@ -298,18 +298,18 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntBackup = new AtomicInteger();
 
-        GridFuture<GridEvent> futBackup = waitForLocalEvent(backupGrid.events(), new P1<GridEvent>() {
+        GridFuture<GridEvent> futBackup = waitForLocalEvent(backupIgnite.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.node().id().equals(backupGrid.cluster().localNode().id()) &&
+                return e.node().id().equals(backupIgnite.cluster().localNode().id()) &&
                     cntBackup.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 
         final AtomicInteger cntPrimary = new AtomicInteger();
 
-        GridFuture<GridEvent> futPrimary = waitForLocalEvent(primaryGrid.events(), new P1<GridEvent>() {
+        GridFuture<GridEvent> futPrimary = waitForLocalEvent(primaryIgnite.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.node().id().equals(primaryGrid.cluster().localNode().id()) &&
+                return e.node().id().equals(primaryIgnite.cluster().localNode().id()) &&
                     cntPrimary.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
@@ -317,7 +317,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         // Evict on primary node.
         // Eviction of the last key should trigger queue processing.
         for (Integer key : keys) {
-            boolean evicted = primaryGrid.cache(null).evict(key);
+            boolean evicted = primaryIgnite.cache(null).evict(key);
 
             assert evicted;
         }

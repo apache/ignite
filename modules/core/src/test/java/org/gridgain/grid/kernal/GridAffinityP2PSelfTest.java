@@ -146,9 +146,9 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     private void affinityTest() throws Exception {
-        Grid g1 = startGrid(1);
-        Grid g2 = startGrid(2);
-        Grid g3 = startGrid(3);
+        Ignite g1 = startGrid(1);
+        Ignite g2 = startGrid(2);
+        Ignite g3 = startGrid(3);
 
         try {
             assert g1.configuration().getCacheConfiguration().length == 0;

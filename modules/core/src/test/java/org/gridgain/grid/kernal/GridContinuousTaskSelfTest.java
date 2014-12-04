@@ -35,9 +35,9 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
      */
     public void testContinuousJobsChain() throws Exception {
         try {
-            Grid grid = startGrid(0);
+            Ignite ignite = startGrid(0);
 
-            GridCompute comp = grid.compute().enableAsync();
+            GridCompute comp = ignite.compute().enableAsync();
 
             comp.execute(TestJobsChainTask.class, true);
 
@@ -60,14 +60,14 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
      */
     public void testContinuousJobsChainMultiThreaded() throws Exception {
         try {
-            final Grid grid = startGrid(0);
+            final Ignite ignite = startGrid(0);
             startGrid(1);
 
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     try {
-                        GridCompute comp = grid.compute().enableAsync();
+                        GridCompute comp = ignite.compute().enableAsync();
 
                         comp.execute(TestJobsChainTask.class, true);
 
@@ -98,10 +98,10 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
      */
     public void testContinuousJobsSessionChain() throws Exception {
         try {
-            Grid grid = startGrid(0);
+            Ignite ignite = startGrid(0);
             startGrid(1);
 
-            grid.compute().execute(SessionChainTestTask.class, false);
+            ignite.compute().execute(SessionChainTestTask.class, false);
         }
         finally {
             stopGrid(0);
@@ -114,9 +114,9 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
      */
     public void testContinuousSlowMap() throws Exception {
         try {
-            Grid grid = startGrid(0);
+            Ignite ignite = startGrid(0);
 
-            Integer cnt = grid.compute().execute(SlowMapTestTask.class, null);
+            Integer cnt = ignite.compute().execute(SlowMapTestTask.class, null);
 
             assert cnt != null;
             assert cnt == 2 : "Unexpected result: " + cnt;

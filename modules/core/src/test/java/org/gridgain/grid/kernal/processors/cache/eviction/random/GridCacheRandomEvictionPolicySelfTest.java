@@ -28,7 +28,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
      */
     public void testMemory() throws Exception {
         try {
-            Grid g = startGrid(0);
+            Ignite g = startGrid(0);
 
             int max = 10;
 
@@ -54,7 +54,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
      */
     public void testRandom() throws Exception {
         try {
-            Grid g = startGrid(0);
+            Ignite g = startGrid(0);
 
             int max = 10;
 
@@ -159,7 +159,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
      */
     public void testRandomMultiThreaded() throws Exception {
         try {
-            final Grid g = startGrid(0);
+            final Ignite g = startGrid(0);
 
             int max = 10;
 

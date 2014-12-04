@@ -33,10 +33,10 @@ import static org.gridgain.grid.events.GridEventType.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /** First grid. */
-    private static Grid grid1;
+    private static Ignite ignite1;
 
     /** Second grid. */
-    private static Grid grid2;
+    private static Ignite ignite2;
 
     /** */
     public GridEventStorageSelfTest() {
@@ -45,8 +45,8 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid1 = startGrid(1);
-        grid2 = startGrid(2);
+        ignite1 = startGrid(1);
+        ignite2 = startGrid(2);
     }
 
     /** {@inheritDoc} */
@@ -66,9 +66,9 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        grid1.events().localListen(lsnr, EVTS_ALL_MINUS_METRIC_UPDATE);
+        ignite1.events().localListen(lsnr, EVTS_ALL_MINUS_METRIC_UPDATE);
 
-        assert grid1.events().stopLocalListen(lsnr);
+        assert ignite1.events().stopLocalListen(lsnr);
     }
 
     /**
@@ -83,10 +83,10 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        grid1.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        ignite1.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        assert grid1.events().stopLocalListen(lsnr);
-        assert !grid1.events().stopLocalListen(lsnr);
+        assert ignite1.events().stopLocalListen(lsnr);
+        assert !ignite1.events().stopLocalListen(lsnr);
     }
 
     /**
@@ -98,38 +98,38 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
         GridPredicate<GridEvent> filter = new TestEventFilter();
 
         // Check that two same listeners may be added.
-        grid1.events().localListen(lsnr, EVT_TASK_STARTED);
-        grid1.events().localListen(lsnr, EVT_TASK_STARTED);
+        ignite1.events().localListen(lsnr, EVT_TASK_STARTED);
+        ignite1.events().localListen(lsnr, EVT_TASK_STARTED);
 
         // Execute task.
-        generateEvents(grid1);
+        generateEvents(ignite1);
 
         assert lsnr.getCounter() == 1;
 
-        Collection<GridEvent> evts = grid1.events().localQuery(filter);
+        Collection<GridEvent> evts = ignite1.events().localQuery(filter);
 
         assert evts != null;
         assert evts.size() == 1;
 
         // Execute task.
-        generateEvents(grid1);
+        generateEvents(ignite1);
 
         // Check that listener has been removed.
         assert lsnr.getCounter() == 2;
 
         // Check that no problems with nonexistent listeners.
-        assert grid1.events().stopLocalListen(lsnr);
-        assert !grid1.events().stopLocalListen(lsnr);
+        assert ignite1.events().stopLocalListen(lsnr);
+        assert !ignite1.events().stopLocalListen(lsnr);
 
         // Check for events from local node.
-        evts = grid1.events().localQuery(filter);
+        evts = ignite1.events().localQuery(filter);
 
         assert evts != null;
         assert evts.size() == 2;
 
         // Check for events from empty remote nodes collection.
         try {
-            events(grid1.cluster().forPredicate(F.<GridNode>alwaysFalse())).remoteQuery(filter, 0);
+            events(ignite1.cluster().forPredicate(F.<GridNode>alwaysFalse())).remoteQuery(filter, 0);
         }
         catch (GridEmptyProjectionException ignored) {
             // No-op
@@ -142,9 +142,9 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     public void testRemoteNodeEventStorage() throws Exception {
         GridPredicate<GridEvent> filter = new TestEventFilter();
 
-        generateEvents(grid2);
+        generateEvents(ignite2);
 
-        GridProjection prj = grid1.cluster().forPredicate(F.remoteNodes(grid1.cluster().localNode().id()));
+        GridProjection prj = ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()));
 
         Collection<GridEvent> evts = events(prj).remoteQuery(filter, 0);
 
@@ -158,12 +158,12 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     public void testRemoteAndLocalNodeEventStorage() throws Exception {
         GridPredicate<GridEvent> filter = new TestEventFilter();
 
-        generateEvents(grid1);
+        generateEvents(ignite1);
 
-        Collection<GridEvent> evts = grid1.events().remoteQuery(filter, 0);
-        Collection<GridEvent> locEvts = grid1.events().localQuery(filter);
+        Collection<GridEvent> evts = ignite1.events().remoteQuery(filter, 0);
+        Collection<GridEvent> locEvts = ignite1.events().localQuery(filter);
         Collection<GridEvent> remEvts =
-            events(grid1.cluster().forPredicate(F.remoteNodes(grid1.cluster().localNode().id()))).remoteQuery(filter, 0);
+            events(ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()))).remoteQuery(filter, 0);
 
         assert evts != null;
         assert locEvts != null;
@@ -176,13 +176,13 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * Create events in grid.
      *
-     * @param grid Grid.
+     * @param ignite Grid.
      * @throws GridException In case of error.
      */
-    private void generateEvents(Grid grid) throws GridException {
-        grid.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
+    private void generateEvents(Ignite ignite) throws GridException {
+        ignite.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
 
-        grid.compute().execute(GridEventTestTask.class.getName(), null);
+        ignite.compute().execute(GridEventTestTask.class.getName(), null);
     }
 
     /**

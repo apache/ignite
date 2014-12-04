@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extends
     GridCacheAbstractByteArrayValuesSelfTest {
     /** Grids. */
-    protected static Grid[] grids;
+    protected static Ignite[] ignites;
 
     /** Regular caches. */
     private static GridCache<Integer, Object>[] caches;
@@ -130,18 +130,18 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
         assert gridCnt > 0;
 
-        grids = new Grid[gridCnt];
+        ignites = new Ignite[gridCnt];
 
         caches = new GridCache[gridCnt];
         cachesOffheap = new GridCache[gridCnt];
         cachesOffheapTiered = new GridCache[gridCnt];
 
         for (int i = 0; i < gridCnt; i++) {
-            grids[i] = startGrid(i);
+            ignites[i] = startGrid(i);
 
-            caches[i] = grids[i].cache(CACHE_REGULAR);
-            cachesOffheap[i] = grids[i].cache(CACHE_OFFHEAP);
-            cachesOffheapTiered[i] = grids[i].cache(CACHE_OFFHEAP_TIERED);
+            caches[i] = ignites[i].cache(CACHE_REGULAR);
+            cachesOffheap[i] = ignites[i].cache(CACHE_OFFHEAP);
+            cachesOffheapTiered[i] = ignites[i].cache(CACHE_OFFHEAP_TIERED);
         }
     }
 
@@ -153,7 +153,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         cachesOffheap = null;
         cachesOffheapTiered = null;
 
-        grids = null;
+        ignites = null;
     }
 
     /**

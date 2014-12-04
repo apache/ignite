@@ -46,7 +46,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
         inclEvtTypes = null;
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             final AtomicInteger cnt = new AtomicInteger();
 
@@ -80,7 +80,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
         inclEvtTypes = new int[] { EVT_TASK_STARTED, EVT_TASK_FINISHED };
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             final AtomicInteger cnt = new AtomicInteger();
 
@@ -114,7 +114,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
         inclEvtTypes = null;
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             g.events().enableLocal(EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_STARTED);
 
@@ -150,7 +150,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
         inclEvtTypes = null;
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             GridEvents evts = g.events();
 
@@ -173,7 +173,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     public void testInvalidTypes() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED};
 
-        try (Grid g = startGrid()) {
+        try (Ignite g = startGrid()) {
             assertTrue(g.events().isEnabled(EVT_TASK_STARTED));
 
             try {
@@ -191,7 +191,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
         inclEvtTypes = new int[]{-13};
 
-        try (Grid g = startGrid()) {
+        try (Ignite g = startGrid()) {
             fail("Expected GridException");
         }
         catch (GridException e) {
@@ -209,7 +209,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
         inclEvtTypes = new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, 30000};
 
         try {
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             assertEqualsWithoutOrder(inclEvtTypes, getEnabledEvents(g));
             assertEqualsWithoutOrder(inclEvtTypes, getEnabledEvents(1013, g, 30000));
@@ -307,7 +307,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
      * @param g Grid.
      * @return Enabled events.
      */
-    private int[] getEnabledEvents(Grid g) {
+    private int[] getEnabledEvents(Ignite g) {
         return g.events().enabledEvents();
     }
 
@@ -317,7 +317,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
      * @param customTypes Array of event types.
      * @return Enabled events counted with loop (1..limit) and checks of custom types.
      */
-    private int[] getEnabledEvents(int limit, Grid g, int... customTypes) {
+    private int[] getEnabledEvents(int limit, Ignite g, int... customTypes) {
         Collection<Integer> res = new HashSet<>();
 
         GridEvents evts = g.events();

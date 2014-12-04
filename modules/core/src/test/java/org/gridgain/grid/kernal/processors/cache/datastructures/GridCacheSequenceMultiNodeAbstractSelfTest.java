@@ -172,7 +172,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     private static class IncrementAndGetJob implements GridCallable<Set<Long>> {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -195,12 +195,12 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
 
         /** {@inheritDoc} */
         @Override public Set<Long> call() throws GridException {
-            assert grid != null;
+            assert ignite != null;
 
             if (log.isInfoEnabled())
-                log.info("Running IncrementAndGetJob on node: " + grid.cluster().localNode().id());
+                log.info("Running IncrementAndGetJob on node: " + ignite.cluster().localNode().id());
 
-            GridCacheAtomicSequence seq = grid.cache(null).dataStructures().atomicSequence(seqName, 0, true);
+            GridCacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence(seqName, 0, true);
 
             assert seq != null;
 
@@ -226,7 +226,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     private static class GetAndIncrementJob implements GridCallable<Set<Long>> {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -249,12 +249,12 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
 
         /** {@inheritDoc} */
         @Override public Set<Long> call() throws GridException {
-            assert grid != null;
+            assert ignite != null;
 
             if (log.isInfoEnabled())
-                log.info("Running GetAndIncrementJob on node: " + grid.cluster().localNode().id());
+                log.info("Running GetAndIncrementJob on node: " + ignite.cluster().localNode().id());
 
-            GridCacheAtomicSequence seq = grid.cache(null).dataStructures().atomicSequence(seqName, 0, true);
+            GridCacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence(seqName, 0, true);
 
             assert seq != null;
 

@@ -24,7 +24,7 @@ public class GridCacheReplicatedPreloadUndeploysTest {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid g = G.start("examples/config/example-cache.xml")) {
+        try (Ignite g = G.start("examples/config/example-cache.xml")) {
             if (g.cluster().forRemotes().nodes().isEmpty()) {
                 X.print(">>> This test needs 1 remote node at start " +
                     "and addition of 1 more node at the end.");

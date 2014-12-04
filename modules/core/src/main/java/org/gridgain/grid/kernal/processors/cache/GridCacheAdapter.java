@@ -4869,7 +4869,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         /** Injected grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /**
          * Empty constructor for serialization.
@@ -4887,7 +4887,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ((GridEx)grid).cachex(cacheName).clearAll();
+            ((GridEx) ignite).cachex(cacheName).clearAll();
 
             return null;
         }
@@ -4920,7 +4920,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         /** Injected grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /**
          * Empty constructor for serialization.
@@ -4940,7 +4940,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            GridCache<Object, Object> cache = ((GridEx)grid).cachex(cacheName);
+            GridCache<Object, Object> cache = ((GridEx) ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }

@@ -282,10 +282,10 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
         private GridProjection subGrid;
 
         /**
-         * @param grid Grid.
+         * @param ignite Grid.
          */
-        private SelfReferencedJob(Grid grid) {
-            node = grid.cluster().localNode();
+        private SelfReferencedJob(Ignite ignite) {
+            node = ignite.cluster().localNode();
 
             ref = this;
 
@@ -295,7 +295,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
 
             GridTestKernalContext ctx = newContext();
 
-            subGrid = grid.cluster().forNodes(Collections.singleton(node));
+            subGrid = ignite.cluster().forNodes(Collections.singleton(node));
         }
 
         /** {@inheritDoc} */
@@ -318,7 +318,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test fails.
      */
     public void testDetectPeerDeployAwareInfiniteRecursion() throws Exception {
-        Grid g = startGrid(1);
+        Ignite g = startGrid(1);
 
         try {
             final SelfReferencedJob job = new SelfReferencedJob(g);

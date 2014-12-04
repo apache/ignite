@@ -39,7 +39,7 @@ public class GridGainSpring {
      * @throws GridException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Grid start(@Nullable ApplicationContext springCtx) throws GridException {
+    public static Ignite start(@Nullable ApplicationContext springCtx) throws GridException {
         return GridGainEx.start(new GridSpringResourceContextImpl(springCtx));
     }
 
@@ -55,7 +55,7 @@ public class GridGainSpring {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Grid start(GridConfiguration cfg, @Nullable ApplicationContext springCtx) throws GridException {
+    public static Ignite start(GridConfiguration cfg, @Nullable ApplicationContext springCtx) throws GridException {
         return GridGainEx.start(cfg, new GridSpringResourceContextImpl(springCtx));
     }
 
@@ -79,7 +79,7 @@ public class GridGainSpring {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(String springCfgPath, @Nullable ApplicationContext springCtx) throws GridException {
+    public static Ignite start(String springCfgPath, @Nullable ApplicationContext springCtx) throws GridException {
         return GridGainEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx));
     }
 
@@ -103,7 +103,7 @@ public class GridGainSpring {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(URL springCfgUrl, @Nullable ApplicationContext springCtx) throws GridException {
+    public static Ignite start(URL springCfgUrl, @Nullable ApplicationContext springCtx) throws GridException {
         return GridGainEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx));
     }
 }

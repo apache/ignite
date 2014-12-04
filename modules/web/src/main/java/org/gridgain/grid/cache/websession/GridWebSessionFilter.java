@@ -183,19 +183,19 @@ public class GridWebSessionFilter implements Filter {
             throw new GridRuntimeException("Maximum number of retries parameter is invalid: " + retriesStr, e);
         }
 
-        Grid webSesGrid = G.grid(gridName);
+        Ignite webSesIgnite = G.grid(gridName);
 
-        if (webSesGrid == null)
+        if (webSesIgnite == null)
             throw new GridRuntimeException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
-        log = webSesGrid.log();
+        log = webSesIgnite.log();
 
-        if (webSesGrid == null)
+        if (webSesIgnite == null)
             throw new GridRuntimeException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
-        cache = webSesGrid.cache(cacheName);
+        cache = webSesIgnite.cache(cacheName);
 
         if (cache == null)
             throw new GridRuntimeException("Cache for web sessions is not started (is it configured?): " + cacheName);
@@ -210,11 +210,11 @@ public class GridWebSessionFilter implements Filter {
                 "Consider setting eagerTtl to true for cache: " + cacheName);
 
         if (cacheCfg.getCacheMode() == LOCAL)
-            U.quietAndWarn(webSesGrid.log(), "Using LOCAL cache for web sessions caching " +
+            U.quietAndWarn(webSesIgnite.log(), "Using LOCAL cache for web sessions caching " +
                 "(this is only OK in test mode): " + cacheName);
 
         if (cacheCfg.getCacheMode() == PARTITIONED && cacheCfg.getAtomicityMode() != ATOMIC)
-            U.quietAndWarn(webSesGrid.log(), "Using " + cacheCfg.getAtomicityMode() + " atomicity for web sessions " +
+            U.quietAndWarn(webSesIgnite.log(), "Using " + cacheCfg.getAtomicityMode() + " atomicity for web sessions " +
                 "caching (switch to ATOMIC mode for better performance)");
 
         if (log.isInfoEnabled())
@@ -223,7 +223,7 @@ public class GridWebSessionFilter implements Filter {
 
         txEnabled = cacheCfg.getAtomicityMode() == TRANSACTIONAL;
 
-        lsnr = new GridWebSessionListener(webSesGrid, cache, retries);
+        lsnr = new GridWebSessionListener(webSesIgnite, cache, retries);
 
         String srvInfo = ctx.getServerInfo();
 

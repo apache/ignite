@@ -61,20 +61,20 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     private void processTest(boolean isExpectUndeploy) throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
-            Grid grid3 = startGrid(3);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
+            Ignite ignite3 = startGrid(3);
 
             Class task1 = urlClsLdr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
             Thread.sleep(1000);
 
             // Task will be deployed after stop node1
-            int[] res2 = (int[])grid3.compute().execute(task1, grid2.cluster().localNode().id());
+            int[] res2 = (int[]) ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
 
             if (isExpectUndeploy)
                 assert isNotSame(res1, res2);

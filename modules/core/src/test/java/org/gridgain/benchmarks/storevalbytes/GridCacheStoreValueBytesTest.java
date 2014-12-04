@@ -145,7 +145,7 @@ public class GridCacheStoreValueBytesTest {
         X.println("Get keys number: " + getKeyNum);
         X.println("Random get: " + randomGet);
 
-        Grid grid = GridGain.start(GridCacheStoreValueBytesNode.parseConfiguration(args, true));
+        Ignite ignite = GridGain.start(GridCacheStoreValueBytesNode.parseConfiguration(args, true));
 
         if (put) {
             X.println("Putting data in cache...");
@@ -156,7 +156,7 @@ public class GridCacheStoreValueBytesTest {
 
             int sizeRange = maxSize - minSize;
 
-            GridCache<Integer, String> cache = grid.cache(null);
+            GridCache<Integer, String> cache = ignite.cache(null);
 
             if (sizeRange == 0) {
                 for (Integer key : KEYS)
@@ -169,7 +169,7 @@ public class GridCacheStoreValueBytesTest {
         }
 
         try {
-            runTest(grid, concurrentGetNum, threadsNum, getKeyNum, duration * 60000, warmup * 1000, randomGet);
+            runTest(ignite, concurrentGetNum, threadsNum, getKeyNum, duration * 60000, warmup * 1000, randomGet);
         }
         finally {
             G.stopAll(true);
@@ -178,7 +178,7 @@ public class GridCacheStoreValueBytesTest {
 
     /**
      * @param exec Pool.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param concurrentGetNum Concurrent GET operations.
      * @param threadsNum Thread count.
      * @param getKeyNum Keys count.
@@ -187,7 +187,7 @@ public class GridCacheStoreValueBytesTest {
      * @param randomGet {@code True} to get random keys.
      * @return Futures.
      */
-    static Collection<Future<?>> startThreads(ExecutorService exec, final Grid grid, int concurrentGetNum,
+    static Collection<Future<?>> startThreads(ExecutorService exec, final Ignite ignite, int concurrentGetNum,
         int threadsNum, final int getKeyNum, final AtomicBoolean finish, final AtomicLong cntr,
         final boolean randomGet) {
 
@@ -208,7 +208,7 @@ public class GridCacheStoreValueBytesTest {
         for (int i = 0; i < threadsNum; i++) {
             futs.add(exec.submit(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    GridCache<Integer, String> cache = grid.cache(null);
+                    GridCache<Integer, String> cache = ignite.cache(null);
 
                     Random random = new Random();
 
@@ -243,7 +243,7 @@ public class GridCacheStoreValueBytesTest {
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param concurrentGetNum Number of concurrent getAllAsync operations.
      * @param threadsNum Thread count.
      * @param getKeyNum Keys count.
@@ -252,7 +252,7 @@ public class GridCacheStoreValueBytesTest {
      * @param randomGet If {@code true} then selects keys randomly, otherwise selects keys sequentially.
      * @throws Exception If failed.
      */
-    static void runTest(final Grid grid, int concurrentGetNum, int threadsNum, int getKeyNum, final long duration,
+    static void runTest(final Ignite ignite, int concurrentGetNum, int threadsNum, int getKeyNum, final long duration,
         long warmup, final boolean randomGet) throws Exception {
         ExecutorService exec = Executors.newFixedThreadPool(threadsNum);
 
@@ -263,7 +263,7 @@ public class GridCacheStoreValueBytesTest {
 
             X.println("Warming up...");
 
-            Collection<Future<?>> futs = startThreads(exec, grid, concurrentGetNum, threadsNum, getKeyNum, finish,
+            Collection<Future<?>> futs = startThreads(exec, ignite, concurrentGetNum, threadsNum, getKeyNum, finish,
                 cntr, randomGet);
 
             U.sleep(warmup);
@@ -290,7 +290,7 @@ public class GridCacheStoreValueBytesTest {
 
             X.println("Running test...");
 
-            futs = startThreads(exec, grid, concurrentGetNum, threadsNum, getKeyNum, finish, cntr, randomGet);
+            futs = startThreads(exec, ignite, concurrentGetNum, threadsNum, getKeyNum, finish, cntr, randomGet);
 
             long end = System.currentTimeMillis() + duration;
 

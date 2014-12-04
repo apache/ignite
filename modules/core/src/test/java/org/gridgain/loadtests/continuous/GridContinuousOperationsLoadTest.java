@@ -68,8 +68,8 @@ public class GridContinuousOperationsLoadTest {
 
         dumpProperties(System.out);
 
-        try (Grid grid = GridGain.start(cfgPath)) {
-            final GridCache<Object, Object> cache = grid.cache(cacheName);
+        try (Ignite ignite = GridGain.start(cfgPath)) {
+            final GridCache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache == null)
                 throw new GridException("Cache is not configured: " + cacheName);
@@ -116,7 +116,7 @@ public class GridContinuousOperationsLoadTest {
                     qry.execute();
                 }
                 else {
-                    grid.events().remoteListen(
+                    ignite.events().remoteListen(
                         bufSize,
                         timeInterval,
                         true,

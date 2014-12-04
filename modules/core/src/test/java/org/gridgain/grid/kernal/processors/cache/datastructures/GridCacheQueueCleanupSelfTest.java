@@ -71,7 +71,7 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
 
         GridNode node = grid(0).cache(null).affinity().mapKeyToNode(new GridCacheQueueHeaderKey(QUEUE_NAME1));
 
-        final Grid grid = grid(0).localNode().equals(node) ? grid(1) : grid(0);
+        final Ignite ignite = grid(0).localNode().equals(node) ? grid(1) : grid(0);
 
         /*
         assertNotNull(queue);
@@ -150,9 +150,9 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
         assertEquals(500, queue.size());
 
         // Remove queue and create queue with the same name.
-        grid.cache(null).dataStructures().removeQueue(QUEUE_NAME1);
+        ignite.cache(null).dataStructures().removeQueue(QUEUE_NAME1);
 
-        queue = grid.cache(null).dataStructures().queue(QUEUE_NAME1, 0, false, true);
+        queue = ignite.cache(null).dataStructures().queue(QUEUE_NAME1, 0, false, true);
 
         assertEquals(0, queue.size());
 
@@ -193,15 +193,15 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param stop Stop flag.
      * @param queueName Queue name.
      * @return Future completing when thread finishes.
      */
-    private GridFuture<?> startAddPollThread(final Grid grid, final AtomicBoolean stop, final String queueName) {
+    private GridFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, false, true);
+                GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, false, true);
 
                 assertEquals(0, queue.size());
 

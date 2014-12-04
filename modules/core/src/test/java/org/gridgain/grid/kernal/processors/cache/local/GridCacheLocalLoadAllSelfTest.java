@@ -37,11 +37,11 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testCacheGetAll() throws Exception {
-        Grid grid = grid();
+        Ignite ignite = grid();
 
-        assert grid != null;
+        assert ignite != null;
 
-        grid.cache("test-cache").getAll(Collections.singleton(1));
+        ignite.cache("test-cache").getAll(Collections.singleton(1));
     }
 
     /** {@inheritDoc} */

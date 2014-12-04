@@ -61,7 +61,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Nodes. */
-    private Grid[] grids;
+    private Ignite[] ignites;
 
     /** Node IDs. */
     private UUID[] ids;
@@ -122,7 +122,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        grids = null;
+        ignites = null;
         ids = null;
         caches = null;
 
@@ -154,18 +154,18 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         startGrids(GRID_CNT);
 
-        grids = new Grid[GRID_CNT];
+        ignites = new Ignite[GRID_CNT];
         ids = new UUID[GRID_CNT];
         caches = new GridCache[GRID_CNT];
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grids[i] = grid(i);
+            ignites[i] = grid(i);
 
-            ids[i] = grids[i].cluster().localNode().id();
+            ids[i] = ignites[i].cluster().localNode().id();
 
-            caches[i] = grids[i].cache(CACHE_NAME);
+            caches[i] = ignites[i].cache(CACHE_NAME);
 
-            grids[i].events().localListen(new GridPredicate<GridEvent>() {
+            ignites[i].events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     GridCacheEvent evt0 = (GridCacheEvent)evt;
 
@@ -211,7 +211,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         caches[0].put(key2, 2);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grids[i].events().localListen(new GridPredicate<GridEvent>() {
+            ignites[i].events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     GridCacheEvent evt0 = (GridCacheEvent)evt;
 

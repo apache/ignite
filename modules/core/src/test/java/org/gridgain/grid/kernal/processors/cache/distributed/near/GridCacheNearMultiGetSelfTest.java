@@ -90,7 +90,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Integer, String> c = g.cache(null);
 

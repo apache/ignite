@@ -33,18 +33,18 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     public void testExecute() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        ExecutorService srvc = createExecutorService(grid);
+        ExecutorService srvc = createExecutorService(ignite);
 
         srvc.execute(new Runnable() {
             @GridInstanceResource
-            private Grid grid;
+            private Ignite ignite;
 
             @Override public void run() {
                 System.out.println("Test message.");
 
-                assert grid != null;
+                assert this.ignite != null;
             }
         });
 
@@ -57,9 +57,9 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     public void testSubmit() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        ExecutorService srvc = createExecutorService(grid);
+        ExecutorService srvc = createExecutorService(ignite);
 
         Future<?> fut = srvc.submit(new TestRunnable());
 
@@ -94,9 +94,9 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     public void testSubmitWithFutureTimeout() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        ExecutorService srvc = createExecutorService(grid);
+        ExecutorService srvc = createExecutorService(ignite);
 
         Future<Integer> fut = srvc.submit(new TestCallable<>(3000)); // Just sleep for 3 seconds.
 
@@ -121,9 +121,9 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAll() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        ExecutorService srvc = createExecutorService(grid);
+        ExecutorService srvc = createExecutorService(ignite);
 
         Collection<Callable<String>> cmds = new ArrayList<>(2);
 
@@ -152,9 +152,9 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAllWithTimeout() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        ExecutorService srvc = createExecutorService(grid);
+        ExecutorService srvc = createExecutorService(ignite);
 
         Collection<Callable<Integer>> cmds = new ArrayList<>();
 
@@ -198,9 +198,9 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAny() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        ExecutorService srvc = createExecutorService(grid);
+        ExecutorService srvc = createExecutorService(ignite);
 
         Collection<Callable<String>> cmds = new ArrayList<>(2);
 
@@ -224,9 +224,9 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAnyWithTimeout() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        ExecutorService srvc = createExecutorService(grid);
+        ExecutorService srvc = createExecutorService(ignite);
 
         Collection<Callable<Integer>> timeoutCmds = new ArrayList<>(2);
 
@@ -250,13 +250,13 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param grid Grid instance.
+     * @param ignite Grid instance.
      * @return Thrown in case of test failure.
      */
-    private ExecutorService createExecutorService(Grid grid) {
-        assert grid != null;
+    private ExecutorService createExecutorService(Ignite ignite) {
+        assert ignite != null;
 
-        return new GridExecutorService((GridProjectionAdapter)grid, log());
+        return new GridExecutorService((GridProjectionAdapter) ignite, log());
     }
 
     /**
@@ -268,7 +268,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /**
          * @param data Data.
@@ -281,7 +281,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
         @Override public T call() throws Exception {
             System.out.println("Test callable message.");
 
-            assert grid != null;
+            assert ignite != null;
 
             if (data instanceof Integer)
                 Thread.sleep((Integer)data);
@@ -294,13 +294,13 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
     private static class TestRunnable implements Runnable, Serializable {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public void run() {
             System.out.println("Test Runnable message.");
 
-            assert grid != null;
+            assert ignite != null;
         }
     }
 }

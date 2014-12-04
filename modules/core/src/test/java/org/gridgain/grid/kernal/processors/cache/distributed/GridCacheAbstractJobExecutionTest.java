@@ -73,7 +73,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
         cache.removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<String, int[]> c = g.cache(null);
 
@@ -109,19 +109,19 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
         info("Grid 2: " + grid(2).localNode().id());
         info("Grid 3: " + grid(3).localNode().id());
 
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
         Collection<GridFuture<?>> futs = new LinkedList<>();
 
-        GridCompute comp = grid.compute().enableAsync();
+        GridCompute comp = ignite.compute().enableAsync();
 
         for (int i = 0; i < jobCnt; i++) {
             comp.apply(new CX1<Integer, Void>() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Void applyx(final Integer i) throws GridException {
-                    GridCache<String, int[]> cache = grid.cache(null);
+                    GridCache<String, int[]> cache = this.ignite.cache(null);
 
                     try (GridCacheTx tx = cache.txStart(concur, isolation)) {
                         int[] arr = cache.get("TestKey");

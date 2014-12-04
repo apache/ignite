@@ -81,30 +81,30 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     public void testTxCleanup() throws Exception {
         backups = 1;
 
-        Grid grid = startGrids(GRID_CNT);
+        Ignite ignite = startGrids(GRID_CNT);
 
         try {
             Integer mainKey = 0;
 
-            GridNode priNode = grid.cluster().mapKeyToNode(null, mainKey);
-            GridNode backupNode = F.first(F.view(grid.cache(null).affinity().mapKeyToPrimaryAndBackups(mainKey),
+            GridNode priNode = ignite.cluster().mapKeyToNode(null, mainKey);
+            GridNode backupNode = F.first(F.view(ignite.cache(null).affinity().mapKeyToPrimaryAndBackups(mainKey),
                 F.notIn(F.asList(priNode))));
-            GridNode otherNode = F.first(grid.cluster().forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
+            GridNode otherNode = F.first(ignite.cluster().forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
 
             assert priNode != backupNode;
             assert backupNode != otherNode;
             assert priNode != otherNode;
 
-            Grid priGrid = G.grid(priNode.id());
-            Grid backupGrid = G.grid(backupNode.id());
-            Grid otherGrid = G.grid(otherNode.id());
+            Ignite priIgnite = G.grid(priNode.id());
+            Ignite backupIgnite = G.grid(backupNode.id());
+            Ignite otherIgnite = G.grid(otherNode.id());
 
-            List<Grid> grids = F.asList(otherGrid, priGrid, backupGrid);
+            List<Ignite> ignites = F.asList(otherIgnite, priIgnite, backupIgnite);
 
             int cntr = 0;
 
             // Update main key from all nodes.
-            for (Grid g : grids)
+            for (Ignite g : ignites)
                 g.cache(null).put(mainKey, ++cntr);
 
             info("Updated mainKey from all nodes.");
@@ -117,12 +117,12 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             for (int i = 1; i <= keyCnt; i++) {
                 keys.add(i);
 
-                Grid g = F.rand(grids);
+                Ignite g = F.rand(ignites);
 
                 g.cache(null).put(new GridCacheAffinityKey<>(i, mainKey), Integer.toString(cntr++));
             }
 
-            GridCacheProjection cache = priGrid.cache(null).flagsOn(GridCacheFlag.CLONE);
+            GridCacheProjection cache = priIgnite.cache(null).flagsOn(GridCacheFlag.CLONE);
 
             GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -143,14 +143,14 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
                 tx.close();
             }
 
-            G.stop(priGrid.name(), true);
-            G.stop(backupGrid.name(), true);
+            G.stop(priIgnite.name(), true);
+            G.stop(backupIgnite.name(), true);
 
-            Grid newGrid = startGrid(GRID_CNT);
+            Ignite newIgnite = startGrid(GRID_CNT);
 
-            grids = F.asList(otherGrid, newGrid);
+            ignites = F.asList(otherIgnite, newIgnite);
 
-            for (Grid g : grids) {
+            for (Ignite g : ignites) {
                 GridNearCacheAdapter near = ((GridKernal)g).internalCache().context().near();
                 GridDhtCacheAdapter dht = near.dht();
 
@@ -222,7 +222,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param tm Transaction manager.
      */
     @SuppressWarnings( {"unchecked"})
-    private void checkTm(Grid g, GridCacheTxManager tm) {
+    private void checkTm(Ignite g, GridCacheTxManager tm) {
         Collection<GridCacheTxEx> txs = tm.txs();
 
         info(">>> Number of transactions in the set [size=" + txs.size() +

@@ -751,17 +751,17 @@ public final class GridTestUtils {
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
-     * @param grid Grid to stop.
+     * @param ignite Grid to stop.
      * @param log Logger.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public static void close(Grid grid, GridLogger log) {
-        if (grid != null)
+    public static void close(Ignite ignite, GridLogger log) {
+        if (ignite != null)
             try {
-                G.stop(grid.name(), false);
+                G.stop(ignite.name(), false);
             }
             catch (Throwable e) {
-                U.error(log, "Failed to stop grid: " + grid.name(), e);
+                U.error(log, "Failed to stop grid: " + ignite.name(), e);
             }
     }
 
@@ -871,7 +871,7 @@ public final class GridTestUtils {
     @SuppressWarnings("BusyWait")
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, GridLogger log)
         throws Exception {
-        for (Grid g : GridGain.allGrids()) {
+        for (Ignite g : GridGain.allGrids()) {
             GridCache<K, V> cache = ((GridEx)g).cachex(cacheName);
 
             GridDhtPartitionTopology<?, ?> top = dht(cache).topology();

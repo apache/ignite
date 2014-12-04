@@ -73,13 +73,13 @@ public class ExamplesUtils {
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param name Streamer name.
      * @return {@code True} if grid has streamer with given name.
      */
-    public static boolean hasStreamer(Grid grid, String name) {
-        if (grid.configuration().getStreamerConfiguration() != null) {
-            for (GridStreamerConfiguration cfg : grid.configuration().getStreamerConfiguration()) {
+    public static boolean hasStreamer(Ignite ignite, String name) {
+        if (ignite.configuration().getStreamerConfiguration() != null) {
+            for (GridStreamerConfiguration cfg : ignite.configuration().getStreamerConfiguration()) {
                 if (name.equals(cfg.getName()))
                     return true;
             }

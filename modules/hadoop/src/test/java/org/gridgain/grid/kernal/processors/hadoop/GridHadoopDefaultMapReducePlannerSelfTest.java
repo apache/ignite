@@ -28,7 +28,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  *
@@ -1084,7 +1083,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Grid grid() {
+        @Override public Ignite grid() {
             return null;
         }
 

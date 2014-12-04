@@ -181,9 +181,9 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void startTxAndPutKeys(final GridCacheTxConcurrency mode, final boolean prepare) throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
-        final Collection<Integer> keys = nearKeys(grid);
+        final Collection<Integer> keys = nearKeys(ignite);
 
         GridFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -225,13 +225,13 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * Gets keys that are not primary nor backup for node.
      *
-     * @param grid Grid.
+     * @param ignite Grid.
      * @return Collection of keys.
      */
-    private Collection<Integer> nearKeys(Grid grid) {
+    private Collection<Integer> nearKeys(Ignite ignite) {
         final Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 
-        GridKernal kernal = (GridKernal)grid;
+        GridKernal kernal = (GridKernal) ignite;
 
         GridCacheAffinityManager<Object, Object> affMgr = kernal.internalCache().context().affinity();
 

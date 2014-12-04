@@ -124,7 +124,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         invokeLatch  = new CountDownLatch(1);
         jobLatch = new CountDownLatch(1);
 
-        Grid g = startGrid(0);
+        Ignite g = startGrid(0);
 
         g.compute().enableAsync().execute(new TestTask(1), null);
 

@@ -31,7 +31,7 @@ public class GridNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid ignored = G.start("examples/config/example-cache.xml")) {
+        try (Ignite ignored = G.start("examples/config/example-cache.xml")) {
             // Wait until Ok is pressed.
             JOptionPane.showMessageDialog(
                 null,

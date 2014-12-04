@@ -79,12 +79,12 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
                 private GridLogger log;
 
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object execute() throws GridException {
                     log.info("Going to put data: " + data.size());
 
-                    GridCache<Object, Object> cache = grid.cache(cacheName);
+                    GridCache<Object, Object> cache = ignite.cache(cacheName);
 
                     assert cache != null;
 
@@ -117,7 +117,7 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
                  * @return Grouped map.
                  */
                 private Map<Integer, T2<Integer, Collection<Integer>>> groupData(Iterable<Integer> data) {
-                    GridCache<Object, Object> cache = grid.cache(cacheName);
+                    GridCache<Object, Object> cache = ignite.cache(cacheName);
 
                     Map<Integer, T2<Integer, Collection<Integer>>> res = new HashMap<>();
 

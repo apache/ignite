@@ -89,9 +89,9 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     @SuppressWarnings("BusyWait")
     public void testEvictions() throws Exception {
         try {
-            final Grid grid1 = startGrid(1);
+            final Ignite ignite1 = startGrid(1);
 
-            GridCache<Integer, Object> cache1 = grid1.cache(null);
+            GridCache<Integer, Object> cache1 = ignite1.cache(null);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);
@@ -112,7 +112,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                         info("Started evicting...");
 
                         for (int i = 0; i < 3000 && !done.get(); i++) {
-                            GridCacheEntry<Integer, Object> entry = randomEntry(grid1);
+                            GridCacheEntry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
                                 entry.evict();
@@ -127,7 +127,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                 },
                 1);
 
-            grid1.events().localListen(
+            ignite1.events().localListen(
                 new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         startLatch.countDown();
@@ -137,22 +137,22 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                 },
                 EVT_NODE_JOINED);
 
-            final Grid grid2 = startGrid(2);
+            final Ignite ignite2 = startGrid(2);
 
             done.set(true);
 
             fut.get();
 
-            sleepUntilCashesEqualize(grid1, grid2, oldSize);
+            sleepUntilCashesEqualize(ignite1, ignite2, oldSize);
 
-            checkCachesConsistency(grid1, grid2);
+            checkCachesConsistency(ignite1, ignite2);
 
             oldSize = cache1.size();
 
             info("Evicting on constant topology.");
 
             for (int i = 0; i < 1000; i++) {
-                GridCacheEntry<Integer, Object> entry = randomEntry(grid1);
+                GridCacheEntry<Integer, Object> entry = randomEntry(ignite1);
 
                 if (entry != null)
                     entry.evict();
@@ -160,9 +160,9 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                     info("Entry is null.");
             }
 
-            sleepUntilCashesEqualize(grid1, grid2, oldSize);
+            sleepUntilCashesEqualize(ignite1, ignite2, oldSize);
 
-            checkCachesConsistency(grid1, grid2);
+            checkCachesConsistency(ignite1, ignite2);
         }
         finally {
             stopAllGrids();
@@ -172,19 +172,19 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * Waits until cache stabilizes on new value.
      *
-     * @param grid1 Grid 1.
-     * @param grid2 Grid 2.
+     * @param ignite1 Grid 1.
+     * @param ignite2 Grid 2.
      * @param oldSize Old size, stable size should be .
      * @throws GridInterruptedException If interrupted.
      */
-    private void sleepUntilCashesEqualize(final Grid grid1, final Grid grid2, final int oldSize)
+    private void sleepUntilCashesEqualize(final Ignite ignite1, final Ignite ignite2, final int oldSize)
         throws GridInterruptedException {
         info("Sleeping...");
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                int size1 = grid1.cache(null).size();
-                return size1 != oldSize && size1 == grid2.cache(null).size();
+                int size1 = ignite1.cache(null).size();
+                return size1 != oldSize && size1 == ignite2.cache(null).size();
             }
         }, getTestTimeout()));
 
@@ -195,20 +195,20 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param g Grid.
      * @return Random entry from cache.
      */
-    @Nullable private GridCacheEntry<Integer, Object> randomEntry(Grid g) {
+    @Nullable private GridCacheEntry<Integer, Object> randomEntry(Ignite g) {
         GridKernal g1 = (GridKernal)g;
 
         return g1.<Integer, Object>internalCache().randomEntry();
     }
 
     /**
-     * @param grid1 Grid 1.
-     * @param grid2 Grid 2.
+     * @param ignite1 Grid 1.
+     * @param ignite2 Grid 2.
      * @throws Exception If failed.
      */
-    private void checkCachesConsistency(Grid grid1, Grid grid2) throws Exception {
-        GridKernal g1 = (GridKernal)grid1;
-        GridKernal g2 = (GridKernal)grid2;
+    private void checkCachesConsistency(Ignite ignite1, Ignite ignite2) throws Exception {
+        GridKernal g1 = (GridKernal) ignite1;
+        GridKernal g2 = (GridKernal) ignite2;
 
         GridCacheAdapter<Integer, Object> cache1 = g1.internalCache();
         GridCacheAdapter<Integer, Object> cache2 = g2.internalCache();

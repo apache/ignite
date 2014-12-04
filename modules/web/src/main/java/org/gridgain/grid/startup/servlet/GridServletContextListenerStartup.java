@@ -133,20 +133,20 @@ public class GridServletContextListenerStartup implements ServletContextListener
             for (GridConfiguration cfg : cfgs) {
                 assert cfg != null;
 
-                Grid grid;
+                Ignite ignite;
 
                 synchronized (GridServletContextListenerStartup.class) {
                     try {
-                        grid = G.grid(cfg.getGridName());
+                        ignite = G.grid(cfg.getGridName());
                     }
                     catch (GridIllegalStateException ignored) {
-                        grid = GridGainEx.start(new GridConfiguration(cfg), rsrcCtx);
+                        ignite = GridGainEx.start(new GridConfiguration(cfg), rsrcCtx);
                     }
                 }
 
                 // Check if grid is not null - started properly.
-                if (grid != null)
-                    gridNames.add(grid.name());
+                if (ignite != null)
+                    gridNames.add(ignite.name());
             }
         }
         catch (GridException e) {

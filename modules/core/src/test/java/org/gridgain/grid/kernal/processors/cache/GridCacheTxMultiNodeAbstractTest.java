@@ -92,13 +92,13 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
     /**
      *
-     * @param grid Grid
+     * @param ignite Grid
      * @param key Key.
      * @return Primary node id.
      */
     @SuppressWarnings("unchecked")
-    private static UUID primaryId(Grid grid, Object key) {
-        GridCacheAffinity aff = grid.cache(null).cache().affinity();
+    private static UUID primaryId(Ignite ignite, Object key) {
+        GridCacheAffinity aff = ignite.cache(null).cache().affinity();
 
         Collection<GridNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(key));
 
@@ -115,7 +115,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @return DHT entry.
      */
     @Nullable private static GridCacheEntryEx<Object, Integer> dhtEntry(UUID nodeId, Object key) {
-        Grid g = G.grid(nodeId);
+        Ignite g = G.grid(nodeId);
 
         GridDhtCacheAdapter<Object, Integer> dht =
             ((GridKernal)g).<Object, Integer>internalCache().context().near().dht();
@@ -129,7 +129,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @return Near entry.
      */
     @Nullable private static GridCacheEntryEx<Object, Integer> nearEntry(UUID nodeId, Object key) {
-        Grid g = G.grid(nodeId);
+        Ignite g = G.grid(nodeId);
 
         GridNearCacheAdapter<Object, Integer> near = ((GridKernal)g).<Object, Integer>internalCache().context().near();
 
@@ -139,24 +139,24 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      *
      * @param putCntr Put counter to cache.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param itemKey Item key.
      * @param retry Retry count.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onItemNear(boolean putCntr, Grid grid, String itemKey, int retry) throws GridException {
-        GridCache<String, Integer> cache = grid.cache(null);
+    private void onItemNear(boolean putCntr, Ignite ignite, String itemKey, int retry) throws GridException {
+        GridCache<String, Integer> cache = ignite.cache(null);
 
-        UUID locId = grid.cluster().localNode().id();
-        UUID itemPrimaryId = primaryId(grid, itemKey);
-        UUID cntrPrimaryId = primaryId(grid, CNTR_KEY);
+        UUID locId = ignite.cluster().localNode().id();
+        UUID itemPrimaryId = primaryId(ignite, itemKey);
+        UUID cntrPrimaryId = primaryId(ignite, CNTR_KEY);
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
         try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
-                info("Before near get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
+                info("Before near get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
                     ", nearEntry=" + nearEntry(locId, CNTR_KEY) +
                     (isCntrPrimary ? ", dhtEntry=" + dhtEntry(locId, CNTR_KEY) : "") + ']');
@@ -191,24 +191,24 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      *
      * @param putCntr Put counter to cache.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param itemKey Item key.
      * @param retry Retry count.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onItemPrimary(boolean putCntr, Grid grid, String itemKey, int retry) throws GridException {
-        GridCache<String, Integer> cache = grid.cache(null);
+    private void onItemPrimary(boolean putCntr, Ignite ignite, String itemKey, int retry) throws GridException {
+        GridCache<String, Integer> cache = ignite.cache(null);
 
-        UUID locId = grid.cluster().localNode().id();
-        UUID itemPrimaryId = primaryId(grid, itemKey);
-        UUID cntrPrimaryId = primaryId(grid, CNTR_KEY);
+        UUID locId = ignite.cluster().localNode().id();
+        UUID itemPrimaryId = primaryId(ignite, itemKey);
+        UUID cntrPrimaryId = primaryId(ignite, CNTR_KEY);
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
         try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
-                info("Before item primary get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
+                info("Before item primary get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
                     ", nearEntry=" + nearEntry(locId, CNTR_KEY) +
                     (isCntrPrimary ? ", dhtEntry=" + dhtEntry(locId, CNTR_KEY) : "") + ']');
@@ -245,22 +245,22 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      *
      * @param putCntr Put counter to cache.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param retry Retry count.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onRemoveItemQueried(boolean putCntr, Grid grid, int retry) throws GridException {
-        GridCache<String, Integer> cache = grid.cache(null);
+    private void onRemoveItemQueried(boolean putCntr, Ignite ignite, int retry) throws GridException {
+        GridCache<String, Integer> cache = ignite.cache(null);
 
-        UUID locId = grid.cluster().localNode().id();
-        UUID cntrPrimaryId = primaryId(grid, RMVD_CNTR_KEY);
+        UUID locId = ignite.cluster().localNode().id();
+        UUID cntrPrimaryId = primaryId(ignite, RMVD_CNTR_KEY);
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
         try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
-                grid.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
+                ignite.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
                     ", nearEntry=" + nearEntry(locId, RMVD_CNTR_KEY) +
                     (isCntrPrimary ? ", dhtEntry=" + dhtEntry(locId, RMVD_CNTR_KEY) : "") + ']');
@@ -275,7 +275,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             if (putCntr) {
                 if (DEBUG)
-                    grid.log().info("Before item put counter [retry=" + retry + ", isCntrPrimary=" + isCntrPrimary +
+                    ignite.log().info("Before item put counter [retry=" + retry + ", isCntrPrimary=" + isCntrPrimary +
                         ", cur=" + cntr + ", new=" + newVal + ", nearEntry=" + nearEntry(locId, RMVD_CNTR_KEY) +
                         (isCntrPrimary ? ", dhtEntry=" + dhtEntry(locId, RMVD_CNTR_KEY) : "") + ']');
 
@@ -287,25 +287,25 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
                     cache.queries().createSqlQuery(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
 
                 if (DEBUG)
-                    grid.log().info("Before executing query [retry=" + retry + ", locId=" + locId +
+                    ignite.log().info("Before executing query [retry=" + retry + ", locId=" + locId +
                         ", txId=" + tx.xid() + ']');
 
                 Map.Entry<String, Integer> entry = qry.execute().next();
 
                 if (entry == null) {
-                    grid.log().info("*** Queue is empty.");
+                    ignite.log().info("*** Queue is empty.");
 
                     return;
                 }
 
                 String itemKey = entry.getKey();
 
-                UUID itemPrimaryId = primaryId(grid, itemKey);
+                UUID itemPrimaryId = primaryId(ignite, itemKey);
 
                 // Lock the item key.
                 if (cache.get(itemKey) != null) {
                     if (DEBUG)
-                        grid.log().info("Before item remove [retry=" + retry + ", key=" + itemKey + ", cur=" + cntr +
+                        ignite.log().info("Before item remove [retry=" + retry + ", key=" + itemKey + ", cur=" + cntr +
                             ", nearEntry=" + nearEntry(locId, itemKey) +
                             ", dhtEntry=" + dhtEntry(itemPrimaryId, itemKey) + ']');
 
@@ -326,7 +326,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
             tx.commit();
         }
         catch (Error e) {
-            grid.log().error("Error in test.", e);
+            ignite.log().error("Error in test.", e);
 
             throw e;
         }
@@ -335,22 +335,22 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      *
      * @param putCntr Put counter to cache.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param retry Retry count.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onRemoveItemSimple(boolean putCntr, Grid grid, int retry) throws GridException {
-        GridCache<String, Integer> cache = grid.cache(null);
+    private void onRemoveItemSimple(boolean putCntr, Ignite ignite, int retry) throws GridException {
+        GridCache<String, Integer> cache = ignite.cache(null);
 
-        UUID locId = grid.cluster().localNode().id();
-        UUID cntrPrimaryId = primaryId(grid, RMVD_CNTR_KEY);
+        UUID locId = ignite.cluster().localNode().id();
+        UUID cntrPrimaryId = primaryId(ignite, RMVD_CNTR_KEY);
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
         try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
-                grid.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
+                ignite.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
                     ", nearEntry=" + nearEntry(locId, RMVD_CNTR_KEY) +
                     (isCntrPrimary ? ", dhtEntry=" + dhtEntry(locId, RMVD_CNTR_KEY) : "") + ']');
@@ -367,13 +367,13 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             assert val != null : "Received null val [retry=" + retry + ", cacheSize=" + cache.size() + ']';
 
-            UUID itemPrimaryId = primaryId(grid, itemKey);
+            UUID itemPrimaryId = primaryId(ignite, itemKey);
 
             int newVal = cntr - 1;
 
             if (putCntr) {
                 if (DEBUG)
-                    grid.log().info("Before item put counter [retry=" + retry + ", isCntrPrimary=" + isCntrPrimary +
+                    ignite.log().info("Before item put counter [retry=" + retry + ", isCntrPrimary=" + isCntrPrimary +
                         ", cur=" + cntr + ", new=" + newVal + ", nearEntry=" + nearEntry(locId, RMVD_CNTR_KEY) +
                         (isCntrPrimary ? ", dhtEntry=" + dhtEntry(locId, RMVD_CNTR_KEY) : "") + ']');
 
@@ -381,7 +381,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
             }
 
             if (DEBUG)
-                grid.log().info("Before item remove item [retry=" + retry + ", key=" + itemKey + ", cur=" + cntr +
+                ignite.log().info("Before item remove item [retry=" + retry + ", key=" + itemKey + ", cur=" + cntr +
                     ", new=" + newVal + ", nearEntry=" + nearEntry(locId, itemKey) +
                     ", dhtEntry=" + dhtEntry(itemPrimaryId, itemKey) + ']');
 
@@ -395,7 +395,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
             tx.commit();
         }
         catch (Error e) {
-            grid.log().error("Error in test.", e);
+            ignite.log().error("Error in test.", e);
 
             throw e;
         }
@@ -404,73 +404,73 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     /**
      *
      * @param putCntr Put counter to cache.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @throws GridException If failed.
      */
-    private void retries(Grid grid, boolean putCntr) throws GridException {
-        UUID nodeId = grid.cluster().localNode().id();
+    private void retries(Ignite ignite, boolean putCntr) throws GridException {
+        UUID nodeId = ignite.cluster().localNode().id();
 
         for (int i = 0; i < RETRIES; i++) {
             int cnt = cntr.getAndIncrement();
 
             if (DEBUG)
-                grid.log().info("***");
+                ignite.log().info("***");
             if (DEBUG || cnt % LOG_FREQ == 0)
-                grid.log().info("*** Iteration #" + i + " ***");
+                ignite.log().info("*** Iteration #" + i + " ***");
             if (DEBUG)
-                grid.log().info("***");
+                ignite.log().info("***");
 
             String itemKey = nodeId + "-#" + i;
 
-            if (nodeId.equals(primaryId(grid, itemKey)))
-                onItemPrimary(putCntr, grid, itemKey, i);
+            if (nodeId.equals(primaryId(ignite, itemKey)))
+                onItemPrimary(putCntr, ignite, itemKey, i);
             else
-                onItemNear(putCntr, grid, itemKey, i);
+                onItemNear(putCntr, ignite, itemKey, i);
         }
     }
 
     /**
      *
      * @param putCntr Put counter to cache.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @throws GridException If failed.
      */
-    private void removeRetriesQueried(Grid grid, boolean putCntr) throws GridException {
+    private void removeRetriesQueried(Ignite ignite, boolean putCntr) throws GridException {
         for (int i = 0; i < RETRIES; i++) {
             if (DEBUG)
-                grid.log().info("***");
+                ignite.log().info("***");
 
             if (DEBUG || cntrRmvd.getAndIncrement() % LOG_FREQ == 0)
-                grid.log().info("*** Iteration #" + i + " ***");
+                ignite.log().info("*** Iteration #" + i + " ***");
 
             if (DEBUG)
-                grid.log().info("***");
+                ignite.log().info("***");
 
-            onRemoveItemQueried(putCntr, grid, i);
+            onRemoveItemQueried(putCntr, ignite, i);
 
             if (i % 50 == 0)
-                ((GridKernal)grid).internalCache().context().tm().printMemoryStats();
+                ((GridKernal) ignite).internalCache().context().tm().printMemoryStats();
         }
     }
 
     /**
      *
      * @param putCntr Put counter to cache.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @throws GridException If failed.
      */
-    private void removeRetriesSimple(Grid grid, boolean putCntr) throws GridException {
+    private void removeRetriesSimple(Ignite ignite, boolean putCntr) throws GridException {
         for (int i = 0; i < RETRIES; i++) {
             if (DEBUG)
-                grid.log().info("***");
+                ignite.log().info("***");
 
             if (cntrRmvd.get() % LOG_FREQ == 0 || DEBUG)
-                grid.log().info("*** Iteration #" + i + " ***");
+                ignite.log().info("*** Iteration #" + i + " ***");
 
             if (DEBUG)
-                grid.log().info("***");
+                ignite.log().info("***");
 
-            onRemoveItemSimple(putCntr, grid, i);
+            onRemoveItemSimple(putCntr, ignite, i);
         }
     }
 
@@ -812,16 +812,16 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            retries(grid, true);
+            retries(ignite, true);
 
             return 0;
         }
@@ -839,16 +839,16 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            retries(grid, false);
+            retries(ignite, false);
 
             return 0;
         }
@@ -866,16 +866,16 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            removeRetriesQueried(grid, true);
+            removeRetriesQueried(ignite, true);
 
             return 0;
         }
@@ -893,16 +893,16 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            removeRetriesSimple(grid, true);
+            removeRetriesSimple(ignite, true);
 
             return 0;
         }

@@ -106,7 +106,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
      * @param nodeId Node ID.
      * @return Grid.
      */
-    private Grid grid(UUID nodeId) {
+    private Ignite grid(UUID nodeId) {
         return G.grid(nodeId);
     }
 
@@ -126,8 +126,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNotSame(n1, n2);
         assertFalse("Nodes cannot be equal: " + n1, n1.equals(n2));
 
-        Grid g1 = grid(n1.id());
-        Grid g2 = grid(n2.id());
+        Ignite g1 = grid(n1.id());
+        Ignite g2 = grid(n2.id());
 
         GridCache<Integer, String> cache1 = g1.cache(null);
         GridCache<Integer, String> cache2 = g2.cache(null);
@@ -199,8 +199,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNotSame(n1, n2);
         assertFalse("Nodes cannot be equal: " + n1, n1.equals(n2));
 
-        Grid g1 = grid(n1.id());
-        Grid g2 = grid(n2.id());
+        Ignite g1 = grid(n1.id());
+        Ignite g2 = grid(n2.id());
 
         awaitPartitionMapExchange();
 

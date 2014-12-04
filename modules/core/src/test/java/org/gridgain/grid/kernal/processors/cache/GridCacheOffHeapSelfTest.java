@@ -97,11 +97,11 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("BusyWait")
     public void testOffHeapDeployment() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = grid1.cache(null);
-            GridCache<Integer, Object> cache2 = grid2.cache(null);
+            GridCache<Integer, Object> cache1 = ignite1.cache(null);
+            GridCache<Integer, Object> cache2 = ignite2.cache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -121,7 +121,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             SwapListener lsnr = new SwapListener();
 
-            grid2.events().localListen(lsnr, EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP);
+            ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP);
 
             cache2.evictAll();
 
@@ -131,11 +131,11 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             assert lsnr.awaitUnswap();
 
-            grid2.events().stopLocalListen(lsnr);
+            ignite2.events().stopLocalListen(lsnr);
 
             lsnr = new SwapListener();
 
-            grid2.events().localListen(lsnr, EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP);
+            ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP);
 
             cache2.evictAll();
 

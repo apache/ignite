@@ -42,7 +42,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
      */
     public void testHistorySupported() throws Exception {
         try {
-            final Grid g = startGrid();
+            final Ignite g = startGrid();
 
             GridDiscoverySpi spi = g.configuration().getDiscoverySpi();
 
@@ -62,7 +62,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
      */
     public void testSettingNewTopologyHistorySize() throws Exception {
         try {
-            final Grid g = startGrid();
+            final Ignite g = startGrid();
 
             GridTcpDiscoverySpi spi = (GridTcpDiscoverySpi)g.configuration().getDiscoverySpi();
 
@@ -87,14 +87,14 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
     public void testNodeAdded() throws Exception {
         try {
             // Add grid #1
-            final Grid g1 = startGrid(1);
+            final Ignite g1 = startGrid(1);
 
             assertTopVer(1, g1);
 
             assertEquals(1, g1.cluster().topologyVersion());
 
             // Add grid # 2
-            final Grid g2 = startGrid(2);
+            final Ignite g2 = startGrid(2);
 
             assertTopVer(2, g1, g2);
 
@@ -102,7 +102,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
                 assertEquals(i, g2.cluster().topology(i).size());
 
             // Add grid # 3
-            final Grid g3 = startGrid(3);
+            final Ignite g3 = startGrid(3);
 
             assertTopVer(3, g1, g2, g3);
 
@@ -120,14 +120,14 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
     public void testNodeAddedAndRemoved() throws Exception {
         try {
             // Add grid #1
-            final Grid g1 = startGrid(1);
+            final Ignite g1 = startGrid(1);
 
             assertTopVer(1, g1);
 
             assertEquals(1, g1.cluster().topologyVersion());
 
             // Add grid #2
-            final Grid g2 = startGrid(2);
+            final Ignite g2 = startGrid(2);
 
             assertTopVer(2, g1, g2);
 
@@ -135,7 +135,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
                 assertEquals(i, g2.cluster().topology(i).size());
 
             // Add grid #3
-            final Grid g3 = startGrid(3);
+            final Ignite g3 = startGrid(3);
 
             assertTopVer(3, g1, g2, g3);
 
@@ -156,10 +156,10 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
      * Check if specified grid instances have unexpected topology version.
      *
      * @param expTopVer Expected topology version.
-     * @param grids Grid instances for checking topology version.
+     * @param ignites Grid instances for checking topology version.
      */
-    private static void assertTopVer(long expTopVer, Grid... grids) {
-        for (Grid g : grids)
+    private static void assertTopVer(long expTopVer, Ignite... ignites) {
+        for (Ignite g : ignites)
             assertEquals("Grid has wrong topology version.", expTopVer, g.cluster().topologyVersion());
     }
 }

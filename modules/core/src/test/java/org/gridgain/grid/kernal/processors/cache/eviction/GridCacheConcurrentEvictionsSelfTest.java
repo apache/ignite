@@ -120,9 +120,9 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
      */
     private void checkConcurrentPuts() throws Exception {
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = grid.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             // Warm up.
             for (int i = 0; i < warmUpPutsCnt; i++) {

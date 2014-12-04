@@ -24,7 +24,7 @@ object ScalarGridPimp {
      *
      * @param impl Java-side implementation.
      */
-    def apply(impl: Grid) = {
+    def apply(impl: Ignite) = {
         if (impl == null)
             throw new NullPointerException("impl")
 

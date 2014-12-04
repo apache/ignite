@@ -808,7 +808,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         UUID consumeId = grid(0).events().remoteListen(
             new P2<UUID, GridEvent>() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite grid;
 
                 @Override public boolean apply(UUID nodeId, GridEvent evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -825,7 +825,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             new P1<GridEvent>() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite grid;
 
                 @Override public boolean apply(GridEvent evt) {
                     assertNotNull(grid);
@@ -855,7 +855,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMasterNodeLeave() throws Exception {
-        Grid g = startGrid("anotherGrid");
+        Ignite g = startGrid("anotherGrid");
 
         final UUID nodeId = g.cluster().localNode().id();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
@@ -890,7 +890,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMasterNodeLeaveNoAutoUnsubscribe() throws Exception {
-        Grid g = startGrid("anotherGrid");
+        Ignite g = startGrid("anotherGrid");
 
         final UUID nodeId = g.cluster().localNode().id();
         final CountDownLatch discoLatch = new CountDownLatch(GRID_CNT);

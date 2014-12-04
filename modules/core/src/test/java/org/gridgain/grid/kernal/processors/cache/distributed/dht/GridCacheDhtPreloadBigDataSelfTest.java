@@ -153,11 +153,11 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
             lbean = new GridLifecycleBean() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
                     if (evt == GridLifecycleEventType.AFTER_GRID_START) {
-                        GridCache<Integer, byte[]> c = grid.cache(null);
+                        GridCache<Integer, byte[]> c = ignite.cache(null);
 
                         if (c.putxIfAbsent(-1, new byte[1])) {
                             populate(c, cnt, KBSIZE);

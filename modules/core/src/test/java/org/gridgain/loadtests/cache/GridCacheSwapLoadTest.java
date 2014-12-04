@@ -84,7 +84,7 @@ public class GridCacheSwapLoadTest {
     public static void main(String[] args) throws GridException {
         parseArgs(args);
 
-        try (Grid g = G.start("modules/core/src/test/config/spring-cache-swap.xml")) {
+        try (Ignite g = G.start("modules/core/src/test/config/spring-cache-swap.xml")) {
             g.events().localListen(new GridPredicate<GridEvent>() {
                 private final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -189,7 +189,7 @@ public class GridCacheSwapLoadTest {
     /**
      * @return Future.
      */
-    private static GridFuture<?> doPut(final Grid g) {
+    private static GridFuture<?> doPut(final Ignite g) {
         final AtomicInteger putKey = new AtomicInteger(0);
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
@@ -218,7 +218,7 @@ public class GridCacheSwapLoadTest {
     /**
      * @return Futures.
      */
-    private static Collection<GridFuture<Long>> doGetRemove(final Grid g) {
+    private static Collection<GridFuture<Long>> doGetRemove(final Ignite g) {
         final AtomicBoolean stop = new AtomicBoolean(false);
 
         return F.asList(

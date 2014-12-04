@@ -63,7 +63,7 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
      * @param g Grid.
      * @return Near cache.
      */
-    GridNearCacheAdapter<String, Integer> near(Grid g) {
+    GridNearCacheAdapter<String, Integer> near(Ignite g) {
         return (GridNearCacheAdapter<String, Integer>)((GridKernal)g).<String, Integer>internalCache();
     }
 
@@ -71,7 +71,7 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
      * @param g Grid.
      * @return DHT cache.
      */
-    GridDhtCacheAdapter<String, Integer> dht(Grid g) {
+    GridDhtCacheAdapter<String, Integer> dht(Ignite g) {
         return near(g).dht();
     }
 
@@ -84,16 +84,16 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
         // Random key.
         final String key = UUID.randomUUID().toString();
 
-        final Grid grid = grid();
+        final Ignite ignite = grid();
 
-        grid.cache(null).put(key, "val");
+        ignite.cache(null).put(key, "val");
 
-        GridCacheEntryEx<String,Integer> dhtEntry = dht(grid).peekEx(key);
+        GridCacheEntryEx<String,Integer> dhtEntry = dht(ignite).peekEx(key);
 
         if (DEBUG)
             info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", entry=" + dhtEntry + ']');
 
-        String val = txGet(grid, key);
+        String val = txGet(ignite, key);
 
         assertNotNull(val);
 
@@ -101,26 +101,26 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
 
         multithreaded(new Callable<String>() {
             @Override public String call() throws Exception {
-                return txGet(grid, key);
+                return txGet(ignite, key);
             }
         }, THREAD_NUM, "getter-thread");
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param key Key.
      * @return Value.
      * @throws Exception If failed.
      */
-    private String txGet(Grid grid, String key) throws Exception {
-        try (GridCacheTx tx = grid.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            GridCacheEntryEx<String, Integer> dhtEntry = dht(grid).peekEx(key);
+    private String txGet(Ignite ignite, String key) throws Exception {
+        try (GridCacheTx tx = ignite.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            GridCacheEntryEx<String, Integer> dhtEntry = dht(ignite).peekEx(key);
 
             if (DEBUG)
                 info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", xid=" + tx.xid() +
                     ", entry=" + dhtEntry + ']');
 
-            String val = grid.<String, String>cache(null).get(key);
+            String val = ignite.<String, String>cache(null).get(key);
 
             assertNotNull(val);
             assertEquals("val", val);

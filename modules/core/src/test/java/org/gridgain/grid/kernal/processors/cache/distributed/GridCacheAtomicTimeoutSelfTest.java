@@ -98,11 +98,11 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearUpdateRequestLost() throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-        GridCache<Object, Object> cache = grid.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -132,9 +132,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearUpdateResponseLost() throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = grid.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -166,9 +166,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDhtUpdateRequestLost() throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = grid.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -201,9 +201,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDhtUpdateResponseLost() throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = grid.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 

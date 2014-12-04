@@ -18,7 +18,7 @@ import org.gridgain.grid.resources.*;
  */
 public class GridTestLifecycleBean implements GridLifecycleBean {
     @GridInstanceResource
-    private Grid g;
+    private Ignite g;
 
     @Override public void onLifecycleEvent(GridLifecycleEventType type) throws GridException {
         if (type == GridLifecycleEventType.AFTER_GRID_START) {

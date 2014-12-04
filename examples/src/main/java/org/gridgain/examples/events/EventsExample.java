@@ -38,7 +38,7 @@ public class EventsExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Events API example started.");
 
@@ -62,7 +62,7 @@ public class EventsExample {
         System.out.println();
         System.out.println(">>> Local event listener example.");
 
-        Grid g = GridGain.grid();
+        Ignite g = GridGain.grid();
 
         GridPredicate<GridTaskEvent> lsnr = new GridPredicate<GridTaskEvent>() {
             @Override public boolean apply(GridTaskEvent evt) {
@@ -115,7 +115,7 @@ public class EventsExample {
             }
         };
 
-        Grid g = GridGain.grid();
+        Ignite g = GridGain.grid();
 
         // Register event listeners on all nodes to listen for task events.
         g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);

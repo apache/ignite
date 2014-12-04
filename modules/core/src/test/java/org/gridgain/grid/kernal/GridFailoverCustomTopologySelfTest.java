@@ -63,19 +63,19 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait", "unchecked"})
     public void testFailoverTopology() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            assert grid1 != null;
-            assert grid2 != null;
+            assert ignite1 != null;
+            assert ignite2 != null;
 
-            grid1.compute().localDeployTask(JobTask.class, JobTask.class.getClassLoader());
+            ignite1.compute().localDeployTask(JobTask.class, JobTask.class.getClassLoader());
 
             try {
                 GridComputeTaskFuture<String> fut;
 
                 synchronized(mux){
-                    GridCompute comp = grid1.compute().enableAsync();
+                    GridCompute comp = ignite1.compute().enableAsync();
 
                     comp.execute(JobTask.class, null);
 

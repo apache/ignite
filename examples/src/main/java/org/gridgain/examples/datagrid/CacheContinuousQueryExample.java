@@ -36,7 +36,7 @@ public class CacheContinuousQueryExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException, InterruptedException {
-        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache continuous query example started.");
 

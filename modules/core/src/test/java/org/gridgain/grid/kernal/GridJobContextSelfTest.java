@@ -26,13 +26,13 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If anything failed.
      */
     public void testJobContext() throws Exception {
-        Grid grid = startGrid(1);
+        Ignite ignite = startGrid(1);
 
         try {
             startGrid(2);
 
             try {
-                grid.compute().execute(JobContextTask.class, null);
+                ignite.compute().execute(JobContextTask.class, null);
             }
             finally {
                 stopGrid(2);

@@ -485,7 +485,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Grid startGrid() throws Exception {
+    protected Ignite startGrid() throws Exception {
         return startGrid(getTestGridName());
     }
 
@@ -494,22 +494,22 @@ public abstract class GridAbstractTest extends TestCase {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected final Grid startGrids(int cnt) throws Exception {
+    protected final Ignite startGrids(int cnt) throws Exception {
         assert cnt > 0;
 
-        Grid grid = null;
+        Ignite ignite = null;
 
         for (int i = 0; i < cnt; i++)
-            if (grid == null)
-                grid = startGrid(i);
+            if (ignite == null)
+                ignite = startGrid(i);
             else
                 startGrid(i);
 
         checkTopology(cnt);
 
-        assert grid != null;
+        assert ignite != null;
 
-        return grid;
+        return ignite;
     }
 
     /**
@@ -517,15 +517,15 @@ public abstract class GridAbstractTest extends TestCase {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected Grid startGridsMultiThreaded(int cnt) throws Exception {
+    protected Ignite startGridsMultiThreaded(int cnt) throws Exception {
         if (cnt == 1)
             return startGrids(1);
 
-        Grid grid = startGridsMultiThreaded(0, cnt);
+        Ignite ignite = startGridsMultiThreaded(0, cnt);
 
         checkTopology(cnt);
 
-        return grid;
+        return ignite;
     }
 
     /**
@@ -534,7 +534,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected final Grid startGridsMultiThreaded(int init, int cnt) throws Exception {
+    protected final Ignite startGridsMultiThreaded(int init, int cnt) throws Exception {
         assert init >= 0;
         assert cnt > 0;
 
@@ -600,7 +600,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Grid startGrid(int idx) throws Exception {
+    protected Ignite startGrid(int idx) throws Exception {
         return startGrid(getTestGridName(idx));
     }
 
@@ -612,7 +612,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Grid startGrid(int idx, GridSpringResourceContext ctx) throws Exception {
+    protected Ignite startGrid(int idx, GridSpringResourceContext ctx) throws Exception {
         return startGrid(getTestGridName(idx), ctx);
     }
 
@@ -623,7 +623,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Grid startGrid(String gridName) throws Exception {
+    protected Ignite startGrid(String gridName) throws Exception {
         return startGrid(gridName, (GridSpringResourceContext)null);
     }
 
@@ -635,7 +635,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Grid startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+    protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
         return GridGainEx.start(optimize(getConfiguration(gridName)), ctx);
     }
 
@@ -675,11 +675,11 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String gridName, boolean cancel) {
         try {
-            Grid grid = G.grid(gridName);
+            Ignite ignite = G.grid(gridName);
 
-            assert grid != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "GridGain returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.cluster().localNode().id() + ']');
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
             G.stop(gridName, cancel);
         }
@@ -704,9 +704,9 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
-        List<Grid> grids = G.allGrids();
+        List<Ignite> ignites = G.allGrids();
 
-        for (Grid g : grids)
+        for (Ignite g : ignites)
             stopGrid(g.name(), cancel);
 
         assert G.allGrids().isEmpty();
@@ -716,9 +716,9 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllClients(boolean cancel) {
-        List<Grid> grids = G.allGrids();
+        List<Ignite> ignites = G.allGrids();
 
-        for (Grid g : grids) {
+        for (Ignite g : ignites) {
             if (g.cluster().localNode().isClient())
                 stopGrid(g.name(), cancel);
         }
@@ -728,23 +728,23 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllServers(boolean cancel) {
-        List<Grid> grids = G.allGrids();
+        List<Ignite> ignites = G.allGrids();
 
-        for (Grid g : grids) {
+        for (Ignite g : ignites) {
             if (!g.cluster().localNode().isClient())
                 stopGrid(g.name(), cancel);
         }
     }
 
     /**
-     * @param grid Grid
+     * @param ignite Grid
      * @param cnt Count
      * @throws GridException If failed.
      */
     @SuppressWarnings({"BusyWait"})
-    protected void waitForRemoteNodes(Grid grid, int cnt) throws GridException {
+    protected void waitForRemoteNodes(Ignite ignite, int cnt) throws GridException {
         while (true) {
-            Collection<GridNode> nodes = grid.cluster().forRemotes().nodes();
+            Collection<GridNode> nodes = ignite.cluster().forRemotes().nodes();
 
             if (nodes != null && nodes.size() >= cnt)
                 return;
@@ -753,22 +753,22 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(100);
             }
             catch (InterruptedException ignored) {
-                throw new GridException("Interrupted while waiting for remote nodes [gridName=" + grid.name() +
+                throw new GridException("Interrupted while waiting for remote nodes [gridName=" + ignite.name() +
                     ", count=" + cnt + ']');
             }
         }
     }
 
     /**
-     * @param grids Grids
+     * @param ignites Grids
      * @throws GridException If failed.
      */
-    protected void waitForDiscovery(Grid... grids) throws GridException {
-        assert grids != null;
-        assert grids.length > 1;
+    protected void waitForDiscovery(Ignite... ignites) throws GridException {
+        assert ignites != null;
+        assert ignites.length > 1;
 
-        for (Grid grid : grids)
-            waitForRemoteNodes(grid, grids.length - 1);
+        for (Ignite ignite : ignites)
+            waitForRemoteNodes(ignite, ignites.length - 1);
     }
 
     /**
@@ -810,7 +810,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    protected Grid startGrid(String gridName, String springCfgPath) throws Exception {
+    protected Ignite startGrid(String gridName, String springCfgPath) throws Exception {
         return startGrid(gridName, loadConfiguration(springCfgPath));
     }
 
@@ -824,7 +824,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    protected Grid startGrid(String gridName, GridConfiguration cfg) throws Exception {
+    protected Ignite startGrid(String gridName, GridConfiguration cfg) throws Exception {
         cfg.setGridName(gridName);
 
         return G.start(cfg);
@@ -894,11 +894,11 @@ public abstract class GridAbstractTest extends TestCase {
         String gridName = getTestGridName(idx);
 
         try {
-            Grid grid = G.grid(gridName);
+            Ignite ignite = G.grid(gridName);
 
-            assert grid != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "GridGain returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.cluster().localNode().id() + ']');
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
             G.stop(gridName, cancel);
         }

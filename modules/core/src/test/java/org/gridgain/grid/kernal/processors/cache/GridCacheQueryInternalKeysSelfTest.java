@@ -71,7 +71,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
                 Collection<GridNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(internalKey);
 
                 for (GridNode n : nodes) {
-                    Grid g = findGridForNodeId(n.id());
+                    Ignite g = findGridForNodeId(n.id());
 
                     assertNotNull(g);
 
@@ -86,16 +86,16 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     }
 
     /**
-     * Finds the {@link Grid}, which has a local node
+     * Finds the {@link org.gridgain.grid.Ignite}, which has a local node
      * with given ID.
      *
      * @param nodeId ID for grid's local node.
      * @return A grid instance or {@code null}, if the grid
      * is not found.
      */
-    @Nullable private Grid findGridForNodeId(final UUID nodeId) {
-        return F.find(G.allGrids(), null, new P1<Grid>() {
-            @Override public boolean apply(Grid e) {
+    @Nullable private Ignite findGridForNodeId(final UUID nodeId) {
+        return F.find(G.allGrids(), null, new P1<Ignite>() {
+            @Override public boolean apply(Ignite e) {
                 return nodeId.equals(e.cluster().localNode().id());
             }
         });

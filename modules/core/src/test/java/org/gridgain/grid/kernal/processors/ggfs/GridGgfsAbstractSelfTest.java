@@ -135,13 +135,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
 
-        Grid gridSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
+        Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
-        ggfsSecondary = (GridGgfsImpl)gridSecondary.ggfs("ggfs-secondary");
+        ggfsSecondary = (GridGgfsImpl) igniteSecondary.ggfs("ggfs-secondary");
 
-        Grid grid = startGridWithGgfs("grid", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
 
-        ggfs = (GridGgfsImpl)grid.ggfs("ggfs");
+        ggfs = (GridGgfsImpl) ignite.ggfs("ggfs");
     }
 
     /** {@inheritDoc} */
@@ -165,7 +165,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Grid startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
+    protected Ignite startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
         @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 

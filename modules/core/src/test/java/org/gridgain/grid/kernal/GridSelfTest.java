@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Test for {@link Grid}.
+ * Test for {@link org.gridgain.grid.Ignite}.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridSelfTest extends GridProjectionAbstractTest {
@@ -61,7 +61,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         String name = "oneMoreGrid";
 
         try {
-            Grid g = startGrid(name);
+            Ignite g = startGrid(name);
 
             UUID joinedId = g.cluster().localNode().id();
 
@@ -83,7 +83,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         String name = "oneMoreGrid";
 
         try {
-            Grid g = startGrid(name);
+            Ignite g = startGrid(name);
 
             UUID joinedId = g.cluster().localNode().id();
 
@@ -103,7 +103,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
     public void testAsyncListen() throws Exception {
         final String msg = "HELLO!";
 
-        Grid g = (Grid)projection();
+        Ignite g = (Ignite)projection();
 
         final UUID locNodeId = g.cluster().localNode().id();
 

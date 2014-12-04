@@ -75,13 +75,13 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         routed.set(false);
 
         try {
-            Grid grid1 = startGrid(NODE1);
-            Grid grid2 = startGrid(NODE2);
+            Ignite ignite1 = startGrid(NODE1);
+            Ignite ignite2 = startGrid(NODE2);
 
-            assert grid1 != null;
-            assert grid2 != null;
+            assert ignite1 != null;
+            assert ignite2 != null;
 
-            compute(grid1.cluster().forPredicate(p)).withTimeout(10000).execute(JobFailTask.class.getName(), "1");
+            compute(ignite1.cluster().forPredicate(p)).withTimeout(10000).execute(JobFailTask.class.getName(), "1");
         }
         catch (GridTopologyException ignored) {
             failed.set(true);
@@ -106,15 +106,15 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         routed.set(false);
 
         try {
-            Grid grid1 = startGrid(NODE1);
-            Grid grid2 = startGrid(NODE2);
-            Grid grid3 = startGrid(NODE3);
+            Ignite ignite1 = startGrid(NODE1);
+            Ignite ignite2 = startGrid(NODE2);
+            Ignite ignite3 = startGrid(NODE3);
 
-            assert grid1 != null;
-            assert grid2 != null;
-            assert grid3 != null;
+            assert ignite1 != null;
+            assert ignite2 != null;
+            assert ignite3 != null;
 
-            Integer res = (Integer)compute(grid1.cluster().forPredicate(p)).withTimeout(10000).
+            Integer res = (Integer)compute(ignite1.cluster().forPredicate(p)).withTimeout(10000).
                 execute(JobFailTask.class.getName(), "1");
 
             assert res == 1;
@@ -143,18 +143,18 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         routed.set(false);
 
         try {
-            Grid grid1 = startGrid(NODE1);
-            Grid grid2 = startGrid(NODE2);
-            Grid grid3 = startGrid(NODE3);
+            Ignite ignite1 = startGrid(NODE1);
+            Ignite ignite2 = startGrid(NODE2);
+            Ignite ignite3 = startGrid(NODE3);
 
-            assert grid1 != null;
-            assert grid2 != null;
-            assert grid3 != null;
+            assert ignite1 != null;
+            assert ignite2 != null;
+            assert ignite3 != null;
 
             // Get projection only for first 2 nodes.
-            GridProjection nodes = grid1.cluster().forNodeIds(Arrays.asList(
-                grid1.cluster().localNode().id(),
-                grid2.cluster().localNode().id()));
+            GridProjection nodes = ignite1.cluster().forNodeIds(Arrays.asList(
+                ignite1.cluster().localNode().id(),
+                ignite2.cluster().localNode().id()));
 
             // On failover NODE3 shouldn't be taken into account.
             Integer res = (Integer)compute(nodes.forPredicate(p)).withTimeout(10000).

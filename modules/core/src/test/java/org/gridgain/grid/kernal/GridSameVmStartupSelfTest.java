@@ -39,27 +39,27 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSameVmStartup() throws Exception {
-        Grid grid1 = startGrid(1);
+        Ignite ignite1 = startGrid(1);
 
-        Collection<GridNode> top1 = grid1.cluster().forRemotes().nodes();
+        Collection<GridNode> top1 = ignite1.cluster().forRemotes().nodes();
 
         try {
             assert top1.isEmpty() : "Grid1 topology is not empty: " + top1;
 
             // Start another grid.
-            Grid grid2 = startGrid(2);
+            Ignite ignite2 = startGrid(2);
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            int size1 = grid1.cluster().forRemotes().nodes().size();
-            int size2 = grid2.cluster().forRemotes().nodes().size();
+            int size1 = ignite1.cluster().forRemotes().nodes().size();
+            int size2 = ignite2.cluster().forRemotes().nodes().size();
 
             assert size1 == 1 : "Invalid number of remote nodes discovered: " + size1;
             assert size2 == 1 : "Invalid number of remote nodes discovered: " + size2;
 
-            final UUID grid1LocNodeId = grid1.cluster().localNode().id();
+            final UUID grid1LocNodeId = ignite1.cluster().localNode().id();
 
-            grid2.events().localListen(new GridPredicate<GridEvent>() {
+            ignite2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt.type() != EVT_NODE_FAILED :
                         "Node1 did not exit gracefully.";
@@ -84,7 +84,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            Collection<GridNode> top2 = grid2.cluster().forRemotes().nodes();
+            Collection<GridNode> top2 = ignite2.cluster().forRemotes().nodes();
 
             assert top2.isEmpty() : "Grid2 topology is not empty: " + top2;
         }

@@ -27,7 +27,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 @SuppressWarnings({"ProhibitedExceptionThrown"})
 public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /** Grid. */
-    private Grid grid;
+    private Ignite ignite;
 
     /**
      *
@@ -38,12 +38,12 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = grid();
+        ignite = grid();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid = null;
+        ignite = null;
     }
 
     /** {@inheritDoc} */
@@ -69,7 +69,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws GridException If test failed.
      */
     public void testLockReentry() throws GridException {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         assert !cache.isLocked(1);
         assert !cache.isLockedByThread(1);
@@ -112,7 +112,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLock() throws Throwable {
-        final GridCache<Integer, String> cache = grid.cache(null);
+        final GridCache<Integer, String> cache = ignite.cache(null);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -228,7 +228,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLockAndPut() throws Throwable {
-        final GridCache<Integer, String> cache = grid.cache(null);
+        final GridCache<Integer, String> cache = ignite.cache(null);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
 

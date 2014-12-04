@@ -109,7 +109,7 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
         try {
             for (int i = 1; i <= RUN_CNT; i++) {
                 // Start primary node.
-                Grid g = startGrid();
+                Ignite g = startGrid();
 
                 try {
                     runQuery(g);
@@ -124,7 +124,7 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
                 assertTrue(GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {
                         for (int i = 0; i < GRID_CNT; i++) {
-                            Grid g = grid(i);
+                            Ignite g = grid(i);
 
                             GridNodeLocalMap<String, Integer> nodeLoc = g.cluster().nodeLocalMap();
 
@@ -157,7 +157,7 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    private void runQuery(Grid g) throws Exception {
+    private void runQuery(Ignite g) throws Exception {
         GridCacheQuery<Map.Entry<Integer, Integer>> q = g.<Integer, Integer>cache(null).queries().createScanQuery(null);
 
         // We use external class loader here to guarantee that secondary nodes

@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
@@ -401,7 +400,7 @@ public class GridGainEx {
      * @throws GridException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Grid start() throws GridException {
+    public static Ignite start() throws GridException {
         return start((GridSpringResourceContext)null);
     }
 
@@ -418,7 +417,7 @@ public class GridGainEx {
      * @throws GridException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Grid start(@Nullable GridSpringResourceContext springCtx) throws GridException {
+    public static Ignite start(@Nullable GridSpringResourceContext springCtx) throws GridException {
         URL url = U.resolveGridGainUrl(DFLT_CFG);
 
         if (url != null)
@@ -438,7 +437,7 @@ public class GridGainEx {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Grid start(GridConfiguration cfg) throws GridException {
+    public static Ignite start(GridConfiguration cfg) throws GridException {
         return start(cfg, null);
     }
 
@@ -455,7 +454,7 @@ public class GridGainEx {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Grid start(GridConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws GridException {
+    public static Ignite start(GridConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx)).grid();
@@ -477,7 +476,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(@Nullable String springCfgPath) throws GridException {
+    public static Ignite start(@Nullable String springCfgPath) throws GridException {
         return springCfgPath == null ? start() : start(springCfgPath, null);
     }
 
@@ -498,7 +497,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(@Nullable String springCfgPath, @Nullable String gridName) throws GridException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws GridException {
         if (springCfgPath == null) {
             GridConfiguration cfg = new GridConfiguration();
 
@@ -520,7 +519,7 @@ public class GridGainEx {
      * @return Started Grid.
      * @throws GridException If failed.
      */
-    public static Grid startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
+    public static Ignite startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
         throws GridException {
         GridInteropProcessorAdapter.ENV_PTR.set(envPtr);
 
@@ -643,7 +642,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(String springCfgPath, @Nullable String gridName,
+    public static Ignite start(String springCfgPath, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
@@ -680,7 +679,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(URL springCfgUrl) throws GridException {
+    public static Ignite start(URL springCfgUrl) throws GridException {
         return start(springCfgUrl, null, null);
     }
 
@@ -705,7 +704,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(URL springCfgUrl, @Nullable String gridName,
+    public static Ignite start(URL springCfgUrl, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
@@ -855,7 +854,7 @@ public class GridGainEx {
      * @throws GridIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Grid grid() throws GridIllegalStateException {
+    public static Ignite grid() throws GridIllegalStateException {
         return grid((String)null);
     }
 
@@ -864,14 +863,14 @@ public class GridGainEx {
      *
      * @return List of all grids started so far.
      */
-    public static List<Grid> allGrids() {
-        List<Grid> allGrids = new ArrayList<>(grids.size() + 1);
+    public static List<Ignite> allGrids() {
+        List<Ignite> allIgnites = new ArrayList<>(grids.size() + 1);
 
         for (GridNamedInstance grid : grids.values()) {
-            Grid g = grid.grid();
+            Ignite g = grid.grid();
 
             if (g != null)
-                allGrids.add(g);
+                allIgnites.add(g);
         }
 
         GridNamedInstance dfltGrid0 = dfltGrid;
@@ -880,10 +879,10 @@ public class GridGainEx {
             GridKernal g = dfltGrid0.grid();
 
             if (g != null)
-                allGrids.add(g);
+                allIgnites.add(g);
         }
 
-        return allGrids;
+        return allIgnites;
     }
 
     /**
@@ -898,7 +897,7 @@ public class GridGainEx {
      * @throws GridIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Grid grid(UUID locNodeId) throws GridIllegalStateException {
+    public static Ignite grid(UUID locNodeId) throws GridIllegalStateException {
         A.notNull(locNodeId, "locNodeId");
 
         GridNamedInstance dfltGrid0 = dfltGrid;
@@ -937,10 +936,10 @@ public class GridGainEx {
      * @throws GridIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Grid grid(@Nullable String name) throws GridIllegalStateException {
+    public static Ignite grid(@Nullable String name) throws GridIllegalStateException {
         GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
-        Grid res;
+        Ignite res;
 
         if (grid == null || (res = grid.grid()) == null)
             throw new GridIllegalStateException("Grid instance was not properly started " +

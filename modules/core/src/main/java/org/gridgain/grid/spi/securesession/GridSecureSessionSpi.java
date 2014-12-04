@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.securesession;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.securesession.noop.*;
@@ -45,7 +44,7 @@ import java.util.*;
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
- * via {@link Grid#configuration()} method to check its configuration properties or call other non-SPI
+ * via {@link org.gridgain.grid.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */

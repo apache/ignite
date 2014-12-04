@@ -380,18 +380,18 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
         this.depMode = depMode;
 
         // Create remote grid to execute test on.
-        Grid locGrid = startGrid();
+        Ignite locIgnite = startGrid();
 
-        Grid rmtGrid = startGrid(getTestGridName() + "Remote");
+        Ignite rmtIgnite = startGrid(getTestGridName() + "Remote");
 
         try {
             AtomicInteger locDepCnt = new AtomicInteger(0);
             AtomicInteger rmtDepCnt = new AtomicInteger(0);
 
-            locGrid.events().localListen(new TestEventListener(locDepCnt), EVT_TASK_DEPLOYED, EVT_CLASS_DEPLOYED);
-            rmtGrid.events().localListen(new TestEventListener(rmtDepCnt), EVT_TASK_DEPLOYED, EVT_CLASS_DEPLOYED);
+            locIgnite.events().localListen(new TestEventListener(locDepCnt), EVT_TASK_DEPLOYED, EVT_CLASS_DEPLOYED);
+            rmtIgnite.events().localListen(new TestEventListener(rmtDepCnt), EVT_TASK_DEPLOYED, EVT_CLASS_DEPLOYED);
 
-            assertEquals(2, locGrid.cluster().forPredicate(F.<GridNode>alwaysTrue()).nodes().size());
+            assertEquals(2, locIgnite.cluster().forPredicate(F.<GridNode>alwaysTrue()).nodes().size());
 
             Object targetObj = targetWithUserClassLoader();
 

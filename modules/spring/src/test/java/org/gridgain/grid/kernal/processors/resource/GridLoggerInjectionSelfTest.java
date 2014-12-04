@@ -43,9 +43,9 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      * @throws Exception If failed.
      */
     public void testClosureField() throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
-        grid.compute().call(new GridCallable<Object>() {
+        ignite.compute().call(new GridCallable<Object>() {
             @GridLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private GridLogger log;
 
@@ -70,9 +70,9 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      * @throws Exception If failed.
      */
     public void testClosureMethod() throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
-        grid.compute().call(new GridCallable<Object>() {
+        ignite.compute().call(new GridCallable<Object>() {
             @GridLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private void log(GridLogger log) {
                 if (log instanceof GridLoggerProxy) {
@@ -97,9 +97,9 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      * @throws Exception If failed.
      */
     public void testStringCategory() throws Exception {
-        Grid grid = grid(0);
+        Ignite ignite = grid(0);
 
-        grid.compute().call(new GridCallable<Object>() {
+        ignite.compute().call(new GridCallable<Object>() {
             @GridLoggerResource(categoryName = "GridLoggerInjectionSelfTest")
             private void log(GridLogger log) {
                 if (log instanceof GridLoggerProxy) {

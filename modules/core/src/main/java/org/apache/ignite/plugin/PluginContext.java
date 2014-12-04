@@ -34,7 +34,7 @@ public interface PluginContext {
     /**
      * @return Grid.
      */
-    public Grid grid();
+    public Ignite grid();
 
     /**
      * Gets a collection of all grid nodes. Remote nodes are discovered via underlying

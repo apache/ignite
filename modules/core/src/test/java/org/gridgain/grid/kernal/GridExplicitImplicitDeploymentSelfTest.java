@@ -73,13 +73,13 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    private void stopGrid(Grid grid) {
+    private void stopGrid(Ignite ignite) {
         try {
-            if (grid != null)
-                G.stop(grid.name(), true);
+            if (ignite != null)
+                G.stop(ignite.name(), true);
         }
         catch (Throwable e) {
             error("Got error when stopping grid.", e);
@@ -94,10 +94,10 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private void execExplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
-        Grid grid = null;
+        Ignite ignite = null;
 
         try {
-            grid = startGrid();
+            ignite = startGrid();
 
             // Explicit Deployment. Task execution should return 0.
             // Say resource class loader - different to task one.
@@ -121,34 +121,34 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
             // Check auto-deploy. It should pick up resource class loader.
             if (byCls) {
-                grid.compute().localDeployTask(taskCls, ldr1);
+                ignite.compute().localDeployTask(taskCls, ldr1);
 
-                Integer res = grid.compute().execute(taskCls, null);
+                Integer res = ignite.compute().execute(taskCls, null);
 
                 assert res != null;
                 assert res == 2 : "Invalid response: " + res;
             }
 
             if (byTask) {
-                grid.compute().localDeployTask(taskCls, ldr1);
+                ignite.compute().localDeployTask(taskCls, ldr1);
 
-                Integer res = grid.compute().execute(taskCls.newInstance(), null);
+                Integer res = ignite.compute().execute(taskCls.newInstance(), null);
 
                 assert res != null;
                 assert res == 2 : "Invalid response: " + res;
             }
 
             if (byName) {
-                grid.compute().localDeployTask(taskCls, ldr1);
+                ignite.compute().localDeployTask(taskCls, ldr1);
 
-                Integer res = (Integer)grid.compute().execute(taskCls.getName(), null);
+                Integer res = (Integer) ignite.compute().execute(taskCls.getName(), null);
 
                 assert res != null;
                 assert res == 1 : "Invalid response: " + res;
             }
         }
         finally {
-            stopGrid(grid);
+            stopGrid(ignite);
         }
     }
 
@@ -160,10 +160,10 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
      */
    @SuppressWarnings("unchecked")
    private void execImplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
-       Grid grid = null;
+       Ignite ignite = null;
 
        try {
-           grid = startGrid();
+           ignite = startGrid();
 
            // First task class loader.
            ClassLoader ldr1 = new GridTestClassLoader(
@@ -189,8 +189,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
            if (byCls) {
-               Integer res1 = grid.compute().execute(taskCls1, null);
-               Integer res2 = grid.compute().execute(taskCls2, null);
+               Integer res1 = ignite.compute().execute(taskCls1, null);
+               Integer res2 = ignite.compute().execute(taskCls2, null);
 
                assert res1 != null;
                assert res2 != null;
@@ -200,8 +200,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
            }
 
            if (byTask) {
-               Integer res1 = grid.compute().execute(taskCls1.newInstance(), null);
-               Integer res2 = grid.compute().execute(taskCls2.newInstance(), null);
+               Integer res1 = ignite.compute().execute(taskCls1.newInstance(), null);
+               Integer res2 = ignite.compute().execute(taskCls2.newInstance(), null);
 
                assert res1 != null;
                assert res2 != null;
@@ -211,13 +211,13 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
            }
 
            if (byName) {
-               grid.compute().localDeployTask(taskCls1, ldr1);
+               ignite.compute().localDeployTask(taskCls1, ldr1);
 
-               Integer res1 = (Integer)grid.compute().execute(taskCls1.getName(), null);
+               Integer res1 = (Integer) ignite.compute().execute(taskCls1.getName(), null);
 
-               grid.compute().localDeployTask(taskCls2, ldr2);
+               ignite.compute().localDeployTask(taskCls2, ldr2);
 
-               Integer res2 = (Integer)grid.compute().execute(taskCls2.getName(), null);
+               Integer res2 = (Integer) ignite.compute().execute(taskCls2.getName(), null);
 
                assert res1 != null;
                assert res2 != null;
@@ -227,7 +227,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
            }
        }
        finally {
-           stopGrid(grid);
+           stopGrid(ignite);
        }
    }
 
@@ -239,12 +239,12 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private void execExplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
-       Grid grid1 = null;
-       Grid grid2 = null;
+       Ignite ignite1 = null;
+       Ignite ignite2 = null;
 
        try {
-           grid1 = startGrid(1);
-           grid2 = startGrid(2);
+           ignite1 = startGrid(1);
+           ignite2 = startGrid(2);
 
            ClassLoader ldr1 = new GridTestClassLoader(
                Collections.singletonMap("testResource", "1"),
@@ -264,11 +264,11 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
            if (byCls) {
-               grid1.compute().localDeployTask(taskCls, ldr1);
+               ignite1.compute().localDeployTask(taskCls, ldr1);
 
                // Even though the task is deployed with resource class loader,
                // when we execute it, it will be redeployed with task class-loader.
-               Integer res = grid1.compute().execute(taskCls, null);
+               Integer res = ignite1.compute().execute(taskCls, null);
 
                assert res != null;
                assert res == 2 : "Invalid response: " + res;
@@ -276,30 +276,30 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
 
            if (byTask) {
-               grid1.compute().localDeployTask(taskCls, ldr1);
+               ignite1.compute().localDeployTask(taskCls, ldr1);
 
                // Even though the task is deployed with resource class loader,
                // when we execute it, it will be redeployed with task class-loader.
-               Integer res = grid1.compute().execute(taskCls.newInstance(), null);
+               Integer res = ignite1.compute().execute(taskCls.newInstance(), null);
 
                assert res != null;
                assert res == 2 : "Invalid response: " + res;
            }
 
            if (byName) {
-               grid1.compute().localDeployTask(taskCls, ldr1);
+               ignite1.compute().localDeployTask(taskCls, ldr1);
 
                // Even though the task is deployed with resource class loader,
                // when we execute it, it will be redeployed with task class-loader.
-               Integer res = (Integer)grid1.compute().execute(taskCls.getName(), null);
+               Integer res = (Integer) ignite1.compute().execute(taskCls.getName(), null);
 
                assert res != null;
                assert res == 1 : "Invalid response: " + res;
            }
        }
        finally {
-           stopGrid(grid2);
-           stopGrid(grid1);
+           stopGrid(ignite2);
+           stopGrid(ignite1);
        }
     }
 
@@ -311,12 +311,12 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
      */
    @SuppressWarnings("unchecked")
    private void execImplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
-      Grid grid1 = null;
-      Grid grid2 = null;
+      Ignite ignite1 = null;
+      Ignite ignite2 = null;
 
       try {
-          grid1 = startGrid(1);
-          grid2 = startGrid(2);
+          ignite1 = startGrid(1);
+          ignite2 = startGrid(2);
 
           ClassLoader ldr1 = new GridTestClassLoader(
               Collections.singletonMap("testResource", "1"),
@@ -339,8 +339,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
               ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
           if (byCls) {
-              Integer res1 = grid1.compute().execute(taskCls1, null);
-              Integer res2 = grid1.compute().execute(taskCls2, null);
+              Integer res1 = ignite1.compute().execute(taskCls1, null);
+              Integer res2 = ignite1.compute().execute(taskCls2, null);
 
               assert res1 != null;
               assert res2 != null;
@@ -350,8 +350,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
           }
 
           if (byTask) {
-              Integer res1 = grid1.compute().execute(taskCls1.newInstance(), null);
-              Integer res2 = grid1.compute().execute(taskCls2.newInstance(), null);
+              Integer res1 = ignite1.compute().execute(taskCls1.newInstance(), null);
+              Integer res2 = ignite1.compute().execute(taskCls2.newInstance(), null);
 
               assert res1 != null;
               assert res2 != null;
@@ -361,13 +361,13 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
           }
 
           if (byName) {
-              grid1.compute().localDeployTask(taskCls1, ldr1);
+              ignite1.compute().localDeployTask(taskCls1, ldr1);
 
-              Integer res1 = (Integer)grid1.compute().execute(taskCls1.getName(), null);
+              Integer res1 = (Integer) ignite1.compute().execute(taskCls1.getName(), null);
 
-              grid1.compute().localDeployTask(taskCls2, ldr2);
+              ignite1.compute().localDeployTask(taskCls2, ldr2);
 
-              Integer res2 = (Integer)grid1.compute().execute(taskCls2.getName(), null);
+              Integer res2 = (Integer) ignite1.compute().execute(taskCls2.getName(), null);
 
               assert res1 != null;
               assert res2 != null;
@@ -377,8 +377,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
           }
       }
       finally {
-          stopGrid(grid1);
-          stopGrid(grid2);
+          stopGrid(ignite1);
+          stopGrid(ignite2);
       }
    }
 

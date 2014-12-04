@@ -52,26 +52,26 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
         try {
             this.depMode = depMode;
 
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            waitForDiscovery(grid1, grid2);
+            waitForDiscovery(ignite1, ignite2);
 
             ClassLoader ldr = getExternalClassLoader();
 
             Class<? extends GridComputeTask<Object, int[]>> taskCls =
                 (Class<? extends GridComputeTask<Object, int[]>>)ldr.loadClass(TASK_NAME);
 
-            int[] res1 = grid1.compute().execute(taskCls, Collections.singletonList(grid2.cluster().localNode().id()));
+            int[] res1 = ignite1.compute().execute(taskCls, Collections.singletonList(ignite2.cluster().localNode().id()));
 
             info("Result1: " + Arrays.toString(res1));
 
             assert res1 != null;
 
-            grid1.compute().localDeployTask(taskCls, taskCls.getClassLoader());
+            ignite1.compute().localDeployTask(taskCls, taskCls.getClassLoader());
 
-            int[] res2 = (int[])grid1.compute().execute(taskCls.getName(),
-                Collections.singletonList(grid2.cluster().localNode().id()));
+            int[] res2 = (int[]) ignite1.compute().execute(taskCls.getName(),
+                Collections.singletonList(ignite2.cluster().localNode().id()));
 
             info("Result2: " + Arrays.toString(res2));
 
@@ -94,10 +94,10 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
         try {
             this.depMode = depMode;
 
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            waitForDiscovery(grid1, grid2);
+            waitForDiscovery(ignite1, ignite2);
 
             ClassLoader ldr1 = getExternalClassLoader();
             ClassLoader ldr2 = getExternalClassLoader();
@@ -123,15 +123,15 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
 //                }
 //            }, EVT_TASK_UNDEPLOYED);
 
-            grid2.compute().localDeployTask(taskCls1, taskCls1.getClassLoader());
+            ignite2.compute().localDeployTask(taskCls1, taskCls1.getClassLoader());
 
-            int[] res1 = grid1.compute().execute(taskCls1, Collections.singletonList(grid2.cluster().localNode().id()));
+            int[] res1 = ignite1.compute().execute(taskCls1, Collections.singletonList(ignite2.cluster().localNode().id()));
 
             assert res1 != null;
 
             info("Result1: " + Arrays.toString(res1));
 
-            int[] res2 = grid1.compute().execute(taskCls2, Collections.singletonList(grid2.cluster().localNode().id()));
+            int[] res2 = ignite1.compute().execute(taskCls2, Collections.singletonList(ignite2.cluster().localNode().id()));
 
             assert res2 != null;
 

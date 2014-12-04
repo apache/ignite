@@ -131,7 +131,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @param node Node.
      * @return Grid for the given node.
      */
-    private Grid grid(GridNode node) {
+    private Ignite grid(GridNode node) {
         return G.grid(node.id());
     }
 
@@ -140,7 +140,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Near cache.
      */
     @SuppressWarnings({"unchecked"})
-    private GridNearCacheAdapter<Integer, String> near(Grid g) {
+    private GridNearCacheAdapter<Integer, String> near(Ignite g) {
         return (GridNearCacheAdapter)((GridKernal)g).internalCache();
     }
 
@@ -149,7 +149,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+    private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
         return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 

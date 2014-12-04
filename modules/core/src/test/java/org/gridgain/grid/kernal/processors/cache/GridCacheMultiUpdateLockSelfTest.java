@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.spi.checkpoint.noop.*;
@@ -117,7 +116,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
                     @Override public Object call() throws Exception {
                         info(">>>> Starting grid.");
 
-                        Grid g4 = startGrid(4);
+                        Ignite g4 = startGrid(4);
 
                         started.set(true);
 

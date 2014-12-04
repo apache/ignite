@@ -32,7 +32,7 @@ public final class CreditRiskExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Credit risk example started.");
 

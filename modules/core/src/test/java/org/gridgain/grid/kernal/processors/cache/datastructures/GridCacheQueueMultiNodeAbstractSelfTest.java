@@ -70,7 +70,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         for (int i = 0; i < 5; i++) {
             success = true;
 
-            for (Grid g : G.allGrids()) {
+            for (Ignite g : G.allGrids()) {
                 if (g.cluster().nodes().size() != GRID_CNT) {
                     info("Grid has incorrect nodes count [gridName=" + g.name() +
                         ", nodesCnt=" + g.cluster().nodes().size() + ']');
@@ -165,7 +165,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            final Grid g = startGrid(GRID_CNT + 1);
+            final Ignite g = startGrid(GRID_CNT + 1);
 
             GridFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -196,7 +196,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             latch.await();
 
-            final Grid g1 = startGrid(GRID_CNT + 2);
+            final Ignite g1 = startGrid(GRID_CNT + 2);
 
             GridFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                 @SuppressWarnings("BusyWait")
@@ -525,7 +525,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         for (GridNode node : nodes) {
             Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new GridCallable<Collection<Integer>>() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite grid;
 
                 /** {@inheritDoc} */
                 @Override public Collection<Integer> call() throws Exception {
@@ -621,7 +621,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -640,11 +640,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         /** {@inheritDoc} */
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+            GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
                 false, true);
 
             assertNotNull(queue);
@@ -668,7 +668,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -687,11 +687,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         /** {@inheritDoc} */
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+            GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
                 false, true);
 
             assertNotNull(queue);
@@ -719,7 +719,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -743,11 +743,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         /** {@inheritDoc} */
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheQueue<String> queue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+            GridCacheQueue<String> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
                 false, true);
 
             assertNotNull(queue);
@@ -776,7 +776,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -795,11 +795,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         /** {@inheritDoc} */
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + ']');
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+            GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
                 false, true);
 
             assertNotNull(queue);

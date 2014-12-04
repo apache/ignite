@@ -47,7 +47,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Grid instances. */
-    private static final List<Grid> grids = new ArrayList<>();
+    private static final List<Ignite> IGNITEs = new ArrayList<>();
 
     /**
      * Start grid by default.
@@ -78,7 +78,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < GRID_CNT; i++)
-            grids.add(startGrid(i));
+            IGNITEs.add(startGrid(i));
     }
 
     /**
@@ -87,7 +87,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        grids.clear();
+        IGNITEs.clear();
     }
 
     /**
@@ -95,10 +95,10 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            if (GridGain.state(grids.get(i).name()) == STOPPED) {
+            if (GridGain.state(IGNITEs.get(i).name()) == STOPPED) {
                 info("Restarting grid: " + i);
 
-                grids.set(i, startGrid(i));
+                IGNITEs.set(i, startGrid(i));
             }
 
             GridCacheEntry e = cache(i).entry(KEY);
@@ -112,7 +112,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @return Cache.
      */
     @Override protected <K, V> GridCache<K, V> cache(int i) {
-        return grids.get(i).cache(null);
+        return IGNITEs.get(i).cache(null);
     }
 
     /**
@@ -150,7 +150,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Grid will be stopped: " + idx);
 
-        Grid g = grid(idx);
+        Ignite g = grid(idx);
 
         GridCache<Integer, String> cache = cache(idx);
 

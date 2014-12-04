@@ -31,7 +31,7 @@ public class GridCacheMultiNodeDataStructureTest {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = G.start("examples/config/example-cache.xml")) {
+        try (Ignite g = G.start("examples/config/example-cache.xml")) {
             // All available nodes.
             if (g.cluster().nodes().size() <= 2)
                 throw new GridException("At least 2 nodes must be started.");
@@ -48,7 +48,7 @@ public class GridCacheMultiNodeDataStructureTest {
      * @param cacheName Cache name.
      * @throws GridException If failed.
      */
-    private static void sample(Grid g, String cacheName) throws GridException {
+    private static void sample(Ignite g, String cacheName) throws GridException {
         GridCache<Long, Object> cache = g.cache(cacheName);
 
         GridCacheAtomicLong atomicLong = cache.dataStructures().atomicLong("keygen", 0, true);

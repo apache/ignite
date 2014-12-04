@@ -92,18 +92,18 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      */
     private void processTestWithUndeploy() throws Exception {
         try {
-            Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            GridResourceIoc ioc = ((GridKernal)grid).context().resource().getResourceIoc();
+            GridResourceIoc ioc = ((GridKernal) ignite).context().resource().getResourceIoc();
 
-            grid.compute().execute(TestTask.class, null);
+            ignite.compute().execute(TestTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 1);
             checkUsageCount(deployClss, UserResource1.class, 1);
 
             assert ioc.isCached(UserResource1.class);
 
-            grid.compute().undeployTask(TestTask.class.getName());
+            ignite.compute().undeployTask(TestTask.class.getName());
 
             assert !ioc.isCached(UserResource1.class);
 
@@ -122,12 +122,12 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      */
     private void processTestWithNodeStop() throws Exception {
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             final CountDownLatch latch = new CountDownLatch(2);
 
-            grid2.events().localListen(
+            ignite2.events().localListen(
                 new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
                         info("Received event: " + evt);
@@ -139,9 +139,9 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
                 }, EVT_TASK_UNDEPLOYED
             );
 
-            GridResourceIoc ioc = ((GridKernal)grid2).context().resource().getResourceIoc();
+            GridResourceIoc ioc = ((GridKernal) ignite2).context().resource().getResourceIoc();
 
-            grid1.compute().execute(TestTask.class, null);
+            ignite1.compute().execute(TestTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 1);
             checkUsageCount(deployClss, UserResource1.class, 1);
@@ -191,13 +191,13 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
                 garFile = "file:///" + tmpPath.getAbsolutePath();
 
                 try {
-                    Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+                    Ignite ignite = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-                    int[] res = grid.compute().execute(TEST_EXT_TASK, grid.cluster().localNode().id());
+                    int[] res = ignite.compute().execute(TEST_EXT_TASK, ignite.cluster().localNode().id());
 
                     assert res.length == 2;
 
-                    GridResourceIoc ioc = ((GridKernal)grid).context().resource().
+                    GridResourceIoc ioc = ((GridKernal) ignite).context().resource().
                         getResourceIoc();
 
                     assert ioc.isCached(TEST_USER_RSRC);
@@ -213,8 +213,8 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
                     assert !ioc.isCached(TEST_USER_RSRC);
 
                     try {
-                        grid.compute().execute(TEST_EXT_TASK,
-                            grid.cluster().localNode().id());
+                        ignite.compute().execute(TEST_EXT_TASK,
+                            ignite.cluster().localNode().id());
 
                         assert false : "Task must be undeployed";
                     }

@@ -70,16 +70,16 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"unchecked"})
     private void processTest(boolean isIsolatedDifferentTask, boolean isIsolatedDifferentNode) throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
-            Grid grid3 = startGrid(3);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
+            Ignite ignite3 = startGrid(3);
 
             Class task1 = CLASS_LOADER.loadClass(TEST_TASK1_NAME);
             Class task2 = CLASS_LOADER.loadClass(TEST_TASK2_NAME);
 
             // Execute task1 and task2 from node1 on node2 and make sure that they reuse same class loader on node2.
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
-            int[] res2 = (int[])grid1.compute().execute(task2, grid2.cluster().localNode().id());
+            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            int[] res2 = (int[]) ignite1.compute().execute(task2, ignite2.cluster().localNode().id());
 
             if (isIsolatedDifferentTask) {
                 assert res1[0] != res2[0]; // Resources are not same
@@ -88,8 +88,8 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
             else
                 assert Arrays.equals(res1, res2);
 
-            int[] res3 = (int[])grid3.compute().execute(task1, grid2.cluster().localNode().id());
-            int[] res4 = (int[])grid3.compute().execute(task2, grid2.cluster().localNode().id());
+            int[] res3 = (int[]) ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
+            int[] res4 = (int[]) ignite3.compute().execute(task2, ignite2.cluster().localNode().id());
 
             if (isIsolatedDifferentTask) {
                 assert res3[0] != res4[0]; // Resources are not same

@@ -92,7 +92,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             cache().dataStructures().atomicLong(STRUCTURE_NAME, 10, true);
 
-            Grid g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_GRID_NAME);
 
             assert g.cache(null).dataStructures().atomicLong(STRUCTURE_NAME, 10, true).get() == 10;
 
@@ -121,7 +121,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                             String name = UUID.randomUUID().toString();
 
                             try {
-                                Grid g = startGrid(name);
+                                Ignite g = startGrid(name);
 
                                 assert g.cache(null).dataStructures().atomicLong(STRUCTURE_NAME, 1, true).get() > 0;
                             }
@@ -149,7 +149,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures().atomicLong(STRUCTURE_NAME, 1, true).get() == val;
         }
         finally {
@@ -176,7 +176,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     names.add(name);
 
-                                    Grid g = startGrid(name);
+                                    Ignite g = startGrid(name);
 
                                     assert g.cache(null).dataStructures().atomicLong(STRUCTURE_NAME, 1, true).get() > 0;
                                 }
@@ -206,7 +206,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures().atomicLong(STRUCTURE_NAME, 1, true).get() == val;
         }
         finally {
@@ -221,7 +221,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             cache().dataStructures().atomicReference(STRUCTURE_NAME, 10, true);
 
-            Grid g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_GRID_NAME);
 
             assert g.cache(null).dataStructures().<Integer>atomicReference(STRUCTURE_NAME, 10, true).get() == 10;
 
@@ -250,7 +250,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                             String name = UUID.randomUUID().toString();
 
                             try {
-                                Grid g = startGrid(name);
+                                Ignite g = startGrid(name);
 
                                 assert g.cache(null).dataStructures().<Integer>atomicReference(STRUCTURE_NAME, 1, true)
                                     .get() > 0;
@@ -277,7 +277,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures().<Integer>atomicReference(STRUCTURE_NAME, 1, true).get() == val;
         }
         finally {
@@ -304,7 +304,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     names.add(name);
 
-                                    Grid g = startGrid(name);
+                                    Ignite g = startGrid(name);
 
                                     assert
                                         g.cache(null).dataStructures().<Integer>atomicReference(STRUCTURE_NAME, 1, true)
@@ -334,7 +334,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures().<Integer>atomicReference(STRUCTURE_NAME, 1, true).get() == val;
         }
         finally {
@@ -349,7 +349,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             cache().dataStructures().atomicStamped(STRUCTURE_NAME, 10, 10, true);
 
-            Grid g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_GRID_NAME);
 
             GridBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
                 .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 10, 10, true).get();
@@ -385,7 +385,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                             String name = UUID.randomUUID().toString();
 
                             try {
-                                Grid g = startGrid(name);
+                                Ignite g = startGrid(name);
 
                                 GridBiTuple<Integer, Integer> t =
                                     g.cache(null).dataStructures()
@@ -421,7 +421,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids()) {
+            for (Ignite g : G.allGrids()) {
                 GridBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
                     .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
@@ -453,7 +453,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     names.add(name);
 
-                                    Grid g = startGrid(name);
+                                    Ignite g = startGrid(name);
 
                                     GridBiTuple<Integer, Integer> t =
                                         g.cache(null).dataStructures()
@@ -491,7 +491,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids()) {
+            for (Ignite g : G.allGrids()) {
                 GridBiTuple<Integer, Integer> t = g.cache(null).dataStructures()
                     .<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
@@ -511,7 +511,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             cache().dataStructures().countDownLatch(STRUCTURE_NAME, 20, true, true);
 
-            Grid g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_GRID_NAME);
 
             assert g.cache(null).dataStructures().countDownLatch(STRUCTURE_NAME, 20, true, true).count() == 20;
 
@@ -543,7 +543,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                             String name = UUID.randomUUID().toString();
 
                             try {
-                                Grid g = startGrid(name);
+                                Ignite g = startGrid(name);
 
                                 assert g.cache(null).dataStructures().countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE,
                                     false, false) != null;
@@ -572,7 +572,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures().countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, true)
                     .count() == val;
         }
@@ -603,7 +603,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     names.add(name);
 
-                                    Grid g = startGrid(name);
+                                    Ignite g = startGrid(name);
 
                                     assert g.cache(null).dataStructures()
                                         .countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, false) != null;
@@ -634,7 +634,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures()
                     .countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, false).count() == val;
         }
@@ -651,8 +651,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
     public void testFifoQueueTopologyChange() throws Exception {
         try {
             cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true).put(10);
-            
-            Grid g = startGrid(NEW_GRID_NAME);
+
+            Ignite g = startGrid(NEW_GRID_NAME);
 
             assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false, false).poll() == 10;
 
@@ -683,7 +683,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                             String name = UUID.randomUUID().toString();
 
                             try {
-                                Grid g = startGrid(name);
+                                Ignite g = startGrid(name);
 
                                 assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false,
                                     false).peek() > 0;
@@ -709,7 +709,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false, false).peek() == origVal;
         }
         finally {
@@ -738,7 +738,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     names.add(name);
 
-                                    Grid g = startGrid(name);
+                                    Ignite g = startGrid(name);
 
                                     assert g.cache(null).dataStructures()
                                         .<Integer>queue(STRUCTURE_NAME, 0, false, false).peek() > 0;
@@ -766,7 +766,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
             fut.get();
 
-            for (Grid g : G.allGrids())
+            for (Ignite g : G.allGrids())
                 assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false, false).peek() == origVal;
         }
         finally {
@@ -781,7 +781,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         try {
             cache().dataStructures().atomicSequence(STRUCTURE_NAME, 10, true);
 
-            Grid g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_GRID_NAME);
 
             assert g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 10, false).get() == 1010;
 
@@ -808,7 +808,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
                             try {
-                                Grid g = startGrid(name);
+                                Ignite g = startGrid(name);
 
                                 assertTrue(g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1, false).
                                     get() > 0);
@@ -877,7 +877,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             grid(0).compute().call(new Callable<Object>() {
                     /** */
                     @GridInstanceResource
-                    private Grid g;
+                    private Ignite g;
 
                     @Override public Object call() throws Exception {
                         GridCacheAtomicSequence seq = g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1,
@@ -915,7 +915,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     names.add(name);
 
-                                    Grid g = startGrid(name);
+                                    Ignite g = startGrid(name);
 
                                     assertTrue(g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1, false)
                                         .get() > 0);
@@ -963,7 +963,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Grid g = startGrid(NEW_GRID_NAME);
+                Ignite g = startGrid(NEW_GRID_NAME);
 
                 try {
                     g.cache(null).txStart();
@@ -979,7 +979,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             }
         }).get();
 
-        waitForDiscovery(G.allGrids().toArray(new Grid[gridCount()]));
+        waitForDiscovery(G.allGrids().toArray(new Ignite[gridCount()]));
 
         assert cache().dataStructures().atomicLong(STRUCTURE_NAME, val, false).get() == val + 1;
     }

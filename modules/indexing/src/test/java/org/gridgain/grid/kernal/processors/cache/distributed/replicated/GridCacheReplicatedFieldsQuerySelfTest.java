@@ -55,7 +55,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
             // Ensure that iterators map empty.
             map.clear();
 
-            Grid g = startGrid();
+            Ignite g = startGrid();
 
             GridCache<Integer, Integer> cache = g.cache(null);
 

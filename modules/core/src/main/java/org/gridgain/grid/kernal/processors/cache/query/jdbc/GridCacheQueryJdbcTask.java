@@ -136,7 +136,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
         /** Grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Logger. */
         @GridLoggerResource
@@ -184,7 +184,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 assert args != null;
                 assert futId == null;
 
-                GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
+                GridCache<?, ?> cache = ((GridEx) ignite).cachex(cacheName);
 
                 GridCacheQuery<List<?>> qry =
                     ((GridCacheQueriesEx<?, ?>)cache.queries()).createSqlFieldsQuery(sql, true);
@@ -194,7 +194,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
                 // Query local and replicated caches only locally.
                 if (cache.configuration().getCacheMode() != PARTITIONED)
-                    qry = qry.projection(grid.cluster().forLocal());
+                    qry = qry.projection(ignite.cluster().forLocal());
 
                 GridCacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
 
@@ -227,7 +227,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
                 futId = UUID.randomUUID();
 
-                grid.cluster().nodeLocalMap().put(futId, t = F.t(fut, 0, false, cols));
+                ignite.cluster().nodeLocalMap().put(futId, t = F.t(fut, 0, false, cols));
 
                 scheduleRemoval(futId);
             }
@@ -235,7 +235,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
             assert futId != null;
 
             if (t == null)
-                t = grid.cluster().<UUID, GridTuple4<GridCacheQueryFuture<List<?>>, Integer, Boolean,
+                t = ignite.cluster().<UUID, GridTuple4<GridCacheQueryFuture<List<?>>, Integer, Boolean,
                     Collection<String>>>nodeLocalMap().get(futId);
 
             assert t != null;
@@ -265,11 +265,11 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
             boolean finished = next == null || totalCnt == maxRows;
 
             if (!finished)
-                grid.cluster().nodeLocalMap().put(futId, F.t(fut, totalCnt, true, cols));
+                ignite.cluster().nodeLocalMap().put(futId, F.t(fut, totalCnt, true, cols));
             else
-                grid.cluster().nodeLocalMap().remove(futId);
+                ignite.cluster().nodeLocalMap().remove(futId);
 
-            return first ? F.asList(grid.cluster().localNode().id(), futId, tbls, cols, types, fields, finished) :
+            return first ? F.asList(ignite.cluster().localNode().id(), futId, tbls, cols, types, fields, finished) :
                 F.asList(fields, finished);
         }
 
@@ -282,7 +282,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
             SCHEDULER.schedule(new CAX() {
                 @Override public void applyx() {
                     GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean> t =
-                        grid.cluster().<UUID, GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean>>nodeLocalMap().get(id);
+                        ignite.cluster().<UUID, GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean>>nodeLocalMap().get(id);
 
                     if (t != null) {
                         // If future was accessed since last scheduling,
@@ -294,7 +294,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                         }
                         // Remove stored future otherwise.
                         else
-                            grid.cluster().nodeLocalMap().remove(id);
+                            ignite.cluster().nodeLocalMap().remove(id);
                     }
                 }
             }, RMV_DELAY, TimeUnit.SECONDS);

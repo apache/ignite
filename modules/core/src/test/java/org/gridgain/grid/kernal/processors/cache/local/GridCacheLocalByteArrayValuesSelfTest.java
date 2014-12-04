@@ -30,7 +30,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByteArrayValuesSelfTest {
     /** Grid. */
-    private static Grid grid;
+    private static Ignite ignite;
 
     /** Regular cache. */
     private static GridCache<Integer, Object> cache;
@@ -73,10 +73,10 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid = startGrid(1);
+        ignite = startGrid(1);
 
-        cache = grid.cache(CACHE_REGULAR);
-        cacheOffheap = grid.cache(CACHE_OFFHEAP);
+        cache = ignite.cache(CACHE_REGULAR);
+        cacheOffheap = ignite.cache(CACHE_OFFHEAP);
     }
 
     /** {@inheritDoc} */
@@ -86,7 +86,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cache = null;
         cacheOffheap = null;
 
-        grid = null;
+        ignite = null;
     }
 
     /**

@@ -35,12 +35,12 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testFailover() throws Exception {
-        Grid grid = startGrid();
+        Ignite ignite = startGrid();
 
         try {
-            grid.compute().localDeployTask(GridFailoverTestTask.class, GridFailoverTestTask.class.getClassLoader());
+            ignite.compute().localDeployTask(GridFailoverTestTask.class, GridFailoverTestTask.class.getClassLoader());
 
-            GridComputeTaskFuture<?> fut = grid.compute().execute(GridFailoverTestTask.class.getName(), null);
+            GridComputeTaskFuture<?> fut = ignite.compute().execute(GridFailoverTestTask.class.getName(), null);
 
             assert fut != null;
 

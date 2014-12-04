@@ -26,7 +26,7 @@ public class GridLoadTestTask extends GridComputeTaskAdapter<Integer, Integer> {
     /** */
     @SuppressWarnings("unused")
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Integer arg) throws GridException {

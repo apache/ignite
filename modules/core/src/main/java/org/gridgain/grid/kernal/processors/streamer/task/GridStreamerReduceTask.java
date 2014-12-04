@@ -88,7 +88,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
 
         /** Injected grid. */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** Query closure. */
         private GridClosure<GridStreamerContext, R> qryClos;

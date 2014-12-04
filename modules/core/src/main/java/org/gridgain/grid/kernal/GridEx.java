@@ -18,12 +18,11 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface GridEx extends Grid, GridProjectionEx, GridCluster {
+public interface GridEx extends Ignite, GridProjectionEx, GridCluster {
     /**
      * Gets utility cache.
      *

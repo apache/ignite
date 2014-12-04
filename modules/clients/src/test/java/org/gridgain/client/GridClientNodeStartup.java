@@ -42,7 +42,7 @@ public class GridClientNodeStartup {
      * @throws GridException In case of any exception.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = G.start("modules/clients/src/test/resources/spring-server-node.xml")) {
+        try (Ignite g = G.start("modules/clients/src/test/resources/spring-server-node.xml")) {
             U.sleep(Long.MAX_VALUE);
         }
     }

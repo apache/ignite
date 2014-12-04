@@ -119,7 +119,7 @@ class GridAffinityUtils {
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -149,10 +149,10 @@ class GridAffinityUtils {
         /** {@inheritDoc} */
         @Override public GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> call()
             throws Exception {
-            assert grid != null;
+            assert ignite != null;
             assert log != null;
 
-            GridKernal kernal = ((GridKernal)grid);
+            GridKernal kernal = ((GridKernal) ignite);
 
             GridCacheContext<Object, Object> cctx = kernal.internalCache(cacheName).context();
 

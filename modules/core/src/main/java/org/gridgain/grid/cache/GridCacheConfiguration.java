@@ -429,8 +429,8 @@ public class GridCacheConfiguration {
 
     /**
      * Cache name. If not provided or {@code null}, then this will be considered a default
-     * cache which can be accessed via {@link Grid#cache(String) Grid.cache(null)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Grid#cache(String)} method.
+     * cache which can be accessed via {@link org.gridgain.grid.Ignite#cache(String) Grid.cache(null)} method. Otherwise, if name
+     * is provided, the cache will be accessed via {@link org.gridgain.grid.Ignite#cache(String)} method.
      *
      * @return Cache name.
      */

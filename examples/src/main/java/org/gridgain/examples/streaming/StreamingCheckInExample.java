@@ -99,7 +99,7 @@ public class StreamingCheckInExample {
         Timer timer = new Timer("check-in-query-worker");
 
         // Start grid.
-        final Grid g = GridGain.start("examples/config/example-streamer.xml");
+        final Ignite g = GridGain.start("examples/config/example-streamer.xml");
 
         System.out.println();
         System.out.println(">>> Streaming check-in example started.");

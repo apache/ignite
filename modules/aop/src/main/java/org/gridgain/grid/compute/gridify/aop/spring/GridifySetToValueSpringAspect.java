@@ -94,9 +94,9 @@ public class GridifySetToValueSpringAspect extends GridifySetToValueAbstractAspe
         checkIsSplitToJobsAllowed(arg, ann);
 
         try {
-            Grid grid = G.grid(gridName);
+            Ignite ignite = G.grid(gridName);
 
-            return execute(mtd, grid.compute(), invoc.getMethod().getDeclaringClass(), arg, nodeFilter,
+            return execute(mtd, ignite.compute(), invoc.getMethod().getDeclaringClass(), arg, nodeFilter,
                 ann.threshold(), ann.splitSize(), ann.timeout());
         }
         catch (Throwable e) {

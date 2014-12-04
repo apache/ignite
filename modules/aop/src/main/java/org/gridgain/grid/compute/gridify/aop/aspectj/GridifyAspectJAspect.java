@@ -76,22 +76,22 @@ public class GridifyAspectJAspect {
         }
 
         try {
-            Grid grid = G.grid(gridName);
+            Ignite ignite = G.grid(gridName);
 
             // If task class was specified.
             if (!ann.taskClass().equals(GridifyDefaultTask.class)) {
-                return grid.compute().withTimeout(ann.timeout()).execute(
+                return ignite.compute().withTimeout(ann.timeout()).execute(
                     (Class<? extends GridComputeTask<GridifyArgument, Object>>)ann.taskClass(), arg);
             }
 
             // If task name was not specified.
             if (ann.taskName().isEmpty()) {
-                return grid.compute().withTimeout(ann.timeout()).execute(new GridifyDefaultTask(
+                return ignite.compute().withTimeout(ann.timeout()).execute(new GridifyDefaultTask(
                     joinPnt.getSignature().getDeclaringType()), arg);
             }
 
             // If task name was specified.
-            return grid.compute().withTimeout(ann.timeout()).execute(ann.taskName(), arg);
+            return ignite.compute().withTimeout(ann.timeout()).execute(ann.taskName(), arg);
         }
         catch (Throwable e) {
             for (Class<?> ex : ((MethodSignature) joinPnt.getSignature()).getMethod().getExceptionTypes()) {

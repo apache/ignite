@@ -27,15 +27,15 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
     public void testNodeSingletonNotDeployedProxy() throws Exception {
         String name = "testNodeSingletonNotDeployedProxy";
 
-        Grid grid = randomGrid();
+        Ignite ignite = randomGrid();
 
         // Deploy only on remote nodes.
-        grid.services(grid.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
+        ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
 
         info("Deployed service: " + name);
 
         // Get local proxy.
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
+        CounterService svc = ignite.services().serviceProxy(name, CounterService.class, false);
 
         try {
             svc.increment();

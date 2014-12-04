@@ -23,12 +23,12 @@ public class GridHibernateGeneralDataRegion extends GridHibernateRegion implemen
     /**
      * @param factory Region factory.
      * @param name Region name.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Region cache.
      */
     public GridHibernateGeneralDataRegion(GridHibernateRegionFactory factory, String name,
-        Grid grid, GridCache<Object, Object> cache) {
-        super(factory, name, grid, cache);
+        Ignite ignite, GridCache<Object, Object> cache) {
+        super(factory, name, ignite, cache);
     }
 
     /** {@inheritDoc} */
@@ -51,7 +51,7 @@ public class GridHibernateGeneralDataRegion extends GridHibernateRegion implemen
 
     /** {@inheritDoc} */
     @Override public void evict(Object key) throws CacheException {
-        GridHibernateAccessStrategyAdapter.evict(grid, cache, key);
+        GridHibernateAccessStrategyAdapter.evict(ignite, cache, key);
     }
 
     /** {@inheritDoc} */

@@ -21,17 +21,17 @@ import org.junit.*;
 public class TestClosure implements GridClosure<Object, Object> {
     /** */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** */
     @GridLoggerResource
     private GridLogger log;
 
     @Override public Object apply(Object o) {
-        Assert.assertNotNull(grid);
+        Assert.assertNotNull(ignite);
         Assert.assertNotNull(log);
 
-        log.info("Closure is running with grid: " + grid);
+        log.info("Closure is running with grid: " + ignite);
 
         return null;
     }

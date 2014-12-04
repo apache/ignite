@@ -132,7 +132,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     protected GridCacheStore<?, ?> cacheStore() {
         return new GridCacheStoreAdapter<Integer, String>() {
             @GridInstanceResource
-            private Grid g;
+            private Ignite g;
 
             @Override public void loadCache(GridBiInClosure<Integer, String> c,
                 Object... args) {

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -76,8 +75,8 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     public void testAffinity() throws Exception {
         waitTopologyUpdate();
 
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
 
         for (int i = 0; i < 100; i++)
             assertEquals(g0.cluster().mapKeyToNode(null, i).id(), g1.cluster().mapKeyToNode(null, i).id());
@@ -88,8 +87,8 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     public void testProjectionAffinity() throws Exception {
         waitTopologyUpdate();
 
-        Grid g0 = grid(0);
-        Grid g1 = grid(1);
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
 
         GridProjection g0Pinned = g0.cluster().forNodeIds(F.asList(g0.cluster().localNode().id()));
 

@@ -94,7 +94,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
     /** Injected grid. */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** Injected cache name. */
     @GridCacheNameResource
@@ -346,7 +346,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
         Collection<UUID> ns = neighbors.get(node.id());
 
         if (ns == null) {
-            Collection<GridNode> nodes = grid.cluster().forHost(node).nodes();
+            Collection<GridNode> nodes = ignite.cluster().forHost(node).nodes();
 
             ns = F.addIfAbsent(neighbors, node.id(), new ArrayList<>(F.nodeIds(nodes)));
         }

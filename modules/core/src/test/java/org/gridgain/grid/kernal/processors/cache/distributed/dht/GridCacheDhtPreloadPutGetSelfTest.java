@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -180,7 +179,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
             GridFuture fut1 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        Grid g2 = startGrid(2);
+                        Ignite g2 = startGrid(2);
 
                         for (int i = 0; i < ITER_CNT; i++) {
                             info("Iteration # " + i);
@@ -218,7 +217,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                     @Nullable @Override public Object call() throws Exception {
                         writeLatch.await();
 
-                        Grid g1 = startGrid(1);
+                        Ignite g1 = startGrid(1);
 
                         GridCache<Integer, Integer> cache = g1.cache(null);
 

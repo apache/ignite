@@ -49,7 +49,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
 
     /** */
     @GridInstanceResource
-    private transient Grid grid;
+    private transient Ignite ignite;
 
     /** {@inheritDoc} */
     @Override protected Object executeJob(int gridSize, String type) throws GridException {
@@ -67,7 +67,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
         cfg.setGridName(gridName);
 
         // Start new node in current VM.
-        Grid g =  G.start(cfg);
+        Ignite g =  G.start(cfg);
 
         log.info(">>> Grid started [nodeId=" + g.cluster().localNode().id() + ", name='" + g.name() + "']");
 
@@ -111,7 +111,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
         String nodeType = "tcp+ssl";
 
         // Start initial node = 1
-        try (Grid g = G.start(NODE_CFG.get(nodeType))) {
+        try (Ignite g = G.start(NODE_CFG.get(nodeType))) {
             // Change topology.
             changeTopology(g, 4, 1, nodeType);
             changeTopology(g, 1, 4, nodeType);
@@ -140,7 +140,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
      * @param type Type of nodes to manipulate.
      * @throws GridException On any exception.
      */
-    private static void changeTopology(Grid parent, int add, int rmv, String type) throws GridException {
+    private static void changeTopology(Ignite parent, int add, int rmv, String type) throws GridException {
         Collection<GridComputeTaskFuture<?>> tasks = new ArrayList<>();
 
         GridCompute comp = parent.compute().enableAsync();
@@ -164,7 +164,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
 
         Collection<String> gridNames = new ArrayList<>();
 
-        for (Grid g : G.allGrids())
+        for (Ignite g : G.allGrids())
             gridNames.add(g.name());
 
         parent.log().info(">>> Available grids: " + gridNames);

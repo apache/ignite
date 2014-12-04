@@ -85,7 +85,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
             assert cache0.get(String.valueOf(i)) == null;
 
         // Start another node.
-        Grid g1 = startGrid(1);
+        Ignite g1 = startGrid(1);
 
         final GridCacheAdapter<String, Integer> cache1 = ((GridKernal)g1).context().cache().internalCache();
 

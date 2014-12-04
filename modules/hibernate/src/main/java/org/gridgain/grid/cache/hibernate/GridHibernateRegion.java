@@ -30,19 +30,19 @@ public class GridHibernateRegion implements Region {
     protected final GridCache<Object, Object> cache;
 
     /** Grid instance. */
-    protected Grid grid;
+    protected Ignite ignite;
 
     /**
      * @param factory Region factory.
      * @param name Region name.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Region cache.
      */
-    public GridHibernateRegion(GridHibernateRegionFactory factory, String name, Grid grid,
+    public GridHibernateRegion(GridHibernateRegionFactory factory, String name, Ignite ignite,
         GridCache<Object, Object> cache) {
         this.factory = factory;
         this.name = name;
-        this.grid = grid;
+        this.ignite = ignite;
         this.cache = cache;
     }
 

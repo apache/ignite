@@ -24,7 +24,7 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
 public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<String, Integer> {
     /** Grid. */
     @GridInstanceResource
-    private transient Grid grid;
+    private transient Ignite ignite;
 
     /** {@inheritDoc} */
     @Override protected Object executeJob(int gridSize, String arg) throws GridException {
@@ -40,7 +40,7 @@ public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<Str
         if ("null".equals(cacheName))
             cacheName = null;
 
-        GridNode node = grid.cluster().mapKeyToNode(cacheName, affKey);
+        GridNode node = ignite.cluster().mapKeyToNode(cacheName, affKey);
 
         return node.id().toString();
     }

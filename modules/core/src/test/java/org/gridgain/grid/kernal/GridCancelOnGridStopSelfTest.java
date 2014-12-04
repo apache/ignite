@@ -42,7 +42,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
     public void testCancelingJob() throws Exception {
         cancelCall = false;
 
-        try (Grid g = startGrid(1)) {
+        try (Ignite g = startGrid(1)) {
             cnt = new CountDownLatch(1);
 
             g.compute().enableAsync().execute(CancelledTask.class, null);

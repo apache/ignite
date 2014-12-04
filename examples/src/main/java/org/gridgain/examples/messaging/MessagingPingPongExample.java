@@ -38,7 +38,7 @@ public class MessagingPingPongExample {
      */
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
-        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 
@@ -57,14 +57,14 @@ public class MessagingPingPongExample {
             g.message(nodeB).remoteListen(null, new GridBiPredicate<UUID, String>() {
                 /** This will be injected on node listener comes to. */
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
                     System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
                     try {
                         if ("PING".equals(rcvMsg)) {
-                            grid.message(grid.cluster().forNodeId(nodeId)).send(null, "PONG");
+                            ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PONG");
 
                             return true; // Continue listening.
                         }

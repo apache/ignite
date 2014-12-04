@@ -99,7 +99,7 @@ public class GridP2PTestTaskExternalPath1 extends GridComputeTaskAdapter<Object,
 
         /** */
         @GridInstanceResource
-        private Grid g;
+        private Ignite g;
 
         /** */
         private boolean sleep;

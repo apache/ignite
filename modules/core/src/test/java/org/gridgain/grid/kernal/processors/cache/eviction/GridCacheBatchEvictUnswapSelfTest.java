@@ -86,7 +86,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
      * @param batchSize Size of batch to swap/promote.
      * @throws Exception If failed.
      */
-    private void runConcurrentTest(Grid g, final int keysCnt, final int batchSize) throws Exception {
+    private void runConcurrentTest(Ignite g, final int keysCnt, final int batchSize) throws Exception {
         assert keysCnt % batchSize == 0;
 
         final AtomicInteger evictedKeysCnt = new AtomicInteger();

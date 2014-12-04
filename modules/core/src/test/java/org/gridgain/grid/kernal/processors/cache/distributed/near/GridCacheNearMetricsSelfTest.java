@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -56,7 +55,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         super.afterTest();
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             g.cache(null).removeAll();
 
@@ -80,7 +79,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testPrimaryPut() throws Exception {
-        Grid g0 = grid(0);
+        Ignite g0 = grid(0);
 
         GridCache<Integer, Integer> cache0 = g0.cache(null);
 
@@ -104,7 +103,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         }
 
         for (int j = 0; j < gridCount(); j++) {
-            Grid g = grid(j);
+            Ignite g = grid(j);
 
             info("Checking grid: " + g.name());
 
@@ -133,7 +132,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testBackupPut() throws Exception {
-        Grid g0 = grid(0);
+        Ignite g0 = grid(0);
 
         GridCache<Integer, Integer> cache0 = g0.cache(null);
 
@@ -157,7 +156,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         }
 
         for (int j = 0; j < gridCount(); j++) {
-            Grid g = grid(j);
+            Ignite g = grid(j);
 
             if (g.cache(null).affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals(1, g.cache(null).metrics().writes());
@@ -186,7 +185,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testNearPut() throws Exception {
-        Grid g0 = grid(0);
+        Ignite g0 = grid(0);
 
         GridCache<Integer, Integer> cache0 = g0.cache(null);
 
@@ -210,7 +209,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         }
 
         for (int j = 0; j < gridCount(); j++) {
-            Grid g = grid(j);
+            Ignite g = grid(j);
 
             assertEquals(1, g.cache(null).metrics().writes());
 
@@ -236,7 +235,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testPrimaryRead() throws Exception {
-        Grid g0 = grid(0);
+        Ignite g0 = grid(0);
 
         GridCache<Integer, Integer> cache0 = g0.cache(null);
 
@@ -264,7 +263,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         }
 
         for (int j = 0; j < gridCount(); j++) {
-            Grid g = grid(j);
+            Ignite g = grid(j);
 
             info("Checking grid: " + g.name());
 
@@ -290,7 +289,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testBackupRead() throws Exception {
-        Grid g0 = grid(0);
+        Ignite g0 = grid(0);
 
         GridCache<Integer, Integer> cache0 = g0.cache(null);
 
@@ -318,7 +317,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         }
 
         for (int j = 0; j < gridCount(); j++) {
-            Grid g = grid(j);
+            Ignite g = grid(j);
 
             assertEquals(0, g.cache(null).metrics().writes());
 
@@ -339,7 +338,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testNearRead() throws Exception {
-        Grid g0 = grid(0);
+        Ignite g0 = grid(0);
 
         GridCache<Integer, Integer> cache0 = g0.cache(null);
 
@@ -364,7 +363,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         }
 
         for (int j = 0; j < gridCount(); j++) {
-            Grid g = grid(j);
+            Ignite g = grid(j);
 
             assertEquals(0, g.cache(null).metrics().writes());
 

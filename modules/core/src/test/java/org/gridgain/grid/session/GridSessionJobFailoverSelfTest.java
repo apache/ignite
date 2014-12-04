@@ -45,13 +45,13 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     public void testFailoverJobSession() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
 
             startGrid(2);
 
-            grid1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
+            ignite1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
 
-            Object res = grid1.compute().execute(SessionTestTask.class.getName(), "1");
+            Object res = ignite1.compute().execute(SessionTestTask.class.getName(), "1");
 
             assert (Integer)res == 1;
         }

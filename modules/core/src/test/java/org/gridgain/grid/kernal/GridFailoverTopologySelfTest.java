@@ -74,14 +74,14 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     public void testFailoverTopology() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
 
             startGrid(2);
 
-            grid1.compute().localDeployTask(JobFailTask.class, JobFailTask.class.getClassLoader());
+            ignite1.compute().localDeployTask(JobFailTask.class, JobFailTask.class.getClassLoader());
 
             try {
-                compute(grid1.cluster().forRemotes()).execute(JobFailTask.class, null);
+                compute(ignite1.cluster().forRemotes()).execute(JobFailTask.class, null);
             }
             catch (GridException e) {
                 info("Got expected grid exception: " + e);

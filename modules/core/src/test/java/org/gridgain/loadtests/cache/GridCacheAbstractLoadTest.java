@@ -119,9 +119,9 @@ abstract class GridCacheAbstractLoadTest {
         info("Write threads: " + writeThreads());
         info("Test duration (ms): " + testDuration);
 
-        Grid grid = G.grid();
+        Ignite ignite = G.grid();
 
-        final GridCache<Integer, Integer> cache = grid.cache(null);
+        final GridCache<Integer, Integer> cache = ignite.cache(null);
 
         assert cache != null;
 

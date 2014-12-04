@@ -58,15 +58,15 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         GridComputeTaskFuture<Object> fut = null;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            assert grid1 != null;
-            assert grid2 != null;
+            assert ignite1 != null;
+            assert ignite2 != null;
 
-            fut = executeAsync(grid1.compute().withTimeout(10000),
+            fut = executeAsync(ignite1.compute().withTimeout(10000),
                 GridWaitTask.class.getName(),
-                grid1.cluster().localNode().id());
+                ignite1.cluster().localNode().id());
 
             jobStarted.await();
         }
@@ -91,16 +91,16 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
         GridComputeTaskFuture<Object> fut = null;
 
-        Grid grid1 = startGrid(1);
-        Grid grid2 = startGrid(2);
+        Ignite ignite1 = startGrid(1);
+        Ignite ignite2 = startGrid(2);
 
         try {
-            assert grid1 != null;
-            assert grid2 != null;
+            assert ignite1 != null;
+            assert ignite2 != null;
 
             long timeout = 3000;
 
-            fut = executeAsync(grid1.compute().withTimeout(timeout), JobFailTask.class.getName(), "1");
+            fut = executeAsync(ignite1.compute().withTimeout(timeout), JobFailTask.class.getName(), "1");
 
             jobStarted.await(timeout, TimeUnit.MILLISECONDS);
         }

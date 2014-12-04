@@ -19,7 +19,7 @@ import org.gridgain.testframework.junits.common.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
     /** Grid instance. */
-    private Grid grid;
+    private Ignite ignite;
 
     /** */
     public GridTaskExecutionSelfTest() {
@@ -28,7 +28,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid = startGrid(1);
+        ignite = startGrid(1);
 
         startGrid(2);
         startGrid(3);
@@ -40,14 +40,14 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
         stopGrid(2);
         stopGrid(3);
 
-        grid = null;
+        ignite = null;
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        GridCompute comp = grid.compute().enableAsync();
+        GridCompute comp = ignite.compute().enableAsync();
 
         assertNull(comp.execute(GridTestTask.class,  "testArg"));
 

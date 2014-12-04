@@ -24,7 +24,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /** Grid. */
-    private Grid grid;
+    private Ignite ignite;
 
     /**
      * Start grid by default.
@@ -59,12 +59,12 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = grid();
+        ignite = grid();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid = null;
+        ignite = null;
     }
 
     /**
@@ -122,7 +122,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
         GridCacheTx tx = null;
 
         try {
-            GridCache<Integer, String> cache = grid.cache(null);
+            GridCache<Integer, String> cache = ignite.cache(null);
 
             tx = cache.txStart(concurrency, isolation, 50, 0);
 

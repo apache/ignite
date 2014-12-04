@@ -309,7 +309,7 @@ class GridServiceProxy<T> implements Serializable {
 
         /** Grid instance. */
         @GridInstanceResource
-        private transient Grid grid;
+        private transient Ignite ignite;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -333,7 +333,7 @@ class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            GridServiceContextImpl svcCtx = ((GridKernal)grid).context().service().serviceContext(svcName);
+            GridServiceContextImpl svcCtx = ((GridKernal) ignite).context().service().serviceContext(svcName);
 
             if (svcCtx == null)
                 throw new GridServiceNotFoundException(svcName);

@@ -95,9 +95,9 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
         cachesAtomicOffheapTiered = new GridCache[gridCnt];
 
         for (int i = 0; i < gridCount(); i++) {
-            cachesAtomic[i] = grids[i].cache(CACHE_ATOMIC);
-            cachesAtomicOffheap[i] = grids[i].cache(CACHE_ATOMIC_OFFHEAP);
-            cachesAtomicOffheapTiered[i] = grids[i].cache(CACHE_ATOMIC_OFFHEAP_TIERED);
+            cachesAtomic[i] = ignites[i].cache(CACHE_ATOMIC);
+            cachesAtomicOffheap[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP);
+            cachesAtomicOffheapTiered[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP_TIERED);
         }
     }
 

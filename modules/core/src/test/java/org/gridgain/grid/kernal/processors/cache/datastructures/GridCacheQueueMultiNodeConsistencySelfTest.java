@@ -212,15 +212,15 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
             for (int i = 0; i < GRID_CNT; i++)
                 grid(i).cache(null).forceRepartition();
 
-        Grid newGrid = startGrid(GRID_CNT + 1);
+        Ignite newIgnite = startGrid(GRID_CNT + 1);
 
         // Intentionally commented code cause in this way inconsistent queue problem doesn't appear.
         // GridCacheQueue<Integer> newQueue = newGrid.cache().queue(queueName);
         // assertTrue(CollectionUtils.isEqualCollection(queue0, newQueue));
 
-        Collection<Integer> locQueueContent = compute(newGrid.cluster().forLocal()).call(new GridCallable<Collection<Integer>>() {
+        Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(new GridCallable<Collection<Integer>>() {
             @GridInstanceResource
-            private Grid grid;
+            private Ignite grid;
 
             /** {@inheritDoc} */
             @Override public Collection<Integer> call() throws Exception {

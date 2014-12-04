@@ -66,8 +66,8 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     public void testDisabled() throws Exception {
         storeValBytes = false;
 
-        Grid g0 = startGrid(0);
-        Grid g1 = startGrid(1);
+        Ignite g0 = startGrid(0);
+        Ignite g1 = startGrid(1);
 
         GridCache<Integer, String> c = g0.cache(null);
 
@@ -87,8 +87,8 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     public void testEnabled() throws Exception {
         storeValBytes = true;
 
-        Grid g0 = startGrid(0);
-        Grid g1 = startGrid(1);
+        Ignite g0 = startGrid(0);
+        Ignite g1 = startGrid(1);
 
         GridCache<Integer, String> c = g0.cache(null);
 

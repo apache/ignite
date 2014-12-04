@@ -47,8 +47,8 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFieldInjection() throws Exception {
-        Grid grid1 = null;
-        Grid grid2 = null;
+        Ignite ignite1 = null;
+        Ignite ignite2 = null;
 
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
@@ -61,13 +61,13 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             ctx.refresh();
 
-            grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
-            grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
+            ignite1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
+            ignite2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
 
-            assert grid1.cluster().forRemotes().nodes().size() == 1;
-            assert grid2.cluster().forRemotes().nodes().size() == 1;
+            assert ignite1.cluster().forRemotes().nodes().size() == 1;
+            assert ignite2.cluster().forRemotes().nodes().size() == 1;
 
-            grid1.compute().execute(UserResourceTask.class, null);
+            ignite1.compute().execute(UserResourceTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 4);
             checkUsageCount(createClss, UserResource2.class, 4);
@@ -81,8 +81,8 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             checkUsageCount(deployClss, UserResource4.class, 4);
         }
         finally {
-            GridTestUtils.close(grid1, log());
-            GridTestUtils.close(grid2, log());
+            GridTestUtils.close(ignite1, log());
+            GridTestUtils.close(ignite2, log());
         }
         checkUsageCount(deployClss, UserResource5.class, 8);
 
@@ -97,10 +97,10 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNonTransientFieldInjection() throws Exception {
-        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+        Ignite ignite = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(NonTransientUserResourceTask.class, null);
+            ignite.compute().execute(NonTransientUserResourceTask.class, null);
 
             assert false : "Did not get exception for non-transient field.";
         }
@@ -108,7 +108,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             info("Got correct exception for non-transient field: " + e.getMessage());
         }
         finally {
-            GridTestUtils.close(grid, log());
+            GridTestUtils.close(ignite, log());
         }
     }
 
@@ -116,10 +116,10 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNonTransientSpringBeanFieldInjection() throws Exception {
-        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+        Ignite ignite = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(NonTransientSpringBeanResourceTask.class, null);
+            ignite.compute().execute(NonTransientSpringBeanResourceTask.class, null);
 
             assert false : "Did not get exception for non-transient field.";
         }
@@ -134,10 +134,10 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUnknownNameSpringBeanFieldInjection() throws Exception {
-        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+        Ignite ignite = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(UnknownNameSpringBeanResourceTask.class, null);
+            ignite.compute().execute(UnknownNameSpringBeanResourceTask.class, null);
 
             assert false : "Did not get exception for unknown Spring bean name.";
         }
@@ -152,10 +152,10 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInvalidTypeSpringBeanFieldInjection() throws Exception {
-        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+        Ignite ignite = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(InvalidTypeSpringBeanResourceTask.class, null);
+            ignite.compute().execute(InvalidTypeSpringBeanResourceTask.class, null);
 
             assert false : "Did not get exception for different Spring bean classes.";
         }
@@ -170,36 +170,36 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInjectInClosure() throws Exception {
-        Grid grid = startGrid();
+        Ignite ignite = startGrid();
 
         try {
-            grid.compute().apply(new GridClosure<Object, Object>() {
+            ignite.compute().apply(new GridClosure<Object, Object>() {
                 /** */
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object apply(Object o) {
-                    assertNotNull(grid);
+                    assertNotNull(this.ignite);
 
                     return null;
                 }
             }, new Object());
 
-            grid.compute().broadcast(new GridClosure<Object, Object>() {
+            ignite.compute().broadcast(new GridClosure<Object, Object>() {
                 /** */
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public Object apply(Object o) {
-                    assertNotNull(grid);
+                    assertNotNull(this.ignite);
 
                     return null;
                 }
             }, new Object());
 
-            grid.compute().apply(new TestClosure(), new Object());
+            ignite.compute().apply(new TestClosure(), new Object());
 
-            grid.compute().broadcast(new TestClosure(), new Object());
+            ignite.compute().broadcast(new TestClosure(), new Object());
         }
         finally {
             stopAllGrids();
@@ -405,7 +405,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLocalHostResource
@@ -466,7 +466,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             assert rsrc3 != null;
             assert rsrc4 != null;
             assert log != null;
-            assert grid != null;
+            assert ignite != null;
             assert nodeId != null;
             assert locHost != null;
             assert mbeanSrv != null;
@@ -489,7 +489,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             log.info("Injected shared resource3 into task: " + rsrc3);
             log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
-            log.info("Injected grid resource into task: " + grid);
+            log.info("Injected grid resource into task: " + ignite);
             log.info("Injected nodeId resource into task: " + nodeId);
             log.info("Injected local host resource into task: " + locHost);
             log.info("Injected mbean server resource into task: " + mbeanSrv);
@@ -543,7 +543,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
                         assert rsrc3 != null;
                         assert rsrc4 != null;
                         assert log != null;
-                        assert grid != null;
+                        assert ignite != null;
                         assert nodeId != null;
                         assert mbeanSrv != null;
                         assert exec != null;
@@ -576,7 +576,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
                         log.info("Injected shared resource9 into job: " + rsrc9);
                         log.info("Injected shared resource10 into job: " + rsrc10);
                         log.info("Injected log resource into job: " + log);
-                        log.info("Injected grid resource into job: " + grid);
+                        log.info("Injected grid resource into job: " + ignite);
                         log.info("Injected nodeId resource into job: " + nodeId);
                         log.info("Injected localHost resource into job: " + locHost);
                         log.info("Injected mbean server resource into job: " + mbeanSrv);
@@ -605,7 +605,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             assert rsrc3 != null;
             assert rsrc4 != null;
             assert log != null;
-            assert grid != null;
+            assert ignite != null;
             assert nodeId != null;
             assert mbeanSrv != null;
             assert exec != null;

@@ -438,7 +438,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
-            GridCompute comp = compute(dfltGrid.cluster().forLocal()).enableAsync();
+            GridCompute comp = compute(dfltIgnite.cluster().forLocal()).enableAsync();
 
             comp.call(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {

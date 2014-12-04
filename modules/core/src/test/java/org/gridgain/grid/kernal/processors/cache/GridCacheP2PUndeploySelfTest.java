@@ -194,10 +194,10 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         Class valCls = ldr.loadClass(TEST_VALUE);
 
         try {
-            Grid grid1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
             GridKernal grid2 = (GridKernal)startGrid(2);
 
-            GridCache<Integer, Object> cache1 = grid1.cache(cacheName);
+            GridCache<Integer, Object> cache1 = ignite1.cache(cacheName);
             GridCache<Integer, Object> cache2 = grid2.cache(cacheName);
 
             Object v1 = valCls.newInstance();

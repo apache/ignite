@@ -69,14 +69,14 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Grid grid = G.grid(getTestGridName());
+        final Ignite ignite = G.grid(getTestGridName());
 
-        deployTask(grid);
+        deployTask(ignite);
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
         // Warm up.
-        grid.compute().withTimeout(10000).execute(TASK_TYPE_ID, 3);
+        ignite.compute().withTimeout(10000).execute(TASK_TYPE_ID, 3);
 
         info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
         info("Thread count: " + getThreadCount());
@@ -94,7 +94,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
                     long start = System.currentTimeMillis();
 
                     try {
-                        GridComputeTaskFuture<Integer> fut = grid.compute().withTimeout(10000).
+                        GridComputeTaskFuture<Integer> fut = ignite.compute().withTimeout(10000).
                             execute(TASK_TYPE_ID, levels);
 
                         int res = fut.get();
@@ -106,7 +106,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
                         if (taskCnt % 100 == 0) {
                             try {
-                                deployTask(grid);
+                                deployTask(ignite);
                             }
                             catch (GridException e) {
                                 error("Failed to deploy grid task.", e);
@@ -131,12 +131,12 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void deployTask(Grid grid) throws GridException {
-        grid.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
+    private void deployTask(Ignite ignite) throws GridException {
+        ignite.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
     }
 
     /**

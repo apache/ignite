@@ -174,7 +174,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         atomicity = GridCacheAtomicityMode.ATOMIC;
         offheapSize = -1;
 
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         GridCacheConfiguration cfg = g.cache(null).configuration();
 

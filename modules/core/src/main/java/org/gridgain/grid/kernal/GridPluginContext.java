@@ -51,7 +51,7 @@ public class GridPluginContext implements PluginContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Grid grid() {
+    @Override public Ignite grid() {
         return ctx.grid();
     }
 

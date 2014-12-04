@@ -29,14 +29,14 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
         System.setProperty(GG_UPDATE_NOTIFIER, "true");
 
         try {
-            Grid grid = startGrid();
+            Ignite ignite = startGrid();
 
-            GridProductVersion currVer = grid.product().version();
+            GridProductVersion currVer = ignite.product().version();
 
             String newVer = null;
 
             for (int i = 0; i < 30; i++) {
-                newVer = grid.product().latestVersion();
+                newVer = ignite.product().latestVersion();
 
                 if (newVer != null)
                     break;

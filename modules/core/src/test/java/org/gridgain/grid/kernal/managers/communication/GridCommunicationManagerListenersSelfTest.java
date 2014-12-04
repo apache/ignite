@@ -33,7 +33,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      */
     @SuppressWarnings({"deprecation"})
     public void testDifferentListeners() {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
         for (int i = 0; i < 2000; i++) {
             P2<UUID, Object> l = new P2<UUID, Object>() {
@@ -42,7 +42,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
                 }
             };
 
-            grid.message().localListen(null, l);
+            ignite.message().localListen(null, l);
         }
 
         info(getName() + ": worked without exceptions.");
@@ -62,7 +62,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      */
     @SuppressWarnings({"deprecation"})
     public void testOneListener() {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -73,7 +73,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         };
 
         try {
-            grid.message().localListen(null, l);
+            ignite.message().localListen(null, l);
 
             checkLoop(2000);
         } finally {
@@ -115,14 +115,14 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         implements GridMessageListener {
         /** */
         @GridInstanceResource
-        private transient Grid grid;
+        private transient Ignite ignite;
 
         /** */
         private AtomicBoolean stop = new AtomicBoolean();
 
         /** {@inheritDoc} */
         @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            grid.message().localListen(null, new P2<UUID, Object>() {
+            ignite.message().localListen(null, new P2<UUID, Object>() {
                 @Override public boolean apply(UUID uuid, Object o) {
                     return stop.get();
                 }

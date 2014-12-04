@@ -65,12 +65,12 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
      */
     public void testContinuousJobAnnotation(Class<?> jobCls) throws Exception {
         try {
-            Grid grid = startGrid(0);
+            Ignite ignite = startGrid(0);
             startGrid(1);
 
             fail.set(true);
 
-            grid.compute().execute(TestTask.class, jobCls);
+            ignite.compute().execute(TestTask.class, jobCls);
 
             Exception e = err.get();
 

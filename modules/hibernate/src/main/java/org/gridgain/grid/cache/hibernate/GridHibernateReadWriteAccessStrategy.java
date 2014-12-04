@@ -53,12 +53,12 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
     private final ThreadLocal<TxContext> txCtx;
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      * @param txCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected GridHibernateReadWriteAccessStrategy(Grid grid, GridCache<Object, Object> cache, ThreadLocal txCtx) {
-        super(grid, cache);
+    protected GridHibernateReadWriteAccessStrategy(Ignite ignite, GridCache<Object, Object> cache, ThreadLocal txCtx) {
+        super(ignite, cache);
 
         this.txCtx = (ThreadLocal<TxContext>)txCtx;
     }

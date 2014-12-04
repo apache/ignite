@@ -45,7 +45,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Grids. */
-    private static Grid[] grids;
+    private static Ignite[] ignites;
 
     /** Regular caches. */
     private static GridCache<Integer, String>[] caches;
@@ -82,13 +82,13 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
-        grids = new Grid[GRID_CNT];
+        ignites = new Ignite[GRID_CNT];
         caches = new GridCache[GRID_CNT];
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grids[i] = startGrid(i);
+            ignites[i] = startGrid(i);
 
-            caches[i] = grids[i].cache(CACHE);
+            caches[i] = ignites[i].cache(CACHE);
         }
     }
 
@@ -97,7 +97,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         stopAllGrids();
 
         caches = null;
-        grids = null;
+        ignites = null;
     }
 
     /**

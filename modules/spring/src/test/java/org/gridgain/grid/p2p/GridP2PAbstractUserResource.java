@@ -35,7 +35,7 @@ abstract class GridP2PAbstractUserResource {
     @GridLoggerResource private GridLogger log;
 
     /** */
-    @GridInstanceResource private Grid grid;
+    @GridInstanceResource private Ignite ignite;
 
     /** */
     @GridLocalNodeIdResource private UUID nodeId;
@@ -123,7 +123,7 @@ abstract class GridP2PAbstractUserResource {
         addUsage(deployClss);
 
         assert log != null;
-        assert grid != null;
+        assert ignite != null;
         assert nodeId != null;
         assert mbeanSrv != null;
         assert exec != null;
@@ -139,7 +139,7 @@ abstract class GridP2PAbstractUserResource {
         addUsage(undeployClss);
 
         assert log != null;
-        assert grid != null;
+        assert ignite != null;
         assert nodeId != null;
         assert mbeanSrv != null;
         assert exec != null;

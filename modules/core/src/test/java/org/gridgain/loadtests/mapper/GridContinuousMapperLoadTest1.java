@@ -24,7 +24,7 @@ public class GridContinuousMapperLoadTest1 {
      * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = G.start("examples/config/example-cache.xml")) {
+        try (Ignite g = G.start("examples/config/example-cache.xml")) {
             int max = 30000;
 
             GridDataLoader<Integer, TestObject> ldr = g.dataLoader("replicated");

@@ -135,7 +135,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     private String gridName;
 
     /** Grid instance. */
-    private Grid grid;
+    private Ignite ignite;
 
     /**
      * Gets configuration file path.
@@ -194,7 +194,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public void afterPropertiesSet() throws Exception {
-        assert grid == null;
+        assert ignite == null;
 
         if (cfgPath != null && cfg != null) {
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
@@ -204,25 +204,25 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         }
 
         if (cfgPath != null)
-            grid = GridGain.start(cfgPath);
+            ignite = GridGain.start(cfgPath);
         else if (cfg != null)
-            grid = GridGain.start(cfg);
+            ignite = GridGain.start(cfg);
         else
-            grid = GridGain.grid(gridName);
+            ignite = GridGain.grid(gridName);
     }
 
     /** {@inheritDoc} */
     @Override public Cache getCache(String name) {
-        assert grid != null;
+        assert ignite != null;
 
-        return new SpringCache(grid.cache(name));
+        return new SpringCache(ignite.cache(name));
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> getCacheNames() {
-        assert grid != null;
+        assert ignite != null;
 
-        return F.viewReadOnly(grid.caches(), new GridClosure<GridCache<?, ?>, String>() {
+        return F.viewReadOnly(ignite.caches(), new GridClosure<GridCache<?, ?>, String>() {
             @Override public String apply(GridCache<?, ?> c) {
                 return c.name();
             }
@@ -323,9 +323,9 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         /** {@inheritDoc} */
         @Override public void clear() {
             try {
-                Grid grid = cache.gridProjection().grid();
+                Ignite ignite = cache.gridProjection().grid();
 
-                grid.compute(cache.gridProjection()).broadcast(new ClearClosure(cache.name()));
+                ignite.compute(cache.gridProjection()).broadcast(new ClearClosure(cache.name()));
             }
             catch (GridException e) {
                 throw new GridRuntimeException("Failed to clear cache [cacheName=" + cache.name() + ']', e);
@@ -345,7 +345,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
 
         /** Injected grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /**
          * For {@link Externalizable}.
@@ -363,7 +363,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
 
         /** {@inheritDoc} */
         @Override public void applyx() throws GridException {
-            GridCache<Object, Object> cache = grid.cache(cacheName);
+            GridCache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache != null)
                 cache.removeAll();

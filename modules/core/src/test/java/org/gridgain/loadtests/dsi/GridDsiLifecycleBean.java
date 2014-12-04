@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.dsi;
 
-import org.gridgain.grid.Grid;
+import org.gridgain.grid.Ignite;
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridLifecycleBean;
 import org.gridgain.grid.GridLifecycleEventType;
@@ -27,7 +27,7 @@ public class GridDsiLifecycleBean implements GridLifecycleBean {
      * {@link GridLifecycleBean} documentation.
      */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
@@ -41,7 +41,7 @@ public class GridDsiLifecycleBean implements GridLifecycleBean {
                 break;
 
             case AFTER_GRID_START:
-                grid.cache("PARTITIONED_CACHE").dataStructures().atomicSequence("ID", 0, true);
+                ignite.cache("PARTITIONED_CACHE").dataStructures().atomicSequence("ID", 0, true);
                 break;
 
             case BEFORE_GRID_STOP:

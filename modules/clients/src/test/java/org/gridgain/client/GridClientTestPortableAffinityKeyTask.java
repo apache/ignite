@@ -23,7 +23,7 @@ import java.util.*;
 public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapter<Object, Boolean> {
     /** */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> gridNodes,
@@ -63,12 +63,12 @@ public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapte
 
         String expAffKey = (String)it.next();
 
-        Object affKey = grid.cache(cacheName).affinity().affinityKey(obj);
+        Object affKey = ignite.cache(cacheName).affinity().affinityKey(obj);
 
         if (!expAffKey.equals(affKey))
             throw new GridException("Unexpected affinity key: " + affKey);
 
-        if (!grid.cache(cacheName).affinity().mapKeyToNode(obj).isLocal())
+        if (!ignite.cache(cacheName).affinity().mapKeyToNode(obj).isLocal())
             throw new GridException("Job is not run on primary node.");
 
         return true;

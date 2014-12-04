@@ -58,7 +58,7 @@ public class GridCacheBenchmark {
             final String outputFileName = args.length > 0 ? args[0] : null;
 
             // try (Grid g = G.start("modules/core/src/test/config/load/cache-client-benchmark.xml")) {
-            try (Grid g = G.start("modules/core/src/test/config/load/cache-benchmark.xml")) {
+            try (Ignite g = G.start("modules/core/src/test/config/load/cache-benchmark.xml")) {
                 X.println("warmupTime=" + WARM_UP_TIME);
                 X.println("putCnt=" + PUT_CNT);
                 X.println("threadCnt=" + THREADS);

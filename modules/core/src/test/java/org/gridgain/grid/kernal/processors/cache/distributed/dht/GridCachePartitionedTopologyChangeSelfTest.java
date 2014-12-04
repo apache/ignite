@@ -288,7 +288,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             GridFuture startFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        Grid g3 = startGrid(3);
+                        Ignite g3 = startGrid(3);
 
                         info(">>> Started grid g3: " + g3.cluster().localNode().id());
                     }
@@ -307,7 +307,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             // Now check that new transactions will wait for new topology version to become available.
             Collection<GridFuture> txFuts = new ArrayList<>(nodes.length);
 
-            for (final Grid g : nodes) {
+            for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
                         GridCache<Integer, Integer> cache = g.cache(null);
@@ -443,7 +443,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             // Now check that new transactions will wait for new topology version to become available.
             Collection<GridFuture> txFuts = new ArrayList<>(nodes.length);
 
-            for (final Grid g : nodes) {
+            for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
                         GridCache<Integer, Integer> cache = g.cache(null);
@@ -545,7 +545,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      * @param node Node to calculate partitions for.
      * @return List of partitions.
      */
-    private List<Integer> partitions(Grid node, int partType) {
+    private List<Integer> partitions(Ignite node, int partType) {
         List<Integer> res = new LinkedList<>();
 
         GridCacheAffinity<Object> aff = node.cache(null).affinity();

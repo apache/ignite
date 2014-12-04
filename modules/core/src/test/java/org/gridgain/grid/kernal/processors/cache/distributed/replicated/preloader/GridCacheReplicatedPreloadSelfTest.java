@@ -141,7 +141,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         preloadMode = SYNC;
 
         try {
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
 
             GridCache<Integer, String> cache1 = g1.cache(null);
 
@@ -152,7 +152,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             assert e1 != null;
 
-            Grid g2 = startGrid(2);
+            Ignite g2 = startGrid(2);
 
             Collection<GridEvent> evts = null;
 
@@ -201,8 +201,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         preloadMode = SYNC;
 
         try {
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
             GridCache<Integer, Object> cache1 = g1.cache(null);
             GridCache<Integer, Object> cache2 = g2.cache(null);
@@ -229,7 +229,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             stopGrid(1);
 
-            Grid g3 = startGrid(3);
+            Ignite g3 = startGrid(3);
 
             GridCache<Integer, Object> cache3 = g3.cache(null);
 

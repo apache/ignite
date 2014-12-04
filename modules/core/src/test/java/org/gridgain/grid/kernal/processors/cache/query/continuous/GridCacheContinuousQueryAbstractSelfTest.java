@@ -1359,10 +1359,10 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         cache.putAll(map);
 
-        Grid grid = startGrid("anotherGrid");
+        Ignite ignite = startGrid("anotherGrid");
 
         try {
-            cache = grid.cache(null);
+            cache = ignite.cache(null);
 
             GridCacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
 

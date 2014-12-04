@@ -2002,7 +2002,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 res.add(new GridComputeJobAdapter() {
                     /** Injected grid. */
                     @GridInstanceResource
-                    private Grid g;
+                    private Ignite g;
 
                     @Nullable @Override public GridBiTuple<Long, Long> execute() throws GridException {
                         GridGgfs ggfs = ((GridKernal)g).context().ggfs().ggfs(ggfsName);

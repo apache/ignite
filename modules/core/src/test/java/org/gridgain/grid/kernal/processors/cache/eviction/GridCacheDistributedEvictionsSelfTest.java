@@ -156,7 +156,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         evictSync = true;
         nearEnabled = true;
 
-        Grid g = startGrid(0);
+        Ignite g = startGrid(0);
 
         final GridCache<Integer, Integer> cache = g.cache(null);
 
@@ -172,9 +172,9 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         try {
             startGrids(gridCnt);
 
-            Grid grid = grid(0);
+            Ignite ignite = grid(0);
 
-            final GridCache<Integer, Integer> cache = grid.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             // Put 1 entry to primary node.
             cache.putx(0, 0);

@@ -103,9 +103,9 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
      * @throws GridException if failed.
      */
     private void checkTask(int num) throws GridException {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridTaskSessionTestTask.class, num);
+        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
 
         Object res = fut.get();
 

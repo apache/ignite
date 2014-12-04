@@ -65,15 +65,15 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
     /**
      * Wait for specified event came.
      *
-     * @param grid grid for waiting.
+     * @param ignite grid for waiting.
      * @param type type of event.
      * @throws InterruptedException if thread was interrupted.
      */
-    private void waitForEvent(Grid grid, int type) throws InterruptedException {
+    private void waitForEvent(Ignite ignite, int type) throws InterruptedException {
         Collection<GridEvent> evts;
 
         do {
-            evts = grid.events().localQuery(F.<GridEvent>alwaysTrue(), type);
+            evts = ignite.events().localQuery(F.<GridEvent>alwaysTrue(), type);
 
             Thread.sleep(500);
         }
@@ -100,17 +100,17 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = GridDeploymentMode.SHARED;
 
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            nodeToExec = grid2.cluster().localNode().id();
+            nodeToExec = ignite2.cluster().localNode().id();
 
             cnt = new CountDownLatch(2);
 
-            GridComputeTaskFuture<?> res = executeAsync(grid1.compute(), UserResourceTask1.class, true);
+            GridComputeTaskFuture<?> res = executeAsync(ignite1.compute(), UserResourceTask1.class, true);
 
-            executeAsync(grid3.compute(), UserResourceTask2.class, false).get();
+            executeAsync(ignite3.compute(), UserResourceTask2.class, false).get();
 
             cnt.await();
 
@@ -126,7 +126,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
 
             checkUsageCount(GridAbstractUserResource.undeployClss, UserResource.class, 1);
 
-            GridResourceIoc ioc = ((GridKernal)grid2).context().resource().getResourceIoc();
+            GridResourceIoc ioc = ((GridKernal) ignite2).context().resource().getResourceIoc();
 
             assert ioc.isCached(UserResource.class);
 
@@ -149,19 +149,19 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = mode;
 
         try {
-            Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            nodeToExec = grid.cluster().localNode().id();
+            nodeToExec = ignite.cluster().localNode().id();
 
             cnt = new CountDownLatch(1);
 
-            GridComputeTaskFuture<?> res = executeAsync(grid.compute(), UserResourceTask1.class, true);
+            GridComputeTaskFuture<?> res = executeAsync(ignite.compute(), UserResourceTask1.class, true);
 
             cnt.await();
 
-            grid.compute().undeployTask(UserResourceTask1.class.getName());
+            ignite.compute().undeployTask(UserResourceTask1.class.getName());
 
-            GridResourceIoc ioc = ((GridKernal)grid).context().resource().getResourceIoc();
+            GridResourceIoc ioc = ((GridKernal) ignite).context().resource().getResourceIoc();
 
             assert ioc.isCached(UserResource.class);
 
@@ -169,7 +169,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
 
             info("Received task result.");
 
-            waitForEvent(grid, EVT_TASK_UNDEPLOYED);
+            waitForEvent(ignite, EVT_TASK_UNDEPLOYED);
 
             assert !ioc.isCached(UserResource.class);
         }
@@ -186,30 +186,30 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = mode;
 
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            nodeToExec = grid2.cluster().localNode().id();
+            nodeToExec = ignite2.cluster().localNode().id();
 
             cnt = new CountDownLatch(1);
 
-            GridComputeTaskFuture<?> res = executeAsync(grid1.compute(), UserResourceTask1.class, true);
+            GridComputeTaskFuture<?> res = executeAsync(ignite1.compute(), UserResourceTask1.class, true);
 
             cnt.await();
 
-            grid1.compute().undeployTask(UserResourceTask1.class.getName());
+            ignite1.compute().undeployTask(UserResourceTask1.class.getName());
 
             undeployCnt++;
 
             Thread.sleep(1000);
 
-            GridResourceIoc ioc = ((GridKernal)grid2).context().resource().getResourceIoc();
+            GridResourceIoc ioc = ((GridKernal) ignite2).context().resource().getResourceIoc();
 
             assert ioc.isCached(UserResource.class);
 
             res.cancel();
 
-            waitForEvent(grid2, EVT_TASK_UNDEPLOYED);
+            waitForEvent(ignite2, EVT_TASK_UNDEPLOYED);
 
             assert !ioc.isCached(UserResource.class);
         }
@@ -228,29 +228,29 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = mode;
 
         try {
-            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
-            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Ignite ignite2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             ClassLoader ldr = getExternalClassLoader();
 
             Class task1 = ldr.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
             GridComputeTaskFuture res =
-                executeAsync(grid1.compute(), task1, new Object[] {grid2.cluster().localNode().id(), true});
+                executeAsync(ignite1.compute(), task1, new Object[] {ignite2.cluster().localNode().id(), true});
 
-            waitForEvent(grid2, EVT_JOB_STARTED);
+            waitForEvent(ignite2, EVT_JOB_STARTED);
 
-            grid1.compute().undeployTask(task1.getName());
+            ignite1.compute().undeployTask(task1.getName());
 
             Thread.sleep(500);
 
-            GridResourceIoc ioc = ((GridKernal)grid2).context().resource().getResourceIoc();
+            GridResourceIoc ioc = ((GridKernal) ignite2).context().resource().getResourceIoc();
 
             assert ioc.isCached(TEST_USER_RESOURCE);
 
             res.cancel();
 
-            waitForEvent(grid2, EVT_TASK_UNDEPLOYED);
+            waitForEvent(ignite2, EVT_TASK_UNDEPLOYED);
 
             assert !ioc.isCached(TEST_USER_RESOURCE);
         }

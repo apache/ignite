@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.Grid;
+import org.gridgain.grid.Ignite;
 
 /**
  * Test kernal utils.
  */
 public class GridKernalTestUtils {
     /**
-     * Ensures singleton. 
+     * Ensures singleton.
      */
     private GridKernalTestUtils() {
         /* No-op. */
@@ -25,12 +25,12 @@ public class GridKernalTestUtils {
     /**
      * Returns context by grid.
      *
-     * @param grid Grid.
+     * @param ignite Grid.
      * @return Kernal context.
      */
-    public static GridKernalContext context(Grid grid) {
-        assert grid != null;
+    public static GridKernalContext context(Ignite ignite) {
+        assert ignite != null;
 
-        return ((GridKernal)grid).context();
+        return ((GridKernal) ignite).context();
     }
 }

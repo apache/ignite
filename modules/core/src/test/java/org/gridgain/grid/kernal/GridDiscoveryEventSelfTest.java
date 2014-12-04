@@ -75,7 +75,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
      */
     public void testJoinSequenceEvents() throws Exception {
         try {
-            Grid g0 = startGrid(0);
+            Ignite g0 = startGrid(0);
 
             UUID id0 = g0.cluster().localNode().id();
 
@@ -135,7 +135,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
      */
     public void testLeaveSequenceEvents() throws Exception {
         try {
-            Grid g0 = startGrid(0);
+            Ignite g0 = startGrid(0);
 
             UUID id0 = g0.cluster().localNode().id();
             UUID id1 = startGrid(1).cluster().localNode().id();
@@ -201,7 +201,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
      */
     public void testMixedSequenceEvents() throws Exception {
         try {
-            Grid g0 = startGrid(0);
+            Ignite g0 = startGrid(0);
 
             UUID id0 = g0.cluster().localNode().id();
 
@@ -316,7 +316,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
      */
     public void testConcurrentJoinEvents() throws Exception {
         try {
-            Grid g0 = startGrid(0);
+            Ignite g0 = startGrid(0);
 
             UUID id0 = g0.cluster().localNode().id();
 
@@ -375,7 +375,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             final AtomicReference<GridException> err = new AtomicReference<>();
 
             for (int i = 0; i < 3; i++) {
-                Grid g = grid(i);
+                Ignite g = grid(i);
 
                 g.events().localListen(new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {

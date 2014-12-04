@@ -72,7 +72,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         cache.put(0, 0);
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             // TODO: getting of removed key will produce 3 inner read operations.
             g.cache(null).removeAll();

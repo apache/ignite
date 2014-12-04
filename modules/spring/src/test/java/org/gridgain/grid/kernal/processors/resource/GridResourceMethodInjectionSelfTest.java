@@ -46,8 +46,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testMethodInjection() throws Exception {
-        Grid grid1 = null;
-        Grid grid2 = null;
+        Ignite ignite1 = null;
+        Ignite ignite2 = null;
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
 
@@ -59,10 +59,10 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
 
             ctx.refresh();
 
-            grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
-            grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
+            ignite1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
+            ignite2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
 
-            grid1.compute().execute(UserResourceTask.class, null);
+            ignite1.compute().execute(UserResourceTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 4);
             checkUsageCount(createClss, UserResource2.class, 4);
@@ -76,8 +76,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             checkUsageCount(deployClss, UserResource4.class, 4);
         }
         finally {
-            GridTestUtils.close(grid1, log());
-            GridTestUtils.close(grid2, log());
+            GridTestUtils.close(ignite1, log());
+            GridTestUtils.close(ignite2, log());
         }
         checkUsageCount(deployClss, UserResource5.class, 8);
 
@@ -196,7 +196,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private GridLogger log;
 
         /** */
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         private UUID nodeId;
@@ -278,11 +278,11 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         }
 
         /**
-         * @param grid Grid.
+         * @param ignite Grid.
          */
         @GridInstanceResource
-        public void setGrid(Grid grid) {
-            this.grid = grid;
+        public void setIgnite(Ignite ignite) {
+            this.ignite = ignite;
         }
 
         /**
@@ -396,7 +396,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             assert rsrc3 != null;
             assert rsrc4 != null;
             assert log != null;
-            assert grid != null;
+            assert ignite != null;
             assert nodeId != null;
             assert mbeanSrv != null;
             assert exec != null;
@@ -418,7 +418,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             log.info("Injected shared resource3 into task: " + rsrc3);
             log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
-            log.info("Injected grid resource into task: " + grid);
+            log.info("Injected grid resource into task: " + ignite);
             log.info("Injected nodeId resource into task: " + nodeId);
             log.info("Injected mbean server resource into task: " + mbeanSrv);
             log.info("Injected executor service resource into task: " + exec);
@@ -524,7 +524,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                         assert rsrc3 != null;
                         assert rsrc4 != null;
                         assert log != null;
-                        assert grid != null;
+                        assert ignite != null;
                         assert nodeId != null;
                         assert mbeanSrv != null;
                         assert exec != null;
@@ -556,7 +556,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                         log.info("Injected shared resource9 into job: " + rsrc9);
                         log.info("Injected shared resource10 into job: " + rsrc10);
                         log.info("Injected log resource into job: " + log);
-                        log.info("Injected grid resource into job: " + grid);
+                        log.info("Injected grid resource into job: " + ignite);
                         log.info("Injected nodeId resource into job: " + nodeId);
                         log.info("Injected local Host resource into job: " + locHost);
                         log.info("Injected mbean server resource into job: " + mbeanSrv);
@@ -584,7 +584,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             assert rsrc3 != null;
             assert rsrc4 != null;
             assert log != null;
-            assert grid != null;
+            assert ignite != null;
             assert nodeId != null;
             assert locHost != null;
             assert mbeanSrv != null;

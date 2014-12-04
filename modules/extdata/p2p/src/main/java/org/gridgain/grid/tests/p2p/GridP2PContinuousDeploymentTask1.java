@@ -25,12 +25,12 @@ public class GridP2PContinuousDeploymentTask1 extends GridComputeTaskSplitAdapte
     @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
         return Collections.singleton(new GridComputeJobAdapter() {
             @GridInstanceResource
-            private Grid grid;
+            private Ignite ignite;
 
             @Override public Object execute() throws GridException {
                 X.println(">>> Executing GridP2PContinuousDeploymentTask1 job.");
 
-                grid.cache(null).putx("key", new GridTestUserResource());
+                ignite.cache(null).putx("key", new GridTestUserResource());
 
                 return null;
             }

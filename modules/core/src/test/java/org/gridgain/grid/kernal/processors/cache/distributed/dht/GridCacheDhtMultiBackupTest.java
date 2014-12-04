@@ -34,7 +34,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
      */
     public void testPut() throws Exception {
         try {
-            Grid g = G.start("examples/config/example-cache.xml");
+            Ignite g = G.start("examples/config/example-cache.xml");
 
             if (g.cluster().nodes().size() < 5)
                 U.warn(log, "Topology is too small for this test. " +
@@ -42,7 +42,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
 
             g.compute().run(new CAX() {
                     @GridInstanceResource
-                    private Grid g;
+                    private Ignite g;
 
                     @Override public void applyx() throws GridException {
                         X.println("Checking whether cache is empty.");

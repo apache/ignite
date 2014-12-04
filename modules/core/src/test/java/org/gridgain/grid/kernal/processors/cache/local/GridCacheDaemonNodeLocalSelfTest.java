@@ -28,12 +28,12 @@ public class GridCacheDaemonNodeLocalSelfTest extends GridCacheDaemonNodeAbstrac
     @Override public void testMapKeyToNode() throws Exception {
         try {
             // Start normal nodes.
-            Grid g1 = startGridsMultiThreaded(3);
+            Ignite g1 = startGridsMultiThreaded(3);
 
             // Start daemon node.
             daemon = true;
 
-            Grid g2 = startGrid(4);
+            Ignite g2 = startGrid(4);
 
             for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
                 // Call mapKeyToNode for normal node.

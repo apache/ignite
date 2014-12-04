@@ -63,7 +63,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         super.afterTest();
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             g.cache(null).removeAll();
 

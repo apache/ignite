@@ -301,7 +301,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      */
     public void testDescriptorCache() throws Exception {
         try {
-            Grid grid = startGridsMultiThreaded(2);
+            Ignite ignite = startGridsMultiThreaded(2);
 
             String taskClsName = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask";
             String jobClsName = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask$GridSingleSplitTestJob";
@@ -311,16 +311,16 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<?, ?>> taskCls = (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(taskClsName);
             Class<? extends GridComputeTask<?, ?>> jobCls = (Class<? extends GridComputeTask<?, ?>>)ldr.loadClass(jobClsName);
 
-            grid.compute().localDeployTask(taskCls, ldr);
+            ignite.compute().localDeployTask(taskCls, ldr);
 
-            grid.compute().execute(taskClsName, 2);
+            ignite.compute().execute(taskClsName, 2);
 
             ConcurrentMap<Class<?>, GridOptimizedClassDescriptor> cache =
                 U.staticField(GridOptimizedMarshallerUtils.class, "CLS_DESC_CACHE");
 
             assertTrue(cache.containsKey(jobCls));
 
-            grid.compute().undeployTask(taskClsName);
+            ignite.compute().undeployTask(taskClsName);
 
             // Wait for undeploy.
             Thread.sleep(1000);

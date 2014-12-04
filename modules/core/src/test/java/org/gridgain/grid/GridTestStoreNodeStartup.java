@@ -30,7 +30,7 @@ public class GridTestStoreNodeStartup {
      */
     public static void main(String[] args) throws Exception {
         try {
-            Grid g = G.start("modules/core/src/test/config/spring-cache-teststore.xml");
+            Ignite g = G.start("modules/core/src/test/config/spring-cache-teststore.xml");
 
             g.cache(null).loadCache(new P2<Object, Object>() {
                 @Override public boolean apply(Object o, Object o1) {

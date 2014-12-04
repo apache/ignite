@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -112,10 +111,10 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = CONTINUOUS;
 
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
-            Grid g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(GRID_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -138,10 +137,10 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = CONTINUOUS;
 
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
-            Grid g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(GRID_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -173,10 +172,10 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = SHARED;
 
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
-            Grid g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(GRID_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -218,10 +217,10 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = CONTINUOUS;
 
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
-            Grid g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(GRID_NAME);
 
             info("Started grids:");
             info("g0: " + g0.cluster().localNode().id());
@@ -270,9 +269,9 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = SHARED;
 
-            Grid g0 = startGrid(0);
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g0 = startGrid(0);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
             info(">>>>>>> Grid 0: " + g0.cluster().localNode().id());
             info(">>>>>>> Grid 1: " + g1.cluster().localNode().id());
@@ -321,8 +320,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = SHARED;
 
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -354,8 +353,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = SHARED;
 
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -390,7 +389,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = SHARED;
 
-            Grid g = startGrid(0);
+            Ignite g = startGrid(0);
 
             g.cache(null).put(0, valCls.newInstance());
 
@@ -412,7 +411,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             depMode = SHARED;
 
-            Grid g1 = startGrid(1);
+            Ignite g1 = startGrid(1);
             startGrid(2);
 
             Constructor<?> constructor = keyCls.getDeclaredConstructor(String.class);
@@ -455,7 +454,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
      * @return Key with described properties.
      * @throws IllegalStateException if such a key could not be found after 10000 iterations.
      */
-    private int getNextKey(int start, Grid g, GridNode primary, GridNode backup, GridNode near) {
+    private int getNextKey(int start, Ignite g, GridNode primary, GridNode backup, GridNode near) {
         info("Primary: " + primary);
         info("Backup: " + backup);
         info("Near: " + near);

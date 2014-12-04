@@ -73,7 +73,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         assert nearIdx != null : "Didn't find a near-only node.";
 
-        dfltGrid = grid(nearIdx);
+        dfltIgnite = grid(nearIdx);
 
         super.beforeTest(); // Doing initial asserts.
     }

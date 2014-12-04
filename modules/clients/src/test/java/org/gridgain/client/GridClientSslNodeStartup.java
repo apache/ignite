@@ -44,7 +44,7 @@ public class GridClientSslNodeStartup {
     public static void main(String[] args) throws GridException {
         System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
 
-        try (Grid g = G.start("modules/clients/src/test/resources/spring-server-ssl-node.xml")) {
+        try (Ignite g = G.start("modules/clients/src/test/resources/spring-server-ssl-node.xml")) {
             U.sleep(Long.MAX_VALUE);
         }
     }

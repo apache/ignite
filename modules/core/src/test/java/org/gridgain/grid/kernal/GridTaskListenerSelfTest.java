@@ -47,13 +47,13 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        assert grid != null;
+        assert ignite != null;
 
-        grid.compute().localDeployTask(TestTask.class, TestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(TestTask.class, TestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), TestTask.class.getName(), null);
+        GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), TestTask.class.getName(), null);
 
         fut.listenAsync(lsnr);
 

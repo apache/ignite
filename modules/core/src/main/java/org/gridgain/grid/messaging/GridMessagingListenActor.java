@@ -34,7 +34,7 @@ public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUI
 
     /** */
     @GridInstanceResource
-    private transient Grid grid;
+    private transient Ignite ignite;
 
     /** */
     @GridLoggerResource
@@ -45,10 +45,10 @@ public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUI
      *
      * @return Grid instance associated with this actor.
      */
-    protected final Grid grid() {
-        assert grid != null;
+    protected final Ignite grid() {
+        assert ignite != null;
 
-        return grid;
+        return ignite;
     }
 
     /** {@inheritDoc} */
@@ -203,10 +203,10 @@ public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUI
         assert nodeId != null;
 
         if (respMsg != null) {
-            GridNode node = grid.cluster().node(nodeId);
+            GridNode node = ignite.cluster().node(nodeId);
 
             if (node != null)
-                grid.message(grid.cluster().forNode(node)).send(null, respMsg); // Can still fail.
+                ignite.message(ignite.cluster().forNode(node)).send(null, respMsg); // Can still fail.
             else
                 throw new GridException("Failed to send message since destination node has " +
                     "left topology (ignoring) [nodeId=" +nodeId + ", respMsg=" + respMsg + ']');

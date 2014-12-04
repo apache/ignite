@@ -72,8 +72,8 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
     @SuppressWarnings({"ObjectEquality", "unchecked"})
     private void processTest(boolean isSameTask, boolean expectEquals) throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
             Class task1;
             Class task2;
@@ -94,8 +94,8 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
             }
 
             // Execute task1 and task2 from node1 on node2 and make sure that they reuse same class loader on node2.
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.cluster().localNode().id());
-            int[] res2 = (int[])grid1.compute().execute(task2, grid2.cluster().localNode().id());
+            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            int[] res2 = (int[]) ignite1.compute().execute(task2, ignite2.cluster().localNode().id());
 
             if (expectEquals)
                 assert Arrays.equals(res1, res2);

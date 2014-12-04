@@ -47,11 +47,11 @@ import org.jetbrains.annotations.*;
  */
 public class GridHibernateReadOnlyAccessStrategy extends GridHibernateAccessStrategyAdapter {
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      */
-    public GridHibernateReadOnlyAccessStrategy(Grid grid, GridCache<Object, Object> cache) {
-        super(grid, cache);
+    public GridHibernateReadOnlyAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
+        super(ignite, cache);
     }
 
     /** {@inheritDoc} */

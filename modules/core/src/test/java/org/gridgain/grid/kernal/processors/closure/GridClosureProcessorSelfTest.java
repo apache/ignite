@@ -89,7 +89,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     private static class TestRunnable implements GridRunnable {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -97,9 +97,9 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         /** @{inheritDoc} */
         @Override public void run() {
-            log.info("Runnable job executed on node: " + grid.cluster().localNode().id());
+            log.info("Runnable job executed on node: " + ignite.cluster().localNode().id());
 
-            assert grid != null;
+            assert ignite != null;
 
             execCntr.incrementAndGet();
         }
@@ -111,7 +111,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     private abstract static class AbstractTestCallable implements GridCallable<Integer> {
         /** */
         @GridInstanceResource
-        protected Grid grid;
+        protected Ignite ignite;
 
         /** */
         @GridLoggerResource
@@ -124,9 +124,9 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     private static class TestCallable extends AbstractTestCallable {
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
+            log.info("Callable job executed on node: " + ignite.cluster().localNode().id());
 
-            assert grid != null;
+            assert ignite != null;
 
             return execCntr.incrementAndGet();
         }
@@ -145,7 +145,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
+            log.info("Callable job executed on node: " + ignite.cluster().localNode().id());
 
             return null;
         }
@@ -499,7 +499,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReducerError() throws Exception {
-        final Grid g = grid(0);
+        final Ignite g = grid(0);
 
         final Collection<Callable<Integer>> jobs = new ArrayList<>();
 

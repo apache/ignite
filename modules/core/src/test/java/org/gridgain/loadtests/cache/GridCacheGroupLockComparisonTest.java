@@ -51,7 +51,7 @@ public class GridCacheGroupLockComparisonTest {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid g = G.start("modules/tests/config/load/cache-benchmark.xml")) {
+        try (Ignite g = G.start("modules/tests/config/load/cache-benchmark.xml")) {
             System.out.println("threadCnt=" + THREADS);
             System.out.println("objectCnt=" + OBJECT_CNT);
             System.out.println("batchSize=" + BATCH_SIZE);
@@ -64,17 +64,17 @@ public class GridCacheGroupLockComparisonTest {
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param max Maximum cache size.
      * @param threads Threads.
      * @throws Exception If failed.
      */
-    private static void gridGainPutAll(Grid grid, final long max, int threads) throws Exception {
+    private static void gridGainPutAll(Ignite ignite, final long max, int threads) throws Exception {
         X.println(">>>");
         X.println(">>> Testing putAll");
         X.println(">>>");
 
-        final GridCache<GridCacheAffinityKey<Long>, Long> cache = grid.cache(CACHE);
+        final GridCache<GridCacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
 
         assert cache != null;
 
@@ -119,17 +119,17 @@ public class GridCacheGroupLockComparisonTest {
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param max Maximum cache size.
      * @param threads Threads.
      * @throws Exception If failed.
      */
-    private static void gridGainGroupLock(Grid grid, final long max, int threads) throws Exception {
+    private static void gridGainGroupLock(Ignite ignite, final long max, int threads) throws Exception {
         X.println(">>>");
         X.println(">>> Testing group lock");
         X.println(">>>");
 
-        final GridCache<GridCacheAffinityKey<Long>, Long> cache = grid.cache(CACHE);
+        final GridCache<GridCacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
 
         assert cache != null;
 

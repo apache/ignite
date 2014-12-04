@@ -51,11 +51,11 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSpiFail() throws Exception {
-        Grid grid = startGrid();
+        Ignite ignite = startGrid();
 
         try {
             try {
-                grid.events().localQuery(F.<GridEvent>alwaysTrue());
+                ignite.events().localQuery(F.<GridEvent>alwaysTrue());
 
                 assert false : "Exception should be thrown";
             }
@@ -64,7 +64,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                grid.compute().localDeployTask(GridTestTask.class, GridTestTask.class.getClassLoader());
+                ignite.compute().localDeployTask(GridTestTask.class, GridTestTask.class.getClassLoader());
 
                 assert false : "Exception should be thrown";
             }

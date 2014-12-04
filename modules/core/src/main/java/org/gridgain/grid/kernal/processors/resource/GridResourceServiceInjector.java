@@ -21,15 +21,15 @@ import java.util.*;
  */
 public class GridResourceServiceInjector extends GridResourceBasicInjector<Collection<GridService>> {
     /** */
-    private Grid grid;
+    private Ignite ignite;
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      */
-    public GridResourceServiceInjector(Grid grid) {
+    public GridResourceServiceInjector(Ignite ignite) {
         super(null);
 
-        this.grid = grid;
+        this.ignite = ignite;
     }
 
     /** {@inheritDoc} */
@@ -42,9 +42,9 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         Object svc;
 
         if (svcItf == Void.class)
-            svc = grid.services().service(ann.serviceName());
+            svc = ignite.services().service(ann.serviceName());
         else
-            svc = grid.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
+            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
 
         if (svc != null)
             GridResourceUtils.inject(field.getField(), target, svc);
@@ -60,9 +60,9 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         Object svc;
 
         if (svcItf == Void.class)
-            svc = grid.services().service(ann.serviceName());
+            svc = ignite.services().service(ann.serviceName());
         else
-            svc = grid.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
+            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
 
         Class<?>[] types = mtd.getMethod().getParameterTypes();
 

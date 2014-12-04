@@ -19,13 +19,13 @@ import org.gridgain.grid.resources.*;
 public class GridClientPutPortableTask extends GridTaskSingleJobSplitAdapter {
     /** */
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override protected Object executeJob(int gridSize, Object arg) throws GridException {
         String cacheName = (String)arg;
 
-        GridCache<Object, Object> cache = grid.cache(cacheName);
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         GridClientTestPortable p = new GridClientTestPortable(100, true);
 

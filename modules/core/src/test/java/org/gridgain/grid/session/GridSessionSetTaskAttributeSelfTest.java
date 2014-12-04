@@ -42,9 +42,9 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     public void testSetAttribute() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
         for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
@@ -54,9 +54,9 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     public void testMultiThreaded() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        grid.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
+        ignite.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
         final GridThreadSerialNumber sNum = new GridThreadSerialNumber();
 
@@ -86,9 +86,9 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
      * @throws GridException if failed.
      */
     private void checkTask(int num) throws GridException {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        GridCompute comp = grid.compute().enableAsync();
+        GridCompute comp = ignite.compute().enableAsync();
 
         comp.execute(GridTaskSessionTestTask.class.getName(), num);
 

@@ -43,7 +43,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     private static final int NUM_ITERS = 5000;
 
     /** Helper for excluding stopped node from iteration logic. */
-    private AtomicReferenceArray<Grid> grids;
+    private AtomicReferenceArray<Ignite> grids;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -111,12 +111,12 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
                     while (!stop.get()) {
                         int idx = -1;
 
-                        Grid grid = null;
+                        Ignite ignite = null;
 
-                        while (grid == null) {
+                        while (ignite == null) {
                             idx = rnd.nextInt(GRID_CNT);
 
-                            grid = grids.getAndSet(idx, null);
+                            ignite = grids.getAndSet(idx, null);
                         }
 
                         stopGrid(idx);
@@ -152,15 +152,15 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
         for (int i = 0; i < NUM_ITERS; i++) {
             int idx = -1;
 
-            Grid grid = null;
+            Ignite ignite = null;
 
-            while (grid == null) {
+            while (ignite == null) {
                 idx = rnd.nextInt(GRID_CNT);
 
-                grid = restarts ? grids.getAndSet(idx, null) : grid(idx);
+                ignite = restarts ? grids.getAndSet(idx, null) : grid(idx);
             }
 
-            GridCache <String, TestObject> cache = grid.cache(null);
+            GridCache <String, TestObject> cache = ignite.cache(null);
 
             assertNotNull(cache);
 
@@ -185,7 +185,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
             }
 
             if (restarts)
-                assert grids.compareAndSet(idx, null, grid);
+                assert grids.compareAndSet(idx, null, ignite);
         }
     }
 

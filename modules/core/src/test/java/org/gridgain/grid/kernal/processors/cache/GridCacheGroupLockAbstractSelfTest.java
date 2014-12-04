@@ -161,7 +161,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -208,7 +208,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         );
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -241,7 +241,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -288,7 +288,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         );
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -346,7 +346,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         cache.put(key1, "val1");
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -431,7 +431,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         cache.put(key1, "val1");
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -449,7 +449,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             }
 
             for (int i = 0; i < gridCount(); i++) {
-                Grid g = grid(i);
+                Ignite g = grid(i);
 
                 GridCache<Object, Object> gCache = g.cache(null);
 
@@ -532,7 +532,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -621,7 +621,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         );
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -700,7 +700,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -761,7 +761,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         );
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -841,7 +841,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         );
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -1121,7 +1121,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            Grid g = grid(i);
+            Ignite g = grid(i);
 
             GridCache<Object, Object> gCache = g.cache(null);
 
@@ -1158,7 +1158,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
      * @return Key for which given node is primary.
      * @throws GridException If affinity can not be calculated.
      */
-    protected UUID primaryKeyForCache(Grid primary) throws GridException {
+    protected UUID primaryKeyForCache(Ignite primary) throws GridException {
         UUID res;
 
         int cnt = 0;
@@ -1184,7 +1184,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
      * @return Collection of generated keys.
      * @throws GridException If affinity can not be calculated.
      */
-    protected UUID[] primaryKeysForCache(Grid primary, int cnt) throws GridException {
+    protected UUID[] primaryKeysForCache(Ignite primary, int cnt) throws GridException {
         Collection<UUID> keys = new LinkedHashSet<>();
 
         int iters = 0;

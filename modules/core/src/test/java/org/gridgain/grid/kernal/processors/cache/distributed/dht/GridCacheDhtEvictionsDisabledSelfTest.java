@@ -90,7 +90,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
      * @param g Grid.
      * @throws Exception If failed.
      */
-    private void checkNodes(Grid g) throws Exception {
+    private void checkNodes(Ignite g) throws Exception {
         GridCache<String, String> cache = g.cache("test");
 
         for (char c = 'a'; c <= 'z'; c++) {

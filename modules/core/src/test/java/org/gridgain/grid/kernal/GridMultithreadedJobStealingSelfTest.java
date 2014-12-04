@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest {
     /** */
-    private Grid grid;
+    private Ignite ignite;
 
     /** */
     public GridMultithreadedJobStealingSelfTest() {
@@ -39,12 +39,12 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = startGridsMultiThreaded(2);
+        ignite = startGridsMultiThreaded(2);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid = null;
+        ignite = null;
 
         stopAllGrids();
     }
@@ -66,7 +66,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             /** */
             @Override public void run() {
                 try {
-                    JobStealingResult res = grid.compute().execute(JobStealingTask.class, null);
+                    JobStealingResult res = ignite.compute().execute(JobStealingTask.class, null);
 
                     info("Task result: " + res);
 
@@ -97,7 +97,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             }
         }, threadsNum, "JobStealingThread");
 
-        for (Grid g : G.allGrids())
+        for (Ignite g : G.allGrids())
             info("Metrics [nodeId=" + g.cluster().localNode().id() +
                 ", metrics=" + g.cluster().localNode().metrics() + ']');
 
@@ -140,7 +140,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      */
     private static class JobStealingTask extends GridComputeTaskAdapter<Object, JobStealingResult> {
         /** Grid. */
-        @GridInstanceResource private Grid grid;
+        @GridInstanceResource private Ignite ignite;
 
         /** Logger. */
         @GridLoggerResource private GridLogger log;
@@ -155,7 +155,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
             // Put all jobs onto local node.
             for (int i = 0; i < subgrid.size(); i++)
-                map.put(new GridJobStealingJob(2000L), grid.cluster().localNode());
+                map.put(new GridJobStealingJob(2000L), ignite.cluster().localNode());
 
             return map;
         }
@@ -171,7 +171,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             Object obj0 = results.get(0).getData();
 
             if (obj0.equals(results.get(1).getData())) {
-                if (obj0.equals(grid.name()))
+                if (obj0.equals(ignite.name()))
                     return JobStealingResult.NONE_STOLEN;
 
                 return JobStealingResult.BOTH_STOLEN;
@@ -186,7 +186,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      */
     private static final class GridJobStealingJob extends GridComputeJobAdapter {
         /** Injected grid. */
-        @GridInstanceResource private Grid grid;
+        @GridInstanceResource private Ignite ignite;
 
         /**
          * @param arg Job argument.
@@ -208,7 +208,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
                 throw new GridException("Job got interrupted.", e);
             }
 
-            return grid.name();
+            return ignite.name();
         }
     }
 

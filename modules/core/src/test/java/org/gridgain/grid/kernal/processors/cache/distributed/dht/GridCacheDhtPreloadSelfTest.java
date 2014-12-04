@@ -211,48 +211,48 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 //            GridDhtLocalPartition.class.getName());
 
         try {
-            Grid grid1 = startGrid(0);
+            Ignite ignite1 = startGrid(0);
 
-            GridCache<Integer, String> cache1 = grid1.cache(null);
+            GridCache<Integer, String> cache1 = ignite1.cache(null);
 
             putKeys(cache1, keyCnt);
-            checkKeys(cache1, keyCnt, F.asList(grid1));
+            checkKeys(cache1, keyCnt, F.asList(ignite1));
 
-            List<Grid> grids = new ArrayList<>(nodeCnt + 1);
+            List<Ignite> ignites = new ArrayList<>(nodeCnt + 1);
 
-            startGrids(nodeCnt, 1, grids);
+            startGrids(nodeCnt, 1, ignites);
 
             // Check all nodes.
-            for (Grid g : grids) {
+            for (Ignite g : ignites) {
                 GridCache<Integer, String> c = g.cache(null);
 
-                checkKeys(c, keyCnt, grids);
+                checkKeys(c, keyCnt, ignites);
             }
 
             if (shuffle)
-                Collections.shuffle(grids);
+                Collections.shuffle(ignites);
 
             if (sameCoord)
                 // Add last.
-                grids.add(grid1);
+                ignites.add(ignite1);
             else
                 // Add first.
-                grids.add(0, grid1);
+                ignites.add(0, ignite1);
 
             if (!sameCoord && shuffle)
-                Collections.shuffle(grids);
+                Collections.shuffle(ignites);
 
-            checkActiveState(grids);
+            checkActiveState(ignites);
 
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +
-                U.grids2names(grids) + ']');
+                U.grids2names(ignites) + ']');
 
             Collection<GridFuture<?>> futs = new LinkedList<>();
 
-            Grid last = F.last(grids);
+            Ignite last = F.last(ignites);
 
-            for (Iterator<Grid> it = grids.iterator(); it.hasNext(); ) {
-                Grid g = it.next();
+            for (Iterator<Ignite> it = ignites.iterator(); it.hasNext(); ) {
+                Ignite g = it.next();
 
                 if (!it.hasNext()) {
                     assert last == g;
@@ -260,7 +260,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                     break;
                 }
 
-                checkActiveState(grids);
+                checkActiveState(ignites);
 
                 final UUID nodeId = g.cluster().localNode().id();
 
@@ -277,14 +277,14 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                     }
                 }, EVT_CACHE_PRELOAD_STOPPED));
 
-                info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(grids));
+                info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
                 stopGrid(g.name());
 
-                info("After grid stop [name=" + g.name() + ", fullTop=" + top2string(grids));
+                info("After grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
                 // Check all left nodes.
-                checkActiveState(grids);
+                checkActiveState(ignites);
             }
 
             info("Waiting for preload futures: " + F.view(futs, F.unfinishedFutures()));
@@ -319,7 +319,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            checkActiveState(grids);
+            checkActiveState(ignites);
         }
         catch (Error | Exception e) {
             error("Test failed.", e);
@@ -333,9 +333,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @param grids Grids.
      */
-    private void checkActiveState(Iterable<Grid> grids) {
+    private void checkActiveState(Iterable<Ignite> grids) {
         // Check that nodes don't have non-active information about other nodes.
-        for (Grid g : grids) {
+        for (Ignite g : grids) {
             GridCache<Integer, String> c = g.cache(null);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);
@@ -436,9 +436,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param list List of started grids.
      * @throws Exception If failed.
      */
-    private void startGrids(int cnt, int startIdx, Collection<Grid> list) throws Exception {
+    private void startGrids(int cnt, int startIdx, Collection<Ignite> list) throws Exception {
         for (int i = 0; i < cnt; i++) {
-            final Grid g = startGrid(startIdx++);
+            final Ignite g = startGrid(startIdx++);
 
             if (DEBUG)
                 g.events().localListen(new GridPredicate<GridEvent>() {
@@ -456,8 +456,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @param grids Grids to stop.
      */
-    private void stopGrids(Iterable<Grid> grids) {
-        for (Grid g : grids)
+    private void stopGrids(Iterable<Ignite> grids) {
+        for (Ignite g : grids)
             stopGrid(g.name());
     }
 
@@ -477,44 +477,44 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 //            GridDhtLocalPartition.class.getName());
 
         try {
-            Grid grid1 = startGrid(0);
+            Ignite ignite1 = startGrid(0);
 
-            GridCache<Integer, String> cache1 = grid1.cache(null);
+            GridCache<Integer, String> cache1 = ignite1.cache(null);
 
             putKeys(cache1, keyCnt);
-            checkKeys(cache1, keyCnt, F.asList(grid1));
+            checkKeys(cache1, keyCnt, F.asList(ignite1));
 
-            List<Grid> grids = new ArrayList<>(nodeCnt + 1);
+            List<Ignite> ignites = new ArrayList<>(nodeCnt + 1);
 
-            startGrids(nodeCnt, 1, grids);
+            startGrids(nodeCnt, 1, ignites);
 
             // Check all nodes.
-            for (Grid g : grids) {
+            for (Ignite g : ignites) {
                 GridCache<Integer, String> c = g.cache(null);
 
-                checkKeys(c, keyCnt, grids);
+                checkKeys(c, keyCnt, ignites);
             }
 
             if (shuffle)
-                Collections.shuffle(grids);
+                Collections.shuffle(ignites);
 
             if (sameCoord)
                 // Add last.
-                grids.add(grid1);
+                ignites.add(ignite1);
             else
                 // Add first.
-                grids.add(0, grid1);
+                ignites.add(0, ignite1);
 
             if (!sameCoord && shuffle)
-                Collections.shuffle(grids);
+                Collections.shuffle(ignites);
 
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +
-                U.grids2names(grids) + ']');
+                U.grids2names(ignites) + ']');
 
-            Grid last = null;
+            Ignite last = null;
 
-            for (Iterator<Grid> it = grids.iterator(); it.hasNext(); ) {
-                Grid g = it.next();
+            for (Iterator<Ignite> it = ignites.iterator(); it.hasNext(); ) {
+                Ignite g = it.next();
 
                 if (!it.hasNext()) {
                     last = g;
@@ -528,7 +528,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 Collection<GridFuture<?>> futs = new LinkedList<>();
 
-                for (Grid gg : grids)
+                for (Ignite gg : ignites)
                     futs.add(waitForLocalEvent(gg.events(), new P1<GridEvent>() {
                             @Override public boolean apply(GridEvent e) {
                                 GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
@@ -541,21 +541,21 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                         }, EVT_CACHE_PRELOAD_STOPPED));
 
 
-                info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(grids));
+                info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
                 stopGrid(g.name());
 
-                info(">>> Waiting for preload futures [leftNode=" + g.name() + ", remaining=" + U.grids2names(grids) + ']');
+                info(">>> Waiting for preload futures [leftNode=" + g.name() + ", remaining=" + U.grids2names(ignites) + ']');
 
                 X.waitAll(futs);
 
-                info("After grid stop [name=" + g.name() + ", fullTop=" + top2string(grids));
+                info("After grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
                 // Check all left nodes.
-                for (Grid gg : grids) {
+                for (Ignite gg : ignites) {
                     GridCache<Integer, String> c = gg.cache(null);
 
-                    checkKeys(c, keyCnt, grids);
+                    checkKeys(c, keyCnt, ignites);
                 }
             }
 
@@ -608,17 +608,17 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param grids Grids.
      * @throws GridException If failed.
      */
-    private void checkKeys(GridCache<Integer, String> cache, int cnt, Iterable<Grid> grids) throws GridException {
+    private void checkKeys(GridCache<Integer, String> cache, int cnt, Iterable<Ignite> grids) throws GridException {
         GridCacheAffinity<Integer> aff = affinity(cache);
 
-        Grid grid = cache.gridProjection().grid();
+        Ignite ignite = cache.gridProjection().grid();
 
-        GridNode loc = grid.cluster().localNode();
+        GridNode loc = ignite.cluster().localNode();
 
         boolean sync = cache.configuration().getPreloadMode() == SYNC;
 
         for (int i = 0; i < cnt; i++) {
-            Collection<GridNode> nodes = grid.cluster().nodes();
+            Collection<GridNode> nodes = ignite.cluster().nodes();
 
             Collection<GridNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(i));
 
@@ -633,7 +633,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 boolean primary = primaryNode.equals(loc);
 
-                assert Integer.toString(i).equals(val) : "Key check failed [grid=" + grid.name() +
+                assert Integer.toString(i).equals(val) : "Key check failed [grid=" + ignite.name() +
                     ", cache=" + cache.name() + ", key=" + i + ", expected=" + i + ", actual=" + val +
                     ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
                     ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']';
@@ -646,10 +646,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @return String representation of all partitions and their state.
      */
     @SuppressWarnings( {"ConstantConditions"})
-    private String top2string(Iterable<Grid> grids) {
+    private String top2string(Iterable<Ignite> grids) {
         Map<String, String> map = new HashMap<>();
 
-        for (Grid g : grids) {
+        for (Ignite g : grids) {
             GridCache<Integer, String> c = g.cache(null);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);

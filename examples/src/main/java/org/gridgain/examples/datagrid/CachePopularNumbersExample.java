@@ -51,7 +51,7 @@ public class CachePopularNumbersExample {
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 
@@ -83,7 +83,7 @@ public class CachePopularNumbersExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void streamData(final Grid g) throws GridException {
+    private static void streamData(final Ignite g) throws GridException {
         try (GridDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
@@ -103,7 +103,7 @@ public class CachePopularNumbersExample {
      * @param cnt Number of popular numbers to return.
      * @return Scheduled task.
      */
-    private static TimerTask scheduleQuery(final Grid g, Timer timer, final int cnt) {
+    private static TimerTask scheduleQuery(final Ignite g, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
             private GridCacheQuery<List<?>> qry;
 

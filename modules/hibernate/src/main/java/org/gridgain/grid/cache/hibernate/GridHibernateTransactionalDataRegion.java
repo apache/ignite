@@ -30,13 +30,13 @@ public class GridHibernateTransactionalDataRegion extends GridHibernateRegion im
     /**
      * @param factory Region factory.
      * @param name Region name.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Region cache.
      * @param dataDesc Region data description.
      */
     public GridHibernateTransactionalDataRegion(GridHibernateRegionFactory factory, String name,
-        Grid grid, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
-        super(factory, name, grid, cache);
+        Ignite ignite, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
+        super(factory, name, ignite, cache);
 
         this.dataDesc = dataDesc;
     }
@@ -58,17 +58,17 @@ public class GridHibernateTransactionalDataRegion extends GridHibernateRegion im
     protected GridHibernateAccessStrategyAdapter createAccessStrategy(AccessType accessType) {
         switch (accessType) {
             case READ_ONLY:
-                return new GridHibernateReadOnlyAccessStrategy(grid, cache);
+                return new GridHibernateReadOnlyAccessStrategy(ignite, cache);
 
             case NONSTRICT_READ_WRITE:
-                return new GridHibernateNonStrictAccessStrategy(grid, cache, factory.threadLocalForCache(cache.name()));
+                return new GridHibernateNonStrictAccessStrategy(ignite, cache, factory.threadLocalForCache(cache.name()));
 
             case READ_WRITE:
                 if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
                     throw new CacheException("Hibernate READ-WRITE access strategy must have GridGain cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
-                return new GridHibernateReadWriteAccessStrategy(grid, cache, factory.threadLocalForCache(cache.name()));
+                return new GridHibernateReadWriteAccessStrategy(ignite, cache, factory.threadLocalForCache(cache.name()));
 
             case TRANSACTIONAL:
                 if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
@@ -79,7 +79,7 @@ public class GridHibernateTransactionalDataRegion extends GridHibernateRegion im
                     throw new CacheException("Hibernate TRANSACTIONAL access strategy must have GridGain cache with " +
                         "TransactionManagerLookup configured: " + cache.name());
 
-                return new GridHibernateTransactionalAccessStrategy(grid, cache);
+                return new GridHibernateTransactionalAccessStrategy(ignite, cache);
 
             default:
                 throw new IllegalArgumentException("Unknown Hibernate access type: " + accessType);

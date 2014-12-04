@@ -24,7 +24,7 @@ import java.util.concurrent.*;
  */
 public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long> {
     @GridInstanceResource
-    private Grid grid;
+    private Ignite ignite;
 
     @GridLoggerResource
     private GridLogger log;
@@ -50,7 +50,7 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
         try {
             ExecutorCompletionService<Object> completeSvc = new ExecutorCompletionService<>(execSvc);
 
-            GridCache<GridTestKey, Long> cache = grid.cache("partitioned");
+            GridCache<GridTestKey, Long> cache = ignite.cache("partitioned");
 
             assert cache != null;
 

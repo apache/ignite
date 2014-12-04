@@ -54,11 +54,11 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
             String key = "1";
             Integer val = Integer.valueOf(key);
 
-            Grid primary = G.grid(cache(0).affinity().mapKeyToNode(key).id());
+            Ignite primary = G.grid(cache(0).affinity().mapKeyToNode(key).id());
 
             Collection<GridNode> affNodes = cache(0).affinity().mapKeyToPrimaryAndBackups(key);
 
-            Grid near = G.grid(F.first(F.view(grid(0).nodes(), F.notIn(affNodes))).id());
+            Ignite near = G.grid(F.first(F.view(grid(0).nodes(), F.notIn(affNodes))).id());
 
             assert primary != null;
             assert near != null;
@@ -95,7 +95,7 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
             for (int i = 1; i < 3; i++)
                 stopGrid(i);
 
-            for (Grid g : G.allGrids()) {
+            for (Ignite g : G.allGrids()) {
                 GridKernal grid = (GridKernal)g;
 
                 // Wait until all nodes get topology version event.

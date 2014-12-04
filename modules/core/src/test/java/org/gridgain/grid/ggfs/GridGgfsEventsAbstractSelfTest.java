@@ -148,9 +148,9 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Grid grid = startGrid(1);
+        Ignite ignite = startGrid(1);
 
-        ggfs = (GridGgfsImpl)grid.ggfss().iterator().next();
+        ggfs = (GridGgfsImpl) ignite.ggfss().iterator().next();
     }
 
     /** {@inheritDoc} */

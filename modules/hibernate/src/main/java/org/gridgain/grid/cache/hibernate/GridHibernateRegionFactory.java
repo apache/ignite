@@ -69,7 +69,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
     public static final String GRID_CONFIG_PROPERTY = "org.gridgain.hibernate.grid_config";
 
     /** Grid providing caches. */
-    private Grid grid;
+    private Ignite ignite;
 
     /** Default cache. */
     private GridCache<Object, Object> dfltCache;
@@ -88,7 +88,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
         String gridName = props.getProperty(GRID_NAME_PROPERTY);
 
         if (gridName != null)
-            grid = G.grid(gridName);
+            ignite = G.grid(gridName);
         else {
             String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
 
@@ -96,14 +96,14 @@ public class GridHibernateRegionFactory implements RegionFactory {
                 throw new CacheException("Either grid name or path to grid configuration must be specified.");
 
             try {
-                grid = G.start(gridCfg);
+                ignite = G.start(gridCfg);
             }
             catch (GridException e) {
                 throw new CacheException(e);
             }
         }
 
-        if (grid == null)
+        if (ignite == null)
             throw new CacheException("Grid '" + gridName + "' for hibernate L2 cache is not started.");
 
         String accessType = props.getProperty(DFLT_ACCESS_TYPE_PROPERTY, NONSTRICT_READ_WRITE.name());
@@ -118,7 +118,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
 
                 String cacheName = prop.getValue().toString();
 
-                if (grid.cache(cacheName) == null)
+                if (ignite.cache(cacheName) == null)
                     throw new CacheException("Cache '" + cacheName + "' specified for region '" + regionName + "' " +
                         "is not configured.");
 
@@ -129,13 +129,13 @@ public class GridHibernateRegionFactory implements RegionFactory {
         String dfltCacheName = props.getProperty(DFLT_CACHE_NAME_PROPERTY);
 
         if (dfltCacheName != null) {
-            dfltCache = grid.cache(dfltCacheName);
+            dfltCache = ignite.cache(dfltCacheName);
 
             if (dfltCache == null)
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
         }
 
-        GridLogger log = grid.log().getLogger(GridHibernateRegionFactory.class);
+        GridLogger log = ignite.log().getLogger(GridHibernateRegionFactory.class);
 
         if (log.isDebugEnabled())
             log.debug("GridHibernateRegionFactory started [grid=" + gridName + ']');
@@ -163,30 +163,30 @@ public class GridHibernateRegionFactory implements RegionFactory {
     /** {@inheritDoc} */
     @Override public EntityRegion buildEntityRegion(String regionName, Properties props, CacheDataDescription metadata)
         throws CacheException {
-        return new GridHibernateEntityRegion(this, regionName, grid, regionCache(regionName), metadata);
+        return new GridHibernateEntityRegion(this, regionName, ignite, regionCache(regionName), metadata);
     }
 
     /** {@inheritDoc} */
     @Override public NaturalIdRegion buildNaturalIdRegion(String regionName, Properties props,
         CacheDataDescription metadata) throws CacheException {
-        return new GridHibernateNaturalIdRegion(this, regionName, grid, regionCache(regionName), metadata);
+        return new GridHibernateNaturalIdRegion(this, regionName, ignite, regionCache(regionName), metadata);
     }
 
     /** {@inheritDoc} */
     @Override public CollectionRegion buildCollectionRegion(String regionName, Properties props,
         CacheDataDescription metadata) throws CacheException {
-        return new GridHibernateCollectionRegion(this, regionName, grid, regionCache(regionName), metadata);
+        return new GridHibernateCollectionRegion(this, regionName, ignite, regionCache(regionName), metadata);
     }
 
     /** {@inheritDoc} */
     @Override public QueryResultsRegion buildQueryResultsRegion(String regionName, Properties props)
         throws CacheException {
-        return new GridHibernateQueryResultsRegion(this, regionName, grid, regionCache(regionName));
+        return new GridHibernateQueryResultsRegion(this, regionName, ignite, regionCache(regionName));
     }
 
     /** {@inheritDoc} */
     @Override public TimestampsRegion buildTimestampsRegion(String regionName, Properties props) throws CacheException {
-        return new GridHibernateTimestampsRegion(this, regionName, grid, regionCache(regionName));
+        return new GridHibernateTimestampsRegion(this, regionName, ignite, regionCache(regionName));
     }
 
     /**
@@ -223,7 +223,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
             cacheName = regionName;
         }
 
-        GridCache<Object, Object> cache = grid.cache(cacheName);
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         if (cache == null)
             throw new CacheException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");

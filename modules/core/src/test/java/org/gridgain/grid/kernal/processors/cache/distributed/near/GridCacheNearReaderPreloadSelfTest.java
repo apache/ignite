@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -88,9 +87,9 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private void startUp() throws Exception {
         GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
-        Grid node1 = G.start(dataNode(ipFinder, "node1"));
-        Grid node2 = G.start(dataNode(ipFinder, "node2"));
-        Grid node3 = G.start(dataNode(ipFinder, "node3"));
+        Ignite node1 = G.start(dataNode(ipFinder, "node1"));
+        Ignite node2 = G.start(dataNode(ipFinder, "node2"));
+        Ignite node3 = G.start(dataNode(ipFinder, "node3"));
 
         info("Node 1: " + node1.cluster().localNode().id());
         info("Node 2: " + node2.cluster().localNode().id());

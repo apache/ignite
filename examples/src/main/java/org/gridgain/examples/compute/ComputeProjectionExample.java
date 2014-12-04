@@ -30,33 +30,33 @@ public class ComputeProjectionExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(grid.cluster(), 2))
+        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println("Compute projection example started.");
 
-            GridCluster cluster = grid.cluster();
+            GridCluster cluster = ignite.cluster();
 
             // Say hello to all nodes in the grid, including local node.
             // Note, that Grid itself also implements GridProjection.
-            sayHello(grid, cluster);
+            sayHello(ignite, cluster);
 
             // Say hello to all remote nodes.
-            sayHello(grid, cluster.forRemotes());
+            sayHello(ignite, cluster.forRemotes());
 
             // Pick random node out of remote nodes.
             GridProjection randomNode = cluster.forRemotes().forRandom();
 
             // Say hello to a random node.
-            sayHello(grid, randomNode);
+            sayHello(ignite, randomNode);
 
             // Say hello to all nodes residing on the same host with random node.
-            sayHello(grid, cluster.forHost(randomNode.node()));
+            sayHello(ignite, cluster.forHost(randomNode.node()));
 
             // Say hello to all nodes that have current CPU load less than 50%.
-            sayHello(grid, cluster.forPredicate(new GridPredicate<GridNode>() {
+            sayHello(ignite, cluster.forPredicate(new GridPredicate<GridNode>() {
                 @Override public boolean apply(GridNode n) {
                     return n.metrics().getCurrentCpuLoad() < 0.5;
                 }
@@ -67,13 +67,13 @@ public class ComputeProjectionExample {
     /**
      * Print 'Hello' message on remote grid nodes.
      *
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param prj Grid projection.
      * @throws GridException If failed.
      */
-    private static void sayHello(Grid grid, final GridProjection prj) throws GridException {
+    private static void sayHello(Ignite ignite, final GridProjection prj) throws GridException {
         // Print out hello message on all projection nodes.
-        grid.compute(prj).broadcast(
+        ignite.compute(prj).broadcast(
             new GridRunnable() {
                 @Override public void run() {
                     // Print ID of remote node on remote node.

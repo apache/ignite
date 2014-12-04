@@ -77,10 +77,10 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkSessionLoad() throws Exception {
-        final Grid grid = grid(1);
+        final Ignite ignite = grid(1);
 
-        assert grid != null;
-        assert grid.cluster().nodes().size() == 2;
+        assert ignite != null;
+        assert ignite.cluster().nodes().size() == 2;
 
         info("Thread count: " + THREAD_CNT);
 
@@ -89,9 +89,9 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
                 try {
                     for (int i = 0; i < EXEC_CNT; i++)
                         assertEquals(Boolean.TRUE,
-                            executeAsync(grid.compute().withName("task-name"),
+                            executeAsync(ignite.compute().withName("task-name"),
                                 SessionLoadTestTask.class,
-                                grid.cluster().nodes().size() * 2).get(20000));
+                                ignite.cluster().nodes().size() * 2).get(20000));
                 }
                 catch (Exception e) {
                     U.error(log, "Test failed.", e);

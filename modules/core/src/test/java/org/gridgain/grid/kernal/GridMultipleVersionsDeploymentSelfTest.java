@@ -61,12 +61,12 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param taskName Task name.
      * @return {@code true} if task has been deployed on passed grid.
      */
-    private boolean checkDeployed(Grid grid, String taskName) {
-        Map<String, Class<? extends GridComputeTask<?, ?>>> locTasks = grid.compute().localTasks();
+    private boolean checkDeployed(Ignite ignite, String taskName) {
+        Map<String, Class<? extends GridComputeTask<?, ?>>> locTasks = ignite.compute().localTasks();
 
         if (log().isInfoEnabled())
             log().info("Local tasks found: " + locTasks);
@@ -80,7 +80,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     @SuppressWarnings("unchecked")
     public void testMultipleVersionsLocalDeploy() throws Exception {
         try {
-            Grid grid = startGrid(1);
+            Ignite ignite = startGrid(1);
 
             ClassLoader ldr1 = new GridTestClassLoader(
                 Collections.singletonMap("testResource", "1"),
@@ -99,10 +99,10 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             Class<? extends GridComputeTask<?, ?>> taskCls2 = (Class<? extends GridComputeTask<?, ?>>)ldr2.
                 loadClass(GridDeploymentTestTask.class.getName());
 
-            grid.compute().localDeployTask(taskCls1, ldr1);
+            ignite.compute().localDeployTask(taskCls1, ldr1);
 
             // Task will wait for the signal.
-            GridComputeTaskFuture fut = executeAsync(grid.compute(), "GridDeploymentTestTask", null);
+            GridComputeTaskFuture fut = executeAsync(ignite.compute(), "GridDeploymentTestTask", null);
 
             // We should wait here when to be sure that job has been started.
             // Since we loader task/job classes with different class loaders we cannot
@@ -111,16 +111,16 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             // on Bamboo.
             Thread.sleep(2000);
 
-            assert checkDeployed(grid, "GridDeploymentTestTask");
+            assert checkDeployed(ignite, "GridDeploymentTestTask");
 
             // Deploy new one - this should move first task to the obsolete list.
-            grid.compute().localDeployTask(taskCls2, ldr2);
+            ignite.compute().localDeployTask(taskCls2, ldr2);
 
-            boolean deployed = checkDeployed(grid, "GridDeploymentTestTask");
+            boolean deployed = checkDeployed(ignite, "GridDeploymentTestTask");
 
             Object res = fut.get();
 
-            grid.compute().undeployTask("GridDeploymentTestTask");
+            ignite.compute().undeployTask("GridDeploymentTestTask");
 
             // New one should be deployed.
             assert deployed;
@@ -139,8 +139,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     @SuppressWarnings("unchecked")
     public void testMultipleVersionsP2PDeploy() throws Exception {
         try {
-            Grid g1 = startGrid(1);
-            Grid g2 = startGrid(2);
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
 
             final CountDownLatch latch = new CountDownLatch(2);
 

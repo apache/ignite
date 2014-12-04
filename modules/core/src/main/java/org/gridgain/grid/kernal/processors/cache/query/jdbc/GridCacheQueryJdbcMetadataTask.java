@@ -72,7 +72,7 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
 
         /** Grid instance. */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Logger. */
         @GridLoggerResource
@@ -96,7 +96,7 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
             byte[] data;
 
             try {
-                GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
+                GridCache<?, ?> cache = ((GridEx) ignite).cachex(cacheName);
 
                 assert cache != null;
 

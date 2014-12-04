@@ -103,7 +103,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         stages = F.<GridStreamerStage>asList(new GridStreamerStage() {
             @GridInstanceResource
-            private Grid g;
+            private Ignite g;
 
             @GridLoggerResource
             private GridLogger log;
@@ -125,9 +125,9 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         });
 
         try {
-            final Grid grid0 = startGrid(0);
+            final Ignite ignite0 = startGrid(0);
 
-            GridStreamer streamer = grid0.streamer(null);
+            GridStreamer streamer = ignite0.streamer(null);
 
             for (int i = 0; i < evtCnt; i++)
                 streamer.addEvent("event1");
@@ -176,23 +176,23 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         startGrids(4);
 
         try {
-            final Grid grid0 = grid(0);
-            final Grid grid1 = grid(1);
-            final Grid grid2 = grid(2);
-            final Grid grid3 = grid(3);
+            final Ignite ignite0 = grid(0);
+            final Ignite ignite1 = grid(1);
+            final Ignite ignite2 = grid(2);
+            final Ignite ignite3 = grid(3);
 
-            System.out.println("Grid 0: " + grid0.cluster().localNode().id());
-            System.out.println("Grid 1: " + grid1.cluster().localNode().id());
-            System.out.println("Grid 2: " + grid2.cluster().localNode().id());
-            System.out.println("Grid 3: " + grid3.cluster().localNode().id());
+            System.out.println("Grid 0: " + ignite0.cluster().localNode().id());
+            System.out.println("Grid 1: " + ignite1.cluster().localNode().id());
+            System.out.println("Grid 2: " + ignite2.cluster().localNode().id());
+            System.out.println("Grid 3: " + ignite3.cluster().localNode().id());
 
             GridTestStreamerEventRouter router0 = (GridTestStreamerEventRouter)router;
 
-            router0.put("a", grid1.cluster().localNode().id());
-            router0.put("b", grid2.cluster().localNode().id());
-            router0.put("c", grid3.cluster().localNode().id());
+            router0.put("a", ignite1.cluster().localNode().id());
+            router0.put("b", ignite2.cluster().localNode().id());
+            router0.put("c", ignite3.cluster().localNode().id());
 
-            GridStreamer streamer = grid0.streamer(null);
+            GridStreamer streamer = ignite0.streamer(null);
 
             for (int i = 0; i < evtCnt; i++)
                 streamer.addEvent("event1");
@@ -200,29 +200,29 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             finishLatch.await();
 
             // No stages should be executed on grid0.
-            checkZeroMetrics(grid0, "a", "b", "c");
-            checkZeroMetrics(grid1, "b", "c");
-            checkZeroMetrics(grid2, "a", "c");
-            checkZeroMetrics(grid3, "a", "b");
+            checkZeroMetrics(ignite0, "a", "b", "c");
+            checkZeroMetrics(ignite1, "b", "c");
+            checkZeroMetrics(ignite2, "a", "c");
+            checkZeroMetrics(ignite3, "a", "b");
 
-            checkMetrics(grid1, "a", evtCnt, false);
-            checkMetrics(grid2, "b", evtCnt, false);
-            checkMetrics(grid3, "c", evtCnt, true);
+            checkMetrics(ignite1, "a", evtCnt, false);
+            checkMetrics(ignite2, "b", evtCnt, false);
+            checkMetrics(ignite3, "c", evtCnt, true);
 
             // Wait until all acks are received.
             GridTestUtils.retryAssert(log, 100, 50, new CA() {
                 @Override public void apply() {
-                    GridStreamerMetrics metrics = grid0.streamer(null).metrics();
+                    GridStreamerMetrics metrics = ignite0.streamer(null).metrics();
 
                     assertEquals(0, metrics.currentActiveSessions());
                 }
             });
 
-            GridStreamerMetrics metrics = grid0.streamer(null).metrics();
+            GridStreamerMetrics metrics = ignite0.streamer(null).metrics();
 
             assertTrue(metrics.maximumActiveSessions() > 0);
 
-            grid0.streamer(null).context().query(new GridClosure<GridStreamerContext, Object>() {
+            ignite0.streamer(null).context().query(new GridClosure<GridStreamerContext, Object>() {
                 @Override public Object apply(GridStreamerContext ctx) {
                     try {
                         U.sleep(1000);
@@ -235,7 +235,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            metrics = grid0.streamer(null).metrics();
+            metrics = ignite0.streamer(null).metrics();
 
             assert metrics.queryMaximumExecutionNodes() == 4;
             assert metrics.queryMinimumExecutionNodes() == 4;
@@ -472,23 +472,23 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         startGrids(4);
 
         try {
-            final Grid grid0 = grid(0);
-            final Grid grid1 = grid(1);
-            final Grid grid2 = grid(2);
-            final Grid grid3 = grid(3);
+            final Ignite ignite0 = grid(0);
+            final Ignite ignite1 = grid(1);
+            final Ignite ignite2 = grid(2);
+            final Ignite ignite3 = grid(3);
 
-            System.out.println("Grid 0: " + grid0.cluster().localNode().id());
-            System.out.println("Grid 1: " + grid1.cluster().localNode().id());
-            System.out.println("Grid 2: " + grid2.cluster().localNode().id());
-            System.out.println("Grid 3: " + grid3.cluster().localNode().id());
+            System.out.println("Grid 0: " + ignite0.cluster().localNode().id());
+            System.out.println("Grid 1: " + ignite1.cluster().localNode().id());
+            System.out.println("Grid 2: " + ignite2.cluster().localNode().id());
+            System.out.println("Grid 3: " + ignite3.cluster().localNode().id());
 
             GridTestStreamerEventRouter router0 = (GridTestStreamerEventRouter)router;
 
-            router0.put("a", grid1.cluster().localNode().id());
-            router0.put("b", grid2.cluster().localNode().id());
-            router0.put("c", grid3.cluster().localNode().id());
+            router0.put("a", ignite1.cluster().localNode().id());
+            router0.put("b", ignite2.cluster().localNode().id());
+            router0.put("c", ignite3.cluster().localNode().id());
 
-            GridStreamer streamer = grid0.streamer(null);
+            GridStreamer streamer = ignite0.streamer(null);
 
             for (int i = 0; i < evtCnt; i++)
                 streamer.addEvent(cls.newInstance());
@@ -580,16 +580,16 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
             // Check all stages local map.
             for (int i = 0; i < 4; i++) {
-                Grid grid = grid(i);
+                Ignite ignite = grid(i);
 
-                ConcurrentMap<String, AtomicInteger> locSpace = grid.streamer(null).context().localSpace();
+                ConcurrentMap<String, AtomicInteger> locSpace = ignite.streamer(null).context().localSpace();
 
                 for (String stageName : stages) {
                     AtomicInteger val = locSpace.get(stageName);
 
                     assertNotNull(val);
 
-                    info(">>>>> grid=" + grid.cluster().localNode().id() + ", s=" + stageName + ", val=" + val.get());
+                    info(">>>>> grid=" + ignite.cluster().localNode().id() + ", s=" + stageName + ", val=" + val.get());
 
                     Integer old = stagesSum.get(stageName);
 
@@ -638,9 +638,9 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             int bcastSum = 0;
 
             for (int i = 0; i < 4; i++) {
-                Grid grid = grid(i);
+                Ignite ignite = grid(i);
 
-                ConcurrentMap<String, AtomicInteger> locSpace = grid.streamer(null).context().localSpace();
+                ConcurrentMap<String, AtomicInteger> locSpace = ignite.streamer(null).context().localSpace();
 
                 bcastSum += locSpace.get("bcast").get();
             }
@@ -716,13 +716,13 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param grid Grid to check metrics on.
+     * @param ignite Grid to check metrics on.
      * @param stage Stage name.
      * @param evtCnt Event count.
      * @param pipeline Pipeline.
      */
-    private void checkMetrics(Grid grid, String stage, int evtCnt, boolean pipeline) {
-        GridStreamer streamer = grid.streamer(null);
+    private void checkMetrics(Ignite ignite, String stage, int evtCnt, boolean pipeline) {
+        GridStreamer streamer = ignite.streamer(null);
 
         GridStreamerMetrics metrics = streamer.metrics();
 
@@ -764,12 +764,12 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param grid Grid to check streamer on.
+     * @param ignite Grid to check streamer on.
      * @param stages Stages to check.
      */
-    private void checkZeroMetrics(Grid grid, String... stages) {
+    private void checkZeroMetrics(Ignite ignite, String... stages) {
         for (String stage : stages) {
-            GridStreamer streamer = grid.streamer(null);
+            GridStreamer streamer = ignite.streamer(null);
 
             GridStreamerStageMetrics metrics = streamer.metrics().stageMetrics(stage);
 

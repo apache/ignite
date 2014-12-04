@@ -30,9 +30,9 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Grid grid = G.grid(getTestGridName());
+        Ignite ignite = G.grid(getTestGridName());
 
-        assert grid != null;
+        assert ignite != null;
     }
 
     /** {@inheritDoc} */

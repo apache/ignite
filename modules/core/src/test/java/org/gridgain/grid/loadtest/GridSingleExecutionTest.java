@@ -71,9 +71,9 @@ public final class GridSingleExecutionTest {
         }
 
         try {
-            Grid grid = G.grid();
+            Ignite ignite = G.grid();
 
-            GridCompute comp = grid.compute().enableAsync();
+            GridCompute comp = ignite.compute().enableAsync();
 
             // Execute Hello World task.
             comp.execute(!useSes ? TestTask.class : TestSessionTask.class, null);

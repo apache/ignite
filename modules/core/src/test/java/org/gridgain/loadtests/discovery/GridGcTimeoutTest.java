@@ -32,7 +32,7 @@ public class GridGcTimeoutTest {
      */
     @SuppressWarnings("InfiniteLoopStatement")
     public static void main(String[] args) throws GridException {
-        Grid g = G.start(U.resolveGridGainUrl(CFG_PATH));
+        Ignite g = G.start(U.resolveGridGainUrl(CFG_PATH));
 
         GridDataLoader<Long, String> ldr = g.dataLoader(null);
 

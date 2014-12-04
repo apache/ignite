@@ -42,12 +42,12 @@ public class StreamingRunningAverageExample {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        Grid grid = GridGain.start("examples/config/example-streamer.xml");
+        Ignite ignite = GridGain.start("examples/config/example-streamer.xml");
 
         System.out.println();
         System.out.println(">>> Streaming running average example started.");
 
-        final GridStreamer streamer = grid.streamer("running-average");
+        final GridStreamer streamer = ignite.streamer("running-average");
 
         final int rndRange = 100;
 

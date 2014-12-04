@@ -31,7 +31,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTest {
     /** Grid. */
-    private Grid grid;
+    private Ignite ignite;
 
     /**
      *
@@ -55,12 +55,12 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = grid();
+        ignite = grid();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid = null;
+        ignite = null;
     }
 
     /**
@@ -68,7 +68,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testBasicLock() throws Exception {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         assert cache.lock(1, 0);
 
@@ -83,7 +83,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws GridException If test failed.
      */
     public void testSingleLockReentry() throws GridException {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         assert cache.lock(1, 0);
 
@@ -109,7 +109,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testReentry() throws Exception {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         assert cache.lock(1, 0);
 
@@ -146,7 +146,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws GridException If test failed.
      */
     public void testManyLockReentries() throws GridException {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         Integer key = 1;
 
@@ -187,7 +187,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testLockMultithreaded() throws Exception {
-        final GridCache<Integer, String> cache = grid.cache(null);
+        final GridCache<Integer, String> cache = ignite.cache(null);
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -301,14 +301,14 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If error occur.
      */
     public void testBasicOps() throws Exception {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         CountDownLatch latch = new CountDownLatch(1);
 
         CacheEventListener lsnr = new CacheEventListener(latch);
 
         try {
-            grid.events().localListen(lsnr, EVTS_CACHE);
+            ignite.events().localListen(lsnr, EVTS_CACHE);
 
             int key = (int)System.currentTimeMillis();
 
@@ -354,7 +354,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             assert !cache.containsKey(key);
         }
         finally {
-            grid.events().stopLocalListen(lsnr, EVTS_CACHE);
+            ignite.events().stopLocalListen(lsnr, EVTS_CACHE);
         }
     }
 
@@ -362,7 +362,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If error occur.
      */
     public void testBasicOpsWithReentry() throws Exception {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         int key = (int)System.currentTimeMillis();
 
@@ -375,7 +375,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         CacheEventListener lsnr = new CacheEventListener(latch);
 
         try {
-            grid.events().localListen(lsnr, EVTS_CACHE);
+            ignite.events().localListen(lsnr, EVTS_CACHE);
 
             cache.put(key, "a");
 
@@ -422,7 +422,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         finally {
             cache.unlock(key);
 
-            grid.events().stopLocalListen(lsnr, EVTS_CACHE);
+            ignite.events().stopLocalListen(lsnr, EVTS_CACHE);
         }
 
         // Entry should be evicted since allowEmptyEntries is false.
@@ -434,7 +434,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testMultiLocks() throws Exception {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         Collection<Integer> keys = new ArrayList<>(3);
 
@@ -465,7 +465,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws GridException If test failed.
      */
     public void testGetPutRemove() throws GridException {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         int key = (int)System.currentTimeMillis();
 
@@ -489,11 +489,11 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception In case of error.
      */
     public void testPutWithExpiration() throws Exception {
-        GridCache<Integer, String> cache = grid.cache(null);
+        GridCache<Integer, String> cache = ignite.cache(null);
 
         CacheEventListener lsnr = new CacheEventListener(new CountDownLatch(1));
 
-        grid.events().localListen(lsnr, EVTS_CACHE);
+        ignite.events().localListen(lsnr, EVTS_CACHE);
 
         try {
             int key = (int)System.currentTimeMillis();
@@ -516,7 +516,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             assert cache.get(key) == null;
         }
         finally {
-            grid.events().stopLocalListen(lsnr, EVTS_CACHE);
+            ignite.events().stopLocalListen(lsnr, EVTS_CACHE);
         }
     }
 

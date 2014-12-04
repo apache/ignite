@@ -69,7 +69,7 @@ public class GridIpcSharedMemoryNodeStartup {
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
-        try (Grid ignored = G.start(cfg)) {
+        try (Ignite ignored = G.start(cfg)) {
             X.println("Press any key to stop grid...");
 
             System.in.read();

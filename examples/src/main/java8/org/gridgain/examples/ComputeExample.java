@@ -27,18 +27,18 @@ public class ComputeExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = GridGain.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute broadcast example started.");
 
             // Broadcast closure to all grid nodes.
-            grid.compute().broadcast((GridRunnable)() -> System.out.println("Hello World")).get();
+            ignite.compute().broadcast((GridRunnable)() -> System.out.println("Hello World")).get();
 
             // Unicast closure to some grid node picked by load balancer.
-            grid.compute().run((GridRunnable)() -> System.out.println("Hello World")).get();
+            ignite.compute().run((GridRunnable)() -> System.out.println("Hello World")).get();
 
             // Unicast closure to some grid node picked by load balancer and return result.
-            int length = grid.compute().call((GridCallable<Integer>)"Hello World"::length).get();
+            int length = ignite.compute().call((GridCallable<Integer>)"Hello World"::length).get();
 
             System.out.println();
             System.out.println(">>> Computed length: " + length);

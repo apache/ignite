@@ -86,7 +86,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
         replicatedAffinity = false;
         preloadMode = NONE;
 
-        Grid g1 = startGrid("g1");
+        Ignite g1 = startGrid("g1");
 
         Collection<Integer> keys = new HashSet<>();
 
@@ -97,7 +97,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
             cache.put(i, "val");
         }
 
-        Grid g2 = startGrid("g2");
+        Ignite g2 = startGrid("g2");
 
         Map<GridNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(keys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());

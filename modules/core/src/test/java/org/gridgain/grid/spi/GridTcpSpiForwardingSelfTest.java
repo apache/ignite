@@ -135,8 +135,8 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             GridTcpForwarder tcpForward3 = new GridTcpForwarder(locHost, commExtPort1, locHost, commLocPort1, log);
             GridTcpForwarder tcpForward4 = new GridTcpForwarder(locHost, commExtPort2, locHost, commLocPort2, log);
 
-            Grid g1 = startGrid(0);
-            Grid g2 = startGrid(1)
+            Ignite g1 = startGrid(0);
+            Ignite g2 = startGrid(1)
         ) {
             assertEquals(2, grid(0).nodes().size());
             assertEquals(2, grid(1).nodes().size());

@@ -336,10 +336,10 @@ public class GridCacheLruEvictionPolicySelfTest extends
         syncCommit = true;
         plcMax = 100;
 
-        Grid grid = startGrid();
+        Ignite ignite = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = grid.cache(null);
+            GridCache<Integer, Integer> cache = ignite.cache(null);
 
             int cnt = 500;
 

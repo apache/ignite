@@ -97,13 +97,13 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /**
      * Returns checkpoint manager instance for given Grid.
      *
-     * @param grid Grid instance.
+     * @param ignite Grid instance.
      * @return Checkpoint manager.
      */
-    private GridCheckpointManager checkpoints(Grid grid) {
-        assert grid != null;
+    private GridCheckpointManager checkpoints(Ignite ignite) {
+        assert ignite != null;
 
-        return ((GridKernal)grid).context().checkpoint();
+        return ((GridKernal) ignite).context().checkpoint();
     }
 
     /** {@inheritDoc} */
@@ -166,9 +166,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         final AtomicInteger rmvCnt = new AtomicInteger();
 
         try {
-            Grid grid = startGrid(gridName);
+            Ignite ignite = startGrid(gridName);
 
-            grid.events().localListen(new GridPredicate<GridEvent>() {
+            ignite.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt instanceof GridCheckpointEvent;
 
@@ -200,10 +200,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 }
             }, EVT_CHECKPOINT_SAVED, EVT_CHECKPOINT_LOADED, EVT_CHECKPOINT_REMOVED);
 
-            executeAsync(grid.compute(), GridTestCheckpointTask.class, null).get(2 * 60 * 1000);
+            executeAsync(ignite.compute(), GridTestCheckpointTask.class, null).get(2 * 60 * 1000);
 
-            assert checkCheckpointManager(grid) : "Session IDs got stuck after task completion: " +
-                checkpoints(grid).sessionIds();
+            assert checkCheckpointManager(ignite) : "Session IDs got stuck after task completion: " +
+                checkpoints(ignite).sessionIds();
         }
         finally {
             stopGrid(gridName);
@@ -239,15 +239,15 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         try {
             startGrid(gridName + 1);
 
-            Grid grid = startGrid(gridName);
+            Ignite ignite = startGrid(gridName);
 
-            GridFuture fut = executeAsync(grid.compute(), new GridMultiNodeGlobalConsumerTask(), null);
+            GridFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
 
-            executeAsync(grid.compute(), GridMultiNodeTestCheckPointTask.class, null).get(2 * 60 * 1000);
+            executeAsync(ignite.compute(), GridMultiNodeTestCheckPointTask.class, null).get(2 * 60 * 1000);
 
             fut.get();
 
-            for (Grid g : G.allGrids()) {
+            for (Ignite g : G.allGrids()) {
                 assert checkCheckpointManager(g) : "Session IDs got stuck after task completion [grid=" + g.name() +
                     ", sesIds=" + checkpoints(g).sessionIds() + ']';
             }
@@ -263,7 +263,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @SuppressWarnings( {"BusyWait"})
-    private boolean checkCheckpointManager(Grid g) throws Exception {
+    private boolean checkCheckpointManager(Ignite g) throws Exception {
         int i = 0;
 
         while (true) {
@@ -285,7 +285,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private static class GridTestCheckpointJob extends GridComputeJobAdapter {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridTaskSessionResource
@@ -294,7 +294,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         /** {@inheritDoc} */
         @SuppressWarnings({"TooBroadScope"})
         @Override public String execute() throws GridException {
-            assert grid != null;
+            assert ignite != null;
             assert taskSes != null;
 
             final String key1 = "test-checkpoint-key1";
@@ -351,7 +351,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 0);
 
-            ((GridKernalMBean)grid).removeCheckpoint(key1);
+            ((GridKernalMBean) ignite).removeCheckpoint(key1);
 
             // This checkpoint will not be automatically removed for cache SPI.
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 5000);
@@ -402,7 +402,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private static class GridMultiNodeTestCheckpointProducerJob extends GridComputeJobAdapter {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** */
         @GridTaskSessionResource
@@ -410,7 +410,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override public String execute() throws GridException {
-            assert grid != null;
+            assert ignite != null;
             assert taskSes != null;
 
             assert startLatch != null;

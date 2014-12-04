@@ -251,14 +251,14 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
             lbean = new GridLifecycleBean() {
                 @GridInstanceResource
-                private Grid grid;
+                private Ignite ignite;
 
                 @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
                     if (evt == GridLifecycleEventType.AFTER_GRID_START) {
-                        GridCache<Integer, String> c = grid.cache(null);
+                        GridCache<Integer, String> c = ignite.cache(null);
 
                         if (c.putxIfAbsent(-1, "true")) {
-                            populate(grid.<Integer, String>cache(null), cnt);
+                            populate(ignite.<Integer, String>cache(null), cnt);
 
                             info(">>> POPULATED GRID <<<");
                         }

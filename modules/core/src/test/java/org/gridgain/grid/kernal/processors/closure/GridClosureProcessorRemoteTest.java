@@ -46,7 +46,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of failure.
      */
     public void testAnonymousBroadcast() throws Exception {
-        Grid g = grid();
+        Ignite g = grid();
 
         assert g.cluster().nodes().size() >= 2;
 
@@ -63,7 +63,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of failure.
      */
     public void testAnonymousUnicast() throws Exception {
-        Grid g = grid();
+        Ignite g = grid();
 
         assert g.cluster().nodes().size() >= 2;
 
@@ -83,7 +83,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of failure.
      */
     public void testAnonymousUnicastRequest() throws Exception {
-        Grid g = grid();
+        Ignite g = grid();
 
         assert g.cluster().nodes().size() >= 2;
 

@@ -299,7 +299,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
             @Override public Collection<WeakReference<Object>> call() throws Exception {
                 Collection<WeakReference<Object>> refs = new ArrayList<>();
 
-                Grid g = startGrid();
+                Ignite g = startGrid();
 
                 try {
                     GridCache<Integer, TestValue> cache = g.cache(null);
@@ -340,7 +340,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
             @Override public Collection<WeakReference<Object>> call() throws Exception {
                 Collection<WeakReference<Object>> refs = new ArrayList<>();
 
-                Grid g = startGrid();
+                Ignite g = startGrid();
 
                 try {
                     GridCache<Integer, TestValue> cache = g.cache(null);
@@ -373,7 +373,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
             @Override public Collection<WeakReference<Object>> call() throws Exception {
                 Collection<WeakReference<Object>> refs = new ArrayList<>();
 
-                Grid g = startGrid();
+                Ignite g = startGrid();
 
                 try {
                     GridCache<Integer, TestValue> cache = g.cache(null);
@@ -413,7 +413,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
             @Override public Collection<WeakReference<Object>> call() throws Exception {
                 Collection<WeakReference<Object>> refs = new ArrayList<>();
 
-                Grid g = startGrid();
+                Ignite g = startGrid();
 
                 try {
                     GridCache<Integer, TestValue> cache = g.cache(null);
@@ -450,7 +450,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
             @Override public Collection<WeakReference<Object>> call() throws Exception {
                 Collection<WeakReference<Object>> refs = new ArrayList<>();
 
-                Grid g = startGrid();
+                Ignite g = startGrid();
 
                 try {
                     GridCache<Integer, TestValue> cache = g.cache(null);

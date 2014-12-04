@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.typedef.*;
 import org.springframework.beans.factory.*;
@@ -35,7 +34,7 @@ public class GridTestMain {
         BeanFactory ctx = new ClassPathXmlApplicationContext("org/gridgain/loadtests/colocation/spring-colocation.xml");
 
         // Initialize Spring factory.
-        try (Grid g = G.start((GridConfiguration)ctx.getBean("grid.cfg"))) {
+        try (Ignite g = G.start((GridConfiguration)ctx.getBean("grid.cfg"))) {
             final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 
             assert cache != null;
@@ -62,7 +61,7 @@ public class GridTestMain {
     private static void colocateJobs() throws Exception {
         X.println("Collocating jobs...");
 
-        Grid g = G.grid();
+        Ignite g = G.grid();
 
         final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 

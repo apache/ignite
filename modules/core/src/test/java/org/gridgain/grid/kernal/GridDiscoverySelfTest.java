@@ -39,7 +39,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static Grid grid;
+    private static Ignite ignite;
 
     /** Nodes count. */
     private static final int NODES_CNT = 5;
@@ -74,14 +74,14 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid = G.grid(getTestGridName());
+        ignite = G.grid(getTestGridName());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetRemoteNodes() throws Exception {
-        Collection<GridNode> nodes = grid.cluster().forRemotes().nodes();
+        Collection<GridNode> nodes = ignite.cluster().forRemotes().nodes();
 
         printNodes(nodes);
     }
@@ -90,7 +90,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetAllNodes() throws Exception {
-        Collection<GridNode> nodes = grid.cluster().nodes();
+        Collection<GridNode> nodes = ignite.cluster().nodes();
 
         printNodes(nodes);
 
@@ -118,7 +118,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 nodes.add(new GridDiscoveryTestNode());
 
             @SuppressWarnings("deprecation")
-            long hash = ((GridKernal)grid).context().discovery().topologyHash(nodes);
+            long hash = ((GridKernal) ignite).context().discovery().topologyHash(nodes);
 
             boolean isHashed = hashes.add(hash);
 
@@ -133,11 +133,11 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public void testGetLocalNode() throws Exception {
-        GridNode node = grid.cluster().localNode();
+        GridNode node = ignite.cluster().localNode();
 
         assert node != null;
 
-        Collection<GridNode> nodes = grid.cluster().nodes();
+        Collection<GridNode> nodes = ignite.cluster().nodes();
 
         assert nodes != null;
         assert nodes.contains(node);
@@ -147,11 +147,11 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPingNode() throws Exception {
-        GridNode node = grid.cluster().localNode();
+        GridNode node = ignite.cluster().localNode();
 
         assert node != null;
 
-        boolean pingRes = grid.cluster().pingNode(node.id());
+        boolean pingRes = ignite.cluster().pingNode(node.id());
 
         assert pingRes : "Failed to ping local node.";
     }
@@ -160,7 +160,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDiscoveryListener() throws Exception {
-        GridNode node = grid.cluster().localNode();
+        GridNode node = ignite.cluster().localNode();
 
         assert node != null;
 
@@ -193,7 +193,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             }
         };
 
-        grid.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        ignite.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
         try {
             for (int i = 0; i < NODES_CNT; i++)
@@ -210,7 +210,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
             assert cnt.get() == 0;
 
-            grid.events().stopLocalListen(lsnr);
+            ignite.events().stopLocalListen(lsnr);
 
             assert cnt.get() == 0;
         }
@@ -227,7 +227,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
-        GridDiscoveryManager discoMgr = ((GridKernal)grid).context().discovery();
+        GridDiscoveryManager discoMgr = ((GridKernal) ignite).context().discovery();
 
         Collection<GridNode> nodes = discoMgr.allNodes();
 
@@ -239,7 +239,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         List<UUID> uuids = new ArrayList<>(NODES_CNT);
 
-        UUID locId = grid.cluster().localNode().id();
+        UUID locId = ignite.cluster().localNode().id();
 
         try {
             // Start nodes.

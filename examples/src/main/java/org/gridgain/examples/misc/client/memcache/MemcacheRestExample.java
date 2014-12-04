@@ -39,7 +39,7 @@ public class MemcacheRestExample {
     public static void main(String[] args) throws Exception {
         MemcachedClient client = null;
 
-        try (Grid g = GridGain.start(MemcacheRestExampleNodeStartup.configuration())) {
+        try (Ignite g = GridGain.start(MemcacheRestExampleNodeStartup.configuration())) {
             System.out.println();
             System.out.println(">>> Memcache REST example started.");
 

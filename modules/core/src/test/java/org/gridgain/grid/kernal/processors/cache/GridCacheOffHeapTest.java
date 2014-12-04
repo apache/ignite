@@ -168,7 +168,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void performanceTest() throws Exception {
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         try {
             GridCache<Integer, Integer> cache = g.cache(null);
@@ -198,7 +198,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void performanceMultithreadedTest() throws Exception {
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         try {
             final GridCache<Integer, Integer> c = g.cache(null);

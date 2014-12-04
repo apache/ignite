@@ -359,7 +359,7 @@ public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcess
     public void testCustomPort() throws Exception {
         customPort = 11212;
 
-        Grid g = startGrid();
+        Ignite g = startGrid();
 
         assert g != null;
         assert g.cluster().nodes().size() == gridCount() + 1;

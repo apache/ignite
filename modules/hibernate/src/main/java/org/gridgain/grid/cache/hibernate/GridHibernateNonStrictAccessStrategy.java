@@ -52,12 +52,12 @@ public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStr
     private final ThreadLocal<WriteContext> writeCtx;
 
     /**
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Cache.
      * @param writeCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected GridHibernateNonStrictAccessStrategy(Grid grid, GridCache<Object, Object> cache, ThreadLocal writeCtx) {
-        super(grid, cache);
+    protected GridHibernateNonStrictAccessStrategy(Ignite ignite, GridCache<Object, Object> cache, ThreadLocal writeCtx) {
+        super(ignite, cache);
 
         this.writeCtx = (ThreadLocal<WriteContext>)writeCtx;
     }

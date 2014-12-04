@@ -52,12 +52,12 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testGet() throws Exception {
-        Grid grid = startGrid(getTestGridName());
+        Ignite ignite = startGrid(getTestGridName());
 
         Thread futThread = null;
 
         try {
-            final GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridStopTestTask.class.getName(), null);
+            final GridComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridStopTestTask.class.getName(), null);
 
             fut.listenAsync(new CI1<GridFuture>() {
                 @SuppressWarnings({"NakedNotify"})

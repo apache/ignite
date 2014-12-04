@@ -71,7 +71,7 @@ public class StreamingPriceBarsExample {
         Timer timer = new Timer("priceBars");
 
         // Start grid.
-        final Grid g = GridGain.start("examples/config/example-streamer.xml");
+        final Ignite g = GridGain.start("examples/config/example-streamer.xml");
 
         System.out.println();
         System.out.println(">>> Streaming price bars example started.");
@@ -115,7 +115,7 @@ public class StreamingPriceBarsExample {
      * @param timer Timer.
      * @return Scheduled task.
      */
-    private static TimerTask scheduleQuery(final Grid g, Timer timer) {
+    private static TimerTask scheduleQuery(final Ignite g, Timer timer) {
         TimerTask task = new TimerTask() {
             @Override public void run() {
                 final GridStreamer streamer = g.streamer("priceBars");
@@ -174,7 +174,7 @@ public class StreamingPriceBarsExample {
      * @param g Grid.
      * @throws GridException If failed.
      */
-    private static void streamData(final Grid g) throws GridException {
+    private static void streamData(final Ignite g) throws GridException {
         GridStreamer streamer = g.streamer("priceBars");
 
         for (int i = 0; i < CNT; i++) {

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -97,7 +96,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
      * @param configureTimeout Alter configuration of TX manager.
      * @throws Exception If failed.
      */
-    private void checkCache(Grid g, String cacheName, boolean simulateTimeout,
+    private void checkCache(Ignite g, String cacheName, boolean simulateTimeout,
         boolean configureTimeout) throws Exception {
         if (configureTimeout) {
             GridCacheAdapter<Integer, Integer> cache = ((GridKernal)g).internalCache(cacheName);

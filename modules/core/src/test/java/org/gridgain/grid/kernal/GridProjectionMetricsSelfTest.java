@@ -89,14 +89,14 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     private void performTaskExecutionTest() throws Exception {
-        Grid g = grid(0);
+        Ignite g = grid(0);
 
         JobFinishLock jobFinishLock = new JobFinishLock();
 
         MetricsUpdateLock metricsUpdLock = new MetricsUpdateLock();
 
         try {
-            for (Grid g0 : G.allGrids())
+            for (Ignite g0 : G.allGrids())
                 g0.events().localListen(jobFinishLock, EVT_JOB_FINISHED);
 
             g.compute().execute(new GridTestTask(), "testArg");
@@ -114,7 +114,7 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
             checkMetrics(m);
         }
         finally {
-            for (Grid g0 : G.allGrids())
+            for (Ignite g0 : G.allGrids())
                 g0.events().stopLocalListen(jobFinishLock);
 
             g.events().stopLocalListen(metricsUpdLock);

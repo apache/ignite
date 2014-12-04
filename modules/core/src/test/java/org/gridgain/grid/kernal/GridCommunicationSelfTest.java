@@ -22,7 +22,7 @@ import java.util.*;
 @GridCommonTest(group = "Kernal Self")
 public class GridCommunicationSelfTest extends GridCommonAbstractTest {
     /** */
-    private static Grid grid;
+    private static Ignite ignite;
 
     /** */
     public GridCommunicationSelfTest() {
@@ -31,7 +31,7 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        grid = G.grid(getTestGridName());
+        ignite = G.grid(getTestGridName());
     }
 
     /**
@@ -54,8 +54,8 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
      */
     private void sendMessage(Collection<GridNode> nodes, int cntr) {
         try {
-            message(grid.cluster().forNodes(nodes)).send(null,
-                new GridTestCommunicationMessage(cntr, grid.cluster().localNode().id()));
+            message(ignite.cluster().forNodes(nodes)).send(null,
+                new GridTestCommunicationMessage(cntr, ignite.cluster().localNode().id()));
         }
         catch (GridException e) {
             error("Failed to send message.", e);

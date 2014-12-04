@@ -57,13 +57,13 @@ public class GridHibernateCollectionRegion extends GridHibernateTransactionalDat
     /**
      * @param factory Region factory.
      * @param name Region name.
-     * @param grid Grid.
+     * @param ignite Grid.
      * @param cache Region cache.
      * @param dataDesc Region data description.
      */
     public GridHibernateCollectionRegion(GridHibernateRegionFactory factory, String name,
-        Grid grid, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
-        super(factory, name, grid, cache, dataDesc);
+        Ignite ignite, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
+        super(factory, name, ignite, cache, dataDesc);
     }
 
     /** {@inheritDoc} */

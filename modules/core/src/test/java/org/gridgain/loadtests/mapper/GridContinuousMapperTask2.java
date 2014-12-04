@@ -23,7 +23,7 @@ import java.util.*;
 public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Integer> {
     /** Grid. */
     @GridInstanceResource
-    private Grid g;
+    private Ignite g;
 
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable int[] jobIds)
@@ -35,7 +35,7 @@ public class GridContinuousMapperTask2 extends GridComputeTaskAdapter<int[], Int
         for (int jobId : jobIds) {
             GridComputeJob job = new GridComputeJobAdapter(jobId) {
                 @GridInstanceResource
-                private Grid g;
+                private Ignite g;
 
                 @Override public Object execute() {
                     Integer jobId = argument(0);

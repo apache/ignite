@@ -189,7 +189,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -208,11 +208,11 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         /** {@inheritDoc} */
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
+            GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -236,7 +236,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -260,11 +260,11 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         /** {@inheritDoc} */
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheQueue<String> queue = grid.cache(null).dataStructures()
+            GridCacheQueue<String> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -293,7 +293,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         /** */
         @GridToStringExclude
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -312,11 +312,11 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         /** {@inheritDoc} */
         @Override public Integer call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + ']');
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
+            GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -346,7 +346,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     protected static class TakeJob implements GridCallable<Boolean> {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -360,11 +360,11 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         /** {@inheritDoc} */
         @Override public Boolean call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + ']');
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
+            GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -376,7 +376,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
                 queue.take();
             }
             catch (GridRuntimeException e) {
-                grid.log().info("Caught expected exception: " + e.getMessage());
+                ignite.log().info("Caught expected exception: " + e.getMessage());
             }
 
             return queue.removed();
@@ -394,7 +394,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     protected static class RemoveQueueJob implements GridCallable<Boolean> {
         /** */
         @GridInstanceResource
-        private Grid grid;
+        private Ignite ignite;
 
         /** Queue name. */
         private final String queueName;
@@ -408,18 +408,18 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         /** {@inheritDoc} */
         @Override public Boolean call() throws GridException {
-            assertNotNull(grid);
+            assertNotNull(ignite);
 
-            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
+            GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, false);
 
             assert queue != null;
 
             assert queue.capacity() == QUEUE_CAPACITY;
 
-            assert grid.cache(null).dataStructures().removeQueue(queueName);
+            assert ignite.cache(null).dataStructures().removeQueue(queueName);
 
             return true;
         }

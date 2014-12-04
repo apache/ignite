@@ -45,7 +45,7 @@ public final class MessagingExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+        try (Ignite g = GridGain.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 
@@ -97,7 +97,7 @@ public final class MessagingExample {
         // Add ordered message listener.
         msg.remoteListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
             @GridInstanceResource
-            private Grid g;
+            private Ignite g;
 
             @Override public boolean apply(UUID nodeId, String msg) {
                 System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
@@ -116,7 +116,7 @@ public final class MessagingExample {
         // Add unordered message listener.
         msg.remoteListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
             @GridInstanceResource
-            private Grid g;
+            private Ignite g;
 
             @Override public boolean apply(UUID nodeId, String msg) {
                 System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');

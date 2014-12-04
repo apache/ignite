@@ -179,7 +179,7 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
         out("Starting grids to warmup caches [gridCnt=" + gridCnt +
             ", caches=" + cfg.getCacheConfiguration().length + ']');
 
-        Collection<Grid> grids = new LinkedList<>();
+        Collection<Ignite> ignites = new LinkedList<>();
 
         String old = System.getProperty(GridSystemProperties.GG_UPDATE_NOTIFIER);
 
@@ -203,17 +203,17 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
 
                 cfg0.setGridName("gridgain-warmup-grid-" + i);
 
-                grids.add(GridGain.start(cfg0));
+                ignites.add(GridGain.start(cfg0));
             }
 
-            doWarmup(grids);
+            doWarmup(ignites);
         }
         catch (Exception e) {
             throw new GridRuntimeException(e);
         }
         finally {
-            for (Grid grid : grids)
-                GridGain.stop(grid.name(), false);
+            for (Ignite ignite : ignites)
+                GridGain.stop(ignite.name(), false);
 
             out("Stopped warmup grids.");
 
@@ -227,8 +227,8 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
     /**
      * @param grids Grids to warmup.
      */
-    private void doWarmup(Iterable<Grid> grids) throws Exception {
-        Grid first = F.first(grids);
+    private void doWarmup(Iterable<Ignite> grids) throws Exception {
+        Ignite first = F.first(grids);
 
         ExecutorService svc = Executors.newFixedThreadPool(threadCnt);
 
