@@ -24,7 +24,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      * @throws Exception Thrown if test fails.
      */
     public void testCorrectMBeanInfo() throws Exception {
-        StandardMBean mbean = new GridStandardMBean(new GridMBeanImplementation(), GridMBeanInterface.class);
+        StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(), GridMBeanInterface.class);
 
         MBeanInfo info =  mbean.getMBeanInfo();
 
@@ -70,7 +70,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testMissedNameMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new GridStandardMBean(new GridMBeanImplementation(), GridMBeanInterfaceBad.class);
+            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(), GridMBeanInterfaceBad.class);
 
             mbean.getMBeanInfo();
         }
@@ -87,7 +87,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testMissedDescriptionMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new GridStandardMBean(new GridMBeanImplementation(),
+            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(),
                 GridMBeanInterfaceBadAgain.class);
 
             mbean.getMBeanInfo();
@@ -105,7 +105,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyDescriptionMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new GridStandardMBean(new GridMBeanImplementation(),
+            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(),
                 GridMBeanInterfaceEmptyDescription.class);
 
             mbean.getMBeanInfo();
@@ -123,7 +123,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyNameMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new GridStandardMBean(new GridMBeanImplementation(),
+            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(),
                 GridMBeanInterfaceEmptyName.class);
 
             mbean.getMBeanInfo();

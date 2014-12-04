@@ -19,7 +19,7 @@ import java.util.*;
  * Extension of standard Java MBean. Overrides some hooks to return
  * annotation based descriptions.
  */
-public class GridStandardMBean extends StandardMBean {
+public class IgniteStandardMBean extends StandardMBean {
     /**
      * Objects maps from primitive classes to primitive object classes.
      */
@@ -57,7 +57,7 @@ public class GridStandardMBean extends StandardMBean {
      *    if the given {@code implementation} does not implement the
      *    specified interface.
      */
-    public <T> GridStandardMBean(T implementation,Class<T> mbeanInterface)
+    public <T> IgniteStandardMBean(T implementation, Class<T> mbeanInterface)
         throws NotCompliantMBeanException {
         super(implementation, mbeanInterface);
     }

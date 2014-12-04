@@ -3877,7 +3877,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new GridStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -3901,7 +3901,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new GridStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -3927,7 +3927,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new GridStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
 
         mbean.getMBeanInfo();
 
