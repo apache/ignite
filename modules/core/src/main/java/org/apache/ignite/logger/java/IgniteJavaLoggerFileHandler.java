@@ -21,7 +21,7 @@ import java.util.logging.*;
 /**
  * File logging handler which skips all the messages until node ID is set.
  */
-public final class GridJavaLoggerFileHandler extends StreamHandler {
+public final class IgniteJavaLoggerFileHandler extends StreamHandler {
     /** Log manager. */
     private static final LogManager manager = LogManager.getLogManager();
 
@@ -115,7 +115,7 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
      * @return Pattern or {@code null} if node id has not been set yet.
      */
     @Nullable public String fileName() {
-        return GridJavaLogger.fileName(delegate);
+        return IgniteJavaLogger.fileName(delegate);
     }
 
     /**
@@ -177,6 +177,6 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridJavaLoggerFileHandler.class, this);
+        return S.toString(IgniteJavaLoggerFileHandler.class, this);
     }
 }

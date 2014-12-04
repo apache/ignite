@@ -34,7 +34,7 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.GridClient
  */
 final class GridTestBinaryClient {
     /** Logger. */
-    private final IgniteLogger log = new GridJavaLogger();
+    private final IgniteLogger log = new IgniteJavaLogger();
 
     /** Marshaller. */
     private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();

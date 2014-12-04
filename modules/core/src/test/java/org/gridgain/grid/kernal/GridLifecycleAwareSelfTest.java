@@ -117,7 +117,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestLogger extends GridJavaLogger implements LifecycleAware {
+    private static class TestLogger extends IgniteJavaLogger implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 

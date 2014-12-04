@@ -58,7 +58,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements IgniteLogger, GridLoggerNodeIdAware {
+public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements IgniteLogger, IgniteLoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -395,8 +395,8 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Ign
         this.nodeId = nodeId;
 
         for (FileAppender a : fileAppenders) {
-            if (a instanceof GridLoggerNodeIdAware) {
-                ((GridLoggerNodeIdAware)a).setNodeId(nodeId);
+            if (a instanceof IgniteLoggerNodeIdAware) {
+                ((IgniteLoggerNodeIdAware)a).setNodeId(nodeId);
 
                 a.activateOptions();
             }

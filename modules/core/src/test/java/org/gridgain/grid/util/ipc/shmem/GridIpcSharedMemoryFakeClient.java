@@ -21,8 +21,8 @@ public class GridIpcSharedMemoryFakeClient {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception{
-        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new GridJavaLogger());
-        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new GridJavaLogger());
-        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new GridJavaLogger());
+        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
+        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
+        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
     }
 }

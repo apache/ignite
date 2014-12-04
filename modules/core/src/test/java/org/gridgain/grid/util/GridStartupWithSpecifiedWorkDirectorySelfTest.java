@@ -88,7 +88,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testStartStopWithUndefinedHomeAndWorkDirs() throws Exception {
-        IgniteLogger log = new GridJavaLogger();
+        IgniteLogger log = new IgniteJavaLogger();
 
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);
@@ -123,7 +123,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testStartStopWithUndefinedHomeAndConfiguredWorkDirs() throws Exception {
-        IgniteLogger log = new GridJavaLogger();
+        IgniteLogger log = new IgniteJavaLogger();
 
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);

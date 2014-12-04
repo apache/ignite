@@ -20,7 +20,7 @@ import java.util.logging.*;
 /**
  * Formatter for JUL logger.
  */
-public class GridJavaLoggerFormatter extends Formatter {
+public class IgniteJavaLoggerFormatter extends Formatter {
     /** Name for anonymous loggers. */
     public static final String ANONYMOUS_LOGGER_NAME = "UNKNOWN";
 
@@ -66,6 +66,6 @@ public class GridJavaLoggerFormatter extends Formatter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridJavaLoggerFormatter.class, this);
+        return S.toString(IgniteJavaLoggerFormatter.class, this);
     }
 }

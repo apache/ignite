@@ -75,7 +75,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class GridJavaLogger extends GridMetadataAwareAdapter implements IgniteLogger, GridLoggerNodeIdAware {
+public class IgniteJavaLogger extends GridMetadataAwareAdapter implements IgniteLogger, IgniteLoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -104,7 +104,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements IgniteLo
     /**
      * Creates new logger.
      */
-    public GridJavaLogger() {
+    public IgniteJavaLogger() {
         this(!isConfigured());
     }
 
@@ -144,7 +144,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements IgniteLo
      *      If {@code false}, then no implicit initialization will take place,
      *      and java logger should be configured prior to calling this constructor.
      */
-    public GridJavaLogger(boolean init) {
+    public IgniteJavaLogger(boolean init) {
         impl = Logger.getLogger("");
 
         if (init) {
@@ -162,7 +162,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements IgniteLo
      *
      * @param impl Java Logging implementation to use.
      */
-    public GridJavaLogger(final Logger impl) {
+    public IgniteJavaLogger(final Logger impl) {
         assert impl != null;
 
         configure(impl);
@@ -172,7 +172,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements IgniteLo
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new GridJavaLogger(ctgr == null ? Logger.getLogger("") : Logger.getLogger(
+        return new IgniteJavaLogger(ctgr == null ? Logger.getLogger("") : Logger.getLogger(
             ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
     }
 
@@ -297,7 +297,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements IgniteLo
 
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
-        GridJavaLoggerFileHandler gridFileHnd = findHandler(impl, GridJavaLoggerFileHandler.class);
+        IgniteJavaLoggerFileHandler gridFileHnd = findHandler(impl, IgniteJavaLoggerFileHandler.class);
 
         if (gridFileHnd != null)
             return gridFileHnd.fileName();
@@ -340,7 +340,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements IgniteLo
             this.nodeId = nodeId;
         }
 
-        GridJavaLoggerFileHandler fileHnd = findHandler(impl, GridJavaLoggerFileHandler.class);
+        IgniteJavaLoggerFileHandler fileHnd = findHandler(impl, IgniteJavaLoggerFileHandler.class);
 
         if (fileHnd == null)
             return;

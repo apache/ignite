@@ -2002,12 +2002,12 @@ public class GridGainEx {
                             cfgLog = (IgniteLogger)log4jCls.newInstance();
                     }
                     else
-                        cfgLog = new GridJavaLogger();
+                        cfgLog = new IgniteJavaLogger();
                 }
 
                 // Set node IDs for all file appenders.
-                if (cfgLog instanceof GridLoggerNodeIdAware)
-                    ((GridLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+                if (cfgLog instanceof IgniteLoggerNodeIdAware)
+                    ((IgniteLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
                 return cfgLog;
             }

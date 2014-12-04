@@ -76,7 +76,7 @@ public class GridIpcSharedMemoryBenchmarkWriter implements GridIpcSharedMemoryBe
 
                     try {
                         client = GridIpcEndpointFactory.connectEndpoint("shmem:" +
-                            GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new GridJavaLogger());
+                            GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new IgniteJavaLogger());
 
                         OutputStream space = client.outputStream();
 

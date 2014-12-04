@@ -31,9 +31,9 @@ public class GridJavaLoggerTest extends TestCase {
     public void testLogInitialize() throws Exception {
         U.setWorkDirectory(null, U.getGridGainHome());
 
-        log = new GridJavaLogger();
+        log = new IgniteJavaLogger();
 
-        ((GridLoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
+        ((IgniteLoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");
@@ -46,7 +46,7 @@ public class GridJavaLoggerTest extends TestCase {
         log.error("This is 'error' message.");
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
-        assert log.getLogger(GridJavaLoggerTest.class.getName()) instanceof GridJavaLogger;
+        assert log.getLogger(GridJavaLoggerTest.class.getName()) instanceof IgniteJavaLogger;
 
         assert log.fileName() != null;
 

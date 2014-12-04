@@ -42,7 +42,7 @@ public class GridGgfsSharedMemoryTestClient {
 
         try {
             GridIpcSharedMemoryClientEndpoint client = (GridIpcSharedMemoryClientEndpoint)GridIpcEndpointFactory.connectEndpoint(
-                "shmem:" + GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new GridJavaLogger());
+                "shmem:" + GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new IgniteJavaLogger());
 
             os = client.outputStream();
 
