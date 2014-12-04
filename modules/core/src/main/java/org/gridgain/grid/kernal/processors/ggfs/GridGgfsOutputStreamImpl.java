@@ -398,7 +398,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
         if (!ggfsCtx.configuration().isFragmentizerEnabled())
             return null;
 
-        if (!Boolean.parseBoolean(fileInfo.properties().get(GridGgfs.PROP_PREFER_LOCAL_WRITES)))
+        if (!Boolean.parseBoolean(fileInfo.properties().get(IgniteFs.PROP_PREFER_LOCAL_WRITES)))
             return null;
 
         int blockSize = fileInfo.blockSize();

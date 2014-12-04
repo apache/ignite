@@ -60,7 +60,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     private static GridGgfsImpl ggfsPrimary;
 
     /** Secondary GGFS instance. */
-    private static GridGgfs secondaryFs;
+    private static IgniteFs secondaryFs;
 
     /** Primary file system data cache. */
     private static GridCacheAdapter<GridGgfsBlockKey, byte[]> dataCache;

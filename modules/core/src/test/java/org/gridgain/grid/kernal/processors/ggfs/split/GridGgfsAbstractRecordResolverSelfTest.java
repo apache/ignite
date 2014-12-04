@@ -39,7 +39,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
     private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** GGFS. */
-    protected static GridGgfs ggfs;
+    protected static IgniteFs ggfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

@@ -44,6 +44,6 @@ public interface GridGgfsRecordResolver extends Serializable {
      * @throws GridException If resolve failed.
      * @throws IOException If resolve failed.
      */
-    @Nullable public GridGgfsFileRange resolveRecords(GridGgfs ggfs, GridGgfsInputStream stream,
+    @Nullable public GridGgfsFileRange resolveRecords(IgniteFs ggfs, GridGgfsInputStream stream,
         GridGgfsFileRange suggestedRecord) throws GridException, IOException;
 }

@@ -50,7 +50,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     protected final SecureRandom rnd = new SecureRandom();
 
     /** File system. */
-    protected GridGgfs ggfs;
+    protected IgniteFs ggfs;
 
     /** Meta cache. */
     private GridCache<Object, Object> metaCache;
@@ -148,7 +148,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testGgfsEnabled() throws Exception {
-        GridGgfs ggfs = grid(0).ggfs(ggfsName());
+        IgniteFs ggfs = grid(0).ggfs(ggfsName());
 
         assertNotNull(ggfs);
     }

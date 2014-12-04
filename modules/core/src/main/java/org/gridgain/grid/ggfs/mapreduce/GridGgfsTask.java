@@ -81,7 +81,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
         assert ignite != null;
         assert args != null;
 
-        GridGgfs ggfs = ignite.ggfs(args.ggfsName());
+        IgniteFs ggfs = ignite.ggfs(args.ggfsName());
         GridGgfsProcessorAdapter ggfsProc = ((GridKernal) ignite).context().ggfs();
 
         Map<GridComputeJob, ClusterNode> splitMap = new HashMap<>();

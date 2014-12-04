@@ -591,7 +591,7 @@ public class VisorTaskUtils {
      * @return {@link Path} to log dir or {@code null} if not found.
      * @throws GridException if failed to resolve.
      */
-    public static Path resolveGgfsProfilerLogsDir(GridGgfs ggfs) throws GridException {
+    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws GridException {
         String logsDir;
 
         if (ggfs instanceof GridGgfsEx)

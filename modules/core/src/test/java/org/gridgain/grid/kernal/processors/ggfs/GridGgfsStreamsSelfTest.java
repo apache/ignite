@@ -66,7 +66,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
     public static final int ASSERT_RETRY_INTERVAL = 100;
 
     /** File system to test. */
-    private GridGgfs fs;
+    private IgniteFs fs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -221,12 +221,12 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
         GridGgfsPath path = new GridGgfsPath("/file");
 
         try {
-            GridGgfs fs0 = grid(0).ggfs("ggfs");
-            GridGgfs fs1 = grid(1).ggfs("ggfs");
-            GridGgfs fs2 = grid(2).ggfs("ggfs");
+            IgniteFs fs0 = grid(0).ggfs("ggfs");
+            IgniteFs fs1 = grid(1).ggfs("ggfs");
+            IgniteFs fs2 = grid(2).ggfs("ggfs");
 
             try (GridGgfsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
-                F.asMap(GridGgfs.PROP_PREFER_LOCAL_WRITES, "true"))) {
+                F.asMap(IgniteFs.PROP_PREFER_LOCAL_WRITES, "true"))) {
                 // 1.5 blocks
                 byte[] data = new byte[CFG_BLOCK_SIZE * 3 / 2];
 

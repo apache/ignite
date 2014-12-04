@@ -46,8 +46,8 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Converts context to GGFS. */
-    private static final IgniteClosure<GridGgfsContext,GridGgfs> CTX_TO_GGFS = new C1<GridGgfsContext, GridGgfs>() {
-        @Override public GridGgfs apply(GridGgfsContext ggfsCtx) {
+    private static final IgniteClosure<GridGgfsContext,IgniteFs> CTX_TO_GGFS = new C1<GridGgfsContext, IgniteFs>() {
+        @Override public IgniteFs apply(GridGgfsContext ggfsCtx) {
             return ggfsCtx.ggfs();
         }
     };
@@ -202,12 +202,12 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Collection<GridGgfs> ggfss() {
+    @Override public Collection<IgniteFs> ggfss() {
         return F.viewReadOnly(ggfsCache.values(), CTX_TO_GGFS);
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridGgfs ggfs(@Nullable String name) {
+    @Override @Nullable public IgniteFs ggfs(@Nullable String name) {
         GridGgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
         return ggfsCtx == null ? null : ggfsCtx.ggfs();

@@ -47,7 +47,7 @@ import java.util.*;
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
-public interface GridGgfs extends GridGgfsFileSystem, IgniteAsyncSupport {
+public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
     /** GGFS scheme name. */
     public static final String GGFS_SCHEME = "ggfs";
 
@@ -328,5 +328,5 @@ public interface GridGgfs extends GridGgfsFileSystem, IgniteAsyncSupport {
         long maxRangeLen, @Nullable T arg) throws GridException;
 
     /** {@inheritDoc} */
-    @Override public GridGgfs enableAsync();
+    @Override public IgniteFs enableAsync();
 }

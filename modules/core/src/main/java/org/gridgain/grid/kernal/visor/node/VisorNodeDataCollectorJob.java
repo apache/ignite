@@ -99,7 +99,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             GridGgfsProcessorAdapter ggfsProc = ((GridKernal)g).context().ggfs();
 
-            for (GridGgfs ggfs : ggfsProc.ggfss()) {
+            for (IgniteFs ggfs : ggfsProc.ggfss()) {
                 Collection<GridIpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
 
                 if (endPoints != null) {

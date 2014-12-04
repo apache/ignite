@@ -237,7 +237,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If failed.
      */
     private void prepareFile(String fileName, int lineCnt) throws Exception {
-        GridGgfs ggfs = grid(0).ggfs(ggfsName);
+        IgniteFs ggfs = grid(0).ggfs(ggfsName);
 
         try (OutputStream os = ggfs.create(new GridGgfsPath(fileName), true)) {
             PrintWriter w = new PrintWriter(new OutputStreamWriter(os));

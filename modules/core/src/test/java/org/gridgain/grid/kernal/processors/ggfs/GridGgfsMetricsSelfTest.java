@@ -46,10 +46,10 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Primary GGFS instances. */
-    private static GridGgfs[] ggfsPrimary;
+    private static IgniteFs[] ggfsPrimary;
 
     /** Secondary GGFS instance. */
-    private static GridGgfs ggfsSecondary;
+    private static IgniteFs ggfsSecondary;
 
     /** Primary file system block size. */
     public static final int PRIMARY_BLOCK_SIZE = 512;
@@ -74,7 +74,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startPrimary() throws Exception {
-        ggfsPrimary = new GridGgfs[NODES_CNT];
+        ggfsPrimary = new IgniteFs[NODES_CNT];
 
         for (int i = 0; i < NODES_CNT; i++) {
             Ignite g = G.start(primaryConfiguration(i));
@@ -199,7 +199,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testMetrics() throws Exception {
-        GridGgfs fs = ggfsPrimary[0];
+        IgniteFs fs = ggfsPrimary[0];
 
         assertNotNull(fs);
 
@@ -339,7 +339,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testMultipleClose() throws Exception {
-        GridGgfs fs = ggfsPrimary[0];
+        IgniteFs fs = ggfsPrimary[0];
 
         GridGgfsOutputStream out = fs.create(new GridGgfsPath("/file"), false);
 

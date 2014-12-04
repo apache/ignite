@@ -49,7 +49,7 @@ public class GridGgfsHadoopEndpoint {
      */
     public static URI normalize(URI uri) throws IOException {
         try {
-            if (!F.eq(GridGgfs.GGFS_SCHEME, uri.getScheme()))
+            if (!F.eq(IgniteFs.GGFS_SCHEME, uri.getScheme()))
                 throw new IOException("Failed to normalize UIR because it has non GGFS scheme: " + uri);
 
             GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(uri.getAuthority());

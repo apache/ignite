@@ -37,7 +37,7 @@ public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
      *
      * @return Collection of GGFS instances.
      */
-    public abstract Collection<GridGgfs> ggfss();
+    public abstract Collection<IgniteFs> ggfss();
 
     /**
      * Gets GGFS instance.
@@ -45,7 +45,7 @@ public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
      * @param name (Nullable) GGFS name.
      * @return GGFS instance.
      */
-    @Nullable public abstract GridGgfs ggfs(@Nullable String name);
+    @Nullable public abstract IgniteFs ggfs(@Nullable String name);
 
     /**
      * Gets server endpoints for particular GGFS.

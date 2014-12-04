@@ -98,7 +98,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public abstract static class PrimarySecondaryTest extends GridGgfsEventsAbstractSelfTest {
         /** Secondary file system. */
-        private static GridGgfs ggfsSec;
+        private static IgniteFs ggfsSec;
 
         /** {@inheritDoc} */
         @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
@@ -152,7 +152,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
          * @return Secondary file system handle.
          * @throws Exception If failed.
          */
-        @Nullable private GridGgfs startSecondary() throws Exception {
+        @Nullable private IgniteFs startSecondary() throws Exception {
             IgniteConfiguration cfg = getConfiguration("grid-secondary", getSecondaryGgfsConfiguration());
 
             cfg.setLocalHost("127.0.0.1");

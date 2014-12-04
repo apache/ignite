@@ -1819,7 +1819,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfs enableAsync() {
+    @Override public IgniteFs enableAsync() {
         return new GridGgfsAsyncImpl(this);
     }
 
@@ -2007,7 +2007,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     private Ignite g;
 
                     @Nullable @Override public IgniteBiTuple<Long, Long> execute() throws GridException {
-                        GridGgfs ggfs = ((GridKernal)g).context().ggfs().ggfs(ggfsName);
+                        IgniteFs ggfs = ((GridKernal)g).context().ggfs().ggfs(ggfsName);
 
                         if (ggfs == null)
                             return F.t(0L, 0L);

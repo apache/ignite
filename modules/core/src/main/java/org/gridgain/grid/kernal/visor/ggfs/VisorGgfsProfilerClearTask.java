@@ -51,7 +51,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
             int notDeleted = 0;
 
             try {
-                GridGgfs ggfs = g.ggfs(arg);
+                IgniteFs ggfs = g.ggfs(arg);
 
                 Path logsDir = resolveGgfsProfilerLogsDir(ggfs);
 

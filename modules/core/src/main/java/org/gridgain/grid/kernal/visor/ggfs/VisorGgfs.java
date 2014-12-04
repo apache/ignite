@@ -16,7 +16,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link GridGgfs}.
+ * Data transfer object for {@link org.gridgain.grid.ggfs.IgniteFs}.
  */
 public class VisorGgfs implements Serializable {
     /** */
@@ -59,7 +59,7 @@ public class VisorGgfs implements Serializable {
      * @return Data transfer object for given GGFS.
      * @throws GridException
      */
-    public static VisorGgfs from(GridGgfs ggfs) throws GridException {
+    public static VisorGgfs from(IgniteFs ggfs) throws GridException {
         assert ggfs != null;
 
         return new VisorGgfs(

@@ -319,7 +319,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         long used = 0, max = 0;
 
         for (int i = 0; i < 4; i++) {
-            GridGgfs ggfs = grid(i).ggfs("ggfs");
+            IgniteFs ggfs = grid(i).ggfs("ggfs");
 
             GridGgfsMetrics metrics = ggfs.metrics();
 
@@ -1290,13 +1290,13 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
                 out.write(new byte[1024 * 1024]);
             }
 
-            GridGgfs gridGgfs = grid(0).ggfs("ggfs");
+            IgniteFs igniteFs = grid(0).ggfs("ggfs");
 
             GridGgfsPath filePath = new GridGgfsPath("/someFile");
 
-            GridGgfsFile fileInfo = gridGgfs.info(filePath);
+            GridGgfsFile fileInfo = igniteFs.info(filePath);
 
-            Collection<GridGgfsBlockLocation> locations = gridGgfs.affinity(filePath, 0, fileInfo.length());
+            Collection<GridGgfsBlockLocation> locations = igniteFs.affinity(filePath, 0, fileInfo.length());
 
             assertEquals(1, locations.size());
 

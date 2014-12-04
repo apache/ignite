@@ -54,7 +54,7 @@ public class GgfsMapReduceExample {
                 String regexStr = args[1];
 
                 // Get an instance of GridGain File System.
-                GridGgfs fs = g.ggfs("ggfs");
+                IgniteFs fs = g.ggfs("ggfs");
 
                 // Working directory path.
                 GridGgfsPath workDir = new GridGgfsPath("/examples/ggfs");
@@ -87,7 +87,7 @@ public class GgfsMapReduceExample {
      * @param file File to write.
      * @throws Exception In case of exception.
      */
-    private static void writeFile(GridGgfs fs, GridGgfsPath fsPath, File file) throws Exception {
+    private static void writeFile(IgniteFs fs, GridGgfsPath fsPath, File file) throws Exception {
         System.out.println();
         System.out.println("Copying file to GGFS: " + file);
 
@@ -166,7 +166,7 @@ public class GgfsMapReduceExample {
         }
 
         /**  {@inheritDoc} */
-        @Override public Object execute(GridGgfs ggfs, GridGgfsRangeInputStream in) throws GridException, IOException {
+        @Override public Object execute(IgniteFs ggfs, GridGgfsRangeInputStream in) throws GridException, IOException {
             Collection<Line> res = null;
 
             long start = in.startOffset();

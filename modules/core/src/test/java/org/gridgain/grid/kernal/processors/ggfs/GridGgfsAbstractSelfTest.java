@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.GridGgfs.*;
+import static org.gridgain.grid.ggfs.IgniteFs.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
@@ -2176,7 +2176,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void createFile(GridGgfs ggfs, GridGgfsPath file, boolean overwrite, long blockSize,
+    protected void createFile(IgniteFs ggfs, GridGgfsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
         GridGgfsOutputStream os = null;
 
@@ -2200,7 +2200,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void appendFile(GridGgfs ggfs, GridGgfsPath file, @Nullable byte[]... chunks)
+    protected void appendFile(IgniteFs ggfs, GridGgfsPath file, @Nullable byte[]... chunks)
         throws Exception {
         GridGgfsOutputStream os = null;
 
@@ -2406,7 +2406,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfsSecondary Second GGFS.
      * @throws Exception If failed.
      */
-    protected void clear(GridGgfs ggfs, GridGgfs ggfsSecondary) throws Exception {
+    protected void clear(IgniteFs ggfs, IgniteFs ggfsSecondary) throws Exception {
         clear(ggfs);
 
         if (dual)
@@ -2419,7 +2419,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfs GGFS.
      * @throws Exception If failed.
      */
-    public static void clear(GridGgfs ggfs) throws Exception {
+    public static void clear(IgniteFs ggfs) throws Exception {
         Field workerMapFld = GridGgfsImpl.class.getDeclaredField("workerMap");
 
         workerMapFld.setAccessible(true);

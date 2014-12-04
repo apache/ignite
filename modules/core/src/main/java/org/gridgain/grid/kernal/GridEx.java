@@ -125,7 +125,7 @@ public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @param name GGFS name.
      * @return GGFS.
      */
-    @Nullable public GridGgfs ggfsx(@Nullable String name);
+    @Nullable public IgniteFs ggfsx(@Nullable String name);
 
     /**
      * Gets interop processor.

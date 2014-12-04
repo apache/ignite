@@ -166,7 +166,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
     private void startUp(boolean dfltGridName, boolean dfltGgfsName) throws Exception {
         Ignite ignite = G.start(gridConfiguration(dfltGridName, dfltGgfsName));
 
-        GridGgfs ggfs = ignite.ggfs(dfltGgfsName ? null : GGFS_NAME);
+        IgniteFs ggfs = ignite.ggfs(dfltGgfsName ? null : GGFS_NAME);
 
         ggfs.mkdirs(PATH);
     }

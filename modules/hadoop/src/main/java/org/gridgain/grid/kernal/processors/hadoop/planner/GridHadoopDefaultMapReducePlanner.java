@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.GridGgfs.*;
+import static org.gridgain.grid.ggfs.IgniteFs.*;
 
 /**
  * Default map-reduce planner implementation.

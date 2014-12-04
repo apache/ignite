@@ -40,12 +40,12 @@ public class GridNoopGgfsProcessor extends GridGgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfs> ggfss() {
+    @Override public Collection<IgniteFs> ggfss() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridGgfs ggfs(@Nullable String name) {
+    @Nullable @Override public IgniteFs ggfs(@Nullable String name) {
         return null;
     }
 

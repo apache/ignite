@@ -3017,11 +3017,11 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfs ggfs(String name) {
+    @Override public IgniteFs ggfs(String name) {
         guard();
 
         try{
-            GridGgfs ggfs = ctx.ggfs().ggfs(name);
+            IgniteFs ggfs = ctx.ggfs().ggfs(name);
 
             if (ggfs == null)
                 throw new IllegalArgumentException("GGFS is not configured: " + name);
@@ -3034,7 +3034,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridGgfs ggfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFs ggfsx(@Nullable String name) {
         guard();
 
         try {
@@ -3046,7 +3046,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfs> ggfss() {
+    @Override public Collection<IgniteFs> ggfss() {
         guard();
 
         try {

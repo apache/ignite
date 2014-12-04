@@ -17,9 +17,9 @@ import org.jetbrains.annotations.*;
 import java.net.*;
 
 /**
- * Internal API extension for {@link GridGgfs}.
+ * Internal API extension for {@link org.gridgain.grid.ggfs.IgniteFs}.
  */
-public interface GridGgfsEx extends GridGgfs {
+public interface GridGgfsEx extends IgniteFs {
     /**
      * Stops GGFS cleaning all used resources.
      */

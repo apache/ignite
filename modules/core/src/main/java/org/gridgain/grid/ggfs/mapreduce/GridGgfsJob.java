@@ -19,7 +19,7 @@ import java.io.*;
  * Defines executable unit for {@link GridGgfsTask}. Before this job is executed, it is assigned one of the
  * ranges provided by the {@link GridGgfsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
  * <p>
- * {@link #execute(GridGgfs, GridGgfsFileRange, GridGgfsInputStream)} method is given {@link GridGgfsFileRange} this
+ * {@link #execute(org.gridgain.grid.ggfs.IgniteFs, GridGgfsFileRange, GridGgfsInputStream)} method is given {@link GridGgfsFileRange} this
  * job is expected to operate on, and already opened {@link GridGgfsInputStream} for the file this range belongs to.
  * <p>
  * Note that provided input stream has position already adjusted to range start. However, it will not
@@ -45,7 +45,7 @@ public interface GridGgfsJob {
      * @throws GridException If execution failed.
      * @throws IOException If file system operation resulted in IO exception.
      */
-    public Object execute(GridGgfs ggfs, GridGgfsFileRange range, GridGgfsInputStream in) throws GridException,
+    public Object execute(IgniteFs ggfs, GridGgfsFileRange range, GridGgfsInputStream in) throws GridException,
         IOException;
 
     /**

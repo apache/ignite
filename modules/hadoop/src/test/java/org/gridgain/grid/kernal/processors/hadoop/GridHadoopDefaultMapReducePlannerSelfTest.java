@@ -66,7 +66,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static final MockGrid GRID = new MockGrid();
 
     /** Mocked GGFS. */
-    private static final GridGgfs GGFS = new MockGgfs();
+    private static final IgniteFs GGFS = new MockGgfs();
 
     /** Planner. */
     private static final GridHadoopMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
@@ -901,7 +901,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfs enableAsync() {
+        @Override public IgniteFs enableAsync() {
             return null;
         }
 
@@ -922,7 +922,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private static class MockGrid extends GridSpringBean implements GridEx {
         /** {@inheritDoc} */
-        @Override public GridGgfs ggfsx(String name) {
+        @Override public IgniteFs ggfsx(String name) {
             assert F.eq("ggfs", name);
 
             return GGFS;

@@ -24,7 +24,7 @@ import java.io.*;
  */
 public abstract class GridGgfsInputStreamJobAdapter extends GridGgfsJobAdapter {
     /** {@inheritDoc} */
-    @Override public final Object execute(GridGgfs ggfs, GridGgfsFileRange range, GridGgfsInputStream in)
+    @Override public final Object execute(IgniteFs ggfs, GridGgfsFileRange range, GridGgfsInputStream in)
         throws GridException, IOException {
         in.seek(range.start());
 
@@ -40,5 +40,5 @@ public abstract class GridGgfsInputStreamJobAdapter extends GridGgfsJobAdapter {
      * @throws GridException If execution failed.
      * @throws IOException If IO exception encountered while working with stream.
      */
-    public abstract Object execute(GridGgfs ggfs, GridGgfsRangeInputStream in) throws GridException, IOException;
+    public abstract Object execute(IgniteFs ggfs, GridGgfsRangeInputStream in) throws GridException, IOException;
 }

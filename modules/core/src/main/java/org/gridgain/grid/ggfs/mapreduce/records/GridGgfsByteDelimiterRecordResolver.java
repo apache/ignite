@@ -69,7 +69,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFileRange resolveRecords(GridGgfs ggfs, GridGgfsInputStream stream,
+    @Override public GridGgfsFileRange resolveRecords(IgniteFs ggfs, GridGgfsInputStream stream,
         GridGgfsFileRange suggestedRecord) throws GridException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();

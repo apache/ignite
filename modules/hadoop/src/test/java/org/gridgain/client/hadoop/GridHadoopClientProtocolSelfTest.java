@@ -141,7 +141,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testJobCounters() throws Exception {
-        GridGgfs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
+        IgniteFs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
 
         ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
 
@@ -259,7 +259,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     public void checkJobSubmit(boolean noCombiners, boolean noReducers) throws Exception {
-        GridGgfs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
+        IgniteFs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
 
         ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
 
@@ -391,7 +391,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private static void dumpGgfs(GridGgfs ggfs, GridGgfsPath path) throws Exception {
+    private static void dumpGgfs(IgniteFs ggfs, GridGgfsPath path) throws Exception {
         GridGgfsFile file = ggfs.info(path);
 
         assert file != null;

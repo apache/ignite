@@ -61,7 +61,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     private static final int REPEAT_CNT = 10;
 
     /** GGFS. */
-    private static GridGgfs ggfs;
+    private static IgniteFs ggfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -165,7 +165,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         assertFalse(ggfs.isAsync());
 
-        GridGgfs ggfsAsync = ggfs.enableAsync();
+        IgniteFs ggfsAsync = ggfs.enableAsync();
 
         assertTrue(ggfsAsync.isAsync());
 
@@ -267,7 +267,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         private GridComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(GridGgfs ggfs, GridGgfsFileRange range, GridGgfsInputStream in)
+        @Override public Object execute(IgniteFs ggfs, GridGgfsFileRange range, GridGgfsInputStream in)
             throws GridException, IOException {
             assert ignite != null;
             assert ses != null;

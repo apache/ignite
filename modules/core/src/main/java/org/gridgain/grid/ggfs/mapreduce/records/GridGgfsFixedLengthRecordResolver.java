@@ -44,7 +44,7 @@ public class GridGgfsFixedLengthRecordResolver implements GridGgfsRecordResolver
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFileRange resolveRecords(GridGgfs ggfs, GridGgfsInputStream stream,
+    @Override public GridGgfsFileRange resolveRecords(IgniteFs ggfs, GridGgfsInputStream stream,
         GridGgfsFileRange suggestedRecord)
         throws GridException, IOException {
         long suggestedEnd = suggestedRecord.start() + suggestedRecord.length();
