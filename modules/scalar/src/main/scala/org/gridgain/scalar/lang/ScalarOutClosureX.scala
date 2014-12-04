@@ -13,12 +13,12 @@ package org.gridgain.scalar.lang
 
 import org.gridgain.grid._
 import lang._
-import org.gridgain.grid.util.lang.GridOutClosureX
+import org.gridgain.grid.util.lang.IgniteOutClosureX
 
 /**
  * Peer deploy aware adapter for Java's `GridOutClosureX`.
  */
-class ScalarOutClosureX[R](private val f: () => R) extends GridOutClosureX[R] {
+class ScalarOutClosureX[R](private val f: () => R) extends IgniteOutClosureX[R] {
     assert(f != null)
 
     /**

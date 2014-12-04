@@ -281,7 +281,7 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> NILL = new CO() {
+    private static final IgniteOutClosure<?> NILL = new CO() {
         @Nullable @Override public Object apply() {
             return null;
         }
@@ -579,8 +579,8 @@ public class GridFunc {
      * @return Out closure that always returns {@code null}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridOutClosure<T> nill() {
-        return (GridOutClosure<T>)NILL;
+    public static <T> IgniteOutClosure<T> nill() {
+        return (IgniteOutClosure<T>)NILL;
     }
 
     /**
@@ -661,7 +661,7 @@ public class GridFunc {
      * Creates out closure that will reflectively call a method with the given name on provided
      * object and return result of that call.
      * <p>
-     * Method reflects the typedef for {@link GridOutClosure} which is {@link CO}.
+     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteOutClosure} which is {@link CO}.
      *
      * @param o Target object to call the method on.
      * @param mtdName Method name.
@@ -670,7 +670,7 @@ public class GridFunc {
      * @return Reflective out closure.
      * @throws GridClosureException Thrown in case of any reflective invocation errors.
      */
-    public static <R> GridOutClosure<R> coInvoke(final Object o, final String mtdName, final Object... args) {
+    public static <R> IgniteOutClosure<R> coInvoke(final Object o, final String mtdName, final Object... args) {
         A.notNull(o, "o", mtdName, "mtdName");
 
         return new CO<R>() {
@@ -736,7 +736,7 @@ public class GridFunc {
      * Creates out closure that will reflectively call a static method with the given name
      * and return result of that call.
      * <p>
-     * Method reflects the typedef for {@link GridOutClosure} which is {@link CO}.
+     * Method reflects the typedef for {@link org.gridgain.grid.lang.IgniteOutClosure} which is {@link CO}.
      *
      * @param cls Class to call a static method on.
      * @param mtdName Method name.
@@ -745,7 +745,7 @@ public class GridFunc {
      * @return Reflective out closure.
      * @throws GridClosureException Thrown in case of any reflective invocation errors.
      */
-    public static <R> GridOutClosure<R> coInvoke(final Class<?> cls, final String mtdName,
+    public static <R> IgniteOutClosure<R> coInvoke(final Class<?> cls, final String mtdName,
         @Nullable final Object... args) {
         A.notNull(cls, "cls", mtdName, "mtdName");
 
@@ -2724,7 +2724,7 @@ public class GridFunc {
      * @param <T> Type of the future and closure.
      * @return Out closure that wraps given future.
      */
-    public static <T> GridOutClosure as(final Future<T> fut) {
+    public static <T> IgniteOutClosure as(final Future<T> fut) {
         A.notNull(fut, "fut");
 
         return new CO<T>() {
@@ -2847,8 +2847,8 @@ public class GridFunc {
      * @param <R> Output type.
      * @return Curried closure.
      */
-    public static <T, R> GridOutClosure<R> curry(final IgniteClosure<? super T, R> f, final T e) {
-        return new GridOutClosure<R>() {
+    public static <T, R> IgniteOutClosure<R> curry(final IgniteClosure<? super T, R> f, final T e) {
+        return new IgniteOutClosure<R>() {
             @Override public R apply() {
                 return f.apply(e);
             }
@@ -2916,12 +2916,12 @@ public class GridFunc {
      * @param <R> Type of the return value for the closure.
      * @return Read only collection of closures closed on each element of input collection.
      */
-    public static <T, R> Collection<GridOutClosure<R>> yield(Collection<? extends T> c,
+    public static <T, R> Collection<IgniteOutClosure<R>> yield(Collection<? extends T> c,
         final IgniteClosure<? super T, R> f) {
         A.notNull(c, "c", f, "f");
 
-        return viewReadOnly(c, new C1<T, GridOutClosure<R>>() {
-            @Override public GridOutClosure<R> apply(final T e) {
+        return viewReadOnly(c, new C1<T, IgniteOutClosure<R>>() {
+            @Override public IgniteOutClosure<R> apply(final T e) {
                 return curry(f, e);
             }
         });
@@ -2971,7 +2971,7 @@ public class GridFunc {
      * @param <R> Type of the return value for the closure.
      * @return Collection of closures closed on each element of array.
      */
-    public static <T, R> Collection<GridOutClosure<R>> yield(T[] c, IgniteClosure<? super T, R> f) {
+    public static <T, R> Collection<IgniteOutClosure<R>> yield(T[] c, IgniteClosure<? super T, R> f) {
         A.notNull(c, "c", f, "f");
 
         return yield(asList(c), f);
@@ -3249,13 +3249,13 @@ public class GridFunc {
     }
 
     /**
-     * Returns closure that converts {@link Callable} to {@link GridOutClosure}.
+     * Returns closure that converts {@link Callable} to {@link org.gridgain.grid.lang.IgniteOutClosure}.
      *
-     * @return closure that converts {@link Callable} to {@link GridOutClosure}.
+     * @return closure that converts {@link Callable} to {@link org.gridgain.grid.lang.IgniteOutClosure}.
      */
-    public static <T> IgniteClosure<Callable<T>, GridOutClosure<T>> c2c() {
-        return new C1<Callable<T>, GridOutClosure<T>>() {
-            @Override public GridOutClosure<T> apply(Callable<T> c) {
+    public static <T> IgniteClosure<Callable<T>, IgniteOutClosure<T>> c2c() {
+        return new C1<Callable<T>, IgniteOutClosure<T>>() {
+            @Override public IgniteOutClosure<T> apply(Callable<T> c) {
                 return as0(c);
             }
         };
@@ -3268,7 +3268,7 @@ public class GridFunc {
      * @return Out-closure that wraps given callable. Note that if callable throw
      *      exception the wrapping closure will re-throw it as {@link GridRuntimeException}.
      */
-    public static <R> GridOutClosure<R> as0(final Callable<R> c) {
+    public static <R> IgniteOutClosure<R> as0(final Callable<R> c) {
         A.notNull(c, "c");
 
         return new CO<R>() {
@@ -4066,7 +4066,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link List}.
      * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link GridOutClosure#apply()} method is called.
+     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
@@ -4079,7 +4079,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link List}.
      * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link GridOutClosure#apply()} method is called.
+     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<List<T>> newList() {
@@ -4092,7 +4092,7 @@ public class GridFunc {
      * closure but returns a static one.
      *
      * @return Factory closure that creates new {@link AtomicInteger} instance
-     *      initialized to {@code zero} every time its {@link GridOutClosure#apply()} method is called.
+     *      initialized to {@code zero} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     public static IgniteCallable<AtomicInteger> newAtomicInt() {
         return ATOMIC_INT_FACTORY;
@@ -4104,7 +4104,7 @@ public class GridFunc {
      * closure but returns a static one.
      *
      * @return Factory closure that creates new {@link AtomicLong} instance
-     *      initialized to {@code zero} every time its {@link GridOutClosure#apply()} method is called.
+     *      initialized to {@code zero} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     public static IgniteCallable<AtomicLong> newAtomicLong() {
         return ATOMIC_LONG_FACTORY;
@@ -4117,7 +4117,7 @@ public class GridFunc {
      *
      * @param <T> Type of the atomic reference.
      * @return Factory closure that creates new {@link AtomicReference} instance
-     *      initialized to {@code null} every time its {@link GridOutClosure#apply()} method is called.
+     *      initialized to {@code null} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<AtomicReference<T>> newAtomicRef() {
@@ -4130,7 +4130,7 @@ public class GridFunc {
      * closure but returns a static one.
      *
      * @return Factory closure that creates new {@link AtomicBoolean} instance
-     *      initialized to {@code false} every time its {@link GridOutClosure#apply()} method is called.
+     *      initialized to {@code false} every time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     public static IgniteCallable<AtomicBoolean> newAtomicBoolean() {
         return ATOMIC_BOOL_FACTORY;
@@ -4142,7 +4142,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link LinkedList}.
      * @return Factory closure that creates new {@link LinkedList} instance every time its {@link
-     *         GridOutClosure#apply()} method is called.
+     *         org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<LinkedList<T>> newLinkedList() {
@@ -4155,7 +4155,7 @@ public class GridFunc {
      *
      * @param <T> Type parameters for the created {@link Set}.
      * @return Factory closure that creates new {@link Set} instance every time
-     *      its {@link GridOutClosure#apply()} method is called.
+     *      its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<Set<T>> newSet() {
@@ -4169,7 +4169,7 @@ public class GridFunc {
      * @param <K> Type of the key for the created {@link Map}.
      * @param <V> Type of the value for the created {@link Map}.
      * @return Factory closure that creates new {@link Map} instance every
-     *      time its {@link GridOutClosure#apply()} method is called.
+     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<Map<K, V>> newMap() {
@@ -4183,7 +4183,7 @@ public class GridFunc {
      * @param <K> Type of the key for the created {@link ConcurrentMap}.
      * @param <V> Type of the value for the created {@link ConcurrentMap}.
      * @return Factory closure that creates new {@link Map} instance every
-     *      time its {@link GridOutClosure#apply()} method is called.
+     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<ConcurrentMap<K, V>> newCMap() {
@@ -4195,7 +4195,7 @@ public class GridFunc {
      * Note that this method does not create a new closure but returns a static one.
      *
      * @return Factory closure that creates new {@link GridConcurrentHashSet} instance every
-     *      time its {@link GridOutClosure#apply()} method is called.
+     *      time its {@link org.gridgain.grid.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
     public static <E> IgniteCallable<Set<E>> newCSet() {
@@ -5118,7 +5118,7 @@ public class GridFunc {
      * @param <R> Type of the closure's return value.
      * @return Closure that returns constant value.
      */
-    public static <R> GridOutClosure<R> constant(@Nullable final R val) {
+    public static <R> IgniteOutClosure<R> constant(@Nullable final R val) {
         return new CO<R>() {
             @Nullable @Override public R apply() {
                 return val;
@@ -5133,7 +5133,7 @@ public class GridFunc {
      * @param <T> Type of factory.
      * @return Factory closure for the given type.
      */
-    public static <T> GridOutClosure<T> factory(final Class<T> cls) {
+    public static <T> IgniteOutClosure<T> factory(final Class<T> cls) {
         A.notNull(cls, "cls");
 
         return new CO<T>() {
@@ -5244,7 +5244,7 @@ public class GridFunc {
      * @param p Predicate to convert.
      * @return Predicate converted to closure.
      */
-    public static GridOutClosure<Boolean> as(final GridAbsPredicate p) {
+    public static IgniteOutClosure<Boolean> as(final GridAbsPredicate p) {
         A.notNull(p, "p");
 
         return new CO<Boolean>() {
@@ -5620,7 +5620,7 @@ public class GridFunc {
      * @return Single value as a result of map reduction.
      */
     @Nullable public static <X, Y, R> R reduce(Map<? extends X, ? extends Y> m,
-        GridReducer2<? super X, ? super Y, R> f) {
+        IgniteReducer2<? super X, ? super Y, R> f) {
         A.notNull(m, "m", f, "f");
 
         for (Map.Entry<? extends X, ? extends Y> e : m.entrySet())
@@ -7659,12 +7659,12 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Read only collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends IgniteClosure<? super T, R>> iter,
+    public static <T, R> Collection<IgniteOutClosure<R>> curry(Collection<? extends IgniteClosure<? super T, R>> iter,
         final T arg) {
         A.notNull(iter, "iter", arg, "arg");
 
-        return viewReadOnly(iter, new C1<IgniteClosure<? super T, R>, GridOutClosure<R>>() {
-            @Override public GridOutClosure<R> apply(IgniteClosure<? super T, R> c) {
+        return viewReadOnly(iter, new C1<IgniteClosure<? super T, R>, IgniteOutClosure<R>>() {
+            @Override public IgniteOutClosure<R> apply(IgniteClosure<? super T, R> c) {
                 return curry(c, arg);
             }
         });
@@ -7679,12 +7679,12 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends IgniteClosure<? super T, R>> closures,
+    public static <T, R> Collection<IgniteOutClosure<R>> curry(Collection<? extends IgniteClosure<? super T, R>> closures,
         Collection<? extends T> args) {
         A.notNull(closures, "in", args, "args");
         A.ensure(closures.size() == args.size(), "closures.size() == args.size()");
 
-        Collection<GridOutClosure<R>> ret = new ArrayList<>(closures.size());
+        Collection<IgniteOutClosure<R>> ret = new ArrayList<>(closures.size());
 
         Iterator<? extends T> iter = args.iterator();
 
@@ -7729,11 +7729,11 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(IgniteClosure<? super T, R> c,
+    public static <T, R> Collection<IgniteOutClosure<R>> curry(IgniteClosure<? super T, R> c,
         Collection<? extends T> args) {
         A.notNull(c, "c", args, "args");
 
-        Collection<GridOutClosure<R>> ret = new ArrayList<>(args.size());
+        Collection<IgniteOutClosure<R>> ret = new ArrayList<>(args.size());
 
         for (T arg : args) {
             ret.add(curry(c, arg));
@@ -7752,12 +7752,12 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(int cnt, IgniteClosure<? super T, R> c,
-        GridOutClosure<T> pdc) {
+    public static <T, R> Collection<IgniteOutClosure<R>> curry(int cnt, IgniteClosure<? super T, R> c,
+        IgniteOutClosure<T> pdc) {
         A.notNull(c, "c", pdc, "pdc");
         A.ensure(cnt > 0, "cnt > 0");
 
-        Collection<GridOutClosure<R>> ret = new ArrayList<>(cnt);
+        Collection<IgniteOutClosure<R>> ret = new ArrayList<>(cnt);
 
         for (int i = 0; i < cnt; i++)
             ret.add(curry(c, pdc.apply()));
@@ -7794,7 +7794,7 @@ public class GridFunc {
      * @param <T> Type of closure argument.
      * @return Collection of curried closures.
      */
-    public static <T> Collection<GridAbsClosure> curry(int cnt, IgniteInClosure<? super T> c, GridOutClosure<T> pdc) {
+    public static <T> Collection<GridAbsClosure> curry(int cnt, IgniteInClosure<? super T> c, IgniteOutClosure<T> pdc) {
         A.notNull(c, "c", pdc, "pdc");
         A.ensure(cnt > 0, "cnt > 0");
 

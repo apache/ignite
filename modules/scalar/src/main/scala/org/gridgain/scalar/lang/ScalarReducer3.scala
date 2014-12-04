@@ -12,13 +12,13 @@
 package org.gridgain.scalar.lang
 
 import collection._
-import org.gridgain.grid.util.lang.GridReducer3
+import org.gridgain.grid.util.lang.IgniteReducer3
 
 /**
  * Peer deploy aware adapter for Java's `GridReducer3`.
  */
 class ScalarReducer3[E1, E2, E3, R](private val r: (Seq[E1], Seq[E2], Seq[E3]) => R)
-    extends GridReducer3[E1, E2, E3, R] {
+    extends IgniteReducer3[E1, E2, E3, R] {
     assert(r != null)
 
     private val buf1 = new mutable.ListBuffer[E1]

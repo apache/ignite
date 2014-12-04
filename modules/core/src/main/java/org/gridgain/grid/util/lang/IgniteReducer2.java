@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.lang;
 
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -28,10 +27,9 @@ import org.jetbrains.annotations.*;
  * if any.
  * @param <E1> Type of the first free variable, i.e. the element the closure is called on.
  * @param <E2> Type of the second free variable, i.e. the element the closure is called on.
- * @param <E3> Type of the third free variable, i.e. the element the closure is called on.
  * @param <R> Type of the closure's return value.
  */
-public interface GridReducer3<E1, E2, E3, R> extends GridOutClosure<R> {
+public interface IgniteReducer2<E1, E2, R> extends IgniteOutClosure<R> {
     /**
      * Collects given values. All values will be reduced by {@link #apply()} method.
      * <p>
@@ -40,9 +38,8 @@ public interface GridReducer3<E1, E2, E3, R> extends GridOutClosure<R> {
      *
      * @param e1 First bound free variable, i.e. the element the closure is called on.
      * @param e2 Second bound free variable, i.e. the element the closure is called on.
-     * @param e3 Third bound free variable, i.e. the element the closure is called on.
      * @return {@code true} to continue collecting, {@code false} to instruct caller to stop
      *      collecting and call {@link #apply()} method.
      */
-    public boolean collect(@Nullable E1 e1, @Nullable E2 e2, @Nullable E3 e3);
+    public abstract boolean collect(@Nullable E1 e1, @Nullable E2 e2);
 }

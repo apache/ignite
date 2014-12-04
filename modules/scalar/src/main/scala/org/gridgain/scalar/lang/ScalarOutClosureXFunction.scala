@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridOutClosureX}
+import org.gridgain.grid.util.lang.{IgniteOutClosureX}
 
 /**
  * Wrapping Scala function for `GridOutClosureX`.
  */
-class ScalarOutClosureXFunction[R](val inner: GridOutClosureX[R]) extends (() => R) {
+class ScalarOutClosureXFunction[R](val inner: IgniteOutClosureX[R]) extends (() => R) {
     assert(inner != null)
 
     /**

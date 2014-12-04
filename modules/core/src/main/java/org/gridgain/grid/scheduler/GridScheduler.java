@@ -10,7 +10,6 @@
 package org.gridgain.grid.scheduler;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -41,7 +40,7 @@ public interface GridScheduler {
     /**
      * Executes given closure on internal system thread pool asynchronously.
      * <p>
-     * Note that class {@link org.apache.ignite.lang.IgniteRunnable} implements {@link Runnable} and class {@link GridOutClosure}
+     * Note that class {@link org.apache.ignite.lang.IgniteRunnable} implements {@link Runnable} and class {@link org.gridgain.grid.lang.IgniteOutClosure}
      * implements {@link Callable} interface.
      *
      * @param r Runnable to execute. If {@code null} - this method is no-op.
@@ -54,14 +53,14 @@ public interface GridScheduler {
     /**
      * Executes given callable on internal system thread pool asynchronously.
      * <p>
-     * Note that class {@link org.apache.ignite.lang.IgniteRunnable} implements {@link Runnable} and class {@link GridOutClosure}
+     * Note that class {@link org.apache.ignite.lang.IgniteRunnable} implements {@link Runnable} and class {@link org.gridgain.grid.lang.IgniteOutClosure}
      * implements {@link Callable} interface.
      *
      * @param c Callable to execute. If {@code null} - this method is no-op.
      * @return Future for this execution.
      * @param <R> Type of the return value for the closure.
      * @see #runLocal(Runnable)
-     * @see GridOutClosure
+     * @see org.gridgain.grid.lang.IgniteOutClosure
      */
     public <R> GridFuture<R> callLocal(@Nullable Callable<R> c);
 

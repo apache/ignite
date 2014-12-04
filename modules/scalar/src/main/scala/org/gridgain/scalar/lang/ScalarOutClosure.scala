@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang.GridOutClosure
+import org.gridgain.grid.lang.IgniteOutClosure
 import java.util.concurrent.Callable
 import org.gridgain.grid.util.lang.GridPeerDeployAwareAdapter
 
@@ -19,7 +19,7 @@ import org.gridgain.grid.util.lang.GridPeerDeployAwareAdapter
  * Peer deploy aware adapter for Java's `GridOutClosure`.
  */
 class ScalarOutClosure[R](private val f: () => R) extends GridPeerDeployAwareAdapter
-    with GridOutClosure[R] with Callable[R] {
+    with IgniteOutClosure[R] with Callable[R] {
     assert(f != null)
 
     peerDeployLike(f)

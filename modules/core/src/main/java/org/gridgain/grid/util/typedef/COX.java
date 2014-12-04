@@ -12,14 +12,14 @@ package org.gridgain.grid.util.typedef;
 import org.gridgain.grid.util.lang.*;
 
 /**
- * Defines {@code alias} for {@link GridOutClosureX} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link org.gridgain.grid.util.lang.IgniteOutClosureX} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link GridOutClosureX}.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link org.gridgain.grid.util.lang.IgniteOutClosureX}.
  * @param <T> Type of the factory closure.
  * @see GridFunc
- * @see GridOutClosureX
+ * @see org.gridgain.grid.util.lang.IgniteOutClosureX
  */
-public abstract class COX<T> extends GridOutClosureX<T> {
+public abstract class COX<T> extends IgniteOutClosureX<T> {
     /** */
     private static final long serialVersionUID = 0L;
  /* No-op. */ }

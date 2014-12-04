@@ -16,7 +16,7 @@ import java.io.*;
  *
  * @param <T> Type of return value from this closure.
  */
-public interface GridOutClosure<T> extends Serializable {
+public interface IgniteOutClosure<T> extends Serializable {
     /**
      * Closure body.
      *

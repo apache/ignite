@@ -31,7 +31,7 @@ public class GridThreadLocalEx<T> extends ThreadLocal<T> {
     };
 
     /** */
-    private final GridOutClosure<T> initializer;
+    private final IgniteOutClosure<T> initializer;
 
     /**
      *
@@ -43,7 +43,7 @@ public class GridThreadLocalEx<T> extends ThreadLocal<T> {
     /**
      * @param initializer Initializer.
      */
-    public GridThreadLocalEx(GridOutClosure<T> initializer) {
+    public GridThreadLocalEx(IgniteOutClosure<T> initializer) {
         this.initializer = initializer;
     }
 

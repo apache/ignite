@@ -48,7 +48,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     }
 
     it should "convert reducer 2" in {
-        val r = new GridReducer2[Int, Int, Int] {
+        val r = new IgniteReducer2[Int, Int, Int] {
             var sum = 0
 
             override def collect(e1: Int, e2: Int): Boolean = {
@@ -66,7 +66,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     }
 
     it should "convert reducer 3" in {
-        val r = new GridReducer3[Int, Int, Int, Int] {
+        val r = new IgniteReducer3[Int, Int, Int, Int] {
             var sum = 0
 
             override def collect(e1: Int, e2: Int, e3: Int): Boolean = {

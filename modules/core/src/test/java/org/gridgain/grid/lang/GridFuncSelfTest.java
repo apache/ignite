@@ -817,7 +817,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         String s = "gridgain functional programming";
 
-        GridOutClosure<Boolean> co = F.coInvoke(s, "contains", "prog");
+        IgniteOutClosure<Boolean> co = F.coInvoke(s, "contains", "prog");
 
         try {
             assert co.apply();
@@ -858,13 +858,13 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             len1 += s.length();
         }
 
-        Collection<GridOutClosure<Integer>> c = F.yield(iter, new C1<String, Integer>() {
+        Collection<IgniteOutClosure<Integer>> c = F.yield(iter, new C1<String, Integer>() {
             @Override public Integer apply(String e) { return e.length(); }
         });
 
         int len2 = 0;
 
-        for (GridOutClosure<Integer> f : c) {
+        for (IgniteOutClosure<Integer> f : c) {
             len2 += f.apply();
         }
 
@@ -1175,7 +1175,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * JUnit.
      */
     public void testConstant() {
-        GridOutClosure<Long> c = F.constant(1L);
+        IgniteOutClosure<Long> c = F.constant(1L);
 
         assert c.apply() == 1L;
     }
@@ -1320,7 +1320,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         map.put(3, "3");
 
         res = F.reduce(map,
-            new GridReducer2<Integer, String, Integer>() {
+            new IgniteReducer2<Integer, String, Integer>() {
                 private int sum;
 
                 @Override public boolean collect(Integer e1, String e2) {
@@ -1338,7 +1338,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         // Always false.
         res = F.reduce(map,
-            new GridReducer2<Integer, String, Integer>() {
+            new IgniteReducer2<Integer, String, Integer>() {
                 private int sum;
 
                 @Override public boolean collect(Integer e1, String e2) {

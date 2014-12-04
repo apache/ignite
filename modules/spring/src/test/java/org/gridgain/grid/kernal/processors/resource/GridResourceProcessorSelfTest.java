@@ -321,7 +321,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
             assert taskLog != null;
 
-            final GridOutClosure<Object> callable = new GridOutClosure<Object>() {
+            final IgniteOutClosure<Object> callable = new IgniteOutClosure<Object>() {
                 /** Should be injected despite this is a {@link Callable} instance nested in a job. */
                 @GridInstanceResource private Ignite grid;
 

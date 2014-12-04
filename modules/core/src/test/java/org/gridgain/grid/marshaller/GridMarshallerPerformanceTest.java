@@ -65,7 +65,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
             }
         };
 
-        GridOutClosure<TestObject> reader = new COX<TestObject>() {
+        IgniteOutClosure<TestObject> reader = new COX<TestObject>() {
             @Override public TestObject applyx() throws GridException {
                 ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 
@@ -103,7 +103,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
             }
         };
 
-        GridOutClosure<TestObject> reader = new COX<TestObject>() {
+        IgniteOutClosure<TestObject> reader = new COX<TestObject>() {
             @Override public TestObject applyx() throws GridException {
                 return marsh.unmarshal(tuple.get(), null);
             }
@@ -126,7 +126,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
             }
         };
 
-        GridOutClosure<TestObject> reader = new CO<TestObject>() {
+        IgniteOutClosure<TestObject> reader = new CO<TestObject>() {
             @Override public TestObject apply() {
                 buf.flip();
 
@@ -162,7 +162,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
             }
         };
 
-        GridOutClosure<TestObject> reader = new CO<TestObject>() {
+        IgniteOutClosure<TestObject> reader = new CO<TestObject>() {
             @Override public TestObject apply() {
                 Input kryoIn = null;
 
@@ -187,7 +187,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     private void runTest(String name, IgniteInClosure<TestObject> writer,
-        GridOutClosure<TestObject> reader) throws Exception {
+        IgniteOutClosure<TestObject> reader) throws Exception {
         ArrayList<Float> list = new ArrayList<>();
 
         list.add(10.0f);

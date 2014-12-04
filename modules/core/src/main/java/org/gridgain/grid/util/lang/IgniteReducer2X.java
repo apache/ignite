@@ -16,9 +16,9 @@ import org.gridgain.grid.util.typedef.*;
  * Convenient reducer subclass that allows for thrown grid exception. This class
  * implements {@link #apply()} method that calls {@link #applyx()} method and
  * properly wraps {@link GridException} into {@link GridClosureException} instance.
- * @see RX3
+ * @see RX2
  */
-public abstract class GridReducer3X<E1, E2, E3, R> implements GridReducer3<E1, E2, E3, R> {
+public abstract class IgniteReducer2X<E1, E2, R> implements IgniteReducer2<E1, E2, R> {
     /** */
     private static final long serialVersionUID = 0L;
 

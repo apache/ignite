@@ -6088,7 +6088,7 @@ public abstract class GridUtils {
      * @param <R> Return type.
      * @return Return value.
      */
-    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, GridOutClosure<R> c) {
+    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
         Thread curThread = Thread.currentThread();
 
         // Get original context class loader.

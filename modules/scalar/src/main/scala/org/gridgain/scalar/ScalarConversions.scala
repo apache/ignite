@@ -325,7 +325,7 @@ trait ScalarConversions {
      *
      * @param r Scala function to convert.
      */
-    implicit def toReducer2[E1, E2, R](r: (Seq[E1], Seq[E2]) => R): GridReducer2[E1, E2, R] =
+    implicit def toReducer2[E1, E2, R](r: (Seq[E1], Seq[E2]) => R): IgniteReducer2[E1, E2, R] =
         new ScalarReducer2(r)
 
     /**
@@ -333,7 +333,7 @@ trait ScalarConversions {
      *
      * @param r Java `GridReducer2` to convert.
      */
-    implicit def fromReducer2[E1, E2, R](r: GridReducer2[E1, E2, R]): (Seq[E1], Seq[E2]) => R =
+    implicit def fromReducer2[E1, E2, R](r: IgniteReducer2[E1, E2, R]): (Seq[E1], Seq[E2]) => R =
         new ScalarReducer2Function[E1, E2, R](r)
 
     /**
@@ -341,7 +341,7 @@ trait ScalarConversions {
       *
       * @param r Java-side reducer to pimp.
       */
-    implicit def reducer2DotScala[E1, E2, R](r: GridReducer2[E1, E2, R]) = new {
+    implicit def reducer2DotScala[E1, E2, R](r: IgniteReducer2[E1, E2, R]) = new {
         def scala: (Seq[E1], Seq[E2]) => R =
             fromReducer2(r)
     }
@@ -351,7 +351,7 @@ trait ScalarConversions {
      *
      * @param r Scala function to convert.
      */
-    implicit def toReducer3[E1, E2, E3, R](r: (Seq[E1], Seq[E2], Seq[E3]) => R): GridReducer3[E1, E2, E3, R] =
+    implicit def toReducer3[E1, E2, E3, R](r: (Seq[E1], Seq[E2], Seq[E3]) => R): IgniteReducer3[E1, E2, E3, R] =
         new ScalarReducer3(r)
 
     /**
@@ -359,7 +359,7 @@ trait ScalarConversions {
      *
      * @param r Java `GridReducer3` to convert.
      */
-    implicit def fromReducer3[E1, E2, E3, R](r: GridReducer3[E1, E2, E3, R]): (Seq[E1], Seq[E2], Seq[E3]) => R =
+    implicit def fromReducer3[E1, E2, E3, R](r: IgniteReducer3[E1, E2, E3, R]): (Seq[E1], Seq[E2], Seq[E3]) => R =
         new ScalarReducer3Function[E1, E2, E3, R](r)
 
     /**
@@ -367,7 +367,7 @@ trait ScalarConversions {
       *
       * @param r Java-side reducer to pimp.
       */
-    implicit def reducer3DotScala[E1, E2, E3, R](r: GridReducer3[E1, E2, E3, R]) = new {
+    implicit def reducer3DotScala[E1, E2, E3, R](r: IgniteReducer3[E1, E2, E3, R]) = new {
         def scala: (Seq[E1], Seq[E2], Seq[E3]) => R =
             fromReducer3(r)
     }
@@ -706,7 +706,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    def toOutClosureX[R](f: () => R): GridOutClosureX[R] =
+    def toOutClosureX[R](f: () => R): IgniteOutClosureX[R] =
         f match {
             case (p: ScalarOutClosureXFunction[R]) => p.inner
             case _ => new ScalarOutClosureX[R](f)
@@ -725,7 +725,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromOutClosureX[R](f: GridOutClosureX[R]): () => R =
+    implicit def fromOutClosureX[R](f: IgniteOutClosureX[R]): () => R =
         new ScalarOutClosureXFunction[R](f)
 
     /**
@@ -743,7 +743,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def outClosureXDotScala[R](f: GridOutClosureX[R]) = new {
+    implicit def outClosureXDotScala[R](f: IgniteOutClosureX[R]) = new {
         def scala: () => R =
             fromOutClosureX(f)
     }
@@ -877,7 +877,7 @@ trait ScalarConversions {
      *
      * @param c Java callable to convert.
      */
-    implicit def toOutClosure2[R](c: java.util.concurrent.Callable[R]): GridOutClosure[R] =
+    implicit def toOutClosure2[R](c: java.util.concurrent.Callable[R]): IgniteOutClosure[R] =
         GridFunc.as0(c)
 
     /**
