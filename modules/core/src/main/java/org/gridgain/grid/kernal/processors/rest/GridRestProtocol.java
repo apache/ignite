@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 
 import java.util.*;
 

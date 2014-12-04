@@ -739,7 +739,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Applies {@code transformer} closure to the previous value associated with given key in cache,
-     * closure should return {@link org.gridgain.grid.lang.IgniteBiTuple} instance where first value is new value stored in cache
+     * closure should return {@link org.apache.ignite.lang.IgniteBiTuple} instance where first value is new value stored in cache
      * and second value is returned as result of this method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction

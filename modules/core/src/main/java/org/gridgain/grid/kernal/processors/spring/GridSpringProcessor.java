@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.spring;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 
 import java.net.*;

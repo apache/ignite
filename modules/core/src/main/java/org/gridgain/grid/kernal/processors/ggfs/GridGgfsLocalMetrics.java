@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 

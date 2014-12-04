@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.GridLogger;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

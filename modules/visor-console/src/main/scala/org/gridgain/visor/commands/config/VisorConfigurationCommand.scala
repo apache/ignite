@@ -12,12 +12,12 @@
 package org.gridgain.visor.commands.config
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.lang.IgniteBiTuple
 import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
 
 import java.lang.System._
 
 import org.gridgain.grid._
-import org.gridgain.grid.lang.IgniteBiTuple
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}

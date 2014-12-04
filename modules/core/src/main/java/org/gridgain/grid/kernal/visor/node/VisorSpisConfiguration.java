@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.visor.node;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

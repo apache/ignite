@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.nodestart;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

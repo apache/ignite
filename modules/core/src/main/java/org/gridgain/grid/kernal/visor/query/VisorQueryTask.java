@@ -18,7 +18,7 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
 import org.gridgain.grid.kernal.visor.*;
-import org.gridgain.grid.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.*;
 

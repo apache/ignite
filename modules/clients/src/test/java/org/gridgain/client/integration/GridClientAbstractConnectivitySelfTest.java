@@ -10,8 +10,8 @@
 package org.gridgain.client.integration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.client.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

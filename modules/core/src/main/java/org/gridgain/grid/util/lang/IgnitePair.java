@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Simple extension over {@link org.gridgain.grid.lang.IgniteBiTuple} for pair of objects of the same type.
+ * Simple extension over {@link org.apache.ignite.lang.IgniteBiTuple} for pair of objects of the same type.
  */
 public class IgnitePair<T> extends IgniteBiTuple<T, T> {
     /** */

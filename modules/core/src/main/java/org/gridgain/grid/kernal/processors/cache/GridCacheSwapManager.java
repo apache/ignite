@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;

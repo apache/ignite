@@ -18,7 +18,6 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

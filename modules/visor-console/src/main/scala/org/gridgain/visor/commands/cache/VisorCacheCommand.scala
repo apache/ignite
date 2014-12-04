@@ -12,10 +12,10 @@
 package org.gridgain.visor.commands.cache
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.lang.IgniteBiTuple
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cache.{VisorCacheMetricsCollectorTask, VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfiguration}
 import org.gridgain.grid.kernal.visor.node.{VisorNodeConfigurationCollectorTask, VisorGridConfiguration}
-import org.gridgain.grid.lang.IgniteBiTuple
 import org.gridgain.grid.util.typedef._
 
 import org.jetbrains.annotations._

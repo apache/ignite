@@ -10,11 +10,11 @@
 package org.gridgain.grid.kernal.visor.compute;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

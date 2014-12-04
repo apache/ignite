@@ -16,7 +16,6 @@ import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.spi.*;

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
@@ -19,7 +20,6 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.spring.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.*;

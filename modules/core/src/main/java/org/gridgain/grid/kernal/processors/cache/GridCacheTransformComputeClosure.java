@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.GridCacheProjection;
 import org.gridgain.grid.lang.*;
 

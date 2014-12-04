@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;

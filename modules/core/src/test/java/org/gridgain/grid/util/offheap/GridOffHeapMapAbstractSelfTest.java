@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.util.offheap;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridFuture;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.X;
 import org.gridgain.grid.util.typedef.internal.*;

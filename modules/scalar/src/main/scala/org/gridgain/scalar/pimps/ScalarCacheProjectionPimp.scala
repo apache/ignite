@@ -12,6 +12,7 @@
 package org.gridgain.scalar.pimps
 
 import org.apache.ignite.cluster.ClusterGroup
+import org.apache.ignite.lang.IgniteBiTuple
 
 import collection._
 import collection.JavaConversions._

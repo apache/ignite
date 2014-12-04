@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.communication.*;

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
@@ -18,7 +19,6 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.*;

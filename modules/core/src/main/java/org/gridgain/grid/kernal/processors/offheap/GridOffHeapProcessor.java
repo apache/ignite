@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.offheap;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;

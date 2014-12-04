@@ -12,9 +12,9 @@
 package org.gridgain.visor.commands.cache
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.lang.IgniteBiTuple
 import org.gridgain.grid.kernal.visor.query.VisorQueryTask.VisorQueryArg
 import org.gridgain.grid.kernal.visor.query.{VisorQueryNextPageTask, VisorQueryResult, VisorQueryTask}
-import org.gridgain.grid.lang.IgniteBiTuple
 
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
