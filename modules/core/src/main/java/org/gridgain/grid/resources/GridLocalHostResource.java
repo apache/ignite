@@ -25,7 +25,7 @@ import java.lang.annotation.*;
  * <li>{@link GridComputeTask}</li>
  * <li>{@link GridComputeJob}</li>
  * <li>{@link GridSpi}</li>
- * <li>{@link org.gridgain.grid.LifecycleBean}</li>
+ * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>

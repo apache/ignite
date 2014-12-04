@@ -11,13 +11,14 @@ package org.gridgain.examples.misc.lifecycle;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lifecycle.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 
 import static org.gridgain.grid.GridLifecycleEventType.*;
 
 /**
- * This example shows how to provide your own {@link org.gridgain.grid.LifecycleBean} implementation
+ * This example shows how to provide your own {@link org.apache.ignite.lifecycle.LifecycleBean} implementation
  * to be able to hook into GridGain lifecycle. The {@link LifecycleExampleBean} bean
  * will output occurred lifecycle events to the console.
  * <p>
@@ -52,7 +53,7 @@ public final class LifecycleExample {
     }
 
     /**
-     * Simple {@link org.gridgain.grid.LifecycleBean} implementation that outputs event type when it is occurred.
+     * Simple {@link org.apache.ignite.lifecycle.LifecycleBean} implementation that outputs event type when it is occurred.
      */
     public static class LifecycleExampleBean implements LifecycleBean {
         /** Auto-inject grid instance. */

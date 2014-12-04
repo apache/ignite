@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
  * Grid lifecycle event types. These events are used to notify lifecycle beans
  * about changes in grid lifecycle state.
  * <p>
- * For more information and detailed examples refer to {@link LifecycleBean}
+ * For more information and detailed examples refer to {@link org.apache.ignite.lifecycle.LifecycleBean}
  * documentation.
  */
 public enum GridLifecycleEventType {

@@ -11,7 +11,7 @@ package org.gridgain.loadtests.dsi;
 
 import org.apache.ignite.Ignite;
 import org.gridgain.grid.*;
-import org.gridgain.grid.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleBean;
 import org.gridgain.grid.resources.GridInstanceResource;
 import org.gridgain.grid.resources.GridSpringApplicationContextResource;
 import org.springframework.context.ApplicationContext;
@@ -23,7 +23,7 @@ public class GridDsiLifecycleBean implements LifecycleBean {
     /**
      * Grid instance will be automatically injected. For additional resources
      * that can be injected into lifecycle beans see
-     * {@link org.gridgain.grid.LifecycleBean} documentation.
+     * {@link org.apache.ignite.lifecycle.LifecycleBean} documentation.
      */
     @GridInstanceResource
     private Ignite ignite;

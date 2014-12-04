@@ -22,7 +22,7 @@ import java.lang.annotation.*;
  * <ul>
  * <li>{@link GridComputeTask}</li>
  * <li>{@link GridComputeJob}</li>
- * <li>{@link org.gridgain.grid.LifecycleBean}</li>
+ * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>All closures and predicates that can run on grid.</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>

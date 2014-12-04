@@ -7,38 +7,39 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.lifecycle;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 
 /**
- * A bean that reacts to grid lifecycle events defined in {@link GridLifecycleEventType}.
+ * A bean that reacts to grid lifecycle events defined in {@link org.gridgain.grid.GridLifecycleEventType}.
  * Use this bean whenever you need to plug some custom logic before or after
  * grid startup and stopping routines.
  * <p>
  * There are four events you can react to:
  * <ul>
  * <li>
- *   {@link GridLifecycleEventType#BEFORE_GRID_START} invoked before grid startup
+ *   {@link org.gridgain.grid.GridLifecycleEventType#BEFORE_GRID_START} invoked before grid startup
  *   routine is initiated. Note that grid is not available during this event,
  *   therefore if you injected a grid instance via {@link GridInstanceResource}
  *   annotation, you cannot use it yet.
  * </li>
  * <li>
- *   {@link GridLifecycleEventType#AFTER_GRID_START} invoked right after grid
+ *   {@link org.gridgain.grid.GridLifecycleEventType#AFTER_GRID_START} invoked right after grid
  *   has started. At this point, if you injected a grid instance via
  *   {@link GridInstanceResource} annotation, you can start using it. Note that
- *   you should not be using {@link GridGain} to get grid instance from
+ *   you should not be using {@link org.gridgain.grid.GridGain} to get grid instance from
  *   lifecycle bean.
  * </li>
  * <li>
- *   {@link GridLifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
+ *   {@link org.gridgain.grid.GridLifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
  *   stop routine is initiated. Grid is still available at this stage, so
  *   if you injected a grid instance via  {@link GridInstanceResource} annotation,
  *   you can use it.
  * </li>
  * <li>
- *   {@link GridLifecycleEventType#AFTER_GRID_STOP} invoked right after grid
+ *   {@link org.gridgain.grid.GridLifecycleEventType#AFTER_GRID_STOP} invoked right after grid
  *   has stopped. Note that grid is not available during this event.
  * </li>
  * </ul>
@@ -98,7 +99,7 @@ public interface LifecycleBean {
      * This method is called when lifecycle event occurs.
      *
      * @param evt Lifecycle event.
-     * @throws GridException Thrown in case of any errors.
+     * @throws org.gridgain.grid.GridException Thrown in case of any errors.
      */
     public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException;
 }
