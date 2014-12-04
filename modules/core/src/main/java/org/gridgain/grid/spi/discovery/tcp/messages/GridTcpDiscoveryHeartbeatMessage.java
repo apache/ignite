@@ -71,7 +71,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      * @param nodeId Node ID.
      * @param metrics Node metrics.
      */
-    public void setMetrics(UUID nodeId, GridNodeMetrics metrics) {
+    public void setMetrics(UUID nodeId, ClusterNodeMetrics metrics) {
         assert nodeId != null;
         assert metrics != null;
         assert !this.metrics.containsKey(nodeId);
@@ -86,7 +86,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      * @param clientNodeId Client node ID.
      * @param metrics Node metrics.
      */
-    public void setClientMetrics(UUID nodeId, UUID clientNodeId, GridNodeMetrics metrics) {
+    public void setClientMetrics(UUID nodeId, UUID clientNodeId, ClusterNodeMetrics metrics) {
         assert nodeId != null;
         assert clientNodeId != null;
         assert metrics != null;
@@ -188,7 +188,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      * @param metrics Metrics.
      * @return Serialized metrics.
      */
-    private static byte[] serializeMetrics(GridNodeMetrics metrics) {
+    private static byte[] serializeMetrics(ClusterNodeMetrics metrics) {
         assert metrics != null;
 
         byte[] buf = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
@@ -203,7 +203,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      * @param metrics Metrics.
      * @return Serialized metrics.
      */
-    private static byte[] serializeMetrics(UUID nodeId, GridNodeMetrics metrics) {
+    private static byte[] serializeMetrics(UUID nodeId, ClusterNodeMetrics metrics) {
         assert nodeId != null;
         assert metrics != null;
 
@@ -239,7 +239,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         /**
          * @param metrics Metrics.
          */
-        public MetricsSet(GridNodeMetrics metrics) {
+        public MetricsSet(ClusterNodeMetrics metrics) {
             assert metrics != null;
 
             this.metrics = serializeMetrics(metrics);
@@ -248,16 +248,16 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         /**
          * @return Deserialized metrics.
          */
-        public GridNodeMetrics metrics() {
+        public ClusterNodeMetrics metrics() {
             return deserialize(metrics, 0);
         }
 
         /**
          * @return Client metrics.
          */
-        public Collection<T2<UUID, GridNodeMetrics>> clientMetrics() {
-            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, GridNodeMetrics>>() {
-                @Override public T2<UUID, GridNodeMetrics> apply(byte[] bytes) {
+        public Collection<T2<UUID, ClusterNodeMetrics>> clientMetrics() {
+            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, ClusterNodeMetrics>>() {
+                @Override public T2<UUID, ClusterNodeMetrics> apply(byte[] bytes) {
                     UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
 
                     return new T2<>(nodeId, deserialize(bytes, 16));
@@ -269,7 +269,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
          * @param nodeId Client node ID.
          * @param metrics Client metrics.
          */
-        private void addClientMetrics(UUID nodeId, GridNodeMetrics metrics) {
+        private void addClientMetrics(UUID nodeId, ClusterNodeMetrics metrics) {
             assert nodeId != null;
             assert metrics != null;
 

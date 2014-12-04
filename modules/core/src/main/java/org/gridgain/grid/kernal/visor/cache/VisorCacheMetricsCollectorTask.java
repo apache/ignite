@@ -133,7 +133,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<GridBiTup
                 Collection<VisorCacheMetrics2> res = new ArrayList<>(caches.size());
 
                 for (GridCache<?, ?> c : caches) {
-                    GridNodeMetrics m = g.localNode().metrics();
+                    ClusterNodeMetrics m = g.localNode().metrics();
                     GridCacheMetrics cm = c.metrics();
                     GridCacheQueryMetrics qm = c.queries().metrics();
 

@@ -38,7 +38,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
         assert off == GridDiscoveryMetricsHelper.METRICS_SIZE;
 
         // Test deserialization.
-        GridNodeMetrics res = GridDiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterNodeMetrics res = GridDiscoveryMetricsHelper.deserialize(data, 0);
 
         assert res != null;
     }
@@ -47,7 +47,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
     public void testSerialization() {
         byte[] data = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
 
-        GridNodeMetrics metrics1 = createMetrics();
+        ClusterNodeMetrics metrics1 = createMetrics();
 
         // Test serialization.
         int off = GridDiscoveryMetricsHelper.serialize(data, 0, metrics1);
@@ -55,7 +55,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
         assert off == GridDiscoveryMetricsHelper.METRICS_SIZE;
 
         // Test deserialization.
-        GridNodeMetrics metrics2 = GridDiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterNodeMetrics metrics2 = GridDiscoveryMetricsHelper.deserialize(data, 0);
 
         assert metrics2 != null;
 
@@ -66,7 +66,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
      * @throws IOException If I/O error occurs.
      */
     public void testMultipleMetricsSerialization() throws IOException {
-        Map<UUID, GridNodeMetrics> metrics = new HashMap<>(METRICS_COUNT);
+        Map<UUID, ClusterNodeMetrics> metrics = new HashMap<>(METRICS_COUNT);
 
         for (int i = 0; i < METRICS_COUNT; i++)
             metrics.put(UUID.randomUUID(), createMetrics());
@@ -86,8 +86,8 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
     /**
      * @return Test metrics.
      */
-    private GridNodeMetrics createMetrics() {
-        GridDiscoveryMetricsAdapter metrics = new GridDiscoveryMetricsAdapter();
+    private ClusterNodeMetrics createMetrics() {
+        ClusterDiscoveryMetricsAdapter metrics = new ClusterDiscoveryMetricsAdapter();
 
         metrics.setAvailableProcessors(1);
         metrics.setAverageActiveJobs(2);

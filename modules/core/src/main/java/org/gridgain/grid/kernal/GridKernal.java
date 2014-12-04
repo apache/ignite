@@ -957,7 +957,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                 @Override protected void safeRun() {
                     if (log.isInfoEnabled()) {
-                        GridNodeMetrics m = localNode().metrics();
+                        ClusterNodeMetrics m = localNode().metrics();
 
                         double cpuLoadPct = m.getCurrentCpuLoad() * 100;
                         double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
@@ -1443,7 +1443,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** @throws GridException If registration failed. */
     private void registerLocalNodeMBean() throws GridException {
-        GridNodeMetricsMBean mbean = new GridLocalNodeMetrics(ctx.discovery().localNode());
+        ClusterNodeMetricsMBean mbean = new ClusterLocalNodeMetrics(ctx.discovery().localNode());
 
         try {
             locNodeMBean = U.registerMBean(
@@ -1452,7 +1452,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
-                GridNodeMetricsMBean.class);
+                ClusterNodeMetricsMBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered local node MBean: " + locNodeMBean);

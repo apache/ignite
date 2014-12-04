@@ -130,8 +130,8 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param activeJobs Active jobs count.
      * @return Metrics adapter.
      */
-    private GridDiscoveryMetricsAdapter createMetrics(int waitingJobs, int activeJobs) {
-        GridDiscoveryMetricsAdapter metrics = new GridDiscoveryMetricsAdapter();
+    private ClusterDiscoveryMetricsAdapter createMetrics(int waitingJobs, int activeJobs) {
+        ClusterDiscoveryMetricsAdapter metrics = new ClusterDiscoveryMetricsAdapter();
 
         metrics.setCurrentWaitingJobs(waitingJobs);
         metrics.setCurrentActiveJobs(activeJobs);

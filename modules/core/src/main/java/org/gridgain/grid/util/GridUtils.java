@@ -799,7 +799,7 @@ public abstract class GridUtils {
         double heap = 0.0;
 
         for (ClusterNode n : nodesPerJvm(nodes)) {
-            GridNodeMetrics m = n.metrics();
+            ClusterNodeMetrics m = n.metrics();
 
             heap += Math.max(m.getHeapMemoryInitialized(), m.getHeapMemoryMaximum());
         }

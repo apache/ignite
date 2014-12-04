@@ -76,7 +76,7 @@ public class GridAdaptiveJobCountLoadProbe implements GridAdaptiveLoadProbe {
 
     /** {@inheritDoc} */
     @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
-        GridNodeMetrics metrics = node.metrics();
+        ClusterNodeMetrics metrics = node.metrics();
 
         if (useAvg) {
             double load = metrics.getAverageActiveJobs() + metrics.getAverageWaitingJobs();

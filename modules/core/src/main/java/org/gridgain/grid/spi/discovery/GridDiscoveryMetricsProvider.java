@@ -27,5 +27,5 @@ public interface GridDiscoveryMetricsProvider {
      *
      * @return Up to date metrics data about local node.
      */
-    public GridNodeMetrics getMetrics();
+    public ClusterNodeMetrics getMetrics();
 }

@@ -340,7 +340,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
     protected GridDiscoveryMetricsProvider createMetricsProvider() {
         return new GridDiscoveryMetricsProvider() {
             /** {@inheritDoc} */
-            @Override public GridNodeMetrics getMetrics() { return new GridDiscoveryMetricsAdapter(); }
+            @Override public ClusterNodeMetrics getMetrics() { return new ClusterDiscoveryMetricsAdapter(); }
         };
     }
 

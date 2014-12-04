@@ -141,7 +141,7 @@ public interface ClusterNode extends GridMetadataAware {
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
      * and provide up to date information about nodes. For example, you can get
-     * an idea about CPU load on remote node via {@link GridNodeMetrics#getCurrentCpuLoad()}
+     * an idea about CPU load on remote node via {@link org.gridgain.grid.ClusterNodeMetrics#getCurrentCpuLoad()}
      * method and use it during {@link GridComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
@@ -151,7 +151,7 @@ public interface ClusterNode extends GridMetadataAware {
      *
      * @return Runtime metrics snapshot for this node.
      */
-    public GridNodeMetrics metrics();
+    public ClusterNodeMetrics metrics();
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup

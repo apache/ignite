@@ -32,7 +32,7 @@ import java.io.*;
  * as a graph.
  * @see org.apache.ignite.cluster.ClusterMetrics
  */
-public interface GridNodeMetrics extends Serializable {
+public interface ClusterNodeMetrics extends Serializable {
     /**
      * Gets last update time of this node metrics.
      *

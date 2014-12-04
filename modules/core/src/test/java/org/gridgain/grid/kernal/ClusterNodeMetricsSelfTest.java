@@ -27,7 +27,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Grid node metrics self test.
  */
 @GridCommonTest(group = "Kernal Self")
-public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
+public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Test message size. */
     private static final int MSG_SIZE = 1024;
 
@@ -78,7 +78,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        GridNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -134,7 +134,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        GridNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -197,7 +197,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        GridNodeMetrics metrics = ignite0.cluster().localNode().metrics();
+        ClusterNodeMetrics metrics = ignite0.cluster().localNode().metrics();
 
         info("Node 0 metrics: " + metrics);
 

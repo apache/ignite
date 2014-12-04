@@ -66,7 +66,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
 
     /** Node metrics. */
     @GridToStringExclude
-    private volatile GridNodeMetrics metrics;
+    private volatile ClusterNodeMetrics metrics;
 
     /** Node order in the topology. */
     private volatile long order;
@@ -186,7 +186,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
     }
 
     /** {@inheritDoc} */
-    @Override public GridNodeMetrics metrics() {
+    @Override public ClusterNodeMetrics metrics() {
         if (metricsProvider != null)
             metrics = metricsProvider.getMetrics();
 
@@ -198,7 +198,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
      *
      * @param metrics Node metrics.
      */
-    public void setMetrics(GridNodeMetrics metrics) {
+    public void setMetrics(ClusterNodeMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;

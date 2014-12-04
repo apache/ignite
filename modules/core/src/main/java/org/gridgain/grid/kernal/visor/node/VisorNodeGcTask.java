@@ -74,7 +74,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridB
          * @return Current free heap.
          */
         private long freeHeap(ClusterNode node) {
-            final GridNodeMetrics m = node.metrics();
+            final ClusterNodeMetrics m = node.metrics();
 
             return m.getHeapMemoryMaximum() - m.getHeapMemoryUsed();
         }

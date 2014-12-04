@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Local node metrics MBean.
  */
-public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
+public class ClusterLocalNodeMetrics implements ClusterNodeMetricsMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -25,7 +25,7 @@ public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
     /**
      * @param node Node to manage.
      */
-    public GridLocalNodeMetrics(ClusterNode node) {
+    public ClusterLocalNodeMetrics(ClusterNode node) {
         assert node != null;
 
         this.node = node;
@@ -298,6 +298,6 @@ public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridLocalNodeMetrics.class, this);
+        return S.toString(ClusterLocalNodeMetrics.class, this);
     }
 }

@@ -21,7 +21,7 @@ import java.io.*;
  * Note that whenever adding or removing metric parameters, care
  * must be taken to update {@link GridDiscoveryMetricsHelper} as well.
  */
-public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externalizable {
+public class ClusterDiscoveryMetricsAdapter implements ClusterNodeMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1008,7 +1008,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        GridDiscoveryMetricsAdapter other = (GridDiscoveryMetricsAdapter)obj;
+        ClusterDiscoveryMetricsAdapter other = (ClusterDiscoveryMetricsAdapter)obj;
 
         return
             availProcs == other.availProcs &&
@@ -1055,6 +1055,6 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDiscoveryMetricsAdapter.class, this);
+        return S.toString(ClusterDiscoveryMetricsAdapter.class, this);
     }
 }

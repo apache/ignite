@@ -83,7 +83,7 @@ public final class GridDiscoveryMetricsHelper {
      * @param metrics Node metrics to serialize.
      * @return New offset.
      */
-    public static int serialize(byte[] data, int off, GridNodeMetrics metrics) {
+    public static int serialize(byte[] data, int off, ClusterNodeMetrics metrics) {
         int start = off;
 
         off = U.intToBytes(metrics.getMaximumActiveJobs(), data, off);
@@ -149,10 +149,10 @@ public final class GridDiscoveryMetricsHelper {
      * @param off Offset into byte array.
      * @return Deserialized node metrics.
      */
-    public static GridNodeMetrics deserialize(byte[] data, int off) {
+    public static ClusterNodeMetrics deserialize(byte[] data, int off) {
         int start = off;
 
-        GridDiscoveryMetricsAdapter metrics = new GridDiscoveryMetricsAdapter();
+        ClusterDiscoveryMetricsAdapter metrics = new ClusterDiscoveryMetricsAdapter();
 
         metrics.setLastUpdateTime(U.currentTimeMillis());
 
