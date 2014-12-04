@@ -17,7 +17,7 @@ import java.io.*;
 import java.util.concurrent.*;
 
 /**
- * Reduced variant of {@link org.gridgain.grid.IgniteFuture} interface. Removed asynchronous
+ * Reduced variant of {@link org.apache.ignite.lang.IgniteFuture} interface. Removed asynchronous
  * listen methods which require a valid grid kernal context.
  * @param <R> Type of the result for the future.
  */

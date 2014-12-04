@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;

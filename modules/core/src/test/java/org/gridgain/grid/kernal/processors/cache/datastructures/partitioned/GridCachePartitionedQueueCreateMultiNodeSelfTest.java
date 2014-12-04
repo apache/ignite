@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

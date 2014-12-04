@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.timeout;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;

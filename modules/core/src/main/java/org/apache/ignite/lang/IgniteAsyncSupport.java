@@ -9,8 +9,6 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.*;
-
 /**
  * TODO: Add interface description.
  */

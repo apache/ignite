@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;

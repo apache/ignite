@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.offheap;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.util.typedef.*;

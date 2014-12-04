@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.dataload;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;

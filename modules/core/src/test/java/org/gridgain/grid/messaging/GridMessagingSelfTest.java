@@ -3,7 +3,7 @@ package org.gridgain.grid.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

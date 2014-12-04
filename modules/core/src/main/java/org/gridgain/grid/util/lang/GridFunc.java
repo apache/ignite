@@ -2756,7 +2756,7 @@ public class GridFunc {
     }
 
     /**
-     * Converts given object with interface {@link org.gridgain.grid.IgniteFuture} into an object implementing {@link Future}.
+     * Converts given object with interface {@link org.apache.ignite.lang.IgniteFuture} into an object implementing {@link Future}.
      *
      * @param fut Future to convert.
      * @param <T> Type of computation result.
@@ -2824,10 +2824,10 @@ public class GridFunc {
     }
 
     /**
-     * Gets closure that converts {@link org.gridgain.grid.IgniteFuture} to {@link Future}.
+     * Gets closure that converts {@link org.apache.ignite.lang.IgniteFuture} to {@link Future}.
      *
      * @param <T> Type of future.
-     * @return Closure that converts {@link org.gridgain.grid.IgniteFuture} to {@link Future}.
+     * @return Closure that converts {@link org.apache.ignite.lang.IgniteFuture} to {@link Future}.
      */
     public static <T> IgniteClosure<IgniteFuture<T>, Future<T>> future() {
         return new C1<IgniteFuture<T>, Future<T>>() {

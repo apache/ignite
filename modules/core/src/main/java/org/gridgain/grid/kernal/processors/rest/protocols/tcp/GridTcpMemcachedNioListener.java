@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;

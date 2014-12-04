@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.dr;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;

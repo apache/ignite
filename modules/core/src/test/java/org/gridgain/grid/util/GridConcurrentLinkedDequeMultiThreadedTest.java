@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
 import org.gridgain.testframework.junits.common.*;

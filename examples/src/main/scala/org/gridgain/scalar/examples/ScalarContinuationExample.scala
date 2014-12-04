@@ -10,7 +10,7 @@
  */
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.lang.IgniteClosure
+import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
 import org.gridgain.scalar._
 import scalar._
 import java.math._

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.streamer.index;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.index.hash.*;
 import org.gridgain.grid.streamer.index.tree.*;

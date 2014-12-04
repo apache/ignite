@@ -623,7 +623,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     }
 
     /**
-     * Wrapper for {@link org.gridgain.grid.IgniteFuture}.
+     * Wrapper for {@link org.apache.ignite.lang.IgniteFuture}.
      * Used for compatibility {@link Future} interface.
      * @param <T> The result type of the {@link Future} argument.
      */

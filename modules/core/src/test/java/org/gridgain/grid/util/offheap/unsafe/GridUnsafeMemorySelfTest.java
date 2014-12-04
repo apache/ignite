@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
-import org.gridgain.grid.IgniteFuture;
+import org.apache.ignite.lang.IgniteFuture;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.X;
 import org.gridgain.testframework.junits.common.*;

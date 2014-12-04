@@ -7,9 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.lang;
 
-import org.apache.ignite.lang.*;
+import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -26,9 +26,9 @@ public interface IgniteFuture<R> {
      * returns computation result.
      *
      * @return Computation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws GridFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
-     * @throws GridException If computation failed.
+     * @throws org.gridgain.grid.GridInterruptedException Subclass of {@link org.gridgain.grid.GridException} thrown if the wait was interrupted.
+     * @throws org.gridgain.grid.GridFutureCancelledException Subclass of {@link org.gridgain.grid.GridException} throws if computation was cancelled.
+     * @throws org.gridgain.grid.GridException If computation failed.
      */
     public R get() throws GridException;
 
