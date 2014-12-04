@@ -41,7 +41,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param embedded Embedded future.
      * @param c Closure to execute upon completion of embedded future.
      */
-    public GridEmbeddedFuture(GridKernalContext ctx, GridFuture<B> embedded, final GridBiClosure<B, Exception, A> c) {
+    public GridEmbeddedFuture(GridKernalContext ctx, GridFuture<B> embedded, final IgniteBiClosure<B, Exception, A> c) {
         super(ctx);
 
         assert embedded != null;
@@ -75,7 +75,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      * @param ctx Context.
      */
-    public GridEmbeddedFuture(boolean syncNotify, GridFuture<B> embedded, GridBiClosure<B, Exception, GridFuture<A>> c,
+    public GridEmbeddedFuture(boolean syncNotify, GridFuture<B> embedded, IgniteBiClosure<B, Exception, GridFuture<A>> c,
         GridKernalContext ctx) {
         this(embedded, c, ctx);
 
@@ -89,7 +89,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param embedded Closure.
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      */
-    public GridEmbeddedFuture(GridFuture<B> embedded, final GridBiClosure<B, Exception, GridFuture<A>> c,
+    public GridEmbeddedFuture(GridFuture<B> embedded, final IgniteBiClosure<B, Exception, GridFuture<A>> c,
         GridKernalContext ctx) {
         super(ctx);
 
@@ -155,8 +155,8 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param c1 Closure which runs upon completion of embedded future and which returns another future.
      * @param c2 Closure will runs upon completion of future returned by {@code c1} closure.
      */
-    public GridEmbeddedFuture(GridKernalContext ctx, GridFuture<B> embedded, final GridBiClosure<B, Exception,
-                GridFuture<A>> c1, final GridBiClosure<A, Exception, A> c2) {
+    public GridEmbeddedFuture(GridKernalContext ctx, GridFuture<B> embedded, final IgniteBiClosure<B, Exception,
+                    GridFuture<A>> c1, final IgniteBiClosure<A, Exception, A> c2) {
         super(ctx);
 
         assert embedded != null;

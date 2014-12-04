@@ -44,7 +44,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < DFLT_MAX_CONCURRENT_ASYNC_OPS; i++) {
             cur = new GridEmbeddedFuture<>(cur,
-                new GridBiClosure<Integer, Exception, GridFuture<Integer>>() {
+                new IgniteBiClosure<Integer, Exception, GridFuture<Integer>>() {
                     @Override public GridFuture<Integer> apply(Integer o, Exception e) {
                         return new GridFinishedFuture<>(ctx, o);
                     }

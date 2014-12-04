@@ -1807,7 +1807,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     key = (K)cacheCtx.marshalToPortable(key);
 
                 GridCacheTxKey<K> txKey = cacheCtx.txKey(key);
-                
+
                 GridCacheTxEntry<K, V> txEntry = entry(txKey);
 
                 // First time access.
@@ -2940,7 +2940,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class PostLockClosure1<T> implements GridBiClosure<Boolean, Exception, GridFuture<T>> {
+    protected abstract class PostLockClosure1<T> implements IgniteBiClosure<Boolean, Exception, GridFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3055,7 +3055,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class PostLockClosure2<T> implements GridBiClosure<Boolean, Exception, GridFuture<T>> {
+    protected abstract class PostLockClosure2<T> implements IgniteBiClosure<Boolean, Exception, GridFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3100,7 +3100,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class PostMissClosure<T> implements GridBiClosure<T, Exception, GridFuture<T>> {
+    protected abstract class PostMissClosure<T> implements IgniteBiClosure<T, Exception, GridFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3142,7 +3142,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class FinishClosure<T> implements GridBiClosure<T, Exception, T> {
+    protected abstract class FinishClosure<T> implements IgniteBiClosure<T, Exception, T> {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -229,7 +229,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
     }
 
     it should "convert closure 2" in {
-        val f = new GridBiClosure[Int, Int, Int] {
+        val f = new IgniteBiClosure[Int, Int, Int] {
             override def apply(e1: Int, e2: Int): Int =
                 e1 + e2
         }

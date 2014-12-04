@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
  * method and properly wraps {@link GridException} into {@link GridClosureException} instance.
  * @see CX2
  */
-public abstract class GridClosure2X<E1, E2, R> implements GridBiClosure<E1, E2, R> {
+public abstract class IgniteClosure2X<E1, E2, R> implements IgniteBiClosure<E1, E2, R> {
     /** */
     private static final long serialVersionUID = 0L;
 

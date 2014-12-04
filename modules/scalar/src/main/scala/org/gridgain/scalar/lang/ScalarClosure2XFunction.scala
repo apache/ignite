@@ -11,12 +11,12 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridClosure2X}
+import org.gridgain.grid.util.lang.{IgniteClosure2X}
 
 /**
  * Wrapping Scala function for `GridClosure2X`.
  */
-class ScalarClosure2XFunction[T1, T2, R](val inner: GridClosure2X[T1, T2, R]) extends ((T1, T2) => R) {
+class ScalarClosure2XFunction[T1, T2, R](val inner: IgniteClosure2X[T1, T2, R]) extends ((T1, T2) => R) {
     assert(inner != null)
 
     /**

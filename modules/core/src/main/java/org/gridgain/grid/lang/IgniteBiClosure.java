@@ -19,7 +19,7 @@ import java.io.*;
  * @param <E2> Type of the second parameter.
  * @param <R> Type of the closure's return value.
  */
-public interface GridBiClosure<E1, E2, R> extends Serializable {
+public interface IgniteBiClosure<E1, E2, R> extends Serializable {
     /**
      * Closure body.
      *

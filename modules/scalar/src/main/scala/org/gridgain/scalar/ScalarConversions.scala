@@ -1117,7 +1117,7 @@ trait ScalarConversions {
      *
      * @param f Scala closure to convert.
      */
-    implicit def toClosure2[A1, A2, R](f: (A1, A2) => R): GridBiClosure[A1, A2, R] =
+    implicit def toClosure2[A1, A2, R](f: (A1, A2) => R): IgniteBiClosure[A1, A2, R] =
         f match {
             case (p: ScalarClosure2Function[A1, A2, R]) => p.inner
             case _ => new ScalarClosure2[A1, A2, R](f)
@@ -1128,7 +1128,7 @@ trait ScalarConversions {
      *
      * @param f Scala closure to convert.
      */
-    def toClosure2X[A1, A2, R](f: (A1, A2) => R): GridClosure2X[A1, A2, R] =
+    def toClosure2X[A1, A2, R](f: (A1, A2) => R): IgniteClosure2X[A1, A2, R] =
         f match {
             case (p: ScalarClosure2XFunction[A1, A2, R]) => p.inner
             case _ => new ScalarClosure2X[A1, A2, R](f)
@@ -1139,7 +1139,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromClosure2[A1, A2, R](f: GridBiClosure[A1, A2, R]): (A1, A2) => R =
+    implicit def fromClosure2[A1, A2, R](f: IgniteBiClosure[A1, A2, R]): (A1, A2) => R =
         new ScalarClosure2Function[A1, A2, R](f)
 
     /**
@@ -1147,7 +1147,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromClosure2X[A1, A2, R](f: GridClosure2X[A1, A2, R]): (A1, A2) => R =
+    implicit def fromClosure2X[A1, A2, R](f: IgniteClosure2X[A1, A2, R]): (A1, A2) => R =
         new ScalarClosure2XFunction[A1, A2, R](f)
 
     /**
@@ -1155,7 +1155,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def closure2DotScala[A1, A2, R](f: GridBiClosure[A1, A2, R]) = new {
+    implicit def closure2DotScala[A1, A2, R](f: IgniteBiClosure[A1, A2, R]) = new {
         def scala: (A1, A2) => R =
             fromClosure2(f)
     }
@@ -1165,7 +1165,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def closure2XDotScala[A1, A2, R](f: GridClosure2X[A1, A2, R]) = new {
+    implicit def closure2XDotScala[A1, A2, R](f: IgniteClosure2X[A1, A2, R]) = new {
         def scala: (A1, A2) => R =
             fromClosure2X(f)
     }

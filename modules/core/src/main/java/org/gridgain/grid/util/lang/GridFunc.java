@@ -2864,7 +2864,7 @@ public class GridFunc {
      * @param <R> Output type.
      * @return Curried closure.
      */
-    public static <T1, T2, R> GridClosure<T2, R> curry(final GridBiClosure<? super T1, ? super T2, R> f, final T1 e) {
+    public static <T1, T2, R> GridClosure<T2, R> curry(final IgniteBiClosure<? super T1, ? super T2, R> f, final T1 e) {
         return new GridClosure<T2, R>() {
             @Override public R apply(T2 t) {
                 return f.apply(e, t);
@@ -3714,7 +3714,7 @@ public class GridFunc {
      * @return Light-weight view on given map with provided predicate and transformer.
      */
     public static <K0, K extends K0, V0, V extends V0, V1> Map<K, V1> viewReadOnly(@Nullable final Map<K, V> m,
-        final GridBiClosure<K, V, V1> trans, @Nullable final GridPredicate<? super K>... p) {
+        final IgniteBiClosure<K, V, V1> trans, @Nullable final GridPredicate<? super K>... p) {
         A.notNull(trans, "trans");
 
         if (isEmpty(m) || isAlwaysFalse(p))
@@ -5084,7 +5084,7 @@ public class GridFunc {
      * @param <R> Type of the closure's return value.
      * @return Closure that returns constant value.
      */
-    public static <T1, T2, R> GridBiClosure<T1, T2, R> constant2(@Nullable final R val) {
+    public static <T1, T2, R> IgniteBiClosure<T1, T2, R> constant2(@Nullable final R val) {
         return new C2<T1, T2, R>() {
             @Nullable @Override public R apply(T1 t1, T2 t2) {
                 return val;
@@ -5210,7 +5210,7 @@ public class GridFunc {
      * @param c Closure to convert.
      * @return Closure converted to predicate.
      */
-    public static <T1, T2> GridBiPredicate<T1, T2> as(final GridBiClosure<? super T1, ? super T2, Boolean> c) {
+    public static <T1, T2> GridBiPredicate<T1, T2> as(final IgniteBiClosure<? super T1, ? super T2, Boolean> c) {
         A.notNull(c, "c");
 
         return new P2<T1, T2>() {
@@ -5278,7 +5278,7 @@ public class GridFunc {
      * @param <X2> Type of the free variable for the predicate.
      * @return Predicate converted to closure.
      */
-    public static <X1, X2> GridBiClosure<X1, X2, Boolean> as(final GridBiPredicate<? super X1, ? super X2> p) {
+    public static <X1, X2> IgniteBiClosure<X1, X2, Boolean> as(final GridBiPredicate<? super X1, ? super X2> p) {
         A.notNull(p, "p");
 
         return new C2<X1, X2, Boolean>() {
@@ -6825,14 +6825,14 @@ public class GridFunc {
      * @return Value representing folded collection.
      */
     @Nullable public static <D, B> B fold(Iterable<? extends D> c, @Nullable B b,
-        @Nullable GridBiClosure<? super D, ? super B, B>... fs) {
+        @Nullable IgniteBiClosure<? super D, ? super B, B>... fs) {
         A.notNull(c, "c");
 
         if (!isEmpty(fs))
             for (D e : c) {
                 assert fs != null;
 
-                for (GridBiClosure<? super D, ? super B, B> f : fs)
+                for (IgniteBiClosure<? super D, ? super B, B> f : fs)
                     b = f.apply(e, b);
             }
 
@@ -6854,7 +6854,7 @@ public class GridFunc {
      * @return Value representing folded array.
      */
     @Nullable
-    public static <D, B> B fold(D[] c, @Nullable B b, @Nullable GridBiClosure<? super D, ? super B, B>... fs) {
+    public static <D, B> B fold(D[] c, @Nullable B b, @Nullable IgniteBiClosure<? super D, ? super B, B>... fs) {
         A.notNull(c, "c");
 
         return fold(asList(c), b, fs);
@@ -7815,12 +7815,12 @@ public class GridFunc {
      * @param <R> Type of closure return value.
      * @return Read only collection of curried closures.
      */
-    public static <T1, T2, R> Collection<GridClosure<T2, R>> curry2(Collection<? extends GridBiClosure<? super T1,
-        T2, R>> iter, final T1 arg) {
+    public static <T1, T2, R> Collection<GridClosure<T2, R>> curry2(Collection<? extends IgniteBiClosure<? super T1,
+            T2, R>> iter, final T1 arg) {
         A.notNull(iter, "iter", arg, "arg");
 
-        return viewReadOnly(iter, new C1<GridBiClosure<? super T1, T2, R>, GridClosure<T2, R>>() {
-            @Override public GridClosure<T2, R> apply(GridBiClosure<? super T1, T2, R> c) {
+        return viewReadOnly(iter, new C1<IgniteBiClosure<? super T1, T2, R>, GridClosure<T2, R>>() {
+            @Override public GridClosure<T2, R> apply(IgniteBiClosure<? super T1, T2, R> c) {
                 return curry(c, arg);
             }
         });

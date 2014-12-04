@@ -634,7 +634,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * Type alias.
      */
     private abstract static class CacheCommand
-        extends GridClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, GridFuture<?>> {
+        extends IgniteClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, GridFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -645,7 +645,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * Type alias.
      */
     private abstract static class CacheProjectionCommand
-        extends GridClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, GridFuture<?>> {
+        extends IgniteClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, GridFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -197,7 +197,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             retries.addAll(fut.invalidPartitions());
 
         add(new GridEmbeddedFuture<>(cctx.kernalContext(), fut,
-            new GridBiClosure<Object, Exception, Collection<GridCacheEntryInfo<K, V>>>() {
+            new IgniteBiClosure<Object, Exception, Collection<GridCacheEntryInfo<K, V>>>() {
                 @Override public Collection<GridCacheEntryInfo<K, V>> apply(Object o, Exception e) {
                     if (e != null) { // Check error first.
                         if (log.isDebugEnabled())
