@@ -58,7 +58,7 @@ final class GridTestMemcacheClient {
     private static final short BYTE_ARR_FLAG = (8 << 8);
 
     /** Logger. */
-    private final GridLogger log = new GridJavaLogger();
+    private final IgniteLogger log = new GridJavaLogger();
 
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();

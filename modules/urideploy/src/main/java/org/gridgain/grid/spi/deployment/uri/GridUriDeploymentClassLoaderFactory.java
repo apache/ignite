@@ -35,7 +35,7 @@ class GridUriDeploymentClassLoaderFactory {
      * @return Class Loader.
      * @throws GridSpiException In case of any error.
      */
-    public static ClassLoader create(ClassLoader parent, File file, GridLogger log) throws GridSpiException {
+    public static ClassLoader create(ClassLoader parent, File file, IgniteLogger log) throws GridSpiException {
         assert parent != null;
         assert file != null;
         assert log != null;

@@ -703,7 +703,7 @@ public class GridCacheConcurrentMap<K, V> {
         int size = 0;
         int pubSize = 0;
 
-        GridLogger log = ctx.logger(GridCacheConcurrentMap.class);
+        IgniteLogger log = ctx.logger(GridCacheConcurrentMap.class);
 
         for (Segment s : segs) {
             SegmentHeader<K, V> segHdr = s.hdr;

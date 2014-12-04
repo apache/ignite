@@ -42,7 +42,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Maximum number of attempts to remap key to the same primary node. */
     private static final int MAX_REMAP_CNT = GridSystemProperties.getInteger(GG_NEAR_GET_MAX_REMAPS,
@@ -73,7 +73,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private IgnitePredicate<GridCacheEntry<K, V>>[] filters;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Trackable flag. */
     private volatile boolean trackable;

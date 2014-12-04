@@ -186,7 +186,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                     private Ignite grid;
 
                     @IgniteLoggerResource
-                    private GridLogger log0;
+                    private IgniteLogger log0;
 
                     private int cnt;
 

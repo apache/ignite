@@ -59,7 +59,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
     private final String tokFileName;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /**
      * This will allocate system resources for the space.
@@ -73,7 +73,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @throws GridException If failed.
      */
     public GridIpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
-        GridLogger parent) throws GridException {
+        IgniteLogger parent) throws GridException {
         assert size > 0 : "Size cannot be less than 1 byte";
 
         log = parent.getLogger(GridIpcSharedMemorySpace.class);
@@ -108,7 +108,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @throws GridException If failed.
      */
     public GridIpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
-        int shmemId, GridLogger parent) throws GridException {
+        int shmemId, IgniteLogger parent) throws GridException {
         assert size > 0 : "Size cannot be less than 1 byte";
 
         log = parent.getLogger(GridIpcSharedMemorySpace.class);

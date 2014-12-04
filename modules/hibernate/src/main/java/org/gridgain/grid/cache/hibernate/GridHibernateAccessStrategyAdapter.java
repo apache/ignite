@@ -82,7 +82,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
     protected final Ignite ignite;
 
     /** */
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /**
      * @param ignite Grid.

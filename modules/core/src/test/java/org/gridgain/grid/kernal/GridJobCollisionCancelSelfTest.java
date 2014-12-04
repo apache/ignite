@@ -117,7 +117,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     public static class GridCancelTestTask extends ComputeTaskSplitAdapter<Serializable, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
@@ -157,7 +157,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     public static class GridCancelTestJob extends ComputeJobAdapter {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteJobContextResource
@@ -226,7 +226,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     public static class GridTestCollision extends GridSpiAdapter implements GridCollisionSpi {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public void onCollision(GridCollisionContext ctx) {

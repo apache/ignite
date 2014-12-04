@@ -86,7 +86,7 @@ public class GridFifoQueueCollisionSpi extends GridSpiAdapter implements GridCol
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Number of jobs that were active last time. */
     private volatile int runningCnt;

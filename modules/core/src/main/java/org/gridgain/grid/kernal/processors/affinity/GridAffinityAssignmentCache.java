@@ -64,7 +64,7 @@ public class GridAffinityAssignmentCache {
     private final ConcurrentMap<Long, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
 
     /** Log. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * Constructs affinity cached calculations.

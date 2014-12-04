@@ -92,7 +92,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
     private static class ResourceOverrideTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteUserResource
@@ -134,7 +134,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
                     /** */
                     @IgniteLoggerResource
-                    private GridLogger log;
+                    private IgniteLogger log;
 
                     /** */
                     @IgniteTaskSessionResource

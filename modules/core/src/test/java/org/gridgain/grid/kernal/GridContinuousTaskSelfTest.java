@@ -137,7 +137,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private int cnt;
@@ -234,7 +234,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

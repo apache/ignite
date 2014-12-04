@@ -176,7 +176,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
     public static class SharedResourceTask1 extends ComputeTaskAdapter<Object, Object> {
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** User resource.  */
         @IgniteUserResource(resourceClass = UserResource1.class)
@@ -227,7 +227,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ObjectEquality"})
@@ -248,7 +248,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
     public static class SharedResourceTask2 extends ComputeTaskAdapter<Object, Object> {
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** User resource.  */
         @IgniteUserResource(resourceClass = UserResource1.class)
@@ -295,7 +295,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ObjectEquality"})

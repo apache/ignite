@@ -32,10 +32,10 @@ import java.util.concurrent.*;
  */
 public class GridTestResources {
     /** */
-    private static final GridLogger rootLog = new GridTestLog4jLogger(false);
+    private static final IgniteLogger rootLog = new GridTestLog4jLogger(false);
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Local host. */
     private final String locHost;
@@ -97,7 +97,7 @@ public class GridTestResources {
     /**
      * @param log Logger.
      */
-    public GridTestResources(GridLogger log) {
+    public GridTestResources(IgniteLogger log) {
         assert log != null;
 
         this.log = log.getLogger(getClass());
@@ -199,14 +199,14 @@ public class GridTestResources {
     /**
      * @return Logger for specified class.
      */
-    public static GridLogger getLogger(Class<?> cls) {
+    public static IgniteLogger getLogger(Class<?> cls) {
         return rootLog.getLogger(cls);
     }
 
     /**
      * @return Logger.
      */
-    public GridLogger getLogger() {
+    public IgniteLogger getLogger() {
         return log;
     }
 

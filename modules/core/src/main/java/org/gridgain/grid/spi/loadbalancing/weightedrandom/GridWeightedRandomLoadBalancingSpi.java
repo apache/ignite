@@ -169,7 +169,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     private boolean isUseWeights;

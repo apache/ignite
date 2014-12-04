@@ -51,7 +51,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
     private final GridEventStorageManager evts;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Lock. */
     private final Lock lock = new ReentrantLock();

@@ -39,7 +39,7 @@ public class GridJobLoadTestJob implements ComputeJob {
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Local node id. */
     @IgniteLocalNodeIdResource

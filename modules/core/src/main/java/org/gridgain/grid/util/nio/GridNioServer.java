@@ -79,7 +79,7 @@ public class GridNioServer<T> {
 
     /** Logger. */
     @GridToStringExclude
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Closed flag. */
     private volatile boolean closed;
@@ -168,7 +168,7 @@ public class GridNioServer<T> {
     private GridNioServer(
         InetAddress addr,
         int port,
-        GridLogger log,
+        IgniteLogger log,
         int selectorCnt,
         @Nullable String gridName,
         boolean tcpNoDelay,
@@ -529,7 +529,7 @@ public class GridNioServer<T> {
          * @param log Logger.
          * @throws GridException If selector could not be created.
          */
-        protected ByteBufferNioClientWorker(int idx, @Nullable String gridName, String name, GridLogger log)
+        protected ByteBufferNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
             throws GridException {
             super(idx, gridName, name, log);
 
@@ -674,7 +674,7 @@ public class GridNioServer<T> {
          * @param log Logger.
          * @throws GridException If selector could not be created.
          */
-        protected DirectNioClientWorker(int idx, @Nullable String gridName, String name, GridLogger log)
+        protected DirectNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
             throws GridException {
             super(idx, gridName, name, log);
         }
@@ -1037,7 +1037,7 @@ public class GridNioServer<T> {
          * @param log Logger.
          * @throws GridException If selector could not be created.
          */
-        protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, GridLogger log)
+        protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
             throws GridException {
             super(gridName, name, log);
 
@@ -1474,7 +1474,7 @@ public class GridNioServer<T> {
          * @param log Log.
          * @param selector Which will accept incoming connections.
          */
-        protected GridNioAcceptWorker(@Nullable String gridName, String name, GridLogger log, Selector selector) {
+        protected GridNioAcceptWorker(@Nullable String gridName, String name, IgniteLogger log, Selector selector) {
             super(gridName, name, log);
 
             this.selector = selector;
@@ -1903,7 +1903,7 @@ public class GridNioServer<T> {
         private int port;
 
         /** Logger. */
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** Selector count. */
         private int selectorCnt;
@@ -2014,7 +2014,7 @@ public class GridNioServer<T> {
          * @param log Logger.
          * @return This for chaining.
          */
-        public Builder<T> logger(GridLogger log) {
+        public Builder<T> logger(IgniteLogger log) {
             this.log = log;
 
             return this;

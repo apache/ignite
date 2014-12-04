@@ -63,7 +63,7 @@ public class GridClientTestRestServer {
     private volatile boolean failOnConnect;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final AtomicInteger connCnt = new AtomicInteger();
@@ -85,7 +85,7 @@ public class GridClientTestRestServer {
      * @param failOnConnect If {@code true} than server will close connection immediately after connect.
      * @param log Log.
      */
-    public GridClientTestRestServer(int port, boolean failOnConnect, GridLogger log) {
+    public GridClientTestRestServer(int port, boolean failOnConnect, IgniteLogger log) {
         this.port = port;
         this.failOnConnect = failOnConnect;
         this.log = log;

@@ -244,7 +244,7 @@ public class GridNodeStartUtils {
         String ggHome = null;
         String cfg = DFLT_CFG;
         String script = null;
-        GridLogger log = null;
+        IgniteLogger log = null;
 
         if (dflts != null) {
             if (dflts.get(PORT) != null)
@@ -272,7 +272,7 @@ public class GridNodeStartUtils {
                 script = (String)dflts.get(SCRIPT);
 
             if (dflts.get(LOGGER) != null)
-                log = (GridLogger)dflts.get(LOGGER);
+                log = (IgniteLogger)dflts.get(LOGGER);
         }
 
         if (port <= 0)

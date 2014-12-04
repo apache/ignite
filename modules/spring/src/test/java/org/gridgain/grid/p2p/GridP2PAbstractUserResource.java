@@ -33,7 +33,7 @@ abstract class GridP2PAbstractUserResource {
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     @IgniteInstanceResource

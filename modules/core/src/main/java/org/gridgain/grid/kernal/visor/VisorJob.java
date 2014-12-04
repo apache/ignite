@@ -24,7 +24,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     protected GridEx g;
 
     @IgniteLoggerResource
-    protected GridLogger log;
+    protected IgniteLogger log;
 
     /**
      * Create job with specified argument.

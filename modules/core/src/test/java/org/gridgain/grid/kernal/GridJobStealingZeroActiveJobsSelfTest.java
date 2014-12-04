@@ -93,7 +93,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
 
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {

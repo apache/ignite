@@ -120,7 +120,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger log() {
+    @Override public IgniteLogger log() {
         assert cfg != null;
 
         return cfg.getGridLogger();

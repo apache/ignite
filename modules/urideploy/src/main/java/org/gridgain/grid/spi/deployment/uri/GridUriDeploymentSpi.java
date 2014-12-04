@@ -370,7 +370,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     @IgniteLocalNodeIdResource

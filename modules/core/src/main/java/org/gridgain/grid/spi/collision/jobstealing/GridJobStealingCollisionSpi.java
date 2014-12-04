@@ -218,7 +218,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
     /** Grid logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Number of jobs that can be executed in parallel. */
     private volatile int activeJobsThreshold = DFLT_ACTIVE_JOBS_THRESHOLD;

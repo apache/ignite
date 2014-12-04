@@ -27,7 +27,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
 /**
  *
  */
-public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLogger, LifecycleAware,
+public class GridLoggerProxy extends GridMetadataAwareAdapter implements IgniteLogger, LifecycleAware,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -40,7 +40,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
     };
 
     /** */
-    private GridLogger impl;
+    private IgniteLogger impl;
 
     /** */
     private String gridName;
@@ -70,7 +70,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
      * @param id8 Node ID.
      */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
-    public GridLoggerProxy(GridLogger impl, @Nullable Object ctgr, @Nullable String gridName, String id8) {
+    public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String gridName, String id8) {
         assert impl != null;
 
         this.impl = impl;
@@ -90,7 +90,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger getLogger(Object ctgr) {
+    @Override public IgniteLogger getLogger(Object ctgr) {
         assert ctgr != null;
 
         return new GridLoggerProxy(impl.getLogger(ctgr), ctgr, gridName, id8);

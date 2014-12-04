@@ -36,7 +36,7 @@ public class GridHadoopV2JobResourceManager {
     private final JobContextImpl ctx;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Job ID. */
     private final GridHadoopJobId jobId;
@@ -56,7 +56,7 @@ public class GridHadoopV2JobResourceManager {
      * @param ctx Hadoop job context.
      * @param log Logger.
      */
-    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, GridLogger log) {
+    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, IgniteLogger log) {
         this.jobId = jobId;
         this.ctx = ctx;
         this.log = log.getLogger(GridHadoopV2JobResourceManager.class);

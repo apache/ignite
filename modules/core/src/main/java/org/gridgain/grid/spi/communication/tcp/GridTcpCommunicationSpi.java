@@ -331,7 +331,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Node ID. */
     @IgniteLocalNodeIdResource

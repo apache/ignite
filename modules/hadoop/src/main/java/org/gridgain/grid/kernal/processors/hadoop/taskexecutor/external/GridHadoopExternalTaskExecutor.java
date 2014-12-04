@@ -46,7 +46,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private String javaCmd;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Node process descriptor. */
     private GridHadoopProcessDescriptor nodeDesc;
@@ -869,7 +869,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         private volatile boolean replyReceived;
 
         /** Logger. */
-        private final GridLogger log = GridHadoopExternalTaskExecutor.this.log;
+        private final IgniteLogger log = GridHadoopExternalTaskExecutor.this.log;
 
         /**
          * Empty constructor.

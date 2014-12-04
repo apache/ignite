@@ -35,10 +35,10 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     private static final long serialVersionUID = 0L;
 
     /** Static logger to avoid re-creation. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static volatile GridLogger log;
+    protected static volatile IgniteLogger log;
 
     /** Cached entry. */
     @GridToStringInclude

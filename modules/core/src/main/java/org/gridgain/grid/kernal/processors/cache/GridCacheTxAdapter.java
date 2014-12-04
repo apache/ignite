@@ -46,10 +46,10 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     private static final long serialVersionUID = 0L;
 
     /** Static logger to avoid re-creation. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static GridLogger log;
+    protected static IgniteLogger log;
 
     /** Transaction ID. */
     @GridToStringInclude
@@ -525,7 +525,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /**
      * @return Logger.
      */
-    protected GridLogger log() {
+    protected IgniteLogger log() {
         return log;
     }
 

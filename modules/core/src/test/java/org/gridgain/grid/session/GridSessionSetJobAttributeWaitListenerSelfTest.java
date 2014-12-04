@@ -114,7 +114,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteTaskSessionResource
@@ -203,12 +203,12 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         private Map<Object, Object> attrs = new HashMap<>();
 
         /** */
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param log Grid logger.
          */
-        GridTaskSessionAttributeTestListener(GridLogger log) {
+        GridTaskSessionAttributeTestListener(IgniteLogger log) {
             assert log != null;
 
             this.log = log;

@@ -106,7 +106,7 @@ public final class GridSingleExecutionTest {
      * @return Logger.
      * @throws GridException If file initialization failed.
      */
-    private static GridLogger initLogger(String log) throws GridException {
+    private static IgniteLogger initLogger(String log) throws GridException {
 
         Logger impl = Logger.getRootLogger();
 
@@ -242,7 +242,7 @@ public final class GridSingleExecutionTest {
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
                     @IgniteLoggerResource
-                    private GridLogger log;
+                    private IgniteLogger log;
 
                     @Override public Serializable execute() throws GridException {
                         if (log.isInfoEnabled())
@@ -278,7 +278,7 @@ public final class GridSingleExecutionTest {
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
                     @IgniteLoggerResource
-                    private GridLogger log;
+                    private IgniteLogger log;
 
                     @Override public Serializable execute() throws GridException {
                         if (log.isInfoEnabled())

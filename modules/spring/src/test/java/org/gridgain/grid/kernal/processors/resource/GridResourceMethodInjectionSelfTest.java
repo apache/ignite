@@ -196,7 +196,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private transient UserResource2 rsrc4;
 
         /** */
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private Ignite ignite;
@@ -276,7 +276,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
          * @param log Logger.
          */
         @IgniteLoggerResource
-        public void setLog(GridLogger log) {
+        public void setLog(IgniteLogger log) {
             this.log = log;
         }
 

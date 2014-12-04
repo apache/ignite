@@ -29,7 +29,7 @@ public abstract class GridSpiThread extends Thread {
     private static final AtomicLong cntr = new AtomicLong();
 
     /** Grid logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /**
      * Creates thread with given {@code name}.
@@ -38,7 +38,7 @@ public abstract class GridSpiThread extends Thread {
      * @param name Thread's name.
      * @param log Grid logger to use.
      */
-    protected GridSpiThread(String gridName, String name, GridLogger log) {
+    protected GridSpiThread(String gridName, String name, IgniteLogger log) {
         super(DFLT_GRP, name + "-#" + cntr.incrementAndGet() + '%' + gridName);
 
         assert log != null;

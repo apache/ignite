@@ -78,7 +78,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
 
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param cacheName Cache name.

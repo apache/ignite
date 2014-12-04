@@ -142,7 +142,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param args Arguments.

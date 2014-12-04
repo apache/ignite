@@ -230,7 +230,7 @@ public class IgniteConfiguration {
     private Map<String, ?> userAttrs;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Executor service. */
     private ExecutorService execSvc;
@@ -1097,7 +1097,7 @@ public class IgniteConfiguration {
      *
      * @return Logger to use in grid.
      */
-    public GridLogger getGridLogger() {
+    public IgniteLogger getGridLogger() {
         return log;
     }
 
@@ -1107,7 +1107,7 @@ public class IgniteConfiguration {
      * @param log Logger to use within grid.
      * @see IgniteConfiguration#getGridLogger()
      */
-    public void setGridLogger(GridLogger log) {
+    public void setGridLogger(IgniteLogger log) {
         this.log = log;
     }
 

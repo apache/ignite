@@ -129,7 +129,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
         boolean complete;
 
         // Avoid 'protected field is accessed in synchronized context' warning.
-        GridLogger log0 = log;
+        IgniteLogger log0 = log;
 
         synchronized (this) {
             while (!availableNodes.isEmpty()) {

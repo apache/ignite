@@ -55,7 +55,7 @@ import java.util.*;
 public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
     /** Injected grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws GridSpiException {

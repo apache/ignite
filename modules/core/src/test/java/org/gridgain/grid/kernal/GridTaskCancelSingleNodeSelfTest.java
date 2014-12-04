@@ -147,7 +147,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
             return F.asSet(new ComputeJobAdapter() {
                 /** */
                 @IgniteLoggerResource
-                private GridLogger log;
+                private IgniteLogger log;
 
                 /** */
                 @IgniteInstanceResource

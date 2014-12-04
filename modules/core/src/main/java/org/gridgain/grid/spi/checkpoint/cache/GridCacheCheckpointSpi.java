@@ -82,7 +82,7 @@ public class GridCacheCheckpointSpi extends GridSpiAdapter implements GridCheckp
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Cache name. */
     private String cacheName = DFLT_CACHE_NAME;

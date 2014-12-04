@@ -160,7 +160,7 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     private DataSource dataSrc;

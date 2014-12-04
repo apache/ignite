@@ -31,7 +31,7 @@ import static org.gridgain.grid.kernal.GridProductImpl.*;
 public class GridRouterCommandLineStartup {
     /** Logger. */
     @SuppressWarnings("FieldCanBeLocal")
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** TCP router. */
     private LifecycleAware tcpRouter;
@@ -42,7 +42,7 @@ public class GridRouterCommandLineStartup {
      * @param beans Beans loaded from spring configuration file.
      */
     public void start(Map<Class<?>, Object> beans) {
-        log = (GridLogger)beans.get(GridLogger.class);
+        log = (IgniteLogger)beans.get(IgniteLogger.class);
 
         if (log == null) {
             U.error(log, "Failed to find logger definition in application context. Stopping the router.");
@@ -134,7 +134,7 @@ public class GridRouterCommandLineStartup {
         Map<Class<?>, Object> beans;
 
         try {
-            beans = spring.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class);
+            beans = spring.loadBeans(cfgUrl, IgniteLogger.class, GridTcpRouterConfiguration.class);
         }
         finally {
             if (isLog4jUsed && t != null)

@@ -97,7 +97,7 @@ public class GridS3CheckpointSpi extends GridSpiAdapter implements GridCheckpoin
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Marshaller. */
     @IgniteMarshallerResource

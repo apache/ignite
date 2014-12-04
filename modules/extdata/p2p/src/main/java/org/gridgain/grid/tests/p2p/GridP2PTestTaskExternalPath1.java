@@ -26,7 +26,7 @@ import java.util.*;
 public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int[]> {
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * {@inheritDoc}
@@ -97,7 +97,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteInstanceResource

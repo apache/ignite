@@ -30,7 +30,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
 
     /** Grid logger. */
     @GridToStringExclude
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /**
      * @param ctx Kernal context.

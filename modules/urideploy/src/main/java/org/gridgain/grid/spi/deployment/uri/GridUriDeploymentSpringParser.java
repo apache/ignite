@@ -44,7 +44,7 @@ final class GridUriDeploymentSpringParser {
      *      read or parsed by {@code Spring} {@link XmlBeanFactory}.
      * @see XmlBeanFactory
      */
-    static GridUriDeploymentSpringDocument parseTasksDocument(InputStream in, GridLogger log) throws
+    static GridUriDeploymentSpringDocument parseTasksDocument(InputStream in, IgniteLogger log) throws
         GridSpiException {
         assert in != null;
 

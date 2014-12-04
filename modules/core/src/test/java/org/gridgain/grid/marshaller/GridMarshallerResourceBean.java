@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  */
 class GridMarshallerResourceBean implements Serializable {
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Marshaller. */
     private GridMarshaller marshaller;

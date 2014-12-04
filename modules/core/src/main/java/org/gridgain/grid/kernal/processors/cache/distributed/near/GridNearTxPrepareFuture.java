@@ -42,7 +42,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
@@ -55,7 +55,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private GridNearTxLocal<K, V> tx;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Error. */
     @GridToStringExclude

@@ -40,10 +40,10 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         200_000);
 
     /** Static logger to avoid re-creation. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    private static volatile GridLogger log;
+    private static volatile IgniteLogger log;
 
     /** Partition ID. */
     private final int id;

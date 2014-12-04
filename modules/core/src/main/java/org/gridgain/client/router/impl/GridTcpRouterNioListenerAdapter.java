@@ -38,7 +38,7 @@ abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<
     }
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Client for grid access. */
     private final GridRouterClientImpl client;
@@ -51,7 +51,7 @@ abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<
      * @param client Client for grid access.
      */
     @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
-    GridTcpRouterNioListenerAdapter(GridLogger log, GridRouterClientImpl client) {
+    GridTcpRouterNioListenerAdapter(IgniteLogger log, GridRouterClientImpl client) {
         this.log = log;
         this.client = client;
 

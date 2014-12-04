@@ -423,7 +423,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param arg Wait attribute type.

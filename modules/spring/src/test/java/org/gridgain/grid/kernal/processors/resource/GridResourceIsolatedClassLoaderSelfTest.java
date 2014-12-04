@@ -314,7 +314,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -432,7 +432,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -546,7 +546,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -660,7 +660,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

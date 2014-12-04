@@ -22,7 +22,7 @@ import java.io.*;
 public class GridTestGridifyJob extends ComputeJobAdapter {
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * @param arg Argument.

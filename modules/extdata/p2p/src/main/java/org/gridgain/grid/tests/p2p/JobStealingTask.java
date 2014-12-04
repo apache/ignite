@@ -25,7 +25,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -69,7 +69,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
 
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param arg Job argument.

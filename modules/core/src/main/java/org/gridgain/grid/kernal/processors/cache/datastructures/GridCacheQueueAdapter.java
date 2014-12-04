@@ -44,7 +44,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     private static final int DFLT_CLEAR_BATCH_SIZE = 100;
 
     /** Logger. */
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /** Cache context. */
     protected final GridCacheContext<?, ?> cctx;

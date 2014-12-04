@@ -76,7 +76,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
 
                     /** */
                     @IgniteLoggerResource
-                    private GridLogger log;
+                    private IgniteLogger log;
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {
@@ -111,7 +111,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
     private static class GridSessionCollisionSpi extends GridFifoQueueCollisionSpi {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public void onCollision(GridCollisionContext ctx) {

@@ -691,12 +691,12 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger log() {
+    @Override public IgniteLogger log() {
         return config().getGridLogger();
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger log(Class<?> cls) {
+    @Override public IgniteLogger log(Class<?> cls) {
         return config().getGridLogger().getLogger(cls);
     }
 

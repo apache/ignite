@@ -56,7 +56,7 @@ public class GridPerformanceSuggestions {
      * @param log Log.
      * @param gridName Grid name.
      */
-    public synchronized void logSuggestions(GridLogger log, @Nullable String gridName) {
+    public synchronized void logSuggestions(IgniteLogger log, @Nullable String gridName) {
         if (disabled)
             return;
 

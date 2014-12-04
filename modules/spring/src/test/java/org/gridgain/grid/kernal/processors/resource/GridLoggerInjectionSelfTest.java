@@ -47,7 +47,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
 
         ignite.compute().call(new IgniteCallable<Object>() {
             @IgniteLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
-            private GridLogger log;
+            private IgniteLogger log;
 
             @Override public Object call() throws Exception {
                 if (log instanceof GridLoggerProxy) {
@@ -74,7 +74,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
 
         ignite.compute().call(new IgniteCallable<Object>() {
             @IgniteLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
-            private void log(GridLogger log) {
+            private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
                     Object category = U.field(log,  "ctgr");
 
@@ -101,7 +101,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
 
         ignite.compute().call(new IgniteCallable<Object>() {
             @IgniteLoggerResource(categoryName = "GridLoggerInjectionSelfTest")
-            private void log(GridLogger log) {
+            private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
                     Object category = U.field(log,  "ctgr");
 

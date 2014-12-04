@@ -66,7 +66,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param state State.

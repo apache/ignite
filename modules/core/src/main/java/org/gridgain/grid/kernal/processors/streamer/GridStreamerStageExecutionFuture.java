@@ -33,7 +33,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
     private static final long serialVersionUID = 0L;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Execution ID. */
     private final IgniteUuid execId;

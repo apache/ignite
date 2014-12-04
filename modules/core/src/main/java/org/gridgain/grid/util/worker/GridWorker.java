@@ -24,7 +24,7 @@ import java.util.concurrent.*;
  */
 public abstract class GridWorker implements Runnable {
     /** Grid logger. */
-    protected static volatile GridLogger log;
+    protected static volatile IgniteLogger log;
 
     /** Thread name. */
     private final String name;
@@ -63,7 +63,7 @@ public abstract class GridWorker implements Runnable {
      * @param log Grid logger to be used.
      * @param lsnr Listener for life-cycle events.
      */
-    protected GridWorker(String gridName, String name, GridLogger log, @Nullable GridWorkerListener lsnr) {
+    protected GridWorker(String gridName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
         assert name != null;
         assert log != null;
 
@@ -92,7 +92,7 @@ public abstract class GridWorker implements Runnable {
      *      for logging and debugging purposes we separate the two.
      * @param log Grid logger to be used.
      */
-    protected GridWorker(@Nullable String gridName, String name, GridLogger log) {
+    protected GridWorker(@Nullable String gridName, String name, IgniteLogger log) {
         this(gridName, name, log, null);
     }
 
@@ -120,7 +120,7 @@ public abstract class GridWorker implements Runnable {
 
         enterThreadLocals();
 
-        GridLogger log = GridWorker.log;
+        IgniteLogger log = GridWorker.log;
 
         if (log.isDebugEnabled())
             log.debug("Grid runnable started: " + name);

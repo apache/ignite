@@ -25,7 +25,7 @@ public class TestClosure implements IgniteClosure<Object, Object> {
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     @Override public Object apply(Object o) {
         Assert.assertNotNull(ignite);

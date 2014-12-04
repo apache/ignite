@@ -40,7 +40,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
 public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Addresses. */
     @GridToStringInclude

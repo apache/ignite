@@ -143,7 +143,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
 
     /** Logger. */
     @IgniteLoggerResource
-    protected GridLogger log;
+    protected IgniteLogger log;
 
     /**
      * Sets local host IP address that discovery SPI uses.

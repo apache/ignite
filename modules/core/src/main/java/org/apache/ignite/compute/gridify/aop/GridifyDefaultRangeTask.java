@@ -50,7 +50,7 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Load balancer. */
     @IgniteLoadBalancerResource

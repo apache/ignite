@@ -230,7 +230,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Node ID. */
     @IgniteLocalNodeIdResource

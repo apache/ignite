@@ -108,7 +108,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        protected GridLogger log;
+        protected IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

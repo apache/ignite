@@ -34,7 +34,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
         String cacheName = cache0.name();
 
         GridKernalContext ctx = ((GridKernal)cache0.gridProjection().grid()).context();
-        GridLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
+        IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
         GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 
         assert !F.isEmpty(col);

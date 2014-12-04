@@ -38,7 +38,7 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 @GridToStringExclude
 class GridDeploymentCommunication {
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final GridKernalContext ctx;
@@ -61,7 +61,7 @@ class GridDeploymentCommunication {
      * @param ctx Kernal context.
      * @param log Logger.
      */
-    GridDeploymentCommunication(final GridKernalContext ctx, GridLogger log) {
+    GridDeploymentCommunication(final GridKernalContext ctx, IgniteLogger log) {
         assert log != null;
 
         this.ctx = ctx;

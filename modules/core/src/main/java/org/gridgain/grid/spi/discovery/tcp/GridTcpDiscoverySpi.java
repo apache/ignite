@@ -2034,7 +2034,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * @param log Logger.
      */
-    public void dumpDebugInfo(GridLogger log) {
+    public void dumpDebugInfo(IgniteLogger log) {
         if (!debugMode) {
             U.quietAndWarn(log, "Failed to dump debug info (discovery SPI was not configured " +
                 "in debug mode, consider setting 'debugMode' configuration property to 'true').");

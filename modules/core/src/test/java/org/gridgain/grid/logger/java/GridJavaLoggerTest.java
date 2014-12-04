@@ -23,7 +23,7 @@ import java.util.*;
 public class GridJavaLoggerTest extends TestCase {
     /** */
     @SuppressWarnings({"FieldCanBeLocal"})
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     public void testLogInitialize() throws Exception {

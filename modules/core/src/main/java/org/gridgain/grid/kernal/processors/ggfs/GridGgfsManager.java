@@ -22,7 +22,7 @@ public abstract class GridGgfsManager {
     protected GridGgfsContext ggfsCtx;
 
     /** Logger. */
-    protected GridLogger log;
+    protected IgniteLogger log;
 
     /** Starting flag. */
     private AtomicBoolean starting = new AtomicBoolean();

@@ -128,7 +128,7 @@ public class GridHadoopExternalCommunication {
         };
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Local process descriptor. */
     private GridHadoopProcessDescriptor locProcDesc;
@@ -224,7 +224,7 @@ public class GridHadoopExternalCommunication {
         UUID parentNodeId,
         UUID procId,
         GridMarshaller marsh,
-        GridLogger log,
+        IgniteLogger log,
         ExecutorService execSvc,
         String gridName
     ) {

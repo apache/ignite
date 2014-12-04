@@ -17,11 +17,11 @@ import org.gridgain.grid.logger.*;
 /**
  *
  */
-public class GridResourceLoggerInjector extends GridResourceBasicInjector<GridLogger> {
+public class GridResourceLoggerInjector extends GridResourceBasicInjector<IgniteLogger> {
     /**
      * @param rsrc Root logger.
      */
-    public GridResourceLoggerInjector(GridLogger rsrc) {
+    public GridResourceLoggerInjector(IgniteLogger rsrc) {
         super(rsrc);
     }
 
@@ -43,11 +43,11 @@ public class GridResourceLoggerInjector extends GridResourceBasicInjector<GridLo
      * @return Logger.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private GridLogger resource(IgniteLoggerResource ann, Object target) {
+    private IgniteLogger resource(IgniteLoggerResource ann, Object target) {
         Class<?> cls = ann.categoryClass();
         String cat = ann.categoryName();
 
-        GridLogger rsrc = getResource();
+        IgniteLogger rsrc = getResource();
 
         if (cls != null && cls != Void.class)
             rsrc = rsrc.getLogger(cls);

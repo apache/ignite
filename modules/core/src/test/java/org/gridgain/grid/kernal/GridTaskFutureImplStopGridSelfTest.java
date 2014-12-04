@@ -140,7 +140,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
@@ -175,7 +175,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     public static class GridStopTestJob extends ComputeJobAdapter {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Serializable execute() {

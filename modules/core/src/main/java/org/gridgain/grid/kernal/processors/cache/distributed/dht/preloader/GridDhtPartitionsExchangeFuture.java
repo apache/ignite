@@ -128,7 +128,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private final Object mux = new Object();
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * Dummy future created to trigger reassignments if partition

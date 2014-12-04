@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 public class GridJclLoggerTest extends TestCase {
     /** */
     @SuppressWarnings({"FieldCanBeLocal"})
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     public void testLogInitialize() {

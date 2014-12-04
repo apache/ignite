@@ -14,9 +14,9 @@ import org.jetbrains.annotations.*;
 /**
  * Logger which does not output anything.
  */
-public class GridNullLogger implements GridLogger {
+public class GridNullLogger implements IgniteLogger {
     /** {@inheritDoc} */
-    @Override public GridLogger getLogger(Object ctgr) {
+    @Override public IgniteLogger getLogger(Object ctgr) {
         return this;
     }
 

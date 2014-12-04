@@ -36,7 +36,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** */
     private static final Object NULL = new Object();
@@ -45,7 +45,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected GridCacheContext<K, V> cctx;
 
     /** Logger. */
-    protected GridLogger log;
+    protected IgniteLogger log;
 
     /** */
     protected final GridCacheQueryBean qry;

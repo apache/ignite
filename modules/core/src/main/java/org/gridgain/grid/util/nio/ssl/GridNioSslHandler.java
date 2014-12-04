@@ -32,7 +32,7 @@ class GridNioSslHandler extends ReentrantLock {
     private static final long serialVersionUID = 0L;
 
     /** Grid logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** SSL engine. */
     private SSLEngine sslEngine;
@@ -76,7 +76,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @param log Logger to use.
      * @throws SSLException If exception occurred when starting SSL handshake.
      */
-    GridNioSslHandler(GridNioSslFilter parent, GridNioSession ses, SSLEngine engine, GridLogger log)
+    GridNioSslHandler(GridNioSslFilter parent, GridNioSession ses, SSLEngine engine, IgniteLogger log)
         throws SSLException {
         assert parent != null;
         assert ses != null;

@@ -45,7 +45,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
     /** */
     @GridToStringExclude
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Registered nodes. */
     @GridToStringExclude
@@ -122,7 +122,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         UUID nodeId,
         GridDeploymentCommunication comm,
         long p2pTimeout,
-        GridLogger log,
+        IgniteLogger log,
         String[] p2pExclude,
         int missedResourcesCacheSize,
         boolean clsBytesCacheEnabled,
@@ -201,7 +201,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         Map<UUID, IgniteUuid> participants,
         GridDeploymentCommunication comm,
         long p2pTimeout,
-        GridLogger log,
+        IgniteLogger log,
         String[] p2pExclude,
         int missedResourcesCacheSize,
         boolean clsBytesCacheEnabled,

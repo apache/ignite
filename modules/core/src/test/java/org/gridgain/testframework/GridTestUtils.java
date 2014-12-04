@@ -110,7 +110,7 @@ public final class GridTestUtils {
      *      and this message should be equal.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrows(@Nullable GridLogger log, Callable<?> call,
+    @Nullable public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assert call != null;
         assert cls != null;
@@ -154,7 +154,7 @@ public final class GridTestUtils {
      *      and this message should be equal.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrowsInherited(@Nullable GridLogger log, Callable<?> call,
+    @Nullable public static Throwable assertThrowsInherited(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assert call != null;
         assert cls != null;
@@ -235,7 +235,7 @@ public final class GridTestUtils {
      * @param params Method parameters.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrows(@Nullable GridLogger log, Class<? extends Throwable> cls,
+    @Nullable public static Throwable assertThrows(@Nullable IgniteLogger log, Class<? extends Throwable> cls,
         @Nullable String msg, final Object obj, final String mtd, final Object... params) {
         return assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
@@ -621,7 +621,7 @@ public final class GridTestUtils {
      *
      * @param log Logger.
      */
-    public static void stopThreads(GridLogger log) {
+    public static void stopThreads(IgniteLogger log) {
         busyLock.block();
 
         try {
@@ -757,7 +757,7 @@ public final class GridTestUtils {
      * @param log Logger.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public static void close(Ignite ignite, GridLogger log) {
+    public static void close(Ignite ignite, IgniteLogger log) {
         if (ignite != null)
             try {
                 G.stop(ignite.name(), false);
@@ -775,7 +775,7 @@ public final class GridTestUtils {
      * @param log Logger.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public static void stopGrid(String gridName, GridLogger log) {
+    public static void stopGrid(String gridName, IgniteLogger log) {
         try {
             G.stop(gridName, false);
         }
@@ -871,7 +871,7 @@ public final class GridTestUtils {
      * @throws Exception If failed.
      */
     @SuppressWarnings("BusyWait")
-    public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, GridLogger log)
+    public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, IgniteLogger log)
         throws Exception {
         for (Ignite g : Ignition.allGrids()) {
             GridCache<K, V> cache = ((GridEx)g).cachex(cacheName);
@@ -1173,7 +1173,7 @@ public final class GridTestUtils {
      * @throws GridInterruptedException If interrupted.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    public static void retryAssert(@Nullable GridLogger log, int retries, long retryInterval, GridAbsClosure c)
+    public static void retryAssert(@Nullable IgniteLogger log, int retries, long retryInterval, GridAbsClosure c)
         throws GridInterruptedException {
         for (int i = 0; i < retries; i++) {
             try {

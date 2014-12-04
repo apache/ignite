@@ -64,7 +64,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Data source. */
     private DataSource dataSrc;

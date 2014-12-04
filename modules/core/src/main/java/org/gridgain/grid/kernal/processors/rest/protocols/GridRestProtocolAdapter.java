@@ -36,7 +36,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     protected final GridKernalContext ctx;
 
     /** Logger. */
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /** Secret key. */
     protected final String secretKey;

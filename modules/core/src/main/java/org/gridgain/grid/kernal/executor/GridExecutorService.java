@@ -76,7 +76,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     private IgniteCompute comp;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Whether service is being stopped or not. */
     private boolean isBeingShutdown;
@@ -103,7 +103,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      * @param prj Projection.
      * @param log Grid logger.
      */
-    public GridExecutorService(ClusterGroupAdapter prj, GridLogger log) {
+    public GridExecutorService(ClusterGroupAdapter prj, IgniteLogger log) {
         assert prj != null;
         assert log != null;
 

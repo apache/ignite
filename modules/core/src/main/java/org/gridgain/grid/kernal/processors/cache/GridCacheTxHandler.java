@@ -36,7 +36,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  */
 public class GridCacheTxHandler<K, V> {
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Shared cache context. */
     private GridCacheSharedContext<K, V> ctx;

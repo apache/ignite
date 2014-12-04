@@ -62,7 +62,7 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     /** Injected grid logger. */
     @IgniteLoggerResource
     @GridToStringExclude
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Always allow permission set. */
     private static final GridSecurityPermissionSet allowAll = new GridAllowAllPermissionSet();

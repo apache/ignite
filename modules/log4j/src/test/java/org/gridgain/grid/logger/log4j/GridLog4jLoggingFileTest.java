@@ -21,7 +21,7 @@ import java.io.*;
 @GridCommonTest(group = "Logger")
 public class GridLog4jLoggingFileTest extends TestCase {
     /** */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {

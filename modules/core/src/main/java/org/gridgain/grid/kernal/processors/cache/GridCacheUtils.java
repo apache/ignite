@@ -1052,7 +1052,7 @@ public class GridCacheUtils {
      * @param excl Excludes.
      * @return Future listener that logs errors.
      */
-    public static IgniteInClosure<IgniteFuture<?>> errorLogger(final GridLogger log,
+    public static IgniteInClosure<IgniteFuture<?>> errorLogger(final IgniteLogger log,
         final Class<? extends Exception>... excl) {
         return new CI1<IgniteFuture<?>>() {
             @Override public void apply(IgniteFuture<?> f) {
@@ -1380,7 +1380,7 @@ public class GridCacheUtils {
      * @param fail If true throws GridException in case of attribute values mismatch, otherwise logs warning.
      * @throws GridException If attribute values are different and fail flag is true.
      */
-    public static void checkAttributeMismatch(GridLogger log, GridCacheConfiguration locCfg,
+    public static void checkAttributeMismatch(IgniteLogger log, GridCacheConfiguration locCfg,
         GridCacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws GridException {
         assert rmt != null;
         assert attr != null;
@@ -1407,7 +1407,7 @@ public class GridCacheUtils {
      * @param fail If true throws GridException in case of attribute values mismatch, otherwise logs warning.
      * @throws GridException If attribute values are different and fail flag is true.
      */
-    public static void checkAttributeMismatch(GridLogger log, String cfgName, ClusterNode rmt, String attrName,
+    public static void checkAttributeMismatch(IgniteLogger log, String cfgName, ClusterNode rmt, String attrName,
         String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws GridException {
         assert rmt != null;
         assert attrName != null;
@@ -1448,7 +1448,7 @@ public class GridCacheUtils {
      * @param log Logger used to log warning message.
      * @param val Value.
      */
-    public static void validateCacheValue(GridLogger log, @Nullable Object val) {
+    public static void validateCacheValue(IgniteLogger log, @Nullable Object val) {
         if (val == null)
             return;
 
@@ -1463,7 +1463,7 @@ public class GridCacheUtils {
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
      */
-    public static void validateCacheKey(GridLogger log, @Nullable Object key) {
+    public static void validateCacheKey(IgniteLogger log, @Nullable Object key) {
         if (key == null)
             return;
 
@@ -1527,7 +1527,7 @@ public class GridCacheUtils {
      * @param log Logger used to log warning message.
      * @param obj Cache key or cache value.
      */
-    private static void validateExternalizable(GridLogger log, Object obj) {
+    private static void validateExternalizable(IgniteLogger log, Object obj) {
         Class<?> cls = obj.getClass();
 
         if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))

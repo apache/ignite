@@ -42,7 +42,7 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     @IgniteTaskSessionResource

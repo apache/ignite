@@ -61,7 +61,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     private static final int MAX_REMAP_CNT = 32;
 
     /** Log reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Cache name ({@code null} for default cache). */
     private final String cacheName;
@@ -90,7 +90,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap8<>();
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr;

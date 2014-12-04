@@ -237,7 +237,7 @@ abstract class GridCacheAbstractLoadTest {
      * @return Logger.
      * @throws GridException If file initialization failed.
      */
-    protected GridLogger initLogger(String log) throws GridException {
+    protected IgniteLogger initLogger(String log) throws GridException {
         Logger impl = Logger.getRootLogger();
 
         impl.removeAllAppenders();

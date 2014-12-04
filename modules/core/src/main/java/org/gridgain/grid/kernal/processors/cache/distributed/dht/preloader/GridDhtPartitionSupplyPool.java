@@ -39,7 +39,7 @@ class GridDhtPartitionSupplyPool<K, V> {
     private final GridCacheContext<K, V> cctx;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final ReadWriteLock busyLock;

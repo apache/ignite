@@ -27,7 +27,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     @IgniteLocalNodeIdResource

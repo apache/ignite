@@ -36,7 +36,7 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  */
 public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<GridMemcachedMessage> {
     /** Logger */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Handler. */
     private final GridRestProtocolHandler hnd;
@@ -55,7 +55,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param hnd Rest handler.
      * @param ctx Context.
      */
-    public GridTcpMemcachedNioListener(GridLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+    public GridTcpMemcachedNioListener(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
         this.log = log;
         this.hnd = hnd;
         this.ctx = ctx;

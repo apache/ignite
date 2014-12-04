@@ -42,7 +42,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Cache registry. */
     @GridToStringExclude
@@ -82,7 +82,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
     /** Logger. */
     @GridToStringExclude
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Filter. */
     private IgnitePredicate<GridCacheEntry<K, V>>[] filter;

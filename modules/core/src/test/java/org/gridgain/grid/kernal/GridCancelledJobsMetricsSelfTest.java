@@ -155,7 +155,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         implements GridCollisionSpi {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private GridCollisionExternalListener lsnr;

@@ -104,7 +104,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
     /** Injected logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Initialization flag. */
     @SuppressWarnings("TransientFieldNotInitialized")

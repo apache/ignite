@@ -112,7 +112,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Grid marshaller. */
     @IgniteMarshallerResource

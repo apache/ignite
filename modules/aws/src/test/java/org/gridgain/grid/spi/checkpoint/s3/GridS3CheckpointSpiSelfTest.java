@@ -14,12 +14,10 @@ import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.GridLogger;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.spi.*;
 import org.gridgain.testsuites.bamboo.*;
 
@@ -197,7 +195,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
     }
 
     /**
-     * Wrapper around {@link GridTestUtils#retryAssert(GridLogger, int, long, GridAbsClosure)}.
+     * Wrapper around {@link GridTestUtils#retryAssert(org.gridgain.grid.logger.IgniteLogger, int, long, GridAbsClosure)}.
      * Provides s3-specific timeouts.
      * @param assertion Closure with assertion inside.
      * @throws GridInterruptedException If was interrupted.

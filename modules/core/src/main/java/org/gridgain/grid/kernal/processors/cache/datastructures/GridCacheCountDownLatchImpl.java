@@ -41,7 +41,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         };
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Latch name. */
     private String name;

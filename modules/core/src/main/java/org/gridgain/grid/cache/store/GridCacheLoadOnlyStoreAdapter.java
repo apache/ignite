@@ -75,7 +75,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
 
     /** Auto-injected logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Batch size. */
     private int batchSize = DFLT_BATCH_SIZE;

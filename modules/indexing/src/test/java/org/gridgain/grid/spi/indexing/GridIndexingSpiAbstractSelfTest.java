@@ -348,7 +348,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
         GridStringLogger log = new GridStringLogger(false, this.log);
 
-        GridLogger oldLog = GridTestUtils.getFieldValue(spi, "log");
+        IgniteLogger oldLog = GridTestUtils.getFieldValue(spi, "log");
         ((GridH2IndexingSpi)spi).setLongQueryExecutionTimeout(longQryExecTime);
         ((GridH2IndexingSpi) spi).setLongQueryExplain(true);
 
@@ -411,7 +411,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
         GridStringLogger log = new GridStringLogger(false, this.log);
 
-        GridLogger oldLog = GridTestUtils.getFieldValue(spi, "log");
+        IgniteLogger oldLog = GridTestUtils.getFieldValue(spi, "log");
         ((GridH2IndexingSpi)spi).setLongQueryExecutionTimeout(longQryExecTime);
         ((GridH2IndexingSpi) spi).setLongQueryExplain(true);
 

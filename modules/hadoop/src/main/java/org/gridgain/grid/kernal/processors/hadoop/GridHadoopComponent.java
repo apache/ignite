@@ -20,7 +20,7 @@ public abstract class GridHadoopComponent {
     protected GridHadoopContext ctx;
 
     /** Logger. */
-    protected GridLogger log;
+    protected IgniteLogger log;
 
     /**
      * @param ctx Hadoop context.

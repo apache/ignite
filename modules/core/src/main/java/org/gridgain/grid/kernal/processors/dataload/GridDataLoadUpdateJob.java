@@ -27,7 +27,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final GridKernalContext ctx;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Cache name. */
     private final String cacheName;
@@ -50,7 +50,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
      * @param updater Updater.
      */
     GridDataLoadUpdateJob(
-        GridKernalContext ctx, GridLogger log, @Nullable String cacheName,
+        GridKernalContext ctx, IgniteLogger log, @Nullable String cacheName,
         Collection<Map.Entry<K, V>> col,
         boolean ignoreDepOwnership,
         IgniteDataLoadCacheUpdater<K, V> updater) {

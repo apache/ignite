@@ -31,7 +31,7 @@ public class GridClockServer {
     private DatagramSocket sock;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Read worker. */
     private GridWorker readWorker;

@@ -62,7 +62,7 @@ public class GridLogThrottle {
      * @param e Error (optional).
      * @param msg Message.
      */
-    public static void error(@Nullable GridLogger log, @Nullable Throwable e, String msg) {
+    public static void error(@Nullable IgniteLogger log, @Nullable Throwable e, String msg) {
         assert !F.isEmpty(msg);
 
         log(log, e, msg, null, LogLevel.ERROR);
@@ -75,7 +75,7 @@ public class GridLogThrottle {
      * @param e Error (optional).
      * @param msg Message.
      */
-    public static void warn(@Nullable GridLogger log, @Nullable Throwable e, String msg) {
+    public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String msg) {
         assert !F.isEmpty(msg);
 
         log(log, e, msg, null, LogLevel.WARN);
@@ -89,7 +89,7 @@ public class GridLogThrottle {
      * @param longMsg Long message (or just message).
      * @param shortMsg Short message for quite logging.
      */
-    public static void warn(@Nullable GridLogger log, @Nullable Throwable e, String longMsg, @Nullable String shortMsg) {
+    public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String longMsg, @Nullable String shortMsg) {
         assert !F.isEmpty(longMsg);
 
         log(log, e, longMsg, shortMsg, LogLevel.WARN);
@@ -101,7 +101,7 @@ public class GridLogThrottle {
      * @param log Logger.
      * @param msg Message.
      */
-    public static void info(@Nullable GridLogger log, String msg) {
+    public static void info(@Nullable IgniteLogger log, String msg) {
         assert !F.isEmpty(msg);
 
         log(log, null, msg, null, LogLevel.INFO);
@@ -124,7 +124,7 @@ public class GridLogThrottle {
      * @param level Level where messages should appear.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    private static void log(@Nullable GridLogger log, @Nullable Throwable e, String longMsg, @Nullable String shortMsg,
+    private static void log(@Nullable IgniteLogger log, @Nullable Throwable e, String longMsg, @Nullable String shortMsg,
         LogLevel level) {
         assert !F.isEmpty(longMsg);
 
@@ -177,7 +177,7 @@ public class GridLogThrottle {
     private enum LogLevel {
         /** Error level. */
         ERROR {
-            @Override public void doLog(GridLogger log, String longMsg, String shortMsg, Throwable e) {
+            @Override public void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e) {
                 if (e != null)
                     U.error(log, longMsg, e);
                 else
@@ -187,14 +187,14 @@ public class GridLogThrottle {
 
         /** Warn level. */
         WARN {
-            @Override public void doLog(GridLogger log, String longMsg, String shortMsg, Throwable e) {
+            @Override public void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e) {
                 U.warn(log, longMsg, F.isEmpty(shortMsg) ? longMsg : shortMsg);
             }
         },
 
         /** Info level. */
         INFO {
-            @Override public void doLog(GridLogger log, String longMsg, String shortMsg, Throwable e) {
+            @Override public void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e) {
                 if (log.isInfoEnabled())
                     log.info(longMsg);
             }
@@ -208,6 +208,6 @@ public class GridLogThrottle {
          * @param shortMsg Short message.
          * @param e Exception to attach to log.
          */
-        public abstract void doLog(GridLogger log, String longMsg, String shortMsg, Throwable e);
+        public abstract void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e);
     }
 }

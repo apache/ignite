@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 public class GridNioFilterChain<T> extends GridNioFilterAdapter {
     /** Grid logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Listener that will be used to notify on server events. */
     private GridNioServerListener<T> lsnr;
@@ -41,7 +41,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * @param filters Filters applied between listener and head. Will be inserted in the same order,
      *      so chain will look like (lsnr) -> (filters[0]) -> ... -> (filters[n]) -> (head).
      */
-    public GridNioFilterChain(GridLogger log, GridNioServerListener<T> lsnr, GridNioFilter head,
+    public GridNioFilterChain(IgniteLogger log, GridNioServerListener<T> lsnr, GridNioFilter head,
         GridNioFilter... filters) {
         super("FilterChain");
 

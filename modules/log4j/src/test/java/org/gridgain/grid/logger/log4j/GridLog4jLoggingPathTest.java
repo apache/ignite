@@ -19,7 +19,7 @@ import org.gridgain.testframework.junits.common.*;
 @GridCommonTest(group = "Logger")
 public class GridLog4jLoggingPathTest extends TestCase {
     /** */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {

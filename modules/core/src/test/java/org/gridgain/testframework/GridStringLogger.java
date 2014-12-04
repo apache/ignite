@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * Logger which logs to string buffer.
  */
-public class GridStringLogger implements GridLogger {
+public class GridStringLogger implements IgniteLogger {
     /** */
     private static final int MAX = 1024 * 11;
 
@@ -30,7 +30,7 @@ public class GridStringLogger implements GridLogger {
     private final boolean dbg;
 
     /** */
-    private final GridLogger echo;
+    private final IgniteLogger echo;
 
     /**
      *
@@ -50,7 +50,7 @@ public class GridStringLogger implements GridLogger {
      * @param dbg Debug flag.
      * @param echo Logger to echo all messages.
      */
-    public GridStringLogger(boolean dbg, @Nullable GridLogger echo) {
+    public GridStringLogger(boolean dbg, @Nullable IgniteLogger echo) {
         this.dbg = dbg;
         this.echo = echo;
     }
@@ -75,7 +75,7 @@ public class GridStringLogger implements GridLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger getLogger(Object ctgr) {
+    @Override public IgniteLogger getLogger(Object ctgr) {
         return this;
     }
 

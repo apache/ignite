@@ -62,7 +62,7 @@ public class ComputeFailoverExample {
 
         /** Injected grid logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private IgniteBiTuple<Integer, Integer> state;

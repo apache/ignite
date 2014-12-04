@@ -452,7 +452,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -570,7 +570,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

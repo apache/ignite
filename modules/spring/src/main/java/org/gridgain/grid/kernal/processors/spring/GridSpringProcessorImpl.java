@@ -134,7 +134,7 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public String userVersion(ClassLoader ldr, GridLogger log) {
+    @Override public String userVersion(ClassLoader ldr, IgniteLogger log) {
         assert ldr != null;
         assert log != null;
 

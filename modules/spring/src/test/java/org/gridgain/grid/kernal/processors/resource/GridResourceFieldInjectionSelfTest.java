@@ -404,7 +404,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteInstanceResource

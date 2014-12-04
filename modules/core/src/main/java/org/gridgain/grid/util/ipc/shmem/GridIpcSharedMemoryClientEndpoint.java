@@ -43,7 +43,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
     private final Thread checker;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /**
      * Creates connected client IPC endpoint.
@@ -53,7 +53,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      * @param parent Parent logger.
      */
     public GridIpcSharedMemoryClientEndpoint(GridIpcSharedMemorySpace inSpace, GridIpcSharedMemorySpace outSpace,
-        GridLogger parent) {
+        IgniteLogger parent) {
         assert inSpace != null;
         assert outSpace != null;
 
@@ -76,7 +76,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      * @param parent Parent logger.
      * @throws GridException If connection fails.
      */
-    public GridIpcSharedMemoryClientEndpoint(int port, GridLogger parent) throws GridException {
+    public GridIpcSharedMemoryClientEndpoint(int port, IgniteLogger parent) throws GridException {
         this(port, 0, parent);
     }
 
@@ -90,7 +90,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      * @throws GridException If connection fails.
      */
     @SuppressWarnings({"CallToThreadStartDuringObjectConstruction", "ErrorNotRethrown"})
-    public GridIpcSharedMemoryClientEndpoint(int port, int timeout, GridLogger parent) throws GridException {
+    public GridIpcSharedMemoryClientEndpoint(int port, int timeout, IgniteLogger parent) throws GridException {
         assert port > 0;
         assert port < 0xffff;
 

@@ -366,7 +366,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     private static class GridAllEventsTimeoutTestJob extends ComputeJobAdapter {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @SuppressWarnings("BusyWait")

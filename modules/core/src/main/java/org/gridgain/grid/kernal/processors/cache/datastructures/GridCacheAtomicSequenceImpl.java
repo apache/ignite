@@ -45,7 +45,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         };
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Sequence name. */
     private String name;

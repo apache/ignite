@@ -35,7 +35,7 @@ class GridRoundRobinGlobalLoadBalancer {
     private GridLocalEventListener lsnr;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Current snapshot of nodes which participated in load balancing. */
     private volatile GridNodeList nodeList = new GridNodeList(0, null);
@@ -49,7 +49,7 @@ class GridRoundRobinGlobalLoadBalancer {
     /**
      * @param log Grid logger.
      */
-    GridRoundRobinGlobalLoadBalancer(GridLogger log) {
+    GridRoundRobinGlobalLoadBalancer(IgniteLogger log) {
         assert log != null;
 
         this.log = log;

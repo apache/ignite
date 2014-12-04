@@ -98,7 +98,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
     private static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {

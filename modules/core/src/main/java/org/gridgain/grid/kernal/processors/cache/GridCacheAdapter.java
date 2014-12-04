@@ -139,7 +139,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     protected volatile GridCacheMetricsAdapter metrics;
 
     /** Logger. */
-    protected GridLogger log;
+    protected IgniteLogger log;
 
     /** Queries impl. */
     private GridCacheQueries<K, V> qry;
@@ -290,7 +290,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /**
      * @return Logger.
      */
-    protected GridLogger log() {
+    protected IgniteLogger log() {
         return log;
     }
 

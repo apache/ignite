@@ -48,7 +48,7 @@ public class GridUriDeploymentFtpScanner extends GridUriDeploymentScanner {
         long freq,
         FilenameFilter filter,
         GridUriDeploymentScannerListener lsnr,
-        GridLogger log) {
+        IgniteLogger log) {
         super(gridName, uri, deployDir, freq, filter, lsnr, log);
 
         cfg = initializeFtpConfiguration(uri);

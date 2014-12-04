@@ -47,7 +47,7 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
 
         GridMarshaller marsh = new GridOptimizedMarshaller();
 
-        GridLogger log = log();
+        IgniteLogger log = log();
 
         GridHadoopExternalCommunication[] comms = new GridHadoopExternalCommunication[4];
 

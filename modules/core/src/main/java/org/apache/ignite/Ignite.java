@@ -71,7 +71,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Grid's logger.
      */
-    public GridLogger log();
+    public IgniteLogger log();
 
     /**
      * Gets the configuration of this grid instance.

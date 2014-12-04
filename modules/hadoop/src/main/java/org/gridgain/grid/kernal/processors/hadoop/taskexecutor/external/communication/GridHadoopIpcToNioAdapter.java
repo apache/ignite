@@ -48,7 +48,7 @@ public class GridHadoopIpcToNioAdapter<T> {
      * @param lsnr Listener.
      * @param filters Filters.
      */
-    public GridHadoopIpcToNioAdapter(GridLogger log, GridIpcEndpoint endp, boolean accepted,
+    public GridHadoopIpcToNioAdapter(IgniteLogger log, GridIpcEndpoint endp, boolean accepted,
         GridNioServerListener<T> lsnr, GridNioFilter... filters) {
         this.endp = endp;
 

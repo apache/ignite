@@ -50,7 +50,7 @@ public class GridLocalDeploymentSpi extends GridSpiAdapter implements GridDeploy
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Map of all resources. */
     private ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs =

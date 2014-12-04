@@ -302,12 +302,12 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger taskLog;
+        private IgniteLogger taskLog;
 
         /**
          * @return Task resource.
          */
-        public GridLogger getTaskLog() {
+        public IgniteLogger getTaskLog() {
             return taskLog;
         }
 

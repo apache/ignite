@@ -28,7 +28,7 @@ import java.util.*;
 public class GridNoopSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi {
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {

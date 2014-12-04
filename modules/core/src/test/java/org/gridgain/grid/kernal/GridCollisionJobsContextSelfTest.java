@@ -59,7 +59,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     public static class TestCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public void onCollision(GridCollisionContext ctx) {

@@ -34,7 +34,7 @@ class GridWebSessionListener {
     private final int retries;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /**
      * @param ignite Grid.

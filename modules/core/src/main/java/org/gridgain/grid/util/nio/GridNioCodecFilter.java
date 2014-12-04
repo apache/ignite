@@ -27,7 +27,7 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
 
     /** Grid logger. */
     @GridToStringExclude
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Whether direct mode is used. */
     private boolean directMode;
@@ -39,7 +39,7 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
      * @param log Log instance to use.
      * @param directMode Whether direct mode is used.
      */
-    public GridNioCodecFilter(GridNioParser parser, GridLogger log, boolean directMode) {
+    public GridNioCodecFilter(GridNioParser parser, IgniteLogger log, boolean directMode) {
         super("GridNioCodecFilter");
 
         this.parser = parser;

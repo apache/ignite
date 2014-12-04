@@ -47,7 +47,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private final GridCache<GridCacheSetItemKey, Boolean> cache;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Set name. */
     private final String name;

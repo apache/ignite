@@ -182,7 +182,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
                 /** Logger. */
                 @IgniteLoggerResource
-                private GridLogger log;
+                private IgniteLogger log;
 
                 @Override public Serializable execute() throws GridException {
                     jobStarted.countDown();

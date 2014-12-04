@@ -76,7 +76,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private ClusterNode locNode;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Mode resolver. */
     private final GridGgfsModeResolver modeRslvr;

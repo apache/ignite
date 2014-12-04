@@ -23,7 +23,7 @@ import java.io.*;
  * Logger which automatically attaches {@code [cacheName]} to every log statement.
  */
 @GridToStringExclude
-class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Externalizable {
+class GridCacheLogger extends GridMetadataAwareAdapter implements IgniteLogger, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Ex
         };
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Cache name. */
     private GridCacheContext<?, ?> cctx;
@@ -84,7 +84,7 @@ class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger getLogger(Object ctgr) {
+    @Override public IgniteLogger getLogger(Object ctgr) {
         return new GridCacheLogger(cctx, ctgr.toString());
     }
 

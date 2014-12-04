@@ -28,7 +28,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     private GridCacheContext<K, V> cctx;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * @param cctx Context.

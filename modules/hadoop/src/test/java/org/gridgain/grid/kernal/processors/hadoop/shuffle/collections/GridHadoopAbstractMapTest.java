@@ -115,7 +115,7 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
+        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, IgniteLogger log) throws GridException {
             assert false;
 
             return null;

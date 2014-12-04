@@ -39,7 +39,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private final GridCacheQueryType type;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Class name in case of portable query. */
     private final String clsName;
@@ -147,7 +147,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         IgnitePredicate<GridCacheEntry<Object, Object>> prjPred,
         GridCacheQueryType type,
-        GridLogger log,
+        IgniteLogger log,
         int pageSize,
         long timeout,
         boolean keepAll,

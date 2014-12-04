@@ -39,11 +39,11 @@ final class GridDiagnostic {
      * @param exec Executor service.
      * @param parentLog Parent logger.
      */
-    static void runBackgroundCheck(String gridName, Executor exec, GridLogger parentLog) {
+    static void runBackgroundCheck(String gridName, Executor exec, IgniteLogger parentLog) {
         assert exec != null;
         assert parentLog != null;
 
-        final GridLogger log = parentLog.getLogger(GridDiagnostic.class);
+        final IgniteLogger log = parentLog.getLogger(GridDiagnostic.class);
 
         try {
             exec.execute(new GridWorker(gridName, "grid-diagnostic-1", log) {

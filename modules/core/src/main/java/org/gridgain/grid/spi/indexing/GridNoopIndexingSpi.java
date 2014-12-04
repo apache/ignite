@@ -23,7 +23,7 @@ import java.util.*;
 public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingSpi {
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,

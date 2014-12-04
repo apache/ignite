@@ -34,7 +34,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Cache registry. */
     @GridToStringExclude
@@ -70,7 +70,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
 
     /** Logger. */
     @GridToStringExclude
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Filter. */
     private IgnitePredicate<GridCacheEntry<K, V>>[] filter;

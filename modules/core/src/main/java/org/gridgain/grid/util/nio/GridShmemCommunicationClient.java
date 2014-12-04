@@ -42,7 +42,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
      * @param msgWriter Message writer.
      * @throws GridException If failed.
      */
-    public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout, GridLogger log,
+    public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout, IgniteLogger log,
         GridNioMessageWriter msgWriter)
         throws GridException {
         super(metricsLsnr);

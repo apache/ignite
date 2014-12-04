@@ -43,7 +43,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     private int cacheId;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Node to partition map. */
     private GridDhtPartitionFullMap node2part;

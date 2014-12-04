@@ -142,7 +142,7 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Local node ID. */
     @IgniteLocalNodeIdResource

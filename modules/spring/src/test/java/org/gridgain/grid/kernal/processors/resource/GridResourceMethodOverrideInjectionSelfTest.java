@@ -93,7 +93,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         protected transient UserResource2 rsrc4;
 
         /** */
-        protected GridLogger log;
+        protected IgniteLogger log;
 
         /** */
         protected Ignite ignite;
@@ -166,7 +166,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
         @IgniteLoggerResource
-        private void setLog(GridLogger log) { this.log = log; }
+        private void setLog(IgniteLogger log) { this.log = log; }
 
         /**
          * @param ignite Grid.
@@ -289,7 +289,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          */
         @SuppressWarnings({"MethodOverridesPrivateMethodOfSuperclass", "unused"})
         @IgniteLoggerResource
-        public void setLog(GridLogger log) {
+        public void setLog(IgniteLogger log) {
             this.log = log;
         }
 

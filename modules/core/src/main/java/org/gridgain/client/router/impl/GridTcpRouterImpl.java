@@ -44,7 +44,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
     private final GridTcpRouterConfiguration cfg;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Server. */
     private GridNioServer<GridClientMessage> srv;
@@ -94,7 +94,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         try {
             Class<?> cls = Class.forName(ENT_NIO_LSNR_CLS);
 
-            Constructor<?> cons = cls.getDeclaredConstructor(GridLogger.class, GridRouterClientImpl.class);
+            Constructor<?> cons = cls.getDeclaredConstructor(IgniteLogger.class, GridRouterClientImpl.class);
 
             cons.setAccessible(true);
 

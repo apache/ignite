@@ -160,7 +160,7 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
      *
      * @param log Logger.
      */
-    static void stopAllThreads(GridLogger log) {
+    static void stopAllThreads(IgniteLogger log) {
         startedThreadsLock.block();
 
         List<Thread> all;

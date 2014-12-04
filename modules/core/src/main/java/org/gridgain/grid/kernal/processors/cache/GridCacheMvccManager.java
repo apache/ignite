@@ -79,7 +79,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
     /** Logger. */
     @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
-    private GridLogger exchLog;
+    private IgniteLogger exchLog;
 
     /** Lock callback. */
     @GridToStringExclude

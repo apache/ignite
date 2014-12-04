@@ -40,7 +40,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {

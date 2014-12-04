@@ -33,7 +33,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -54,7 +54,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private final UUID failedNodeId;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Transaction nodes mapping. */
     private final Map<UUID, Collection<UUID>> txNodes;

@@ -67,13 +67,13 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     }
 
     /** Static logger to avoid re-creation. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** */
     private final GridKernalContext ctx;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final GridMarshaller marsh;

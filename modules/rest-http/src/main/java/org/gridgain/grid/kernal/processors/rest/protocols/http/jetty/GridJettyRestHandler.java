@@ -37,7 +37,7 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
  */
 public class GridJettyRestHandler extends AbstractHandler {
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Request handlers. */
     private GridRestProtocolHandler hnd;
@@ -58,7 +58,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param authChecker Authentication checking closure.
      * @param log Logger.
      */
-    GridJettyRestHandler(GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, GridLogger log) {
+    GridJettyRestHandler(GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, IgniteLogger log) {
         assert hnd != null;
         assert log != null;
 

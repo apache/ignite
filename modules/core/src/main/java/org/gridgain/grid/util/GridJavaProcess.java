@@ -37,7 +37,7 @@ public final class GridJavaProcess {
     public static final String PID_MSG_PREFIX = "my_pid_is:";
 
     /** Logger */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Wrapped system process. */
     private Process proc;
@@ -72,7 +72,7 @@ public final class GridJavaProcess {
      * @return Wrapper around {@link Process}
      * @throws Exception If any problem occurred.
      */
-    public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
+    public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
         return exec(cls, params, log, printC, procKilledC, null, null);
     }
@@ -90,7 +90,7 @@ public final class GridJavaProcess {
      * @return Wrapper around {@link Process}
      * @throws Exception If any problem occurred.
      */
-    public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
+    public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
         @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
         if (!(U.isLinux() || U.isMacOs() || U.isWindows()))

@@ -41,7 +41,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     private final GridKernalContext ctx;
 
     /** Log. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Buffer size. */
     private final int bufSize; // Buffer size. Must not be less then file block size.

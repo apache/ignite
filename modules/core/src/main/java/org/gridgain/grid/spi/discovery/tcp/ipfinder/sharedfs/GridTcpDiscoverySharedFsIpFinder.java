@@ -58,7 +58,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** File-system path. */
     private String path = DFLT_PATH;

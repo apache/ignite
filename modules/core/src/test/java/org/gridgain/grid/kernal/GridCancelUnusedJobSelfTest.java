@@ -115,7 +115,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
     private static class GridCancelTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
@@ -153,7 +153,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
     private static class GridCancelTestJob extends ComputeJobAdapter {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteTaskSessionResource

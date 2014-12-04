@@ -53,7 +53,7 @@ final class GridUriDeploymentFileProcessor {
      * @return List of tasks from given file.
      */
     @Nullable static GridUriDeploymentFileProcessorResult processFile(File file, String uri, File deployDir,
-        GridLogger log) throws GridSpiException {
+        IgniteLogger log) throws GridSpiException {
         File gar = file;
 
         if (!checkIntegrity(file, log)) {
@@ -126,7 +126,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to log all failures.
      * @return string representation of the calculated checksum or {@code null} if calculation failed.
      */
-    @Nullable public static String md5(@Nullable File file, @Nullable GridLogger log) {
+    @Nullable public static String md5(@Nullable File file, @Nullable IgniteLogger log) {
         if (file != null)
             return file.isFile() ? fileMd5(file, log) : directoryMd5(file, log);
 
@@ -140,7 +140,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to log all failures.
      * @return string representation of the calculated checksum or {@code null} if calculation failed.
      */
-    @Nullable public static String fileMd5(@Nullable File file, @Nullable GridLogger log) {
+    @Nullable public static String fileMd5(@Nullable File file, @Nullable IgniteLogger log) {
         String md5 = null;
 
         if (file != null) {
@@ -175,7 +175,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to log all failures.
      * @return string representation of the calculated checksum or {@code null} if calculation failed.
      */
-    @Nullable public static String directoryMd5(@Nullable File dir, @Nullable GridLogger log) {
+    @Nullable public static String directoryMd5(@Nullable File dir, @Nullable IgniteLogger log) {
         if (dir != null) {
             if (!dir.isDirectory()) {
                 U.warn(log, "Failed to find directory for md5 calculation: " + dir);
@@ -204,7 +204,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to report errors.
      * @return {@code true} if digest was added successfully, {@code false} otherwise.
      */
-    private static boolean addDirectoryDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
+    private static boolean addDirectoryDigest(File file, MessageDigest digest, @Nullable IgniteLogger log) {
         assert file.isDirectory();
 
         File[] files = file.listFiles();
@@ -234,7 +234,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to report errors.
      * @return {@code true} if digest was added successfully, {@code false} otherwise.
      */
-    private static boolean addFileDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
+    private static boolean addFileDigest(File file, MessageDigest digest, @Nullable IgniteLogger log) {
         if (!file.isFile()) {
             U.error(log, "Failed to add file to directory digest (will not check MD5 hash): " + file);
 
@@ -274,7 +274,7 @@ final class GridUriDeploymentFileProcessor {
      * @param clsLdr Released class loader.
      * @param log Logger.
      */
-    static void cleanupUnit(ClassLoader clsLdr, GridLogger log) {
+    static void cleanupUnit(ClassLoader clsLdr, IgniteLogger log) {
         assert clsLdr != null;
         assert log != null;
 
@@ -315,7 +315,7 @@ final class GridUriDeploymentFileProcessor {
      */
     @SuppressWarnings({"ClassLoader2Instantiation"})
     private static GridUriDeploymentFileProcessorResult processWithDescriptorFile(GridUriDeploymentSpringDocument doc,
-        File file, String uri, GridLogger log) throws GridSpiException {
+        File file, String uri, IgniteLogger log) throws GridSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
         List<Class<? extends ComputeTask<?, ?>>> tasks = doc.getTasks(clsLdr);
@@ -363,7 +363,7 @@ final class GridUriDeploymentFileProcessor {
      * @throws GridSpiException Thrown if file reading error happened.
      * @return List of tasks from given file.
      */
-    private static GridUriDeploymentFileProcessorResult processNoDescriptorFile(File file, String uri, GridLogger log)
+    private static GridUriDeploymentFileProcessorResult processNoDescriptorFile(File file, String uri, IgniteLogger log)
         throws GridSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
@@ -427,7 +427,7 @@ final class GridUriDeploymentFileProcessor {
      * @return {@code true} if given file is a directory of verification
      *      completed successfully otherwise returns {@code false}.
      */
-    private static boolean checkIntegrity(File file, GridLogger log) {
+    private static boolean checkIntegrity(File file, IgniteLogger log) {
         try {
             return file.isDirectory() || GridUriDeploymentJarVerifier.verify(file.getAbsolutePath(), false, log);
         }

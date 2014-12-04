@@ -41,7 +41,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         };
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Atomic reference name. */
     private String name;

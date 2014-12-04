@@ -206,7 +206,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     private static class GridTaskFailedTestTask extends ComputeTaskAdapter<Serializable, Serializable> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteLocalNodeIdResource
@@ -266,7 +266,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     private static class GridTaskFailedTestJob extends ComputeJobAdapter {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         GridTaskFailedTestJob() {

@@ -55,7 +55,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private GridCacheInternal sampling;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Delete worker. */
     private volatile GridGgfsDeleteWorker delWorker;

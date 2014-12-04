@@ -92,7 +92,7 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Event time-to-live value in milliseconds. */
     private long expireAgeMs = DFLT_EXPIRE_AGE_MS;

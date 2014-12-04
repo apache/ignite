@@ -40,7 +40,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     private final GridGgfsReader secReader;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Path to file. */
     protected final GridGgfsPath path;

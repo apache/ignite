@@ -36,7 +36,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Comp
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Kernal context ({@code null} for job result context). */
     private GridKernalContext ctx;
@@ -48,7 +48,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Comp
     private GridJobWorker job;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Attributes mux. Do not use this as object is exposed to user. */
     private final Object mux = new Object();
@@ -260,7 +260,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Comp
     /**
      * @return Logger.
      */
-    private GridLogger log() {
+    private IgniteLogger log() {
         assert ctx != null;
 
         if (log == null)

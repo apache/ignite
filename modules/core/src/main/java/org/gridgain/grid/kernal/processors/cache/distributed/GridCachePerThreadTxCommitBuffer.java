@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommitBuffer<K, V> {
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Cache context. */
     private GridCacheSharedContext<K, V> cctx;

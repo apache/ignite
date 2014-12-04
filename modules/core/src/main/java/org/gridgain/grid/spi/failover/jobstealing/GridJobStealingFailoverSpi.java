@@ -109,7 +109,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
 
     /** Injected grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Maximum number of attempts to execute a failed job on another node. */
     private int maxFailoverAttempts = DFLT_MAX_FAILOVER_ATTEMPTS;

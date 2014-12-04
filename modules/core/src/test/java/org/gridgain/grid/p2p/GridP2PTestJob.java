@@ -27,7 +27,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
 
     /** Injected logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Injected grid. */
     @IgniteLocalNodeIdResource

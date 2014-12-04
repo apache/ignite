@@ -20,7 +20,7 @@ import java.net.*;
  */
 public final class GridTcpForwarder implements AutoCloseable {
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final Thread mainThread;
@@ -41,7 +41,7 @@ public final class GridTcpForwarder implements AutoCloseable {
         final int fromPort,
         final InetAddress toAddr,
         final int toPort,
-        final GridLogger log
+        final IgniteLogger log
     ) throws IOException {
         inputSock = new ServerSocket(fromPort, 0, fromAddr);
 

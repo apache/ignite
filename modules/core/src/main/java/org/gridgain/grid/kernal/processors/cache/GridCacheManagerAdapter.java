@@ -23,7 +23,7 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     protected GridCacheContext<K, V> cctx;
 
     /** Logger. */
-    protected GridLogger log;
+    protected IgniteLogger log;
 
     /** Starting flag. */
     private final AtomicBoolean starting = new AtomicBoolean(false);
@@ -48,7 +48,7 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     /**
      * @return Logger.
      */
-    protected GridLogger log() {
+    protected IgniteLogger log() {
         return log;
     }
 

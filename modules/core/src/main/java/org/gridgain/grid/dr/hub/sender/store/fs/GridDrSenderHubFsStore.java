@@ -140,7 +140,7 @@ public class GridDrSenderHubFsStore implements GridDrSenderHubStore, LifecycleAw
     /** */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Name of the grid. */
     @IgniteNameResource
@@ -807,7 +807,7 @@ public class GridDrSenderHubFsStore implements GridDrSenderHubStore, LifecycleAw
          * @param log Logger.
          * @param existingCheckPoints Existing checkpoints.
          */
-        protected CheckPointWorker(@Nullable String gridName, GridLogger log, Collection<Path> existingCheckPoints) {
+        protected CheckPointWorker(@Nullable String gridName, IgniteLogger log, Collection<Path> existingCheckPoints) {
             super(gridName, "dr-store-checkpoint", log);
 
             checkPoints.addAll(existingCheckPoints);

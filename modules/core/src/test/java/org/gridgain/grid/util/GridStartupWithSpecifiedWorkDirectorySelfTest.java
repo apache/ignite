@@ -60,7 +60,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
      * @param log Grid logger.
      * @return Grid configuration.
      */
-    private IgniteConfiguration getConfiguration(GridLogger log) {
+    private IgniteConfiguration getConfiguration(IgniteLogger log) {
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
         String ggHome = GridSystemProperties.getString(GG_HOME);
@@ -89,7 +89,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testStartStopWithUndefinedHomeAndWorkDirs() throws Exception {
-        GridLogger log = new GridJavaLogger();
+        IgniteLogger log = new GridJavaLogger();
 
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);
@@ -124,7 +124,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testStartStopWithUndefinedHomeAndConfiguredWorkDirs() throws Exception {
-        GridLogger log = new GridJavaLogger();
+        IgniteLogger log = new GridJavaLogger();
 
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);

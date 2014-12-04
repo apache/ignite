@@ -30,7 +30,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** */
     @IgniteLoggerResource
-    private transient GridLogger log;
+    private transient IgniteLogger log;
 
     /** */
     @IgniteInstanceResource
@@ -77,7 +77,7 @@ public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Inte
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteInstanceResource

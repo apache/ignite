@@ -30,14 +30,14 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
     private static final int MAGIC_BUF_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * Creates a filter instance.
      *
      * @param log Logger.
      */
-    public GridConnectionBytesVerifyFilter(GridLogger log) {
+    public GridConnectionBytesVerifyFilter(IgniteLogger log) {
         super("GridConnectionBytesVerifyFilter");
 
         this.log = log;

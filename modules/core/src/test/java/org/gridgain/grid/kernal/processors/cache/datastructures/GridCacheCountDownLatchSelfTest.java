@@ -208,7 +208,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
             private Ignite ignite;
 
             @IgniteLoggerResource
-            private GridLogger log;
+            private IgniteLogger log;
 
             @Nullable @Override public Object call() throws Exception {
                 // Test latch in multiple threads on each node.

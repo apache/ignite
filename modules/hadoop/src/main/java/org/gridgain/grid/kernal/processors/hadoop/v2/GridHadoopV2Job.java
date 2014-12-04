@@ -75,7 +75,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @param jobInfo Job info.
      * @param log Logger.
      */
-    public GridHadoopV2Job(GridHadoopJobId jobId, final GridHadoopDefaultJobInfo jobInfo, GridLogger log) {
+    public GridHadoopV2Job(GridHadoopJobId jobId, final GridHadoopDefaultJobInfo jobInfo, IgniteLogger log) {
         assert jobId != null;
         assert jobInfo != null;
 

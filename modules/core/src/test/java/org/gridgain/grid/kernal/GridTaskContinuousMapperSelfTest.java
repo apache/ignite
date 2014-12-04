@@ -120,7 +120,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     public static class TestLifeCycleTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private ComputeTaskContinuousMapper mapper;
@@ -214,7 +214,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {

@@ -27,7 +27,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     public void testToString() throws Exception {
         TestClass1 obj = new TestClass1();
 
-        GridLogger log = log();
+        IgniteLogger log = log();
 
         log.info(obj.toStringManual());
         log.info(obj.toStringAutomatic());
@@ -41,7 +41,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     public void testToStringWithAdditions() throws Exception {
         TestClass1 obj = new TestClass1();
 
-        GridLogger log = log();
+        IgniteLogger log = log();
 
         log.info(obj.toStringWithAdditional());
     }
@@ -82,7 +82,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     public void testToStringPerformance() {
         TestClass1 obj = new TestClass1();
 
-        GridLogger log = log();
+        IgniteLogger log = log();
 
         // Warm up.
         obj.toStringAutomatic();

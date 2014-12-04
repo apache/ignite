@@ -27,7 +27,7 @@ class GridUriDeploymentFtpClient {
     private final GridUriDeploymentFtpConfiguration cfg;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private FTPClient ftp;
@@ -39,7 +39,7 @@ class GridUriDeploymentFtpClient {
      * @param cfg FTP configuration.
      * @param log Logger to use.
      */
-    GridUriDeploymentFtpClient(GridUriDeploymentFtpConfiguration cfg, GridLogger log) {
+    GridUriDeploymentFtpClient(GridUriDeploymentFtpConfiguration cfg, IgniteLogger log) {
         assert cfg != null;
         assert log != null;
 

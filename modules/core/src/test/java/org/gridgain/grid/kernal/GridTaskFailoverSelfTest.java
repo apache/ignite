@@ -62,7 +62,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
     public static class GridFailoverTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Collection<ComputeJobAdapter> split(int gridSize, Serializable arg) {

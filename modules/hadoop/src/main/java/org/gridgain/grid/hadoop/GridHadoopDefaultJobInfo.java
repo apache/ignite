@@ -76,7 +76,7 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
+    @Override public GridHadoopJob createJob(GridHadoopJobId jobId, IgniteLogger log) throws GridException {
         try {
             Class<?> jobCls0 = jobCls;
 
@@ -91,7 +91,7 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
             }
 
             Constructor<?> constructor = jobCls0.getConstructor(GridHadoopJobId.class, GridHadoopDefaultJobInfo.class,
-                GridLogger.class);
+                IgniteLogger.class);
 
             return (GridHadoopJob)constructor.newInstance(jobId, this, log);
         }

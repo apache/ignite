@@ -232,7 +232,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
     public static class GridP2PTestTask extends ComputeTaskAdapter<Serializable, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteLocalNodeIdResource

@@ -222,7 +222,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public int getParallelJobsNumber() {

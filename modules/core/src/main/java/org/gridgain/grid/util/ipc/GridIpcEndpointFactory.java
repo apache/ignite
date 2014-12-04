@@ -27,7 +27,7 @@ public class GridIpcEndpointFactory {
      * @return Connected client endpoint.
      * @throws GridException If failed to establish connection.
      */
-    public static GridIpcEndpoint connectEndpoint(String endpointAddr, GridLogger log) throws GridException {
+    public static GridIpcEndpoint connectEndpoint(String endpointAddr, IgniteLogger log) throws GridException {
         A.notNull(endpointAddr, "endpointAddr");
 
         String[] split = endpointAddr.split(":");
@@ -71,7 +71,7 @@ public class GridIpcEndpointFactory {
      * @return Connected client endpoint.
      * @throws GridException If connection failed.
      */
-    private static GridIpcEndpoint connectSharedMemoryEndpoint(int port, GridLogger log) throws GridException {
+    private static GridIpcEndpoint connectSharedMemoryEndpoint(int port, IgniteLogger log) throws GridException {
         return new GridIpcSharedMemoryClientEndpoint(port, log);
     }
 }

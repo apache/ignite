@@ -124,7 +124,7 @@ class GridAffinityUtils {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private String cacheName;

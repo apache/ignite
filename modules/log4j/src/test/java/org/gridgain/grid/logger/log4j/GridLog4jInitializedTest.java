@@ -29,7 +29,7 @@ public class GridLog4jInitializedTest extends TestCase {
 
     /** */
     public void testLogInitialize() {
-        GridLogger log = new GridLog4jLogger();
+        IgniteLogger log = new GridLog4jLogger();
 
         assert log.isInfoEnabled() == true;
 

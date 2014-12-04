@@ -135,7 +135,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
 
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {

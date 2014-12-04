@@ -38,7 +38,7 @@ class GridServiceProxy<T> implements Serializable {
 
     /** Grid logger. */
     @GridToStringExclude
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Proxy object. */
     private final T proxy;

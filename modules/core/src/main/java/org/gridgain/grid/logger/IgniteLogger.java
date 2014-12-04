@@ -56,14 +56,14 @@ import org.jetbrains.annotations.*;
  * by default in "quiet" mode. Both scripts accept {@code -v} arguments to turn off "quiet" mode.
  */
 @GridToStringExclude
-public interface GridLogger {
+public interface IgniteLogger {
     /**
      * Creates new logger with given category based off the current instance.
      *
      * @param ctgr Category for new logger.
      * @return New logger with given category.
      */
-    public GridLogger getLogger(Object ctgr);
+    public IgniteLogger getLogger(Object ctgr);
 
     /**
      * Logs out trace message.

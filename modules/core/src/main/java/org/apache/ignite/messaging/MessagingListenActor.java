@@ -40,7 +40,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
 
     /** */
     @IgniteLoggerResource
-    private transient GridLogger log;
+    private transient IgniteLogger log;
 
     /**
      * Gets grid instance associated with this actor.

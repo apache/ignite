@@ -63,7 +63,7 @@ public class GridTcpRouterConfiguration {
     private Collection<String> srvrs = DFLT_SERVERS;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Credentials. */
     private GridSecurityCredentialsProvider credsProvider;
@@ -168,7 +168,7 @@ public class GridTcpRouterConfiguration {
      *
      * @return Logger or {@code null} if no logger provided by configuration.
      */
-    public GridLogger getLogger() {
+    public IgniteLogger getLogger() {
         return log;
     }
 
@@ -269,7 +269,7 @@ public class GridTcpRouterConfiguration {
      *
      * @param log Logger.
      */
-    public void setLogger(GridLogger log) {
+    public void setLogger(IgniteLogger log) {
         this.log = log;
     }
 

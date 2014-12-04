@@ -114,7 +114,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     private final Object mux = new Object();
 
     /** Grid logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Runnable object to schedule with cron scheduler. */
     private final Runnable run = new Runnable() {

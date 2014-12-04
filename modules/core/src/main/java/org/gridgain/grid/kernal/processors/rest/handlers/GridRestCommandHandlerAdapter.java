@@ -20,7 +20,7 @@ public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHa
     protected final GridKernalContext ctx;
 
     /** Log. */
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /**
      * @param ctx Context.

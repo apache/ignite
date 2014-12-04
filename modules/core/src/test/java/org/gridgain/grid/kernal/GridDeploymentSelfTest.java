@@ -352,7 +352,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     private static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg)
@@ -386,7 +386,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     private static class GridDeploymentTestTask1 extends ComputeTaskAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
@@ -418,7 +418,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     private static class GridDeploymentTestTask2 extends ComputeTaskAdapter<Object, Object> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {

@@ -78,7 +78,7 @@ public class GridHadoopExternalProcessStarter {
         ExecutorService msgExecSvc = Executors.newFixedThreadPool(
             Integer.getInteger("MSG_THREAD_POOL_SIZE", Runtime.getRuntime().availableProcessors() * 2));
 
-        GridLogger log = logger(outputDir);
+        IgniteLogger log = logger(outputDir);
 
         GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(
             args.nodeId,
@@ -139,7 +139,7 @@ public class GridHadoopExternalProcessStarter {
      * @param outputDir Directory for process output.
      * @return Logger.
      */
-    private GridLogger logger(final File outputDir) {
+    private IgniteLogger logger(final File outputDir) {
         final URL url = U.resolveGridGainUrl(DFLT_LOG4J_CONFIG);
 
         GridLog4jLogger logger;

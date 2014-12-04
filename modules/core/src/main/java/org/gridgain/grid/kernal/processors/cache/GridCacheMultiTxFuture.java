@@ -29,7 +29,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Transactions to wait for. */
     private final Set<GridCacheTxEx<K, V>> txs = new GridLeanSet<>();
@@ -38,7 +38,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     private Set<GridCacheTxEx<K, V>> remainingTxs;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * @param cctx Cache context.

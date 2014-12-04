@@ -19,7 +19,7 @@ class GridTcpRouterNioListenerOsImpl extends GridTcpRouterNioListenerAdapter {
      * @param log Logger.
      * @param client Client for grid access.
      */
-    GridTcpRouterNioListenerOsImpl(GridLogger log, GridRouterClientImpl client) {
+    GridTcpRouterNioListenerOsImpl(IgniteLogger log, GridRouterClientImpl client) {
         super(log, client);
     }
 

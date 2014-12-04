@@ -99,7 +99,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private GridResourceInjector springCtxInjector;
 
     /** Logger injector. */
-    private GridResourceBasicInjector<GridLogger> logInjector;
+    private GridResourceBasicInjector<IgniteLogger> logInjector;
 
     /** Services injector. */
     private GridResourceBasicInjector<Collection<GridService>> srvcInjector;

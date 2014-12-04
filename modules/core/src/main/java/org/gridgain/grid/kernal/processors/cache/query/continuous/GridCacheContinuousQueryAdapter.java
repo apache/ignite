@@ -49,7 +49,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     private final IgnitePredicate<GridCacheEntry<K, V>> prjPred;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Local callback. */
     private volatile IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;

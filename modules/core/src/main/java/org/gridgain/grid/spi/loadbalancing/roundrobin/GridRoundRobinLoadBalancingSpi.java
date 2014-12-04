@@ -157,7 +157,7 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
     GridRoundRobinLoadBalancingSpiMBean {
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     private GridRoundRobinGlobalLoadBalancer balancer;

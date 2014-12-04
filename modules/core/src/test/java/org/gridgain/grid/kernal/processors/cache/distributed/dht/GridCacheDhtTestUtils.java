@@ -164,7 +164,7 @@ public class GridCacheDhtTestUtils {
      * @param idx Cache index.
      * @param log Logger.
      */
-    static void checkDhtTopology(GridDhtCache<Integer, String> dht, int idx, GridLogger log) {
+    static void checkDhtTopology(GridDhtCache<Integer, String> dht, int idx, IgniteLogger log) {
         assert dht != null;
         assert idx >= 0;
         assert log != null;

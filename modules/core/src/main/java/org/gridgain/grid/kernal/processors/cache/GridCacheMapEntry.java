@@ -77,10 +77,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private static final int SIZE_OVERHEAD = 87 /*entry*/ + 32 /* version */;
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
-    protected static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static volatile GridLogger log;
+    protected static volatile IgniteLogger log;
 
     /** Cache registry. */
     @GridToStringExclude

@@ -50,7 +50,7 @@ public class GridHadoopChildProcessRunner {
     private GridHadoopExternalCommunication comm;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Init guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -80,7 +80,7 @@ public class GridHadoopChildProcessRunner {
      * Starts child process runner.
      */
     public void start(GridHadoopExternalCommunication comm, GridHadoopProcessDescriptor nodeDesc,
-        ExecutorService msgExecSvc, GridLogger parentLog)
+        ExecutorService msgExecSvc, IgniteLogger parentLog)
         throws GridException {
         this.comm = comm;
         this.nodeDesc = nodeDesc;

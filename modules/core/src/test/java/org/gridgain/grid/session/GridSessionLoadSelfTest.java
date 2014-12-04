@@ -121,7 +121,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private Map<String, Integer> params;
@@ -219,7 +219,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param arg Argument.

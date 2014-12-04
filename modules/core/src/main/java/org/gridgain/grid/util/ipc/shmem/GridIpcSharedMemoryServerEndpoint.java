@@ -90,7 +90,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Local node ID. */
     @IgniteLocalNodeIdResource
@@ -128,7 +128,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
      * @param locNodeId Node id.
      * @param gridName Grid name.
      */
-    public GridIpcSharedMemoryServerEndpoint(GridLogger log, UUID locNodeId, String gridName) {
+    public GridIpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
         this.log = log;
         this.locNodeId = locNodeId;
         this.gridName = gridName;
@@ -490,7 +490,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
          * @param name Name.
          * @param log Log.
          */
-        protected GcWorker(@Nullable String gridName, String name, GridLogger log) {
+        protected GcWorker(@Nullable String gridName, String name, IgniteLogger log) {
             super(gridName, name, log);
         }
 

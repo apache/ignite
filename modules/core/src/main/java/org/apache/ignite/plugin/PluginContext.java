@@ -63,7 +63,7 @@ public interface PluginContext {
      * @param cls Class to get logger for.
      * @return Logger.
      */
-    public GridLogger log(Class<?> cls);
+    public IgniteLogger log(Class<?> cls);
 
     /**
      * Registers open port.

@@ -25,7 +25,7 @@ import java.util.*;
  */
 abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     /** Logger. */
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /** Deployment SPI. */
     protected final GridDeploymentSpi spi;

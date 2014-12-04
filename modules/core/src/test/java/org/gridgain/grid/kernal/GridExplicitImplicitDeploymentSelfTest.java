@@ -430,7 +430,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
     public static final class GridDeploymentResourceTestJob extends ComputeJobAdapter {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Serializable execute() throws GridException {

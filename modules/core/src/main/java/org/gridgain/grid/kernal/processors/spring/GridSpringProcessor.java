@@ -62,5 +62,5 @@ public interface GridSpringProcessor {
      * @return User version for given class loader or empty string if no version
      *      was explicitly specified.
      */
-    public String userVersion(ClassLoader ldr, GridLogger log);
+    public String userVersion(ClassLoader ldr, IgniteLogger log);
 }

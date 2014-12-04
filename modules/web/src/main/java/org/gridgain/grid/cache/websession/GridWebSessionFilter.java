@@ -148,7 +148,7 @@ public class GridWebSessionFilter implements Filter {
     private GridWebSessionListener lsnr;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Servlet context. */
     private ServletContext ctx;

@@ -114,7 +114,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
     public static class JobTask extends ComputeTaskAdapter<String, String> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
          /** */
         @IgniteLocalNodeIdResource

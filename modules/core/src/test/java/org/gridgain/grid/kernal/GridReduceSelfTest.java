@@ -139,7 +139,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
     private static class ReducerTestClosure implements IgniteCallable<Long> {
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** Test flag to check the thread was interrupted. */
         volatile boolean isFinished;

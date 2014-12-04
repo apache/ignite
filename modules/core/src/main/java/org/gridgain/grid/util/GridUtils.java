@@ -696,7 +696,7 @@ public abstract class GridUtils {
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
-    public static void debug(GridLogger log, String msg) {
+    public static void debug(IgniteLogger log, String msg) {
         log.info(msg);
     }
 
@@ -727,7 +727,7 @@ public abstract class GridUtils {
      * @param log Logger.
      * @param msg Message.
      */
-    public static void dumpStack(@Nullable GridLogger log, String msg) {
+    public static void dumpStack(@Nullable IgniteLogger log, String msg) {
         U.error(log, "Dumping stack.", new Exception(msg));
     }
 
@@ -753,7 +753,7 @@ public abstract class GridUtils {
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
-    public static void debugStack(GridLogger log, String msg) {
+    public static void debugStack(IgniteLogger log, String msg) {
         log.error(msg, new Exception(debugPrefix() + msg));
     }
 
@@ -857,7 +857,7 @@ public abstract class GridUtils {
      *
      * @param log Logger.
      */
-    public static void dumpThreads(@Nullable GridLogger log) {
+    public static void dumpThreads(@Nullable IgniteLogger log) {
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
         ThreadInfo[] threadInfos =
@@ -3064,7 +3064,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Closeable rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable Closeable rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3110,7 +3110,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Socket rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable Socket rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3141,7 +3141,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable ServerSocket rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable ServerSocket rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3172,7 +3172,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable AbstractInterruptibleChannel rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable AbstractInterruptibleChannel rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3203,7 +3203,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable SelectionKey rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable SelectionKey rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             // This apply will automatically deregister the selection key as well.
             close(rsrc.channel(), log);
@@ -3226,7 +3226,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Reader rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable Reader rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3272,7 +3272,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable ZipFile rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable ZipFile rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3313,7 +3313,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Selector rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable Selector rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 if (rsrc.isOpen())
@@ -3346,7 +3346,7 @@ public abstract class GridUtils {
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Context rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable Context rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3377,7 +3377,7 @@ public abstract class GridUtils {
      * @param rsrc JDBC connection to close. If connection is {@code null}, it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Connection rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable Connection rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3408,7 +3408,7 @@ public abstract class GridUtils {
      * @param rsrc JDBC statement to close. If statement is {@code null}, it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Statement rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable Statement rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3439,7 +3439,7 @@ public abstract class GridUtils {
      * @param rsrc JDBC result set to close. If result set is {@code null}, it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable ResultSet rsrc, @Nullable GridLogger log) {
+    public static void close(@Nullable ResultSet rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
@@ -3472,7 +3472,7 @@ public abstract class GridUtils {
      * @param clsLdr Class loader. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable URLClassLoader clsLdr, @Nullable GridLogger log) {
+    public static void close(@Nullable URLClassLoader clsLdr, @Nullable IgniteLogger log) {
         if (clsLdr != null)
             try {
                 URLClassPath path = SharedSecrets.getJavaNetAccess().getURLClassPath(clsLdr);
@@ -3524,7 +3524,7 @@ public abstract class GridUtils {
      * @param rsrc JDBC connection to rollback. If connection is {@code null}, it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void rollbackConnection(@Nullable Connection rsrc, @Nullable GridLogger log) {
+    public static void rollbackConnection(@Nullable Connection rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.rollback();
@@ -3543,7 +3543,7 @@ public abstract class GridUtils {
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
      */
-    public static void courtesy(@Nullable GridLogger log, Object msg) {
+    public static void courtesy(@Nullable IgniteLogger log, Object msg) {
         assert msg != null;
 
         String s = msg.toString();
@@ -3561,7 +3561,7 @@ public abstract class GridUtils {
      * @param longMsg Message to log using normal logger.
      * @param shortMsg Message to log using quiet logger.
      */
-    public static void courtesy(@Nullable GridLogger log, Object longMsg, Object shortMsg) {
+    public static void courtesy(@Nullable IgniteLogger log, Object longMsg, Object shortMsg) {
         assert longMsg != null;
         assert shortMsg != null;
 
@@ -3580,7 +3580,7 @@ public abstract class GridUtils {
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
      */
-    public static void warn(@Nullable GridLogger log, Object msg) {
+    public static void warn(@Nullable IgniteLogger log, Object msg) {
         assert msg != null;
 
         String s = msg.toString();
@@ -3594,7 +3594,7 @@ public abstract class GridUtils {
      * @param log Logger to use.
      * @param msg Message to log.
      */
-    public static void quietAndWarn(GridLogger log, Object msg) {
+    public static void quietAndWarn(IgniteLogger log, Object msg) {
         quietAndWarn(log, msg, msg);
     }
 
@@ -3605,7 +3605,7 @@ public abstract class GridUtils {
      * @param shortMsg Short message.
      * @param msg Message to log.
      */
-    public static void quietAndWarn(GridLogger log, Object msg, Object shortMsg) {
+    public static void quietAndWarn(IgniteLogger log, Object msg, Object shortMsg) {
         warn(log, msg);
 
         if (log.isQuiet())
@@ -3620,7 +3620,7 @@ public abstract class GridUtils {
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
      */
-    public static void error(@Nullable GridLogger log, Object msg) {
+    public static void error(@Nullable IgniteLogger log, Object msg) {
         assert msg != null;
 
         if (msg instanceof Throwable) {
@@ -3644,7 +3644,7 @@ public abstract class GridUtils {
      * @param longMsg Message to log using normal logger.
      * @param shortMsg Message to log using quiet logger.
      */
-    public static void warn(@Nullable GridLogger log, Object longMsg, Object shortMsg) {
+    public static void warn(@Nullable IgniteLogger log, Object longMsg, Object shortMsg) {
         assert longMsg != null;
         assert shortMsg != null;
 
@@ -3669,7 +3669,7 @@ public abstract class GridUtils {
      * @param longMsg Message to log using normal logger.
      * @param shortMsg Message to log using quiet logger.
      */
-    public static void log(@Nullable GridLogger log, Object longMsg, Object shortMsg) {
+    public static void log(@Nullable IgniteLogger log, Object longMsg, Object shortMsg) {
         assert longMsg != null;
         assert shortMsg != null;
 
@@ -3694,7 +3694,7 @@ public abstract class GridUtils {
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
      */
-    public static void log(@Nullable GridLogger log, Object msg) {
+    public static void log(@Nullable IgniteLogger log, Object msg) {
         assert msg != null;
 
         String s = msg.toString();
@@ -3712,7 +3712,7 @@ public abstract class GridUtils {
      * @param shortMsg Message to log using quiet logger.
      * @param e Optional exception.
      */
-    public static void error(@Nullable GridLogger log, Object longMsg, Object shortMsg, @Nullable Throwable e) {
+    public static void error(@Nullable IgniteLogger log, Object longMsg, Object shortMsg, @Nullable Throwable e) {
         assert longMsg != null;
         assert shortMsg != null;
 
@@ -3734,13 +3734,13 @@ public abstract class GridUtils {
     }
 
     /**
-     * Shortcut for {@link #error(GridLogger, Object, Object, Throwable)}.
+     * Shortcut for {@link #error(org.gridgain.grid.logger.IgniteLogger, Object, Object, Throwable)}.
      *
      * @param log Optional logger.
      * @param shortMsg Message to log using quiet logger.
      * @param e Optional exception.
      */
-    public static void error(@Nullable GridLogger log, Object shortMsg, @Nullable Throwable e) {
+    public static void error(@Nullable IgniteLogger log, Object shortMsg, @Nullable Throwable e) {
         assert shortMsg != null;
 
         String s = shortMsg.toString();
@@ -3774,7 +3774,7 @@ public abstract class GridUtils {
      * @param log Logger.
      * @param msg Message to print.
      */
-    public static void quietAndInfo(GridLogger log, String msg) {
+    public static void quietAndInfo(IgniteLogger log, String msg) {
         if (log.isQuiet())
             U.quiet(false, msg);
 
@@ -3963,7 +3963,7 @@ public abstract class GridUtils {
      * @param log Logger for logging errors.
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
-    public static boolean join(@Nullable Thread t, @Nullable GridLogger log) {
+    public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log) {
         if (t != null)
             try {
                 t.join();
@@ -3989,7 +3989,7 @@ public abstract class GridUtils {
      * @param log Logger for logging errors.
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
-    public static boolean joinThreads(Iterable<? extends Thread> workers, @Nullable GridLogger log) {
+    public static boolean joinThreads(Iterable<? extends Thread> workers, @Nullable IgniteLogger log) {
         boolean retval = true;
 
         if (workers != null)
@@ -4042,7 +4042,7 @@ public abstract class GridUtils {
      * @param log The logger to possible exception.
      * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
      */
-    public static boolean join(@Nullable GridWorker w, @Nullable GridLogger log) {
+    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
         if (w != null)
             try {
                 w.join();
@@ -4066,7 +4066,7 @@ public abstract class GridUtils {
      * @return {@code true} if none of the worker have been interrupted,
      *      {@code false} if at least one was interrupted.
      */
-    public static boolean join(Iterable<? extends GridWorker> ws, GridLogger log) {
+    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
         boolean retval = true;
 
         if (ws != null)
@@ -4084,7 +4084,7 @@ public abstract class GridUtils {
      * @param exec ExecutorService to shutdown.
      * @param log The logger to possible exceptions and warnings.
      */
-    public static void shutdownNow(Class<?> owner, @Nullable ExecutorService exec, @Nullable GridLogger log) {
+    public static void shutdownNow(Class<?> owner, @Nullable ExecutorService exec, @Nullable IgniteLogger log) {
         if (exec != null) {
             List<Runnable> tasks = exec.shutdownNow();
 
@@ -5606,7 +5606,7 @@ public abstract class GridUtils {
      * @throws IOException In case of error.
      */
     @SuppressWarnings({"ResultOfMethodCallIgnored"})
-    public static void unzip(File zipFile, File toDir, @Nullable GridLogger log) throws IOException {
+    public static void unzip(File zipFile, File toDir, @Nullable IgniteLogger log) throws IOException {
         ZipFile zip = null;
 
         try {
@@ -7200,7 +7200,7 @@ public abstract class GridUtils {
      * @param f Future to listen to.
      * @param log Logger.
      */
-    public static void asyncLogError(IgniteFuture<?> f, final GridLogger log) {
+    public static void asyncLogError(IgniteFuture<?> f, final IgniteLogger log) {
         if (f != null)
             f.listenAsync(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> f) {
@@ -7274,7 +7274,7 @@ public abstract class GridUtils {
      * @param log Logger to log failure when cause can not be added.
      * @return {@code True} if cause was added.
      */
-    public static boolean addLastCause(@Nullable Throwable e, @Nullable Throwable cause, GridLogger log) {
+    public static boolean addLastCause(@Nullable Throwable e, @Nullable Throwable cause, IgniteLogger log) {
         if (e == null || cause == null)
             return false;
 
@@ -7314,8 +7314,8 @@ public abstract class GridUtils {
      * @param obj Object to get logger for.
      * @return Logger for the object.
      */
-    public static GridLogger logger(GridKernalContext ctx, AtomicReference<GridLogger> logRef, Object obj) {
-        GridLogger log = logRef.get();
+    public static IgniteLogger logger(GridKernalContext ctx, AtomicReference<IgniteLogger> logRef, Object obj) {
+        IgniteLogger log = logRef.get();
 
         if (log == null) {
             logRef.compareAndSet(null, ctx.log(obj.getClass()));
@@ -7334,8 +7334,8 @@ public abstract class GridUtils {
      * @param cls Class to get logger for.
      * @return Logger for the object.
      */
-    public static GridLogger logger(GridKernalContext ctx, AtomicReference<GridLogger> logRef, Class<?> cls) {
-        GridLogger log = logRef.get();
+    public static IgniteLogger logger(GridKernalContext ctx, AtomicReference<IgniteLogger> logRef, Class<?> cls) {
+        IgniteLogger log = logRef.get();
 
         if (log == null) {
             logRef.compareAndSet(null, ctx.log(cls));
@@ -8145,7 +8145,7 @@ public abstract class GridUtils {
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to GridGain configuration.
      */
-    public static void stopLifecycleAware(GridLogger log, Iterable<?> objs) {
+    public static void stopLifecycleAware(IgniteLogger log, Iterable<?> objs) {
         for (Object obj : objs) {
             if (obj instanceof LifecycleAware) {
                 try {

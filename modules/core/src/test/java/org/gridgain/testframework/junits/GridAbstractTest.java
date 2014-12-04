@@ -76,7 +76,7 @@ public abstract class GridAbstractTest extends TestCase {
     private transient boolean startGrid;
 
     /** */
-    protected transient GridLogger log;
+    protected transient IgniteLogger log;
 
     /** */
     private transient ClassLoader clsLdr;
@@ -178,7 +178,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return logger.
      */
-    protected GridLogger log() {
+    protected IgniteLogger log() {
         return log;
     }
 

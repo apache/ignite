@@ -18,7 +18,7 @@ import java.util.concurrent.*;
  */
 public class GridSpiThreadFactory implements ThreadFactory {
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final String gridName;
@@ -31,7 +31,7 @@ public class GridSpiThreadFactory implements ThreadFactory {
      * @param threadName Name for threads created by this factory.
      * @param log Grid logger.
      */
-    public GridSpiThreadFactory(String gridName, String threadName, GridLogger log) {
+    public GridSpiThreadFactory(String gridName, String threadName, IgniteLogger log) {
         assert log != null;
         assert threadName != null;
 

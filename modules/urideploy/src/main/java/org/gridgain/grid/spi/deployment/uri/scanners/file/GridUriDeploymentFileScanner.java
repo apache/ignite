@@ -62,7 +62,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
         long freq,
         FilenameFilter filter,
         GridUriDeploymentScannerListener lsnr,
-        GridLogger log) throws GridSpiException {
+        IgniteLogger log) throws GridSpiException {
         super(gridName, uri, deployDir, freq, filter, lsnr, log);
 
         initialize(uri);

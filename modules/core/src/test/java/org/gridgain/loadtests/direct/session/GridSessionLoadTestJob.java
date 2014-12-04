@@ -26,7 +26,7 @@ public class GridSessionLoadTestJob extends ComputeJobAdapter {
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     public GridSessionLoadTestJob() {

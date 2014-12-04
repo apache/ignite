@@ -1658,7 +1658,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param name Worker name.
          * @param log Log.
          */
-        protected AsyncDeleteWorker(@Nullable String gridName, String name, GridLogger log) {
+        protected AsyncDeleteWorker(@Nullable String gridName, String name, IgniteLogger log) {
             super(gridName, name, log);
         }
 

@@ -24,7 +24,7 @@ public class GridCacheEntryInfoCollectSwapListener<K, V> implements GridCacheSwa
     private final Map<K, GridCacheEntryInfo<K, V>> swappedEntries = new ConcurrentHashMap8<>();
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final GridCacheContext<K, V> ctx;
@@ -33,7 +33,7 @@ public class GridCacheEntryInfoCollectSwapListener<K, V> implements GridCacheSwa
      * @param log Logger.
      * @param ctx Context.
      */
-    public GridCacheEntryInfoCollectSwapListener(GridLogger log, GridCacheContext<K, V> ctx) {
+    public GridCacheEntryInfoCollectSwapListener(IgniteLogger log, GridCacheContext<K, V> ctx) {
         this.log = log;
         this.ctx = ctx;
     }

@@ -35,7 +35,7 @@ public interface VisorPluginModel {
      *
      * @return Logger.
      */
-    public GridLogger logger();
+    public IgniteLogger logger();
 
     /**
      * Install topology listener.

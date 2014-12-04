@@ -56,7 +56,7 @@ public class GridIpcToNioAdapter<T> {
      * @param lsnr Listener.
      * @param filters Filters.
      */
-    public GridIpcToNioAdapter(GridNioMetricsListener metricsLsnr, GridLogger log, GridIpcEndpoint endp,
+    public GridIpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, GridIpcEndpoint endp,
         GridNioMessageWriter msgWriter, GridNioServerListener<T> lsnr, GridNioFilter... filters) {
         assert metricsLsnr != null;
         assert msgWriter != null;

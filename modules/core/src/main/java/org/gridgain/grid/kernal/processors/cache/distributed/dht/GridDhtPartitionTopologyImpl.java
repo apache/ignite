@@ -42,7 +42,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     private final GridCacheContext<K, V> cctx;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final ConcurrentMap<Integer, GridDhtLocalPartition<K, V>> locParts =

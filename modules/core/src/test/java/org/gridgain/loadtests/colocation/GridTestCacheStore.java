@@ -28,7 +28,7 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
     private Ignite ignite;
 
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * Preload data from store. In this case we just auto-generate random values.

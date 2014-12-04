@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * JCL logger wrapper for Hadoop.
  */
-public class GridGgfsHadoopJclLogger implements GridLogger {
+public class GridGgfsHadoopJclLogger implements IgniteLogger {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,7 @@ public class GridGgfsHadoopJclLogger implements GridLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger getLogger(Object ctgr) {
+    @Override public IgniteLogger getLogger(Object ctgr) {
         return new GridGgfsHadoopJclLogger(LogFactory.getLog(
             ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
     }

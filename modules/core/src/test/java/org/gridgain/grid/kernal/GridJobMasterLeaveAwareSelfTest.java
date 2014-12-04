@@ -532,7 +532,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         /**
          * @param log Logger.
          */
-        private void execute(GridLogger log) {
+        private void execute(IgniteLogger log) {
             try {
                 log.info("Started execute.");
 
@@ -565,7 +565,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          * @param log Logger.
          * @param job Actual job.
          */
-        private void onMasterLeave(GridLogger log, Object job) {
+        private void onMasterLeave(IgniteLogger log, Object job) {
             log.info("Callback executed: " + job);
 
             latch0.countDown();
@@ -580,7 +580,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     private static class TestCallable implements Callable<Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private TestMasterLeaveAware masterLeaveAware = new TestMasterLeaveAware();
@@ -604,7 +604,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     private static class TestRunnable implements Runnable, ComputeJobMasterLeaveAware {
         /** Task session. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private TestMasterLeaveAware masterLeaveAware = new TestMasterLeaveAware();
@@ -626,7 +626,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     private static class TestClosure implements IgniteClosure<String, Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private TestMasterLeaveAware masterLeaveAware = new TestMasterLeaveAware();
@@ -686,7 +686,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     private static class TestJob extends ComputeJobAdapter implements ComputeJobMasterLeaveAware {
         /** Task session. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         private TestMasterLeaveAware masterLeaveAware = new TestMasterLeaveAware();

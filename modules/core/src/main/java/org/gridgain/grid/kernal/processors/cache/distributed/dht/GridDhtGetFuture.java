@@ -33,7 +33,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Message ID. */
     private long msgId;
@@ -69,7 +69,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private IgnitePredicate<GridCacheEntry<K, V>>[] filters;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Retries because ownership changed. */
     private Collection<Integer> retries = new GridLeanSet<>();

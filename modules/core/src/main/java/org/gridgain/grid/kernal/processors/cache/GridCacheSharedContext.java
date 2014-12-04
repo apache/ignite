@@ -337,7 +337,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cls Class to get logger for.
      * @return GridLogger instance.
      */
-    public GridLogger logger(Class<?> cls) {
+    public IgniteLogger logger(Class<?> cls) {
         return kernalCtx.log(cls);
     }
 
@@ -345,7 +345,7 @@ public class GridCacheSharedContext<K, V> {
      * @param category Category.
      * @return Logger.
      */
-    public GridLogger logger(String category) {
+    public IgniteLogger logger(String category) {
         return kernalCtx.log().getLogger(category);
     }
 

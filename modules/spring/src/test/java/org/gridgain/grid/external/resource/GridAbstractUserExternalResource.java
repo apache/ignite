@@ -33,7 +33,7 @@ public abstract class GridAbstractUserExternalResource {
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     @IgniteInstanceResource

@@ -21,7 +21,7 @@ import java.util.concurrent.*;
  */
 public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Worker pool. */
     private GridWorkerPool workerPool;
@@ -36,7 +36,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
      * @param exec Executor.
      * @param log Logger.
      */
-    public GridNioAsyncNotifyFilter(String gridName, Executor exec, GridLogger log) {
+    public GridNioAsyncNotifyFilter(String gridName, Executor exec, IgniteLogger log) {
         super(GridNioAsyncNotifyFilter.class.getSimpleName());
 
         this.gridName = gridName;

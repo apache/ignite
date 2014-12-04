@@ -23,7 +23,7 @@ import java.util.*;
 public class GridStealingLoadTestJob extends ComputeJobAdapter {
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     @IgniteLocalNodeIdResource

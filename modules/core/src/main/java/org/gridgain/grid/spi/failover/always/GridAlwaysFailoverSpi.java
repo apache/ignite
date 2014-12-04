@@ -90,7 +90,7 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
 
     /** Injected grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Maximum number of attempts to execute a failed job on another node. */
     private int maxFailoverAttempts = DFLT_MAX_FAILOVER_ATTEMPTS;

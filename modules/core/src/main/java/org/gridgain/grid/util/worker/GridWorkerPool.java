@@ -28,7 +28,7 @@ public class GridWorkerPool {
     private final Executor exec;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final Collection<GridWorker> workers = new GridConcurrentHashSet<>();
@@ -37,7 +37,7 @@ public class GridWorkerPool {
      * @param exec Executor service.
      * @param log Logger to use.
      */
-    public GridWorkerPool(Executor exec, GridLogger log) {
+    public GridWorkerPool(Executor exec, IgniteLogger log) {
         assert exec != null;
         assert log != null;
 

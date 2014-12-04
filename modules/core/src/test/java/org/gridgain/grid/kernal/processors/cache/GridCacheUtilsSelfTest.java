@@ -196,7 +196,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
         assertThrowsForInvalidKey(new WrongEquals());
 
-        GridLogger log = new GridStringLogger(false);
+        IgniteLogger log = new GridStringLogger(false);
 
         CU.validateCacheKey(log, new ExternalizableEqualsAndHashCode());
 
@@ -214,7 +214,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
     /**
      */
     public void testCacheValueValidation() {
-        GridLogger log = new GridStringLogger(false);
+        IgniteLogger log = new GridStringLogger(false);
 
         CU.validateCacheValue(log, new ImplExternalizable());
 

@@ -30,7 +30,7 @@ public class GridCacheTxFinishSync<K, V> {
     private GridCacheSharedContext<K, V> cctx;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Nodes map. */
     private ConcurrentMap<Long, ThreadFinishSync> threadMap = new ConcurrentHashMap8<>();

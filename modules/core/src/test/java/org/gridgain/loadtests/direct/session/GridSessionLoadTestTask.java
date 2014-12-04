@@ -27,7 +27,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     private Map<String, Integer> params;

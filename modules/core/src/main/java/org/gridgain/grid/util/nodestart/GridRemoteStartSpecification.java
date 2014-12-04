@@ -53,7 +53,7 @@ public class GridRemoteStartSpecification {
     private String script;
 
     /** Custom logger. */
-    private GridLogger logger;
+    private IgniteLogger logger;
 
     /** Valid flag */
     private boolean valid;
@@ -89,7 +89,7 @@ public class GridRemoteStartSpecification {
      */
     public GridRemoteStartSpecification(@Nullable String host, int port, @Nullable String uname,
         @Nullable String passwd, @Nullable File key, int nodes, @Nullable String ggHome,
-        @Nullable String cfg, @Nullable String script, @Nullable GridLogger logger) {
+        @Nullable String cfg, @Nullable String script, @Nullable IgniteLogger logger) {
         assert port > 0;
         assert nodes > 0;
 
@@ -235,7 +235,7 @@ public class GridRemoteStartSpecification {
     /**
      * @return Custom logger.
      */
-    public GridLogger logger() {
+    public IgniteLogger logger() {
         return logger;
     }
 

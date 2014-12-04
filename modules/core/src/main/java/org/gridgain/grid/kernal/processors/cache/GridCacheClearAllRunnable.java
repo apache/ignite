@@ -35,7 +35,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
     protected final GridCacheContext<K, V> ctx;
 
     /** Logger. */
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /**
      * Constructor.

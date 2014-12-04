@@ -1174,7 +1174,7 @@ public class GridGainEx {
         private Thread shutdownHook;
 
         /** Grid log. */
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** Start guard. */
         private final AtomicBoolean startGuard = new AtomicBoolean();
@@ -1335,7 +1335,7 @@ public class GridGainEx {
             if (nodeId == null)
                 nodeId = UUID.randomUUID();
 
-            GridLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
 
             assert cfgLog != null;
 
@@ -1859,7 +1859,7 @@ public class GridGainEx {
                 Class helperCls = Class.forName("org.gridgain.grid.util.GridConfigurationHelper");
 
                 helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
-                    String.class, GridLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
+                    String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
             }
             catch (Exception ignored) {
                 // No-op.
@@ -1955,7 +1955,7 @@ public class GridGainEx {
          * @return Initialized logger.
          * @throws GridException If failed.
          */
-        private GridLogger initLogger(@Nullable GridLogger cfgLog, UUID nodeId) throws GridException {
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws GridException {
             try {
                 if (cfgLog == null) {
                     Class<?> log4jCls;
@@ -1996,10 +1996,10 @@ public class GridGainEx {
                         if (url != null) {
                             Constructor<?> ctor = log4jCls.getConstructor(URL.class);
 
-                            cfgLog = (GridLogger)ctor.newInstance(url);
+                            cfgLog = (IgniteLogger)ctor.newInstance(url);
                         }
                         else
-                            cfgLog = (GridLogger)log4jCls.newInstance();
+                            cfgLog = (IgniteLogger)log4jCls.newInstance();
                     }
                     else
                         cfgLog = new GridJavaLogger();
@@ -2111,7 +2111,7 @@ public class GridGainEx {
          *
          * @param log Grid logger.
          */
-        private void stopExecutors(GridLogger log) {
+        private void stopExecutors(IgniteLogger log) {
             boolean interrupted = Thread.interrupted();
 
             try {
@@ -2128,7 +2128,7 @@ public class GridGainEx {
          *
          * @param log Grid logger.
          */
-        private void stopExecutors0(GridLogger log) {
+        private void stopExecutors0(IgniteLogger log) {
             assert log != null;
 
             /*

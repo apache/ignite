@@ -33,10 +33,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static GridLogger log;
+    protected static IgniteLogger log;
 
     /** Synchronous notification flag. */
     private static final boolean SYNC_NOTIFY = GridSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);

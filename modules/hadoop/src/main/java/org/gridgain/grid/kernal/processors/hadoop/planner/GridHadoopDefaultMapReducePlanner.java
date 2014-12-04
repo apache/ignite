@@ -38,7 +38,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     /** Logger. */
     @SuppressWarnings("UnusedDeclaration")
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,

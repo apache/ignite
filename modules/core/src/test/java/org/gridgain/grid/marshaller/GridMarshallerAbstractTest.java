@@ -491,7 +491,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link GridLogger} instance.
+     * Tests marshal {@link org.gridgain.grid.logger.IgniteLogger} instance.
      *
      * @throws Exception If test failed.
      */
@@ -505,8 +505,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert GridLogger.class.isAssignableFrom(inBean.getObjectField().getClass());
-        assert GridLogger.class.isAssignableFrom(outBean.getObjectField().getClass());
+        assert IgniteLogger.class.isAssignableFrom(inBean.getObjectField().getClass());
+        assert IgniteLogger.class.isAssignableFrom(outBean.getObjectField().getClass());
 
         assert inBean != outBean;
         assert inBean.equals(outBean);

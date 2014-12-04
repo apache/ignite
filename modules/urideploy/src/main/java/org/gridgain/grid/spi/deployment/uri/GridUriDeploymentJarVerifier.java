@@ -46,7 +46,7 @@ final class GridUriDeploymentJarVerifier {
      * @return {@code true} if JAR file was not changed.
      * @throws IOException Thrown if JAR file or its entries could not be read.
      */
-    static boolean verify(String jarName, boolean allSigned, GridLogger log) throws IOException {
+    static boolean verify(String jarName, boolean allSigned, IgniteLogger log) throws IOException {
         assert jarName != null;
 
         return verify0(jarName, null, allSigned, log);
@@ -68,7 +68,7 @@ final class GridUriDeploymentJarVerifier {
      * @return {@code true} if JAR file is signed with given public key.
      * @throws IOException Thrown if JAR file or its entries could not be read.
      */
-    static boolean verify(String jarName, PublicKey pubKey, boolean allSigned, GridLogger log)
+    static boolean verify(String jarName, PublicKey pubKey, boolean allSigned, IgniteLogger log)
         throws IOException {
         assert jarName != null;
         assert pubKey != null;
@@ -87,7 +87,7 @@ final class GridUriDeploymentJarVerifier {
      * @throws IOException Thrown if JAR file stream or its entries could not
      *    be read.
      */
-    static boolean verify(InputStream in, boolean allSigned, GridLogger log) throws IOException {
+    static boolean verify(InputStream in, boolean allSigned, IgniteLogger log) throws IOException {
         assert in != null;
 
         return verify0(in, null, allSigned, log);
@@ -109,7 +109,7 @@ final class GridUriDeploymentJarVerifier {
      * @return {@code true} if JAR file is signed with given public key.
      * @throws IOException Thrown if JAR file or its entries could not be read.
      */
-    static boolean verify(InputStream in, PublicKey pubKey, boolean allSigned, GridLogger log)
+    static boolean verify(InputStream in, PublicKey pubKey, boolean allSigned, IgniteLogger log)
         throws IOException {
         assert in != null;
         assert pubKey != null;
@@ -129,7 +129,7 @@ final class GridUriDeploymentJarVerifier {
      * @return {@code true} if JAR file is signed with given public key.
      * @throws IOException Thrown if JAR file or its entries could not be read.
      */
-    private static boolean verify0(InputStream in, PublicKey pubKey, boolean allSigned, GridLogger log)
+    private static boolean verify0(InputStream in, PublicKey pubKey, boolean allSigned, IgniteLogger log)
         throws IOException {
         assert in != null;
 
@@ -190,7 +190,7 @@ final class GridUriDeploymentJarVerifier {
      * @return {@code true} if JAR file is signed with given public key.
      * @throws IOException Thrown if JAR file or its entries could not be read.
      */
-    private static boolean verify0(String jarName, PublicKey pubKey, boolean allSigned, GridLogger log)
+    private static boolean verify0(String jarName, PublicKey pubKey, boolean allSigned, IgniteLogger log)
         throws IOException {
         JarFile jarFile = null;
 

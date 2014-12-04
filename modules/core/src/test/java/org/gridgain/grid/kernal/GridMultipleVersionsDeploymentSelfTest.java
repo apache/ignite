@@ -267,7 +267,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     public static class GridDeploymentTestJob extends ComputeJobAdapter {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Integer execute() throws GridException {

@@ -41,7 +41,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Wait for 1 second for topology to change. */
     private static final long REMAP_PAUSE = 1000;
@@ -53,7 +53,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private GridDhtPartitionTopology<K, V> top;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Keys to request. */
     private Collection<? extends K> keys;

@@ -73,7 +73,7 @@ public final class GridMarshallerExclusions {
             excl.add(springCtxCls);
 
         // GridGain classes.
-        excl.add(GridLogger.class);
+        excl.add(IgniteLogger.class);
         excl.add(ComputeTaskSession.class);
         excl.add(ComputeLoadBalancer.class);
         excl.add(ComputeJobContext.class);

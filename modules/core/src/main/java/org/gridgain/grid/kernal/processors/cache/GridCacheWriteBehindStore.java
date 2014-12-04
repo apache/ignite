@@ -111,7 +111,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     private AtomicInteger retryEntriesCnt = new AtomicInteger();
 
     /** Log. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * Sets initial capacity for the write cache.
@@ -232,7 +232,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
      * @param log Grid logger.
      * @param store {@code GridCacheStore} that need to be wrapped.
      */
-    public GridCacheWriteBehindStore(String gridName, String cacheName, GridLogger log, GridCacheStore<K, V> store) {
+    public GridCacheWriteBehindStore(String gridName, String cacheName, IgniteLogger log, GridCacheStore<K, V> store) {
         this.gridName = gridName;
         this.cacheName = cacheName;
         this.log = log;
@@ -714,7 +714,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
      */
     private class Flusher extends GridWorker {
         /** {@inheritDoc */
-        protected Flusher(String gridName, String name, GridLogger log) {
+        protected Flusher(String gridName, String name, IgniteLogger log) {
             super(gridName, name, log);
         }
 

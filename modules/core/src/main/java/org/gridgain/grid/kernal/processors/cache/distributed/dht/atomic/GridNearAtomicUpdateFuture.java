@@ -45,10 +45,10 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static GridLogger log;
+    protected static IgniteLogger log;
 
     /** Cache context. */
     private final GridCacheContext<K, V> cctx;

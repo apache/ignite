@@ -55,7 +55,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     private static final int CANCELLED_FUTS_HISTORY_SIZE = 4096;
 
     /** Log. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Context. */
     private GridKernalContext ctx;

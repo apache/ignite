@@ -32,7 +32,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     private final GridUnsafeMemory mem;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final GridHadoopJob job;
@@ -68,7 +68,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
      * @param info Task info.
      * @param nodeId Node id.
      */
-    protected GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
+    protected GridHadoopRunnableTask(IgniteLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
         UUID nodeId) {
         this.nodeId = nodeId;
         this.log = log.getLogger(GridHadoopRunnableTask.class);

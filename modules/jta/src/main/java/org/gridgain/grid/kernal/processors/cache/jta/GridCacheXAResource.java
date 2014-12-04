@@ -25,7 +25,7 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  */
 public final class GridCacheXAResource implements XAResource {
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** */
     private static final Xid[] NO_XID = new Xid[] {};
@@ -37,7 +37,7 @@ public final class GridCacheXAResource implements XAResource {
     private GridCacheTxEx cacheTx;
 
     /** */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     private Xid xid;

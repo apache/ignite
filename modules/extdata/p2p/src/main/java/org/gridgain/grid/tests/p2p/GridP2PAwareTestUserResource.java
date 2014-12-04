@@ -31,7 +31,7 @@ public class GridP2PAwareTestUserResource {
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * Invoked on resource deploy. Increments deploy counter

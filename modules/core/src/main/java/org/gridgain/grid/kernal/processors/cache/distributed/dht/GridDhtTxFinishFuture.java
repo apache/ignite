@@ -37,7 +37,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
@@ -53,7 +53,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     private boolean commit;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Error. */
     @GridToStringExclude

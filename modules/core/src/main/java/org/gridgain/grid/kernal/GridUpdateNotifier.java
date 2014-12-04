@@ -176,7 +176,7 @@ class GridUpdateNotifier {
      * @param exec Executor service.
      * @param log Logger.
      */
-    void checkForNewVersion(Executor exec, GridLogger log) {
+    void checkForNewVersion(Executor exec, IgniteLogger log) {
         assert log != null;
 
         log = log.getLogger(getClass());
@@ -195,7 +195,7 @@ class GridUpdateNotifier {
      *
      * @param log Logger.
      */
-    void reportStatus(GridLogger log) {
+    void reportStatus(IgniteLogger log) {
         assert log != null;
 
         log = log.getLogger(getClass());
@@ -224,7 +224,7 @@ class GridUpdateNotifier {
      * @param warn Whether or not this is a warning.
      * @param msg Message to log.
      */
-    private void throttle(GridLogger log, boolean warn, String msg) {
+    private void throttle(IgniteLogger log, boolean warn, String msg) {
         assert(log != null);
         assert(msg != null);
 
@@ -252,14 +252,14 @@ class GridUpdateNotifier {
         private static final String CHARSET = "UTF-8";
 
         /** Logger. */
-        private final GridLogger log;
+        private final IgniteLogger log;
 
         /**
          * Creates checked with given logger.
          *
          * @param log Logger.
          */
-        UpdateChecker(GridLogger log) {
+        UpdateChecker(IgniteLogger log) {
             super(gridName, "grid-version-checker", log);
 
             this.log = log.getLogger(getClass());

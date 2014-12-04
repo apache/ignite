@@ -41,7 +41,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     private static final String CLS_LDR_RSRC_CACHE = "CLASS_LOADER_RESOURCE_CACHE";
 
     /** Grid logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Grid instance injector. */
     private GridResourceBasicInjector<GridEx> gridInjector;
@@ -68,7 +68,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     private GridResourceInjector springCtxInjector;
 
     /** Logger injector. */
-    private GridResourceBasicInjector<GridLogger> logInjector;
+    private GridResourceBasicInjector<IgniteLogger> logInjector;
 
     /** Service injector. */
     private GridResourceBasicInjector<Collection<GridService>> srvcInjector;
@@ -91,7 +91,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      * @param log Grid logger.
      * @param ioc Resource container for injections.
      */
-    GridResourceCustomInjector(GridLogger log, GridResourceIoc ioc) {
+    GridResourceCustomInjector(IgniteLogger log, GridResourceIoc ioc) {
         assert log != null;
         assert ioc != null;
 
@@ -185,7 +185,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      *
      * @param logInjector Log injector.
      */
-    public void setLogInjector(GridResourceBasicInjector<GridLogger> logInjector) {
+    public void setLogInjector(GridResourceBasicInjector<IgniteLogger> logInjector) {
         this.logInjector = logInjector;
     }
 

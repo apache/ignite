@@ -136,7 +136,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
         }
 
-        GridLogger log = ignite.log().getLogger(GridHibernateRegionFactory.class);
+        IgniteLogger log = ignite.log().getLogger(GridHibernateRegionFactory.class);
 
         if (log.isDebugEnabled())
             log.debug("GridHibernateRegionFactory started [grid=" + gridName + ']');

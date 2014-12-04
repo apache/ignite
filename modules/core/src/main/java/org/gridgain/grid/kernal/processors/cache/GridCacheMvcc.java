@@ -28,10 +28,10 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridCacheMvcc<K> {
     /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    private static volatile GridLogger log;
+    private static volatile IgniteLogger log;
 
     /** Cache context. */
     @GridToStringExclude

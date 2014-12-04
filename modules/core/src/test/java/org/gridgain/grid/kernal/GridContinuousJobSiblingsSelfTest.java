@@ -107,7 +107,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param sibCnt Siblings count to check.

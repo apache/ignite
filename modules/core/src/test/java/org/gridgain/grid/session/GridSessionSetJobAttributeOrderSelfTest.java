@@ -76,7 +76,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
@@ -117,7 +117,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override public Serializable execute() throws GridException {

@@ -43,7 +43,7 @@ public class GridHadoopExecutorService {
     private final String gridName;
 
     /** */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** */
     private volatile boolean shutdown;
@@ -78,7 +78,7 @@ public class GridHadoopExecutorService {
      * @param maxTasks Max number of tasks.
      * @param maxQueue Max queue length.
      */
-    public GridHadoopExecutorService(GridLogger log, String gridName, int maxTasks, int maxQueue) {
+    public GridHadoopExecutorService(IgniteLogger log, String gridName, int maxTasks, int maxQueue) {
         assert maxTasks > 0 : maxTasks;
         assert maxQueue > 0 : maxQueue;
 

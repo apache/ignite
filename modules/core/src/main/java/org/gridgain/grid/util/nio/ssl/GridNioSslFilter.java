@@ -28,7 +28,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     public static final int HANDSHAKE_FUT_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Logger to use. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Set to true if engine should request client authentication. */
     private boolean wantClientAuth;
@@ -57,7 +57,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @param sslCtx SSL context.
      * @param log Logger to use.
      */
-    public GridNioSslFilter(SSLContext sslCtx, GridLogger log) {
+    public GridNioSslFilter(SSLContext sslCtx, IgniteLogger log) {
         super("SSL filter");
 
         this.log = log;

@@ -70,7 +70,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     private Map<Byte, GridClientMarshaller> marshMap;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Protocol. */
     private GridTcpRestProtocol proto;
@@ -90,7 +90,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param hnd Rest handler.
      * @param ctx Context.
      */
-    public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
+    public GridTcpRestNioListener(IgniteLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
         GridKernalContext ctx) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
 

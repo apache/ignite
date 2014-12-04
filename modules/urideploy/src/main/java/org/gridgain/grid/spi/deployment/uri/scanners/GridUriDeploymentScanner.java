@@ -42,7 +42,7 @@ public abstract class GridUriDeploymentScanner {
     private final GridUriDeploymentScannerListener lsnr;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** Scanner implementation. */
     private GridSpiThread scanner;
@@ -73,7 +73,7 @@ public abstract class GridUriDeploymentScanner {
         long freq,
         FilenameFilter filter,
         GridUriDeploymentScannerListener lsnr,
-        GridLogger log) {
+        IgniteLogger log) {
         assert uri != null;
         assert freq > 0;
         assert deployDir != null;
@@ -266,7 +266,7 @@ public abstract class GridUriDeploymentScanner {
      *
      * @return Logger.
      */
-    protected final GridLogger getLogger() {
+    protected final IgniteLogger getLogger() {
         return log;
     }
 

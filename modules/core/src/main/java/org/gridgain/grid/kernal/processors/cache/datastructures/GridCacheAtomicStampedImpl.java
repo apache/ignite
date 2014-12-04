@@ -43,7 +43,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         };
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Atomic stamped name. */
     private String name;

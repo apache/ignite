@@ -81,7 +81,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheSharedContext<K, V> sharedCtx;
 
     /** Logger. */
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** Cache configuration. */
     private GridCacheConfiguration cacheCfg;
@@ -650,7 +650,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ctgr Category to log.
      * @return Logger.
      */
-    public GridLogger logger(String ctgr) {
+    public IgniteLogger logger(String ctgr) {
         return new GridCacheLogger(this, ctgr);
     }
 
@@ -658,7 +658,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cls Class to log.
      * @return Logger.
      */
-    public GridLogger logger(Class<?> cls) {
+    public IgniteLogger logger(Class<?> cls) {
         return logger(cls.getName());
     }
 
@@ -1395,7 +1395,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if mapped.
      * @throws GridCacheEntryRemovedException If reader for entry is removed.
      */
-    public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry<K, V> entry, GridLogger log,
+    public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry<K, V> entry, IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap,
         Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
         assert topVer != -1;

@@ -47,7 +47,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
 
     /** */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     @IgniteMBeanServerResource

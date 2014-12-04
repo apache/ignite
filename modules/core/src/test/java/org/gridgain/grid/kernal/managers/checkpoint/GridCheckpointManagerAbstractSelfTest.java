@@ -19,7 +19,6 @@ import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -738,7 +737,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     }
 
     /**
-     * Wrapper around {@link GridTestUtils#retryAssert(GridLogger, int, long, GridAbsClosure)}.
+     * Wrapper around {@link GridTestUtils#retryAssert(org.gridgain.grid.logger.IgniteLogger, int, long, GridAbsClosure)}.
      * For the given closure provides count of retries, configured by {@link #retries} attribute.
      * @param assertion Closure with assertion inside.
      * @throws GridInterruptedException If was interrupted.

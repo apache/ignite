@@ -121,7 +121,7 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
     private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteTaskSessionResource

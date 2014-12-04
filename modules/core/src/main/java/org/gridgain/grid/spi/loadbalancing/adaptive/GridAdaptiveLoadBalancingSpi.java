@@ -230,7 +230,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
 
     /** Grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** */
     private GridAdaptiveLoadProbe probe = new GridAdaptiveCpuLoadProbe();

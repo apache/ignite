@@ -68,7 +68,7 @@ public class GridPluginContext implements PluginContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger log(Class<?> cls) {
+    @Override public IgniteLogger log(Class<?> cls) {
         return ctx.log(cls);
     }
 

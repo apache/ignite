@@ -639,7 +639,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param filter Filter.

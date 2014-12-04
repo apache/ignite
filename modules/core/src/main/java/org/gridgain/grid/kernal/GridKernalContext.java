@@ -103,7 +103,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Logger.
      */
-    public GridLogger log();
+    public IgniteLogger log();
 
     /**
      * Gets logger for given class.
@@ -111,7 +111,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @param cls Class to get logger for.
      * @return Logger.
      */
-    public GridLogger log(Class<?> cls);
+    public IgniteLogger log(Class<?> cls);
 
     /**
      * @return {@code True} if grid is in the process of stopping.

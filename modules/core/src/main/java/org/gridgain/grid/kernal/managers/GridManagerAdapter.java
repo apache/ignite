@@ -49,7 +49,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
     /** Logger. */
     @GridToStringExclude
-    protected final GridLogger log;
+    protected final IgniteLogger log;
 
     /** Set of SPIs for this manager. */
     @GridToStringExclude

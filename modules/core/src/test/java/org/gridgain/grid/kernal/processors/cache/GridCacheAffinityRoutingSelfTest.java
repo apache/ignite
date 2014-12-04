@@ -276,7 +276,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteJobContextResource
@@ -324,7 +324,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteJobContextResource
@@ -384,7 +384,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteJobContextResource
@@ -440,7 +440,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteJobContextResource
@@ -510,7 +510,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /**
          * @param affKey Affinity key.
@@ -549,7 +549,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** */
         @IgniteInstanceResource

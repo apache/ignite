@@ -36,7 +36,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     /**
      * @param log Logger to use in context config.
      */
-    public GridTestKernalContext(GridLogger log) {
+    public GridTestKernalContext(IgniteLogger log) {
         this();
 
         config().setGridLogger(log);

@@ -36,7 +36,7 @@ public class GridGgfsServer {
     private final GridGgfsContext ggfsCtx;
 
     /** Logger. */
-    private final GridLogger log;
+    private final IgniteLogger log;
 
     /** GGFS marshaller. */
     private final GridGgfsMarshaller marsh;

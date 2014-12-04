@@ -59,7 +59,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
     /** Logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /**
      * Required by Externalizable.
@@ -316,7 +316,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * @param log Logger.
      * @return This callable for chaining method calls.
      */
-    public GridNodeCallable setLogger(GridLogger log) {
+    public GridNodeCallable setLogger(IgniteLogger log) {
         this.log = log;
 
         return this;
@@ -328,8 +328,8 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * @param msg Message text.
      * @param loggers Loggers.
      */
-    private void info(String msg, GridLogger... loggers) {
-        for (GridLogger logger : loggers)
+    private void info(String msg, IgniteLogger... loggers) {
+        for (IgniteLogger logger : loggers)
             if (logger != null && logger.isInfoEnabled())
                 logger.info(msg);
     }

@@ -66,7 +66,7 @@ public class GridNoopSecureSessionSpi extends GridSpiAdapter
 
     /** Injected grid logger. */
     @IgniteLoggerResource
-    private GridLogger log;
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public boolean supported(GridSecuritySubjectType subjType) {

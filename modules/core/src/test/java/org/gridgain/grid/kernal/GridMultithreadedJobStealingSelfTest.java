@@ -148,7 +148,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         /** Logger. */
         @IgniteLoggerResource
-        private GridLogger log;
+        private IgniteLogger log;
 
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
