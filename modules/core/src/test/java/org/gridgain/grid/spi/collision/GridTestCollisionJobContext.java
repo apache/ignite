@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.spi.collision;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.lang.*;
 
 /**
  * Test implementation for job collision context.

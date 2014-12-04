@@ -22,7 +22,6 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;

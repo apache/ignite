@@ -10,7 +10,6 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;

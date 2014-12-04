@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.swapspace;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.spi.swapspace.noop.*;

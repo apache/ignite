@@ -11,6 +11,7 @@ package org.gridgain.grid.marshaller;
 
 import com.esotericsoftware.kryo.*;
 import com.esotericsoftware.kryo.io.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;

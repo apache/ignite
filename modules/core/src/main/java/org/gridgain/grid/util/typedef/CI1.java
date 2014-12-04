@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.util.typedef;
 
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
- * Defines {@code alias} for {@link org.gridgain.grid.lang.IgniteInClosure} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link org.apache.ignite.lang.IgniteInClosure} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link org.gridgain.grid.lang.IgniteInClosure}.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link org.apache.ignite.lang.IgniteInClosure}.
  * @param <T> Type of the factory closure.
  * @see GridFunc
- * @see org.gridgain.grid.lang.IgniteInClosure
+ * @see org.apache.ignite.lang.IgniteInClosure
  */
 public interface CI1<T> extends IgniteInClosure<T> { /* No-op. */ }

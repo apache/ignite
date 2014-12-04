@@ -25,7 +25,6 @@ import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.*;

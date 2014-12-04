@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.lang;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.future.*;
 import org.jdk8.backport.*;

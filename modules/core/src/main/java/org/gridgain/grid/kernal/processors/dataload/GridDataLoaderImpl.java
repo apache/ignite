@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dataload.*;
@@ -20,7 +21,6 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.*;

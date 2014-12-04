@@ -265,7 +265,7 @@ public final class GridSystemProperties {
     /**
      * Name of the system property or environment variable to activate synchronous
      * listener notification for future objects implemented in GridGain. I.e.
-     * closure passed into method {@link GridFuture#listenAsync(org.gridgain.grid.lang.IgniteInClosure)} will
+     * closure passed into method {@link GridFuture#listenAsync(org.apache.ignite.lang.IgniteInClosure)} will
      * be evaluated in the same thread that will end the future.
      *
      * @see GridFuture#syncNotify()

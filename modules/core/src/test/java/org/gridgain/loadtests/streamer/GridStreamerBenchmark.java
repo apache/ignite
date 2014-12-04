@@ -10,7 +10,7 @@
 package org.gridgain.loadtests.streamer;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -9,6 +9,7 @@
 
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;

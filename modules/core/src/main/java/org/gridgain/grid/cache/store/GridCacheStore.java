@@ -125,7 +125,7 @@ public interface GridCacheStore<K, V> {
     /**
      * Loads all values for given keys and passes every value to the provided closure.
      * <p>
-     * For every loaded value method {@link org.gridgain.grid.lang.IgniteInClosure#apply(Object)} should be called on
+     * For every loaded value method {@link org.apache.ignite.lang.IgniteInClosure#apply(Object)} should be called on
      * the passed in closure. The closure will then make sure that the loaded value is stored
      * in cache.
      *
