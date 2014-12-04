@@ -10,11 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -10,9 +10,9 @@
 package org.gridgain.grid.util.future;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;

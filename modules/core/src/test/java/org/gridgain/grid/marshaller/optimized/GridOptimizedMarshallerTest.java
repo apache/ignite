@@ -2,6 +2,7 @@ package org.gridgain.grid.marshaller.optimized;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;

@@ -9,8 +9,8 @@
 
 package org.gridgain.jdbc.util;
 
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

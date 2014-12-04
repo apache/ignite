@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.logger.java.*;
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.marshaller.jdk.*;

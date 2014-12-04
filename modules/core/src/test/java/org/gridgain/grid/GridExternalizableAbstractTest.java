@@ -9,7 +9,7 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.marshaller.*;
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.testframework.junits.common.*;

@@ -11,9 +11,9 @@ package org.gridgain.grid.spi.discovery.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;

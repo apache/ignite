@@ -10,10 +10,10 @@
 package org.gridgain.grid.spi.indexing.h2;
 
 import org.apache.ignite.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.indexing.h2.opt.*;

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.dr;
 
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

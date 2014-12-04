@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.marshaller.jdk;
 
-import org.gridgain.grid.marshaller.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

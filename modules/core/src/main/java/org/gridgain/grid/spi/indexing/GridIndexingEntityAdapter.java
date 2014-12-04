@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -28,7 +27,7 @@ public class GridIndexingEntityAdapter<T> implements GridIndexingEntity<T> {
 
     /**
      * @param val Value.
-     * @param bytes Value marshalled by {@link GridMarshaller}.
+     * @param bytes Value marshalled by {@link org.apache.ignite.marshaller.GridMarshaller}.
      */
     public GridIndexingEntityAdapter(T val, @Nullable byte[] bytes) {
         this.val = val;

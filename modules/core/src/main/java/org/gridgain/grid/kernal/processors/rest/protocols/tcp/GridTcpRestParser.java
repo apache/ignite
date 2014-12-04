@@ -8,10 +8,10 @@
  */
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.apache.ignite.marshaller.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;

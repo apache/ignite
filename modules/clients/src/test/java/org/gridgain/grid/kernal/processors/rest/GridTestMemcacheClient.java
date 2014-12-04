@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.apache.ignite.*;
 import org.apache.ignite.logger.java.*;
+import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
