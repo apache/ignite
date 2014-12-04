@@ -20,7 +20,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.gridgain.grid.compute.IgniteCompute} implementation.
+ * {@link org.apache.ignite.IgniteCompute} implementation.
  */
 public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridServices, Externalizable {
     /** */

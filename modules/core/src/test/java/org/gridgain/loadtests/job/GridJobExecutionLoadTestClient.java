@@ -11,7 +11,6 @@ package org.gridgain.loadtests.job;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.loadtests.util.*;

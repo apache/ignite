@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
@@ -25,7 +26,7 @@ import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
 
 /**
- * {@link org.gridgain.grid.compute.IgniteCompute} implementation.
+ * {@link org.apache.ignite.IgniteCompute} implementation.
  */
 public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     /** */

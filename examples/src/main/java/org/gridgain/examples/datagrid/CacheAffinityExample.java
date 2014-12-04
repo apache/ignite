@@ -63,7 +63,7 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link org.gridgain.grid.compute.IgniteCompute#affinityRun(String, Object, Runnable)}
+     * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)}
      * method.
      *
      * @throws GridException If failed.

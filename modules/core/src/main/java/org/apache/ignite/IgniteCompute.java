@@ -7,11 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.compute;
+package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.failover.*;
@@ -58,7 +59,7 @@ import java.util.concurrent.*;
  * which by default sequentially picks next available node from grid projection. Other load balancing
  * policies, such as {@code random} or {@code adaptive}, can be configured as well by selecting
  * a different load balancing SPI in grid configuration. If your logic requires some custom
- * load balancing behavior, consider implementing {@link GridComputeTask} directly.
+ * load balancing behavior, consider implementing {@link org.gridgain.grid.compute.GridComputeTask} directly.
  * <h1 class="header">Fault Tolerance</h1>
  * GridGain guarantees that as long as there is at least one grid node standing, every job will be
  * executed. Jobs will automatically failover to another node if a remote node crashed
@@ -96,7 +97,7 @@ import java.util.concurrent.*;
  * Note that regardless of which method is used for executing computations, all relevant SPI implementations
  * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution,
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
- * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
+ * {@link org.gridgain.grid.compute.GridComputeTaskSpis} annotation. Refer to {@link org.gridgain.grid.compute.GridComputeTask} documentation for more information.
  */
 public interface IgniteCompute extends IgniteAsyncSupport {
     /**
@@ -115,8 +116,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
-     * @see GridComputeJobContext#cacheName()
-     * @see GridComputeJobContext#affinityKey()
+     * @see org.gridgain.grid.compute.GridComputeJobContext#cacheName()
+     * @see org.gridgain.grid.compute.GridComputeJobContext#affinityKey()
      * @throws GridException If job failed.
      */
     public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws GridException;
@@ -132,18 +133,18 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
      * @throws GridException If job failed.
-     * @see GridComputeJobContext#cacheName()
-     * @see GridComputeJobContext#affinityKey()
+     * @see org.gridgain.grid.compute.GridComputeJobContext#cacheName()
+     * @see org.gridgain.grid.compute.GridComputeJobContext#affinityKey()
      */
     public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) throws GridException;
 
     /**
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
-     * refer to {@link GridComputeTask} documentation.
+     * refer to {@link org.gridgain.grid.compute.GridComputeTask} documentation.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @param taskCls Class of the task to execute. If class has {@link GridComputeTaskName} annotation,
+     * @param taskCls Class of the task to execute. If class has {@link org.gridgain.grid.compute.GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.

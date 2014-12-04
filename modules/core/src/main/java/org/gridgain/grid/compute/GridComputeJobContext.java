@@ -57,8 +57,8 @@ public interface GridComputeJobContext extends GridComputeJobContinuation {
      *
      * @return Cache name if job was co-located or {@code null} otherwise.
      * @see #affinityKey()
-     * @see IgniteCompute#affinityCall(String, Object, Callable)
-     * @see IgniteCompute#affinityRun(String, Object, Runnable)
+     * @see org.apache.ignite.IgniteCompute#affinityCall(String, Object, Callable)
+     * @see org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)
      */
     @Nullable public String cacheName();
 
@@ -67,8 +67,8 @@ public interface GridComputeJobContext extends GridComputeJobContinuation {
      *
      * @return Affinity key if job was co-located or {@code null} otherwise.
      * @see #cacheName()
-     * @see IgniteCompute#affinityCall(String, Object, Callable)
-     * @see IgniteCompute#affinityRun(String, Object, Runnable)
+     * @see org.apache.ignite.IgniteCompute#affinityCall(String, Object, Callable)
+     * @see org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)
      */
     @Nullable public <T> T affinityKey();
 

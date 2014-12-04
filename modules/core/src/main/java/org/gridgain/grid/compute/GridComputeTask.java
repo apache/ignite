@@ -30,7 +30,7 @@ import java.util.*;
  * <li>
  *      Upon request to execute a grid task with given task name system will find
  *      deployed task with given name. Task needs to be deployed prior to execution
- *      (see {@link IgniteCompute#localDeployTask(Class, ClassLoader)} method), however if task does not specify
+ *      (see {@link org.apache.ignite.IgniteCompute#localDeployTask(Class, ClassLoader)} method), however if task does not specify
  *      its name explicitly via {@link GridComputeTaskName @GridComputeTaskName} annotation, it
  *      will be auto-deployed first time it gets executed.
  * </li>

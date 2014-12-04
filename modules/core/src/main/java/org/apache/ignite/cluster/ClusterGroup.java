@@ -46,7 +46,7 @@ import java.util.*;
  * <h1 class="header">Features</h1>
  * Grid projection provides the following functionality over the underlying group of nodes:
  * <ul>
- * <li>{@link org.gridgain.grid.compute.IgniteCompute} - functionality for executing tasks and closures over nodes in this projection.</li>
+ * <li>{@link org.apache.ignite.IgniteCompute} - functionality for executing tasks and closures over nodes in this projection.</li>
  * <li>{@link GridMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
  * <li>{@link GridEvents} - functionality for querying and listening to events on nodes in this projection.</li>
  * </ul>

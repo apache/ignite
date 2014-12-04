@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
 
 import java.util.*;
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.compute.gridify.aop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
@@ -106,7 +107,7 @@ public class GridifySetToSetAbstractAspect {
     /**
      * Execute method on grid.
      *
-     * @param compute {@link org.gridgain.grid.compute.IgniteCompute} instance.
+     * @param compute {@link org.apache.ignite.IgniteCompute} instance.
      * @param cls Joint point signature class.
      * @param arg GridifyArgument with all method signature parameters.
      * @param nodeFilter Node filter.

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.task;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;

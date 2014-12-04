@@ -509,7 +509,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param ignite Grid.
-     * @return {@link org.gridgain.grid.compute.IgniteCompute} for given grid's local node.
+     * @return {@link org.apache.ignite.IgniteCompute} for given grid's local node.
      */
     protected IgniteCompute forLocal(Ignite ignite) {
         return ignite.compute(ignite.cluster().forLocal());
@@ -517,7 +517,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param prj Projection.
-     * @return {@link org.gridgain.grid.compute.IgniteCompute} for given projection.
+     * @return {@link org.apache.ignite.IgniteCompute} for given projection.
      */
     protected IgniteCompute compute(ClusterGroup prj) {
         return prj.grid().compute(prj);
