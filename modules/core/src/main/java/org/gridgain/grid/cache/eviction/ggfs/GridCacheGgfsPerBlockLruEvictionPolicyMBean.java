@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.eviction.ggfs;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -17,14 +17,14 @@ import java.util.*;
 /**
  * MBean for {@code GGFS per-block LRU} eviction policy.
  */
-@GridMBeanDescription("MBean for GGFS per-block LRU cache eviction policy.")
+@IgniteMBeanDescription("MBean for GGFS per-block LRU cache eviction policy.")
 public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
     /**
      * Gets maximum allowed size of all blocks in bytes.
      *
      * @return Maximum allowed size of all blocks in bytes.
      */
-    @GridMBeanDescription("Maximum allowed size of all blocks in bytes.")
+    @IgniteMBeanDescription("Maximum allowed size of all blocks in bytes.")
     public long getMaxSize();
 
     /**
@@ -32,7 +32,7 @@ public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @param maxSize Maximum allowed size of data in all blocks in bytes.
      */
-    @GridMBeanDescription("Sets aximum allowed size of data in all blocks in bytes.")
+    @IgniteMBeanDescription("Sets aximum allowed size of data in all blocks in bytes.")
     public void setMaxSize(long maxSize);
 
     /**
@@ -40,7 +40,7 @@ public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Maximum allowed amount of blocks.
      */
-    @GridMBeanDescription("Maximum allowed amount of blocks.")
+    @IgniteMBeanDescription("Maximum allowed amount of blocks.")
     public int getMaxBlocks();
 
     /**
@@ -48,7 +48,7 @@ public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @param maxBlocks Maximum allowed amount of blocks.
      */
-    @GridMBeanDescription("Sets maximum allowed amount of blocks.")
+    @IgniteMBeanDescription("Sets maximum allowed amount of blocks.")
     public void setMaxBlocks(int maxBlocks);
 
     /**
@@ -56,7 +56,7 @@ public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Collection of regex for paths whose blocks must not be evicted.
      */
-    @GridMBeanDescription("Collection of regex for paths whose blocks must not be evicted.")
+    @IgniteMBeanDescription("Collection of regex for paths whose blocks must not be evicted.")
     @Nullable public Collection<String> getExcludePaths();
 
     /**
@@ -64,7 +64,7 @@ public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @param excludePaths Collection of regex for paths whose blocks must not be evicted.
      */
-    @GridMBeanDescription("Sets collection of regex for paths whose blocks must not be evicted.")
+    @IgniteMBeanDescription("Sets collection of regex for paths whose blocks must not be evicted.")
     public void setExcludePaths(@Nullable Collection<String> excludePaths);
 
     /**
@@ -72,7 +72,7 @@ public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Current size of data in all blocks.
      */
-    @GridMBeanDescription("Current size of data in all blocks.")
+    @IgniteMBeanDescription("Current size of data in all blocks.")
     public long getCurrentSize();
 
     /**
@@ -80,6 +80,6 @@ public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Current amount of blocks.
      */
-    @GridMBeanDescription("Current amount of blocks.")
+    @IgniteMBeanDescription("Current amount of blocks.")
     public int getCurrentBlocks();
 }

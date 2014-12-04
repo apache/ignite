@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.cache.eviction.fifo;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * MBean for {@code FIFO} eviction policy.
  */
-@GridMBeanDescription("MBean for FIFO cache eviction policy.")
+@IgniteMBeanDescription("MBean for FIFO cache eviction policy.")
 public interface GridCacheFifoEvictionPolicyMBean {
     /**
      * Gets name of metadata attribute used to store eviction policy data.
      *
      * @return Name of metadata attribute used to store eviction policy data.
      */
-    @GridMBeanDescription("Name of metadata attribute used to store eviction policy data.")
+    @IgniteMBeanDescription("Name of metadata attribute used to store eviction policy data.")
     public String getMetaAttributeName();
 
     /**
@@ -29,7 +29,7 @@ public interface GridCacheFifoEvictionPolicyMBean {
      *
      * @return Maximum allowed cache size.
      */
-    @GridMBeanDescription("Maximum allowed cache size.")
+    @IgniteMBeanDescription("Maximum allowed cache size.")
     public int getMaxSize();
 
     /**
@@ -37,7 +37,7 @@ public interface GridCacheFifoEvictionPolicyMBean {
      *
      * @param max Maximum allowed cache size.
      */
-    @GridMBeanDescription("Set maximum allowed cache size.")
+    @IgniteMBeanDescription("Set maximum allowed cache size.")
     public void setMaxSize(int max);
 
     /**
@@ -45,6 +45,6 @@ public interface GridCacheFifoEvictionPolicyMBean {
      *
      * @return Current queue size.
      */
-    @GridMBeanDescription("Current FIFO queue size.")
+    @IgniteMBeanDescription("Current FIFO queue size.")
     public int getCurrentSize();
 }

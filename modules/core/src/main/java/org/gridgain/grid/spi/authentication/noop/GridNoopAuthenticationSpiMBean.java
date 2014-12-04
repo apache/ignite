@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.spi.authentication.noop;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridNoopAuthenticationSpi}.
  */
-@GridMBeanDescription("MBean that provides access to no-op authentication SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to no-op authentication SPI configuration.")
 public interface GridNoopAuthenticationSpiMBean extends GridSpiManagementMBean {
     // No-op.
 }

@@ -9,20 +9,20 @@
 
 package org.gridgain.grid.streamer;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Streamer MBean interface.
  */
-@GridMBeanDescription("MBean that provides access to streamer description and metrics.")
+@IgniteMBeanDescription("MBean that provides access to streamer description and metrics.")
 public interface GridStreamerMBean {
     /**
      * Gets streamer name.
      *
      * @return Streamer name.
      */
-    @GridMBeanDescription("Streamer name.")
+    @IgniteMBeanDescription("Streamer name.")
     @Nullable public String getName();
 
     /**
@@ -30,7 +30,7 @@ public interface GridStreamerMBean {
      *
      * @return {@code True} if {@code atLeastOnce} is configured.
      */
-    @GridMBeanDescription("True if atLeastOnce is configured.")
+    @IgniteMBeanDescription("True if atLeastOnce is configured.")
     public boolean isAtLeastOnce();
 
     /**
@@ -39,7 +39,7 @@ public interface GridStreamerMBean {
      *
      * @return Stage future map size.
      */
-    @GridMBeanDescription("Stage future map size.")
+    @IgniteMBeanDescription("Stage future map size.")
     public int getStageFutureMapSize();
 
     /**
@@ -47,7 +47,7 @@ public interface GridStreamerMBean {
      *
      * @return Batch future map size.
      */
-    @GridMBeanDescription("Batch future map size.")
+    @IgniteMBeanDescription("Batch future map size.")
     public int getBatchFutureMapSize();
 
     /**
@@ -55,7 +55,7 @@ public interface GridStreamerMBean {
      *
      * @return Number of stages. Cannot be more than pool thread count.
      */
-    @GridMBeanDescription("Number of stages currently being executed in streamer pool.")
+    @IgniteMBeanDescription("Number of stages currently being executed in streamer pool.")
     public int getStageActiveExecutionCount();
 
     /**
@@ -63,7 +63,7 @@ public interface GridStreamerMBean {
      *
      * @return Number of event batches waiting to be processed.
      */
-    @GridMBeanDescription("Number of event batches currently waiting to be executed.")
+    @IgniteMBeanDescription("Number of event batches currently waiting to be executed.")
     public int getStageWaitingExecutionCount();
 
     /**
@@ -71,7 +71,7 @@ public interface GridStreamerMBean {
      *
      * @return Total number of stages executed since last reset.
      */
-    @GridMBeanDescription("Total number of stages executed since last reset.")
+    @IgniteMBeanDescription("Total number of stages executed since last reset.")
     public long getStageTotalExecutionCount();
 
     /**
@@ -81,7 +81,7 @@ public interface GridStreamerMBean {
      *
      * @return Pipeline maximum execution time.
      */
-    @GridMBeanDescription("Pipeline maximum execution time.")
+    @IgniteMBeanDescription("Pipeline maximum execution time.")
     public long getPipelineMaximumExecutionTime();
 
     /**
@@ -91,7 +91,7 @@ public interface GridStreamerMBean {
      *
      * @return Pipeline minimum execution time.
      */
-    @GridMBeanDescription("Pipeline minimum execution time.")
+    @IgniteMBeanDescription("Pipeline minimum execution time.")
     public long getPipelineMinimumExecutionTime();
 
     /**
@@ -100,7 +100,7 @@ public interface GridStreamerMBean {
      *
      * @return Pipeline average execution time.
      */
-    @GridMBeanDescription("Pipeline average execution time.")
+    @IgniteMBeanDescription("Pipeline average execution time.")
     public long getPipelineAverageExecutionTime();
 
     /**
@@ -109,7 +109,7 @@ public interface GridStreamerMBean {
      *
      * @return Maximum number of unique nodes in pipeline execution.
      */
-    @GridMBeanDescription("Maximum number of unique nodes participated in pipeline execution.")
+    @IgniteMBeanDescription("Maximum number of unique nodes participated in pipeline execution.")
     public int getPipelineMaximumExecutionNodes();
 
     /**
@@ -118,7 +118,7 @@ public interface GridStreamerMBean {
      *
      * @return Minimum number of unique nodes in pipeline execution.
      */
-    @GridMBeanDescription("Minimum number of unique nodes participated in pipeline execution.")
+    @IgniteMBeanDescription("Minimum number of unique nodes participated in pipeline execution.")
     public int getPipelineMinimumExecutionNodes();
 
     /**
@@ -127,7 +127,7 @@ public interface GridStreamerMBean {
      *
      * @return Average number of unique nodes in pipeline execution.
      */
-    @GridMBeanDescription("Average number of unique nodes participated in pipeline execution.")
+    @IgniteMBeanDescription("Average number of unique nodes participated in pipeline execution.")
     public int getPipelineAverageExecutionNodes();
 
     /**
@@ -137,7 +137,7 @@ public interface GridStreamerMBean {
      *
      * @return Number of current active sessions.
      */
-    @GridMBeanDescription("Number of current active sessions.")
+    @IgniteMBeanDescription("Number of current active sessions.")
     public int getCurrentActiveSessions();
 
     /**
@@ -147,7 +147,7 @@ public interface GridStreamerMBean {
      *
      * @return Maximum active sessions since last reset.
      */
-    @GridMBeanDescription("Maximum number of active sessions since last reset.")
+    @IgniteMBeanDescription("Maximum number of active sessions since last reset.")
     public int getMaximumActiveSessions();
 
     /**
@@ -156,6 +156,6 @@ public interface GridStreamerMBean {
      *
      * @return Failures count.
      */
-    @GridMBeanDescription("Number of failures since last reset.")
+    @IgniteMBeanDescription("Number of failures since last reset.")
     public int getFailuresCount();
 }

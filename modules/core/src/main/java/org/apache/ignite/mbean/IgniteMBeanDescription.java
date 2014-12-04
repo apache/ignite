@@ -7,15 +7,20 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.failover.never;
+package org.apache.ignite.mbean;
 
-import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import java.lang.annotation.*;
 
 /**
- * Management bean for {@link GridNeverFailoverSpi}.
+ * Provides description for MBean classes and methods.
  */
-@IgniteMBeanDescription("MBean that provides access to never failover SPI configuration.")
-public interface GridNeverFailoverSpiMBean extends GridSpiManagementMBean {
-    // No-op.
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface IgniteMBeanDescription {
+    /**
+     *
+     * Description for Mbean.
+     */
+    @SuppressWarnings({"JavaDoc"}) public String value();
 }

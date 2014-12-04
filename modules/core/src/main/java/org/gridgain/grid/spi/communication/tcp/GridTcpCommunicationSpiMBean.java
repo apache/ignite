@@ -1,12 +1,12 @@
 package org.gridgain.grid.spi.communication.tcp;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * MBean provide access to TCP-based communication SPI.
  */
-@GridMBeanDescription("MBean provide access to TCP-based communication SPI.")
+@IgniteMBeanDescription("MBean provide access to TCP-based communication SPI.")
 public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets local host address for socket binding.
@@ -15,7 +15,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Grid node IP address.
      */
-    @GridMBeanDescription("Grid node IP address.")
+    @IgniteMBeanDescription("Grid node IP address.")
     public String getLocalAddress();
 
     /**
@@ -23,7 +23,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Port number.
      */
-    @GridMBeanDescription("Port number.")
+    @IgniteMBeanDescription("Port number.")
     public int getLocalPort();
 
     /**
@@ -31,7 +31,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Port number.
      */
-    @GridMBeanDescription("Shared memory endpoint port number.")
+    @IgniteMBeanDescription("Shared memory endpoint port number.")
     public int getSharedMemoryPort();
 
     /**
@@ -40,7 +40,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Local port range.
      */
-    @GridMBeanDescription("Local port range.")
+    @IgniteMBeanDescription("Local port range.")
     public int getLocalPortRange();
 
     /**
@@ -49,7 +49,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum idle connection time.
      */
-    @GridMBeanDescription("Maximum idle connection time.")
+    @IgniteMBeanDescription("Maximum idle connection time.")
     public long getIdleConnectionTimeout();
 
     /**
@@ -57,7 +57,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Flag that indicates whether direct or heap allocated buffer is used.
      */
-    @GridMBeanDescription("Flag that indicates whether direct or heap allocated buffer is used.")
+    @IgniteMBeanDescription("Flag that indicates whether direct or heap allocated buffer is used.")
     public boolean isDirectBuffer();
 
     /**
@@ -66,7 +66,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Count of selectors in TCP server.
      */
-    @GridMBeanDescription("Count of selectors used in TCP server.")
+    @IgniteMBeanDescription("Count of selectors used in TCP server.")
     public int getSelectorsCount();
 
     /**
@@ -75,7 +75,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return {@code True} if asynchronous IO should be used to send messages.
      */
-    @GridMBeanDescription("Asynchronous send.")
+    @IgniteMBeanDescription("Asynchronous send.")
     public boolean isAsyncSend();
 
     /**
@@ -83,7 +83,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Sent messages count.
      */
-    @GridMBeanDescription("Sent messages count.")
+    @IgniteMBeanDescription("Sent messages count.")
     public int getSentMessagesCount();
 
     /**
@@ -91,7 +91,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Sent bytes count.
      */
-    @GridMBeanDescription("Sent bytes count.")
+    @IgniteMBeanDescription("Sent bytes count.")
     public long getSentBytesCount();
 
     /**
@@ -99,7 +99,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Received messages count.
      */
-    @GridMBeanDescription("Received messages count.")
+    @IgniteMBeanDescription("Received messages count.")
     public int getReceivedMessagesCount();
 
     /**
@@ -107,7 +107,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Received bytes count.
      */
-    @GridMBeanDescription("Received bytes count.")
+    @IgniteMBeanDescription("Received bytes count.")
     public long getReceivedBytesCount();
 
     /**
@@ -115,7 +115,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Outbound messages queue size.
      */
-    @GridMBeanDescription("Outbound messages queue size.")
+    @IgniteMBeanDescription("Outbound messages queue size.")
     public int getOutboundMessagesQueueSize();
 
     /**
@@ -124,7 +124,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Connect timeout.
      */
-    @GridMBeanDescription("Connect timeout.")
+    @IgniteMBeanDescription("Connect timeout.")
     public long getConnectTimeout();
 
     /**
@@ -132,7 +132,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum connect timeout.
      */
-    @GridMBeanDescription("Maximum connect timeout.")
+    @IgniteMBeanDescription("Maximum connect timeout.")
     public long getMaxConnectTimeout();
 
     /**
@@ -141,7 +141,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Reconnects count.
      */
-    @GridMBeanDescription("Reconnect count on connection failure.")
+    @IgniteMBeanDescription("Reconnect count on connection failure.")
     public int getReconnectCount();
 
     /**
@@ -149,7 +149,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return {@code True} if TCP delay is disabled.
      */
-    @GridMBeanDescription("TCP_NODELAY socket option value.")
+    @IgniteMBeanDescription("TCP_NODELAY socket option value.")
     public boolean isTcpNoDelay();
 
     /**
@@ -161,7 +161,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Flush frequency.
      */
-    @GridMBeanDescription("Connection buffer flush frequency.")
+    @IgniteMBeanDescription("Connection buffer flush frequency.")
     public long getConnectionBufferFlushFrequency();
 
     /**
@@ -178,7 +178,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      * @param connBufFlushFreq Flush frequency.
      * @see #getConnectionBufferSize()
      */
-    @GridMBeanDescription("Sets connection buffer flush frequency.")
+    @IgniteMBeanDescription("Sets connection buffer flush frequency.")
     public void setConnectionBufferFlushFrequency(long connBufFlushFreq);
 
     /**
@@ -188,7 +188,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Connection buffer size.
      */
-    @GridMBeanDescription("Connection buffer size.")
+    @IgniteMBeanDescription("Connection buffer size.")
     public int getConnectionBufferSize();
 
     /**
@@ -196,7 +196,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return {@code True} if direct buffers should be used.
      */
-    @GridMBeanDescription("Direct send buffer.")
+    @IgniteMBeanDescription("Direct send buffer.")
     public boolean isDirectSendBuffer();
 
     /**
@@ -206,7 +206,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Socket receive buffer size.
      */
-    @GridMBeanDescription("Socket receive buffer.")
+    @IgniteMBeanDescription("Socket receive buffer.")
     public int getSocketReceiveBuffer();
 
     /**
@@ -216,7 +216,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Socket send buffer size.
      */
-    @GridMBeanDescription("Socket send buffer.")
+    @IgniteMBeanDescription("Socket send buffer.")
     public int getSocketSendBuffer();
 
     /**
@@ -230,7 +230,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Whether dual-socket connection should be enforced.
      */
-    @GridMBeanDescription("Dual-socket connection.")
+    @IgniteMBeanDescription("Dual-socket connection.")
     public boolean isDualSocketConnection();
 
     /**
@@ -240,7 +240,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Send queue size limit.
      */
-    @GridMBeanDescription("Message queue size limit.")
+    @IgniteMBeanDescription("Message queue size limit.")
     public int getMessageQueueLimit();
 
     /**
@@ -249,7 +249,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Minimum buffered message count.
      */
-    @GridMBeanDescription("Minimum buffered message count.")
+    @IgniteMBeanDescription("Minimum buffered message count.")
     public int getMinimumBufferedMessageCount();
 
     /**
@@ -258,6 +258,6 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
      *
      * @return Buffer size ratio.
      */
-    @GridMBeanDescription("Buffer size ratio.")
+    @IgniteMBeanDescription("Buffer size ratio.")
     public double getBufferSizeRatio();
 }

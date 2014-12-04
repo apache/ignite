@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.cache.eviction.random;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * MBean for {@code random} eviction policy.
  */
-@GridMBeanDescription("MBean for random cache eviction policy.")
+@IgniteMBeanDescription("MBean for random cache eviction policy.")
 public interface GridCacheRandomEvictionPolicyMBean {
     /**
      * Gets maximum allowed cache size.
      *
      * @return Maximum allowed cache size.
      */
-    @GridMBeanDescription("Maximum allowed cache size.")
+    @IgniteMBeanDescription("Maximum allowed cache size.")
     public int getMaxSize();
 
     /**
@@ -29,6 +29,6 @@ public interface GridCacheRandomEvictionPolicyMBean {
      *
      * @param max Maximum allowed cache size.
      */
-    @GridMBeanDescription("Sets maximum allowed cache size.")
+    @IgniteMBeanDescription("Sets maximum allowed cache size.")
     public void setMaxSize(int max);
 }

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.spi.failover.always;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridAlwaysFailoverSpi}.
  */
-@GridMBeanDescription("MBean that provides access to always failover SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to always failover SPI configuration.")
 public interface GridAlwaysFailoverSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
@@ -23,7 +23,7 @@ public interface GridAlwaysFailoverSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum number of attempts to execute a failed job on another node.
      */
-    @GridMBeanDescription("Maximum number of attempts to execute a failed job on another node.")
+    @IgniteMBeanDescription("Maximum number of attempts to execute a failed job on another node.")
     public int getMaximumFailoverAttempts();
 
     /**
@@ -31,6 +31,6 @@ public interface GridAlwaysFailoverSpiMBean extends GridSpiManagementMBean {
      *
      * @return Total number of failed over jobs.
      */
-    @GridMBeanDescription("Total number of jobs that were failed over.")
+    @IgniteMBeanDescription("Total number of jobs that were failed over.")
     public int getTotalFailoverJobsCount();
 }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.mbean.*;
 
@@ -18,14 +19,14 @@ import java.util.*;
 /**
  * This interface defines JMX view on kernal.
  */
-@GridMBeanDescription("MBean that provides access to Kernal information.")
+@IgniteMBeanDescription("MBean that provides access to Kernal information.")
 public interface GridKernalMBean {
     /**
      * Gets file path of the license.
      *
      * @return File path of the license.
      */
-    @GridMBeanDescription("File path of the license.")
+    @IgniteMBeanDescription("File path of the license.")
     public String getLicenseFilePath();
 
     /**
@@ -33,7 +34,7 @@ public interface GridKernalMBean {
      *
      * @return String presentation of the version.
      */
-    @GridMBeanDescription("String presentation of the GridGain version.")
+    @IgniteMBeanDescription("String presentation of the GridGain version.")
     public String getFullVersion();
 
     /**
@@ -41,7 +42,7 @@ public interface GridKernalMBean {
      *
      * @return Copyright statement for GridGain product.
      */
-    @GridMBeanDescription("Copyright statement for GridGain product.")
+    @IgniteMBeanDescription("Copyright statement for GridGain product.")
     public String getCopyright();
 
     /**
@@ -49,7 +50,7 @@ public interface GridKernalMBean {
      *
      * @return String presentation of the kernal start timestamp.
      */
-    @GridMBeanDescription("String presentation of the kernal start timestamp.")
+    @IgniteMBeanDescription("String presentation of the kernal start timestamp.")
     public String getStartTimestampFormatted();
 
     /**
@@ -57,7 +58,7 @@ public interface GridKernalMBean {
      *
      * @return String presentation of up-time for the kernal.
      */
-    @GridMBeanDescription("String presentation of up-time for the kernal.")
+    @IgniteMBeanDescription("String presentation of up-time for the kernal.")
     public String getUpTimeFormatted();
 
     /**
@@ -65,7 +66,7 @@ public interface GridKernalMBean {
      *
      * @return Start timestamp of the kernal.
      */
-    @GridMBeanDescription("Start timestamp of the kernal.")
+    @IgniteMBeanDescription("Start timestamp of the kernal.")
     public long getStartTimestamp();
 
     /**
@@ -73,7 +74,7 @@ public interface GridKernalMBean {
      *
      * @return Up-time of the kernal.
      */
-    @GridMBeanDescription("Up-time of the kernal.")
+    @IgniteMBeanDescription("Up-time of the kernal.")
     public long getUpTime();
 
     /**
@@ -85,7 +86,7 @@ public interface GridKernalMBean {
      *
      * @return User defined attributes for this node.
      */
-    @GridMBeanDescription("Collection of formatted user-defined attributes added to this node.")
+    @IgniteMBeanDescription("Collection of formatted user-defined attributes added to this node.")
     public Collection<String> getUserAttributesFormatted();
 
     /**
@@ -93,7 +94,7 @@ public interface GridKernalMBean {
      *
      * @return Logger that is used in grid.
      */
-    @GridMBeanDescription("Formatted instance of logger that is in grid.")
+    @IgniteMBeanDescription("Formatted instance of logger that is in grid.")
     public String getGridLoggerFormatted();
 
     /**
@@ -101,7 +102,7 @@ public interface GridKernalMBean {
      *
      * @return Thread pool implementation that is used in grid.
      */
-    @GridMBeanDescription("Formatted instance of fully configured thread pool that is used in grid.")
+    @IgniteMBeanDescription("Formatted instance of fully configured thread pool that is used in grid.")
     public String getExecutorServiceFormatted();
 
     /**
@@ -109,7 +110,7 @@ public interface GridKernalMBean {
      *
      * @return GridGain installation home.
      */
-    @GridMBeanDescription("GridGain installation home folder.")
+    @IgniteMBeanDescription("GridGain installation home folder.")
     public String getGridGainHome();
 
     /**
@@ -117,7 +118,7 @@ public interface GridKernalMBean {
      *
      * @return MBean server instance.
      */
-    @GridMBeanDescription("Formatted instance of MBean server instance.")
+    @IgniteMBeanDescription("Formatted instance of MBean server instance.")
     public String getMBeanServerFormatted();
 
     /**
@@ -125,7 +126,7 @@ public interface GridKernalMBean {
      *
      * @return Unique identifier for this node within grid.
      */
-    @GridMBeanDescription("Unique identifier for this node within grid.")
+    @IgniteMBeanDescription("Unique identifier for this node within grid.")
     public UUID getLocalNodeId();
 
     /**
@@ -140,7 +141,7 @@ public interface GridKernalMBean {
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.
      */
-    @GridMBeanDescription("Whether or not peer class loading (a.k.a. P2P class loading) is enabled.")
+    @IgniteMBeanDescription("Whether or not peer class loading (a.k.a. P2P class loading) is enabled.")
     public boolean isPeerClassLoadingEnabled();
 
     /**
@@ -150,7 +151,7 @@ public interface GridKernalMBean {
      * @return {@code toString()} representation of all lifecycle beans configured
      *      with GridGain.
      */
-    @GridMBeanDescription("String representation of lifecycle beans.")
+    @IgniteMBeanDescription("String representation of lifecycle beans.")
     public Collection<String> getLifecycleBeansFormatted();
 
     /**
@@ -160,7 +161,7 @@ public interface GridKernalMBean {
      * @return {@code true} if specified checkpoint was indeed removed, {@code false}
      *      otherwise.
      */
-    @GridMBeanDescription("This method allows manually remove the checkpoint with given key. Return true " +
+    @IgniteMBeanDescription("This method allows manually remove the checkpoint with given key. Return true " +
         "if specified checkpoint was indeed removed, false otherwise.")
     @GridMBeanParametersNames(
         "key"
@@ -177,7 +178,7 @@ public interface GridKernalMBean {
      *      details on string formatting.
      * @return Whether or not node is alive.
      */
-    @GridMBeanDescription("Pings node with given node ID to see whether it is alive. " +
+    @IgniteMBeanDescription("Pings node with given node ID to see whether it is alive. " +
         "Returns whether or not node is alive.")
     @GridMBeanParametersNames(
         "nodeId"
@@ -201,7 +202,7 @@ public interface GridKernalMBean {
      *      class name should be used as task's name.
      * @throws JMException Thrown if undeploy failed.
      */
-    @GridMBeanDescription("Makes the best attempt to undeploy a task from the whole grid.")
+    @IgniteMBeanDescription("Makes the best attempt to undeploy a task from the whole grid.")
     @GridMBeanParametersNames(
         "taskName"
     )
@@ -219,7 +220,7 @@ public interface GridKernalMBean {
      * @return Task return value (assumed of {@code java.lang.String} type).
      * @throws JMException Thrown in case when execution failed.
      */
-    @GridMBeanDescription("A shortcut method that executes given task assuming single " +
+    @IgniteMBeanDescription("A shortcut method that executes given task assuming single " +
         "String argument and String return type. Returns Task return value (assumed of String type).")
     @GridMBeanParametersNames(
         {
@@ -241,7 +242,7 @@ public interface GridKernalMBean {
      * @param host Host name or IP address of the node to ping.
      * @return Whether or not node is alive.
      */
-    @GridMBeanDescription("Pings node with given host name to see if it is alive. " +
+    @IgniteMBeanDescription("Pings node with given host name to see if it is alive. " +
         "Returns whether or not node is alive.")
     @GridMBeanParametersNames(
         "host"
@@ -256,7 +257,7 @@ public interface GridKernalMBean {
      *
      * @return Grid discovery SPI implementation.
      */
-    @GridMBeanDescription("Formatted instance of configured discovery SPI implementation.")
+    @IgniteMBeanDescription("Formatted instance of configured discovery SPI implementation.")
     public String getDiscoverySpiFormatted();
 
     /**
@@ -264,7 +265,7 @@ public interface GridKernalMBean {
      *
      * @return Grid communication SPI implementation.
      */
-    @GridMBeanDescription("Formatted instance of fully configured SPI communication implementation.")
+    @IgniteMBeanDescription("Formatted instance of fully configured SPI communication implementation.")
     public String getCommunicationSpiFormatted();
 
     /**
@@ -272,7 +273,7 @@ public interface GridKernalMBean {
      *
      * @return Grid deployment SPI implementation.
      */
-    @GridMBeanDescription("Formatted instance of fully configured deployment SPI implementation.")
+    @IgniteMBeanDescription("Formatted instance of fully configured deployment SPI implementation.")
     public String getDeploymentSpiFormatted();
 
     /**
@@ -280,7 +281,7 @@ public interface GridKernalMBean {
      *
      * @return Grid checkpoint SPI implementation.
      */
-    @GridMBeanDescription("Formatted instance of configured checkpoint SPI implementation.")
+    @IgniteMBeanDescription("Formatted instance of configured checkpoint SPI implementation.")
     public String getCheckpointSpiFormatted();
 
     /**
@@ -288,7 +289,7 @@ public interface GridKernalMBean {
      *
      * @return Grid collision SPI implementations.
      */
-    @GridMBeanDescription("Formatted instance of configured collision SPI implementations.")
+    @IgniteMBeanDescription("Formatted instance of configured collision SPI implementations.")
     public String getCollisionSpiFormatted();
 
     /**
@@ -296,7 +297,7 @@ public interface GridKernalMBean {
      *
      * @return Grid swapspace SPI implementations.
      */
-    @GridMBeanDescription("Formatted instance of configured swapspace SPI implementations.")
+    @IgniteMBeanDescription("Formatted instance of configured swapspace SPI implementations.")
     public String getSwapSpaceSpiFormatted();
 
     /**
@@ -304,7 +305,7 @@ public interface GridKernalMBean {
      *
      * @return Grid event SPI implementation.
      */
-    @GridMBeanDescription("Formatted instance of fully configured event SPI implementation.")
+    @IgniteMBeanDescription("Formatted instance of fully configured event SPI implementation.")
     public String getEventStorageSpiFormatted();
 
     /**
@@ -312,7 +313,7 @@ public interface GridKernalMBean {
      *
      * @return Grid failover SPI implementations.
      */
-    @GridMBeanDescription("Formatted instance of fully configured failover SPI implementations.")
+    @IgniteMBeanDescription("Formatted instance of fully configured failover SPI implementations.")
     public String getFailoverSpiFormatted();
 
     /**
@@ -320,7 +321,7 @@ public interface GridKernalMBean {
      *
      * @return Grid load balancing SPI implementations.
      */
-    @GridMBeanDescription("Formatted instance of fully configured load balancing SPI implementations.")
+    @IgniteMBeanDescription("Formatted instance of fully configured load balancing SPI implementations.")
     public String getLoadBalancingSpiFormatted();
 
     /**
@@ -328,7 +329,7 @@ public interface GridKernalMBean {
      *
      * @return Grid authentication SPI implementation.
      */
-    @GridMBeanDescription("Formatted instance of fully configured authentication SPI implementation.")
+    @IgniteMBeanDescription("Formatted instance of fully configured authentication SPI implementation.")
     public String getAuthenticationSpiFormatted();
 
     /**
@@ -336,7 +337,7 @@ public interface GridKernalMBean {
      *
      * @return Grid secure session SPI implementation.
      */
-    @GridMBeanDescription("Formatted instance of fully configured secure session SPI implementation.")
+    @IgniteMBeanDescription("Formatted instance of fully configured secure session SPI implementation.")
     public String getSecureSessionSpiFormatted();
 
     /**
@@ -344,7 +345,7 @@ public interface GridKernalMBean {
      *
      * @return OS information.
      */
-    @GridMBeanDescription("OS information.")
+    @IgniteMBeanDescription("OS information.")
     public String getOsInformation();
 
     /**
@@ -352,7 +353,7 @@ public interface GridKernalMBean {
      *
      * @return JDK information.
      */
-    @GridMBeanDescription("JDK information.")
+    @IgniteMBeanDescription("JDK information.")
     public String getJdkInformation();
 
     /**
@@ -360,7 +361,7 @@ public interface GridKernalMBean {
      *
      * @return OS user name.
      */
-    @GridMBeanDescription("OS user name.")
+    @IgniteMBeanDescription("OS user name.")
     public String getOsUser();
 
     /**
@@ -368,7 +369,7 @@ public interface GridKernalMBean {
      *
      * @return VM name.
      */
-    @GridMBeanDescription("VM name.")
+    @IgniteMBeanDescription("VM name.")
     public String getVmName();
 
     /**
@@ -376,6 +377,6 @@ public interface GridKernalMBean {
      *
      * @return Optional kernal instance name.
      */
-    @GridMBeanDescription("Optional kernal instance name.")
+    @IgniteMBeanDescription("Optional kernal instance name.")
     public String getInstanceName();
 }

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.spi.failover.jobstealing;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridJobStealingFailoverSpi}.
  */
-@GridMBeanDescription("MBean that provides access to job stealing failover SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to job stealing failover SPI configuration.")
 public interface GridJobStealingFailoverSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
@@ -25,7 +25,7 @@ public interface GridJobStealingFailoverSpiMBean extends GridSpiManagementMBean 
      *
      * @return Maximum number of attempts to execute a failed job on another node.
      */
-    @GridMBeanDescription("Maximum number of attempts to execute a failed job on another node.")
+    @IgniteMBeanDescription("Maximum number of attempts to execute a failed job on another node.")
     public int getMaximumFailoverAttempts();
 
     /**
@@ -33,7 +33,7 @@ public interface GridJobStealingFailoverSpiMBean extends GridSpiManagementMBean 
      *
      * @return Total number of failed over jobs.
      */
-    @GridMBeanDescription("Total number of jobs that were failed over including stolen ones.")
+    @IgniteMBeanDescription("Total number of jobs that were failed over including stolen ones.")
     public int getTotalFailedOverJobsCount();
 
     /**
@@ -41,6 +41,6 @@ public interface GridJobStealingFailoverSpiMBean extends GridSpiManagementMBean 
      *
      * @return Total number of stolen jobs.
      */
-    @GridMBeanDescription("Total number of jobs that were stolen.")
+    @IgniteMBeanDescription("Total number of jobs that were stolen.")
     public int getTotalStolenJobsCount();
 }

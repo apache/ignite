@@ -9,21 +9,22 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
+
 import java.util.*;
 
 /**
  * Management bean for {@link GridUriDeploymentSpi}.
  */
-@GridMBeanDescription("MBean that provides access to URI deployment SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to URI deployment SPI configuration.")
 public interface GridUriDeploymentSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets temporary directory path.
      *
      * @return Temporary directory path.
      */
-    @GridMBeanDescription("Temporary directory path.")
+    @IgniteMBeanDescription("Temporary directory path.")
     public String getTemporaryDirectoryPath();
 
     /**
@@ -31,7 +32,7 @@ public interface GridUriDeploymentSpiMBean extends GridSpiManagementMBean {
      *
      * @return List of URIs.
      */
-    @GridMBeanDescription("List of URIs.")
+    @IgniteMBeanDescription("List of URIs.")
     public List<String> getUriList();
 
     /**
@@ -39,6 +40,6 @@ public interface GridUriDeploymentSpiMBean extends GridSpiManagementMBean {
      *
      * @return if files are ckecked for redundancy.
      */
-    @GridMBeanDescription("Indicates if MD5 check is enabled.")
+    @IgniteMBeanDescription("Indicates if MD5 check is enabled.")
     public boolean isCheckMd5();
 }

@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.spi.loadbalancing.adaptive;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management MBean for {@link GridAdaptiveLoadBalancingSpi} SPI.
  */
-@GridMBeanDescription("MBean that provides access to adaptive load balancing SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to adaptive load balancing SPI configuration.")
 public interface GridAdaptiveLoadBalancingSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets text description of current load probing implementation used.
      *
      * @return Text description of current load probing implementation used.
      */
-    @GridMBeanDescription("Text description of current load probing implementation used.")
+    @IgniteMBeanDescription("Text description of current load probing implementation used.")
     public String getLoadProbeFormatted();
 }

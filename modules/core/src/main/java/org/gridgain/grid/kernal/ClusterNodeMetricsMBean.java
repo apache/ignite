@@ -10,12 +10,12 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * MBean for local node metrics.
  */
-@GridMBeanDescription("MBean that provides access to all local node metrics.")
+@IgniteMBeanDescription("MBean that provides access to all local node metrics.")
 public interface ClusterNodeMetricsMBean extends ClusterNodeMetrics {
     // No-op.
 }

@@ -9,15 +9,16 @@
 
 package org.gridgain.grid.spi.collision.jobstealing;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
+
 import java.io.*;
 import java.util.*;
 
 /**
  * Management MBean for job stealing based collision SPI.
  */
-@GridMBeanDescription("MBean for job stealing based collision SPI.")
+@IgniteMBeanDescription("MBean for job stealing based collision SPI.")
 public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets current number of jobs to be stolen. This is outstanding
@@ -25,7 +26,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Number of jobs to be stolen.
      */
-    @GridMBeanDescription("Number of jobs to be stolen.")
+    @IgniteMBeanDescription("Number of jobs to be stolen.")
     public int getCurrentJobsToStealNumber();
 
     /**
@@ -33,7 +34,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Number of jobs that wait for execution.
      */
-    @GridMBeanDescription("Number of jobs that wait for execution.")
+    @IgniteMBeanDescription("Number of jobs that wait for execution.")
     public int getCurrentWaitJobsNumber();
 
     /**
@@ -41,7 +42,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Number of active jobs.
      */
-    @GridMBeanDescription("Number of active jobs.")
+    @IgniteMBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
     /*
@@ -49,7 +50,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Number of currently running (not {@code 'held}) jobs.
      */
-    @GridMBeanDescription("Number of running jobs.")
+    @IgniteMBeanDescription("Number of running jobs.")
     public int getCurrentRunningJobsNumber();
 
     /**
@@ -57,7 +58,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Number of currently {@code 'held'} jobs.
      */
-    @GridMBeanDescription("Number of held jobs.")
+    @IgniteMBeanDescription("Number of held jobs.")
     public int getCurrentHeldJobsNumber();
 
     /**
@@ -65,7 +66,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Number of stolen jobs.
      */
-    @GridMBeanDescription("Number of stolen jobs.")
+    @IgniteMBeanDescription("Number of stolen jobs.")
     public int getTotalStolenJobsNumber();
 
     /**
@@ -73,7 +74,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Number of jobs that can be executed in parallel.
      */
-    @GridMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
     public int getActiveJobsThreshold();
 
     /**
@@ -81,7 +82,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @param activeJobsTreshold Number of jobs that can be executed in parallel.
      */
-    @GridMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
     public void setActiveJobsThreshold(int activeJobsTreshold);
 
     /**
@@ -90,7 +91,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Job count threshold.
      */
-    @GridMBeanDescription("Job count threshold.")
+    @IgniteMBeanDescription("Job count threshold.")
     public int getWaitJobsThreshold();
 
     /**
@@ -99,7 +100,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @param waitJobsThreshold Job count threshold.
      */
-    @GridMBeanDescription("Job count threshold.")
+    @IgniteMBeanDescription("Job count threshold.")
     public void setWaitJobsThreshold(int waitJobsThreshold);
 
     /**
@@ -110,7 +111,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Message expire time.
      */
-    @GridMBeanDescription("Message expire time.")
+    @IgniteMBeanDescription("Message expire time.")
     public long getMessageExpireTime();
 
     /**
@@ -121,7 +122,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @param msgExpireTime Message expire time.
      */
-    @GridMBeanDescription("Message expire time.")
+    @IgniteMBeanDescription("Message expire time.")
     public void setMessageExpireTime(long msgExpireTime);
 
     /**
@@ -135,7 +136,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      * @return Flag indicating whether this node should attempt to steal jobs
      *      from other nodes.
      */
-    @GridMBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
+    @IgniteMBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
     public boolean isStealingEnabled();
 
     /**
@@ -149,7 +150,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      * @param stealingEnabled Flag indicating whether this node should attempt to steal jobs
      *      from other nodes.
      */
-    @GridMBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
+    @IgniteMBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
     public void setStealingEnabled(boolean stealingEnabled);
 
     /**
@@ -159,7 +160,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Maximum number of attempts to steal job by another node.
      */
-    @GridMBeanDescription("Maximum number of attempts to steal job by another node.")
+    @IgniteMBeanDescription("Maximum number of attempts to steal job by another node.")
     public int getMaximumStealingAttempts();
 
     /**
@@ -169,7 +170,7 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @param maximumStealingAttempts Maximum number of attempts to steal job by another node.
      */
-    @GridMBeanDescription("Maximum number of attempts to steal job by another node.")
+    @IgniteMBeanDescription("Maximum number of attempts to steal job by another node.")
     public void setMaximumStealingAttempts(int maximumStealingAttempts);
 
     /**
@@ -179,6 +180,6 @@ public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean
      *
      * @return Node attributes to enable job stealing for.
      */
-    @GridMBeanDescription("Node attributes to enable job stealing for.")
+    @IgniteMBeanDescription("Node attributes to enable job stealing for.")
     public Map<String, ? extends Serializable> getStealingAttributes();
 }

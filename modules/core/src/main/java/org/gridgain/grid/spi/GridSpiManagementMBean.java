@@ -9,7 +9,8 @@
 
 package org.gridgain.grid.spi;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
+
 import java.util.*;
 
 /**
@@ -23,7 +24,7 @@ public interface GridSpiManagementMBean {
      *
      * @return String presentation of the start timestamp.
      */
-    @GridMBeanDescription("String presentation of the start timestamp.")
+    @IgniteMBeanDescription("String presentation of the start timestamp.")
     public String getStartTimestampFormatted();
 
     /**
@@ -31,7 +32,7 @@ public interface GridSpiManagementMBean {
      *
      * @return String presentation of up-time for this SPI.
      */
-    @GridMBeanDescription("String presentation of up-time for this SPI.")
+    @IgniteMBeanDescription("String presentation of up-time for this SPI.")
     public String getUpTimeFormatted();
 
     /**
@@ -39,7 +40,7 @@ public interface GridSpiManagementMBean {
      *
      * @return Start timestamp of this SPI.
      */
-    @GridMBeanDescription("Start timestamp of this SPI.")
+    @IgniteMBeanDescription("Start timestamp of this SPI.")
     public long getStartTimestamp();
 
     /**
@@ -47,7 +48,7 @@ public interface GridSpiManagementMBean {
      *
      * @return Up-time of this SPI.
      */
-    @GridMBeanDescription("Up-time of this SPI in milliseconds.")
+    @IgniteMBeanDescription("Up-time of this SPI in milliseconds.")
     public long getUpTime();
 
     /**
@@ -55,7 +56,7 @@ public interface GridSpiManagementMBean {
      *
      * @return Gridgain installation home folder.
      */
-    @GridMBeanDescription("Gridgain installation home folder.")
+    @IgniteMBeanDescription("Gridgain installation home folder.")
     public String getGridGainHome();
 
     /**
@@ -63,7 +64,7 @@ public interface GridSpiManagementMBean {
      *
      * @return ID of the local node.
      */
-    @GridMBeanDescription("ID of the local node.")
+    @IgniteMBeanDescription("ID of the local node.")
     public UUID getLocalNodeId();
 
     /**
@@ -71,6 +72,6 @@ public interface GridSpiManagementMBean {
      *
      * @return Name of the SPI.
      */
-    @GridMBeanDescription("Name of the SPI.")
+    @IgniteMBeanDescription("Name of the SPI.")
     public String getName();
 }

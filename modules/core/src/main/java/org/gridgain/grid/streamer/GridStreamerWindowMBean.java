@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.streamer;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * Streamer window MBean.
  */
-@GridMBeanDescription("MBean that provides access to streamer window description.")
+@IgniteMBeanDescription("MBean that provides access to streamer window description.")
 public interface GridStreamerWindowMBean {
     /**
      * Gets window name.
      *
      * @return Window name.
      */
-    @GridMBeanDescription("Window name.")
+    @IgniteMBeanDescription("Window name.")
     public String getName();
 
     /**
@@ -29,7 +29,7 @@ public interface GridStreamerWindowMBean {
      *
      * @return Window class name.
      */
-    @GridMBeanDescription("Window class name.")
+    @IgniteMBeanDescription("Window class name.")
     public String getClassName();
 
     /**
@@ -37,7 +37,7 @@ public interface GridStreamerWindowMBean {
      *
      * @return Current window size.
      */
-    @GridMBeanDescription("Window size.")
+    @IgniteMBeanDescription("Window size.")
     public int getSize();
 
     /**
@@ -45,6 +45,6 @@ public interface GridStreamerWindowMBean {
      *
      * @return Eviction queue size estimate.
      */
-    @GridMBeanDescription("Eviction queue size estimate.")
+    @IgniteMBeanDescription("Eviction queue size estimate.")
     public int getEvictionQueueSize();
 }

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.streamer.index;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -21,7 +21,7 @@ public interface GridStreamerIndexProviderMBean {
      *
      * @return Index name.
      */
-    @GridMBeanDescription("Index name.")
+    @IgniteMBeanDescription("Index name.")
     @Nullable public String name();
 
     /**
@@ -29,7 +29,7 @@ public interface GridStreamerIndexProviderMBean {
      *
      * @return Index updater class.
      */
-    @GridMBeanDescription("Index updater class name.")
+    @IgniteMBeanDescription("Index updater class name.")
     public String updaterClass();
 
     /**
@@ -37,7 +37,7 @@ public interface GridStreamerIndexProviderMBean {
      *
      * @return Index unique flag.
      */
-    @GridMBeanDescription("Index unique flag.")
+    @IgniteMBeanDescription("Index unique flag.")
     public boolean unique();
 
     /**
@@ -45,7 +45,7 @@ public interface GridStreamerIndexProviderMBean {
      *
      * @return Index sorted flag.
      */
-    @GridMBeanDescription("Index sorted flag.")
+    @IgniteMBeanDescription("Index sorted flag.")
     public boolean sorted();
 
     /**
@@ -53,7 +53,7 @@ public interface GridStreamerIndexProviderMBean {
      *
      * @return Index policy.
      */
-    @GridMBeanDescription("Index policy.")
+    @IgniteMBeanDescription("Index policy.")
     public GridStreamerIndexPolicy policy();
 
     /**
@@ -61,6 +61,6 @@ public interface GridStreamerIndexProviderMBean {
      *
      * @return Current index size.
      */
-    @GridMBeanDescription("Current index size.")
+    @IgniteMBeanDescription("Current index size.")
     public int size();
 }

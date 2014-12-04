@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.streamer;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * Streamer stage MBean.
  */
-@GridMBeanDescription("MBean that provides access to streamer stage description and metrics.")
+@IgniteMBeanDescription("MBean that provides access to streamer stage description and metrics.")
 public interface GridStreamerStageMBean {
     /**
      * Gets stage name.
      *
      * @return Stage name.
      */
-    @GridMBeanDescription("Stage name.")
+    @IgniteMBeanDescription("Stage name.")
     public String getName();
 
     /**
@@ -29,7 +29,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage class name.
      */
-    @GridMBeanDescription("Stage class name.")
+    @IgniteMBeanDescription("Stage class name.")
     public String getStageClassName();
 
     /**
@@ -37,7 +37,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage minimum execution time.
      */
-    @GridMBeanDescription("Stage minimum execution time.")
+    @IgniteMBeanDescription("Stage minimum execution time.")
     public long getMinimumExecutionTime();
 
     /**
@@ -45,7 +45,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage maximum execution time.
      */
-    @GridMBeanDescription("Stage maximum execution time.")
+    @IgniteMBeanDescription("Stage maximum execution time.")
     public long getMaximumExecutionTime();
 
     /**
@@ -53,7 +53,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage average execution time.
      */
-    @GridMBeanDescription("Stage average execution time.")
+    @IgniteMBeanDescription("Stage average execution time.")
     public long getAverageExecutionTime();
 
     /**
@@ -61,7 +61,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage minimum waiting time.
      */
-    @GridMBeanDescription("Stage minimum waiting time.")
+    @IgniteMBeanDescription("Stage minimum waiting time.")
     public long getMinimumWaitingTime();
 
     /**
@@ -69,7 +69,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage maximum waiting time.
      */
-    @GridMBeanDescription("Stage maximum waiting time.")
+    @IgniteMBeanDescription("Stage maximum waiting time.")
     public long getMaximumWaitingTime();
 
     /**
@@ -77,7 +77,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage average waiting time.
      */
-    @GridMBeanDescription("Stage average waiting time.")
+    @IgniteMBeanDescription("Stage average waiting time.")
     public long getAverageWaitingTime();
 
     /**
@@ -85,7 +85,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Number of times this stage was executed.
      */
-    @GridMBeanDescription("Number of times this stage was executed.")
+    @IgniteMBeanDescription("Number of times this stage was executed.")
     public long getTotalExecutionCount();
 
     /**
@@ -93,7 +93,7 @@ public interface GridStreamerStageMBean {
      *
      * @return Stage failure count.
      */
-    @GridMBeanDescription("Stage failure count.")
+    @IgniteMBeanDescription("Stage failure count.")
     public int getFailuresCount();
 
     /**
@@ -101,6 +101,6 @@ public interface GridStreamerStageMBean {
      *
      * @return {@code True} if stage is executing now.
      */
-    @GridMBeanDescription("Whether stage is currently being executed.")
+    @IgniteMBeanDescription("Whether stage is currently being executed.")
     public boolean isExecuting();
 }

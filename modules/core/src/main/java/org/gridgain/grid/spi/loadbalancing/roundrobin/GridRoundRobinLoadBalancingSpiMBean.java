@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.spi.loadbalancing.roundrobin;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridRoundRobinLoadBalancingSpi} SPI.
  */
-@GridMBeanDescription("MBean that provides access to round robin load balancing SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to round robin load balancing SPI configuration.")
 public interface GridRoundRobinLoadBalancingSpiMBean extends GridSpiManagementMBean {
     /**
      * Configuration parameter indicating whether a new round robin order should be
@@ -32,6 +32,6 @@ public interface GridRoundRobinLoadBalancingSpiMBean extends GridSpiManagementMB
      * @return Configuration parameter indicating whether a new round robin order should
      *      be created for every task. Default is {@code true}.
      */
-    @GridMBeanDescription("Configuration parameter indicating whether a new round robin order should be created for every task.")
+    @IgniteMBeanDescription("Configuration parameter indicating whether a new round robin order should be created for every task.")
     public boolean isPerTask();
 }

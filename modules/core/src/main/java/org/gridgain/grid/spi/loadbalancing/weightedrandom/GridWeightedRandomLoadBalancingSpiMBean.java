@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.spi.loadbalancing.weightedrandom;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management MBean for {@link GridWeightedRandomLoadBalancingSpi} SPI.
  */
-@GridMBeanDescription("MBean that provides access to weighted random load balancing SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to weighted random load balancing SPI configuration.")
 public interface GridWeightedRandomLoadBalancingSpiMBean extends GridSpiManagementMBean {
     /**
      * Checks whether node weights are considered when doing
@@ -24,7 +24,7 @@ public interface GridWeightedRandomLoadBalancingSpiMBean extends GridSpiManageme
      * @return If {@code true} then random load is distributed according
      *      to node weights.
      */
-    @GridMBeanDescription("Whether node weights are considered when doing random load balancing.")
+    @IgniteMBeanDescription("Whether node weights are considered when doing random load balancing.")
     public boolean isUseWeights();
 
     /**
@@ -32,6 +32,6 @@ public interface GridWeightedRandomLoadBalancingSpiMBean extends GridSpiManageme
      *
      * @return Weight of this node.
      */
-    @GridMBeanDescription("Weight of this node.")
+    @IgniteMBeanDescription("Weight of this node.")
     public int getNodeWeight();
 }

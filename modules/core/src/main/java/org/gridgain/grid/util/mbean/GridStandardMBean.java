@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.mbean;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import javax.management.*;
 import java.lang.reflect.*;
@@ -72,7 +73,7 @@ public class GridStandardMBean extends StandardMBean {
             Method mtd = findMethod(getMBeanInterface(), methodName, new Class[]{});
 
             if (mtd != null) {
-                GridMBeanDescription desc = mtd.getAnnotation(GridMBeanDescription.class);
+                IgniteMBeanDescription desc = mtd.getAnnotation(IgniteMBeanDescription.class);
 
                 if (desc != null) {
                     str = desc.value();
@@ -100,7 +101,7 @@ public class GridStandardMBean extends StandardMBean {
         String str = super.getDescription(info);
 
         // Return either default one or given by annotation.
-        GridMBeanDescription desc = U.getAnnotation(getMBeanInterface(), GridMBeanDescription.class);
+        IgniteMBeanDescription desc = U.getAnnotation(getMBeanInterface(), IgniteMBeanDescription.class);
 
         if (desc != null) {
             str = desc.value();
@@ -123,7 +124,7 @@ public class GridStandardMBean extends StandardMBean {
         try {
             Method m = getMethod(info);
 
-            GridMBeanDescription desc = m.getAnnotation(GridMBeanDescription.class);
+            IgniteMBeanDescription desc = m.getAnnotation(IgniteMBeanDescription.class);
 
             if (desc != null) {
                 str = desc.value();

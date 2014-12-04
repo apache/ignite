@@ -9,19 +9,19 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * MBean that provides access to information about executor service.
  */
-@GridMBeanDescription("MBean that provides access to information about executor service.")
+@IgniteMBeanDescription("MBean that provides access to information about executor service.")
 public interface GridExecutorServiceMBean {
     /**
      * Returns the approximate number of threads that are actively executing tasks.
      *
      * @return The number of threads.
      */
-    @GridMBeanDescription("Approximate number of threads that are actively executing tasks.")
+    @IgniteMBeanDescription("Approximate number of threads that are actively executing tasks.")
     public int getActiveCount();
 
     /**
@@ -32,7 +32,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return The number of tasks.
      */
-    @GridMBeanDescription("Approximate total number of tasks that have completed execution.")
+    @IgniteMBeanDescription("Approximate total number of tasks that have completed execution.")
     public long getCompletedTaskCount();
 
     /**
@@ -40,7 +40,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return The core number of threads.
      */
-    @GridMBeanDescription("The core number of threads.")
+    @IgniteMBeanDescription("The core number of threads.")
     public int getCorePoolSize();
 
     /**
@@ -49,7 +49,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return The number of threads.
      */
-    @GridMBeanDescription("Largest number of threads that have ever simultaneously been in the pool.")
+    @IgniteMBeanDescription("Largest number of threads that have ever simultaneously been in the pool.")
     public int getLargestPoolSize();
 
     /**
@@ -57,7 +57,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return The maximum allowed number of threads.
      */
-    @GridMBeanDescription("The maximum allowed number of threads.")
+    @IgniteMBeanDescription("The maximum allowed number of threads.")
     public int getMaximumPoolSize();
 
     /**
@@ -65,7 +65,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return The number of threads.
      */
-    @GridMBeanDescription("Current number of threads in the pool.")
+    @IgniteMBeanDescription("Current number of threads in the pool.")
     public int getPoolSize();
 
     /**
@@ -76,7 +76,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return The number of tasks.
      */
-    @GridMBeanDescription("Approximate total number of tasks that have been scheduled for execution.")
+    @IgniteMBeanDescription("Approximate total number of tasks that have been scheduled for execution.")
     public long getTaskCount();
 
     /**
@@ -85,7 +85,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return Current size of the execution queue.
      */
-    @GridMBeanDescription("Current size of the execution queue.")
+    @IgniteMBeanDescription("Current size of the execution queue.")
     public int getQueueSize();
 
     /**
@@ -94,7 +94,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return Keep alive time.
      */
-    @GridMBeanDescription("Thread keep-alive time, which is the amount of time which threads in excess of " +
+    @IgniteMBeanDescription("Thread keep-alive time, which is the amount of time which threads in excess of " +
         "the core pool size may remain idle before being terminated.")
     public long getKeepAliveTime();
 
@@ -103,7 +103,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return {@code True} if this executor has been shut down.
      */
-    @GridMBeanDescription("True if this executor has been shut down.")
+    @IgniteMBeanDescription("True if this executor has been shut down.")
     public boolean isShutdown();
 
     /**
@@ -113,7 +113,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return {@code True} if all tasks have completed following shut down.
      */
-    @GridMBeanDescription("True if all tasks have completed following shut down.")
+    @IgniteMBeanDescription("True if all tasks have completed following shut down.")
     public boolean isTerminated();
 
     /**
@@ -125,7 +125,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return {@code True} if terminating but not yet terminated.
      */
-    @GridMBeanDescription("True if terminating but not yet terminated.")
+    @IgniteMBeanDescription("True if terminating but not yet terminated.")
     public boolean isTerminating();
 
     /**
@@ -133,7 +133,7 @@ public interface GridExecutorServiceMBean {
      *
      * @return Class name of current rejection handler.
      */
-    @GridMBeanDescription("Class name of current rejection handler.")
+    @IgniteMBeanDescription("Class name of current rejection handler.")
     public String getRejectedExecutionHandlerClass();
 
     /**
@@ -141,6 +141,6 @@ public interface GridExecutorServiceMBean {
      *
      * @return Class name of thread factory used to create new threads.
      */
-    @GridMBeanDescription("Class name of thread factory used to create new threads.")
+    @IgniteMBeanDescription("Class name of thread factory used to create new threads.")
     public String getThreadFactoryClass();
 }

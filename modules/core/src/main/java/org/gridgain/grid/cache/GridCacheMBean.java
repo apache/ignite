@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * This interface defines JMX view on {@link GridCache}.
  */
-@GridMBeanDescription("MBean that provides access to cache descriptor.")
+@IgniteMBeanDescription("MBean that provides access to cache descriptor.")
 public interface GridCacheMBean {
     /**
      * Gets name of this cache.
      *
      * @return Cache name.
      */
-    @GridMBeanDescription("Cache name.")
+    @IgniteMBeanDescription("Cache name.")
     public String name();
 
     /**
@@ -29,7 +29,7 @@ public interface GridCacheMBean {
      *
      * @return Cache metrics.
      */
-    @GridMBeanDescription("Formatted cache metrics.")
+    @IgniteMBeanDescription("Formatted cache metrics.")
     public String metricsFormatted();
 
     /**
@@ -37,7 +37,7 @@ public interface GridCacheMBean {
      *
      * @return Number of entries that was swapped to disk.
      */
-    @GridMBeanDescription("Number of entries that was swapped to disk.")
+    @IgniteMBeanDescription("Number of entries that was swapped to disk.")
     public long getOverflowSize();
 
     /**
@@ -45,7 +45,7 @@ public interface GridCacheMBean {
      *
      * @return Number of entries stored in off-heap memory.
      */
-    @GridMBeanDescription("Number of entries stored in off-heap memory.")
+    @IgniteMBeanDescription("Number of entries stored in off-heap memory.")
     public long getOffHeapEntriesCount();
 
     /**
@@ -53,7 +53,7 @@ public interface GridCacheMBean {
      *
      * @return Memory size allocated in off-heap.
      */
-    @GridMBeanDescription("Memory size allocated in off-heap.")
+    @IgniteMBeanDescription("Memory size allocated in off-heap.")
     public long getOffHeapAllocatedSize();
 
     /**
@@ -61,7 +61,7 @@ public interface GridCacheMBean {
      *
      * @return Number of non-{@code null} values in the cache.
      */
-    @GridMBeanDescription("Number of non-null values in the cache.")
+    @IgniteMBeanDescription("Number of non-null values in the cache.")
     public int getSize();
 
     /**
@@ -69,7 +69,7 @@ public interface GridCacheMBean {
      *
      * @return Number of keys in the cache.
      */
-    @GridMBeanDescription("Number of keys in the cache (possibly with null values).")
+    @IgniteMBeanDescription("Number of keys in the cache (possibly with null values).")
     public int getKeySize();
 
     /**
@@ -77,7 +77,7 @@ public interface GridCacheMBean {
      *
      * @return {@code true} if this cache is empty.
      */
-    @GridMBeanDescription("True if cache is empty.")
+    @IgniteMBeanDescription("True if cache is empty.")
     public boolean isEmpty();
 
     /**
@@ -85,7 +85,7 @@ public interface GridCacheMBean {
      *
      * @return Current size of evict queue.
      */
-    @GridMBeanDescription("Current size of evict queue.")
+    @IgniteMBeanDescription("Current size of evict queue.")
     public int getDhtEvictQueueCurrentSize();
 
     /**
@@ -93,7 +93,7 @@ public interface GridCacheMBean {
      *
      * @return Thread map size.
      */
-    @GridMBeanDescription("Transaction per-thread map size.")
+    @IgniteMBeanDescription("Transaction per-thread map size.")
     public int getTxThreadMapSize();
 
     /**
@@ -101,7 +101,7 @@ public interface GridCacheMBean {
      *
      * @return Transaction per-Xid map size.
      */
-    @GridMBeanDescription("Transaction per-Xid map size.")
+    @IgniteMBeanDescription("Transaction per-Xid map size.")
     public int getTxXidMapSize();
 
     /**
@@ -109,7 +109,7 @@ public interface GridCacheMBean {
      *
      * @return Committed transaction queue size.
      */
-    @GridMBeanDescription("Transaction committed queue size.")
+    @IgniteMBeanDescription("Transaction committed queue size.")
     public int getTxCommitQueueSize();
 
     /**
@@ -117,7 +117,7 @@ public interface GridCacheMBean {
      *
      * @return Prepared transaction queue size.
      */
-    @GridMBeanDescription("Transaction prepared queue size.")
+    @IgniteMBeanDescription("Transaction prepared queue size.")
     public int getTxPrepareQueueSize();
 
     /**
@@ -125,7 +125,7 @@ public interface GridCacheMBean {
      *
      * @return Start version counts map size.
      */
-    @GridMBeanDescription("Transaction start version counts map size.")
+    @IgniteMBeanDescription("Transaction start version counts map size.")
     public int getTxStartVersionCountsSize();
 
     /**
@@ -133,7 +133,7 @@ public interface GridCacheMBean {
      *
      * @return Number of cached committed transaction IDs.
      */
-    @GridMBeanDescription("Transaction committed ID map size.")
+    @IgniteMBeanDescription("Transaction committed ID map size.")
     public int getTxCommittedVersionsSize();
 
     /**
@@ -141,7 +141,7 @@ public interface GridCacheMBean {
      *
      * @return Number of cached rolled back transaction IDs.
      */
-    @GridMBeanDescription("Transaction rolled back ID map size.")
+    @IgniteMBeanDescription("Transaction rolled back ID map size.")
     public int getTxRolledbackVersionsSize();
 
     /**
@@ -149,7 +149,7 @@ public interface GridCacheMBean {
      *
      * @return DHT thread map size.
      */
-    @GridMBeanDescription("Transaction DHT per-thread map size.")
+    @IgniteMBeanDescription("Transaction DHT per-thread map size.")
     public int getTxDhtThreadMapSize();
 
     /**
@@ -157,7 +157,7 @@ public interface GridCacheMBean {
      *
      * @return Transaction DHT per-Xid map size.
      */
-    @GridMBeanDescription("Transaction DHT per-Xid map size.")
+    @IgniteMBeanDescription("Transaction DHT per-Xid map size.")
     public int getTxDhtXidMapSize();
 
     /**
@@ -165,7 +165,7 @@ public interface GridCacheMBean {
      *
      * @return Committed DHT transaction queue size.
      */
-    @GridMBeanDescription("Transaction DHT committed queue size.")
+    @IgniteMBeanDescription("Transaction DHT committed queue size.")
     public int getTxDhtCommitQueueSize();
 
     /**
@@ -173,7 +173,7 @@ public interface GridCacheMBean {
      *
      * @return Prepared DHT transaction queue size.
      */
-    @GridMBeanDescription("Transaction DHT prepared queue size.")
+    @IgniteMBeanDescription("Transaction DHT prepared queue size.")
     public int getTxDhtPrepareQueueSize();
 
     /**
@@ -181,7 +181,7 @@ public interface GridCacheMBean {
      *
      * @return DHT start version counts map size.
      */
-    @GridMBeanDescription("Transaction DHT start version counts map size.")
+    @IgniteMBeanDescription("Transaction DHT start version counts map size.")
     public int getTxDhtStartVersionCountsSize();
 
     /**
@@ -189,7 +189,7 @@ public interface GridCacheMBean {
      *
      * @return Number of cached committed DHT transaction IDs.
      */
-    @GridMBeanDescription("Transaction DHT committed ID map size.")
+    @IgniteMBeanDescription("Transaction DHT committed ID map size.")
     public int getTxDhtCommittedVersionsSize();
 
     /**
@@ -197,7 +197,7 @@ public interface GridCacheMBean {
      *
      * @return Number of cached rolled back DHT transaction IDs.
      */
-    @GridMBeanDescription("Transaction DHT rolled back ID map size.")
+    @IgniteMBeanDescription("Transaction DHT rolled back ID map size.")
     public int getTxDhtRolledbackVersionsSize();
 
     /**
@@ -205,7 +205,7 @@ public interface GridCacheMBean {
      *
      * @return {@code True} if write-behind is enabled.
      */
-    @GridMBeanDescription("True if write-behind is enabled for this cache.")
+    @IgniteMBeanDescription("True if write-behind is enabled for this cache.")
     public boolean isWriteBehindEnabled();
 
     /**
@@ -218,7 +218,7 @@ public interface GridCacheMBean {
      *
      * @return Buffer size that triggers flush procedure.
      */
-    @GridMBeanDescription("Size of internal buffer that triggers flush procedure.")
+    @IgniteMBeanDescription("Size of internal buffer that triggers flush procedure.")
     public int getWriteBehindFlushSize();
 
     /**
@@ -226,7 +226,7 @@ public interface GridCacheMBean {
      *
      * @return Count of worker threads.
      */
-    @GridMBeanDescription("Count of flush threads.")
+    @IgniteMBeanDescription("Count of flush threads.")
     public int getWriteBehindFlushThreadCount();
 
     /**
@@ -237,7 +237,7 @@ public interface GridCacheMBean {
      *
      * @return Flush frequency in milliseconds.
      */
-    @GridMBeanDescription("Flush frequency interval in milliseconds.")
+    @IgniteMBeanDescription("Flush frequency interval in milliseconds.")
     public long getWriteBehindFlushFrequency();
 
     /**
@@ -245,7 +245,7 @@ public interface GridCacheMBean {
      *
      * @return Maximum size of batch.
      */
-    @GridMBeanDescription("Maximum size of batch for similar operations.")
+    @IgniteMBeanDescription("Maximum size of batch for similar operations.")
     public int getWriteBehindStoreBatchSize();
 
     /**
@@ -254,7 +254,7 @@ public interface GridCacheMBean {
      *
      * @return Count of cache overflow events since start.
      */
-    @GridMBeanDescription("Count of cache overflow events since write-behind cache has started.")
+    @IgniteMBeanDescription("Count of cache overflow events since write-behind cache has started.")
     public int getWriteBehindTotalCriticalOverflowCount();
 
     /**
@@ -263,7 +263,7 @@ public interface GridCacheMBean {
      *
      * @return Count of cache overflow events since start.
      */
-    @GridMBeanDescription("Count of cache overflow events since write-behind cache has started.")
+    @IgniteMBeanDescription("Count of cache overflow events since write-behind cache has started.")
     public int getWriteBehindCriticalOverflowCount();
 
     /**
@@ -273,7 +273,7 @@ public interface GridCacheMBean {
      *
      * @return Count of entries in store-retry state.
      */
-    @GridMBeanDescription("Count of cache cache entries that are currently in retry state.")
+    @IgniteMBeanDescription("Count of cache cache entries that are currently in retry state.")
     public int getWriteBehindErrorRetryCount();
 
     /**
@@ -282,6 +282,6 @@ public interface GridCacheMBean {
      *
      * @return Total count of entries in cache store internal buffer.
      */
-    @GridMBeanDescription("Count of cache entries that are waiting to be flushed.")
+    @IgniteMBeanDescription("Count of cache entries that are waiting to be flushed.")
     public int getWriteBehindBufferSize();
 }

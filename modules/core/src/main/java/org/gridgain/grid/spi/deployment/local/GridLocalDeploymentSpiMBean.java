@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.spi.deployment.local;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management MBean for {@link GridLocalDeploymentSpi} SPI.
  */
-@GridMBeanDescription("MBean that provides access to local deployment SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to local deployment SPI configuration.")
 public interface GridLocalDeploymentSpiMBean extends GridSpiManagementMBean {
     // No-op.
 }

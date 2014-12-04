@@ -9,20 +9,20 @@
 
 package org.gridgain.grid.spi.collision.priorityqueue;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean that provides access to the priority queue collision SPI configuration.
  */
-@GridMBeanDescription("MBean provides access to the priority queue collision SPI.")
+@IgniteMBeanDescription("MBean provides access to the priority queue collision SPI.")
 public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets current number of jobs that wait for the execution.
      *
      * @return Number of jobs that wait for execution.
      */
-    @GridMBeanDescription("Number of jobs that wait for execution.")
+    @IgniteMBeanDescription("Number of jobs that wait for execution.")
     public int getCurrentWaitJobsNumber();
 
     /**
@@ -30,7 +30,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Number of active jobs.
      */
-    @GridMBeanDescription("Number of active jobs.")
+    @IgniteMBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
     /*
@@ -38,7 +38,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Number of currently running (not {@code 'held}) jobs.
      */
-    @GridMBeanDescription("Number of running jobs.")
+    @IgniteMBeanDescription("Number of running jobs.")
     public int getCurrentRunningJobsNumber();
 
     /**
@@ -46,7 +46,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Number of currently {@code 'held'} jobs.
      */
-    @GridMBeanDescription("Number of held jobs.")
+    @IgniteMBeanDescription("Number of held jobs.")
     public int getCurrentHeldJobsNumber();
 
     /**
@@ -54,7 +54,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Number of jobs that can be executed in parallel.
      */
-    @GridMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
     public int getParallelJobsNumber();
 
     /**
@@ -62,7 +62,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @param num Parallel jobs number.
      */
-    @GridMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
     public void setParallelJobsNumber(int num);
 
     /**
@@ -71,7 +71,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Maximum allowed number of waiting jobs.
      */
-    @GridMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
     public int getWaitingJobsNumber();
 
     /**
@@ -80,7 +80,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @param num Maximium jobs number.
      */
-    @GridMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
     public void setWaitingJobsNumber(int num);
 
     /**
@@ -88,7 +88,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Key name of task priority attribute.
      */
-    @GridMBeanDescription("Key name of task priority attribute.")
+    @IgniteMBeanDescription("Key name of task priority attribute.")
     public String getPriorityAttributeKey();
 
     /**
@@ -96,7 +96,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Key name of job priority attribute.
      */
-    @GridMBeanDescription("Key name of job priority attribute.")
+    @IgniteMBeanDescription("Key name of job priority attribute.")
     public String getJobPriorityAttributeKey();
 
     /**
@@ -106,7 +106,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      * @return Default priority to use if a task does not have priority
      *      attribute set.
      */
-    @GridMBeanDescription("Default priority to use if a task does not have priority attribute set.")
+    @IgniteMBeanDescription("Default priority to use if a task does not have priority attribute set.")
     public int getDefaultPriority();
 
     /**
@@ -114,7 +114,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @param priority default priority.
      */
-    @GridMBeanDescription("Default priority to use if a task does not have priority attribute set.")
+    @IgniteMBeanDescription("Default priority to use if a task does not have priority attribute set.")
     public void setDefaultPriority(int priority);
 
     /**
@@ -124,7 +124,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      * @return Value to increment job priority by every time a lower priority job gets
      *      behind a higher priority job.
      */
-    @GridMBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
+    @IgniteMBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
     public int getStarvationIncrement();
 
     /**
@@ -133,7 +133,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @param increment Increment value.
      */
-    @GridMBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
+    @IgniteMBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
     public void setStarvationIncrement(int increment);
 
     /**
@@ -141,7 +141,7 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @return Flag indicating whether job starvation prevention is enabled.
      */
-    @GridMBeanDescription("Flag indicating whether job starvation prevention is enabled.")
+    @IgniteMBeanDescription("Flag indicating whether job starvation prevention is enabled.")
     public boolean isStarvationPreventionEnabled();
 
     /**
@@ -149,6 +149,6 @@ public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBe
      *
      * @param preventStarvation Flag indicating whether job starvation prevention is enabled.
      */
-    @GridMBeanDescription("Flag indicating whether job starvation prevention is enabled.")
+    @IgniteMBeanDescription("Flag indicating whether job starvation prevention is enabled.")
     public void setStarvationPreventionEnabled(boolean preventStarvation);
 }

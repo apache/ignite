@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.dr.hub.sender;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * This interface defines JMX view on data center replication sender hub.
  */
-@GridMBeanDescription("MBean that provides access to sender hub descriptor.")
+@IgniteMBeanDescription("MBean that provides access to sender hub descriptor.")
 public interface GridDrSenderHubMBean {
     /**
      * Gets metrics (statistics) for this sender hub.
      *
      * @return Sender hub metrics.
      */
-    @GridMBeanDescription("Formatted sender hub metrics.")
+    @IgniteMBeanDescription("Formatted sender hub metrics.")
     public String metricsFormatted();
 
     /**
@@ -31,7 +31,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return Maximum wait queue size.
      */
-    @GridMBeanDescription("Maximum size of wait queue.")
+    @IgniteMBeanDescription("Maximum size of wait queue.")
     public int getMaxQueueSize();
 
     /**
@@ -40,7 +40,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return Ping frequency.
      */
-    @GridMBeanDescription("Health check frequency in milliseconds.")
+    @IgniteMBeanDescription("Health check frequency in milliseconds.")
     public long getHealthCheckFrequency();
 
     /**
@@ -54,7 +54,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return System request timeout in milliseconds.
      */
-    @GridMBeanDescription("System request timeout.")
+    @IgniteMBeanDescription("System request timeout.")
     public long getSystemRequestTimeout();
 
     /**
@@ -63,7 +63,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return Read timeout in milliseconds.
      */
-    @GridMBeanDescription("Read timeout in milliseconds.")
+    @IgniteMBeanDescription("Read timeout in milliseconds.")
     public long getReadTimeout();
 
     /**
@@ -72,7 +72,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return Maximum failed connect attempts.
      */
-    @GridMBeanDescription("Maximum failed connection attempts.")
+    @IgniteMBeanDescription("Maximum failed connection attempts.")
     public int getMaxFailedConnectAttempts();
 
     /**
@@ -81,7 +81,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return Maximum errors.
      */
-    @GridMBeanDescription("Maximum amount of errors received from the remote data center.")
+    @IgniteMBeanDescription("Maximum amount of errors received from the remote data center.")
     public int getMaxErrors();
 
     /**
@@ -89,7 +89,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return Reconnect-on-failure timeout.
      */
-    @GridMBeanDescription("Node reconnection timeout after failure.")
+    @IgniteMBeanDescription("Node reconnection timeout after failure.")
     public long getReconnectOnFailureTimeout();
 
     /**
@@ -97,7 +97,7 @@ public interface GridDrSenderHubMBean {
      *
      * @return Cache names this sender hub works with.
      */
-    @GridMBeanDescription("Cache names.")
+    @IgniteMBeanDescription("Cache names.")
     public String getCacheNames();
 
     /**
@@ -105,6 +105,6 @@ public interface GridDrSenderHubMBean {
      *
      * @return Formatted remote data centers configuration info.
      */
-    @GridMBeanDescription("Formatted remote data centers configuration info.")
+    @IgniteMBeanDescription("Formatted remote data centers configuration info.")
     public String remoteDataCentersFormatted();
 }

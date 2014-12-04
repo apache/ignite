@@ -10,21 +10,21 @@
 package org.gridgain.grid.spi.checkpoint.jdbc;
 
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean that provides general administrative and configuration information
  * about jdbc checkpoint SPI.
  */
-@GridMBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
+@IgniteMBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
 public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets number of retries in case of DB failure.
      *
      * @return Number of retries.
      */
-    @GridMBeanDescription("Number of retries.")
+    @IgniteMBeanDescription("Number of retries.")
     public int getNumberOfRetries();
 
     /**
@@ -32,7 +32,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Description for data source.
      */
-    @GridMBeanDescription("Data source description.")
+    @IgniteMBeanDescription("Data source description.")
     public String getDataSourceInfo();
 
     /**
@@ -40,7 +40,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return User name for checkpoint jdbc.
      */
-    @GridMBeanDescription("User name for checkpoint database.")
+    @IgniteMBeanDescription("User name for checkpoint database.")
     public String getUser();
 
     /**
@@ -48,7 +48,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Password for checkpoint jdbc.
      */
-    @GridMBeanDescription("Password for checkpoint database.")
+    @IgniteMBeanDescription("Password for checkpoint database.")
     public String getPwd();
 
     /**
@@ -56,7 +56,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Checkpoint table name.
      */
-    @GridMBeanDescription("Checkpoint table name.")
+    @IgniteMBeanDescription("Checkpoint table name.")
     public String getCheckpointTableName();
 
     /**
@@ -64,7 +64,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Key field name for checkpoint table.
      */
-    @GridMBeanDescription("Key field name for checkpoint table.")
+    @IgniteMBeanDescription("Key field name for checkpoint table.")
     public String getKeyFieldName();
 
     /**
@@ -72,7 +72,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Key field type for checkpoint table.
      */
-    @GridMBeanDescription("Key field type for checkpoint table.")
+    @IgniteMBeanDescription("Key field type for checkpoint table.")
     public String getKeyFieldType();
 
     /**
@@ -80,7 +80,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Value field name for checkpoint table.
      */
-    @GridMBeanDescription("Value field name for checkpoint table.")
+    @IgniteMBeanDescription("Value field name for checkpoint table.")
     public String getValueFieldName();
 
     /**
@@ -88,7 +88,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Value field type for checkpoint table.
      */
-    @GridMBeanDescription("Value field type for checkpoint table.")
+    @IgniteMBeanDescription("Value field type for checkpoint table.")
     public String getValueFieldType();
 
     /**
@@ -96,7 +96,7 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Create date field name for checkpoint table.
      */
-    @GridMBeanDescription("Expiration date field name for checkpoint table.")
+    @IgniteMBeanDescription("Expiration date field name for checkpoint table.")
     public String getExpireDateFieldName();
 
     /**
@@ -104,6 +104,6 @@ public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Expiration date field type for checkpoint table.
      */
-    @GridMBeanDescription("Expiration date field type for checkpoint table.")
+    @IgniteMBeanDescription("Expiration date field type for checkpoint table.")
     public String getExpireDateFieldType();
 }

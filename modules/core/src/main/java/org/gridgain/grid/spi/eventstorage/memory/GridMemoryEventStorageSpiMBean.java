@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.eventstorage.memory;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridMemoryEventStorageSpi}.
@@ -21,7 +21,7 @@ import org.gridgain.grid.util.mbean.*;
  * <li>Method that removes all items from queue (see {@link #clearAll()})</li>
  * </ul>
  */
-@GridMBeanDescription("MBean that provides access to memory event storage SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to memory event storage SPI configuration.")
 public interface GridMemoryEventStorageSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets event time-to-live value. Implementation must guarantee
@@ -29,7 +29,7 @@ public interface GridMemoryEventStorageSpiMBean extends GridSpiManagementMBean {
      *
      * @return Event time-to-live.
      */
-    @GridMBeanDescription("Event time-to-live value.")
+    @IgniteMBeanDescription("Event time-to-live value.")
     public long getExpireAgeMs();
 
     /**
@@ -38,7 +38,7 @@ public interface GridMemoryEventStorageSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum event queue size.
      */
-    @GridMBeanDescription("Maximum event queue size.")
+    @IgniteMBeanDescription("Maximum event queue size.")
     public long getExpireCount();
 
     /**
@@ -46,12 +46,12 @@ public interface GridMemoryEventStorageSpiMBean extends GridSpiManagementMBean {
      *
      * @return Current queue size of the event queue.
      */
-    @GridMBeanDescription("Current event queue size.")
+    @IgniteMBeanDescription("Current event queue size.")
     public long getQueueSize();
 
     /**
      * Removes all events from the event queue.
      */
-    @GridMBeanDescription("Removes all events from the event queue.")
+    @IgniteMBeanDescription("Removes all events from the event queue.")
     public void clearAll();
 }

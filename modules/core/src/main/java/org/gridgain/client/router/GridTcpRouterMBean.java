@@ -9,21 +9,21 @@
 
 package org.gridgain.client.router;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 import java.util.*;
 
 /**
  * MBean interface for TCP router.
  */
-@GridMBeanDescription("MBean for TCP router.")
+@IgniteMBeanDescription("MBean for TCP router.")
 public interface GridTcpRouterMBean {
     /**
      * Gets host for TCP binary protocol server.
      *
      * @return TCP host.
      */
-    @GridMBeanDescription("Host for TCP binary protocol server.")
+    @IgniteMBeanDescription("Host for TCP binary protocol server.")
     public String getHost();
 
     /**
@@ -31,7 +31,7 @@ public interface GridTcpRouterMBean {
      *
      * @return TCP port.
      */
-    @GridMBeanDescription("Port for TCP binary protocol server.")
+    @IgniteMBeanDescription("Port for TCP binary protocol server.")
     public int getPort();
 
     /**
@@ -40,7 +40,7 @@ public interface GridTcpRouterMBean {
      *
      * @return Whether or not client authentication is required.
      */
-    @GridMBeanDescription("Flag indicating whether or not SSL is enabled for incoming connections.")
+    @IgniteMBeanDescription("Flag indicating whether or not SSL is enabled for incoming connections.")
     public boolean isSslEnabled();
 
     /**
@@ -49,7 +49,7 @@ public interface GridTcpRouterMBean {
      *
      * @return Whether or not client authentication is required.
      */
-    @GridMBeanDescription("Flag indicating whether or not remote clients are required to have a valid SSL certificate.")
+    @IgniteMBeanDescription("Flag indicating whether or not remote clients are required to have a valid SSL certificate.")
     public boolean isSslClientAuth();
 
     /**
@@ -57,7 +57,7 @@ public interface GridTcpRouterMBean {
      *
      * @return List of server addresses.
      */
-    @GridMBeanDescription("Gets list of server addresses where router's embedded client should connect.")
+    @IgniteMBeanDescription("Gets list of server addresses where router's embedded client should connect.")
     public Collection<String> getServers();
 
     /**
@@ -66,7 +66,7 @@ public interface GridTcpRouterMBean {
      *
      * @return Number of messages received by this router.
      */
-    @GridMBeanDescription("Number of messages received by this router.")
+    @IgniteMBeanDescription("Number of messages received by this router.")
     public long getReceivedCount();
 
     /**
@@ -75,6 +75,6 @@ public interface GridTcpRouterMBean {
      *
      * @return Number of responses returned by this router.
      */
-    @GridMBeanDescription("Number of responses returned by this router.")
+    @IgniteMBeanDescription("Number of responses returned by this router.")
     public long getSendCount();
 }

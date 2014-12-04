@@ -9,22 +9,23 @@
 
 package org.gridgain.grid.spi.checkpoint.sharedfs;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
+
 import java.util.*;
 
 /**
  * Management bean that provides general administrative and configuration information
  * about shared file system checkpoints.
  */
-@GridMBeanDescription("MBean for shared file system based checkpoint SPI.")
+@IgniteMBeanDescription("MBean for shared file system based checkpoint SPI.")
 public interface GridSharedFsCheckpointSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets path to the directory where all checkpoints are saved.
      *
      * @return Path to the checkpoints directory.
      */
-    @GridMBeanDescription("Gets path to the directory where all checkpoints are saved.")
+    @IgniteMBeanDescription("Gets path to the directory where all checkpoints are saved.")
     public String getCurrentDirectoryPath();
 
 
@@ -33,6 +34,6 @@ public interface GridSharedFsCheckpointSpiMBean extends GridSpiManagementMBean {
      *
      * @return Collection of all configured paths.
      */
-    @GridMBeanDescription("Gets collection of all configured paths where checkpoints can be saved.")
+    @IgniteMBeanDescription("Gets collection of all configured paths where checkpoints can be saved.")
     public Collection<String> getDirectoryPaths();
 }

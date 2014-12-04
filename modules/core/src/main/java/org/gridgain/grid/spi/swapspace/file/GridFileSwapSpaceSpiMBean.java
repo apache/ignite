@@ -9,20 +9,20 @@
 
 package org.gridgain.grid.spi.swapspace.file;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridFileSwapSpaceSpi}.
  */
-@GridMBeanDescription("MBean that provides configuration information on file-based swapspace SPI.")
+@IgniteMBeanDescription("MBean that provides configuration information on file-based swapspace SPI.")
 public interface GridFileSwapSpaceSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets base directory.
      *
      * @return Base directory.
      */
-    @GridMBeanDescription("Base directory.")
+    @IgniteMBeanDescription("Base directory.")
     public String getBaseDirectory();
 
     /**
@@ -30,7 +30,7 @@ public interface GridFileSwapSpaceSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum sparsity.
      */
-    @GridMBeanDescription("Maximum sparsity.")
+    @IgniteMBeanDescription("Maximum sparsity.")
     public float getMaximumSparsity();
 
     /**
@@ -38,7 +38,7 @@ public interface GridFileSwapSpaceSpiMBean extends GridSpiManagementMBean {
      *
      * @return Write buffer size in bytes.
      */
-    @GridMBeanDescription("Write buffer size in bytes.")
+    @IgniteMBeanDescription("Write buffer size in bytes.")
     public int getWriteBufferSize();
 
     /**
@@ -46,7 +46,7 @@ public interface GridFileSwapSpaceSpiMBean extends GridSpiManagementMBean {
      *
      * @return Max write queue size in bytes.
      */
-    @GridMBeanDescription("Max write queue size in bytes.")
+    @IgniteMBeanDescription("Max write queue size in bytes.")
     public int getMaxWriteQueueSize();
 
     /**
@@ -54,6 +54,6 @@ public interface GridFileSwapSpaceSpiMBean extends GridSpiManagementMBean {
      *
      * @return Read pool size.
      */
-    @GridMBeanDescription("Read pool size.")
+    @IgniteMBeanDescription("Read pool size.")
     public int getReadStripesNumber();
 }

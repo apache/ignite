@@ -9,13 +9,14 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.mbean.*;
 
 /**
  * This interface defines JMX view on {@link GridGain}.
  */
-@GridMBeanDescription("MBean that provides access to grid life-cycle operations.")
+@IgniteMBeanDescription("MBean that provides access to grid life-cycle operations.")
 public interface GridGainMBean {
     /**
      * Gets state of default grid instance.
@@ -23,7 +24,7 @@ public interface GridGainMBean {
      * @return State of default grid instance.
      * @see GridGain#state()
      */
-    @GridMBeanDescription("State of default grid instance.")
+    @IgniteMBeanDescription("State of default grid instance.")
     public String getState();
 
     /**
@@ -33,7 +34,7 @@ public interface GridGainMBean {
      * @return State of grid instance with given name.
      * @see GridGain#state(String)
      */
-    @GridMBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
+    @IgniteMBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
     @GridMBeanParametersNames(
         "name"
     )
@@ -53,7 +54,7 @@ public interface GridGainMBean {
      *      {@code false} otherwise (if it was not started).
      * @see GridGain#stop(boolean)
      */
-    @GridMBeanDescription("Stops default grid instance. Return true if default grid instance was " +
+    @IgniteMBeanDescription("Stops default grid instance. Return true if default grid instance was " +
         "indeed stopped, false otherwise (if it was not started).")
     @GridMBeanParametersNames(
         "cancel"
@@ -82,7 +83,7 @@ public interface GridGainMBean {
      *      not found).
      * @see GridGain#stop(String, boolean)
      */
-    @GridMBeanDescription("Stops grid by name. Cancels running jobs if cancel is true. Returns true if named " +
+    @IgniteMBeanDescription("Stops grid by name. Cancels running jobs if cancel is true. Returns true if named " +
         "grid instance was indeed found and stopped, false otherwise.")
     @GridMBeanParametersNames(
         {
@@ -112,7 +113,7 @@ public interface GridGainMBean {
      *      up to the actual job to exit from execution
      * @see GridGain#stopAll(boolean)
      */
-    @GridMBeanDescription("Stops all started grids.")
+    @IgniteMBeanDescription("Stops all started grids.")
     @GridMBeanParametersNames(
         "cancel"
     )
@@ -130,7 +131,7 @@ public interface GridGainMBean {
      *      up to the actual job to exit from execution
      * @see GridGain#stopAll(boolean)
      */
-    @GridMBeanDescription("Restart JVM.")
+    @IgniteMBeanDescription("Restart JVM.")
     @GridMBeanParametersNames(
         {
             "cancel",

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.spi.discovery.tcp;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.util.mbean.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -25,7 +25,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Time period in milliseconds.
      */
-    @GridMBeanDescription("Heartbeat frequency.")
+    @IgniteMBeanDescription("Heartbeat frequency.")
     public long getHeartbeatFrequency();
 
     /**
@@ -33,7 +33,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Current SPI state.
      */
-    @GridMBeanDescription("SPI state.")
+    @IgniteMBeanDescription("SPI state.")
     public String getSpiState();
 
     /**
@@ -41,7 +41,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return IPFinder (string representation).
      */
-    @GridMBeanDescription("IP Finder.")
+    @IgniteMBeanDescription("IP Finder.")
     public String getIpFinderFormatted();
 
     /**
@@ -49,7 +49,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Number of connection attempts.
      */
-    @GridMBeanDescription("Reconnect count.")
+    @IgniteMBeanDescription("Reconnect count.")
     public int getReconnectCount();
 
     /**
@@ -57,7 +57,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Network timeout.
      */
-    @GridMBeanDescription("Network timeout.")
+    @IgniteMBeanDescription("Network timeout.")
     public long getNetworkTimeout();
 
     /**
@@ -65,7 +65,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Local port range.
      */
-    @GridMBeanDescription("Local TCP port.")
+    @IgniteMBeanDescription("Local TCP port.")
     public int getLocalPort();
 
     /**
@@ -73,7 +73,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Local port range.
      */
-    @GridMBeanDescription("Local TCP port range.")
+    @IgniteMBeanDescription("Local TCP port range.")
     public int getLocalPortRange();
 
     /**
@@ -81,7 +81,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Max missed heartbeats.
      */
-    @GridMBeanDescription("Max missed heartbeats.")
+    @IgniteMBeanDescription("Max missed heartbeats.")
     public int getMaxMissedHeartbeats();
 
     /**
@@ -89,7 +89,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Max missed client heartbeats.
      */
-    @GridMBeanDescription("Max missed client heartbeats.")
+    @IgniteMBeanDescription("Max missed client heartbeats.")
     public int getMaxMissedClientHeartbeats();
 
     /**
@@ -97,7 +97,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Thread priority.
      */
-    @GridMBeanDescription("Threads priority.")
+    @IgniteMBeanDescription("Threads priority.")
     public int getThreadPriority();
 
     /**
@@ -105,7 +105,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return IP finder clean frequency.
      */
-    @GridMBeanDescription("IP finder clean frequency.")
+    @IgniteMBeanDescription("IP finder clean frequency.")
     public long getIpFinderCleanFrequency();
 
     /**
@@ -113,7 +113,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Statistics print frequency in milliseconds.
      */
-    @GridMBeanDescription("Statistics print frequency.")
+    @IgniteMBeanDescription("Statistics print frequency.")
     public long getStatisticsPrintFrequency();
 
     /**
@@ -121,7 +121,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Message worker queue current size.
      */
-    @GridMBeanDescription("Message worker queue current size.")
+    @IgniteMBeanDescription("Message worker queue current size.")
     public int getMessageWorkerQueueSize();
 
     /**
@@ -129,7 +129,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Nodes joined count.
      */
-    @GridMBeanDescription("Nodes joined count.")
+    @IgniteMBeanDescription("Nodes joined count.")
     public long getNodesJoined();
 
     /**
@@ -137,7 +137,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Left nodes count.
      */
-    @GridMBeanDescription("Nodes left count.")
+    @IgniteMBeanDescription("Nodes left count.")
     public long getNodesLeft();
 
     /**
@@ -145,7 +145,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Failed nodes count.
      */
-    @GridMBeanDescription("Nodes failed count.")
+    @IgniteMBeanDescription("Nodes failed count.")
     public long getNodesFailed();
 
     /**
@@ -153,7 +153,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Pending messages registered count.
      */
-    @GridMBeanDescription("Pending messages registered.")
+    @IgniteMBeanDescription("Pending messages registered.")
     public long getPendingMessagesRegistered();
 
     /**
@@ -161,7 +161,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Pending messages registered count.
      */
-    @GridMBeanDescription("Pending messages discarded.")
+    @IgniteMBeanDescription("Pending messages discarded.")
     public long getPendingMessagesDiscarded();
 
     /**
@@ -169,7 +169,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Avg message processing time.
      */
-    @GridMBeanDescription("Avg message processing time.")
+    @IgniteMBeanDescription("Avg message processing time.")
     public long getAvgMessageProcessingTime();
 
     /**
@@ -177,7 +177,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Max message processing time.
      */
-    @GridMBeanDescription("Max message processing time.")
+    @IgniteMBeanDescription("Max message processing time.")
     public long getMaxMessageProcessingTime();
 
     /**
@@ -185,7 +185,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Total received messages count.
      */
-    @GridMBeanDescription("Total received messages count.")
+    @IgniteMBeanDescription("Total received messages count.")
     public int getTotalReceivedMessages();
 
     /**
@@ -193,7 +193,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @GridMBeanDescription("Received messages by type.")
+    @IgniteMBeanDescription("Received messages by type.")
     public Map<String, Integer> getReceivedMessages();
 
     /**
@@ -201,7 +201,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Total processed messages count.
      */
-    @GridMBeanDescription("Total processed messages count.")
+    @IgniteMBeanDescription("Total processed messages count.")
     public int getTotalProcessedMessages();
 
     /**
@@ -209,7 +209,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @GridMBeanDescription("Received messages by type.")
+    @IgniteMBeanDescription("Received messages by type.")
     public Map<String, Integer> getProcessedMessages();
 
     /**
@@ -217,7 +217,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Time local node is coordinator since.
      */
-    @GridMBeanDescription("Local node is coordinator since.")
+    @IgniteMBeanDescription("Local node is coordinator since.")
     public long getCoordinatorSinceTimestamp();
 
     /**
@@ -225,7 +225,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Gets current coordinator.
      */
-    @GridMBeanDescription("Coordinator node ID.")
+    @IgniteMBeanDescription("Coordinator node ID.")
     @Nullable public UUID getCoordinator();
 
     /**
@@ -233,7 +233,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Message acknowledgement timeout.
      */
-    @GridMBeanDescription("Message acknowledgement timeout.")
+    @IgniteMBeanDescription("Message acknowledgement timeout.")
     public long getAckTimeout();
 
     /**
@@ -241,7 +241,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum message acknowledgement timeout.
      */
-    @GridMBeanDescription("Maximum message acknowledgement timeout.")
+    @IgniteMBeanDescription("Maximum message acknowledgement timeout.")
     public long getMaxAckTimeout();
 
     /**
@@ -249,7 +249,7 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Socket timeout.
      */
-    @GridMBeanDescription("Socket timeout.")
+    @IgniteMBeanDescription("Socket timeout.")
     public long getSocketTimeout();
 
     /**
@@ -257,12 +257,12 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      *
      * @return Join timeout.
      */
-    @GridMBeanDescription("Join timeout.")
+    @IgniteMBeanDescription("Join timeout.")
     public long getJoinTimeout();
 
     /**
      * Dumps debug info using configured logger.
      */
-    @GridMBeanDescription("Dump debug info.")
+    @IgniteMBeanDescription("Dump debug info.")
     public void dumpDebugInfo();
 }

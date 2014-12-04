@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.indexing.h2;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.mbean.*;
 import org.h2.api.*;
@@ -17,14 +18,14 @@ import org.jetbrains.annotations.*;
 /**
  * Management bean for {@link GridH2IndexingSpi}.
  */
-@GridMBeanDescription("MBean that provides access to H2 indexing SPI configuration.")
+@IgniteMBeanDescription("MBean that provides access to H2 indexing SPI configuration.")
 public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets if SPI will index primitive key-value pairs by key.
      *
      * @return Flag value.
      */
-    @GridMBeanDescription("Index primitive key-value pairs by key by default in all schemas.")
+    @IgniteMBeanDescription("Index primitive key-value pairs by key by default in all schemas.")
     public boolean isDefaultIndexPrimitiveKey();
 
     /**
@@ -33,7 +34,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Flag value.
      */
-    @GridMBeanDescription("Index primitive key-value pairs by value by default in all schemas.")
+    @IgniteMBeanDescription("Index primitive key-value pairs by value by default in all schemas.")
     public boolean isDefaultIndexPrimitiveValue();
 
     /**
@@ -43,7 +44,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Flag value.
      */
-    @GridMBeanDescription("If false, SPI will store all keys in BINARY form, otherwise it will try to convert key " +
+    @IgniteMBeanDescription("If false, SPI will store all keys in BINARY form, otherwise it will try to convert key " +
         "type to respective SQL type.")
     public boolean isDefaultIndexFixedTyping();
 
@@ -67,7 +68,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum memory in bytes available to off-heap memory space.
      */
-    @GridMBeanDescription("Maximum off-heap memory for indexes.")
+    @IgniteMBeanDescription("Maximum off-heap memory for indexes.")
     public long getMaxOffHeapMemory();
 
     /**
@@ -76,7 +77,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Index write lock wait time in milliseconds.
      */
-    @GridMBeanDescription("Index write lock wait time in milliseconds.")
+    @IgniteMBeanDescription("Index write lock wait time in milliseconds.")
     public long getIndexWriteLockWaitTime();
 
     /**
@@ -84,7 +85,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum allowed off-heap rows cache size.
      */
-    @GridMBeanDescription("Maximum allowed off-heap rows cache size.")
+    @IgniteMBeanDescription("Maximum allowed off-heap rows cache size.")
     public int getMaxOffheapRowsCacheSize();
 
     /**
@@ -92,7 +93,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Current off-heap rows cache size.
      */
-    @GridMBeanDescription("Current off-heap rows cache size.")
+    @IgniteMBeanDescription("Current off-heap rows cache size.")
     public int getOffheapRowsCacheSize();
 
     /**
@@ -100,7 +101,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Allocated memory in bytes.
      */
-    @GridMBeanDescription("Allocated off-heap memory for indexes.")
+    @IgniteMBeanDescription("Allocated off-heap memory for indexes.")
     public long getAllocatedOffHeapMemory();
 
     /**
@@ -108,7 +109,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Collection of space names.
      */
-    @GridMBeanDescription("All registered in this SPI spaces.")
+    @IgniteMBeanDescription("All registered in this SPI spaces.")
     public String getSpaceNames();
 
     /**
@@ -139,7 +140,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      * @return Long query execution time.
      * @see #isLongQueryExplain()
      */
-    @GridMBeanDescription("Query execution time interpreted by SPI as long query.")
+    @IgniteMBeanDescription("Query execution time interpreted by SPI as long query.")
     public long getLongQueryExecutionTimeout();
 
     /**
@@ -148,7 +149,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      * @return Flag marking SPI should print SQL execution plan for long queries (explain SQL query).
      * @see #getLongQueryExecutionTimeout()
      */
-    @GridMBeanDescription("If true, SPI will print SQL execution plan for long queries (explain SQL query).")
+    @IgniteMBeanDescription("If true, SPI will print SQL execution plan for long queries (explain SQL query).")
     public boolean isLongQueryExplain();
 
     /**
@@ -157,7 +158,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      * @param spaceName Space name.
      * @return Flag value.
      */
-    @GridMBeanDescription("Index by key entries where key and value are primitive types in given space.")
+    @IgniteMBeanDescription("Index by key entries where key and value are primitive types in given space.")
     @GridMBeanParametersNames("spaceName")
     @GridMBeanParametersDescriptions("Space name.")
     public boolean isIndexPrimitiveKey(@Nullable String spaceName);
@@ -168,7 +169,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      * @param spaceName Space name.
      * @return Flag value.
      */
-    @GridMBeanDescription("Index by value entries where key and value are primitive types in given space.")
+    @IgniteMBeanDescription("Index by value entries where key and value are primitive types in given space.")
     @GridMBeanParametersNames("spaceName")
     @GridMBeanParametersDescriptions("Space name.")
     public boolean isIndexPrimitiveValue(@Nullable String spaceName);
@@ -185,7 +186,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      * @param spaceName Space name.
      * @return Flag value.
      */
-    @GridMBeanDescription("If false, SPI will store all keys in BINARY form, otherwise it will try to convert key " +
+    @IgniteMBeanDescription("If false, SPI will store all keys in BINARY form, otherwise it will try to convert key " +
         "type to respective SQL type.")
     @GridMBeanParametersNames("spaceName")
     @GridMBeanParametersDescriptions("Space name.")
@@ -200,7 +201,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Flag value.
      */
-    @GridMBeanDescription("If true, then table name and all column names in 'create table' SQL generated by " +
+    @IgniteMBeanDescription("If true, then table name and all column names in 'create table' SQL generated by " +
         "SPI are escaped with double quotes.")
     public boolean isDefaultEscapeAll();
 
@@ -214,7 +215,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      * @param spaceName Space name.
      * @return Flag value.
      */
-    @GridMBeanDescription("If true, then table name and all column names in 'create table' SQL generated by " +
+    @IgniteMBeanDescription("If true, then table name and all column names in 'create table' SQL generated by " +
         "SPI are escaped with double quotes.")
     @GridMBeanParametersNames("spaceName")
     @GridMBeanParametersDescriptions("Space name.")

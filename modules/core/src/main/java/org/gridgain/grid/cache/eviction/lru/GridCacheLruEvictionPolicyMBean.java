@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.cache.eviction.lru;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * MBean for {@code LRU} eviction policy.
  */
-@GridMBeanDescription("MBean for LRU cache eviction policy.")
+@IgniteMBeanDescription("MBean for LRU cache eviction policy.")
 public interface GridCacheLruEvictionPolicyMBean {
     /**
      * Gets name of metadata attribute used to store eviction policy data.
      *
      * @return Name of metadata attribute used to store eviction policy data.
      */
-    @GridMBeanDescription("Name of metadata attribute used to store eviction policy data.")
+    @IgniteMBeanDescription("Name of metadata attribute used to store eviction policy data.")
     public String getMetaAttributeName();
 
     /**
@@ -29,7 +29,7 @@ public interface GridCacheLruEvictionPolicyMBean {
      *
      * @return Maximum allowed cache size.
      */
-    @GridMBeanDescription("Maximum allowed cache size.")
+    @IgniteMBeanDescription("Maximum allowed cache size.")
     public int getMaxSize();
 
     /**
@@ -37,7 +37,7 @@ public interface GridCacheLruEvictionPolicyMBean {
      *
      * @param max Maximum allowed cache size.
      */
-    @GridMBeanDescription("Sets maximum allowed cache size.")
+    @IgniteMBeanDescription("Sets maximum allowed cache size.")
     public void setMaxSize(int max);
 
     /**
@@ -45,6 +45,6 @@ public interface GridCacheLruEvictionPolicyMBean {
      *
      * @return Current queue size.
      */
-    @GridMBeanDescription("Current queue size.")
+    @IgniteMBeanDescription("Current queue size.")
     public int getCurrentSize();
 }

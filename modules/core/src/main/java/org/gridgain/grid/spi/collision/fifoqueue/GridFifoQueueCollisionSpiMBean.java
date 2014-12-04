@@ -9,20 +9,20 @@
 
 package org.gridgain.grid.spi.collision.fifoqueue;
 
+import org.apache.ignite.mbean.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean that provides access to the FIFO queue collision SPI configuration.
  */
-@GridMBeanDescription("MBean provides information about FIFO queue based collision SPI configuration.")
+@IgniteMBeanDescription("MBean provides information about FIFO queue based collision SPI configuration.")
 public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets number of jobs that can be executed in parallel.
      *
      * @return Number of jobs that can be executed in parallel.
      */
-    @GridMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
     public int getParallelJobsNumber();
 
     /**
@@ -30,7 +30,7 @@ public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
      *
      * @param num Parallel jobs number.
      */
-    @GridMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
     public void setParallelJobsNumber(int num);
 
     /**
@@ -39,7 +39,7 @@ public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
      *
      * @return Maximum allowed number of waiting jobs.
      */
-    @GridMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
     public int getWaitingJobsNumber();
 
     /**
@@ -48,7 +48,7 @@ public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
      *
      * @param num Waiting jobs number.
      */
-    @GridMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
     public void setWaitingJobsNumber(int num);
 
     /**
@@ -56,7 +56,7 @@ public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
      *
      * @return Number of jobs that wait for execution.
      */
-    @GridMBeanDescription("Number of jobs that wait for execution.")
+    @IgniteMBeanDescription("Number of jobs that wait for execution.")
     public int getCurrentWaitJobsNumber();
 
     /**
@@ -64,7 +64,7 @@ public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
      *
      * @return Number of active jobs.
      */
-    @GridMBeanDescription("Number of active jobs.")
+    @IgniteMBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
     /*
@@ -72,7 +72,7 @@ public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
      *
      * @return Number of currently running (not {@code 'held}) jobs.
      */
-    @GridMBeanDescription("Number of running jobs.")
+    @IgniteMBeanDescription("Number of running jobs.")
     public int getCurrentRunningJobsNumber();
 
     /**
@@ -80,6 +80,6 @@ public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
      *
      * @return Number of currently {@code 'held'} jobs.
      */
-    @GridMBeanDescription("Number of held jobs.")
+    @IgniteMBeanDescription("Number of held jobs.")
     public int getCurrentHeldJobsNumber();
 }

@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.dr.hub.receiver;
 
-import org.gridgain.grid.util.mbean.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * This interface defines JMX view on data center replication receiver hub.
  */
-@GridMBeanDescription("MBean that provides access to receiver hub descriptor.")
+@IgniteMBeanDescription("MBean that provides access to receiver hub descriptor.")
 public interface GridDrReceiverHubMBean {
     /**
      * Get metrics (statistics) for this receiver hub.
      *
      * @return Receiver hub metrics.
      */
-    @GridMBeanDescription("Formatted receiver hub metrics.")
+    @IgniteMBeanDescription("Formatted receiver hub metrics.")
     public String metricsFormatted();
 
     /**
@@ -29,7 +29,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Local host name.
      */
-    @GridMBeanDescription("Local hostname.")
+    @IgniteMBeanDescription("Local hostname.")
     public String getLocalInboundHost();
 
     /**
@@ -37,7 +37,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Local port.
      */
-    @GridMBeanDescription("Local port.")
+    @IgniteMBeanDescription("Local port.")
     public int getLocalInboundPort();
 
     /**
@@ -45,7 +45,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Amount of server NIO threads.
      */
-    @GridMBeanDescription("Number of selector threads in receiver hub's TCP server.")
+    @IgniteMBeanDescription("Number of selector threads in receiver hub's TCP server.")
     public int getSelectorCount();
 
     /**
@@ -53,7 +53,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Amount of server worker threads.
      */
-    @GridMBeanDescription("Amount of server worker threads.")
+    @IgniteMBeanDescription("Amount of server worker threads.")
     public int getWorkerThreads();
 
     /**
@@ -61,7 +61,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Message queue limit.
      */
-    @GridMBeanDescription("Message queue limit for incoming and outgoing messages.")
+    @IgniteMBeanDescription("Message queue limit for incoming and outgoing messages.")
     public int getMessageQueueLimit();
 
     /**
@@ -69,7 +69,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return TCP_NODELAY mode flag.
      */
-    @GridMBeanDescription("TCP_NODELAY mode flag.")
+    @IgniteMBeanDescription("TCP_NODELAY mode flag.")
     public boolean isTcpNodelay();
 
     /**
@@ -77,7 +77,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Direct buffer flag.
      */
-    @GridMBeanDescription("Direct buffer flag.")
+    @IgniteMBeanDescription("Direct buffer flag.")
     public boolean isDirectBuffer();
 
     /**
@@ -85,7 +85,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Idle timeout for sender hub socket connection.
      */
-    @GridMBeanDescription("Idle timeout for sender hub socket connection.")
+    @IgniteMBeanDescription("Idle timeout for sender hub socket connection.")
     public long getIdleTimeout();
 
     /**
@@ -93,7 +93,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Write timeout.
      */
-    @GridMBeanDescription("Write timeout for sender hub socket connection.")
+    @IgniteMBeanDescription("Write timeout for sender hub socket connection.")
     public long getWriteTimeout();
 
     /**
@@ -101,7 +101,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Data flush frequency.
      */
-    @GridMBeanDescription("Data flush frequency.")
+    @IgniteMBeanDescription("Data flush frequency.")
     public long getFlushFrequency();
 
     /**
@@ -109,7 +109,7 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Buffer size.
      */
-    @GridMBeanDescription("DR data loader per node buffer size.")
+    @IgniteMBeanDescription("DR data loader per node buffer size.")
     public int getPerNodeBufferSize();
 
     /**
@@ -117,6 +117,6 @@ public interface GridDrReceiverHubMBean {
      *
      * @return Per node parallel load operations.
      */
-    @GridMBeanDescription("Parallel load operations per node.")
+    @IgniteMBeanDescription("Parallel load operations per node.")
     public int getPerNodeParallelLoadOperations();
 }
