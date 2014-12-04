@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;

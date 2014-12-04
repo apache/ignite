@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.ggfs.mapreduce.records;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;

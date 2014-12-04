@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.ggfs;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -16,7 +17,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link org.gridgain.grid.ggfs.IgniteFs}.
+ * Data transfer object for {@link org.apache.ignite.IgniteFs}.
  */
 public class VisorGgfs implements Serializable {
     /** */

@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.IgniteFs.*;
+import static org.apache.ignite.IgniteFs.*;
 
 /**
  * Hadoop file system properties.

@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.*;
+
 /**
  * Tests coordinator transfer from one node to other.
  */

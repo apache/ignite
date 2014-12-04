@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.IgniteFs.*;
+import static org.apache.ignite.IgniteFs.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
@@ -17,7 +18,7 @@ import org.jetbrains.annotations.*;
 import java.net.*;
 
 /**
- * Internal API extension for {@link org.gridgain.grid.ggfs.IgniteFs}.
+ * Internal API extension for {@link org.apache.ignite.IgniteFs}.
  */
 public interface GridGgfsEx extends IgniteFs {
     /**

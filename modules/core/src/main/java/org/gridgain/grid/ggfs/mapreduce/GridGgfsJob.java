@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.ggfs.mapreduce;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
@@ -19,7 +20,7 @@ import java.io.*;
  * Defines executable unit for {@link GridGgfsTask}. Before this job is executed, it is assigned one of the
  * ranges provided by the {@link GridGgfsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
  * <p>
- * {@link #execute(org.gridgain.grid.ggfs.IgniteFs, GridGgfsFileRange, GridGgfsInputStream)} method is given {@link GridGgfsFileRange} this
+ * {@link #execute(org.apache.ignite.IgniteFs, GridGgfsFileRange, GridGgfsInputStream)} method is given {@link GridGgfsFileRange} this
  * job is expected to operate on, and already opened {@link GridGgfsInputStream} for the file this range belongs to.
  * <p>
  * Note that provided input stream has position already adjusted to range start. However, it will not

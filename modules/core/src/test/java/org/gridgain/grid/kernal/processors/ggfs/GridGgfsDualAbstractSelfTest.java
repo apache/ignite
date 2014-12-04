@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.ggfs.IgniteFs.*;
+import static org.apache.ignite.IgniteFs.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**

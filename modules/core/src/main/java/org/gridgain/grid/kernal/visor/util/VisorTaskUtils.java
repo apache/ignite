@@ -18,7 +18,6 @@ import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.eviction.random.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.visor.event.*;
 import org.gridgain.grid.kernal.visor.file.*;

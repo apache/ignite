@@ -18,7 +18,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows usage of {@link org.gridgain.grid.ggfs.IgniteFs} API. It starts a GridGain node with {@code GGFS}
+ * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a GridGain node with {@code GGFS}
  * configured and performs several file system operations (create, write, append, read and delete
  * files, create, list and delete directories).
  * <p>

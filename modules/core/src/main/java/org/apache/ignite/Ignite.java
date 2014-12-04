@@ -44,7 +44,7 @@ import java.util.concurrent.*;
  * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link GridDr} - functionality for WAN-based Data Center Replication of in-memory cache.</li>
- * <li>{@link org.gridgain.grid.ggfs.IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
+ * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
