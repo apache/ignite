@@ -11,9 +11,9 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.dataload.IgniteDataLoadCacheUpdater
 import org.gridgain.grid.GridException
 import org.gridgain.grid.cache.GridCache
-import org.gridgain.grid.dataload.IgniteDataLoadCacheUpdater
 
 import java.util
 import java.util.Timer

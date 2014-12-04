@@ -12,7 +12,6 @@ package org.gridgain.loadtests.mapper;
 import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.dataload.*;
 
 /**
  * Continuous mapper load test.

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.dataload;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.portables.*;

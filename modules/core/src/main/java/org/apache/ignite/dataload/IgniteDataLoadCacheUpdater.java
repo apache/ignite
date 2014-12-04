@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.dataload;
+package org.apache.ignite.dataload;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -16,12 +16,12 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataLoader#isolated(boolean)}
+ * Updates cache with batch of entries. Usually it is enough to configure {@link org.apache.ignite.IgniteDataLoader#isolated(boolean)}
  * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
  * performance custom user-defined implementation may help.
  * <p>
  * Data loader can be configured to use custom implementation of updater instead of default one using
- * {@link IgniteDataLoader#updater(IgniteDataLoadCacheUpdater)} method.
+ * {@link org.apache.ignite.IgniteDataLoader#updater(IgniteDataLoadCacheUpdater)} method.
  */
 public interface IgniteDataLoadCacheUpdater<K, V> extends Serializable {
     /**

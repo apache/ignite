@@ -9,9 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.dataload;
 
+import org.apache.ignite.*;
+import org.apache.ignite.dataload.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;

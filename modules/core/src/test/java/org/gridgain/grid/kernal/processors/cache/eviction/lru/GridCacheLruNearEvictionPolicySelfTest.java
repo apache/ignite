@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.eviction.lru;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

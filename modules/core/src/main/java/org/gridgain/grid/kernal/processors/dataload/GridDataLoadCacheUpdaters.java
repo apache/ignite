@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.dataload;
 
+import org.apache.ignite.dataload.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

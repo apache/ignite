@@ -14,7 +14,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
@@ -47,7 +46,7 @@ import java.util.concurrent.*;
  * In addition to {@link org.apache.ignite.cluster.ClusterGroup} functionality, from here you can get the following:
  * <ul>
  * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
- * <li>{@link org.gridgain.grid.dataload.IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
+ * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link GridDr} - functionality for WAN-based Data Center Replication of in-memory cache.</li>
  * <li>{@link GridGgfs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link GridStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
@@ -251,7 +250,7 @@ public interface Ignite extends AutoCloseable {
     /**
      * Gets a new instance of data loader associated with given cache name. Data loader
      * is responsible for loading external data into in-memory data grid. For more information
-     * refer to {@link org.gridgain.grid.dataload.IgniteDataLoader} documentation.
+     * refer to {@link IgniteDataLoader} documentation.
      *
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.

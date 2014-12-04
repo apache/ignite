@@ -12,7 +12,7 @@
 package org.gridgain.scalar
 
 import java.net.URL
-import org.apache.ignite.{Ignition, Ignite}
+import org.apache.ignite.{IgniteDataLoader, Ignition, Ignite}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.jetbrains.annotations.Nullable
@@ -21,7 +21,6 @@ import org.gridgain.grid._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.cache.query._
 import annotation.meta.field
-import org.gridgain.grid.dataload.IgniteDataLoader
 import org.gridgain.grid.kernal.GridProductImpl
 
 /**

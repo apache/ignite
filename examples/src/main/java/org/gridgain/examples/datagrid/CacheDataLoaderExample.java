@@ -12,11 +12,10 @@ package org.gridgain.examples.datagrid;
 import org.apache.ignite.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.dataload.*;
 
 /**
- * Demonstrates how cache can be populated with data utilizing {@link org.gridgain.grid.dataload.IgniteDataLoader} API.
- * {@link org.gridgain.grid.dataload.IgniteDataLoader} is a lot more efficient to use than standard
+ * Demonstrates how cache can be populated with data utilizing {@link org.apache.ignite.IgniteDataLoader} API.
+ * {@link org.apache.ignite.IgniteDataLoader} is a lot more efficient to use than standard
  * {@code GridCacheProjection.put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>

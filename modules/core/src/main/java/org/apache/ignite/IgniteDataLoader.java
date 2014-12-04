@@ -7,8 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.dataload;
+package org.apache.ignite;
 
+import org.apache.ignite.dataload.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -67,7 +68,7 @@ import java.util.*;
  *      updates and allow data loader choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(IgniteDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
+ *      {@link #updater(org.apache.ignite.dataload.IgniteDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
  *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
@@ -104,7 +105,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache updater set using {@link #updater(IgniteDataLoadCacheUpdater)} method.
+     * Should not be used when custom cache updater set using {@link #updater(org.apache.ignite.dataload.IgniteDataLoadCacheUpdater)} method.
      * Default is {@code false}.
      *
      * @param isolated Flag value.

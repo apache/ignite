@@ -19,7 +19,6 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.affinity.*;
