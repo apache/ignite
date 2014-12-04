@@ -595,7 +595,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 if (info != null) {
                     if (evts.isRecordable(EVT_GGFS_META_UPDATED))
-                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_META_UPDATED, props));
+                        evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_META_UPDATED, props));
 
                     return new GridGgfsFileImpl(path, info, data.groupBlockSize());
                 }
@@ -700,7 +700,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 if (srcDesc.isFile) { // Renamed a file.
                     if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
-                        evts.record(new GridGgfsEvent(
+                        evts.record(new IgniteFsEvent(
                             src,
                             newDest ? dest : new GridGgfsPath(dest, destFileName),
                             localNode(),
@@ -708,7 +708,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 }
                 else { // Renamed a directory.
                     if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
-                        evts.record(new GridGgfsEvent(src, dest, localNode(), EVT_GGFS_DIR_RENAMED));
+                        evts.record(new IgniteFsEvent(src, dest, localNode(), EVT_GGFS_DIR_RENAMED));
                 }
             }
             finally {
@@ -757,10 +757,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (res && desc != null) {
                     if (desc.isFile) {
                         if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                            evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
+                            evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
                     }
                     else if (evts.isRecordable(EVT_GGFS_DIR_DELETED))
-                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_DIR_DELETED));
+                        evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_DIR_DELETED));
                 }
 
                 return res;
@@ -873,7 +873,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                             fileId = oldId == null ? fileInfo.id() : oldId; // Update node ID.
 
                             if (oldId == null && evts.isRecordable(EVT_GGFS_DIR_CREATED))
-                                evts.record(new GridGgfsEvent(curPath, localNode(), EVT_GGFS_DIR_CREATED));
+                                evts.record(new IgniteFsEvent(curPath, localNode(), EVT_GGFS_DIR_CREATED));
                         }
                         catch (GridException e) {
                             if (log.isDebugEnabled())
@@ -1074,7 +1074,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
-                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
+                        evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
 
                     return os;
                 }
@@ -1095,7 +1095,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
-                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
+                    evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
 
                 return os;
             }
@@ -1176,7 +1176,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+                        evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
 
                     return os;
                 }
@@ -1224,11 +1224,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
+                        evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
                 }
 
                 if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
+                    evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
 
                 info = meta.lock(info.id());
 
@@ -1236,7 +1236,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
                 if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+                    evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
 
                 return os;
             }
@@ -1310,7 +1310,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         info = meta.info(oldId);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
+                        evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
                 }
 
                 if (!info.isFile())
@@ -1319,7 +1319,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 info = meta.lock(info.id());
 
                 if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+                    evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
 
                 return new GgfsEventAwareOutputStream(path, info, parentId, bufSize == 0 ?
                     cfg.getStreamBufferSize() : bufSize, mode, batch);
@@ -1932,7 +1932,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 metrics.decrementFilesOpenedForWrite();
 
                 if (evts.isRecordable(EVT_GGFS_FILE_CLOSED_WRITE))
-                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CLOSED_WRITE, bytes()));
+                    evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_CLOSED_WRITE, bytes()));
             }
         }
     }
@@ -1972,7 +1972,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 metrics.decrementFilesOpenedForRead();
 
                 if (evts.isRecordable(EVT_GGFS_FILE_CLOSED_READ))
-                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CLOSED_READ, bytes()));
+                    evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_CLOSED_READ, bytes()));
             }
         }
     }

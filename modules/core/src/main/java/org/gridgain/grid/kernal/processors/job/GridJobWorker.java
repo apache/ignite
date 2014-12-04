@@ -620,7 +620,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         assert ctx.event().isRecordable(evtType);
         assert !internal;
 
-        GridJobEvent evt = new GridJobEvent();
+        IgniteJobEvent evt = new IgniteJobEvent();
 
         evt.jobId(ses.getJobId());
         evt.message(msg);

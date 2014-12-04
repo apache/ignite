@@ -390,8 +390,8 @@ public class VisorTaskUtils {
                 res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
                     te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
             }
-            else if (e instanceof GridJobEvent) {
-                GridJobEvent je = (GridJobEvent)e;
+            else if (e instanceof IgniteJobEvent) {
+                IgniteJobEvent je = (IgniteJobEvent)e;
 
                 res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
                     je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));

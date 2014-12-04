@@ -1587,7 +1587,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert path != null;
 
                 // Events to fire (can be done outside of a transaction).
-                final Deque<GridGgfsEvent> pendingEvts = new LinkedList<>();
+                final Deque<IgniteFsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
@@ -1627,7 +1627,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                     GridGgfsPath evtPath = parent0;
 
                                     while (!parentPath.equals(evtPath)) {
-                                        pendingEvts.addFirst(new GridGgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                                        pendingEvts.addFirst(new IgniteFsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
 
                                         evtPath = evtPath.parent();
 
@@ -1672,7 +1672,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                             try {
                                                 t.get(); // Ensure delete succeeded.
 
-                                                evts.record(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
+                                                evts.record(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
                                             }
                                             catch (GridException e) {
                                                 LT.warn(log, e, "Old file deletion failed in DUAL mode [path=" + path +
@@ -1686,12 +1686,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                                 // Record DELETE event if needed.
                                 if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                                    pendingEvts.add(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_DELETED));
+                                    pendingEvts.add(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_DELETED));
                             }
 
                             // Record CREATE event if needed.
                             if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                                pendingEvts.add(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
+                                pendingEvts.add(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
 
                             return new GridGgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
                         }
@@ -1716,7 +1716,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     return synchronizeAndExecute(task, fs, false, path.parent());
                 }
                 finally {
-                    for (GridGgfsEvent evt : pendingEvts)
+                    for (IgniteFsEvent evt : pendingEvts)
                         evts.record(evt);
                 }
             }
@@ -1947,7 +1947,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     return true; // No additional handling for root directory is needed.
 
                 // Events to fire (can be done outside of a transaction).
-                final Deque<GridGgfsEvent> pendingEvts = new LinkedList<>();
+                final Deque<IgniteFsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
                     @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
@@ -1973,7 +1973,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsPath evtPath = path;
 
                             while (!parentPath.equals(evtPath)) {
-                                pendingEvts.addFirst(new GridGgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                                pendingEvts.addFirst(new IgniteFsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
 
                                 evtPath = evtPath.parent();
 
@@ -1997,7 +1997,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     return synchronizeAndExecute(task, fs, false, path.parent());
                 }
                 finally {
-                    for (GridGgfsEvent evt : pendingEvts)
+                    for (IgniteFsEvent evt : pendingEvts)
                         evts.record(evt);
                 }
             }
@@ -2031,7 +2031,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     return false; // Root directory cannot be renamed.
 
                 // Events to fire (can be done outside of a transaction).
-                final Collection<GridGgfsEvent> pendingEvts = new LinkedList<>();
+                final Collection<IgniteFsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
                     @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
@@ -2070,14 +2070,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         // Record event if needed.
                         if (srcInfo.isFile()) {
                             if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
-                                pendingEvts.add(new GridGgfsEvent(
+                                pendingEvts.add(new IgniteFsEvent(
                                     src,
                                     destInfo == null ? dest : new GridGgfsPath(dest, src.name()),
                                     locNode,
                                     EVT_GGFS_FILE_RENAMED));
                         }
                         else if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
-                            pendingEvts.add(new GridGgfsEvent(src, dest, locNode, EVT_GGFS_DIR_RENAMED));
+                            pendingEvts.add(new IgniteFsEvent(src, dest, locNode, EVT_GGFS_DIR_RENAMED));
 
                         return true;
                     }
@@ -2098,7 +2098,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     return synchronizeAndExecute(task, fs, false, src, dest);
                 }
                 finally {
-                    for (GridGgfsEvent evt : pendingEvts)
+                    for (IgniteFsEvent evt : pendingEvts)
                         evts.record(evt);
                 }
             }

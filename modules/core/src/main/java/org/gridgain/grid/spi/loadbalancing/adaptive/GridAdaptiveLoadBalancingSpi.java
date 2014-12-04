@@ -322,7 +322,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
                         // We should keep topology and use cache in GridComputeTask#map() method to
                         // avoid O(n*n/2) complexity, after that we can drop caches.
                         // Here we set mapped property and later cache will be ignored
-                        GridJobEvent jobEvt = (GridJobEvent)evt;
+                        IgniteJobEvent jobEvt = (IgniteJobEvent)evt;
 
                         IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(jobEvt.taskSessionId());
 

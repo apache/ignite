@@ -1252,7 +1252,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ", jobId=" + req.getJobId() + ']');
 
             if (ctx.event().isRecordable(EVT_JOB_FAILED)) {
-                GridJobEvent evt = new GridJobEvent();
+                IgniteJobEvent evt = new IgniteJobEvent();
 
                 evt.jobId(req.getJobId());
                 evt.message("Job reply failed (original task node left grid): " + req.getJobId());
@@ -1334,7 +1334,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             }
 
             if (ctx.event().isRecordable(EVT_JOB_FAILED)) {
-                GridJobEvent evt = new GridJobEvent();
+                IgniteJobEvent evt = new IgniteJobEvent();
 
                 evt.jobId(req.getJobId());
                 evt.message("Failed to send reply for job: " + req.getJobId());

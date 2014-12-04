@@ -55,7 +55,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * @see IgniteEventType#EVT_GGFS_FILE_RENAMED
  * @see IgniteEventType#EVT_GGFS_FILE_DELETED
  */
-public class GridGgfsEvent extends IgniteEventAdapter {
+public class IgniteFsEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -79,7 +79,7 @@ public class GridGgfsEvent extends IgniteEventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public GridGgfsEvent(GridGgfsPath path, ClusterNode node, int type) {
+    public IgniteFsEvent(GridGgfsPath path, ClusterNode node, int type) {
         super(node, "GGFS event.", type);
 
         this.path = path;
@@ -95,7 +95,7 @@ public class GridGgfsEvent extends IgniteEventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public GridGgfsEvent(GridGgfsPath path, GridGgfsPath newPath, ClusterNode node, int type) {
+    public IgniteFsEvent(GridGgfsPath path, GridGgfsPath newPath, ClusterNode node, int type) {
         this(path, node, type);
 
         this.newPath = newPath;
@@ -111,7 +111,7 @@ public class GridGgfsEvent extends IgniteEventAdapter {
      * @param type Event type.
      * @param dataSize Transferred data size in bytes.
      */
-    public GridGgfsEvent(GridGgfsPath path, ClusterNode node, int type, long dataSize) {
+    public IgniteFsEvent(GridGgfsPath path, ClusterNode node, int type, long dataSize) {
         this(path, node, type);
 
         this.dataSize = dataSize;
@@ -126,7 +126,7 @@ public class GridGgfsEvent extends IgniteEventAdapter {
      * @param type Event type.
      * @param meta Modified properties.
      */
-    public GridGgfsEvent(GridGgfsPath path, ClusterNode node, int type, Map<String, String> meta) {
+    public IgniteFsEvent(GridGgfsPath path, ClusterNode node, int type, Map<String, String> meta) {
         this(path, node, type);
 
         this.meta = meta;
@@ -184,6 +184,6 @@ public class GridGgfsEvent extends IgniteEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsEvent.class, this, super.toString());
+        return S.toString(IgniteFsEvent.class, this, super.toString());
     }
 }

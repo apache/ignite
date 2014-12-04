@@ -215,8 +215,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                 return containsInTaskName(te.taskName(), te.taskClassName(), taskName);
             }
 
-            if (e.getClass().equals(GridJobEvent.class)) {
-                GridJobEvent je = (GridJobEvent)e;
+            if (e.getClass().equals(IgniteJobEvent.class)) {
+                IgniteJobEvent je = (IgniteJobEvent)e;
 
                 return containsInTaskName(je.taskName(), je.taskName(), taskName);
             }
@@ -243,8 +243,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                 return te.taskSessionId().equals(taskSessionId);
             }
 
-            if (e.getClass().equals(GridJobEvent.class)) {
-                GridJobEvent je = (GridJobEvent)e;
+            if (e.getClass().equals(IgniteJobEvent.class)) {
+                IgniteJobEvent je = (IgniteJobEvent)e;
 
                 return je.taskSessionId().equals(taskSessionId);
             }
@@ -293,8 +293,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                     res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
                         te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
                 }
-                else if (e instanceof GridJobEvent) {
-                    GridJobEvent je = (GridJobEvent)e;
+                else if (e instanceof IgniteJobEvent) {
+                    IgniteJobEvent je = (IgniteJobEvent)e;
 
                     res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
                         je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));

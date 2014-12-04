@@ -58,7 +58,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_JOB_TIMEDOUT
  * @see IgniteEventType#EVTS_JOB_EXECUTION
  */
-public class GridJobEvent extends IgniteEventAdapter {
+public class IgniteJobEvent extends IgniteEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -88,7 +88,7 @@ public class GridJobEvent extends IgniteEventAdapter {
     /**
      * No-arg constructor.
      */
-    public GridJobEvent() {
+    public IgniteJobEvent() {
         // No-op.
     }
 
@@ -99,7 +99,7 @@ public class GridJobEvent extends IgniteEventAdapter {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridJobEvent(ClusterNode node, String msg, int type) {
+    public IgniteJobEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
@@ -219,7 +219,7 @@ public class GridJobEvent extends IgniteEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridJobEvent.class, this,
+        return S.toString(IgniteJobEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

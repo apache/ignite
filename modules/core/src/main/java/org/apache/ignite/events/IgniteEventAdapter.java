@@ -38,7 +38,7 @@ public class IgniteEventAdapter implements IgniteEvent {
     private int type;
 
     /** */
-    private long locId = GridEventLocalOrder.nextOrder();
+    private long locId = IgniteEventLocalOrder.nextOrder();
 
     /**
      * No-arg constructor.

@@ -254,7 +254,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof GridTaskEvent || evt instanceof GridJobEvent;
+                assert evt instanceof GridTaskEvent || evt instanceof IgniteJobEvent;
 
                 if (evt.type() == EVT_TASK_FINISHED ||
                     evt.type() == EVT_TASK_FAILED) {
@@ -269,7 +269,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
                 // avoid O(n*n/2) complexity, after that we can drop caches.
                 // Here we set mapped property and later cache will be ignored
                 else if (evt.type() == EVT_JOB_MAPPED) {
-                    IgniteUuid sesId = ((GridJobEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((IgniteJobEvent)evt).taskSessionId();
 
                     IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(sesId);
 
