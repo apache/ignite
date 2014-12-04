@@ -98,7 +98,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
                     try {
                         int levels = 20;
 
-                        GridCompute comp = ignite.compute().enableAsync();
+                        IgniteCompute comp = ignite.compute().enableAsync();
 
                         comp.execute(new GridSingleSplitTestTask(), levels);
 

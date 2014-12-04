@@ -283,7 +283,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private GridComputeTaskFuture<?> generateEvents(@Nullable Long timeout, GridComputeJob job) throws Exception {
-        GridCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().enableAsync();
 
         if (timeout == null)
             comp.execute(GridAllEventsTestTask.class.getName(), job);

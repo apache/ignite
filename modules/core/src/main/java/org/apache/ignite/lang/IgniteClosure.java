@@ -9,8 +9,6 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.compute.*;
-
 import java.io.*;
 
 /**
@@ -18,7 +16,7 @@ import java.io.*;
  * returns a value.
  * <p>
  * In GridGain closures are mainly used for executing distributed computations
- * on the grid, like in {@link GridCompute#apply(IgniteClosure, Object)} method.
+ * on the grid, like in {@link org.gridgain.grid.compute.IgniteCompute#apply(IgniteClosure, Object)} method.
  *
  * @param <E> Type of closure parameter.
  * @param <R> Type of the closure return value.

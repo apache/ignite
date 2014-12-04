@@ -76,7 +76,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         for (int i = 0; i < 5; i++) {
             refreshInitialData();
 
-            GridCompute comp = ignite.compute().enableAsync();
+            IgniteCompute comp = ignite.compute().enableAsync();
 
             comp.execute(GridTaskSessionTestTask.class.getName(), null);
 

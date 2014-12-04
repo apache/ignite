@@ -262,7 +262,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
     }
 
     /** {@inheritDoc} */
-    @Override public final GridCompute compute(ClusterGroup prj) {
+    @Override public final IgniteCompute compute(ClusterGroup prj) {
         return ((ClusterGroupAdapter)prj).compute();
     }
 

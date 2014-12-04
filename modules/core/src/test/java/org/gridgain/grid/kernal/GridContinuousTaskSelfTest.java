@@ -39,7 +39,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(0);
 
-            GridCompute comp = ignite.compute().enableAsync();
+            IgniteCompute comp = ignite.compute().enableAsync();
 
             comp.execute(TestJobsChainTask.class, true);
 
@@ -69,7 +69,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     try {
-                        GridCompute comp = ignite.compute().enableAsync();
+                        IgniteCompute comp = ignite.compute().enableAsync();
 
                         comp.execute(TestJobsChainTask.class, true);
 

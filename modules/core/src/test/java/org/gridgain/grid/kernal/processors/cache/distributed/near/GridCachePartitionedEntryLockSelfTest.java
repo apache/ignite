@@ -50,7 +50,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
 
                 assert e.isLocked();
 
-                GridCompute comp = compute(grid(i).forLocal()).enableAsync();
+                IgniteCompute comp = compute(grid(i).forLocal()).enableAsync();
 
                 comp.call(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {

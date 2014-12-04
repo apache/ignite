@@ -124,7 +124,7 @@ public final class ComputeFibonacciContinuationExample {
 
                     ClusterGroup p = g.cluster().forPredicate(nodeFilter);
 
-                    GridCompute compute = g.compute(p).enableAsync();
+                    IgniteCompute compute = g.compute(p).enableAsync();
 
                     // If future is not cached in node-local-map, cache it.
                     if (fut1 == null) {

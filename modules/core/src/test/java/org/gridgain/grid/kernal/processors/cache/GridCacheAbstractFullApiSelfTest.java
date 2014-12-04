@@ -3298,7 +3298,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            GridCompute comp = forLocal(dfltIgnite).enableAsync();
+            IgniteCompute comp = forLocal(dfltIgnite).enableAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override
@@ -3376,7 +3376,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
-            GridCompute comp = forLocal(dfltIgnite).enableAsync();
+            IgniteCompute comp = forLocal(dfltIgnite).enableAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {

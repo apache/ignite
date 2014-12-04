@@ -182,7 +182,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 if (locExec) {
                     ClusterGroup prj = ctx.grid().forSubjectId(clientId);
 
-                    GridCompute comp = ctx.grid().compute(prj).withTimeout(timeout).enableAsync();
+                    IgniteCompute comp = ctx.grid().compute(prj).withTimeout(timeout).enableAsync();
 
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
@@ -195,7 +195,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     // in order to provide user well-structured EmptyProjectionException.
                     ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId()));
 
-                    GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
+                    IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
 
                     comp.call(new ExeCallable(name, params, timeout, clientId));
 

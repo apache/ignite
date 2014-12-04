@@ -301,7 +301,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     long submitTime1 = t0;
 
-                    GridCompute comp = g.compute(g.cluster().forPredicate(serverNode)).enableAsync();
+                    IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode)).enableAsync();
 
                     comp.execute(RequestTask.class, new Message(terminalId, nodeId));
 

@@ -101,7 +101,7 @@ public class GridifySetToValueAbstractAspect {
      * Execute method on grid.
      *
      * @param mtd Method.
-     * @param compute {@link GridCompute} instance.
+     * @param compute {@link org.gridgain.grid.compute.IgniteCompute} instance.
      * @param cls Joint point signature class.
      * @param arg GridifyArgument with all method signature parameters.
      * @param nodeFilter Node filter.
@@ -112,7 +112,7 @@ public class GridifySetToValueAbstractAspect {
      * @return Result.
      * @throws GridException If execution failed.
      */
-    protected Object execute(Method mtd, GridCompute compute, Class<?> cls, GridifyRangeArgument arg,
+    protected Object execute(Method mtd, IgniteCompute compute, Class<?> cls, GridifyRangeArgument arg,
         GridifyNodeFilter nodeFilter, int threshold, int splitSize, long timeout) throws GridException {
         long now = U.currentTimeMillis();
 

@@ -98,7 +98,7 @@ import java.util.concurrent.*;
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
  */
-public interface GridCompute extends IgniteAsyncSupport {
+public interface IgniteCompute extends IgniteAsyncSupport {
     /**
      * Gets grid projection to which this {@code GridCompute} instance belongs.
      *
@@ -343,7 +343,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @param taskName Task name.
      * @return This {@code GridCompute} instance for chaining calls.
      */
-    public GridCompute withName(String taskName);
+    public IgniteCompute withName(String taskName);
 
     /**
      * Sets task timeout for the next executed task on this projection in the <b>current thread</b>.
@@ -359,7 +359,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      * @param timeout Computation timeout in milliseconds.
      * @return This {@code GridCompute} instance for chaining calls.
      */
-    public GridCompute withTimeout(long timeout);
+    public IgniteCompute withTimeout(long timeout);
 
     /**
      * Sets no-failover flag for the next executed task on this projection in the <b>current thread</b>.
@@ -374,7 +374,7 @@ public interface GridCompute extends IgniteAsyncSupport {
      *
      * @return This {@code GridCompute} instance for chaining calls.
      */
-    public GridCompute withNoFailover();
+    public IgniteCompute withNoFailover();
 
     /**
      * Explicitly deploys a task with given class loader on the local node. Upon completion of this method,
@@ -424,5 +424,5 @@ public interface GridCompute extends IgniteAsyncSupport {
     @Override public <R> GridComputeTaskFuture<R> future();
 
     /** {@inheritDoc} */
-    @Override public GridCompute enableAsync();
+    @Override public IgniteCompute enableAsync();
 }

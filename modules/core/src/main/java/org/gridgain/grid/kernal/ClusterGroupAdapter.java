@@ -42,7 +42,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private transient ClusterGroup parent;
 
     /** Compute. */
-    private transient GridComputeImpl compute;
+    private transient IgniteComputeImpl compute;
 
     /** Messaging. */
     private transient GridMessagingImpl messaging;
@@ -190,13 +190,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link GridCompute} for this projection.
+     * @return {@link org.gridgain.grid.compute.IgniteCompute} for this projection.
      */
-    public final GridCompute compute() {
+    public final IgniteCompute compute() {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new GridComputeImpl(ctx, this, subjId, false);
+            compute = new IgniteComputeImpl(ctx, this, subjId, false);
         }
 
         return compute;

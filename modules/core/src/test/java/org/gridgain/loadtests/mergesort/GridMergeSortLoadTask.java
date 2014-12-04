@@ -61,7 +61,7 @@ public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], in
                     // Future is null before holdcc() is called and
                     // not null after callcc() is called.
                     if (fut == null) {
-                        GridCompute comp = ignite.compute().enableAsync();
+                        IgniteCompute comp = ignite.compute().enableAsync();
 
                         // Launch the recursive child task asynchronously.
                         comp.execute(new GridMergeSortLoadTask(), arr);

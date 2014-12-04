@@ -1031,7 +1031,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        GridCompute comp = grid(idx).compute().enableAsync();
+                        IgniteCompute comp = grid(idx).compute().enableAsync();
 
                         comp.run(F.noop());
 

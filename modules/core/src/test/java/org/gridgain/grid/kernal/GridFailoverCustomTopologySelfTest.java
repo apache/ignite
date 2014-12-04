@@ -78,7 +78,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                 GridComputeTaskFuture<String> fut;
 
                 synchronized(mux){
-                    GridCompute comp = ignite1.compute().enableAsync();
+                    IgniteCompute comp = ignite1.compute().enableAsync();
 
                     comp.execute(JobTask.class, null);
 

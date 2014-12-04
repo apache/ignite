@@ -145,7 +145,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
     private static void changeTopology(Ignite parent, int add, int rmv, String type) throws GridException {
         Collection<GridComputeTaskFuture<?>> tasks = new ArrayList<>();
 
-        GridCompute comp = parent.compute().enableAsync();
+        IgniteCompute comp = parent.compute().enableAsync();
 
         // Start nodes in parallel.
         while (add-- > 0) {

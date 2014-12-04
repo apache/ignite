@@ -86,8 +86,8 @@ public final class DeploymentExample {
      * Example task used to demonstrate direct task deployment through API.
      * For this example this task as available on the classpath, however
      * in real life that may not always be the case. In those cases
-     * you should use explicit {@link GridCompute#localDeployTask(Class, ClassLoader)} apply and
-     * then use {@link GridCompute#execute(String, Object)}
+     * you should use explicit {@link org.gridgain.grid.compute.IgniteCompute#localDeployTask(Class, ClassLoader)} apply and
+     * then use {@link org.gridgain.grid.compute.IgniteCompute#execute(String, Object)}
      * method passing your task name as first parameter.
      * <p>
      * Note that this task specifies explicit task name. Task name is optional

@@ -164,7 +164,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute compute() {
+    @Override public IgniteCompute compute() {
         assert g != null;
 
         return g.compute();
@@ -206,7 +206,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute compute(ClusterGroup prj) {
+    @Override public IgniteCompute compute(ClusterGroup prj) {
         assert g != null;
 
         return g.compute(prj);

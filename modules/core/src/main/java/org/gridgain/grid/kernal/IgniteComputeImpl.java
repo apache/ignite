@@ -25,9 +25,9 @@ import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
 
 /**
- * {@link GridCompute} implementation.
+ * {@link org.gridgain.grid.compute.IgniteCompute} implementation.
  */
-public class GridComputeImpl implements GridCompute, Externalizable {
+public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridComputeImpl() {
+    public IgniteComputeImpl() {
         // No-op.
     }
 
@@ -56,7 +56,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
      * @param subjId Subject ID.
      * @param async Async support flag.
      */
-    public GridComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async) {
+    public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async) {
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
@@ -70,11 +70,11 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute enableAsync() {
+    @Override public IgniteCompute enableAsync() {
         if (asyncSup.isAsync())
             return this;
 
-        return new GridComputeImpl(ctx, prj, subjId, true);
+        return new IgniteComputeImpl(ctx, prj, subjId, true);
     }
 
     /** {@inheritDoc} */
@@ -344,7 +344,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withName(String taskName) {
+    @Override public IgniteCompute withName(String taskName) {
         A.notNull(taskName, "taskName");
 
         guard();
@@ -360,7 +360,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withTimeout(long timeout) {
+    @Override public IgniteCompute withTimeout(long timeout) {
         A.ensure(timeout >= 0, "timeout >= 0");
 
         guard();
@@ -376,7 +376,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withNoFailover() {
+    @Override public IgniteCompute withNoFailover() {
         guard();
 
         try {

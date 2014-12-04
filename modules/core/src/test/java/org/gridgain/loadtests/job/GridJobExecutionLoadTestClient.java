@@ -45,7 +45,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     /** {@inheritDoc} */
     @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
-        GridCompute rmts = g.compute(g.cluster().forRemotes());
+        IgniteCompute rmts = g.compute(g.cluster().forRemotes());
 
         while (!finish) {
             try {
@@ -183,7 +183,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     private static void warmUp(int noThreads) {
         X.println("Warming up...");
 
-        final GridCompute rmts = g.compute(g.cluster().forRemotes());
+        final IgniteCompute rmts = g.compute(g.cluster().forRemotes());
 
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
             @Nullable @Override public Object call() {

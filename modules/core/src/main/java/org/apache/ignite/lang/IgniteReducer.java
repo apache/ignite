@@ -9,7 +9,6 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.compute.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -18,7 +17,7 @@ import java.util.*;
 /**
  * Defines generic reducer that collects multiple values and reduces them into one.
  * Reducers are useful in computations when results from multiple remote jobs need
- * to be reduced into one, e.g. {@link GridCompute#call(Collection, IgniteReducer)} method.
+ * to be reduced into one, e.g. {@link org.gridgain.grid.compute.IgniteCompute#call(Collection, IgniteReducer)} method.
  *
  * @param <E> Type of collected values.
  * @param <R> Type of reduced value.

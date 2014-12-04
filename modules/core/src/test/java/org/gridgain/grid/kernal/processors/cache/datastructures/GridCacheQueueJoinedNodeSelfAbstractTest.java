@@ -79,7 +79,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         PutJob putJob = new PutJob(queueName);
 
-        GridCompute comp = compute(grid(0).forLocal()).enableAsync();
+        IgniteCompute comp = compute(grid(0).forLocal()).enableAsync();
 
         comp.run(putJob);
 

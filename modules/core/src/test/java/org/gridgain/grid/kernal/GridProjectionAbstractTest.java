@@ -316,7 +316,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void run1(AtomicInteger cnt) throws Exception {
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.broadcast(runJob);
 
@@ -338,7 +338,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void run2(AtomicInteger cnt) throws Exception {
         Collection<Runnable> jobs = F.asList(runJob);
 
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.run(jobs);
 
@@ -358,7 +358,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call1(AtomicInteger cnt) throws Exception {
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.broadcast(calJob);
 
@@ -378,7 +378,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call2(AtomicInteger cnt) throws Exception {
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         Collection<Callable<String>> jobs = F.asList(calJob);
 
@@ -400,7 +400,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call3(AtomicInteger cnt) throws Exception {
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.apply(clrJob, (String) null);
 
@@ -422,7 +422,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void call4(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.apply(clrJob, args);
 
@@ -442,7 +442,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call5(AtomicInteger cnt) throws Exception {
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.broadcast(new TestClosure(), "arg");
 
@@ -469,7 +469,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void forkjoin1(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.apply(clrJob, args, rdc);
 
@@ -491,7 +491,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void forkjoin2(AtomicInteger cnt) throws Exception {
         Collection<Callable<String>> jobs = F.asList(calJob);
 
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         comp.call(jobs, rdc);
 
@@ -636,7 +636,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If test failed.
      */
     private void checkActiveFutures() throws Exception {
-        GridCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).enableAsync();
 
         assertEquals(0, comp.activeTaskFutures().size());
 

@@ -431,7 +431,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Task future.
      * @throws GridException If failed.
      */
-    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, GridComputeTask task, @Nullable Object arg)
+    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, GridComputeTask task, @Nullable Object arg)
         throws GridException {
         comp = comp.enableAsync();
 
@@ -451,7 +451,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Task future.
      * @throws GridException If failed.
      */
-    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, String taskName, @Nullable Object arg)
+    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, String taskName, @Nullable Object arg)
         throws GridException {
         comp = comp.enableAsync();
 
@@ -472,7 +472,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, Class taskCls, @Nullable Object arg)
+    protected <R> GridComputeTaskFuture<R> executeAsync(IgniteCompute comp, Class taskCls, @Nullable Object arg)
         throws GridException {
         comp = comp.enableAsync();
 
@@ -509,17 +509,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param ignite Grid.
-     * @return {@link GridCompute} for given grid's local node.
+     * @return {@link org.gridgain.grid.compute.IgniteCompute} for given grid's local node.
      */
-    protected GridCompute forLocal(Ignite ignite) {
+    protected IgniteCompute forLocal(Ignite ignite) {
         return ignite.compute(ignite.cluster().forLocal());
     }
 
     /**
      * @param prj Projection.
-     * @return {@link GridCompute} for given projection.
+     * @return {@link org.gridgain.grid.compute.IgniteCompute} for given projection.
      */
-    protected GridCompute compute(ClusterGroup prj) {
+    protected IgniteCompute compute(ClusterGroup prj) {
         return prj.grid().compute(prj);
     }
 

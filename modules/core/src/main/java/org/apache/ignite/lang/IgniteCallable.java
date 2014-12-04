@@ -9,15 +9,13 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.compute.*;
-
 import java.io.*;
 import java.util.concurrent.*;
 
 /**
  * Grid-aware adapter for {@link Callable} implementations. It adds {@link Serializable} interface
  * to {@link Callable} object. Use this class for executing distributed computations on the grid,
- * like in {@link GridCompute#call(Callable)} method.
+ * like in {@link org.gridgain.grid.compute.IgniteCompute#call(Callable)} method.
  */
 public interface IgniteCallable<V> extends Callable<V>, Serializable {
 }

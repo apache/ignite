@@ -142,7 +142,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         throw new GridException("Could not instantiate a job.", e);
                     }
 
-                    GridCompute comp = ignite1.compute().enableAsync();
+                    IgniteCompute comp = ignite1.compute().enableAsync();
 
                     comp.call(job);
 

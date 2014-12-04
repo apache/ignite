@@ -56,7 +56,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void run() {
-        GridCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().enableAsync();
 
         while (true) {
             checkCompletion();

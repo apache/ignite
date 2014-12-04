@@ -119,7 +119,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     "the query): " + destId));
 
             try {
-                GridCompute comp = ctx.grid().compute(ctx.grid().forNodeId(destId)).withNoFailover().enableAsync();
+                IgniteCompute comp = ctx.grid().compute(ctx.grid().forNodeId(destId)).withNoFailover().enableAsync();
 
                 comp.call(c);
 
@@ -138,7 +138,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private IgniteFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        GridCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().enableAsync();
+        IgniteCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().enableAsync();
 
         try {
             comp.broadcast(c);

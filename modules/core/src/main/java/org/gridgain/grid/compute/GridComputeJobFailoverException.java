@@ -18,7 +18,7 @@ import java.util.concurrent.*;
  * This runtime exception can be thrown from {@link GridComputeJob#execute()} method to force
  * job failover to another node within task topology. Any
  * {@link org.apache.ignite.lang.IgniteClosure}, {@link Callable}, or {@link Runnable} instance passed into
- * any of the {@link GridCompute} methods can also throw this exception to force failover.
+ * any of the {@link IgniteCompute} methods can also throw this exception to force failover.
  */
 public class GridComputeJobFailoverException extends GridRuntimeException {
     /** */

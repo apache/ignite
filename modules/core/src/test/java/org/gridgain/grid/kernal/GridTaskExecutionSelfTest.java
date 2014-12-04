@@ -48,7 +48,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        GridCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().enableAsync();
 
         assertNull(comp.execute(GridTestTask.class,  "testArg"));
 

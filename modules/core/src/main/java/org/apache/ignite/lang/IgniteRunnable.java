@@ -9,14 +9,12 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.compute.*;
-
 import java.io.*;
 
 /**
  * Grid-aware adapter for {@link Runnable} implementations. It adds {@link Serializable} interface
  * to {@link Runnable} object. Use this class for executing distributed computations on the grid,
- * like in {@link GridCompute#run(Runnable)} method.
+ * like in {@link org.gridgain.grid.compute.IgniteCompute#run(Runnable)} method.
  */
 public interface IgniteRunnable extends Runnable, Serializable {
     // No-op.

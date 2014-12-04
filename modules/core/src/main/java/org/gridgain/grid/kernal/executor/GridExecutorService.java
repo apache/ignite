@@ -72,7 +72,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     private ClusterGroupAdapter prj;
 
     /** Compute. */
-    private GridCompute comp;
+    private IgniteCompute comp;
 
     /** Logger. */
     private GridLogger log;

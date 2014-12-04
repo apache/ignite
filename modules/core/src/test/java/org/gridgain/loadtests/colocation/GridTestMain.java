@@ -72,7 +72,7 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        GridCompute comp = g.compute().enableAsync();
+        IgniteCompute comp = g.compute().enableAsync();
 
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {

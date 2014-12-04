@@ -54,7 +54,7 @@ import java.util.concurrent.*;
  * <li>{@link GridStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
- * <li>{@link GridCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link org.gridgain.grid.compute.IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * </ul>
@@ -105,18 +105,18 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets {@code compute} functionality over this grid projection. All operations
-     * on the returned {@link GridCompute} instance will only include nodes from
+     * on the returned {@link org.gridgain.grid.compute.IgniteCompute} instance will only include nodes from
      * this projection.
      *
      * @return Compute instance over this grid projection.
      */
-    public GridCompute compute();
+    public IgniteCompute compute();
 
     /**
      * @param prj Projection.
      * @return Compute instance over given projection.
      */
-    public GridCompute compute(ClusterGroup prj);
+    public IgniteCompute compute(ClusterGroup prj);
 
     /**
      * Gets {@code messaging} functionality over this grid projection. All operations
