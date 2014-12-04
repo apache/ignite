@@ -10,14 +10,14 @@
 package org.gridgain.examples.compute;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 
 import java.util.*;
 
 /**
- * Demonstrates using of {@link org.gridgain.grid.lang.IgniteCallable} job execution on the grid.
+ * Demonstrates using of {@link org.apache.ignite.lang.IgniteCallable} job execution on the grid.
  * <p>
  * This example takes a sentence composed of multiple words and counts number of non-space
  * characters in the sentence by having each compute job count characters in each individual

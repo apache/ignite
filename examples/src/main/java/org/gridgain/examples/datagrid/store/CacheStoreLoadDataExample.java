@@ -10,10 +10,10 @@
 package org.gridgain.examples.datagrid.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 
 /**
  * Loads data from persistent store at cache startup by calling

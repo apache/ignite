@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  * <li>{@code apply(...)} methods execute {@link GridClosure} jobs over nodes in the projection.</li>
  * <li>
  *     {@code call(...)} methods execute {@link Callable} jobs over nodes in the projection.
- *     Use {@link org.gridgain.grid.lang.IgniteCallable} for better performance as it implements {@link Serializable}.
+ *     Use {@link org.apache.ignite.lang.IgniteCallable} for better performance as it implements {@link Serializable}.
  * </li>
  * <li>
  *     {@code run(...)} methods execute {@link Runnable} jobs over nodes in the projection.
@@ -51,7 +51,7 @@ import java.util.concurrent.*;
  * by the configured marshaller. For example, {@link GridOptimizedMarshaller} requires {@link Serializable}
  * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
  * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
- * GridGain provides analogous {@link org.apache.ignite.lang.IgniteRunnable} and {@link org.gridgain.grid.lang.IgniteCallable} classes which are
+ * GridGain provides analogous {@link org.apache.ignite.lang.IgniteRunnable} and {@link org.apache.ignite.lang.IgniteCallable} classes which are
  * {@link Serializable} and should be used to run computations on the grid.
  * <h1 class="header">Load Balancing</h1>
  * In all cases other than {@code broadcast(...)}, GridGain must select a node for a computation

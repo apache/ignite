@@ -24,7 +24,6 @@ import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.eviction.random.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
