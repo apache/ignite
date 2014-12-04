@@ -10,8 +10,8 @@
 package org.gridgain.grid.service;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 

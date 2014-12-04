@@ -10,6 +10,7 @@
 package org.gridgain.grid.messaging;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
