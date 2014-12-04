@@ -83,7 +83,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     public void testScheduleRunnable() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        GridSchedulerFuture<?> fut = null;
+        SchedulerFuture<?> fut = null;
 
         long freq = 60; // 1 minute frequency.
         long delay = 2; // 2 seconds delay.
@@ -146,7 +146,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testScheduleCallable() throws Exception {
-        GridSchedulerFuture<Integer> fut = null;
+        SchedulerFuture<Integer> fut = null;
 
         long freq = 60; // 1 minute frequency.
         long delay = 2; // 2 seconds delay.
@@ -203,7 +203,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRunnableCancel() throws Exception {
-        GridSchedulerFuture fut = null;
+        SchedulerFuture fut = null;
 
         final GridTuple<Integer> tpl = new GridTuple<>(0);
 
@@ -321,7 +321,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Waits until method {@link GridSchedulerFuture#last()} returns not a null value. Tries to call specified number
+     * Waits until method {@link org.gridgain.grid.scheduler.SchedulerFuture#last()} returns not a null value. Tries to call specified number
      * of attempts with 100ms interval between them.
      *
      * @param fut Schedule future to call method on.
@@ -330,7 +330,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("BusyWait")
-    private boolean waitForLastResult(GridSchedulerFuture<Integer> fut, int attempts) throws Exception {
+    private boolean waitForLastResult(SchedulerFuture<Integer> fut, int attempts) throws Exception {
         assert fut != null;
         assert attempts > 0;
 

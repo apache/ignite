@@ -33,7 +33,7 @@ public abstract class GridScheduleProcessorAdapter extends GridProcessorAdapter 
      *      and n2 is the number of task calls.
      * @return Descriptor of the scheduled execution.
      */
-    public abstract GridSchedulerFuture<?> schedule(final Runnable c, String pattern);
+    public abstract SchedulerFuture<?> schedule(final Runnable c, String pattern);
 
     /**
      * @param c Closure to schedule to run as a background cron-based job.
@@ -41,5 +41,5 @@ public abstract class GridScheduleProcessorAdapter extends GridProcessorAdapter 
      *      and n2 is the number of task calls.
      * @return Descriptor of the scheduled execution.
      */
-    public abstract <R> GridSchedulerFuture<R> schedule(Callable<R> c, String pattern);
+    public abstract <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern);
 }

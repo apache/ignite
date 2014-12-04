@@ -33,9 +33,9 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
- * Implementation of {@link GridSchedulerFuture} interface.
+ * Implementation of {@link org.gridgain.grid.scheduler.SchedulerFuture} interface.
  */
-class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements GridSchedulerFuture<R>, Externalizable {
+class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements SchedulerFuture<R>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -174,7 +174,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridScheduleFutureImpl() {
+    public ScheduleFutureImpl() {
         // No-op.
     }
 
@@ -185,7 +185,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      * @param ctx Kernal context.
      * @param pat Cron pattern.
      */
-    GridScheduleFutureImpl(Scheduler sched, GridKernalContext ctx, String pat) {
+    ScheduleFutureImpl(Scheduler sched, GridKernalContext ctx, String pat) {
         assert sched != null;
         assert ctx != null;
         assert pat != null;
@@ -611,7 +611,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx, syncNotify) {
             @Override public String toString() {
-                return "ChainFuture[orig=" + GridScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
+                return "ChainFuture[orig=" + ScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
             }
         };
 
@@ -632,7 +632,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         assert !Thread.holdsLock(mux);
         assert ctx != null;
 
-        final GridSchedulerFuture<R> snapshot = snapshot(res, err);
+        final SchedulerFuture<R> snapshot = snapshot(res, err);
 
         if (syncNotify)
             lsnr.apply(snapshot);
@@ -661,7 +661,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
             tmp = new ArrayList<>(lsnrs);
         }
 
-        final GridSchedulerFuture<R> snapshot = snapshot(res, err);
+        final SchedulerFuture<R> snapshot = snapshot(res, err);
 
         if (concurNotify) {
             for (final IgniteInClosure<? super IgniteFuture<R>> lsnr : tmp)
@@ -763,8 +763,8 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      * @param err Last error.
      * @return Future snapshot.
      */
-    private GridSchedulerFuture<R> snapshot(R res, Throwable err) {
-        return new GridScheduleFutureSnapshot<>(this, res, err);
+    private SchedulerFuture<R> snapshot(R res, Throwable err) {
+        return new ScheduleFutureSnapshot<>(this, res, err);
     }
 
     /**
@@ -772,13 +772,13 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      *
      * @param <R>
      */
-    private static class GridScheduleFutureSnapshot<R> extends GridMetadataAwareAdapter implements
-        GridSchedulerFuture<R> {
+    private static class ScheduleFutureSnapshot<R> extends GridMetadataAwareAdapter implements
+        SchedulerFuture<R> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private GridScheduleFutureImpl<R> ref;
+        private ScheduleFutureImpl<R> ref;
 
         /** */
         private R res;
@@ -792,7 +792,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
          * @param res Last result.
          * @param err Throwable.
          */
-        GridScheduleFutureSnapshot(GridScheduleFutureImpl<R> ref, R res, Throwable err) {
+        ScheduleFutureSnapshot(ScheduleFutureImpl<R> ref, R res, Throwable err) {
             assert ref != null;
 
             this.ref = ref;
@@ -994,6 +994,6 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridScheduleFutureImpl.class, this);
+        return S.toString(ScheduleFutureImpl.class, this);
     }
 }

@@ -27,12 +27,12 @@ public class GridNoopScheduleProcessor extends GridScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSchedulerFuture<?> schedule(Runnable c, String pattern) {
+    @Override public SchedulerFuture<?> schedule(Runnable c, String pattern) {
         throw processorException();
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridSchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
         throw processorException();
     }
 

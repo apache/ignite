@@ -14,7 +14,7 @@ package org.gridgain.scalar.pimps
 import org.apache.ignite.{IgniteCluster, Ignite}
 import org.gridgain.grid._
 import org.jetbrains.annotations.Nullable
-import org.gridgain.grid.scheduler.GridSchedulerFuture
+import org.gridgain.grid.scheduler.SchedulerFuture
 
 /**
  * Companion object.
@@ -65,7 +65,7 @@ class ScalarGridPimp extends ScalarProjectionPimp[IgniteCluster] with ScalarTask
      *     where `n1` is delay of scheduling in seconds and `n2` is the number of execution. Both
      *     parameters are optional.
      */
-    def scheduleLocalCall[R](@Nullable s: Call[R], ptrn: String): GridSchedulerFuture[R] = {
+    def scheduleLocalCall[R](@Nullable s: Call[R], ptrn: String): SchedulerFuture[R] = {
         assert(ptrn != null)
 
         value.grid().scheduler().scheduleLocal(toCallable(s), ptrn)
@@ -79,7 +79,7 @@ class ScalarGridPimp extends ScalarProjectionPimp[IgniteCluster] with ScalarTask
      *     where `n1` is delay of scheduling in seconds and `n2` is the number of execution. Both
      *     parameters are optional.
      */
-    def scheduleLocalRun(@Nullable s: Run, ptrn: String): GridSchedulerFuture[_] = {
+    def scheduleLocalRun(@Nullable s: Run, ptrn: String): SchedulerFuture[_] = {
         assert(ptrn != null)
 
         value.grid().scheduler().scheduleLocal(toRunnable(s), ptrn)

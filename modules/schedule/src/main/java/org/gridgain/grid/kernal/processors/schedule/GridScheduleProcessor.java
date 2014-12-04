@@ -29,7 +29,7 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
     private Scheduler sched;
 
     /** Schedule futures. */
-    private Set<GridSchedulerFuture<?>> schedFuts = new GridConcurrentHashSet<>();
+    private Set<SchedulerFuture<?>> schedFuts = new GridConcurrentHashSet<>();
 
     /**
      * @param ctx Kernal context.
@@ -39,11 +39,11 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSchedulerFuture<?> schedule(final Runnable c, String pattern) {
+    @Override public SchedulerFuture<?> schedule(final Runnable c, String pattern) {
         assert c != null;
         assert pattern != null;
 
-        GridScheduleFutureImpl<Object> fut = new GridScheduleFutureImpl<>(sched, ctx, pattern);
+        ScheduleFutureImpl<Object> fut = new ScheduleFutureImpl<>(sched, ctx, pattern);
 
         fut.schedule(new IgniteCallable<Object>() {
             @Nullable @Override public Object call() {
@@ -57,11 +57,11 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridSchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
         assert c != null;
         assert pattern != null;
 
-        GridScheduleFutureImpl<R> fut = new GridScheduleFutureImpl<>(sched, ctx, pattern);
+        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, pattern);
 
         fut.schedule(c);
 
@@ -72,7 +72,7 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
      *
      * @return Future objects of currently scheduled active(not finished) tasks.
      */
-    public Collection<GridSchedulerFuture<?>> getScheduledFutures() {
+    public Collection<SchedulerFuture<?>> getScheduledFutures() {
         return Collections.unmodifiableList(new ArrayList<>(schedFuts));
     }
 
@@ -81,7 +81,7 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
      *
      * @param fut Future object.
      */
-    void onDescheduled(GridSchedulerFuture<?> fut) {
+    void onDescheduled(SchedulerFuture<?> fut) {
         assert fut != null;
 
         schedFuts.remove(fut);
@@ -92,7 +92,7 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
      *
      * @param fut Future object.
      */
-    void onScheduled(GridSchedulerFuture<?> fut) {
+    void onScheduled(SchedulerFuture<?> fut) {
         assert fut != null;
 
         schedFuts.add(fut);

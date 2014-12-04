@@ -41,7 +41,7 @@ public class ComputeScheduleExample {
             System.out.println("Compute schedule example started.");
 
             // Schedule output message every minute.
-            GridSchedulerFuture<?> fut = g.scheduler().scheduleLocal(
+            SchedulerFuture<?> fut = g.scheduler().scheduleLocal(
                 new Callable<Integer>() {
                     private int invocations;
 
