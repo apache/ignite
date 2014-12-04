@@ -182,7 +182,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     @ComputeTaskSessionFullSupport
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */

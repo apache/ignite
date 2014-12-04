@@ -24,7 +24,7 @@ import java.util.concurrent.*;
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * <li>{@link GridSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
- * <li>{@link GridUserResource @GridUserResource}</li>
+ * <li>{@link IgniteUserResource @GridUserResource}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:

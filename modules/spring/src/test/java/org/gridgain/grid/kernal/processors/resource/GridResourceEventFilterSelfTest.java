@@ -109,7 +109,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
     public static final class CustomEventFilter1 implements IgnitePredicate<IgniteEvent> {
         /** User resource. */
         @SuppressWarnings("unused")
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource1 rsrc;
 
         /** Grid ID. */
@@ -130,7 +130,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
     public static final class CustomEventFilter2 implements IgnitePredicate<IgniteEvent> {
         /** User resource. */
         @SuppressWarnings("unused")
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource1 rsrc;
 
         /** Logger. */

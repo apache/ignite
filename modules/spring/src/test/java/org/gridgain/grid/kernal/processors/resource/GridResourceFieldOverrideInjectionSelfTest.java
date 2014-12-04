@@ -95,7 +95,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         private GridLogger log;
 
         /** */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource rsrc;
 
         /** */
@@ -103,7 +103,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         private transient UserSpringBean springBean;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** */
@@ -129,7 +129,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @GridUserResource
+                    @IgniteUserResource
                     private transient UserResource rsrc;
 
                     /** */
@@ -137,7 +137,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
                     private GridLogger log;
 
                     /** */
-                    @GridTaskSessionResource
+                    @IgniteTaskSessionResource
                     private ComputeTaskSession ses;
 
                     /** */

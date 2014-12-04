@@ -156,7 +156,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /**

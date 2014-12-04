@@ -86,7 +86,7 @@ import java.util.*;
  * grid resources. Both, field and method based injection are supported.
  * The following grid resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.GridTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteJobContextResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
@@ -114,7 +114,7 @@ import java.util.*;
  * of certain event or state change that occurred during job execution.
  * <p>
  * Distributed task session can be injected into {@link ComputeJob} implementation
- * using {@link org.apache.ignite.resources.GridTaskSessionResource @GridTaskSessionResource} annotation.
+ * using {@link org.apache.ignite.resources.IgniteTaskSessionResource @GridTaskSessionResource} annotation.
  * Both, field and method based injections are supported. Refer to
  * {@link ComputeTaskSession} documentation for more information on session functionality.
  * <p>

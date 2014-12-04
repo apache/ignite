@@ -128,7 +128,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Task session. */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
@@ -145,7 +145,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     @IgniteLocalNodeIdResource
                     private UUID nodeId;
 
-                    @GridTaskSessionResource
+                    @IgniteTaskSessionResource
                     private ComputeTaskSession ses;
 
                     @Override public Object execute() throws GridException {
@@ -184,7 +184,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Task session. */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
@@ -199,7 +199,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     @IgniteLocalNodeIdResource
                     private UUID nodeId;
 
-                    @GridTaskSessionResource
+                    @IgniteTaskSessionResource
                     private ComputeTaskSession ses;
 
                     @Override public Object execute() throws GridException {

@@ -67,7 +67,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @GridTaskSessionResource
+                    @IgniteTaskSessionResource
                     private ComputeTaskSession taskSes;
 
                     /** */

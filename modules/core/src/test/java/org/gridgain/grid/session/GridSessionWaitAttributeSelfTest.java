@@ -414,7 +414,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     /** */
     public static class TestSessionJob extends ComputeJobAdapter {
         /** */
-        @GridTaskSessionResource private ComputeTaskSession taskSes;
+        @IgniteTaskSessionResource
+        private ComputeTaskSession taskSes;
 
         /** */
         @IgniteJobContextResource

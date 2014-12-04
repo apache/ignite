@@ -24,18 +24,19 @@ import static org.gridgain.grid.external.resource.GridAbstractUserExternalResour
  */
 public class GridUserExternalResourceTask1 extends ComputeTaskSplitAdapter<Object, Object> {
     /** User resource. */
-    @GridUserResource(resourceClass = GridUserExternalResource1.class)
+    @IgniteUserResource(resourceClass = GridUserExternalResource1.class)
     private transient GridAbstractUserExternalResource rsrc1;
 
     /** User resource. */
-    @GridUserResource private transient GridUserExternalResource2 rsrc2;
+    @IgniteUserResource
+    private transient GridUserExternalResource2 rsrc2;
 
     /** User resource. */
-    @GridUserResource(resourceClass = GridUserExternalResource1.class, resourceName = "rsrc3")
+    @IgniteUserResource(resourceClass = GridUserExternalResource1.class, resourceName = "rsrc3")
     private transient GridAbstractUserExternalResource rsrc3;
 
     /** User resource. */
-    @GridUserResource(resourceName = "rsrc4")
+    @IgniteUserResource(resourceName = "rsrc4")
     private transient GridUserExternalResource2 rsrc4;
 
     /** */
@@ -91,18 +92,19 @@ public class GridUserExternalResourceTask1 extends ComputeTaskSplitAdapter<Objec
      */
     public final class GridUserExternalResourceJob1 extends ComputeJobAdapter {
         /** User resource. */
-        @GridUserResource private transient GridUserExternalResource1 rsrc5;
+        @IgniteUserResource
+        private transient GridUserExternalResource1 rsrc5;
 
         /** User resource. */
-        @GridUserResource(resourceClass = GridUserExternalResource2.class)
+        @IgniteUserResource(resourceClass = GridUserExternalResource2.class)
         private transient GridAbstractUserExternalResource rsrc6;
 
         /** User resource. */
-        @GridUserResource(resourceName = "rsrc3")
+        @IgniteUserResource(resourceName = "rsrc3")
         private transient GridUserExternalResource1 rsrc7;
 
         /** User resource. */
-        @GridUserResource(resourceClass = GridUserExternalResource2.class, resourceName = "rsrc4")
+        @IgniteUserResource(resourceClass = GridUserExternalResource2.class, resourceName = "rsrc4")
         private transient GridAbstractUserExternalResource rsrc8;
 
         /** {@inheritDoc} */

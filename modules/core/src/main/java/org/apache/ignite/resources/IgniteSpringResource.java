@@ -26,7 +26,7 @@ import java.lang.annotation.*;
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * <li>{@link GridSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
- * <li>{@link GridUserResource @GridUserResource}</li>
+ * <li>{@link IgniteUserResource @GridUserResource}</li>
  * </ul>
  * <p>
  * <h1 class="header">Resource Name</h1>

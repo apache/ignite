@@ -93,7 +93,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     @SuppressWarnings({"PublicInnerClass", "unused"})
     public static class TestTask implements ComputeTask<Object, Object> {
         /** */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */

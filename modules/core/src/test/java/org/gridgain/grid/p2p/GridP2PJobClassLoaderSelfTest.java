@@ -105,7 +105,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      */
     public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource rsrcTask;
 
         /**
@@ -123,7 +123,8 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonList(new ComputeJobAdapter() {
                     /** User resource */
-                    @GridUserResource private transient UserResource rsrcJob;
+                    @IgniteUserResource
+                    private transient UserResource rsrcJob;
 
                     /** {@inheritDoc} */
                     @SuppressWarnings({"ObjectEquality"})

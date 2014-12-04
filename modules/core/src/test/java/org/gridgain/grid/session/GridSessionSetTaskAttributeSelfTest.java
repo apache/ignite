@@ -110,7 +110,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
         private GridLogger log;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */

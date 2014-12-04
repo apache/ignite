@@ -88,7 +88,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         private UUID targetNodeId;
 
         /** Session. */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /**
@@ -132,7 +132,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PublicInnerClass")
     public static class Job extends ComputeJobAdapter {
         /** Session. */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */

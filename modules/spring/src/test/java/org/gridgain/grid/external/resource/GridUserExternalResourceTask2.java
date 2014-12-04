@@ -25,18 +25,19 @@ import static org.gridgain.grid.external.resource.GridAbstractUserExternalResour
 @SuppressWarnings("PublicInnerClass")
 public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Object, Object> {
     /** User resource. */
-    @GridUserResource private transient GridUserExternalResource1 rsrc1;
+    @IgniteUserResource
+    private transient GridUserExternalResource1 rsrc1;
 
     /** User resource. */
-    @GridUserResource(resourceClass = GridUserExternalResource2.class)
+    @IgniteUserResource(resourceClass = GridUserExternalResource2.class)
     private transient GridAbstractUserExternalResource rsrc2;
 
     /** User resource. */
-    @GridUserResource(resourceName = "rsrc3")
+    @IgniteUserResource(resourceName = "rsrc3")
     private transient GridUserExternalResource1 rsrc3;
 
     /** User resource. */
-    @GridUserResource(resourceClass = GridUserExternalResource2.class, resourceName = "rsrc4")
+    @IgniteUserResource(resourceClass = GridUserExternalResource2.class, resourceName = "rsrc4")
     private transient GridAbstractUserExternalResource rsrc4;
 
     /** */
@@ -44,7 +45,8 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
     private GridLogger log;
 
     /** */
-    @GridTaskSessionResource private ComputeTaskSession ses;
+    @IgniteTaskSessionResource
+    private ComputeTaskSession ses;
 
     /** {@inheritDoc} */
     @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -94,18 +96,19 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
      */
     public final class GridUserExternalResourceJob2 extends ComputeJobAdapter {
         /** User resource. */
-        @GridUserResource(resourceClass = GridUserExternalResource1.class)
+        @IgniteUserResource(resourceClass = GridUserExternalResource1.class)
         private transient GridAbstractUserExternalResource rsrc5;
 
         /** User resource. */
-        @GridUserResource private transient GridUserExternalResource2 rsrc6;
+        @IgniteUserResource
+        private transient GridUserExternalResource2 rsrc6;
 
         /** User resource. */
-        @GridUserResource(resourceClass = GridUserExternalResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = GridUserExternalResource1.class, resourceName = "rsrc3")
         private transient GridAbstractUserExternalResource rsrc7;
 
         /** User resource. */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         private transient GridUserExternalResource2 rsrc8;
 
         /** */

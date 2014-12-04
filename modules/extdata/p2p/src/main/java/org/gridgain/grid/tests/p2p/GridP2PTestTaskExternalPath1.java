@@ -84,7 +84,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
         /** User resource. */
-        @GridUserResource
+        @IgniteUserResource
         private transient GridTestUserResource rsrc;
 
         /** Local node ID. */
@@ -92,7 +92,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
         private UUID locNodeId;
 
         /** Task session. */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** */

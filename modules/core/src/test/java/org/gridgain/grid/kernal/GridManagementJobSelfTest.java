@@ -119,7 +119,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
      */
     private static class TestJob implements Callable<Object>, Serializable {
         /** Task session. */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         protected ComputeTaskSession ses;
 
         /** {@inheritDoc} */

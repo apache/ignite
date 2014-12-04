@@ -128,7 +128,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc1 User defined resource.
          */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         @SuppressWarnings("unused")
         public void setResource1(GridAbstractUserResource rsrc1) {
             this.rsrc1 = rsrc1;
@@ -137,7 +137,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc2 User defined resource.
          */
-        @GridUserResource
+        @IgniteUserResource
         @SuppressWarnings("unused")
         protected void setResource2(UserResource2 rsrc2) {
             this.rsrc2 = rsrc2;
@@ -146,7 +146,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc3 User defined resource.
          */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         @SuppressWarnings("unused")
         public void setResource3(GridAbstractUserResource rsrc3) {
             this.rsrc3 = rsrc3;
@@ -155,7 +155,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc4 User defined resource.
          */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         @SuppressWarnings("unused")
         public void setResource4(UserResource2 rsrc4) {
             this.rsrc4 = rsrc4;
@@ -223,7 +223,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param ses GridComputeTaskSession.
          */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         @SuppressWarnings("unused")
         public void setSession(ComputeTaskSession ses) {
             this.ses = ses;
@@ -241,7 +241,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param mapper continuous mapper.
          */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         @SuppressWarnings("unused")
         public void setMapper(ComputeTaskContinuousMapper mapper) {
             this.mapper = mapper;
@@ -255,7 +255,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc1 User resource.
          */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         @Override public void setResource1(GridAbstractUserResource rsrc1) {
             this.rsrc1 = rsrc1;
         }
@@ -263,7 +263,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc2 UserResource2
          */
-        @GridUserResource
+        @IgniteUserResource
         @Override public void setResource2(UserResource2 rsrc2) {
             this.rsrc2 = rsrc2;
         }
@@ -271,7 +271,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc3 The grid resource.
          */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         @Override public void setResource3(GridAbstractUserResource rsrc3) {
             this.rsrc3 = rsrc3;
         }
@@ -279,7 +279,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param rsrc4 The grid resource.
          */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         @Override public void setResource4(UserResource2 rsrc4) {
             this.rsrc4 = rsrc4;
         }
@@ -370,28 +370,28 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                      * @param rsrc5 User resource.
                      */
                     @SuppressWarnings("unused")
-                    @GridUserResource(resourceClass = UserResource1.class)
+                    @IgniteUserResource(resourceClass = UserResource1.class)
                     public void setResource5(GridAbstractUserResource rsrc5) { this.rsrc5 = rsrc5; }
 
                     /**
                      * @param rsrc6 User resource.
                      */
                     @SuppressWarnings("unused")
-                    @GridUserResource
+                    @IgniteUserResource
                     public void setResource6(UserResource2 rsrc6) { this.rsrc6 = rsrc6; }
 
                     /**
                      * @param rsrc7 User resource.
                      */
                     @SuppressWarnings("unused")
-                    @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
                     public void setResource7(GridAbstractUserResource rsrc7) { this.rsrc7 = rsrc7; }
 
                     /**
                      * @param rsrc8 User resource.
                      */
                     @SuppressWarnings("unused")
-                    @GridUserResource(resourceName = "rsrc4")
+                    @IgniteUserResource(resourceName = "rsrc4")
                     public void setResource8(UserResource2 rsrc8) { this.rsrc8 = rsrc8; }
 
                     /**

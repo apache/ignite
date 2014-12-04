@@ -50,7 +50,7 @@ public class GridJobLoadTestJob implements ComputeJob {
     private ComputeJobContext cntx;
 
     /** Task session. */
-    @GridTaskSessionResource
+    @IgniteTaskSessionResource
     private ComputeTaskSession taskSes;
 
     /**

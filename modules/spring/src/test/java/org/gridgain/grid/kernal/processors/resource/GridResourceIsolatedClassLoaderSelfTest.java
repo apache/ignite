@@ -297,18 +297,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
     /** */
     public static class SharedResourceTask1 extends ComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridAbstractUserResource rsrc1;
 
         /** User resource. */
-        @GridUserResource private transient UserResource2 rsrc2;
+        @IgniteUserResource
+        private transient UserResource2 rsrc2;
 
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         private transient GridAbstractUserResource rsrc3;
 
         /** User resource. */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         private transient UserResource2 rsrc4;
 
         /** */
@@ -360,18 +361,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
          */
         public final class GridSharedJob1 extends ComputeJobAdapter {
             /** User resource. */
-            @GridUserResource(resourceClass = UserResource1.class)
+            @IgniteUserResource(resourceClass = UserResource1.class)
             private transient GridAbstractUserResource rsrc5;
 
             /** Global resource. */
-            @GridUserResource private transient UserResource2 rsrc6;
+            @IgniteUserResource
+            private transient UserResource2 rsrc6;
 
             /** User resource. */
-            @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+            @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
             private transient GridAbstractUserResource rsrc7;
 
             /** Global resource. */
-            @GridUserResource(resourceName = "rsrc4")
+            @IgniteUserResource(resourceName = "rsrc4")
             private transient UserResource2 rsrc8;
 
             /** {@inheritDoc} */
@@ -413,18 +415,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
     /** */
     public static class SharedResourceTask2 extends ComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridAbstractUserResource rsrc1;
 
         /** User resource. */
-        @GridUserResource private transient UserResource2 rsrc2;
+        @IgniteUserResource
+        private transient UserResource2 rsrc2;
 
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         private transient GridAbstractUserResource rsrc3;
 
         /** User resource. */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         private transient UserResource2 rsrc4;
 
         /** */
@@ -455,18 +458,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** User resource. */
-                    @GridUserResource(resourceClass = UserResource1.class)
+                    @IgniteUserResource(resourceClass = UserResource1.class)
                     private transient GridAbstractUserResource rsrc5;
 
                     /** User resource */
-                    @GridUserResource private transient UserResource2 rsrc6;
+                    @IgniteUserResource
+                    private transient UserResource2 rsrc6;
 
                     /** User resource. */
-                    @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
                     private transient GridAbstractUserResource rsrc7;
 
                     /** User resource */
-                    @GridUserResource(resourceName = "rsrc4")
+                    @IgniteUserResource(resourceName = "rsrc4")
                     private transient UserResource2 rsrc8;
 
                     /** {@inheritDoc} */
@@ -525,18 +529,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
     @ComputeTaskName("name")
     public static class SharedResourceTask3 extends ComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridAbstractUserResource rsrc1;
 
         /** User resource. */
-        @GridUserResource private transient UserResource2 rsrc2;
+        @IgniteUserResource
+        private transient UserResource2 rsrc2;
 
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         private transient GridAbstractUserResource rsrc3;
 
         /** User resource. */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         private transient UserResource2 rsrc4;
 
         /** */
@@ -567,18 +572,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** User resource. */
-                    @GridUserResource(resourceClass = UserResource1.class)
+                    @IgniteUserResource(resourceClass = UserResource1.class)
                     private transient GridAbstractUserResource rsrc5;
 
                     /** User resource */
-                    @GridUserResource private transient UserResource2 rsrc6;
+                    @IgniteUserResource
+                    private transient UserResource2 rsrc6;
 
                     /** User resource. */
-                    @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
                     private transient GridAbstractUserResource rsrc7;
 
                     /** User resource */
-                    @GridUserResource(resourceName = "rsrc4")
+                    @IgniteUserResource(resourceName = "rsrc4")
                     private transient UserResource2 rsrc8;
 
                     /** {@inheritDoc} */
@@ -637,18 +643,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
     @ComputeTaskName("name")
     public static class SharedResourceTask4 extends ComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridAbstractUserResource rsrc1;
 
         /** User resource. */
-        @GridUserResource private transient UserResource2 rsrc2;
+        @IgniteUserResource
+        private transient UserResource2 rsrc2;
 
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         private transient GridAbstractUserResource rsrc3;
 
         /** User resource. */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         private transient UserResource2 rsrc4;
 
         /** */
@@ -679,18 +686,19 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** User resource. */
-                    @GridUserResource(resourceClass = UserResource1.class)
+                    @IgniteUserResource(resourceClass = UserResource1.class)
                     private transient GridAbstractUserResource rsrc5;
 
                     /** User resource */
-                    @GridUserResource private transient UserResource2 rsrc6;
+                    @IgniteUserResource
+                    private transient UserResource2 rsrc6;
 
                     /** User resource. */
-                    @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
                     private transient GridAbstractUserResource rsrc7;
 
                     /** User resource */
-                    @GridUserResource(resourceName = "rsrc4")
+                    @IgniteUserResource(resourceName = "rsrc4")
                     private transient UserResource2 rsrc8;
 
                     /** {@inheritDoc} */

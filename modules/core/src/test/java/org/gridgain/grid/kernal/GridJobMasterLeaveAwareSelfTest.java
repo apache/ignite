@@ -652,7 +652,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private int jobCnt;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession taskSes;
 
         /**

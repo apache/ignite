@@ -31,7 +31,7 @@ import java.util.concurrent.locks.*;
  * Custom injector implementation works with user resources.
  * Injector creates and collects all created user resources.
  * All resources will be cleaned before task undeploy.
- * Task resources should be marked in task with {@link GridUserResource} annotation.
+ * Task resources should be marked in task with {@link org.apache.ignite.resources.IgniteUserResource} annotation.
  */
 class GridResourceCustomInjector implements GridResourceInjector {
     /** Class-based resource attachment. */
@@ -292,7 +292,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
         GridDeployment dep) throws GridException {
         assert dep != null;
 
-        GridUserResource ann = (GridUserResource)field.getAnnotation();
+        IgniteUserResource ann = (IgniteUserResource)field.getAnnotation();
 
         assert ann != null;
 
@@ -314,7 +314,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
         throws GridException {
         assert dep != null;
 
-        GridUserResource ann = (GridUserResource)mtd.getAnnotation();
+        IgniteUserResource ann = (IgniteUserResource)mtd.getAnnotation();
 
         if (mtd.getMethod().getParameterTypes().length != 1)
             throw new GridException("Method injection setter must have only one parameter: " + mtd.getMethod());

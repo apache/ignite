@@ -159,7 +159,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
     public static class NonTransientUserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private GridAbstractUserResource rsrc;
 
         /** {@inheritDoc} */
@@ -241,7 +241,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param rsrc1 Resource 1.
          */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         public void setResource1(GridAbstractUserResource rsrc1) {
             this.rsrc1 = rsrc1;
         }
@@ -249,7 +249,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param rsrc2 Resource 2.
          */
-        @GridUserResource
+        @IgniteUserResource
         public void setResource2(UserResource2 rsrc2) {
             this.rsrc2 = rsrc2;
         }
@@ -257,7 +257,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param rsrc3 Resource 3.
          */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         public void setResource3(GridAbstractUserResource rsrc3) {
             this.rsrc3 = rsrc3;
         }
@@ -265,7 +265,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param rsrc4 Resource 4.
          */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         public void setResource4(UserResource2 rsrc4) {
             this.rsrc4 = rsrc4;
         }
@@ -345,7 +345,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param ses Task session.
          */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         public void setSession(ComputeTaskSession ses) {
             this.ses = ses;
         }
@@ -385,7 +385,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param mapper Task Continuous Mapper.
          */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         public void setMapper(ComputeTaskContinuousMapper mapper) {
             this.mapper = mapper;
         }
@@ -461,7 +461,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     /**
                      * @param rsrc5 Resource 5.
                      */
-                    @GridUserResource(resourceClass = UserResource3.class)
+                    @IgniteUserResource(resourceClass = UserResource3.class)
                     public void setResource5(GridAbstractUserResource rsrc5) {
                         this.rsrc5 = rsrc5;
                     }
@@ -469,7 +469,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     /**
                      * @param rsrc6 Resource 6.
                      */
-                    @GridUserResource
+                    @IgniteUserResource
                     public void setResource6(UserResource4 rsrc6) {
                         this.rsrc6 = rsrc6;
                     }
@@ -477,7 +477,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     /**
                      * @param rsrc7 Resource 7.
                      */
-                    @GridUserResource
+                    @IgniteUserResource
                     public void setResource7(UserResource5 rsrc7) {
                         this.rsrc7 = rsrc7;
                     }
@@ -485,7 +485,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     /**
                      * @param rsrc8 Resource 8.
                      */
-                    @GridUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
+                    @IgniteUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
                     public void setResource8(GridAbstractUserResource rsrc8) {
                         this.rsrc8 = rsrc8;
                     }
@@ -493,7 +493,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     /**
                      * @param rsrc9 Resource 9.
                      */
-                    @GridUserResource(resourceName = "rsrc9")
+                    @IgniteUserResource(resourceName = "rsrc9")
                     public void setResource9(UserResource4 rsrc9) {
                         this.rsrc9 = rsrc9;
                     }
@@ -501,7 +501,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                     /**
                      * @param rsrc10 Resource 10.
                      */
-                    @GridUserResource(resourceName = "rsrc10")
+                    @IgniteUserResource(resourceName = "rsrc10")
                     public void setResource10(UserResource5 rsrc10) {
                         this.rsrc10 = rsrc10;
                     }

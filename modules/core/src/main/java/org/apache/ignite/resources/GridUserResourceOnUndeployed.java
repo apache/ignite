@@ -12,7 +12,7 @@ package org.apache.ignite.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a special method inside injected user-defined resources {@link GridUserResource}. This
+ * Annotates a special method inside injected user-defined resources {@link IgniteUserResource}. This
  * annotation is typically used to de-initialize user-defined resource. For example, the method with
  * this annotation can close database connection, or perform certain cleanup. Note that this method
  * will be called before any injected resources on this user-defined resource are cleaned up.

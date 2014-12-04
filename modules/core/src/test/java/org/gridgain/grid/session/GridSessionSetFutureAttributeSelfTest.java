@@ -164,7 +164,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
         private GridLogger log;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */

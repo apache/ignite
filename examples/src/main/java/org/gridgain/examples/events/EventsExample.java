@@ -125,7 +125,7 @@ public class EventsExample {
         for (int i = 0; i < 10; i++) {
             g.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new IgniteRunnable() {
                 // Auto-inject task session.
-                @GridTaskSessionResource
+                @IgniteTaskSessionResource
                 private ComputeTaskSession ses;
 
                 @Override public void run() {

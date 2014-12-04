@@ -246,7 +246,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
     @ComputeTaskName("TestTask")
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Void> {
         /** User resource. */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource1 rsrc1;
 
         /** {@inheritDoc} */
@@ -258,7 +258,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** User resource */
-                    @GridUserResource
+                    @IgniteUserResource
                     private transient UserResource1 rsrc2;
 
                     @Override public Serializable execute() {
@@ -290,7 +290,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient Object rsrc1;
 
         /** {@inheritDoc} */
@@ -340,7 +340,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         UserResourceTask.UserResource2 rsrc;
 
         // Nullable caching key.
-        ioc.inject(rsrc = task.createAnonymousResource(), GridUserResource.class,
+        ioc.inject(rsrc = task.createAnonymousResource(), IgniteUserResource.class,
             new GridResourceBasicInjector<>(null), dep, task.getClass());
 
         info("Injected resources.");

@@ -71,7 +71,7 @@ import java.util.concurrent.*;
  * grid resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.GridTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>

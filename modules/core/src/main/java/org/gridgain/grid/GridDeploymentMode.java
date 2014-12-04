@@ -18,9 +18,9 @@ import org.jetbrains.annotations.*;
  * difference between all deployment modes is how classes and user resources
  * are loaded on remote nodes via peer-class-loading mechanism. User resources
  * can be instances of caches, databased connections, or any other class
- * specified by user with {@link org.apache.ignite.resources.GridUserResource @GridUserResource} annotation.
+ * specified by user with {@link org.apache.ignite.resources.IgniteUserResource @GridUserResource} annotation.
  * <p>
- * Refer to {@link org.apache.ignite.resources.GridUserResource} documentation and examples for more
+ * Refer to {@link org.apache.ignite.resources.IgniteUserResource} documentation and examples for more
  * information on how user resources are created and injected.
  * <p>
  * The following deployment modes are supported:
@@ -62,7 +62,7 @@ import org.jetbrains.annotations.*;
  *      {@code GRIDGAIN_HOME/ggstart.{sh|bat}} scripts.
  *  <li>
  *      Inject your cache instance into your jobs via
- *      {@link org.apache.ignite.resources.GridUserResource @GridUserResource} annotation. The cache can be initialized
+ *      {@link org.apache.ignite.resources.IgniteUserResource @GridUserResource} annotation. The cache can be initialized
  *      and destroyed with {@link org.apache.ignite.resources.GridUserResourceOnDeployed @GridUserResourceOnDeployed} and
  *      {@link org.apache.ignite.resources.GridUserResourceOnUndeployed @GridUserResourceOnUndeployed} annotations.
  *  </li>
@@ -76,7 +76,7 @@ import org.jetbrains.annotations.*;
 public enum GridDeploymentMode {
     /**
      * In this mode deployed classes do not share user resources
-     * (see {@link org.apache.ignite.resources.GridUserResource}). Basically, user resources are created
+     * (see {@link org.apache.ignite.resources.IgniteUserResource}). Basically, user resources are created
      * once per deployed task class and then get reused for all executions.
      * <p>
      * Note that classes deployed within the same class loader on master
@@ -97,7 +97,7 @@ public enum GridDeploymentMode {
      * Unlike {@link #PRIVATE} mode, where different deployed tasks will
      * never use the same instance of user resources, in {@code ISOLATED}
      * mode, tasks or classes deployed within the same class loader
-     * will share the same instances of user resources (see {@link org.apache.ignite.resources.GridUserResource}).
+     * will share the same instances of user resources (see {@link org.apache.ignite.resources.IgniteUserResource}).
      * This means that if multiple tasks classes are loaded by the same
      * class loader on master node, then they will share instances
      * of user resources on worker nodes. In other words, user resources
@@ -122,7 +122,7 @@ public enum GridDeploymentMode {
      * <p>
      * The advantage of this approach is that it allows tasks coming from
      * different master nodes share the same instances of user resources
-     * (see {@link org.apache.ignite.resources.GridUserResource}) on worker nodes. This allows for all
+     * (see {@link org.apache.ignite.resources.IgniteUserResource}) on worker nodes. This allows for all
      * tasks executing on remote nodes to reuse, for example, the same instances of
      * connection pools or caches. When using this mode, you can
      * startup multiple stand-alone GridGain worker nodes, define user resources
@@ -146,14 +146,14 @@ public enum GridDeploymentMode {
 
     /**
      * Same as {@link #SHARED} deployment mode, but user resources
-     * (see {@link org.apache.ignite.resources.GridUserResource}) will not be undeployed even after all master
+     * (see {@link org.apache.ignite.resources.IgniteUserResource}) will not be undeployed even after all master
      * nodes left grid. Tasks from different master nodes with the same user
      * version and same class loader will share the same class loader on remote
      * worker nodes. Classes will be undeployed whenever user version changes.
      * <p>
      * The advantage of this approach is that it allows tasks coming from
      * different master nodes share the same instances of user resources
-     * (see {@link org.apache.ignite.resources.GridUserResource}) on worker nodes. This allows for all
+     * (see {@link org.apache.ignite.resources.IgniteUserResource}) on worker nodes. This allows for all
      * tasks executing on remote nodes to reuse, for example, the same instances of
      * connection pools or caches. When using this mode, you can
      * startup multiple stand-alone GridGain worker nodes, define user resources

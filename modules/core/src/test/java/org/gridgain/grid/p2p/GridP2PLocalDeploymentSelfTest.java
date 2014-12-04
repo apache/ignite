@@ -216,7 +216,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     public static class TestTask extends ComputeTaskAdapter<UUID, Serializable> {
         /** User resource. */
-        @GridUserResource private transient UserResource rsrc;
+        @IgniteUserResource
+        private transient UserResource rsrc;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
@@ -249,7 +250,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
          */
         public static class TestJob extends ComputeJobAdapter {
             /** User resource. */
-            @GridUserResource private transient UserResource rsrc;
+            @IgniteUserResource
+            private transient UserResource rsrc;
 
             /** Local node ID. */
             @IgniteLocalNodeIdResource

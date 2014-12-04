@@ -160,7 +160,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
         private GridLogger log;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */

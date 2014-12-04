@@ -31,7 +31,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
     private final transient AtomicInteger jobIdGen = new AtomicInteger();
 
     /** Mapper. */
-    @GridTaskContinuousMapperResource
+    @IgniteTaskContinuousMapperResource
     private ComputeTaskContinuousMapper mapper;
 
     /** Grid. */

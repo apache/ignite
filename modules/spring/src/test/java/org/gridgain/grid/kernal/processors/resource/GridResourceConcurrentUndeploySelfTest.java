@@ -396,7 +396,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
     /** */
     public static class UserResourceTask1 extends ComputeTaskAdapter<Boolean, Object> {
         /** */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource rsrcTask;
 
         /** {@inheritDoc} */
@@ -408,7 +408,8 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
                     return Collections.singletonMap(new ComputeJobAdapter(arg) {
                         /** */
                         @SuppressWarnings("unused")
-                        @GridUserResource private transient UserResource2 rsrc2;
+                        @IgniteUserResource
+                        private transient UserResource2 rsrc2;
 
                         /** {@inheritDoc} */
                         @SuppressWarnings({"ObjectEquality"})

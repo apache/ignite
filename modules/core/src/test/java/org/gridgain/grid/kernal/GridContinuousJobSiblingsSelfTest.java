@@ -59,11 +59,11 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** */
@@ -102,7 +102,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestJob extends ComputeJobAdapter {
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** */

@@ -132,7 +132,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJobsChainTask implements ComputeTask<Boolean, Integer> {
         /** */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** */
@@ -225,11 +225,11 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     public static class SessionChainTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** */
@@ -279,7 +279,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class SessionChainTestJob extends ComputeJobAdapter {
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** */
@@ -312,7 +312,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class SlowMapTestTask extends ComputeTaskAdapter<Object, Integer> {
         /** */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** */

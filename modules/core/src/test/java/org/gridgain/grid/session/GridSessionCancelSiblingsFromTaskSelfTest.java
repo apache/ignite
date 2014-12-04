@@ -181,7 +181,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         private GridLogger log;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */

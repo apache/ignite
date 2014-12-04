@@ -21,7 +21,7 @@ import org.gridgain.grid.*;
 @SuppressWarnings({"ProhibitedExceptionThrown"})
 public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<IgniteEvent> {
     /** */
-    @GridUserResource
+    @IgniteUserResource
     private transient GridTestUserResource rsrc;
 
     /** Instance of grid. Used for save class loader and injected resource. */

@@ -110,7 +110,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridUserResource {
+public @interface IgniteUserResource {
     /**
      * Optional resource class. By default the type of the resource variable
      * or setter parameter will be used.

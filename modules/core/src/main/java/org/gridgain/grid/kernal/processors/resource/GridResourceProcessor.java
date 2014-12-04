@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 public class GridResourceProcessor extends GridProcessorAdapter {
     /** */
     private static final Collection<Class<? extends Annotation>> JOB_INJECTIONS = Arrays.asList(
-        GridTaskSessionResource.class,
+        IgniteTaskSessionResource.class,
         IgniteJobContextResource.class,
         IgniteInstanceResource.class,
         IgniteExecutorServiceResource.class,
@@ -50,13 +50,13 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         IgniteSpringResource.class,
         IgniteLoggerResource.class,
         IgniteServiceResource.class,
-        GridUserResource.class);
+        IgniteUserResource.class);
 
     /** */
     private static final Collection<Class<? extends Annotation>> TASK_INJECTIONS = Arrays.asList(
-        GridTaskSessionResource.class,
+        IgniteTaskSessionResource.class,
         IgniteLoadBalancerResource.class,
-        GridTaskContinuousMapperResource.class,
+        IgniteTaskContinuousMapperResource.class,
         IgniteInstanceResource.class,
         IgniteExecutorServiceResource.class,
         IgniteLocalNodeIdResource.class,
@@ -69,7 +69,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         IgniteSpringResource.class,
         IgniteLoggerResource.class,
         IgniteServiceResource.class,
-        GridUserResource.class);
+        IgniteUserResource.class);
 
     /** Grid instance injector. */
     private GridResourceBasicInjector<GridEx> gridInjector;
@@ -250,7 +250,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(target, IgniteServiceResource.class, srvcInjector, dep, depCls);
 
         // Inject users resource.
-        ioc.inject(target, GridUserResource.class, customInjector, dep, depCls);
+        ioc.inject(target, IgniteUserResource.class, customInjector, dep, depCls);
     }
 
     /**
@@ -372,8 +372,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
         if (filtered.length > 0) {
             for (Class<? extends Annotation> annCls : filtered) {
-                if (annCls == GridTaskSessionResource.class)
-                    injectBasicResource(job, GridTaskSessionResource.class, ses, dep, taskCls);
+                if (annCls == IgniteTaskSessionResource.class)
+                    injectBasicResource(job, IgniteTaskSessionResource.class, ses, dep, taskCls);
                 else if (annCls == IgniteJobContextResource.class)
                     ioc.inject(job, IgniteJobContextResource.class, new GridResourceJobContextInjector(jobCtx),
                         dep, taskCls);
@@ -402,9 +402,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 else if (annCls == IgniteServiceResource.class)
                     ioc.inject(job, IgniteServiceResource.class, srvcInjector, dep, taskCls);
                 else {
-                    assert annCls == GridUserResource.class;
+                    assert annCls == IgniteUserResource.class;
 
-                    ioc.inject(job, GridUserResource.class, customInjector, dep, taskCls);
+                    ioc.inject(job, IgniteUserResource.class, customInjector, dep, taskCls);
                 }
             }
         }
@@ -449,12 +449,12 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         Class<?> taskCls = obj.getClass();
 
         for (Class<? extends Annotation> annCls : filtered) {
-            if (annCls == GridTaskSessionResource.class)
-                injectBasicResource(obj, GridTaskSessionResource.class, ses, dep, taskCls);
+            if (annCls == IgniteTaskSessionResource.class)
+                injectBasicResource(obj, IgniteTaskSessionResource.class, ses, dep, taskCls);
             else if (annCls == IgniteLoadBalancerResource.class)
                 injectBasicResource(obj, IgniteLoadBalancerResource.class, balancer, dep, taskCls);
-            else if (annCls == GridTaskContinuousMapperResource.class)
-                injectBasicResource(obj, GridTaskContinuousMapperResource.class, mapper, dep, taskCls);
+            else if (annCls == IgniteTaskContinuousMapperResource.class)
+                injectBasicResource(obj, IgniteTaskContinuousMapperResource.class, mapper, dep, taskCls);
             else if (annCls == IgniteInstanceResource.class)
                 ioc.inject(obj, IgniteInstanceResource.class, gridInjector, dep, taskCls);
             else if (annCls == IgniteExecutorServiceResource.class)
@@ -480,9 +480,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             else if (annCls == IgniteServiceResource.class)
                 ioc.inject(obj, IgniteServiceResource.class, srvcInjector, dep, taskCls);
             else {
-                assert annCls == GridUserResource.class;
+                assert annCls == IgniteUserResource.class;
 
-                ioc.inject(obj, GridUserResource.class, customInjector, dep, taskCls);
+                ioc.inject(obj, IgniteUserResource.class, customInjector, dep, taskCls);
             }
         }
     }

@@ -362,7 +362,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     public static class NonTransientUserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private Object rsrc;
 
         /** {@inheritDoc} */
@@ -385,19 +385,19 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient Object rsrc1;
 
         /** */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource2 rsrc2;
 
         /** */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
         private transient Object rsrc3;
 
         /** */
-        @GridUserResource(resourceName = "rsrc4")
+        @IgniteUserResource(resourceName = "rsrc4")
         private transient UserResource2 rsrc4;
 
         /** */
@@ -449,7 +449,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private transient UserSpringBean springBean;
 
         /** */
-        @GridTaskSessionResource
+        @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
         /** Job context is job resource, not task resource. */
@@ -457,7 +457,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private ComputeJobContext outerJobCtx;
 
         /** */
-        @GridTaskContinuousMapperResource
+        @IgniteTaskContinuousMapperResource
         private transient ComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
@@ -509,25 +509,27 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @GridUserResource(resourceClass = UserResource3.class)
+                    @IgniteUserResource(resourceClass = UserResource3.class)
                     private transient GridAbstractUserResource rsrc5;
 
                     /** */
-                    @GridUserResource private transient UserResource4 rsrc6;
+                    @IgniteUserResource
+                    private transient UserResource4 rsrc6;
 
                     /** */
-                    @GridUserResource private transient UserResource5 rsrc7;
+                    @IgniteUserResource
+                    private transient UserResource5 rsrc7;
 
                     /** */
-                    @GridUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
+                    @IgniteUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
                     private transient GridAbstractUserResource rsrc8;
 
                     /** */
-                    @GridUserResource(resourceName = "rsrc9")
+                    @IgniteUserResource(resourceName = "rsrc9")
                     private transient UserResource4 rsrc9;
 
                     /** */
-                    @GridUserResource(resourceName = "rsrc10")
+                    @IgniteUserResource(resourceName = "rsrc10")
                     private transient UserResource5 rsrc10;
 
                     /** */

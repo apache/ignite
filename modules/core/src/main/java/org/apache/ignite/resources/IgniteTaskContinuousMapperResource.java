@@ -12,21 +12,18 @@ package org.apache.ignite.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeTaskSession} resource.
- * Task session can be injected into instances of following classes:
+ * Annotates a field or a setter method for injection of
+ * {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} resource.
  * <p>
- * Distributed Task Session can be injected into instances of following classes:
- * <ul>
- * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
- * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
- * </ul>
+ * Task continuous mapper can be injected into {@link org.apache.ignite.compute.ComputeTask} class
+ * instance.
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridTaskSessionResource
- *      private GridComputeTaskSession taskSes;
+ *      &#64;GridTaskContinuousMapperResource
+ *      private GridComputeTaskContinuousMapper mapper;
  *      ...
  *  }
  * </pre>
@@ -34,11 +31,11 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private GridComputeTaskSession taskSes;
+ *     private GridComputeTaskContinuousMapper mapper;
  *     ...
- *     &#64;GridTaskSessionResource
- *     public void setTaskSession(GridComputeTaskSession taskSes) {
- *          this.taskSes = taskSes;
+ *     &#64;GridTaskContinuousMapperResource
+ *     public void setMapper(GridComputeTaskContinuousMapper mapper) {
+ *          this.mapper = mapper;
  *     }
  *     ...
  * }
@@ -47,6 +44,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridTaskSessionResource {
+public @interface IgniteTaskContinuousMapperResource {
     // No-op.
 }

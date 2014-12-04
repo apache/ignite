@@ -129,7 +129,8 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         private GridLogger log;
 
         /** */
-        @GridTaskSessionResource private ComputeTaskSession taskSes;
+        @IgniteTaskSessionResource
+        private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {

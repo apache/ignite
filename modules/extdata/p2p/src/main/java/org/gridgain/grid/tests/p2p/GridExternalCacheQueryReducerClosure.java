@@ -20,7 +20,7 @@ import java.util.*;
  */
 public class GridExternalCacheQueryReducerClosure implements IgniteReducer<Map.Entry<Integer, Integer>, Integer> {
     /** */
-    @GridUserResource
+    @IgniteUserResource
     private transient GridP2PAwareTestUserResource rsrc;
 
     /** {@inheritDoc} */

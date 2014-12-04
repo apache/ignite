@@ -179,11 +179,11 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private GridLogger log;
 
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridP2PAbstractUserResource rsrc1;
 
         /** User resource. */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource2 rsrc2;
 
         /** Grid instance. */
@@ -216,13 +216,13 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         /**
          * User resource.
          */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridP2PAbstractUserResource rsrc3;
 
         /**
          * Global resource.
          */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource2 rsrc4;
 
         /** */
@@ -251,11 +251,11 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private GridLogger log;
 
         /** User resource.  */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridP2PAbstractUserResource rsrc1;
 
         /** User resource. */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource2 rsrc2;
 
         /** Grid instance. */
@@ -286,11 +286,11 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
      */
     public static final class GridSharedJob2 extends ComputeJobAdapter {
         /** User resource. */
-        @GridUserResource(resourceClass = UserResource1.class)
+        @IgniteUserResource(resourceClass = UserResource1.class)
         private transient GridP2PAbstractUserResource rsrc3;
 
         /** Global resource. */
-        @GridUserResource
+        @IgniteUserResource
         private transient UserResource2 rsrc4;
 
         /** */
