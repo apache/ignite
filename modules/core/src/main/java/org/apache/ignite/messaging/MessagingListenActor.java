@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.messaging;
+package org.apache.ignite.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;

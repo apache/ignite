@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.messaging.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Tests for {@link org.gridgain.grid.messaging.MessagingListenActor}.
+ * Tests for {@link org.apache.ignite.messaging.MessagingListenActor}.
  */
 public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /** */
@@ -97,7 +97,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Testing {@link org.gridgain.grid.messaging.MessagingListenActor#respond(UUID, Object)} method.
+     * Testing {@link org.apache.ignite.messaging.MessagingListenActor#respond(UUID, Object)} method.
      *
      * @throws Exception If failed.
      */

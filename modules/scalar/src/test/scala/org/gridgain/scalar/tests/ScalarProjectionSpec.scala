@@ -14,6 +14,7 @@ package org.gridgain.scalar.tests
 import org.apache.ignite.Ignition
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.messaging.MessagingListenActor
 import org.gridgain.scalar._
 import scalar._
 import org.scalatest.matchers._
@@ -23,7 +24,6 @@ import org.gridgain.grid._
 import collection.JavaConversions._
 import java.util.UUID
 import org.junit.runner.RunWith
-import org.gridgain.grid.messaging.MessagingListenActor
 
 /**
  * Scalar cache test.

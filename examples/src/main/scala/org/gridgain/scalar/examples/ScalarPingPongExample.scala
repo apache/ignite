@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.messaging.MessagingListenActor
 import org.gridgain.scalar.scalar
 import scalar._
 import java.util.UUID

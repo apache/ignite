@@ -11,15 +11,15 @@ package org.gridgain.examples.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.messaging.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.messaging.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates messaging with {@link org.gridgain.grid.messaging.MessagingListenActor} convenience adapter.
+ * Demonstrates messaging with {@link org.apache.ignite.messaging.MessagingListenActor} convenience adapter.
  * <p>
  * To run this example you must have at least one remote node started.
  * <p>
