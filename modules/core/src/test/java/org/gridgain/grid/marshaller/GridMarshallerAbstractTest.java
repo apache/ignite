@@ -517,7 +517,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link org.gridgain.grid.ClusterNodeLocalMap} instance.
+     * Tests marshal {@link org.apache.ignite.cluster.ClusterNodeLocalMap} instance.
      *
      * @throws Exception If test failed.
      */

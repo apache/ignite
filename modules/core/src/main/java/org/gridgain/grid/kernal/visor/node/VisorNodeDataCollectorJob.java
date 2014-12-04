@@ -1,5 +1,6 @@
 package org.gridgain.grid.kernal.visor.node;
 
+import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
