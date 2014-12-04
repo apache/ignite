@@ -19,7 +19,7 @@ import java.util.*;
  * This interface defines JMX view on kernal.
  */
 @IgniteMBeanDescription("MBean that provides access to Kernal information.")
-public interface GridKernalMBean {
+public interface IgniteMBean {
     /**
      * Gets file path of the license.
      *

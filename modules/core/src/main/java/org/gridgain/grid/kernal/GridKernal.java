@@ -108,7 +108,7 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKernalMBean {
+public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1430,7 +1430,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, GridKerna
                 "Kernal",
                 getClass().getSimpleName(),
                 this,
-                GridKernalMBean.class);
+                IgniteMBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered kernal MBean: " + kernalMBean);
