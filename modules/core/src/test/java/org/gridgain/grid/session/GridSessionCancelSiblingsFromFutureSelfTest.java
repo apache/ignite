@@ -181,7 +181,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
     /**
      *
      */
-    private static class GridTaskSessionTestTask extends GridComputeTaskSplitAdapter<Serializable, String> {
+    private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, String> {
         /** */
         @GridLoggerResource private GridLogger log;
 

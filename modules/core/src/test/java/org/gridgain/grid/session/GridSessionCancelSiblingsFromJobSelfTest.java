@@ -168,7 +168,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
     /**
      *
      */
-    public static class GridTaskSessionTestTask extends GridComputeTaskSplitAdapter<Serializable, String> {
+    public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, String> {
         /** */
         @GridLoggerResource
         private GridLogger log;

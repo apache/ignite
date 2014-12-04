@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.GridEventType.*;
-import static org.apache.ignite.compute.GridComputeTaskSessionScope.*;
+import static org.apache.ignite.compute.ComputeTaskSessionScope.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -386,8 +386,8 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /**
      * Test task.
      */
-    @GridComputeTaskSessionFullSupport
-    private static class GridTestCheckpointTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    @ComputeTaskSessionFullSupport
+    private static class GridTestCheckpointTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new GridTestCheckpointJob());
@@ -616,8 +616,8 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /**
      * Multi-node test task.
      */
-    @GridComputeTaskSessionFullSupport
-    private static class GridMultiNodeTestCheckPointTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    @ComputeTaskSessionFullSupport
+    private static class GridMultiNodeTestCheckPointTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             assert gridSize == 2;
@@ -635,8 +635,8 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     }
 
     /** */
-    @GridComputeTaskSessionFullSupport
-    private static class GridMultiNodeGlobalConsumerTask extends GridComputeTaskSplitAdapter<Object, Integer> {
+    @ComputeTaskSessionFullSupport
+    private static class GridMultiNodeGlobalConsumerTask extends ComputeTaskSplitAdapter<Object, Integer> {
         /** */
         @GridTaskSessionResource
         private ComputeTaskSession taskSes;

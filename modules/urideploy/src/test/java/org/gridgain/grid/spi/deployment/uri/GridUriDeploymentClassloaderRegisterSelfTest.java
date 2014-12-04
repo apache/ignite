@@ -122,7 +122,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
     /**
      * Do nothing task for test.
      */
-    private static class GridFileDeploymentTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private static class GridFileDeploymentTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return null;

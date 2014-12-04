@@ -77,7 +77,7 @@ import java.util.*;
  *      method via {@link ComputeJobResult} instance. If job execution resulted
  *      in a checked exception, then {@link ComputeJobResult#getException()} method
  *      will contain that exception. If job execution threw a runtime exception
- *      or error, then it will be wrapped into {@link GridComputeUserUndeclaredException}
+ *      or error, then it will be wrapped into {@link ComputeUserUndeclaredException}
  *      exception.
  * </li>
  * </ol>
@@ -123,7 +123,7 @@ import java.util.*;
  * Long running jobs may wish to save intermediate checkpoints to protect themselves
  * from failures. There are three checkpoint management methods:
  * <ul>
- * <li>{@link ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}</li>
+ * <li>{@link ComputeTaskSession#saveCheckpoint(String, Object, ComputeTaskSessionScope, long)}</li>
  * <li>{@link ComputeTaskSession#loadCheckpoint(String)}</li>
  * <li>{@link ComputeTaskSession#removeCheckpoint(String)}</li>
  * </ul>

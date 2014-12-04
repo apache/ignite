@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Test task for P2P deployment tests.
  */
-public class GridSingleSplitTestTask extends GridComputeTaskSplitAdapter<Integer, Integer> {
+public class GridSingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, Integer> {
     /**
      * {@inheritDoc}
      */

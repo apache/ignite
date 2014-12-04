@@ -9,7 +9,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Demonstrates a simple use of GridGain grid with {@link GridComputeTaskSplitAdapter}.
+ * Demonstrates a simple use of GridGain grid with {@link org.apache.ignite.compute.ComputeTaskSplitAdapter}.
  * <p>
  * Phrase passed as task argument is split into jobs each taking one word. Then jobs are distributed among
  * grid nodes. Each node computes word length and returns result to master node where total phrase length
@@ -45,7 +45,7 @@ public class ComputeTaskSplitExample {
     /**
      * Task to count non-white-space characters in a phrase.
      */
-    private static class CharacterCountTask extends GridComputeTaskSplitAdapter<String, Integer> {
+    private static class CharacterCountTask extends ComputeTaskSplitAdapter<String, Integer> {
         /**
          * Splits the received string to words, creates a child job for each word, and sends
          * these jobs to other nodes for processing. Each such job simply prints out the received word.

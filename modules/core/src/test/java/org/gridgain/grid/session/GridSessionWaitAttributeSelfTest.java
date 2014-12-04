@@ -391,8 +391,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @GridComputeTaskSessionFullSupport
-    public static class TestSessionTask extends GridComputeTaskSplitAdapter<WaitAttributeType, Object> {
+    @ComputeTaskSessionFullSupport
+    public static class TestSessionTask extends ComputeTaskSplitAdapter<WaitAttributeType, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<TestSessionJob> split(int gridSize, WaitAttributeType type) throws GridException {
             assert type != null;

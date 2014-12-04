@@ -53,7 +53,7 @@ public interface ComputeJobResult {
      *      no exception was produced.
      *      <p>
      *      Note that if remote job resulted in {@link RuntimeException}
-     *      or {@link Error} then they will be wrapped into {@link GridComputeUserUndeclaredException}
+     *      or {@link Error} then they will be wrapped into {@link ComputeUserUndeclaredException}
      *      returned by this method.
      *      <p>
      *      If job on remote node was rejected (cancelled while it was on waiting queue), then

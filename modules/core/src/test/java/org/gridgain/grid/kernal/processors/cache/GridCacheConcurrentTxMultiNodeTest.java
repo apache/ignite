@@ -819,7 +819,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings( {"UnusedDeclaration"})
-    private static class ResponseTask extends GridComputeTaskSplitAdapter<Message, Void> {
+    private static class ResponseTask extends ComputeTaskSplitAdapter<Message, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws GridException {
             return Collections.singletonList(new PerfJob(msg));
@@ -834,7 +834,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class RequestTask extends GridComputeTaskSplitAdapter<Message, Void> {
+    private static class RequestTask extends ComputeTaskSplitAdapter<Message, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws GridException {
             return Collections.singletonList(new PerfJob(msg));

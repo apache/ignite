@@ -25,7 +25,7 @@ import java.util.*;
  * a job gets mapped to a node during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)}
  * invocation.
  * <h1 class="header">Coding Examples</h1>
- * If you are using {@link GridComputeTaskSplitAdapter} then load balancing logic
+ * If you are using {@link org.apache.ignite.compute.ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task could look:
  * <pre name="code" class="java">

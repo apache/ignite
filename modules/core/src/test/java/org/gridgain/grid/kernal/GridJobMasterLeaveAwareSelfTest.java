@@ -647,7 +647,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Base implementation of dummy task which produces predefined amount of test jobs on split stage.
      */
-    private static class TestTask extends GridComputeTaskSplitAdapter<String, Integer> {
+    private static class TestTask extends ComputeTaskSplitAdapter<String, Integer> {
         /** How many jobs to produce. */
         private int jobCnt;
 

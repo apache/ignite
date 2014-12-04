@@ -436,7 +436,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
             // Ensure that we will get timeout exception.
             grid(0).compute().withTimeout(JOB_TIMEOUT).call(jobs);
         }
-        catch (GridComputeTaskTimeoutException ignore) {
+        catch (ComputeTaskTimeoutException ignore) {
             timedOut = true;
         }
 
@@ -448,7 +448,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
             // Previous task invocation cleared the timeout.
             grid(0).compute().call(jobs);
         }
-        catch (GridComputeTaskTimeoutException ignore) {
+        catch (ComputeTaskTimeoutException ignore) {
             timedOut = true;
         }
 

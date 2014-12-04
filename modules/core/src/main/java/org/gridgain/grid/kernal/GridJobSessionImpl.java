@@ -194,12 +194,12 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributeListener(GridComputeTaskSessionAttributeListener lsnr, boolean rewind) {
+    @Override public void addAttributeListener(ComputeTaskSessionAttributeListener lsnr, boolean rewind) {
         ses.addAttributeListener(lsnr, rewind);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAttributeListener(GridComputeTaskSessionAttributeListener lsnr) {
+    @Override public boolean removeAttributeListener(ComputeTaskSessionAttributeListener lsnr) {
         return ses.removeAttributeListener(lsnr);
     }
 
@@ -227,17 +227,17 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state) throws GridException {
-        saveCheckpoint(key, state, GridComputeTaskSessionScope.SESSION_SCOPE, 0);
+        saveCheckpoint(key, state, ComputeTaskSessionScope.SESSION_SCOPE, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout)
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
         throws GridException {
         saveCheckpoint(key, state, scope, timeout, true);
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope,
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope,
         long timeout, boolean overwrite) throws GridException {
         ses.saveCheckpoint0(this, key, state, scope, timeout, overwrite);
     }

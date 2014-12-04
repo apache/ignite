@@ -22,16 +22,16 @@ import java.util.*;
  * @see ComputeTaskSession
  * @see ComputeTaskSession#setAttribute(Object, Object)
  * @see ComputeTaskSession#setAttributes(Map)
- * @see ComputeTaskSession#addAttributeListener(GridComputeTaskSessionAttributeListener, boolean)
+ * @see ComputeTaskSession#addAttributeListener(ComputeTaskSessionAttributeListener, boolean)
  * @see ComputeTaskSession#saveCheckpoint(String, Object)
- * @see ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)
- * @see ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long, boolean)
+ * @see ComputeTaskSession#saveCheckpoint(String, Object, ComputeTaskSessionScope, long)
+ * @see ComputeTaskSession#saveCheckpoint(String, Object, ComputeTaskSessionScope, long, boolean)
  * @see ComputeTaskSession#loadCheckpoint(String)
  * @see ComputeTaskSession#removeCheckpoint(String)
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridComputeTaskSessionFullSupport {
+public @interface ComputeTaskSessionFullSupport {
     // No-op.
 }

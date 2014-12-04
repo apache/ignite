@@ -56,7 +56,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private Map<Object, Object> attrs;
 
     /** */
-    private List<GridComputeTaskSessionAttributeListener> lsnrs;
+    private List<ComputeTaskSessionAttributeListener> lsnrs;
 
     /** */
     private ClassLoader clsLdr;
@@ -563,7 +563,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (attrs.isEmpty())
             return;
 
-        List<GridComputeTaskSessionAttributeListener> lsnrs;
+        List<ComputeTaskSessionAttributeListener> lsnrs;
 
         synchronized (mux) {
             if (this.attrs == null)
@@ -578,24 +578,24 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         if (lsnrs != null)
             for (Map.Entry<?, ?> entry : attrs.entrySet())
-                for (GridComputeTaskSessionAttributeListener lsnr : lsnrs)
+                for (ComputeTaskSessionAttributeListener lsnr : lsnrs)
                     lsnr.onAttributeSet(entry.getKey(), entry.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributeListener(GridComputeTaskSessionAttributeListener lsnr, boolean rewind) {
+    @Override public void addAttributeListener(ComputeTaskSessionAttributeListener lsnr, boolean rewind) {
         A.notNull(lsnr, "lsnr");
 
         checkFullSupport();
 
         Map<Object, Object> attrs = null;
 
-        List<GridComputeTaskSessionAttributeListener> lsnrs;
+        List<ComputeTaskSessionAttributeListener> lsnrs;
 
         synchronized (mux) {
             lsnrs = this.lsnrs != null ?
-                new ArrayList<GridComputeTaskSessionAttributeListener>(this.lsnrs.size() + 1) :
-                new ArrayList<GridComputeTaskSessionAttributeListener>(1);
+                new ArrayList<ComputeTaskSessionAttributeListener>(this.lsnrs.size() + 1) :
+                new ArrayList<ComputeTaskSessionAttributeListener>(1);
 
             if (this.lsnrs != null)
                 lsnrs.addAll(this.lsnrs);
@@ -610,12 +610,12 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         if (attrs != null)
             for (Map.Entry<Object, Object> entry : attrs.entrySet())
-                for (GridComputeTaskSessionAttributeListener l : lsnrs)
+                for (ComputeTaskSessionAttributeListener l : lsnrs)
                     l.onAttributeSet(entry.getKey(), entry.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAttributeListener(GridComputeTaskSessionAttributeListener lsnr) {
+    @Override public boolean removeAttributeListener(ComputeTaskSessionAttributeListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
         checkFullSupport();
@@ -624,7 +624,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
             if (lsnrs == null)
                 return false;
 
-            List<GridComputeTaskSessionAttributeListener> lsnrs = new ArrayList<>(this.lsnrs);
+            List<ComputeTaskSessionAttributeListener> lsnrs = new ArrayList<>(this.lsnrs);
 
             boolean rmv = lsnrs.remove(lsnr);
 
@@ -636,17 +636,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state) throws GridException {
-        saveCheckpoint(key, state, GridComputeTaskSessionScope.SESSION_SCOPE, 0);
+        saveCheckpoint(key, state, ComputeTaskSessionScope.SESSION_SCOPE, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout)
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
         throws GridException {
         saveCheckpoint(key, state, scope, timeout, true);
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope,
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope,
         long timeout, boolean overwrite) throws GridException {
         saveCheckpoint0(this, key, state, scope, timeout, overwrite);
     }
@@ -660,7 +660,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param overwrite Overwrite.
      * @throws GridException If failed.
      */
-    protected void saveCheckpoint0(GridTaskSessionInternal ses, String key, Object state, GridComputeTaskSessionScope scope,
+    protected void saveCheckpoint0(GridTaskSessionInternal ses, String key, Object state, ComputeTaskSessionScope scope,
         long timeout, boolean overwrite) throws GridException {
         assert ses != null; // Internal call, so assert should be enough.
 

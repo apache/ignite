@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Simple URI deployment test task.
  */
-public class GridUriDeploymentTestTask0 extends GridComputeTaskSplitAdapter<Object, Object> {
+public class GridUriDeploymentTestTask0 extends ComputeTaskSplitAdapter<Object, Object> {
     /** {@inheritDoc} */
     @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
         return null;

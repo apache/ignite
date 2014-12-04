@@ -21,7 +21,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  * <p>
  * The argument of the task is a collection of objects to calculate string length sum of.
  */
-public class GridClientTcpTask extends GridComputeTaskSplitAdapter<List<Object>, Integer> {
+public class GridClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
         throws GridException {

@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Simple URI deployment test task.
  */
-public class GridUriDeploymentTestTask3 extends GridComputeTaskSplitAdapter<Object, Object> {
+public class GridUriDeploymentTestTask3 extends ComputeTaskSplitAdapter<Object, Object> {
     /**
      * {@inheritDoc}
      */

@@ -19,7 +19,7 @@ import java.util.*;
 /**
  *
  */
-class TestTask2 extends GridComputeTaskSplitAdapter<String, String> {
+class TestTask2 extends ComputeTaskSplitAdapter<String, String> {
     static final String RES = "Task 2 result.";
 
     /** {@inheritDoc} */

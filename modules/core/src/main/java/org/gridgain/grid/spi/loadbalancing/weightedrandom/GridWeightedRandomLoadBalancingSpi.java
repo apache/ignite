@@ -35,7 +35,7 @@ import static org.apache.ignite.events.GridEventType.*;
  * configuration property). By default all nodes get equal weight defined by
  * {@link #DFLT_NODE_WEIGHT} (value is {@code 10}).
  * <h1 class="header">Coding Example</h1>
- * If you are using {@link GridComputeTaskSplitAdapter} then load balancing logic
+ * If you are using {@link org.apache.ignite.compute.ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task could look:
  * <pre name="code" class="java">

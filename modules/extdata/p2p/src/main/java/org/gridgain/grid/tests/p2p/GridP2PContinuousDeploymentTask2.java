@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Test task for {@code GridP2PContinuousDeploymentSelfTest}.
  */
-public class GridP2PContinuousDeploymentTask2 extends GridComputeTaskSplitAdapter<Object, Object> {
+public class GridP2PContinuousDeploymentTask2 extends ComputeTaskSplitAdapter<Object, Object> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
         return Collections.singleton(new ComputeJobAdapter() {

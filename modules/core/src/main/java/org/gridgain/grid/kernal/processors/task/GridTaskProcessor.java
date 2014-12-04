@@ -501,7 +501,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             log.debug("Task deployment: " + dep);
 
         boolean fullSup = dep != null && taskCls!= null &&
-            dep.annotation(taskCls, GridComputeTaskSessionFullSupport.class) != null;
+            dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null;
 
         Collection<? extends ClusterNode> nodes = (Collection<? extends ClusterNode>)map.get(TC_SUBGRID);
 

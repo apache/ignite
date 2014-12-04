@@ -433,7 +433,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class SharedResourceTask1 extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class SharedResourceTask1 extends ComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
         @GridUserResource(resourceClass = UserResource1.class)
         private transient GridAbstractUserResource rsrc1;
@@ -548,7 +548,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class SharedResourceTask2 extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class SharedResourceTask2 extends ComputeTaskSplitAdapter<Object, Object> {
         /** User resource.  */
         @GridUserResource(resourceClass = UserResource1.class)
         private transient GridAbstractUserResource rsrc1;

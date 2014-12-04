@@ -135,7 +135,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
     /**
      * Test task that returns its name.
      */
-    private static class TestTask extends GridComputeTaskSplitAdapter<Void, String> {
+    private static class TestTask extends ComputeTaskSplitAdapter<Void, String> {
         /** */
         private final boolean fail;
 

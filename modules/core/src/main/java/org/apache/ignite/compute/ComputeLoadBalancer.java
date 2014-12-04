@@ -24,11 +24,11 @@ import java.util.*;
  * <p>
  * Load balancer can be used <i>explicitly</i> from inside {@link ComputeTask#map(List, Object)}
  * method when you implement {@link ComputeTask} interface directly or use
- * {@link ComputeTaskAdapter}. If you use {@link GridComputeTaskSplitAdapter} then
+ * {@link ComputeTaskAdapter}. If you use {@link ComputeTaskSplitAdapter} then
  * load balancer is accessed <i>implicitly</i> by the adapter so you don't have
  * to use it directly in your logic.
  * <h1 class="header">Coding Examples</h1>
- * If you are using {@link GridComputeTaskSplitAdapter} then load balancing logic
+ * If you are using {@link ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
  * <pre name="code" class="java">

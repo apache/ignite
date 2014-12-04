@@ -32,9 +32,9 @@ import java.util.*;
  * be set from any task or job methods. Session attribute and checkpoint consistency
  * is fault tolerant and is preserved whenever a job gets failed over to
  * another node for execution. Whenever task execution ends, all checkpoints
- * saved within session with {@link GridComputeTaskSessionScope#SESSION_SCOPE} scope
+ * saved within session with {@link ComputeTaskSessionScope#SESSION_SCOPE} scope
  * will be removed from checkpoint storage. Checkpoints saved with
- * {@link GridComputeTaskSessionScope#GLOBAL_SCOPE} will outlive the session and
+ * {@link ComputeTaskSessionScope#GLOBAL_SCOPE} will outlive the session and
  * can be viewed by other tasks.
  * <p>
  * The sequence in which session attributes are set is consistent across
@@ -49,7 +49,7 @@ import java.util.*;
  * jobs can choose to wait for a certain attribute to be set using any of
  * the {@code waitForAttribute(...)} methods. Tasks and jobs can also
  * receive asynchronous notifications about a certain attribute being set
- * through {@link GridComputeTaskSessionAttributeListener} listener. Such feature
+ * through {@link ComputeTaskSessionAttributeListener} listener. Such feature
  * allows grid jobs and tasks remain <u><i>connected</i></u> in order
  * to synchronize their execution with each other and opens a solution for a
  * whole new range of problems.
@@ -185,7 +185,7 @@ public interface ComputeTaskSession {
      * Sets session attributed. Note that task session is distributed and
      * this attribute will be propagated to all other jobs within this task and task
      * itself - i.e., to all accessors of this session.
-     * Other jobs then will be notified by {@link GridComputeTaskSessionAttributeListener}
+     * Other jobs then will be notified by {@link ComputeTaskSessionAttributeListener}
      * callback than an attribute has changed.
      * <p>
      * This method is no-op if the session has finished.
@@ -241,7 +241,7 @@ public interface ComputeTaskSession {
      *      the attributes that were previously received or received while this method
      *      was executing.
      */
-    public void addAttributeListener(GridComputeTaskSessionAttributeListener lsnr, boolean rewind);
+    public void addAttributeListener(ComputeTaskSessionAttributeListener lsnr, boolean rewind);
 
     /**
      * Removes given listener.
@@ -249,7 +249,7 @@ public interface ComputeTaskSession {
      * @param lsnr Listener to remove.
      * @return {@code true} if listener was removed, {@code false} otherwise.
      */
-    public boolean removeAttributeListener(GridComputeTaskSessionAttributeListener lsnr);
+    public boolean removeAttributeListener(ComputeTaskSessionAttributeListener lsnr);
 
     /**
      * Waits for the specified attribute to be set. If this attribute is already in session
@@ -310,9 +310,9 @@ public interface ComputeTaskSession {
      * This way whenever a job fails over to another node, it can load its previously saved state via
      * {@link #loadCheckpoint(String)} method and continue with execution.
      * <p>
-     * This method defaults checkpoint scope to {@link GridComputeTaskSessionScope#SESSION_SCOPE} and
+     * This method defaults checkpoint scope to {@link ComputeTaskSessionScope#SESSION_SCOPE} and
      * implementation will automatically remove the checkpoint at the end of the session. It is
-     * analogous to calling {@link #saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)
+     * analogous to calling {@link #saveCheckpoint(String, Object, ComputeTaskSessionScope, long)
      * saveCheckpoint(String, Serializable, GridCheckpointScope.SESSION_SCOPE, 0}.
      *
      * @param key Key to be used to load this checkpoint in future.
@@ -333,15 +333,15 @@ public interface ComputeTaskSession {
      * {@link #loadCheckpoint(String)} method and continue with execution.
      * <p>
      * The life time of the checkpoint is determined by its timeout and scope.
-     * If {@link GridComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
+     * If {@link ComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
      * its session, and can only be removed by calling {@link GridCheckpointSpi#removeCheckpoint(String)}
      * from {@link org.apache.ignite.Ignite} or another task or job.
      *
      * @param key Key to be used to load this checkpoint in future.
      * @param state Intermediate job state to save.
-     * @param scope Checkpoint scope. If equal to {@link GridComputeTaskSessionScope#SESSION_SCOPE}, then
+     * @param scope Checkpoint scope. If equal to {@link ComputeTaskSessionScope#SESSION_SCOPE}, then
      *      state will automatically be removed at the end of task execution. Otherwise, if scope is
-     *      {@link GridComputeTaskSessionScope#GLOBAL_SCOPE} then state will outlive its session and can be
+     *      {@link ComputeTaskSessionScope#GLOBAL_SCOPE} then state will outlive its session and can be
      *      removed by calling {@link #removeCheckpoint(String)} from another task or whenever
      *      timeout expires.
      * @param timeout Maximum time this state should be kept by the underlying storage. Value {@code 0} means that
@@ -351,7 +351,7 @@ public interface ComputeTaskSession {
      * @see #removeCheckpoint(String)
      * @see GridCheckpointSpi
      */
-    public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout)
+    public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
         throws GridException;
 
     /**
@@ -363,15 +363,15 @@ public interface ComputeTaskSession {
      * {@link #loadCheckpoint(String)} method and continue with execution.
      * <p>
      * The life time of the checkpoint is determined by its timeout and scope.
-     * If {@link GridComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
+     * If {@link ComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
      * its session, and can only be removed by calling {@link GridCheckpointSpi#removeCheckpoint(String)}
      * from {@link org.apache.ignite.Ignite} or another task or job.
      *
      * @param key Key to be used to load this checkpoint in future.
      * @param state Intermediate job state to save.
-     * @param scope Checkpoint scope. If equal to {@link GridComputeTaskSessionScope#SESSION_SCOPE}, then
+     * @param scope Checkpoint scope. If equal to {@link ComputeTaskSessionScope#SESSION_SCOPE}, then
      *      state will automatically be removed at the end of task execution. Otherwise, if scope is
-     *      {@link GridComputeTaskSessionScope#GLOBAL_SCOPE} then state will outlive its session and can be
+     *      {@link ComputeTaskSessionScope#GLOBAL_SCOPE} then state will outlive its session and can be
      *      removed by calling {@link #removeCheckpoint(String)} from another task or whenever
      *      timeout expires.
      * @param timeout Maximum time this state should be kept by the underlying storage. Value <tt>0</tt> means that
@@ -382,11 +382,11 @@ public interface ComputeTaskSession {
      * @see #removeCheckpoint(String)
      * @see GridCheckpointSpi
      */
-    public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout,
+    public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
         boolean overwrite) throws GridException;
 
     /**
-     * Loads job's state previously saved via {@link #saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}
+     * Loads job's state previously saved via {@link #saveCheckpoint(String, Object, ComputeTaskSessionScope, long)}
      * method from an underlying storage for a given {@code key}. If state was not previously
      * saved, then {@code null} will be returned. The storage implementation is defined by
      * {@link GridCheckpointSpi} implementation used.

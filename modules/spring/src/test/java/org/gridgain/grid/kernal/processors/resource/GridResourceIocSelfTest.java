@@ -244,7 +244,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"PublicInnerClass"})
     @ComputeTaskName("TestTask")
-    public static class TestTask extends GridComputeTaskSplitAdapter<Object, Void> {
+    public static class TestTask extends ComputeTaskSplitAdapter<Object, Void> {
         /** User resource. */
         @GridUserResource
         private transient UserResource1 rsrc1;
@@ -288,7 +288,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * Task that will always fail due to non-transient resource injection.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class UserResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridUserResource(resourceClass = UserResource1.class)
         private transient Object rsrc1;

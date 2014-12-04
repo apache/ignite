@@ -154,7 +154,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"PublicInnerClass"})
     @ComputeTaskName("name")
-    public static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);

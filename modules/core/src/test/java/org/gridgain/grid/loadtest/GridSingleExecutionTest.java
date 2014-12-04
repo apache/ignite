@@ -234,7 +234,7 @@ public final class GridSingleExecutionTest {
     }
 
     /** */
-    public static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
@@ -265,7 +265,7 @@ public final class GridSingleExecutionTest {
     }
 
     /** */
-    public static class TestSessionTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class TestSessionTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridTaskSessionResource private ComputeTaskSession ses;
 

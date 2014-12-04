@@ -23,7 +23,7 @@ import static org.gridgain.grid.external.resource.GridAbstractUserExternalResour
  * Resource injection task.
  */
 @SuppressWarnings("PublicInnerClass")
-public class GridUserExternalResourceTask2 extends GridComputeTaskSplitAdapter<Object, Object> {
+public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Object, Object> {
     /** User resource. */
     @GridUserResource private transient GridUserExternalResource1 rsrc1;
 

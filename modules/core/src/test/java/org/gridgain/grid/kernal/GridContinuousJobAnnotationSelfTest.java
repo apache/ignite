@@ -112,7 +112,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
             throws GridException {
             if (res.getException() != null) {
-                if (res.getException() instanceof GridComputeUserUndeclaredException)
+                if (res.getException() instanceof ComputeUserUndeclaredException)
                     throw new GridException("Job threw unexpected exception.", res.getException());
 
                 return ComputeJobResultPolicy.FAILOVER;

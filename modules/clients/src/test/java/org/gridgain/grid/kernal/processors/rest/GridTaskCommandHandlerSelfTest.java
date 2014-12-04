@@ -173,7 +173,7 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    private static class TestTask extends GridComputeTaskSplitAdapter<String, Integer> {
+    private static class TestTask extends ComputeTaskSplitAdapter<String, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, final String arg) throws GridException {
             return Collections.singletonList(new ComputeJobAdapter() {

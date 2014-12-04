@@ -58,8 +58,8 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    @GridComputeTaskSessionFullSupport
-    private static class GridSessionTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    @ComputeTaskSessionFullSupport
+    private static class GridSessionTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);

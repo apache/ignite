@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * A task that performs distributed Merge Sort.
  */
-public class GridMergeSortLoadTask extends GridComputeTaskSplitAdapter<int[], int[]> {
+public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]> {
     /** Injected Grid instance. */
     @GridInstanceResource
     private Ignite ignite;

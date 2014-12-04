@@ -59,7 +59,7 @@ import java.util.*;
  * @param <T> Type of the task execution argument.
  * @param <R> Type of the task result returning from {@link ComputeTask#reduce(List)} method.
  */
-public abstract class GridComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T, R> {
+public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T, R> {
     /** */
     private static final long serialVersionUID = 0L;
 

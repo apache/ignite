@@ -35,7 +35,7 @@ public class GridTestTaskSession implements ComputeTaskSession {
     private Map<Object, Object> attrs = new HashMap<>();
 
     /** */
-    private Collection<GridComputeTaskSessionAttributeListener> lsnrs = new ArrayList<>();
+    private Collection<ComputeTaskSessionAttributeListener> lsnrs = new ArrayList<>();
 
     /** */
     private ClassLoader clsLdr = getClass().getClassLoader();
@@ -153,12 +153,12 @@ public class GridTestTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributeListener(GridComputeTaskSessionAttributeListener lsnr, boolean rewind) {
+    @Override public void addAttributeListener(ComputeTaskSessionAttributeListener lsnr, boolean rewind) {
         lsnrs.add(lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAttributeListener(GridComputeTaskSessionAttributeListener lsnr) {
+    @Override public boolean removeAttributeListener(ComputeTaskSessionAttributeListener lsnr) {
         return lsnrs.remove(lsnr);
     }
 
@@ -168,13 +168,13 @@ public class GridTestTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout)
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
         throws GridException {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout,
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
         boolean overwrite) throws GridException {
         assert false : "Not implemented";
     }

@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
  * assumed the code in grid task, grid job or SPI. In most cases it should be an indication of unrecoverable
  * error condition such as assertion, {@link NullPointerException}, {@link OutOfMemoryError}, etc.
  */
-public class GridComputeUserUndeclaredException extends GridException {
+public class ComputeUserUndeclaredException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -27,7 +27,7 @@ public class GridComputeUserUndeclaredException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridComputeUserUndeclaredException(String msg) {
+    public ComputeUserUndeclaredException(String msg) {
         super(msg);
     }
 
@@ -37,7 +37,7 @@ public class GridComputeUserUndeclaredException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridComputeUserUndeclaredException(Throwable cause) {
+    public ComputeUserUndeclaredException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -48,7 +48,7 @@ public class GridComputeUserUndeclaredException extends GridException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridComputeUserUndeclaredException(String msg, @Nullable Throwable cause) {
+    public ComputeUserUndeclaredException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

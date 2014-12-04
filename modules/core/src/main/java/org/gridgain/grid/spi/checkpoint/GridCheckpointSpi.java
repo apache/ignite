@@ -33,8 +33,8 @@ import org.jetbrains.annotations.*;
  * <li>{@link org.apache.ignite.compute.ComputeTaskSession#loadCheckpoint(String)}</li>
  * <li>{@link org.apache.ignite.compute.ComputeTaskSession#removeCheckpoint(String)}</li>
  * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object)}</li>
- * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.GridComputeTaskSessionScope, long)}</li>
- * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.GridComputeTaskSessionScope, long, boolean)}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.ComputeTaskSessionScope, long)}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.ComputeTaskSessionScope, long, boolean)}</li>
  * </ul>
  * <p>
  * GridGain provides the following {@code GridCheckpointSpi} implementations:

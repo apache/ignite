@@ -208,7 +208,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
             try {
                 fut.get(end - now);
             }
-            catch (GridComputeTaskTimeoutException e) {
+            catch (ComputeTaskTimeoutException e) {
                 U.error(log, "Failed to get task result: " + fut, e);
 
                 return false;
@@ -371,7 +371,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
                 try {
                     fut.get(end - now);
                 }
-                catch (GridComputeTaskTimeoutException ignore) {
+                catch (ComputeTaskTimeoutException ignore) {
                     if (log.isDebugEnabled())
                         log.debug("Timeout occurred during getting task result: " + fut);
 
@@ -710,7 +710,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                 throw e2;
             }
-            catch (GridComputeTaskTimeoutException e) {
+            catch (ComputeTaskTimeoutException e) {
                 throw new ExecutionException("Task execution timed out during waiting for task result: " + fut, e);
             }
             catch (GridException e) {

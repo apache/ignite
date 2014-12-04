@@ -1249,7 +1249,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
         }
-        catch (GridComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutException e) {
             U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 
@@ -3694,7 +3694,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             return primaryOnly ? primarySize() : size();
         }
-        catch (GridComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutException e) {
             U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 

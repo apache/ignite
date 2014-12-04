@@ -193,7 +193,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            GridComputeTaskTimeoutException.class,
+            ComputeTaskTimeoutException.class,
             null
         );
 
@@ -326,7 +326,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class SimpleTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private static class SimpleTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new ComputeJobAdapter() {
@@ -343,7 +343,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class FailedTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private static class FailedTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new ComputeJobAdapter() {
@@ -360,7 +360,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TimedOutTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private static class TimedOutTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton(new ComputeJobAdapter() {

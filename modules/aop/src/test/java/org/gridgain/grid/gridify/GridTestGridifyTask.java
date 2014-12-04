@@ -18,7 +18,7 @@ import java.util.*;
  * Test gridify task.
  */
 @ComputeTaskName(GridTestGridifyTask.TASK_NAME)
-public class GridTestGridifyTask extends GridComputeTaskSplitAdapter<GridifyArgument, Object> {
+public class GridTestGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument, Object> {
     /** */
     public static final String TASK_NAME = "org.gridgain.grid.gridify.GridTestGridifyTask";
 

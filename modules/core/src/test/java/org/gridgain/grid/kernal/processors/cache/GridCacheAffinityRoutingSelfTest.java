@@ -541,7 +541,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test task that produces a single job.
      */
-    private static class OneJobTask extends GridComputeTaskSplitAdapter<Integer, Boolean> {
+    private static class OneJobTask extends ComputeTaskSplitAdapter<Integer, Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         @GridCacheAffinityKeyMapped

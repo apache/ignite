@@ -13,7 +13,7 @@ package org.gridgain.visor.commands.tasks
 
 import java.util
 
-import org.apache.ignite.compute.{ComputeJobAdapter, GridComputeTaskSplitAdapter, ComputeJob, ComputeJobResult}
+import org.apache.ignite.compute.{ComputeJobAdapter, ComputeTaskSplitAdapter, ComputeJob, ComputeJobResult}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.GridEventType
 import org.gridgain.grid.compute.GridComputeJobAdapter
@@ -175,7 +175,7 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
 /**
  * Test task 1.
  */
-private class TestTask1 extends GridComputeTaskSplitAdapter[String, Void] {
+private class TestTask1 extends ComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
         Iterable.fill(gridSize)(new ComputeJobAdapter() {
             def execute() = {
@@ -192,7 +192,7 @@ private class TestTask1 extends GridComputeTaskSplitAdapter[String, Void] {
 /**
  * Test task 2.
  */
-private class TestTask2 extends GridComputeTaskSplitAdapter[String, Void] {
+private class TestTask2 extends ComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
         Iterable.fill(gridSize)(new ComputeJobAdapter() {
             def execute() = {
@@ -209,7 +209,7 @@ private class TestTask2 extends GridComputeTaskSplitAdapter[String, Void] {
 /**
  * Test task 3 (w/o 'Task' in host for testing '-s' option).
  */
-private class Test3 extends GridComputeTaskSplitAdapter[String, Void] {
+private class Test3 extends ComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
         Iterable.fill(gridSize)(new ComputeJobAdapter() {
             def execute() = {

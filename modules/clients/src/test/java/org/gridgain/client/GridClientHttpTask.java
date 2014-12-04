@@ -22,7 +22,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  * <p>
  * The argument of the task is JSON-serialized array of objects to calculate string length sum of.
  */
-public class GridClientHttpTask extends GridComputeTaskSplitAdapter<String, Integer> {
+public class GridClientHttpTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** Task delegate. */
     private final GridClientTcpTask delegate = new GridClientTcpTask();
 

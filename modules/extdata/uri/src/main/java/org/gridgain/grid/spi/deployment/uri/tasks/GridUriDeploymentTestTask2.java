@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * URI deployment test task which loads Spring bean definitions from spring1.xml configuration file.
  */
-public class GridUriDeploymentTestTask2 extends GridComputeTaskSplitAdapter<Object, Object> {
+public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, Object> {
     /** */
     private static final long serialVersionUID = 172455091783232848L;
 

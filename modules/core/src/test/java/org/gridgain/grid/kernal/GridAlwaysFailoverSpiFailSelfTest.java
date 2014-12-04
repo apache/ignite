@@ -106,7 +106,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
      * Task which splits to the jobs that always fail.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class GridTestFailoverTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static final class GridTestFailoverTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert gridSize == 1;

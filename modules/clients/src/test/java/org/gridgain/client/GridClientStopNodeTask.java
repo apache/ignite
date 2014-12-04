@@ -27,7 +27,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  *     <li>node type (see start nodes task).</li>
  * </ul>
  */
-public class GridClientStopNodeTask extends GridComputeTaskSplitAdapter<String, Integer> {
+public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** */
     @GridLoggerResource
     private transient GridLogger log;

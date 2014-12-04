@@ -112,7 +112,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
     /**
      *
      */
-    private static class MessageListeningTask extends GridComputeTaskSplitAdapter<Object, Object>
+    private static class MessageListeningTask extends ComputeTaskSplitAdapter<Object, Object>
         implements GridMessageListener {
         /** */
         @GridInstanceResource

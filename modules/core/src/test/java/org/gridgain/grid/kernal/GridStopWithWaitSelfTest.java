@@ -123,7 +123,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridComputeTaskSessionFullSupport
+    @ComputeTaskSessionFullSupport
     private static class GridWaitTask extends ComputeTaskAdapter<UUID, Integer> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
@@ -157,7 +157,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridComputeTaskSessionFullSupport
+    @ComputeTaskSessionFullSupport
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
         @GridTaskSessionResource
@@ -225,7 +225,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
-            if (res.getException() != null && !(res.getException() instanceof GridComputeUserUndeclaredException)) {
+            if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException)) {
                 assert res.getNode().id().equals(nodeRef.get().id());
 
                 return ComputeJobResultPolicy.FAILOVER;

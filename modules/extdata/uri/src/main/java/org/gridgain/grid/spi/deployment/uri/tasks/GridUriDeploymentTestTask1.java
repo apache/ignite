@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * URI deployment test task which loads Spring bean definitions from spring1.xml configuration file.
  */
-public class GridUriDeploymentTestTask1 extends GridComputeTaskSplitAdapter<Object, Object> {
+public class GridUriDeploymentTestTask1 extends ComputeTaskSplitAdapter<Object, Object> {
     /** */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     public GridUriDeploymentTestTask1() {

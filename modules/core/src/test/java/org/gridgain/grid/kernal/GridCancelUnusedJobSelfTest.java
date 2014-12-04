@@ -112,7 +112,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class GridCancelTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private static class GridCancelTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridLoggerResource private GridLogger log;
 

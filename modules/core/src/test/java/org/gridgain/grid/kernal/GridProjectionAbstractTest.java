@@ -721,7 +721,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * Test task.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestTask extends GridComputeTaskSplitAdapter<String, Void> {
+    public static class TestTask extends ComputeTaskSplitAdapter<String, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
             Collection<ComputeJob> jobs = new HashSet<>();

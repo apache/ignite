@@ -79,7 +79,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
     /**
      *
      */
-    private abstract static class AbstractResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private abstract static class AbstractResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         protected transient GridAbstractUserResource rsrc1;
 

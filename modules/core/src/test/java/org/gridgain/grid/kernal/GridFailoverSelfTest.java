@@ -69,7 +69,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridComputeTaskSessionFullSupport
+    @ComputeTaskSessionFullSupport
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
         @GridTaskSessionResource
@@ -116,7 +116,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
             List<ComputeJobResult> received) throws GridException {
-            if (res.getException() != null && !(res.getException() instanceof GridComputeUserUndeclaredException)) {
+            if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException)) {
                 assert res.getNode().id().equals(nodeRef.get().id());
 
                 return ComputeJobResultPolicy.FAILOVER;

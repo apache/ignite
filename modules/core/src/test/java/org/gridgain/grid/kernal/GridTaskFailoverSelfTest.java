@@ -59,7 +59,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class GridFailoverTestTask extends GridComputeTaskSplitAdapter<Serializable, Integer> {
+    public static class GridFailoverTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
         @GridLoggerResource
         private GridLogger log;

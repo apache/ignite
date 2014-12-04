@@ -218,8 +218,8 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
      * Task which splits to the jobs that uses SPIs from annotation.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    @GridComputeTaskSpis(loadBalancingSpi = "load2", failoverSpi = "fail2", checkpointSpi = "cp2")
-    @GridComputeTaskSessionFullSupport
+    @ComputeTaskSpis(loadBalancingSpi = "load2", failoverSpi = "fail2", checkpointSpi = "cp2")
+    @ComputeTaskSessionFullSupport
     public static final class GridTestMultipleSpisTask extends ComputeTaskAdapter<UUID, Integer> {
         /** */
         @GridTaskSessionResource private ComputeTaskSession taskSes;

@@ -96,7 +96,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    private abstract static class BaseTask extends GridComputeTaskSplitAdapter<Object, Void> {
+    private abstract static class BaseTask extends ComputeTaskSplitAdapter<Object, Void> {
         /** */
         protected static final Thread mainThread = Thread.currentThread();
 

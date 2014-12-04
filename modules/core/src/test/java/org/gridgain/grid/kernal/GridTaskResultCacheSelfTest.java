@@ -101,7 +101,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    private abstract static class GridAbstractCacheTestTask extends GridComputeTaskSplitAdapter<String, Object> {
+    private abstract static class GridAbstractCacheTestTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
             String[] words = arg.split(" ");

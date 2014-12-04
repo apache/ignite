@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Gridify load test task.
  */
-public class GridifyLoadTestTask extends GridComputeTaskSplitAdapter<GridifyArgument, Integer> {
+public class GridifyLoadTestTask extends ComputeTaskSplitAdapter<GridifyArgument, Integer> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws GridException {
         assert gridSize > 0 : "Subgrid cannot be empty.";

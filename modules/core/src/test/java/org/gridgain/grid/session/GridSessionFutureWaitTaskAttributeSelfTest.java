@@ -150,8 +150,8 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
      *
      */
     @ComputeTaskMapAsync
-    @GridComputeTaskSessionFullSupport
-    private static class GridTaskSessionTestTask extends GridComputeTaskSplitAdapter<Serializable, Integer> {
+    @ComputeTaskSessionFullSupport
+    private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
         @GridLoggerResource
         private GridLogger log;

@@ -122,8 +122,8 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
     /**
      *
      */
-    @GridComputeTaskSessionFullSupport
-    public static class GridTaskSessionTestTask extends GridComputeTaskSplitAdapter<Serializable, Integer> {
+    @ComputeTaskSessionFullSupport
+    public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
         @GridLoggerResource private GridLogger log;
 
@@ -199,7 +199,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
     /**
      *
      */
-    private class GridTaskSessionAttributeTestListener implements GridComputeTaskSessionAttributeListener {
+    private class GridTaskSessionAttributeTestListener implements ComputeTaskSessionAttributeListener {
         /** */
         private Map<Object, Object> attrs = new HashMap<>();
 

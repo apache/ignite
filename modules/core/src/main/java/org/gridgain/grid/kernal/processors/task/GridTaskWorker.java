@@ -301,7 +301,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         recordTaskEvent(EVT_TASK_TIMEDOUT, "Task has timed out.");
 
-        Throwable e = new GridComputeTaskTimeoutException("Task timed out (check logs for error messages): " + ses);
+        Throwable e = new ComputeTaskTimeoutException("Task timed out (check logs for error messages): " + ses);
 
         finishTask(null, e);
     }
@@ -329,7 +329,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      *
      */
     private void initializeSpis() {
-        GridComputeTaskSpis spis = dep.annotation(taskCls, GridComputeTaskSpis.class);
+        ComputeTaskSpis spis = dep.annotation(taskCls, ComputeTaskSpis.class);
 
         if (spis != null) {
             ses.setLoadBalancingSpi(spis.loadBalancingSpi());
@@ -434,7 +434,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             U.error(log, errMsg, e);
 
-            finishTask(null, new GridComputeUserUndeclaredException(errMsg, e));
+            finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
         }
     }
 
@@ -881,7 +881,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     U.error(log, errMsg, e);
 
-                    Throwable tmp = new GridComputeUserUndeclaredException(errMsg, e);
+                    Throwable tmp = new ComputeUserUndeclaredException(errMsg, e);
 
                     // Failed to successfully obtain result policy and
                     // hence forced to fail the whole deployed task.
@@ -939,7 +939,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             U.error(log, errMsg, e);
 
-            userE = new GridComputeUserUndeclaredException(errMsg ,e);
+            userE = new ComputeUserUndeclaredException(errMsg ,e);
         }
         finally {
             finishTask(reduceRes, userE);
@@ -998,7 +998,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             U.error(log, errMsg, e);
 
-            finishTask(null, new GridComputeUserUndeclaredException(errMsg, e));
+            finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
 
             return false;
         }

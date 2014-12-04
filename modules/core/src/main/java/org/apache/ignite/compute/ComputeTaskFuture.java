@@ -25,21 +25,21 @@ public interface ComputeTaskFuture<R> extends IgniteFuture<R> {
     /**
      * {@inheritDoc}
      *
-     * @throws GridComputeTaskTimeoutException If task execution timed out.
+     * @throws ComputeTaskTimeoutException If task execution timed out.
      */
     @Override public R get() throws GridException;
 
     /**
      * {@inheritDoc}
      *
-     * @throws GridComputeTaskTimeoutException If task execution timed out.
+     * @throws ComputeTaskTimeoutException If task execution timed out.
      */
     @Override public R get(long timeout) throws GridException;
 
     /**
      * {@inheritDoc}
      *
-     * @throws GridComputeTaskTimeoutException If task execution timed out.
+     * @throws ComputeTaskTimeoutException If task execution timed out.
      */
     @Override public R get(long timeout, TimeUnit unit) throws GridException;
 

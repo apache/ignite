@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * External gridify task.
  */
-public class GridExternalGridifyTask extends GridComputeTaskSplitAdapter<GridifyArgument, Object> {
+public class GridExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument, Object> {
     /** */
     public static final String TASK_NAME = "org.test.gridify.GridExternalGridifyTask";
 

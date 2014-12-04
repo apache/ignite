@@ -14,10 +14,10 @@ import org.jetbrains.annotations.*;
 /**
  * Defines life-time scopes for checkpoint operations. Such operations include:
  * <ul>
- *      <li>{@link ComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}</li>
+ *      <li>{@link ComputeTaskSession#saveCheckpoint(String, Object, ComputeTaskSessionScope, long)}</li>
  * </ul>
  */
-public enum GridComputeTaskSessionScope {
+public enum ComputeTaskSessionScope {
     /**
      * Data saved with this scope will be automatically removed
      * once the task session is completed (i.e. execution of the task is completed)
@@ -37,7 +37,7 @@ public enum GridComputeTaskSessionScope {
     GLOBAL_SCOPE;
 
     /** Enumerated values. */
-    private static final GridComputeTaskSessionScope[] VALS = values();
+    private static final ComputeTaskSessionScope[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -45,7 +45,7 @@ public enum GridComputeTaskSessionScope {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridComputeTaskSessionScope fromOrdinal(byte ord) {
+    @Nullable public static ComputeTaskSessionScope fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

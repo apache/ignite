@@ -156,7 +156,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
     /**
      * Task that will always fail due to non-transient resource injection.
      */
-    public static class NonTransientUserResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class NonTransientUserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
         @GridUserResource(resourceClass = UserResource1.class)
@@ -180,7 +180,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
     }
 
     /** */
-    public static class UserResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         private transient GridAbstractUserResource rsrc1;
 

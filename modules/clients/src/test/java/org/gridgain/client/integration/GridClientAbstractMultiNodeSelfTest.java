@@ -687,7 +687,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      * Test task. Returns a tuple in which first component is id of node that has split the task,
      * and second component is count of nodes that executed jobs.
      */
-    private static class TestTask extends GridComputeTaskSplitAdapter<Object, String> {
+    private static class TestTask extends ComputeTaskSplitAdapter<Object, String> {
         /** */
         @GridInstanceResource
         private Ignite ignite;

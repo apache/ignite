@@ -97,7 +97,7 @@ import java.util.concurrent.*;
  * Note that regardless of which method is used for executing computations, all relevant SPI implementations
  * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution,
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
- * {@link org.apache.ignite.compute.GridComputeTaskSpis} annotation. Refer to {@link org.apache.ignite.compute.ComputeTask} documentation for more information.
+ * {@link org.apache.ignite.compute.ComputeTaskSpis} annotation. Refer to {@link org.apache.ignite.compute.ComputeTask} documentation for more information.
  */
 public interface IgniteCompute extends IgniteAsyncSupport {
     /**

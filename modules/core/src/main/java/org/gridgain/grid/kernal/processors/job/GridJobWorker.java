@@ -551,7 +551,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 "originating node is still in grid and requested class is in the task class path) [jobId=" +
                 ses.getJobId() + ", ses=" + ses + ']';
 
-            ex = new GridComputeUserUndeclaredException(msg, e);
+            ex = new ComputeUserUndeclaredException(msg, e);
         }
         else if (sysStopping && X.hasCause(e, InterruptedException.class, GridInterruptedException.class)) {
             msg = "Job got interrupted due to system stop (will attempt failover).";
@@ -563,7 +563,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             msg = "Failed to execute job due to unexpected runtime exception [jobId=" + ses.getJobId() +
                 ", ses=" + ses + ']';
 
-            ex = new GridComputeUserUndeclaredException(msg, e);
+            ex = new ComputeUserUndeclaredException(msg, e);
         }
 
         assert msg != null;

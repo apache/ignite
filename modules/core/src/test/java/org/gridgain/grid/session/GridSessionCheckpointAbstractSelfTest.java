@@ -110,7 +110,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
 
             fut.getTaskSession().saveCheckpoint("future:session:key", "future:session:testval");
             fut.getTaskSession().saveCheckpoint("future:global:key", "future:global:testval",
-                GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
+                ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
 
             int res = (Integer) fut.get();
 
@@ -136,8 +136,8 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
 
     /** */
     @ComputeTaskName("GridCheckpointTestTask")
-    @GridComputeTaskSessionFullSupport
-    private static class GridCheckpointTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    @ComputeTaskSessionFullSupport
+    private static class GridCheckpointTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridTaskSessionResource private ComputeTaskSession ses;
 
@@ -149,7 +149,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
             for (int i = 0; i < SPLIT_COUNT; i++) {
                 ses.saveCheckpoint("map:session:key:" + i, "map:session:testval:" + i);
                 ses.saveCheckpoint("map:global:key:" + i, "map:global:testval:" + i,
-                    GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
+                    ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
             }
 
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(SPLIT_COUNT);
@@ -163,7 +163,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                     @Override public Serializable execute() throws GridException {
                         ses.saveCheckpoint("job:session:key:" + argument(0), "job:session:testval:" + argument(0));
                         ses.saveCheckpoint("job:global:key:" + argument(0), "job:global:testval:" + argument(0),
-                            GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
+                            ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
 
                         return 1;
                     }
@@ -184,7 +184,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
             for (int i = 0; i < SPLIT_COUNT; i++) {
                 ses.saveCheckpoint("reduce:session:key:" + i, "reduce:session:testval:" + i);
                 ses.saveCheckpoint("reduce:global:key:" + i, "reduce:global:testval:" + i,
-                    GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
+                    ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
             }
 
             // Sleep to let task future store a session attribute.

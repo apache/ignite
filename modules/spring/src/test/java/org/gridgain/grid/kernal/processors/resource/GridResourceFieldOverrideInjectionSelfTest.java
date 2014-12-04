@@ -89,7 +89,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
     }
 
     /** */
-    private static class ResourceOverrideTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private static class ResourceOverrideTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridLoggerResource
         private GridLogger log;

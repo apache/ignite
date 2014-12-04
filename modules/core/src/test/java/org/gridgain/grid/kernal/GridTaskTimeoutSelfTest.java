@@ -78,7 +78,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
             assert false : "GridComputeTaskTimeoutException was not thrown (synchronous apply)";
         }
-        catch (GridComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutException e) {
             info("Received expected timeout exception (synchronous apply): " + e);
         }
 
@@ -143,7 +143,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
                         assert false : "Task has not been timed out. Future: " + fut;
                     }
-                    catch (GridComputeTaskTimeoutException ignored) {
+                    catch (ComputeTaskTimeoutException ignored) {
                         // Expected.
                     }
                     catch (GridException e) {
@@ -171,7 +171,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class GridTaskTimeoutTestTask extends GridComputeTaskSplitAdapter<Serializable, Object> {
+    private static class GridTaskTimeoutTestTask extends ComputeTaskSplitAdapter<Serializable, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
             Collection<GridTaskTimeoutTestJob> jobs = new ArrayList<>(SPLIT_COUNT);

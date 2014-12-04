@@ -166,8 +166,8 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    @GridComputeTaskSessionFullSupport
-    private static class Task extends GridComputeTaskSplitAdapter<Void, Void> {
+    @ComputeTaskSessionFullSupport
+    private static class Task extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
             return Collections.singleton(new ComputeJobAdapter() {
@@ -186,8 +186,8 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    @GridComputeTaskSessionFullSupport
-    private static class FailTask extends GridComputeTaskSplitAdapter<Void, Void> {
+    @ComputeTaskSessionFullSupport
+    private static class FailTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
             return Collections.singleton(new ComputeJobAdapter() {

@@ -141,7 +141,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
      *
      */
     @ComputeTaskMapAsync
-    private static class TestTask extends GridComputeTaskSplitAdapter<Void, Void> {
+    private static class TestTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new ComputeJobAdapter() {

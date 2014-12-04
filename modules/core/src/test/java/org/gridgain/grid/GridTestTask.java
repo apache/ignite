@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Test task.
  */
-public class GridTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
     /** Logger. */
     @GridLoggerResource private GridLogger log;
 

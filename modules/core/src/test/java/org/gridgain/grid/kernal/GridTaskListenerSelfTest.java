@@ -75,7 +75,7 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
     }
 
     /** Test task. */
-    private static class TestTask extends GridComputeTaskSplitAdapter<Serializable, Object> {
+    private static class TestTask extends ComputeTaskSplitAdapter<Serializable, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();

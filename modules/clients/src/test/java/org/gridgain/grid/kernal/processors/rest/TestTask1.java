@@ -19,7 +19,7 @@ import java.util.*;
 /**
  *
  */
-class TestTask1 extends GridComputeTaskSplitAdapter<String, String> {
+class TestTask1 extends ComputeTaskSplitAdapter<String, String> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
         Collection<ComputeJob> jobs = new ArrayList<>(gridSize);

@@ -81,12 +81,12 @@ public class GridTestCollisionTaskSession implements ComputeTaskSession {
         assert false : "Not implemented";
     }
 
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout)
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
         throws GridException {
         assert false : "Not implemented";
     }
 
-    @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout,
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
         boolean overwrite) throws GridException {
         assert false : "Not implemented";
     }
@@ -177,12 +177,12 @@ public class GridTestCollisionTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributeListener(GridComputeTaskSessionAttributeListener lsnr, boolean rewind) {
+    @Override public void addAttributeListener(ComputeTaskSessionAttributeListener lsnr, boolean rewind) {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAttributeListener(GridComputeTaskSessionAttributeListener lsnr) {
+    @Override public boolean removeAttributeListener(ComputeTaskSessionAttributeListener lsnr) {
         assert false : "Not implemented";
 
         return false;

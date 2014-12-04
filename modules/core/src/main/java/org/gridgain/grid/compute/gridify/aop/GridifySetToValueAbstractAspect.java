@@ -127,7 +127,7 @@ public class GridifySetToValueAbstractAspect {
 
         while (true) {
             if (now > end)
-                throw new GridComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
+                throw new ComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
 
             GridifyRangeArgument taskArg = createGridifyArgument(arg, res);
 

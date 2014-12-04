@@ -179,7 +179,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     }
 
     /** */
-    @GridComputeTaskSessionFullSupport
+    @ComputeTaskSessionFullSupport
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
         @GridTaskSessionResource
@@ -222,7 +222,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
                 throws GridException {
-            if (res.getException() != null && !(res.getException() instanceof GridComputeUserUndeclaredException))
+            if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException))
                 return ComputeJobResultPolicy.FAILOVER;
 
             return ComputeJobResultPolicy.REDUCE;

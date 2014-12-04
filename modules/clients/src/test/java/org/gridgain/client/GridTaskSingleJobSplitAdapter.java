@@ -15,13 +15,13 @@ import org.gridgain.grid.*;
 import java.util.*;
 
 /**
- * Adapter for {@link GridComputeTaskSplitAdapter}
+ * Adapter for {@link org.apache.ignite.compute.ComputeTaskSplitAdapter}
  * overriding {@code split(...)} method to return singleton with self instance.
  * This adapter should be used for tasks that always splits to a single task.
  * @param <T> Type of the task execution argument.
  * @param <R> Type of the task result returning from {@link org.apache.ignite.compute.ComputeTask#reduce(List)} method.
  */
-public abstract class GridTaskSingleJobSplitAdapter<T, R> extends GridComputeTaskSplitAdapter<T, R> {
+public abstract class GridTaskSingleJobSplitAdapter<T, R> extends ComputeTaskSplitAdapter<T, R> {
     /** Empty constructor. */
     protected GridTaskSingleJobSplitAdapter() {
         // No-op.

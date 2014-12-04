@@ -103,7 +103,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to non-transient resource injection.
      */
-    public static class UserResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridUserResource private transient UserResource rsrcTask;
 

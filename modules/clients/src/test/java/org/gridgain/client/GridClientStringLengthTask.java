@@ -21,7 +21,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  * <p>
  * The argument of the task is a simple string to calculate length of.
  */
-public class GridClientStringLengthTask extends GridComputeTaskSplitAdapter<String, Integer> {
+public class GridClientStringLengthTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
         Collection<ComputeJobAdapter> jobs = new ArrayList<>();

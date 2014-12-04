@@ -20,7 +20,7 @@ import java.util.*;
 /**
  *
  */
-public class GridCacheLoadPopulationTask extends GridComputeTaskSplitAdapter<Void, Void> {
+public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, Void> {
     /** Serial version UID. */
     private static final long serialVersionUID = 1L;
 

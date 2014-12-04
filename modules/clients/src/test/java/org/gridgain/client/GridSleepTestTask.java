@@ -11,7 +11,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  * Test task, that sleeps for 10 seconds in split and returns
  * the length of an argument.
  */
-public class GridSleepTestTask extends GridComputeTaskSplitAdapter<String, Integer> {
+public class GridSleepTestTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
     @Override public Collection<? extends ComputeJob> split(int gridSize, String arg)
         throws GridException {

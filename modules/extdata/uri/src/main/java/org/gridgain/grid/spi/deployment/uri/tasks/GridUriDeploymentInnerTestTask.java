@@ -21,7 +21,7 @@ public class GridUriDeploymentInnerTestTask {
     /**
      * Inner test task.
      */
-    public class GridInnerTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public class GridInnerTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return null;

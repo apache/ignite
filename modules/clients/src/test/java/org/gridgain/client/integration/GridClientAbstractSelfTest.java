@@ -1432,7 +1432,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * Test task.
      */
-    private static class TestTask extends GridComputeTaskSplitAdapter<List<Object>, Integer> {
+    private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
             throws GridException {
@@ -1470,7 +1470,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * Test task that sleeps 5 seconds.
      */
-    private static class SleepTestTask extends GridComputeTaskSplitAdapter<List<Object>, Integer> {
+    private static class SleepTestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
             throws GridException {
@@ -1508,7 +1508,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * Http test task with restriction to string arguments only.
      */
-    protected static class HttpTestTask extends GridComputeTaskSplitAdapter<String, Integer> {
+    protected static class HttpTestTask extends ComputeTaskSplitAdapter<String, Integer> {
         private final TestTask delegate = new TestTask();
 
         /** {@inheritDoc} */
@@ -1533,7 +1533,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * Http wrapper for sleep task.
      */
-    protected static class SleepHttpTestTask extends GridComputeTaskSplitAdapter<String, Integer> {
+    protected static class SleepHttpTestTask extends ComputeTaskSplitAdapter<String, Integer> {
         private final SleepTestTask delegate = new SleepTestTask();
 
         /** {@inheritDoc} */

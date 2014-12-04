@@ -137,7 +137,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
-    public static class GridStopTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridLoggerResource private GridLogger log;
 

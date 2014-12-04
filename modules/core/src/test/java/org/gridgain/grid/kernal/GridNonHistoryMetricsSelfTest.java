@@ -95,7 +95,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    private static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    private static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** Logger. */
         @GridLoggerResource private GridLogger log;
 

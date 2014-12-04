@@ -119,7 +119,7 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
      * @return {@code true} if checkpoint has been actually saved, {@code false} otherwise.
      * @throws GridException Thrown in case of any errors.
      */
-    public boolean storeCheckpoint(GridTaskSessionInternal ses, String key, Object state, GridComputeTaskSessionScope scope,
+    public boolean storeCheckpoint(GridTaskSessionInternal ses, String key, Object state, ComputeTaskSessionScope scope,
         long timeout, boolean override) throws GridException {
         assert ses != null;
         assert key != null;

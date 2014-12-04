@@ -299,7 +299,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
      * Test task.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static class TestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridLoggerResource
         private GridLogger taskLog;

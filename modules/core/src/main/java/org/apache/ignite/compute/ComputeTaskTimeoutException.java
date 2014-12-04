@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  * This exception indicates that task execution timed out. It is thrown from
  * {@link ComputeTaskFuture#get()} method.
  */
-public class GridComputeTaskTimeoutException extends GridException {
+public class ComputeTaskTimeoutException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -26,7 +26,7 @@ public class GridComputeTaskTimeoutException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridComputeTaskTimeoutException(String msg) {
+    public ComputeTaskTimeoutException(String msg) {
         super(msg);
     }
 
@@ -36,7 +36,7 @@ public class GridComputeTaskTimeoutException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridComputeTaskTimeoutException(Throwable cause) {
+    public ComputeTaskTimeoutException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -47,7 +47,7 @@ public class GridComputeTaskTimeoutException extends GridException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridComputeTaskTimeoutException(String msg, @Nullable Throwable cause) {
+    public ComputeTaskTimeoutException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

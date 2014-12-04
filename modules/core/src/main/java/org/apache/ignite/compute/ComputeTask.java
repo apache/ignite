@@ -188,10 +188,10 @@ import java.util.*;
  * </pre>
  * </li>
  * <li>
- * {@link GridComputeTaskSplitAdapter} hides the job-to-node mapping logic from
- * user and provides convenient {@link GridComputeTaskSplitAdapter#split(int, Object)}
+ * {@link ComputeTaskSplitAdapter} hides the job-to-node mapping logic from
+ * user and provides convenient {@link ComputeTaskSplitAdapter#split(int, Object)}
  * method for splitting task into sub-jobs in homogeneous environments.
- * Here is an example of how you would implement your task using {@link GridComputeTaskSplitAdapter}:
+ * Here is an example of how you would implement your task using {@link ComputeTaskSplitAdapter}:
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override

@@ -46,7 +46,7 @@ import static org.apache.ignite.events.GridEventType.*;
  * number of nodes, some jobs within the same task will be assigned to the same node if
  * multiple tasks are executing concurrently.
  * <h1 class="header">Coding Example</h1>
- * If you are using {@link GridComputeTaskSplitAdapter} then load balancing logic
+ * If you are using {@link org.apache.ignite.compute.ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
  * <pre name="code" class="java">

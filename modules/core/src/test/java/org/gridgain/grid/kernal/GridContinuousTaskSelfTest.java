@@ -222,8 +222,8 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})
-    @GridComputeTaskSessionFullSupport
-    public static class SessionChainTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    @ComputeTaskSessionFullSupport
+    public static class SessionChainTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridTaskSessionResource
         private ComputeTaskSession ses;
@@ -238,7 +238,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
-            ses.addAttributeListener(new GridComputeTaskSessionAttributeListener() {
+            ses.addAttributeListener(new ComputeTaskSessionAttributeListener() {
                 @Override public void onAttributeSet(Object key, Object val) {
                     if (key instanceof String) {
                         if (((String)key).startsWith("sendJob")) {

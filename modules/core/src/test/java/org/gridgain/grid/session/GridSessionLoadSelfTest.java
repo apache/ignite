@@ -113,7 +113,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridComputeTaskSessionFullSupport
+    @ComputeTaskSessionFullSupport
     private static class SessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean> {
         /** */
         @GridTaskSessionResource

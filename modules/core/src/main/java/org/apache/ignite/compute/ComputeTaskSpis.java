@@ -28,7 +28,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridComputeTaskSpis {
+public @interface ComputeTaskSpis {
     /**
      * Optional load balancing SPI name. By default, SPI name is equal
      * to the name of the SPI class. You can change SPI name by explicitely

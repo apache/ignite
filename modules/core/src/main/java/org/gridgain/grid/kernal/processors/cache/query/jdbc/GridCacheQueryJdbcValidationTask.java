@@ -26,7 +26,7 @@ import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*
 /**
  * Task to validate connection. Checks that cache with provided name exists in grid.
  */
-public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapter<String, Boolean> {
+public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<String, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -183,7 +183,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
             assert false : "Task should fail.";
         }
-        catch (GridComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutException e) {
             info("Expected timeout exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 
@@ -409,8 +409,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      *
      */
-    @GridComputeTaskSessionFullSupport
-    private static class GridAllEventsTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    @ComputeTaskSessionFullSupport
+    private static class GridAllEventsTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
             return Collections.singleton((ComputeJob)arg);

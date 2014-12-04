@@ -281,7 +281,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to non-transient resource injection.
      */
-    public static class NonTransientSpringBeanResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class NonTransientSpringBeanResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
         @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
@@ -307,7 +307,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to resource injection with unknown Spring bean name.
      */
-    public static class UnknownNameSpringBeanResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class UnknownNameSpringBeanResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
         @GridSpringResource(resourceName = "unknown-bean-name")
@@ -333,7 +333,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to resource injection with invalid declared bean type.
      */
-    public static class InvalidTypeSpringBeanResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class InvalidTypeSpringBeanResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
         @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
@@ -359,7 +359,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to non-transient resource injection.
      */
-    public static class NonTransientUserResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class NonTransientUserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
         @GridUserResource(resourceClass = UserResource1.class)
@@ -383,7 +383,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class UserResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+    public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridUserResource(resourceClass = UserResource1.class)
         private transient Object rsrc1;

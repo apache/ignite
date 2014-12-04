@@ -95,7 +95,7 @@ public final class DeploymentExample {
      * default to the task class name.
      */
     @ComputeTaskName(TASK_NAME)
-    public static class ExampleTask extends GridComputeTaskSplitAdapter<String, Object> {
+    public static class ExampleTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
             Collection<ComputeJob> jobs = new ArrayList<>(gridSize);

@@ -1981,7 +1981,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * Space calculation task.
      */
     @GridInternal
-    private static class GgfsGlobalSpaceTask extends GridComputeTaskSplitAdapter<Object, IgniteBiTuple<Long, Long>> {
+    private static class GgfsGlobalSpaceTask extends ComputeTaskSplitAdapter<Object, IgniteBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 

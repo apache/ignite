@@ -110,8 +110,8 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     /**
      *
      */
-    @GridComputeTaskSessionFullSupport
-    public static class GridTaskSessionTestTask extends GridComputeTaskSplitAdapter<Serializable, Integer> {
+    @ComputeTaskSessionFullSupport
+    public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
         @GridLoggerResource private GridLogger log;
 
@@ -196,7 +196,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     /**
      *
      */
-    private static class GridTaskSessionAttributeTestListener implements GridComputeTaskSessionAttributeListener {
+    private static class GridTaskSessionAttributeTestListener implements ComputeTaskSessionAttributeListener {
         /** */
         private Map<Object, Object> attrs = new HashMap<>();
 
