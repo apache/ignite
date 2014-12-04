@@ -420,7 +420,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         private final boolean ret;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -428,7 +428,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         private UUID locNodeId;
 
         /** */
-        @GridExecutorServiceResource
+        @IgniteExecutorServiceResource
         private ExecutorService exec;
 
         /**

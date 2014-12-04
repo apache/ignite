@@ -33,7 +33,7 @@ public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Inte
     private transient GridLogger log;
 
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
@@ -80,7 +80,7 @@ public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Inte
         private GridLogger log;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */

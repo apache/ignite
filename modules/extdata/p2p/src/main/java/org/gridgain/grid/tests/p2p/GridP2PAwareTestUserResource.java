@@ -26,7 +26,7 @@ public class GridP2PAwareTestUserResource {
     private static final String UNDEPLOY_CNT_KEY = "undeployCnt";
 
     /** Grid instance. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Grid logger. */

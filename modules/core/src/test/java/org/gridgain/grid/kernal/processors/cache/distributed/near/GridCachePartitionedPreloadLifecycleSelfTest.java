@@ -70,7 +70,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
      */
     private LifecycleBean lifecycleBean(final Object[] keys) {
         return new LifecycleBean() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private Ignite ignite;
 
             @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
@@ -172,7 +172,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
                 GridCacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
                 int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
-                    @GridInstanceResource
+                    @IgniteInstanceResource
                     private Ignite grid;
 
                     private int cnt;

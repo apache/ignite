@@ -155,7 +155,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
             final int cnt = 10000;
 
             lbean = new LifecycleBean() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {

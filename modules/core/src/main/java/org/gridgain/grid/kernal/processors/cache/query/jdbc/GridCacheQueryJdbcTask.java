@@ -137,7 +137,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         private final boolean first;
 
         /** Grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */

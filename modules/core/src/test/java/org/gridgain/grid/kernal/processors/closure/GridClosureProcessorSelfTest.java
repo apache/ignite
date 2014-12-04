@@ -91,7 +91,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      */
     private static class TestRunnable implements IgniteRunnable {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -113,7 +113,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      */
     private abstract static class AbstractTestCallable implements IgniteCallable<Integer> {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         protected Ignite ignite;
 
         /** */

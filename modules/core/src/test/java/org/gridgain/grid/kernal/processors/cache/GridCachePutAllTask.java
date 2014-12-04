@@ -55,7 +55,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                 @GridLoggerResource
                 private GridLogger log;
 
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Object execute() throws GridException {

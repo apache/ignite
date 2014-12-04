@@ -170,7 +170,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param ignite Grid.
          */
-        @GridInstanceResource
+        @IgniteInstanceResource
         @SuppressWarnings("unused")
         void setIgnite(Ignite ignite) { this.ignite = ignite; }
 
@@ -192,7 +192,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param exec ExecutorService.
          */
-        @GridExecutorServiceResource
+        @IgniteExecutorServiceResource
         @SuppressWarnings("unused")
         public void setExecutor(ExecutorService exec) {
             this.exec = exec;
@@ -202,13 +202,15 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
          * @param ggHome GridGain Home.
          */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridHomeResource private void setGridGainHome(String ggHome) { this.ggHome = ggHome; }
+        @IgniteHomeResource
+        private void setGridGainHome(String ggHome) { this.ggHome = ggHome; }
 
         /**
          * @param gridName Grid name.
          */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @GridHomeResource private void setGridName(String gridName) { this.gridName = gridName; }
+        @IgniteHomeResource
+        private void setGridName(String gridName) { this.gridName = gridName; }
 
         /**
          * @param springCtx Spring Application Context.
@@ -293,7 +295,7 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         /**
          * @param ignite Grid.
          */
-        @GridInstanceResource
+        @IgniteInstanceResource
         @Override public void setIgnite(Ignite ignite) {
             this.ignite = ignite;
         }

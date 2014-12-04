@@ -814,7 +814,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     protected class PutTwoEntriesInTxJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
@@ -841,7 +841,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     protected class PutOneEntryInTxJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
@@ -868,7 +868,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     protected class RemoveInTxJobQueried implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
@@ -895,7 +895,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     protected class RemoveInTxJobSimple implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */

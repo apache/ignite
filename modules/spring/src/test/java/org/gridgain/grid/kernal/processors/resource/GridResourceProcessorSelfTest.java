@@ -322,11 +322,12 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteOutClosure<Object> callable = new IgniteOutClosure<Object>() {
                 /** Should be injected despite this is a {@link Callable} instance nested in a job. */
-                @GridInstanceResource private Ignite grid;
+                @IgniteInstanceResource
+                private Ignite grid;
 
                 /** Runnable object nested inside callable. */
                 private Runnable run = new IgniteRunnable() {
-                    @GridHomeResource
+                    @IgniteHomeResource
                     private String ggHomeDir;
 
                     @Override public void run() {

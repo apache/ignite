@@ -23,14 +23,14 @@ import java.lang.annotation.*;
  * <ul>
  * <li>{@link GridLoggerResource}</li>
  * <li>{@link GridLocalNodeIdResource}</li>
- * <li>{@link GridHomeResource}</li>
+ * <li>{@link IgniteHomeResource}</li>
  * <li>{@link GridNameResource}</li>
  * <li>{@link GridMBeanServerResource}</li>
- * <li>{@link GridExecutorServiceResource}</li>
+ * <li>{@link IgniteExecutorServiceResource}</li>
  * <li>{@link GridMarshallerResource}</li>
  * <li>{@link GridSpringApplicationContextResource}</li>
  * <li>{@link GridSpringResource}</li>
- * <li>{@link GridInstanceResource}</li>
+ * <li>{@link IgniteInstanceResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>

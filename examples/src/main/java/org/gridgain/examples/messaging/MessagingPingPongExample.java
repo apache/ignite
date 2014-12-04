@@ -58,7 +58,7 @@ public class MessagingPingPongExample {
             // Set up remote player.
             g.message(nodeB).remoteListen(null, new IgniteBiPredicate<UUID, String>() {
                 /** This will be injected on node listener comes to. */
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {

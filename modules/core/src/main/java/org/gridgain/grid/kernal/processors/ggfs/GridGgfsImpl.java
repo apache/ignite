@@ -2003,7 +2003,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             for (int i = 0; i < gridSize; i++) {
                 res.add(new ComputeJobAdapter() {
                     /** Injected grid. */
-                    @GridInstanceResource
+                    @IgniteInstanceResource
                     private Ignite g;
 
                     @Nullable @Override public IgniteBiTuple<Long, Long> execute() throws GridException {

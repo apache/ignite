@@ -73,7 +73,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
         private final String cacheName;
 
         /** Grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */

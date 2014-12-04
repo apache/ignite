@@ -187,7 +187,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private transient UserResource2 rsrc2;
 
         /** Grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
@@ -259,7 +259,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private transient UserResource2 rsrc2;
 
         /** Grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */

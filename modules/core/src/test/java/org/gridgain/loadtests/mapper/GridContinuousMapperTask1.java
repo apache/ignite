@@ -35,7 +35,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
     private ComputeTaskContinuousMapper mapper;
 
     /** Grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite g;
 
     /** Blocking queue. */
@@ -73,7 +73,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
             sentJobs.incrementAndGet();
 
             mapper.send(new ComputeJobAdapter(jobId) {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite g;
 
                 @Override public Object execute() {

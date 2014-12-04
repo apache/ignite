@@ -41,7 +41,7 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
     private final transient Class<?> p2pCls;
 
     /** Grid instance. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Grid task session. */

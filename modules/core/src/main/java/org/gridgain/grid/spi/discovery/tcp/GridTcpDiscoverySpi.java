@@ -288,7 +288,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @param addrRslvr Address resolver.
      */
     @GridSpiConfiguration(optional = true)
-    @GridAddressResolverResource
+    @IgniteAddressResolverResource
     public void setAddressResolver(GridAddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)

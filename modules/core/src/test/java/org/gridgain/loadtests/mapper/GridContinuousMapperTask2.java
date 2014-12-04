@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer> {
     /** Grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite g;
 
     /** {@inheritDoc} */
@@ -36,7 +36,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
 
         for (int jobId : jobIds) {
             ComputeJob job = new ComputeJobAdapter(jobId) {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite g;
 
                 @Override public Object execute() {

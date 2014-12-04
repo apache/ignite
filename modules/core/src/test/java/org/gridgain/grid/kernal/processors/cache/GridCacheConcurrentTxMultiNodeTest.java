@@ -391,7 +391,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private static final long MAX = 5000;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**

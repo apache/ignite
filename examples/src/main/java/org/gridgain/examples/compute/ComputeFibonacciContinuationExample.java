@@ -89,7 +89,7 @@ public final class ComputeFibonacciContinuationExample {
         private ComputeJobContext jobCtx;
 
         /** Auto-inject grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Predicate. */

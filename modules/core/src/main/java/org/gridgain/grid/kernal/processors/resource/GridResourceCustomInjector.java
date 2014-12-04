@@ -261,11 +261,11 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
             // Clean up injected resources.
             cleanup(rsrc, GridLoggerResource.class);
-            cleanup(rsrc, GridInstanceResource.class);
-            cleanup(rsrc, GridExecutorServiceResource.class);
+            cleanup(rsrc, IgniteInstanceResource.class);
+            cleanup(rsrc, IgniteExecutorServiceResource.class);
             cleanup(rsrc, GridLocalNodeIdResource.class);
             cleanup(rsrc, GridMBeanServerResource.class);
-            cleanup(rsrc, GridHomeResource.class);
+            cleanup(rsrc, IgniteHomeResource.class);
             cleanup(rsrc, GridMarshallerResource.class);
             cleanup(rsrc, GridSpringApplicationContextResource.class);
             cleanup(rsrc, GridSpringResource.class);
@@ -444,11 +444,11 @@ class GridResourceCustomInjector implements GridResourceInjector {
             // Inject resources into shared resource.
             ioc.inject(rsrc, GridLoggerResource.class, new GridResourceBasicInjector<>(
                 log.getLogger(rsrcCls)), dep, depCls);
-            ioc.inject(rsrc, GridInstanceResource.class, gridInjector, dep, depCls);
-            ioc.inject(rsrc, GridExecutorServiceResource.class, execInjector, dep, depCls);
+            ioc.inject(rsrc, IgniteInstanceResource.class, gridInjector, dep, depCls);
+            ioc.inject(rsrc, IgniteExecutorServiceResource.class, execInjector, dep, depCls);
             ioc.inject(rsrc, GridLocalNodeIdResource.class, nodeIdInjector, dep, depCls);
             ioc.inject(rsrc, GridMBeanServerResource.class, mbeanServerInjector, dep, depCls);
-            ioc.inject(rsrc, GridHomeResource.class, ggHomeInjector, dep, depCls);
+            ioc.inject(rsrc, IgniteHomeResource.class, ggHomeInjector, dep, depCls);
             ioc.inject(rsrc, GridNameResource.class, ggNameInjector, dep, depCls);
             ioc.inject(rsrc, GridMarshallerResource.class, marshallerInjector, dep, depCls);
             ioc.inject(rsrc, GridSpringApplicationContextResource.class, springCtxInjector, dep, depCls);

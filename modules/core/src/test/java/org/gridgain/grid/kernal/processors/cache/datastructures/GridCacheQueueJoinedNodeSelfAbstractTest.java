@@ -144,7 +144,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     protected class PutJob implements IgniteRunnable {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Queue name. */
@@ -205,7 +205,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     protected class TakeJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Queue name. */

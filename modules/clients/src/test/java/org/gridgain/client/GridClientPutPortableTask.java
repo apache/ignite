@@ -19,7 +19,7 @@ import org.gridgain.grid.cache.*;
  */
 public class GridClientPutPortableTask extends GridTaskSingleJobSplitAdapter {
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

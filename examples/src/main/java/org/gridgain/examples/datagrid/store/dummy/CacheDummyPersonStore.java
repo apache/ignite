@@ -26,7 +26,7 @@ import java.util.concurrent.*;
  */
 public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** Auto-inject grid instance. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Auto-inject cache name. */

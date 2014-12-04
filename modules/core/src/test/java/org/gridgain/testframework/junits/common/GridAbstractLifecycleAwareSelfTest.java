@@ -34,7 +34,7 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         private AtomicInteger stopCnt = new AtomicInteger();
 
         /** */
-        @GridCacheNameResource
+        @IgniteCacheNameResource
         private String cacheName;
 
         /** */

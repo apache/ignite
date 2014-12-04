@@ -95,11 +95,11 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     private GridCacheAffinityNodeHashResolver hashIdRslvr = new GridCacheAffinityNodeAddressHashResolver();
 
     /** Injected grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Injected cache name. */
-    @GridCacheNameResource
+    @IgniteCacheNameResource
     private String cacheName;
 
     /** Injected logger. */

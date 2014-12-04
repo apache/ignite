@@ -25,7 +25,7 @@ public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Ob
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
         return Collections.singleton(new ComputeJobAdapter() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private Ignite ignite;
 
             @Override public Object execute() throws GridException {

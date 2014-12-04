@@ -38,7 +38,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
         ExecutorService srvc = createExecutorService(ignite);
 
         srvc.execute(new Runnable() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private Ignite ignite;
 
             @Override public void run() {
@@ -267,7 +267,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
         private T data;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**
@@ -293,7 +293,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
     /** */
     private static class TestRunnable implements Runnable, Serializable {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */

@@ -346,7 +346,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         private String cacheName;
 
         /** Injected grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**

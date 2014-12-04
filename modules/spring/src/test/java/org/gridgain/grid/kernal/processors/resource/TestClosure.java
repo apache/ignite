@@ -20,7 +20,7 @@ import org.junit.*;
  */
 public class TestClosure implements IgniteClosure<Object, Object> {
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** */

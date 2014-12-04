@@ -254,7 +254,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         private static final long serialVersionUID = 0L;
 
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Query request. */
@@ -355,7 +355,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         private static final long serialVersionUID = 0L;
 
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Query request. */
@@ -386,7 +386,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         private static final long serialVersionUID = 0L;
 
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Cache name. */

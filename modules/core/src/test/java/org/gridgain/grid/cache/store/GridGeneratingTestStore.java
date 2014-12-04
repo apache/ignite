@@ -26,7 +26,7 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
     private static final int DFLT_GEN_CNT = 100;
 
     /** */
-    @GridCacheNameResource
+    @IgniteCacheNameResource
     private String cacheName;
 
     /** {@inheritDoc} */

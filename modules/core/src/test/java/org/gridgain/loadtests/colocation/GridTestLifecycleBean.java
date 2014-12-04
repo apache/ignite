@@ -19,7 +19,7 @@ import org.gridgain.grid.cache.*;
  * Lifecycle bean.
  */
 public class GridTestLifecycleBean implements LifecycleBean {
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite g;
 
     @Override public void onLifecycleEvent(LifecycleEventType type) throws GridException {

@@ -172,7 +172,7 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
      */
     private static class TimeShiftLifecycleBean implements LifecycleBean {
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Time delta. */

@@ -225,7 +225,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */

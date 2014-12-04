@@ -22,7 +22,7 @@ import java.util.*;
  */
 public class GridStreamerLocalEventRouter implements GridStreamerEventRouter {
     /** Grid instance. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

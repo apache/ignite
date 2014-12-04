@@ -97,7 +97,7 @@ public final class MessagingExample {
     private static void startListening(IgniteMessaging msg) throws GridException {
         // Add ordered message listener.
         msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private Ignite g;
 
             @Override public boolean apply(UUID nodeId, String msg) {
@@ -116,7 +116,7 @@ public final class MessagingExample {
 
         // Add unordered message listener.
         msg.remoteListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private Ignite g;
 
             @Override public boolean apply(UUID nodeId, String msg) {

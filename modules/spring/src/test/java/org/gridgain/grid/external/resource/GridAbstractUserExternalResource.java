@@ -35,7 +35,8 @@ public abstract class GridAbstractUserExternalResource {
     @GridLoggerResource private GridLogger log;
 
     /** */
-    @GridInstanceResource private Ignite ignite;
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** */
     @GridLocalNodeIdResource private UUID nodeId;
@@ -44,11 +45,12 @@ public abstract class GridAbstractUserExternalResource {
     @GridMBeanServerResource private MBeanServer mbeanSrv;
 
     /** */
-    @GridExecutorServiceResource
+    @IgniteExecutorServiceResource
     private ExecutorService exec;
 
     /** */
-    @GridHomeResource private String ggHome;
+    @IgniteHomeResource
+    private String ggHome;
 
     /** */
     @GridNameResource private String ggName;

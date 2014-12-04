@@ -46,7 +46,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
     }
 
     /** Grid instance. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** */

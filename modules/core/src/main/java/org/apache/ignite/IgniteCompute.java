@@ -72,10 +72,10 @@ import java.util.concurrent.*;
  * resources can be injected:
  * <ul>
  * <li>{@link org.apache.ignite.resources.GridTaskSessionResource}</li>
- * <li>{@link org.apache.ignite.resources.GridInstanceResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
  * <li>{@link org.apache.ignite.resources.GridLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.GridHomeResource}</li>
- * <li>{@link org.apache.ignite.resources.GridExecutorServiceResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
  * <li>{@link org.apache.ignite.resources.GridLocalNodeIdResource}</li>
  * <li>{@link org.apache.ignite.resources.GridMBeanServerResource}</li>
  * <li>{@link org.apache.ignite.resources.GridMarshallerResource}</li>

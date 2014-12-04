@@ -108,7 +108,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
             final int cnt = 100;
 
             grid(0).compute().broadcast(new Callable<Object>() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
@@ -142,7 +142,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
             final int cnt = 100;
 
             grid(0).compute().broadcast(new Callable<Object>() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {

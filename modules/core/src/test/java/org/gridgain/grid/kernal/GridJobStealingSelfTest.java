@@ -294,7 +294,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     private static class JobStealingSpreadTask extends ComputeTaskAdapter<Object, Object> {
         /** Grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */
@@ -384,7 +384,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     private static final class GridJobStealingJob extends ComputeJobAdapter {
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */

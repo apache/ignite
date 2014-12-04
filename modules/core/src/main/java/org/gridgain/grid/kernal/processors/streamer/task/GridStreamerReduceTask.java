@@ -89,7 +89,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
         private static final long serialVersionUID = 0L;
 
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Query closure. */

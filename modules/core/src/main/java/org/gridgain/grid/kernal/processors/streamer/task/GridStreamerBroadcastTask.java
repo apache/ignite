@@ -80,7 +80,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
         private static final long serialVersionUID = 0L;
 
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Closure. */

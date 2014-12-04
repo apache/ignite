@@ -85,7 +85,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
         private static final long serialVersionUID = 0L;
 
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** Query closure. */

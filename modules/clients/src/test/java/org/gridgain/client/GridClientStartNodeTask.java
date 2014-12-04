@@ -50,7 +50,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
     private transient GridLogger log;
 
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private transient Ignite ignite;
 
     /** {@inheritDoc} */

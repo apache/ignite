@@ -42,7 +42,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
                     "Run with 4 remote nodes or more having large number of backup nodes.");
 
             g.compute().run(new CAX() {
-                    @GridInstanceResource
+                    @IgniteInstanceResource
                     private Ignite g;
 
                     @Override public void applyx() throws GridException {

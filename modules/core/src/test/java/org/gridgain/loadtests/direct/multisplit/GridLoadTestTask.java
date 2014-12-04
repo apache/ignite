@@ -27,7 +27,7 @@ public class GridLoadTestTask extends ComputeTaskAdapter<Integer, Integer> {
 
     /** */
     @SuppressWarnings("unused")
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

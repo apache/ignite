@@ -150,7 +150,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
                 private GridLogger log;
 
                 /** */
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite g;
 
                 /** {@inheritDoc} */

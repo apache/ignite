@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.*;
  * Grid cache name is provided to cache via {@link GridCacheConfiguration#getName()} method.
  * <p>
  * Cache name can be injected into components provided in the {@link GridCacheConfiguration},
- * if {@link GridCacheNameResource} annotation is used in another classes it is no-op.
+ * if {@link IgniteCacheNameResource} annotation is used in another classes it is no-op.
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
@@ -47,6 +47,6 @@ import org.gridgain.grid.cache.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridCacheNameResource {
+public @interface IgniteCacheNameResource {
     // No-op.
 }

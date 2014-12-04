@@ -281,7 +281,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param ignite Grid.
          */
-        @GridInstanceResource
+        @IgniteInstanceResource
         public void setIgnite(Ignite ignite) {
             this.ignite = ignite;
         }
@@ -305,7 +305,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param exec Executor.
          */
-        @GridExecutorServiceResource
+        @IgniteExecutorServiceResource
         public void setExecutor(ExecutorService exec) {
             this.exec = exec;
         }
@@ -313,7 +313,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /**
          * @param ggHome GridGain home.
          */
-        @GridHomeResource
+        @IgniteHomeResource
         public void setGridgainHome(String ggHome) {
             this.ggHome = ggHome;
         }

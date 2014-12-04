@@ -80,7 +80,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                 @GridLoggerResource
                 private GridLogger log;
 
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Object execute() throws GridException {

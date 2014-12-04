@@ -80,7 +80,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(locId)) {
                     return Collections.singletonMap(new ComputeJobAdapter() {
-                        @GridInstanceResource
+                        @IgniteInstanceResource
                         private Ignite ignite;
 
                         @Override public void cancel() {

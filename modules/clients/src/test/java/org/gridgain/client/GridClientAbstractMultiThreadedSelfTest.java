@@ -558,7 +558,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Object, String> {
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Count of tasks this job was split to. */

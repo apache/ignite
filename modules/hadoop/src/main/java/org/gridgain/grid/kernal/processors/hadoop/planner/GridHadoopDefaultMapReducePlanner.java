@@ -32,7 +32,7 @@ import static org.apache.ignite.IgniteFs.*;
  */
 public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePlanner {
     /** Injected grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Logger. */

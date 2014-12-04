@@ -527,7 +527,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         for (ClusterNode node : nodes) {
             Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite grid;
 
                 /** {@inheritDoc} */
@@ -623,7 +623,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     protected static class PutJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Queue name. */
@@ -670,7 +670,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     protected static class AddAllJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Queue name. */
@@ -721,7 +721,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     protected static class GetJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Queue name. */
@@ -778,7 +778,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     protected static class PutTakeJob implements IgniteCallable<Integer> {
         /** */
         @GridToStringExclude
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Queue name. */

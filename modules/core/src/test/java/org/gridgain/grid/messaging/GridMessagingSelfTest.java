@@ -773,7 +773,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
         ignite2.message().remoteListen(I_TOPIC_1, new P2<UUID, Object>() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private transient Ignite g;
 
             @Override public boolean apply(UUID nodeId, Object msg) {
@@ -810,7 +810,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         });
 
         ignite2.message().remoteListen(I_TOPIC_2, new P2<UUID, Object>() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private transient Ignite g;
 
             @Override public boolean apply(UUID nodeId, Object msg) {
@@ -847,7 +847,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         });
 
         ignite2.message().remoteListen(null, new P2<UUID, Object>() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private transient Ignite g;
 
             @Override public boolean apply(UUID nodeId, Object msg) {

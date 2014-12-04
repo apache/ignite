@@ -72,7 +72,7 @@ public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
     private static final long serialVersionUID = 0L;
 
     /** Injected grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

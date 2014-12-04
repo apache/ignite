@@ -143,7 +143,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      */
     private static class JobStealingTask extends ComputeTaskAdapter<Object, JobStealingResult> {
         /** Grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */
@@ -190,7 +190,8 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      */
     private static final class GridJobStealingJob extends ComputeJobAdapter {
         /** Injected grid. */
-        @GridInstanceResource private Ignite ignite;
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /**
          * @param arg Job argument.

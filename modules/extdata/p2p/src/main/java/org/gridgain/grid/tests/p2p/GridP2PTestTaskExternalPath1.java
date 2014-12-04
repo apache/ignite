@@ -100,7 +100,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
         private GridLogger log;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /** */

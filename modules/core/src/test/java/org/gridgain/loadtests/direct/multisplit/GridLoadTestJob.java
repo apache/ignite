@@ -21,7 +21,7 @@ import java.io.*;
  */
 public class GridLoadTestJob extends ComputeJobAdapter {
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /**

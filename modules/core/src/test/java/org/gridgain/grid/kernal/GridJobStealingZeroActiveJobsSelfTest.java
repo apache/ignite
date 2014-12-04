@@ -88,7 +88,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     @SuppressWarnings({"PublicInnerClass"})
     public static class JobStealingTask extends ComputeTaskAdapter<Object, Object> {
         /** Grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */
@@ -134,7 +134,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     @SuppressWarnings({"PublicInnerClass"})
     public static final class GridJobStealingJob extends ComputeJobAdapter {
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**

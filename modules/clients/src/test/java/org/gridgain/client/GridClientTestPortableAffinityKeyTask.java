@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class GridClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Object, Boolean> {
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

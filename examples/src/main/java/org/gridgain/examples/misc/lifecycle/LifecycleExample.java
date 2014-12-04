@@ -57,7 +57,7 @@ public final class LifecycleExample {
      */
     public static class LifecycleExampleBean implements LifecycleBean {
         /** Auto-inject grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Started flag. */

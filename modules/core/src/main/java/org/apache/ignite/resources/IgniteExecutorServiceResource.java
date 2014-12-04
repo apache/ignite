@@ -9,19 +9,21 @@
 
 package org.apache.ignite.resources;
 
+import org.gridgain.grid.spi.*;
+
 import java.lang.annotation.*;
+import java.util.concurrent.*;
 
 /**
- * Annotates a field or a setter method for injection of current {@link org.apache.ignite.Ignite} instance.
- * It can be injected into grid tasks and grid jobs. Note that grid instance will
- * not be injected into SPI's, as there is no grid during SPI start.
+ * Annotates a field or a setter method for injection of {@link ExecutorService} resource.
+ * {@code ExecutorService} is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
- * Grid instance can be injected into instances of following classes:
+ * Executor service can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
+ * <li>{@link GridSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
- * <li>All closures and predicates that can run on grid.</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>
@@ -29,8 +31,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridInstanceResource
- *      private Grid grid;
+ *      &#64;GridExecutorServiceResource
+ *      private ExecutorService execSvc;
  *      ...
  *  }
  * </pre>
@@ -38,19 +40,21 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private Grid grid;
+ *     private ExecutorService execSvc;
  *     ...
- *     &#64;GridInstanceResource
- *     public void setGrid(Grid grid) {
- *          this.grid = grid;
+ *     &#64;GridExecutorServiceResource
+ *     public void setExecutor(GridExecutorService execSvc) {
+ *          this.execSvc = execSvc;
  *     }
  *     ...
  * }
  * </pre>
+ * <p>
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridInstanceResource {
+public @interface IgniteExecutorServiceResource {
     // No-op.
 }

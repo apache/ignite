@@ -201,7 +201,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
             for (ClusterNode node : e.getValue()) {
                 compute(G.grid(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
-                    @GridInstanceResource
+                    @IgniteInstanceResource
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {

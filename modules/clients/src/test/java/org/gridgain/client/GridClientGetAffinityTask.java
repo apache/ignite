@@ -25,7 +25,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  */
 public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<String, Integer> {
     /** Grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private transient Ignite ignite;
 
     /** {@inheritDoc} */

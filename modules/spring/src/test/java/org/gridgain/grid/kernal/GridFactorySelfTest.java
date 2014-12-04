@@ -619,7 +619,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private GridMarshaller marshaller;
 
         /** Executor. */
-        @GridExecutorServiceResource
+        @IgniteExecutorServiceResource
         private Executor exec;
 
         /** MBean server. */
@@ -627,7 +627,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private MBeanServer mbeanSrv;
 
         /** Grid home. */
-        @GridHomeResource
+        @IgniteHomeResource
         private String gridHome;
 
         /** Grid name. */
@@ -643,7 +643,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         private ApplicationContext appCtx;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Lifecycle events. */

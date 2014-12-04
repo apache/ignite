@@ -42,7 +42,7 @@ public class GridStreamerCacheAffinityEventRouter extends GridStreamerEventRoute
     }
 
     /** Grid instance. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

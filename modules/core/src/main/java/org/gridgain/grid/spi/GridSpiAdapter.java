@@ -54,7 +54,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
     private MBeanServer jmx;
 
     /** */
-    @GridHomeResource
+    @IgniteHomeResource
     private String ggHome;
 
     /** */

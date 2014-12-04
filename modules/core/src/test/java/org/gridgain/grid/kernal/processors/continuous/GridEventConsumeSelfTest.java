@@ -809,7 +809,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         UUID consumeId = grid(0).events().remoteListen(
             new P2<UUID, IgniteEvent>() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite grid;
 
                 @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
@@ -826,7 +826,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 }
             },
             new P1<IgniteEvent>() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite grid;
 
                 @Override public boolean apply(IgniteEvent evt) {

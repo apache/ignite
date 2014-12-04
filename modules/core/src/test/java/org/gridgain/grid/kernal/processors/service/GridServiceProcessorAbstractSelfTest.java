@@ -523,7 +523,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         private final Object affKey;
 
         /** Grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /**
@@ -559,7 +559,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      */
     protected static class CounterServiceImpl implements CounterService, GridService {
         /** Auto-injected grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */

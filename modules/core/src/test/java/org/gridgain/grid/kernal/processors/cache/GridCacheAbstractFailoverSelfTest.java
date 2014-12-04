@@ -389,7 +389,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         if (cacheMode() == PARTITIONED) {
             Collection<Integer> res = compute(cache.gridProjection()).broadcast(new IgniteCallable<Integer>() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite g;
 
                 @Override public Integer call() {

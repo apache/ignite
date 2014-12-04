@@ -59,7 +59,7 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
         private int maxElements;
 
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /**

@@ -54,7 +54,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<Gr
         /** */
         private static final long serialVersionUID = 0L;
 
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         @SuppressWarnings("UnusedDeclaration")

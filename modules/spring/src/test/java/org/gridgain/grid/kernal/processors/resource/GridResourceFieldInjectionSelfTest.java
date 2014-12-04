@@ -176,7 +176,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         try {
             ignite.compute().apply(new IgniteClosure<Object, Object>() {
                 /** */
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Object apply(Object o) {
@@ -188,7 +188,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             ignite.compute().broadcast(new IgniteClosure<Object, Object>() {
                 /** */
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Object apply(Object o) {
@@ -405,7 +405,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -421,7 +421,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private MBeanServer mbeanSrv;
 
         /** */
-        @GridExecutorServiceResource
+        @IgniteExecutorServiceResource
         private ExecutorService exec;
 
         /** */
@@ -429,7 +429,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private ComputeLoadBalancer balancer;
 
         /** */
-        @GridHomeResource
+        @IgniteHomeResource
         private String ggHome;
 
         /** */

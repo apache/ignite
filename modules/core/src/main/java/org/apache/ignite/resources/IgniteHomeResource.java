@@ -12,13 +12,12 @@ package org.apache.ignite.resources;
 import org.gridgain.grid.spi.*;
 
 import java.lang.annotation.*;
-import java.util.concurrent.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link ExecutorService} resource.
- * {@code ExecutorService} is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
+ * Annotates a field or a setter method for injection of GridGain installation home path.
+ * GridGain installation home is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
- * Executor service can be injected into instances of following classes:
+ * Home path can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
@@ -31,8 +30,8 @@ import java.util.concurrent.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridExecutorServiceResource
- *      private ExecutorService execSvc;
+ *      &#64;GridHomeResource
+ *      private String home;
  *      ...
  *  }
  * </pre>
@@ -40,21 +39,21 @@ import java.util.concurrent.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private ExecutorService execSvc;
+ *     private String home;
  *     ...
- *     &#64;GridExecutorServiceResource
- *     public void setExecutor(GridExecutorService execSvc) {
- *          this.execSvc = execSvc;
+ *     &#64;GridHomeResource
+ *     public void setGridGainHome(String home) {
+ *          this.home = home;
  *     }
  *     ...
  * }
  * </pre>
  * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()} for Grid configuration details.
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridGainHome()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridExecutorServiceResource {
+public @interface IgniteHomeResource {
     // No-op.
 }

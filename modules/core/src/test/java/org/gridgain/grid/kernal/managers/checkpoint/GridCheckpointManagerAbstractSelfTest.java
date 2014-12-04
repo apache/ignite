@@ -287,7 +287,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
      */
     private static class GridTestCheckpointJob extends ComputeJobAdapter {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -404,7 +404,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
      */
     private static class GridMultiNodeTestCheckpointProducerJob extends ComputeJobAdapter {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */

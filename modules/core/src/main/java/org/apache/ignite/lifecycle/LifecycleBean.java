@@ -21,20 +21,20 @@ import org.gridgain.grid.*;
  * <li>
  *   {@link LifecycleEventType#BEFORE_GRID_START} invoked before grid startup
  *   routine is initiated. Note that grid is not available during this event,
- *   therefore if you injected a grid instance via {@link org.apache.ignite.resources.GridInstanceResource}
+ *   therefore if you injected a grid instance via {@link org.apache.ignite.resources.IgniteInstanceResource}
  *   annotation, you cannot use it yet.
  * </li>
  * <li>
  *   {@link LifecycleEventType#AFTER_GRID_START} invoked right after grid
  *   has started. At this point, if you injected a grid instance via
- *   {@link org.apache.ignite.resources.GridInstanceResource} annotation, you can start using it. Note that
+ *   {@link org.apache.ignite.resources.IgniteInstanceResource} annotation, you can start using it. Note that
  *   you should not be using {@link org.apache.ignite.Ignition} to get grid instance from
  *   lifecycle bean.
  * </li>
  * <li>
  *   {@link LifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
  *   stop routine is initiated. Grid is still available at this stage, so
- *   if you injected a grid instance via  {@link org.apache.ignite.resources.GridInstanceResource} annotation,
+ *   if you injected a grid instance via  {@link org.apache.ignite.resources.IgniteInstanceResource} annotation,
  *   you can use it.
  * </li>
  * <li>
@@ -49,13 +49,13 @@ import org.gridgain.grid.*;
  * <ul>
  * <li>{@link org.apache.ignite.resources.GridLoggerResource}</li>
  * <li>{@link org.apache.ignite.resources.GridLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.GridHomeResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
  * <li>{@link org.apache.ignite.resources.GridMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.GridExecutorServiceResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
  * <li>{@link org.apache.ignite.resources.GridMarshallerResource}</li>
  * <li>{@link org.apache.ignite.resources.GridSpringApplicationContextResource}</li>
  * <li>{@link org.apache.ignite.resources.GridSpringResource}</li>
- * <li>{@link org.apache.ignite.resources.GridInstanceResource}</li>
+ * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>

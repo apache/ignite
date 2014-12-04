@@ -257,7 +257,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
      * Job.
      */
     private static class Job implements GridGgfsJob, Serializable {
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         @GridTaskSessionResource

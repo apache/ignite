@@ -271,7 +271,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Object affKey;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -319,7 +319,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Object affKey;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -379,7 +379,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private String cacheName = NON_DFLT_CACHE_NAME;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -435,7 +435,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Object affKey;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -505,7 +505,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Object affKeyDup;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -552,7 +552,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**
@@ -618,7 +618,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private final Object key;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -654,7 +654,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private final Object key;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */

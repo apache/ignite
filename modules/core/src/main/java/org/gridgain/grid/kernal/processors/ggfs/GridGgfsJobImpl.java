@@ -46,7 +46,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
     private GridGgfsRecordResolver rslvr;
 
     /** Injected grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Injected logger. */

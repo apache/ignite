@@ -678,7 +678,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final boolean keepPortable;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /**
@@ -735,7 +735,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite g;
 
         /**

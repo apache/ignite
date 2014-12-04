@@ -47,7 +47,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     private static final long MAX = 5000;
 
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** */

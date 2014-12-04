@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]> {
     /** Injected Grid instance. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /**

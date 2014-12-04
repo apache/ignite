@@ -105,7 +105,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         final CountDownLatch finishLatch = new CountDownLatch(evtCnt);
 
         stages = F.<GridStreamerStage>asList(new GridStreamerStage() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private Ignite g;
 
             @GridLoggerResource

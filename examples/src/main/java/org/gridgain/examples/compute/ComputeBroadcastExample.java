@@ -78,7 +78,7 @@ public class ComputeBroadcastExample {
         Collection<String> res = g.compute().broadcast(
             new IgniteCallable<String>() {
                 // Automatically inject grid instance.
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite grid;
 
                 @Override public String call() {

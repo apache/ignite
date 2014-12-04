@@ -24,7 +24,7 @@ import java.util.concurrent.*;
  * Accenture cache store.
  */
 public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long> {
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     @GridLoggerResource

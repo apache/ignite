@@ -35,7 +35,8 @@ abstract class GridP2PAbstractUserResource {
     @GridLoggerResource private GridLogger log;
 
     /** */
-    @GridInstanceResource private Ignite ignite;
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** */
     @GridLocalNodeIdResource private UUID nodeId;
@@ -44,11 +45,12 @@ abstract class GridP2PAbstractUserResource {
     @GridMBeanServerResource private MBeanServer mbeanSrv;
 
     /** */
-    @GridExecutorServiceResource
+    @IgniteExecutorServiceResource
     private ExecutorService exec;
 
     /** */
-    @GridHomeResource private String ggHome;
+    @IgniteHomeResource
+    private String ggHome;
 
     /** */
     @GridSpringApplicationContextResource private ApplicationContext springCtx;

@@ -582,7 +582,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         private UUID clientId;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private GridEx g;
 
         /**

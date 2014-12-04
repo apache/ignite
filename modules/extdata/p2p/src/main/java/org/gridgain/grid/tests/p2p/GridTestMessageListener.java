@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.*;
  */
 public class GridTestMessageListener implements P2<UUID, Object> {
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

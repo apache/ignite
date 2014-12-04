@@ -35,7 +35,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
     private UUID nodeId;
 
     /** */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private transient Ignite ignite;
 
     /** */

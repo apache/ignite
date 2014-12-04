@@ -4870,7 +4870,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         private String cacheName;
 
         /** Injected grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**
@@ -4921,7 +4921,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         private boolean primaryOnly;
 
         /** Injected grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**

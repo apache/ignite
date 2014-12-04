@@ -25,7 +25,7 @@ public class GridP2PEventFilterExternalPath1 implements IgnitePredicate<IgniteEv
     private transient GridTestUserResource rsrc;
 
     /** Instance of grid. Used for save class loader and injected resource. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */

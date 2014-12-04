@@ -310,7 +310,7 @@ class GridServiceProxy<T> implements Serializable {
         private Object[] args;
 
         /** Grid instance. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private transient Ignite ignite;
 
         /**

@@ -26,7 +26,7 @@ import java.util.*;
  * @param <R> Task result type.
  */
 public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
-    @GridInstanceResource
+    @IgniteInstanceResource
     protected GridEx g;
 
     /** Task argument. */

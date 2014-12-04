@@ -689,7 +689,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Object, String> {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Count of tasks this job was split to. */

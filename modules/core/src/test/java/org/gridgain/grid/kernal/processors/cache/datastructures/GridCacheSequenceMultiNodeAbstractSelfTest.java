@@ -173,7 +173,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
      */
     private static class IncrementAndGetJob implements IgniteCallable<Set<Long>> {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
@@ -227,7 +227,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
      */
     private static class GetAndIncrementJob implements IgniteCallable<Set<Long>> {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */

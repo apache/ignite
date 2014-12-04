@@ -30,7 +30,7 @@ public class GridCacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterN
 
         return F.asMap(
                 new ComputeJobAdapter() {
-                    @GridInstanceResource
+                    @IgniteInstanceResource
                     private Ignite ignite;
 
                     @Override public Object execute() throws GridException {

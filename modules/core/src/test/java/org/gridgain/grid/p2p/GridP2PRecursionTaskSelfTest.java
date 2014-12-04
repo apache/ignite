@@ -157,7 +157,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     /** */
     private static class FactorialJob extends ComputeJobAdapter {
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /**

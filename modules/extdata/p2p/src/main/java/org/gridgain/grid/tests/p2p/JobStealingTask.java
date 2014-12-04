@@ -20,7 +20,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     private static final int N_JOBS = 4;
 
     /** Grid. */
-    @GridInstanceResource
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Logger. */
@@ -64,7 +64,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
      */
     private static final class GridJobStealingJob extends ComputeJobAdapter {
         /** Injected grid. */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */

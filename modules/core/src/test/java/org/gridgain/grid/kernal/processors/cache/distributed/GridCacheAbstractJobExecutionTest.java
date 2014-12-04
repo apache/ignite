@@ -119,7 +119,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         for (int i = 0; i < jobCnt; i++) {
             comp.apply(new CX1<Integer, Void>() {
-                @GridInstanceResource
+                @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Void applyx(final Integer i) throws GridException {

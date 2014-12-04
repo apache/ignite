@@ -37,7 +37,7 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
         GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
 
         return F.asSet(new ComputeJobAdapter() {
-            @GridInstanceResource
+            @IgniteInstanceResource
             private Ignite ignite;
 
             @Override public Object execute() {

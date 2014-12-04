@@ -308,7 +308,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @GridInstanceResource
+        @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
