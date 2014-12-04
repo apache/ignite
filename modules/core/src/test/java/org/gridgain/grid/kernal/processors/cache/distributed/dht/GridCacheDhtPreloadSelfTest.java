@@ -271,7 +271,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 futs.add(waitForLocalEvent(last.events(), new P1<IgniteEvent>() {
                     @Override public boolean apply(IgniteEvent e) {
-                        GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
+                        IgniteCachePreloadingEvent evt = (IgniteCachePreloadingEvent)e;
 
                         ClusterNode node = evt.discoveryNode();
 
@@ -534,7 +534,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 for (Ignite gg : ignites)
                     futs.add(waitForLocalEvent(gg.events(), new P1<IgniteEvent>() {
                             @Override public boolean apply(IgniteEvent e) {
-                                GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
+                                IgniteCachePreloadingEvent evt = (IgniteCachePreloadingEvent)e;
 
                                 ClusterNode node = evt.discoveryNode();
 

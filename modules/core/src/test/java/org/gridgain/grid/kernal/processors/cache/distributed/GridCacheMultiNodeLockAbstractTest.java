@@ -671,8 +671,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         @Override public boolean apply(IgniteEvent evt) {
             info("Received cache event: " + evt);
 
-            if (evt instanceof GridCacheEvent) {
-                GridCacheEvent cacheEvt = (GridCacheEvent)evt;
+            if (evt instanceof IgniteCacheEvent) {
+                IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
 
                 Integer key = cacheEvt.key();
 

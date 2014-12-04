@@ -49,7 +49,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @see IgniteEventType#EVT_CACHE_PRELOAD_STARTED
  * @see IgniteEventType#EVT_CACHE_PRELOAD_STOPPED
  */
-public class GridCachePreloadingEvent extends GridEventAdapter {
+public class IgniteCachePreloadingEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -80,8 +80,8 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
      * @param discoEvtType Discovery event type that triggered this preloading event.
      * @param discoTs Timestamp of discovery event that triggered this preloading event.
      */
-    public GridCachePreloadingEvent(String cacheName, ClusterNode node, String msg, int type, int part,
-        ClusterNode discoNode, int discoEvtType, long discoTs) {
+    public IgniteCachePreloadingEvent(String cacheName, ClusterNode node, String msg, int type, int part,
+                                      ClusterNode discoNode, int discoEvtType, long discoTs) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.part = part;
@@ -154,7 +154,7 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePreloadingEvent.class, this,
+        return S.toString(IgniteCachePreloadingEvent.class, this,
             "discoEvtName", discoveryEventName(),
             "nodeId8", U.id8(node().id()),
             "msg", message(),

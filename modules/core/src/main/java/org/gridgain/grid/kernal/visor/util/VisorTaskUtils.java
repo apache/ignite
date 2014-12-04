@@ -406,14 +406,14 @@ public class VisorTaskUtils {
 
                 res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
             }
-            else if (e instanceof GridAuthorizationEvent) {
-                GridAuthorizationEvent ae = (GridAuthorizationEvent)e;
+            else if (e instanceof IgniteAuthorizationEvent) {
+                IgniteAuthorizationEvent ae = (IgniteAuthorizationEvent)e;
 
                 res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
                     ae.subject()));
             }
-            else if (e instanceof GridAuthenticationEvent) {
-                GridAuthenticationEvent ae = (GridAuthenticationEvent)e;
+            else if (e instanceof IgniteAuthenticationEvent) {
+                IgniteAuthenticationEvent ae = (IgniteAuthenticationEvent)e;
 
                 res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
                     ae.subjectId(), ae.login()));

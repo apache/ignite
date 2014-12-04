@@ -460,7 +460,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
             IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
-                    GridCacheEvent e = (GridCacheEvent)evt;
+                    IgniteCacheEvent e = (IgniteCacheEvent)evt;
 
                     switch (e.type()) {
                         case EVT_CACHE_OBJECT_PUT:

@@ -1216,7 +1216,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         @Override public boolean apply(IgniteEvent evt) {
             assert evt.type() == EVT_CACHE_OBJECT_LOCKED || evt.type() == EVT_CACHE_OBJECT_UNLOCKED;
 
-            GridCacheEvent cacheEvt = (GridCacheEvent)evt;
+            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
 
             synchronized (this) {
                 affectedKeys.add(cacheEvt.key());

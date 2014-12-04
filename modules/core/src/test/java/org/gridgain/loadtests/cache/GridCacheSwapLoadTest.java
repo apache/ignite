@@ -98,7 +98,7 @@ public class GridCacheSwapLoadTest {
                         X.println(">>> Swap count: " + cnt);
 
                     if (getRmvEnabled) {
-                        GridCacheEvent ce = (GridCacheEvent) evt;
+                        IgniteCacheEvent ce = (IgniteCacheEvent) evt;
 
                         Integer key = ce.key();
 

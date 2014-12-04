@@ -166,7 +166,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     "(try to increase topology history size configuration property of configured " +
                     "discovery SPI): " + evtNodeId);
 
-            cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNode,
+            cctx.gridEvents().record(new IgniteCacheEvent(cctx.name(), cctx.localNode(), evtNode,
                 "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal,
                 subjId, cloClsName, taskName));
         }
@@ -211,7 +211,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
-        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), cctx.localNode(),
+        cctx.gridEvents().record(new IgniteCachePreloadingEvent(cctx.name(), cctx.localNode(),
             "Cache preloading event.", type, part, discoNode, discoType, discoTs));
     }
 
@@ -225,7 +225,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
             LT.warn(log, null, "Added event without checking if event is recordable: " +
                 U.gridEventName(EVT_CACHE_PRELOAD_PART_UNLOADED));
 
-        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), cctx.localNode(),
+        cctx.gridEvents().record(new IgniteCachePreloadingEvent(cctx.name(), cctx.localNode(),
             "Cache unloading event.", EVT_CACHE_PRELOAD_PART_UNLOADED, part, null, 0, 0));
     }
 

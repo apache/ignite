@@ -771,7 +771,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridAuthenticationEvent
+     * @see IgniteAuthenticationEvent
      */
     public static final int EVT_AUTHENTICATION_SUCCEEDED = 111;
 
@@ -784,7 +784,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridAuthenticationEvent
+     * @see IgniteAuthenticationEvent
      */
     public static final int EVT_AUTHENTICATION_FAILED = 112;
 
@@ -975,7 +975,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridAuthorizationEvent
+     * @see IgniteAuthorizationEvent
      */
     public static final int EVT_AUTHORIZATION_SUCCEEDED = 128;
 
@@ -988,7 +988,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see GridAuthorizationEvent
+     * @see IgniteAuthorizationEvent
      */
     public static final int EVT_AUTHORIZATION_FAILED = 129;
 
@@ -1193,7 +1193,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see GridAuthenticationEvent
+     * @see IgniteAuthenticationEvent
      */
     public static final int[] EVTS_AUTHENTICATION = {
         EVT_AUTHENTICATION_SUCCEEDED,
@@ -1205,7 +1205,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see GridAuthenticationEvent
+     * @see IgniteAuthenticationEvent
      */
     public static final int[] EVTS_AUTHORIZATION = {
         EVT_AUTHORIZATION_SUCCEEDED,

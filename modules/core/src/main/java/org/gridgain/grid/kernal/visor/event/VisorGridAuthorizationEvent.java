@@ -16,7 +16,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link org.apache.ignite.events.GridAuthorizationEvent}.
+ * Lightweight counterpart for {@link org.apache.ignite.events.IgniteAuthorizationEvent}.
  */
 public class VisorGridAuthorizationEvent extends VisorGridEvent {
     /** */

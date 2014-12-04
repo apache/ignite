@@ -812,7 +812,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {
-            assert evt instanceof GridCacheEvent;
+            assert evt instanceof IgniteCacheEvent;
 
             if (!listen)
                 return true;

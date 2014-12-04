@@ -135,7 +135,7 @@ public class GridCacheCheckpointSpi extends GridSpiAdapter implements GridCheckp
                 assert evt != null;
                 assert evt.type() == EVT_CACHE_OBJECT_REMOVED || evt.type() == EVT_CACHE_OBJECT_EXPIRED;
 
-                GridCacheEvent e = (GridCacheEvent)evt;
+                IgniteCacheEvent e = (IgniteCacheEvent)evt;
 
                 if (!F.eq(e.cacheName(), cacheName))
                     return;

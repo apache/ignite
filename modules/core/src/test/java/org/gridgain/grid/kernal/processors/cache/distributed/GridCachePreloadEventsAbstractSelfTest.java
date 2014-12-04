@@ -110,7 +110,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
         assertEquals(keys.size(), evts.size());
 
         for (IgniteEvent evt : evts) {
-            GridCacheEvent cacheEvt = (GridCacheEvent)evt;
+            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_LOADED, cacheEvt.type());
             assertEquals(g.cache(null).name(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());

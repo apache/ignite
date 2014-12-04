@@ -66,8 +66,8 @@ import java.io.*;
  *     <li>{@link IgniteEventType#EVT_NODE_METRICS_UPDATED}</li>
  * </ul>
  * @see GridJobEvent
- * @see GridCacheEvent
- * @see GridCachePreloadingEvent
+ * @see IgniteCacheEvent
+ * @see IgniteCachePreloadingEvent
  * @see GridSwapSpaceEvent
  * @see GridCheckpointEvent
  * @see GridDeploymentEvent

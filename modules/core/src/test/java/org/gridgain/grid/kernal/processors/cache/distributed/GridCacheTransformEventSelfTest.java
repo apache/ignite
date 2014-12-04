@@ -71,7 +71,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private GridCache<Integer, Integer>[] caches;
 
     /** Recorded events.*/
-    private ConcurrentHashSet<GridCacheEvent> evts;
+    private ConcurrentHashSet<IgniteCacheEvent> evts;
 
     /** Cache mode. */
     private GridCacheMode cacheMode;
@@ -168,7 +168,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
             ignites[i].events().localListen(new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
-                    GridCacheEvent evt0 = (GridCacheEvent)evt;
+                    IgniteCacheEvent evt0 = (IgniteCacheEvent)evt;
 
                     if (evt0.closureClassName() != null) {
                         System.out.println("ADDED: [nodeId=" + evt0.node() + ", evt=" + evt0 + ']');
@@ -214,7 +214,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             ignites[i].events().localListen(new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
-                    GridCacheEvent evt0 = (GridCacheEvent)evt;
+                    IgniteCacheEvent evt0 = (IgniteCacheEvent)evt;
 
                     if (evt0.closureClassName() != null)
                         evts.add(evt0);
@@ -531,9 +531,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
             assertEquals(ids.length, evts.size());
 
             for (UUID id : ids) {
-                GridCacheEvent foundEvt = null;
+                IgniteCacheEvent foundEvt = null;
 
-                for (GridCacheEvent evt : evts) {
+                for (IgniteCacheEvent evt : evts) {
                     if (F.eq(id, evt.node().id())) {
                         assertEquals(CLO_NAME, evt.closureClassName());
 

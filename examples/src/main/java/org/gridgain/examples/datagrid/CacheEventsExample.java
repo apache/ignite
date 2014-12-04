@@ -51,8 +51,8 @@ public class CacheEventsExample {
 
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.
-            IgniteBiPredicate<UUID, GridCacheEvent> locLsnr = new IgniteBiPredicate<UUID, GridCacheEvent>() {
-                @Override public boolean apply(UUID uuid, GridCacheEvent evt) {
+            IgniteBiPredicate<UUID, IgniteCacheEvent> locLsnr = new IgniteBiPredicate<UUID, IgniteCacheEvent>() {
+                @Override public boolean apply(UUID uuid, IgniteCacheEvent evt) {
                     System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
                         ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
 
@@ -62,8 +62,8 @@ public class CacheEventsExample {
 
             // Remote listener which only accepts events for keys that are
             // greater or equal than 10 and if event node is primary for this key.
-            IgnitePredicate<GridCacheEvent> rmtLsnr = new IgnitePredicate<GridCacheEvent>() {
-                @Override public boolean apply(GridCacheEvent evt) {
+            IgnitePredicate<IgniteCacheEvent> rmtLsnr = new IgnitePredicate<IgniteCacheEvent>() {
+                @Override public boolean apply(IgniteCacheEvent evt) {
                     System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
 
                     int key = evt.key();

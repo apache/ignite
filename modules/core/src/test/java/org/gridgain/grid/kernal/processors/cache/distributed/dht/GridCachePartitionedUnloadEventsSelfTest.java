@@ -104,7 +104,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         assertEquals(keys.size(), evts.size());
 
         for (IgniteEvent evt : evts) {
-            GridCacheEvent cacheEvt = ((GridCacheEvent)evt);
+            IgniteCacheEvent cacheEvt = ((IgniteCacheEvent)evt);
 
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_UNLOADED, cacheEvt.type());
             assertEquals(g.cache(null).name(), cacheEvt.cacheName());
@@ -124,7 +124,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         assertEquals(parts.size(), evts.size());
 
         for (IgniteEvent evt : evts) {
-            GridCachePreloadingEvent unloadEvt = (GridCachePreloadingEvent)evt;
+            IgniteCachePreloadingEvent unloadEvt = (IgniteCachePreloadingEvent)evt;
 
             final int part = unloadEvt.partition();
 

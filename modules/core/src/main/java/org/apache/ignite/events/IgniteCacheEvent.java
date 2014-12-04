@@ -60,7 +60,7 @@ import java.util.*;
  * @see IgniteEventType#EVT_CACHE_OBJECT_UNSWAPPED
  * @see IgniteEventType#EVT_CACHE_OBJECT_EXPIRED
  */
-public class GridCacheEvent extends GridEventAdapter {
+public class IgniteCacheEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -146,9 +146,9 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      */
-    public GridCacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
-        boolean near, Object key, IgniteUuid xid, Object lockId, Object newVal, boolean hasNewVal,
-        Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
+    public IgniteCacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
+                            boolean near, Object key, IgniteUuid xid, Object lockId, Object newVal, boolean hasNewVal,
+                            Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.evtNode = evtNode;
@@ -313,7 +313,7 @@ public class GridCacheEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public String toString() {
-        return S.toString(GridCacheEvent.class, this,
+        return S.toString(IgniteCacheEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "evtNodeId8", U.id8(evtNode.id()),
             "msg", message(),

@@ -126,8 +126,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                             try {
                                 EventWrapper wrapper = new EventWrapper(evt);
 
-                                if (evt instanceof GridCacheEvent) {
-                                    String cacheName = ((GridCacheEvent)evt).cacheName();
+                                if (evt instanceof IgniteCacheEvent) {
+                                    String cacheName = ((IgniteCacheEvent)evt).cacheName();
 
                                     if (ctx.config().isPeerClassLoadingEnabled() && U.hasCache(node, cacheName)) {
                                         wrapper.p2pMarshal(ctx.config().getMarshaller());
@@ -366,7 +366,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         /** {@inheritDoc} */
         @Override public void prepare(GridDeploymentInfo depInfo) {
-            assert evt instanceof GridCacheEvent;
+            assert evt instanceof IgniteCacheEvent;
 
             this.depInfo = depInfo;
         }
