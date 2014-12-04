@@ -10,7 +10,7 @@
 package org.gridgain.grid.tests.p2p;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.resources.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 

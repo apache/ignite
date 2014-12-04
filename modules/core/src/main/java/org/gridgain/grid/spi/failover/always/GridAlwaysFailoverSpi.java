@@ -10,9 +10,9 @@
 package org.gridgain.grid.spi.failover.always;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.util.typedef.*;
@@ -89,7 +89,8 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
     public static final String MAX_FAILOVER_ATTEMPT_ATTR = "gg:failover:maxattempts";
 
     /** Injected grid logger. */
-    @GridLoggerResource private GridLogger log;
+    @GridLoggerResource
+    private GridLogger log;
 
     /** Maximum number of attempts to execute a failed job on another node. */
     private int maxFailoverAttempts = DFLT_MAX_FAILOVER_ATTEMPTS;

@@ -12,9 +12,9 @@ package org.gridgain.grid.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
@@ -142,7 +142,8 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         @GridTaskSessionResource private ComputeTaskSession ses;
 
         /** */
-        @GridMarshallerResource private GridMarshaller marshaller;
+        @GridMarshallerResource
+        private GridMarshaller marshaller;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

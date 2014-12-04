@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

@@ -12,6 +12,7 @@ package org.gridgain.scalar.examples
 
 import org.apache.ignite.compute.ComputeJobContext
 import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
+import org.apache.ignite.resources.GridJobContextResource
 import org.gridgain.scalar._
 import scalar._
 import java.math._

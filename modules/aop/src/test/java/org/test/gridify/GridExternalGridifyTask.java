@@ -11,9 +11,9 @@ package org.test.gridify;
 
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,7 +31,8 @@ public class GridExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgu
 
         return Collections.singletonList(new ComputeJobAdapter((String)arg.getMethodParameters()[0]) {
             /** */
-            @GridLoggerResource private GridLogger log;
+            @GridLoggerResource
+            private GridLogger log;
 
             /** {@inheritDoc} */
             @Override public Serializable execute() {

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.checkpoint.noop;
 
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -15,9 +15,9 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
@@ -97,7 +97,8 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** Logger. */
-        @GridLoggerResource private GridLogger log;
+        @GridLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {

@@ -10,10 +10,10 @@
 package org.gridgain.grid.spi.swapspace.file;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;

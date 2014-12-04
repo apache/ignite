@@ -13,9 +13,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;
 import org.gridgain.grid.util.typedef.*;
@@ -143,7 +143,8 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      */
     private static class JobStealingTask extends ComputeTaskAdapter<Object, JobStealingResult> {
         /** Grid. */
-        @GridInstanceResource private Ignite ignite;
+        @GridInstanceResource
+        private Ignite ignite;
 
         /** Logger. */
         @GridLoggerResource private GridLogger log;

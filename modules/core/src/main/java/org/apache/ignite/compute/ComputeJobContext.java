@@ -10,7 +10,6 @@
 package org.apache.ignite.compute;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.failover.*;
 import org.jetbrains.annotations.*;
@@ -45,8 +44,8 @@ import java.util.concurrent.*;
  * ability to check context attributes from within grid task implementation for every job
  * returned from remote nodes.
  * <p>
- * Job context can be injected into {@link ComputeJob} via {@link GridJobContextResource}
- * annotation. Refer to the {@link GridJobContextResource}
+ * Job context can be injected into {@link ComputeJob} via {@link org.apache.ignite.resources.GridJobContextResource}
+ * annotation. Refer to the {@link org.apache.ignite.resources.GridJobContextResource}
  * documentation for coding examples on how to inject job context.
  * <p>
  * Attribute names that start with {@code "gridgain:"} are reserved for internal system use.

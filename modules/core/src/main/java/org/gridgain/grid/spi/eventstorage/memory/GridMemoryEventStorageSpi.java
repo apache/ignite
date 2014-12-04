@@ -11,8 +11,8 @@ package org.gridgain.grid.spi.eventstorage.memory;
 
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.eventstorage.*;
 import org.gridgain.grid.util.typedef.*;

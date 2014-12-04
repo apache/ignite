@@ -13,8 +13,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -252,7 +252,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             @GridUserResource private transient UserResource rsrc;
 
             /** Local node ID. */
-            @GridLocalNodeIdResource private UUID locNodeId;
+            @GridLocalNodeIdResource
+            private UUID locNodeId;
 
             /**
              * @param nodeId Node ID for node this job is supposed to execute on.

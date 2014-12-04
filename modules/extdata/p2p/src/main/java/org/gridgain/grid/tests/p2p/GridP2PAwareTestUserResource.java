@@ -11,8 +11,8 @@ package org.gridgain.grid.tests.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 
 /**
  * User resource, that increases node-local counters

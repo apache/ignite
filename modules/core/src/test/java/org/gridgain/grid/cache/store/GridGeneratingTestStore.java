@@ -10,10 +10,10 @@
 package org.gridgain.grid.cache.store;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

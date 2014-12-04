@@ -10,9 +10,9 @@
 package org.gridgain.grid.external.resource;
 
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 
 import java.io.*;
 import java.util.*;
@@ -39,7 +39,8 @@ public class GridUserExternalResourceTask1 extends ComputeTaskSplitAdapter<Objec
     private transient GridUserExternalResource2 rsrc4;
 
     /** */
-    @GridLoggerResource private GridLogger log;
+    @GridLoggerResource
+    private GridLogger log;
 
     /** {@inheritDoc} */
     @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {

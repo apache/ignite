@@ -10,9 +10,9 @@
 package org.gridgain.client;
 
 import org.apache.ignite.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.resources.*;
 
 /**
  * Task creates portable object and puts it in cache.

@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -139,7 +139,8 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
     public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @GridLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

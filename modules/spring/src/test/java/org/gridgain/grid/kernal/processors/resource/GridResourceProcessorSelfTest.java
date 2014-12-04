@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal.processors.resource;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
@@ -326,7 +326,8 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
                 /** Runnable object nested inside callable. */
                 private Runnable run = new IgniteRunnable() {
-                    @GridHomeResource private String ggHomeDir;
+                    @GridHomeResource
+                    private String ggHomeDir;
 
                     @Override public void run() {
                         assert ggHomeDir != null;

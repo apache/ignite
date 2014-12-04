@@ -11,7 +11,7 @@ package org.gridgain.testframework.junits.common;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.resources.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;

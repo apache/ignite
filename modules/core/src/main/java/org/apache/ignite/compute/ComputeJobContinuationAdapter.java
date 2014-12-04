@@ -9,7 +9,7 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.resources.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 /**

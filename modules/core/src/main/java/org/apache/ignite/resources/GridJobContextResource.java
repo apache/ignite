@@ -7,17 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
+package org.apache.ignite.resources;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeTaskSession} resource.
- * Task session can be injected into instances of following classes:
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeJobContext} instance.
+ * It can be injected into grid jobs only.
  * <p>
- * Distributed Task Session can be injected into instances of following classes:
+ * Job context can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * </ul>
  * <p>
@@ -25,8 +24,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridTaskSessionResource
- *      private GridComputeTaskSession taskSes;
+ *      &#64;GridJobContextResource
+ *      private GridComputeJobContext jobCtx;
  *      ...
  *  }
  * </pre>
@@ -34,11 +33,11 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private GridComputeTaskSession taskSes;
+ *     private GridComputeJobContext jobCtx;
  *     ...
- *     &#64;GridTaskSessionResource
- *     public void setTaskSession(GridComputeTaskSession taskSes) {
- *          this.taskSes = taskSes;
+ *     &#64;GridJobContextResource
+ *     public void setJobContext(GridComputeJobContext jobCtx) {
+ *          this.jobCtx = jobCtx;
  *     }
  *     ...
  * }
@@ -47,6 +46,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridTaskSessionResource {
+public @interface GridJobContextResource {
     // No-op.
 }

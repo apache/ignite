@@ -13,8 +13,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.failover.*;
@@ -225,7 +225,8 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         @GridTaskSessionResource private ComputeTaskSession taskSes;
 
         /** */
-        @GridInstanceResource private Ignite ignite;
+        @GridInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {

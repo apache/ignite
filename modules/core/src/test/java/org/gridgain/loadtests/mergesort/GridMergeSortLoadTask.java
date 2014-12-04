@@ -12,8 +12,8 @@ package org.gridgain.loadtests.mergesort;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;

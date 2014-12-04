@@ -7,18 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
+package org.apache.ignite.resources;
 
 import org.gridgain.grid.spi.*;
 
 import java.lang.annotation.*;
-import java.util.concurrent.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link ExecutorService} resource.
- * {@code ExecutorService} is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
+ * Annotates a field or a setter method for injection of Spring ApplicationContext resource.
+ * When GridGain starts using Spring configuration, the Application Context for Spring
+ * Configuration is injected as this resource.
+ * method.
  * <p>
- * Executor service can be injected into instances of following classes:
+ * Spring Application Context can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
@@ -31,8 +32,8 @@ import java.util.concurrent.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridExecutorServiceResource
- *      private ExecutorService execSvc;
+ *      &#64;GridSpringApplicationContextResource
+ *      private ApplicationContext springCtx;
  *      ...
  *  }
  * </pre>
@@ -40,21 +41,23 @@ import java.util.concurrent.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private ExecutorService execSvc;
+ *     private ApplicationContext springCtx;
  *     ...
- *     &#64;GridExecutorServiceResource
- *     public void setExecutor(GridExecutorService execSvc) {
- *          this.execSvc = execSvc;
+ *     &#64;GridSpringApplicationContextResource
+ *     public void setApplicationContext(MBeanServer springCtx) {
+ *          this.springCtx = springCtx;
  *     }
  *     ...
  * }
  * </pre>
  * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()} for Grid configuration details.
+ * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridExecutorServiceResource {
+public @interface GridSpringApplicationContextResource {
     // No-op.
 }

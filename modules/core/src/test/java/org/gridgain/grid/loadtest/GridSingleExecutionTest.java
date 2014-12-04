@@ -12,11 +12,11 @@ package org.gridgain.grid.loadtest;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -241,7 +241,8 @@ public final class GridSingleExecutionTest {
 
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @GridLoggerResource private GridLogger log;
+                    @GridLoggerResource
+                    private GridLogger log;
 
                     @Override public Serializable execute() throws GridException {
                         if (log.isInfoEnabled())

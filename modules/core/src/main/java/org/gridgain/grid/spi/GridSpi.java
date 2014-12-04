@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi;
 
-import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 import java.util.*;
 
@@ -21,15 +20,15 @@ import java.util.*;
  * with grid resources. Both, field and method based injection are supported.
  * The following grid resources can be injected:
  * <ul>
- * <li>{@link GridLoggerResource}</li>
- * <li>{@link GridLocalNodeIdResource}</li>
- * <li>{@link GridHomeResource}</li>
- * <li>{@link GridMBeanServerResource}</li>
- * <li>{@link GridExecutorServiceResource}</li>
- * <li>{@link GridMarshallerResource}</li>
- * <li>{@link GridSpringApplicationContextResource}</li>
- * <li>{@link GridSpringResource}</li>
- * <li>{@link GridAddressResolverResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridLoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridLocalNodeIdResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridHomeResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridMBeanServerResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridExecutorServiceResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridMarshallerResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridSpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.GridAddressResolverResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  */

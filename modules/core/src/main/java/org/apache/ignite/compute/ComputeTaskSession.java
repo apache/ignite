@@ -11,7 +11,6 @@ package org.apache.ignite.compute;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.jetbrains.annotations.*;
 
@@ -70,7 +69,7 @@ import java.util.*;
  * <p>
  * <h1 class="header">Session Injection</h1>
  * Session can be injected into a task or a job using IoC (dependency
- * injection) by attaching {@link GridTaskSessionResource @GridTaskSessionResource}
+ * injection) by attaching {@link org.apache.ignite.resources.GridTaskSessionResource @GridTaskSessionResource}
  * annotation to a field or a setter method inside of {@link ComputeTask} or
  * {@link ComputeJob} implementations as follows:
  * <pre name="code" class="java">

@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
@@ -114,7 +114,8 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
      */
     private static class GridCancelTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @GridLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {

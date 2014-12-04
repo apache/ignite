@@ -14,9 +14,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -396,7 +396,8 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
     /** */
     public static class UserResourceTask1 extends ComputeTaskAdapter<Boolean, Object> {
         /** */
-        @GridUserResource private transient UserResource rsrcTask;
+        @GridUserResource
+        private transient UserResource rsrcTask;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Boolean arg) throws GridException {

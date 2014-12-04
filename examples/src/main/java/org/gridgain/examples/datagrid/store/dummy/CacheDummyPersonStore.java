@@ -11,11 +11,11 @@ package org.gridgain.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

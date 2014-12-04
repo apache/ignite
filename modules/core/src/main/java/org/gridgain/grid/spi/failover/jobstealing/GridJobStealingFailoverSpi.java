@@ -10,9 +10,9 @@
 package org.gridgain.grid.spi.failover.jobstealing;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.failover.*;

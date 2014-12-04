@@ -14,7 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.messaging.*;
-import org.gridgain.grid.resources.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;

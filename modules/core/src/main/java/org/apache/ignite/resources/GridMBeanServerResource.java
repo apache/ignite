@@ -7,19 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
+package org.apache.ignite.resources;
 
 import org.gridgain.grid.spi.*;
 
+import javax.management.*;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of Spring ApplicationContext resource.
- * When GridGain starts using Spring configuration, the Application Context for Spring
- * Configuration is injected as this resource.
- * method.
+ * Annotates a field or a setter method for injection of {@link MBeanServer} resource. MBean server
+ * is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
- * Spring Application Context can be injected into instances of following classes:
+ * MBean server can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
@@ -32,8 +31,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridSpringApplicationContextResource
- *      private ApplicationContext springCtx;
+ *      &#64;GridMBeanServerResource
+ *      private MBeanServer mbeanSrv;
  *      ...
  *  }
  * </pre>
@@ -41,23 +40,21 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private ApplicationContext springCtx;
+ *     private MBeanSever mbeanSrv;
  *     ...
- *     &#64;GridSpringApplicationContextResource
- *     public void setApplicationContext(MBeanServer springCtx) {
- *          this.springCtx = springCtx;
+ *     &#64;GridMBeanServerResource
+ *     public void setMBeanServer(MBeanServer mbeanSrv) {
+ *          this.mbeanSrv = mbeanSrv;
  *     }
  *     ...
  * }
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
- * <br>
- * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getMBeanServer()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridSpringApplicationContextResource {
+public @interface GridMBeanServerResource {
     // No-op.
 }

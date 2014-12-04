@@ -15,9 +15,9 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -228,7 +228,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     @ComputeTaskName(value="GridDeploymentTestTask")
     public static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @GridLocalNodeIdResource private UUID locNodeId;
+        @GridLocalNodeIdResource
+        private UUID locNodeId;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {

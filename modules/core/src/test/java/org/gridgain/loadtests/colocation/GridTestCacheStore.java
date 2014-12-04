@@ -11,11 +11,11 @@ package org.gridgain.loadtests.colocation;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;

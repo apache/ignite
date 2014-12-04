@@ -13,10 +13,10 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.loadbalancing.*;
@@ -229,7 +229,8 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
     private static final Random RAND = new Random();
 
     /** Grid logger. */
-    @GridLoggerResource private GridLogger log;
+    @GridLoggerResource
+    private GridLogger log;
 
     /** */
     private GridAdaptiveLoadProbe probe = new GridAdaptiveCpuLoadProbe();

@@ -10,9 +10,9 @@
 package org.gridgain.grid.p2p;
 
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 
 import java.io.*;
 import java.util.*;

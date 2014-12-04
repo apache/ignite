@@ -12,8 +12,8 @@ package org.gridgain.grid.p2p;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -105,7 +105,8 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      */
     public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @GridUserResource private transient UserResource rsrcTask;
+        @GridUserResource
+        private transient UserResource rsrcTask;
 
         /**
          * ClassLoader loaded task.

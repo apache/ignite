@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 import org.springframework.context.*;
 
@@ -21,7 +20,7 @@ import java.net.*;
 
 /**
  * Factory methods to start GridGain with optional Spring application context, this context can be injected into
- * grid tasks and grid jobs using {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource}
+ * grid tasks and grid jobs using {@link org.apache.ignite.resources.GridSpringApplicationContextResource @GridSpringApplicationContextResource}
  * annotation.
  * <p>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
@@ -36,7 +35,7 @@ public class GridGainSpring {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
+     *      {@link org.apache.ignite.resources.GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid.
      * @throws GridException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
@@ -52,7 +51,7 @@ public class GridGainSpring {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
+     *      {@link org.apache.ignite.resources.GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid.
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
@@ -74,7 +73,7 @@ public class GridGainSpring {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
+     *      {@link org.apache.ignite.resources.GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws GridException If grid could not be started or configuration
@@ -98,7 +97,7 @@ public class GridGainSpring {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
+     *      {@link org.apache.ignite.resources.GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws GridException If grid could not be started or configuration

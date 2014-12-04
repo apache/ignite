@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -65,7 +65,8 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         private Object state;
 
         /** */
-        @GridLoggerResource private GridLogger log;
+        @GridLoggerResource
+        private GridLogger log;
 
         /**
          * @param state State.

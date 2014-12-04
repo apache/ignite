@@ -12,8 +12,8 @@ package org.gridgain.grid.session;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -59,7 +59,8 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
     @ComputeTaskSessionFullSupport
     private static class SessionTestTask extends ComputeTaskAdapter<UUID, Object> {
         /** */
-        @GridTaskSessionResource private ComputeTaskSession taskSes;
+        @GridTaskSessionResource
+        private ComputeTaskSession taskSes;
 
         /** */
         private UUID attrVal;

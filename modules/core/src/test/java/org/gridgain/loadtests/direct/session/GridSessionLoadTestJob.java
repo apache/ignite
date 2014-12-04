@@ -10,9 +10,9 @@
 package org.gridgain.loadtests.direct.session;
 
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 
 import java.io.*;
 
@@ -24,7 +24,8 @@ public class GridSessionLoadTestJob extends ComputeJobAdapter {
     @GridTaskSessionResource private ComputeTaskSession taskSes;
 
     /** */
-    @GridLoggerResource private GridLogger log;
+    @GridLoggerResource
+    private GridLogger log;
 
     /** */
     public GridSessionLoadTestJob() {

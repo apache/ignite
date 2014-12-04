@@ -11,7 +11,7 @@ package org.apache.ignite.compute;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
+
 import java.util.*;
 
 /**
@@ -33,7 +33,7 @@ import java.util.*;
  * has been sent prior to completing the {@link ComputeTask#map(List, Object)} method.
  * <p>
  * Task continuous mapper can be injected into a task using IoC (dependency
- * injection) by attaching {@link GridTaskContinuousMapperResource}
+ * injection) by attaching {@link org.apache.ignite.resources.GridTaskContinuousMapperResource}
  * annotation to a field or a setter method inside of {@link ComputeTask} implementations
  * as follows:
  * <pre name="code" class="java">

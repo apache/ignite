@@ -13,10 +13,10 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -156,7 +156,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
 public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements GridLoadBalancingSpi,
     GridRoundRobinLoadBalancingSpiMBean {
     /** Grid logger. */
-    @GridLoggerResource private GridLogger log;
+    @GridLoggerResource
+    private GridLogger log;
 
     /** */
     private GridRoundRobinGlobalLoadBalancer balancer;

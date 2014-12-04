@@ -10,7 +10,6 @@
 package org.gridgain.grid.logger.slf4j;
 
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 import org.slf4j.*;
@@ -27,7 +26,7 @@ import org.slf4j.*;
  * </pre>
  * <p>
  * It's recommended to use GridGain's logger injection instead of using/instantiating
- * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
+ * logger in your task/job code. See {@link org.apache.ignite.resources.GridLoggerResource} annotation about logger
  * injection.
  */
 public class GridSlf4jLogger extends GridMetadataAwareAdapter implements GridLogger {

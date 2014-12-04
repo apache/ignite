@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
+package org.apache.ignite.resources;
 
 import org.gridgain.grid.spi.loadbalancing.*;
 

@@ -10,9 +10,9 @@
 package org.gridgain.grid.external.resource;
 
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 
 import java.io.*;
 import java.util.*;
@@ -108,7 +108,8 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
         private transient GridUserExternalResource2 rsrc8;
 
         /** */
-        @GridLocalNodeIdResource private UUID locId;
+        @GridLocalNodeIdResource
+        private UUID locId;
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ObjectEquality"})

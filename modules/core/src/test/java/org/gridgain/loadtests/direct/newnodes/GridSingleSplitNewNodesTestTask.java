@@ -11,8 +11,8 @@ package org.gridgain.loadtests.direct.newnodes;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 
 import java.io.*;
 import java.util.*;

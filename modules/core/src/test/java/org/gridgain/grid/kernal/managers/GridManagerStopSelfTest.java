@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers;
 
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -21,7 +22,6 @@ import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.collision.*;

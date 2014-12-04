@@ -13,9 +13,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -234,7 +234,8 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         @GridLoggerResource private GridLogger log;
 
         /** */
-        @GridLocalNodeIdResource private UUID nodeId;
+        @GridLocalNodeIdResource
+        private UUID nodeId;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)

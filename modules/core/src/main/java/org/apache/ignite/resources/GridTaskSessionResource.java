@@ -7,31 +7,26 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
-
-import org.gridgain.grid.spi.*;
+package org.apache.ignite.resources;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of GridGain grid name.
- * GridGain name is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration#getGridName()} method.
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeTaskSession} resource.
+ * Task session can be injected into instances of following classes:
  * <p>
- * Grid name can be injected into instances of following classes:
+ * Distributed Task Session can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
- * <li>{@link GridSpi}</li>
- * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
- * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridNameResource
- *      private String name;
+ *      &#64;GridTaskSessionResource
+ *      private GridComputeTaskSession taskSes;
  *      ...
  *  }
  * </pre>
@@ -39,21 +34,19 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private String gridName;
+ *     private GridComputeTaskSession taskSes;
  *     ...
- *     &#64;GridNameResource
- *     public void setGridName(String gridName) {
- *          this.gridName = gridName;
+ *     &#64;GridTaskSessionResource
+ *     public void setTaskSession(GridComputeTaskSession taskSes) {
+ *          this.taskSes = taskSes;
  *     }
  *     ...
  * }
  * </pre>
- * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridName()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridNameResource {
+public @interface GridTaskSessionResource {
     // No-op.
 }

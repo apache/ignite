@@ -11,9 +11,9 @@ package org.gridgain.loadtests.colocation;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.resources.*;
 
 /**
  * Lifecycle bean.

@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.springframework.context.*;
 
 import javax.management.*;
@@ -45,7 +45,8 @@ abstract class GridAbstractUserResource {
     @GridMBeanServerResource private MBeanServer mbeanSrv;
 
     /** */
-    @GridExecutorServiceResource private ExecutorService exec;
+    @GridExecutorServiceResource
+    private ExecutorService exec;
 
     /** */
     @GridHomeResource private String ggHome;

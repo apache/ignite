@@ -12,9 +12,9 @@ package org.gridgain.grid.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
@@ -113,7 +113,8 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @GridLoggerResource
+        private GridLogger log;
 
         /** */
         @GridTaskSessionResource private ComputeTaskSession taskSes;

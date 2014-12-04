@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi.failover.never;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -54,7 +54,8 @@ import java.util.*;
 @GridSpiMultipleInstancesSupport(true)
 public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
     /** Injected grid logger. */
-    @GridLoggerResource private GridLogger log;
+    @GridLoggerResource
+    private GridLogger log;
 
     /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws GridSpiException {

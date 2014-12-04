@@ -7,22 +7,21 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
-
-import org.gridgain.grid.spi.*;
+package org.apache.ignite.resources;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of GridGain installation home path.
- * GridGain installation home is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
+ * Annotates a field or a setter method for injection of current {@link org.apache.ignite.Ignite} instance.
+ * It can be injected into grid tasks and grid jobs. Note that grid instance will
+ * not be injected into SPI's, as there is no grid during SPI start.
  * <p>
- * Home path can be injected into instances of following classes:
+ * Grid instance can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
- * <li>{@link GridSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
+ * <li>All closures and predicates that can run on grid.</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>
@@ -30,8 +29,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridHomeResource
- *      private String home;
+ *      &#64;GridInstanceResource
+ *      private Grid grid;
  *      ...
  *  }
  * </pre>
@@ -39,21 +38,19 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private String home;
+ *     private Grid grid;
  *     ...
- *     &#64;GridHomeResource
- *     public void setGridGainHome(String home) {
- *          this.home = home;
+ *     &#64;GridInstanceResource
+ *     public void setGrid(Grid grid) {
+ *          this.grid = grid;
  *     }
  *     ...
  * }
  * </pre>
- * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridGainHome()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridHomeResource {
+public @interface GridInstanceResource {
     // No-op.
 }

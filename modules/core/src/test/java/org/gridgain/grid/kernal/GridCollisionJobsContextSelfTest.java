@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.util.typedef.*;
@@ -58,7 +58,8 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     @GridSpiMultipleInstancesSupport(true)
     public static class TestCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
-        @GridLoggerResource private GridLogger log;
+        @GridLoggerResource
+        private GridLogger log;
 
         /** {@inheritDoc} */
         @Override public void onCollision(GridCollisionContext ctx) {

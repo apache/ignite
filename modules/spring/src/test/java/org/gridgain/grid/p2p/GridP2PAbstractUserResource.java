@@ -10,8 +10,8 @@
 package org.gridgain.grid.p2p;
 
 import org.apache.ignite.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.springframework.context.*;
 import javax.management.*;
 import java.util.*;
@@ -44,7 +44,8 @@ abstract class GridP2PAbstractUserResource {
     @GridMBeanServerResource private MBeanServer mbeanSrv;
 
     /** */
-    @GridExecutorServiceResource private ExecutorService exec;
+    @GridExecutorServiceResource
+    private ExecutorService exec;
 
     /** */
     @GridHomeResource private String ggHome;

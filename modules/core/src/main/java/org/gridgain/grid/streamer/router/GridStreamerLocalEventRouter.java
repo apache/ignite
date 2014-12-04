@@ -11,7 +11,7 @@ package org.gridgain.grid.streamer.router;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.resources.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.*;
 

@@ -7,19 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
+package org.apache.ignite.resources;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of local host address or host name for
- * connection binding. Local host is provided via {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} or
- * via {@link GridSystemProperties#GG_LOCAL_HOST} system or environment property.
+ * Annotates a field or a setter method for injection of GridGain grid name.
+ * GridGain name is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration#getGridName()} method.
  * <p>
- * Local node ID can be injected into instances of following classes:
+ * Grid name can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
@@ -32,8 +30,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridLocalHostResource
- *      private String locHost;
+ *      &#64;GridNameResource
+ *      private String name;
  *      ...
  *  }
  * </pre>
@@ -41,21 +39,21 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private String locHost;
+ *     private String gridName;
  *     ...
- *     &#64;GridLocalHostResource
- *     public void setLocalHost(String locHost) {
- *          this.locHost = locHost;
+ *     &#64;GridNameResource
+ *     public void setGridName(String gridName) {
+ *          this.gridName = gridName;
  *     }
  *     ...
  * }
  * </pre>
  * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} for Grid configuration details.
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridName()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridLocalHostResource {
+public @interface GridNameResource {
     // No-op.
 }

@@ -13,8 +13,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.testframework.junits.common.*;
@@ -44,7 +44,8 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
 
         cfg.setFailoverSpi(new GridAlwaysFailoverSpi() {
             /** */
-            @GridLocalNodeIdResource private UUID locNodeId;
+            @GridLocalNodeIdResource
+            private UUID locNodeId;
 
             /** {@inheritDoc} */
             @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> grid) {

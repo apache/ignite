@@ -7,25 +7,31 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.resources;
+package org.apache.ignite.resources;
+
+import org.gridgain.grid.spi.*;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeJobContext} instance.
- * It can be injected into grid jobs only.
+ * Annotates a field or a setter method for injection of GridGain installation home path.
+ * GridGain installation home is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
- * Job context can be injected into instances of following classes:
+ * Home path can be injected into instances of following classes:
  * <ul>
+ * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
+ * <li>{@link GridSpi}</li>
+ * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
+ * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *      ...
- *      &#64;GridJobContextResource
- *      private GridComputeJobContext jobCtx;
+ *      &#64;GridHomeResource
+ *      private String home;
  *      ...
  *  }
  * </pre>
@@ -33,19 +39,21 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private GridComputeJobContext jobCtx;
+ *     private String home;
  *     ...
- *     &#64;GridJobContextResource
- *     public void setJobContext(GridComputeJobContext jobCtx) {
- *          this.jobCtx = jobCtx;
+ *     &#64;GridHomeResource
+ *     public void setGridGainHome(String home) {
+ *          this.home = home;
  *     }
  *     ...
  * }
  * </pre>
+ * <p>
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridGainHome()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GridJobContextResource {
+public @interface GridHomeResource {
     // No-op.
 }

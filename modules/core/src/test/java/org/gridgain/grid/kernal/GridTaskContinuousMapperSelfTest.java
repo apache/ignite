@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -118,7 +118,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestLifeCycleTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @GridLoggerResource private GridLogger log;
+        @GridLoggerResource
+        private GridLogger log;
 
         /** */
         private ComputeTaskContinuousMapper mapper;
