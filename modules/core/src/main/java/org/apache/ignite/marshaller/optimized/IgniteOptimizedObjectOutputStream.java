@@ -18,12 +18,12 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.marshaller.optimized.GridOptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshallerUtils.*;
 
 /**
  * Optimized object output stream.
  */
-class GridOptimizedObjectOutputStream extends ObjectOutputStream {
+class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private static final Collection<String> CONVERTED_ERR = F.asList(
         "weblogic/management/ManagementException",
@@ -56,7 +56,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     /**
      * @throws IOException In case of error.
      */
-    GridOptimizedObjectOutputStream() throws IOException {
+    IgniteOptimizedObjectOutputStream() throws IOException {
         // No-op.
     }
 
@@ -64,7 +64,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
      * @param out Output.
      * @throws IOException In case of error.
      */
-    GridOptimizedObjectOutputStream(GridDataOutput out) throws IOException {
+    IgniteOptimizedObjectOutputStream(GridDataOutput out) throws IOException {
         this.out = out;
     }
 
@@ -744,7 +744,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
      */
     private static class PutFieldImpl extends PutField {
         /** Stream. */
-        private final GridOptimizedObjectOutputStream out;
+        private final IgniteOptimizedObjectOutputStream out;
 
         /** Field info map. */
         private final Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap;
@@ -757,7 +757,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
          * @throws IOException In case of error.
          */
         @SuppressWarnings("unchecked")
-        private PutFieldImpl(GridOptimizedObjectOutputStream out) {
+        private PutFieldImpl(IgniteOptimizedObjectOutputStream out) {
             this.out = out;
 
             fieldInfoMap = out.curFieldInfoMap;

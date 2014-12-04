@@ -689,7 +689,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadLine() throws Exception {
-        GridOptimizedObjectInputStream in = new GridOptimizedObjectInputStream(new GridUnsafeDataInput());
+        IgniteOptimizedObjectInputStream in = new IgniteOptimizedObjectInputStream(new GridUnsafeDataInput());
 
         byte[] bytes = "line1\nline2\r\nli\rne3\nline4".getBytes();
 
@@ -859,7 +859,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadToArray() throws Exception {
-        GridOptimizedObjectInputStream in = GridOptimizedObjectStreamRegistry.in();
+        IgniteOptimizedObjectInputStream in = IgniteOptimizedObjectStreamRegistry.in();
 
         try {
             byte[] arr = new byte[50];
@@ -898,7 +898,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
                 assertEquals(i < 10 ? 40 + i : 0, buf[i]);
         }
         finally {
-            GridOptimizedObjectStreamRegistry.closeIn(in);
+            IgniteOptimizedObjectStreamRegistry.closeIn(in);
         }
     }
 
@@ -978,11 +978,11 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     private <T> T marshalUnmarshal(@Nullable Object obj) throws Exception {
-        GridOptimizedObjectOutputStream out = null;
-        GridOptimizedObjectInputStream in = null;
+        IgniteOptimizedObjectOutputStream out = null;
+        IgniteOptimizedObjectInputStream in = null;
 
         try {
-            out = GridOptimizedObjectStreamRegistry.out();
+            out = IgniteOptimizedObjectStreamRegistry.out();
 
             out.requireSerializable(true);
 
@@ -990,7 +990,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             byte[] arr = out.out().array();
 
-            in = GridOptimizedObjectStreamRegistry.in();
+            in = IgniteOptimizedObjectStreamRegistry.in();
 
             in.classLoader(getClass().getClassLoader());
 
@@ -1003,8 +1003,8 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             return (T)obj0;
         }
         finally {
-            GridOptimizedObjectStreamRegistry.closeOut(out);
-            GridOptimizedObjectStreamRegistry.closeIn(in);
+            IgniteOptimizedObjectStreamRegistry.closeOut(out);
+            IgniteOptimizedObjectStreamRegistry.closeIn(in);
         }
     }
 
@@ -1015,7 +1015,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @param in Input stream.
      * @throws Exception If failed.
      */
-    private void checkHandles(GridOptimizedObjectOutputStream out, GridOptimizedObjectInputStream in)
+    private void checkHandles(IgniteOptimizedObjectOutputStream out, IgniteOptimizedObjectInputStream in)
         throws Exception {
         Object[] outHandles = out.handledObjects();
         Object[] inHandles = in.handledObjects();

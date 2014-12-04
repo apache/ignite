@@ -216,7 +216,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         Object obj = new SomeSerializable(null);
 
         // Clear caches.
-        ((Map)U.staticField(GridOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
+        ((Map)U.staticField(IgniteOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
         IgniteOptimizedClassResolver.userClasses(null, null);
 
         GridMarshaller marsh = new IgniteOptimizedMarshaller();
@@ -224,7 +224,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         int size1 = marsh.marshal(obj).length;
 
         // Clear caches.
-        ((Map)U.staticField(GridOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
+        ((Map)U.staticField(IgniteOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
         IgniteOptimizedClassResolver.userClasses(null, null);
 
         IgniteOptimizedMarshaller marshPreregistered = new IgniteOptimizedMarshaller();
@@ -246,7 +246,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         Object obj = new SomeSerializable(null);
 
         // Clear caches.
-        ((Map)U.staticField(GridOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
+        ((Map)U.staticField(IgniteOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
         IgniteOptimizedClassResolver.userClasses(null, null);
 
         GridMarshaller marsh = new IgniteOptimizedMarshaller();
@@ -254,7 +254,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         int size1 = marsh.marshal(obj).length;
 
         // Clear caches.
-        ((Map)U.staticField(GridOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
+        ((Map)U.staticField(IgniteOptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
         IgniteOptimizedClassResolver.userClasses(null, null);
 
         IgniteOptimizedMarshaller marshPreregistered = new IgniteOptimizedMarshaller();
@@ -318,7 +318,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
             ignite.compute().execute(taskClsName, 2);
 
             ConcurrentMap<Class<?>, IgniteOptimizedClassDescriptor> cache =
-                U.staticField(GridOptimizedMarshallerUtils.class, "CLS_DESC_CACHE");
+                U.staticField(IgniteOptimizedMarshallerUtils.class, "CLS_DESC_CACHE");
 
             assertTrue(cache.containsKey(jobCls));
 

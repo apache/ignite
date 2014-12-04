@@ -175,7 +175,7 @@ class IgniteOptimizedClassResolver {
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(
             IgniteOptimizedClassResolver.class.getResourceAsStream(FILE_NAME),
-            GridOptimizedMarshallerUtils.UTF_8));
+            IgniteOptimizedMarshallerUtils.UTF_8));
 
         List<T3<String, Class<?>, IgniteOptimizedClassDescriptor>> ggId2name0 =
             new LinkedList<>();
@@ -238,7 +238,7 @@ class IgniteOptimizedClassResolver {
             IgniteOptimizedClassDescriptor desc = ggxT.get2();
 
             if (desc == null) {
-                desc = GridOptimizedMarshallerUtils.classDescriptor(ggxT.get1(), null);
+                desc = IgniteOptimizedMarshallerUtils.classDescriptor(ggxT.get1(), null);
 
                 ggxT.set2(desc);
             }
@@ -276,14 +276,14 @@ class IgniteOptimizedClassResolver {
                             ggT.set2(cls);
                         }
 
-                        desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
+                        desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
 
                         ggT.set3(desc);
                     }
                     else {
                         cls = forName(name, clsLdr);
 
-                        desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
+                        desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
                     }
                 }
 
@@ -317,7 +317,7 @@ class IgniteOptimizedClassResolver {
                         usrT.set2(cls);
                     }
 
-                    desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
+                    desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
 
                     usrT.set3(desc);
                 }
@@ -331,14 +331,14 @@ class IgniteOptimizedClassResolver {
 
                 cls = forName(name, clsLdr);
 
-                return GridOptimizedMarshallerUtils.classDescriptor(cls, null);
+                return IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
 
             case HEADER_NAME:
                 name = in.readUTF();
 
                 cls = forName(name, clsLdr);
 
-                desc = GridOptimizedMarshallerUtils.classDescriptor(cls, null);
+                desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
 
                 break;
 
@@ -380,7 +380,7 @@ class IgniteOptimizedClassResolver {
                 return;
 
             case HEADER_ARRAY:
-                writeClass(out, GridOptimizedMarshallerUtils.classDescriptor(desc.componentType(), null));
+                writeClass(out, IgniteOptimizedMarshallerUtils.classDescriptor(desc.componentType(), null));
 
                 return;
 
@@ -428,7 +428,7 @@ class IgniteOptimizedClassResolver {
         Class<?> cls = primitive(name);
 
         if (cls == null)
-            cls = GridOptimizedMarshallerUtils.forName(name, ldr);
+            cls = IgniteOptimizedMarshallerUtils.forName(name, ldr);
 
         return cls;
     }

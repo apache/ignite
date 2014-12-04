@@ -20,12 +20,12 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.marshaller.optimized.GridOptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshallerUtils.*;
 
 /**
  * Optimized object input stream.
  */
-class GridOptimizedObjectInputStream extends ObjectInputStream {
+class IgniteOptimizedObjectInputStream extends ObjectInputStream {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -60,14 +60,14 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
      * @param in Input.
      * @throws IOException In case of error.
      */
-    GridOptimizedObjectInputStream(GridDataInput in) throws IOException {
+    IgniteOptimizedObjectInputStream(GridDataInput in) throws IOException {
         this.in = in;
     }
 
     /**
      * @throws IOException In case of error.
      */
-    GridOptimizedObjectInputStream() throws IOException {
+    IgniteOptimizedObjectInputStream() throws IOException {
         // No-op.
     }
 
@@ -880,7 +880,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
          * @throws ClassNotFoundException If class not found.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        private GetFieldImpl(GridOptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
+        private GetFieldImpl(IgniteOptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
             fieldInfoMap = in.curFieldInfoMap;
 
             List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> infos = in.curFieldInfoList;

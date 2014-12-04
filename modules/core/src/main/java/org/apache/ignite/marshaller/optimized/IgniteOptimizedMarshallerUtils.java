@@ -27,7 +27,7 @@ import static org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshallable
 /**
  * Miscellaneous utility methods to facilitate {@link IgniteOptimizedMarshaller}.
  */
-class GridOptimizedMarshallerUtils {
+class IgniteOptimizedMarshallerUtils {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -54,7 +54,7 @@ class GridOptimizedMarshallerUtils {
     /**
      * Suppresses default constructor, ensuring non-instantiability.
      */
-    private GridOptimizedMarshallerUtils() {
+    private IgniteOptimizedMarshallerUtils() {
         // No-op.
     }
 

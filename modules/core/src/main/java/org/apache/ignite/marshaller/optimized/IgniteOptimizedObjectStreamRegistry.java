@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * Storage for object streams.
  */
-class GridOptimizedObjectStreamRegistry {
+class IgniteOptimizedObjectStreamRegistry {
     /** Holders. */
     private static final ThreadLocal<StreamHolder> holders = new ThreadLocal<>();
 
@@ -29,7 +29,7 @@ class GridOptimizedObjectStreamRegistry {
     /**
      * Ensures singleton.
      */
-    private GridOptimizedObjectStreamRegistry() {
+    private IgniteOptimizedObjectStreamRegistry() {
         // No-op.
     }
 
@@ -58,7 +58,7 @@ class GridOptimizedObjectStreamRegistry {
      * @return Object output stream.
      * @throws GridInterruptedException If thread is interrupted while trying to take holder from pool.
      */
-    static GridOptimizedObjectOutputStream out() throws GridInterruptedException {
+    static IgniteOptimizedObjectOutputStream out() throws GridInterruptedException {
         return holder().acquireOut();
     }
 
@@ -68,7 +68,7 @@ class GridOptimizedObjectStreamRegistry {
      * @return Object input stream.
      * @throws GridInterruptedException If thread is interrupted while trying to take holder from pool.
      */
-    static GridOptimizedObjectInputStream in() throws GridInterruptedException {
+    static IgniteOptimizedObjectInputStream in() throws GridInterruptedException {
         return holder().acquireIn();
     }
 
@@ -77,7 +77,7 @@ class GridOptimizedObjectStreamRegistry {
      *
      * @param out Object output stream.
      */
-    static void closeOut(GridOptimizedObjectOutputStream out) {
+    static void closeOut(IgniteOptimizedObjectOutputStream out) {
         U.close(out, null);
 
         StreamHolder holder = holders.get();
@@ -99,7 +99,7 @@ class GridOptimizedObjectStreamRegistry {
      * @param in Object input stream.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    static void closeIn(GridOptimizedObjectInputStream in) {
+    static void closeIn(IgniteOptimizedObjectInputStream in) {
         U.close(in, null);
 
         StreamHolder holder = holders.get();
@@ -141,10 +141,10 @@ class GridOptimizedObjectStreamRegistry {
      */
     private static class StreamHolder {
         /** Output stream. */
-        private final GridOptimizedObjectOutputStream out = createOut();
+        private final IgniteOptimizedObjectOutputStream out = createOut();
 
         /** Input stream. */
-        private final GridOptimizedObjectInputStream in = createIn();
+        private final IgniteOptimizedObjectInputStream in = createIn();
 
         /** Output streams counter. */
         private int outAcquireCnt;
@@ -157,7 +157,7 @@ class GridOptimizedObjectStreamRegistry {
          *
          * @return Object output stream.
          */
-        GridOptimizedObjectOutputStream acquireOut() {
+        IgniteOptimizedObjectOutputStream acquireOut() {
             return outAcquireCnt++ > 0 ? createOut() : out;
         }
 
@@ -166,7 +166,7 @@ class GridOptimizedObjectStreamRegistry {
          *
          * @return Object input stream.
          */
-        GridOptimizedObjectInputStream acquireIn() {
+        IgniteOptimizedObjectInputStream acquireIn() {
             return inAcquireCnt++ > 0 ? createIn() : in;
         }
 
@@ -189,9 +189,9 @@ class GridOptimizedObjectStreamRegistry {
          *
          * @return Object output stream.
          */
-        private GridOptimizedObjectOutputStream createOut() {
+        private IgniteOptimizedObjectOutputStream createOut() {
             try {
-                return new GridOptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
+                return new IgniteOptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
             }
             catch (IOException e) {
                 throw new GridRuntimeException("Failed to create object output stream.", e);
@@ -203,9 +203,9 @@ class GridOptimizedObjectStreamRegistry {
          *
          * @return Object input stream.
          */
-        private GridOptimizedObjectInputStream createIn() {
+        private IgniteOptimizedObjectInputStream createIn() {
             try {
-                return new GridOptimizedObjectInputStream(new GridUnsafeDataInput());
+                return new IgniteOptimizedObjectInputStream(new GridUnsafeDataInput());
             }
             catch (IOException e) {
                 throw new GridRuntimeException("Failed to create object input stream.", e);

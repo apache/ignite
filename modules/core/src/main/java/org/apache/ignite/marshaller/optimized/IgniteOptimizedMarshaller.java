@@ -208,7 +208,7 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
         try {
             clsNames = new LinkedList<>();
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), GridOptimizedMarshallerUtils.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), IgniteOptimizedMarshallerUtils.UTF_8))) {
                 String clsName;
 
                 while ((clsName = reader.readLine()) != null)
@@ -238,7 +238,7 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
      * @param poolSize Streams pool size. If {@code 0}, pool is not used.
      */
     public void setPoolSize(int poolSize) {
-        GridOptimizedObjectStreamRegistry.poolSize(poolSize);
+        IgniteOptimizedObjectStreamRegistry.poolSize(poolSize);
     }
 
     /**
@@ -263,10 +263,10 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws GridException {
         assert out != null;
 
-        GridOptimizedObjectOutputStream objOut = null;
+        IgniteOptimizedObjectOutputStream objOut = null;
 
         try {
-            objOut = GridOptimizedObjectStreamRegistry.out();
+            objOut = IgniteOptimizedObjectStreamRegistry.out();
 
             objOut.requireSerializable(requireSer);
 
@@ -278,16 +278,16 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
             throw new GridException("Failed to serialize object: " + obj, e);
         }
         finally {
-            GridOptimizedObjectStreamRegistry.closeOut(objOut);
+            IgniteOptimizedObjectStreamRegistry.closeOut(objOut);
         }
     }
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws GridException {
-        GridOptimizedObjectOutputStream objOut = null;
+        IgniteOptimizedObjectOutputStream objOut = null;
 
         try {
-            objOut = GridOptimizedObjectStreamRegistry.out();
+            objOut = IgniteOptimizedObjectStreamRegistry.out();
 
             objOut.requireSerializable(requireSer);
 
@@ -299,7 +299,7 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
             throw new GridException("Failed to serialize object: " + obj, e);
         }
         finally {
-            GridOptimizedObjectStreamRegistry.closeOut(objOut);
+            IgniteOptimizedObjectStreamRegistry.closeOut(objOut);
         }
     }
 
@@ -307,10 +307,10 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws GridException {
         assert in != null;
 
-        GridOptimizedObjectInputStream objIn = null;
+        IgniteOptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = GridOptimizedObjectStreamRegistry.in();
+            objIn = IgniteOptimizedObjectStreamRegistry.in();
 
             objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
 
@@ -327,7 +327,7 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
                 clsLdr, e);
         }
         finally {
-            GridOptimizedObjectStreamRegistry.closeIn(objIn);
+            IgniteOptimizedObjectStreamRegistry.closeIn(objIn);
         }
     }
 
@@ -335,10 +335,10 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
     @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws GridException {
         assert arr != null;
 
-        GridOptimizedObjectInputStream objIn = null;
+        IgniteOptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = GridOptimizedObjectStreamRegistry.in();
+            objIn = IgniteOptimizedObjectStreamRegistry.in();
 
             objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
 
@@ -355,7 +355,7 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
                 clsLdr, e);
         }
         finally {
-            GridOptimizedObjectStreamRegistry.closeIn(objIn);
+            IgniteOptimizedObjectStreamRegistry.closeIn(objIn);
         }
     }
 
@@ -396,13 +396,13 @@ public class IgniteOptimizedMarshaller extends GridAbstractMarshaller {
      * @param ldr Class loader being undeployed.
      */
     public static void onUndeploy(ClassLoader ldr) {
-        GridOptimizedMarshallerUtils.onUndeploy(ldr);
+        IgniteOptimizedMarshallerUtils.onUndeploy(ldr);
     }
 
     /**
      * Clears internal caches and frees memory. Usually called on system stop.
      */
     public static void clearCache() {
-        GridOptimizedMarshallerUtils.clearCache();
+        IgniteOptimizedMarshallerUtils.clearCache();
     }
 }

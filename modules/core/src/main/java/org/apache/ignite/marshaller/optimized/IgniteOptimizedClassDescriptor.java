@@ -550,7 +550,7 @@ class IgniteOptimizedClassDescriptor {
             }
         }
 
-        shortId = GridOptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
+        shortId = IgniteOptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
     }
 
     /**
@@ -651,7 +651,7 @@ class IgniteOptimizedClassDescriptor {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void write(GridOptimizedObjectOutputStream out, Object obj) throws IOException {
+    void write(IgniteOptimizedObjectOutputStream out, Object obj) throws IOException {
         switch (type) {
             case TYPE_BYTE:
                 out.writeByte((Byte)obj);
@@ -794,7 +794,7 @@ class IgniteOptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                IgniteOptimizedClassResolver.writeClass(out, GridOptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
+                IgniteOptimizedClassResolver.writeClass(out, IgniteOptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
 
                 break;
 
@@ -826,7 +826,7 @@ class IgniteOptimizedClassDescriptor {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    Object read(GridOptimizedObjectInputStream in) throws ClassNotFoundException, IOException {
+    Object read(IgniteOptimizedObjectInputStream in) throws ClassNotFoundException, IOException {
         switch (type) {
             case TYPE_BYTE:
                 return in.readByte();
