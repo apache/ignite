@@ -109,7 +109,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
         for (Object key : g2Keys)
             g2.cache(null).put(key, "changed val");
 
-        Collection<GridEvent> evts = g2.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<IgniteEvent> evts = g2.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, g2Keys);
     }

@@ -439,7 +439,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
                 @SuppressWarnings("fallthrough")
-                @Override public void onEvent(GridEvent evt) {
+                @Override public void onEvent(IgniteEvent evt) {
                     assert evt instanceof GridDiscoveryEvent;
 
                     GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

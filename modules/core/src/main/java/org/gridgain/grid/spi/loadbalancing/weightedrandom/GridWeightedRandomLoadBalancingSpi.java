@@ -253,7 +253,7 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt instanceof GridTaskEvent || evt instanceof GridJobEvent;
 
                 if (evt.type() == EVT_TASK_FINISHED ||

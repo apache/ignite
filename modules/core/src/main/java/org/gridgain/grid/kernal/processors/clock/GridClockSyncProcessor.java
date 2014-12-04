@@ -87,7 +87,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
 
         // We care only about node leave and fail events.
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_JOINED;
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

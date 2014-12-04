@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
  * Base adapter for the events. All events (including user-defined ones) should
  * extend this adapter as it provides necessary plumbing implementation details.
  */
-public class GridEventAdapter implements GridEvent {
+public class GridEventAdapter implements IgniteEvent {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -64,7 +64,7 @@ public class GridEventAdapter implements GridEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(GridEvent o) {
+    @Override public int compareTo(IgniteEvent o) {
         return o == null ? 1 : id.compareTo(o.id());
     }
 
@@ -82,7 +82,7 @@ public class GridEventAdapter implements GridEvent {
     @Override public boolean equals(Object o) {
         assert id != null;
 
-        return this == o || o instanceof GridEventAdapter && id.equals(((GridEvent)o).id());
+        return this == o || o instanceof GridEventAdapter && id.equals(((IgniteEvent)o).id());
     }
 
     /** {@inheritDoc} */

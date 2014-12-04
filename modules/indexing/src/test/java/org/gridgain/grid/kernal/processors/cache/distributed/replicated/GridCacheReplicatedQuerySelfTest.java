@@ -173,8 +173,8 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
         final CountDownLatch latch = new CountDownLatch(keyCnt * 2);
 
-        IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 latch.countDown();
 
                 return true;
@@ -423,8 +423,8 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             final UUID nodeId = g.cluster().localNode().id();
             final CountDownLatch latch = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     if (((GridDiscoveryEvent)evt).eventNode().id().equals(nodeId))
                         latch.countDown();
 

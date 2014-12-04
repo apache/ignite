@@ -57,8 +57,8 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     private volatile CountDownLatch latch;
 
     /** */
-    private final IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
-        @Override public boolean apply(GridEvent evt) {
+    private final IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
+        @Override public boolean apply(IgniteEvent evt) {
             assertNotNull("Topology lost nodes before stopTempNodes() was called.", latch);
 
             latch.countDown();

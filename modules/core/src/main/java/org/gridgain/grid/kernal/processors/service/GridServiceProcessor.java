@@ -1046,7 +1046,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private class TopologyListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(final GridEvent evt) {
+        @Override public void onEvent(final IgniteEvent evt) {
             if (!busyLock.enterBusy())
                 return;
 

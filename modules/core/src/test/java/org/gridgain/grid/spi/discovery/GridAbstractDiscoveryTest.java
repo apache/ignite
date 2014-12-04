@@ -107,7 +107,7 @@ public abstract class GridAbstractDiscoveryTest<T extends GridDiscoverySpi> exte
     /** */
     private class DiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             info("Discovery event [event=" + evt + ']');
         }
     }

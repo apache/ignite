@@ -170,7 +170,7 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
 
     /** Event listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             if (evt.type() == EVT_TASK_FAILED ||
                 evt.type() == EVT_TASK_FINISHED)
                 perTaskBalancers.remove(((GridTaskEvent)evt).taskSessionId());

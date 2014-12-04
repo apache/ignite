@@ -3127,8 +3127,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     switch (evt.type()) {
                         case EVT_CACHE_OBJECT_LOCKED:
                             lockCnt.countDown();
@@ -4437,8 +4437,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     info("Received event: " + evt);
 
                     switch (evt.type()) {

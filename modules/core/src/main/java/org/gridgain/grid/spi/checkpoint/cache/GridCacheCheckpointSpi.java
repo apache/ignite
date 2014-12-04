@@ -131,7 +131,7 @@ public class GridCacheCheckpointSpi extends GridSpiAdapter implements GridCheckp
     @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             /** {@inheritDoc} */
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt != null;
                 assert evt.type() == EVT_CACHE_OBJECT_REMOVED || evt.type() == EVT_CACHE_OBJECT_EXPIRED;
 

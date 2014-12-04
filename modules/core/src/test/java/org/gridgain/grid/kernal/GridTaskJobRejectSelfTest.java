@@ -61,16 +61,16 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReject() throws Exception {
-        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 X.println("Task event: " + evt);
 
                 return true;
             }
         }, EVTS_TASK_EXECUTION);
 
-        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 X.println("Job event: " + evt);
 
                 return true;
@@ -79,8 +79,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch startedLatch = new CountDownLatch(1);
 
-        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 startedLatch.countDown();
 
                 return true;
@@ -89,8 +89,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger failedOver = new AtomicInteger(0);
 
-        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 failedOver.incrementAndGet();
 
                 return true;
@@ -99,8 +99,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch finishedLatch = new CountDownLatch(1);
 
-        grid(1).events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 finishedLatch.countDown();
 
                 return true;

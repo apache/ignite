@@ -241,7 +241,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     public void testOptimisticTransaction() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
-        IgnitePredicate<GridEvent> lsnr = new CacheEventListener(latch);
+        IgnitePredicate<IgniteEvent> lsnr = new CacheEventListener(latch);
 
         try {
             GridCache<String, String> cache1 = ignite1.cache(null);
@@ -355,7 +355,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<GridEvent> {
+    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
         /** Wait latch. */
         private CountDownLatch latch;
 
@@ -374,7 +374,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             assert evt.type() == EVT_CACHE_OBJECT_PUT || evt.type() == EVT_CACHE_OBJECT_REMOVED :
                 "Unexpected event type: " + evt;
 

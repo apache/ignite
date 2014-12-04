@@ -53,8 +53,8 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     private void checkTimedOutEvents(final IgniteUuid execId) {
         Ignite ignite = G.grid(getTestGridName());
 
-        Collection<GridEvent> evts = ignite.events().localQuery(new PE() {
-            @Override public boolean apply(GridEvent evt) {
+        Collection<IgniteEvent> evts = ignite.events().localQuery(new PE() {
+            @Override public boolean apply(IgniteEvent evt) {
                 return ((GridTaskEvent) evt).taskSessionId().equals(execId);
             }
         }, EVT_TASK_TIMEDOUT);

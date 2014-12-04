@@ -73,10 +73,10 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws InterruptedException if thread was interrupted.
      */
     private void waitForEvent(Ignite ignite, int type) throws InterruptedException {
-        Collection<GridEvent> evts;
+        Collection<IgniteEvent> evts;
 
         do {
-            evts = ignite.events().localQuery(F.<GridEvent>alwaysTrue(), type);
+            evts = ignite.events().localQuery(F.<IgniteEvent>alwaysTrue(), type);
 
             Thread.sleep(500);
         }

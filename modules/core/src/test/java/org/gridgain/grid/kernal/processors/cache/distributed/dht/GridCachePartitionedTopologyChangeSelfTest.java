@@ -272,8 +272,8 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             final CountDownLatch joinLatch = new CountDownLatch(1);
 
-            g0.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
                     info(">>> Node has joined: " + evt.node().id());
@@ -424,8 +424,8 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             final CountDownLatch leaveLatch = new CountDownLatch(1);
 
-            g0.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
                     info(">>> Node has left: " + evt.node().id());

@@ -62,8 +62,8 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
         final AtomicInteger preloadStartCnt = new AtomicInteger();
         final AtomicInteger preloadStopCnt = new AtomicInteger();
 
-        ignite.events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 if (e.type() == EVT_CACHE_PRELOAD_STARTED)
                     preloadStartCnt.incrementAndGet();
                 else if (e.type() == EVT_CACHE_PRELOAD_STOPPED)

@@ -70,8 +70,8 @@ public class GridOptimizedMarshallerAopTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUp() throws Exception {
-        G.grid().events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        G.grid().events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 cntr.incrementAndGet();
 
                 return true;

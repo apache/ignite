@@ -688,8 +688,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         try (Ignite g1 = G.start(cfg)) {
             IgniteEvents evts = events(grid().forNode(g1.cluster().localNode()));
 
-            evts.localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent gridEvt) {
+            evts.localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent gridEvt) {
                     return true;
                 }
             }, EVTS_CACHE);

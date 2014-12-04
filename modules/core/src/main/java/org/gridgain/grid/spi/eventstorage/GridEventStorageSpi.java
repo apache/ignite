@@ -35,7 +35,7 @@ import java.util.*;
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
- * @see org.apache.ignite.events.GridEvent
+ * @see org.apache.ignite.events.IgniteEvent
  */
 public interface GridEventStorageSpi extends GridSpi {
     /**
@@ -45,7 +45,7 @@ public interface GridEventStorageSpi extends GridSpi {
      * @param p Event predicate filter.
      * @return Collection of events.
      */
-    public <T extends GridEvent> Collection<T> localEvents(IgnitePredicate<T> p);
+    public <T extends IgniteEvent> Collection<T> localEvents(IgnitePredicate<T> p);
 
     /**
      * Records single event.
@@ -53,5 +53,5 @@ public interface GridEventStorageSpi extends GridSpi {
      * @param evt Event that should be recorded.
      * @throws GridSpiException If event recording failed for any reason.
      */
-    public void record(GridEvent evt) throws GridSpiException;
+    public void record(IgniteEvent evt) throws GridSpiException;
 }

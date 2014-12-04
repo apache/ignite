@@ -241,8 +241,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
             final Ignite g = startGrid(startIdx++);
 
             if (DEBUG)
-                g.events().localListen(new IgnitePredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
+                g.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                    @Override public boolean apply(IgniteEvent evt) {
                         info("\n>>> Preload event [grid=" + g.name() + ", evt=" + evt + ']');
 
                         return true;

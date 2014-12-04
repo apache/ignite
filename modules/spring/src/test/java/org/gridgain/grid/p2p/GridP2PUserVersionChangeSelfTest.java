@@ -131,8 +131,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
                         ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
@@ -180,8 +180,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
                         ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
@@ -226,8 +226,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
                         ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
@@ -238,8 +238,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch discoLatch = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_NODE_LEFT)
                         discoLatch.countDown();
 

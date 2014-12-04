@@ -74,7 +74,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
         // We care only about node leave and fail events.
         ggfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
@@ -423,7 +423,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

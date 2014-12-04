@@ -101,17 +101,17 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     private long expireCnt = DFLT_EXPIRE_COUNT;
 
     /** Events queue. */
-    private ConcurrentLinkedDeque8<GridEvent> evts = new ConcurrentLinkedDeque8<>();
+    private ConcurrentLinkedDeque8<IgniteEvent> evts = new ConcurrentLinkedDeque8<>();
 
     /** Configured event predicate filter. */
-    private IgnitePredicate<GridEvent> filter;
+    private IgnitePredicate<IgniteEvent> filter;
 
     /**
      * Gets filter for events to be recorded.
      *
      * @return Filter to use.
      */
-    public IgnitePredicate<GridEvent> getFilter() {
+    public IgnitePredicate<IgniteEvent> getFilter() {
         return filter;
     }
 
@@ -121,7 +121,7 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
      * @param filter Filter to use.
      */
     @GridSpiConfiguration(optional = true)
-    public void setFilter(IgnitePredicate<GridEvent> filter) {
+    public void setFilter(IgnitePredicate<IgniteEvent> filter) {
         this.filter = filter;
     }
 
@@ -204,7 +204,7 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
+    @Override public <T extends IgniteEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
         A.notNull(p, "p");
 
         cleanupQueue();
@@ -213,7 +213,7 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public void record(GridEvent evt) throws GridSpiException {
+    @Override public void record(IgniteEvent evt) throws GridSpiException {
         assert evt != null;
 
         // Filter out events.
@@ -240,19 +240,19 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
         long queueOversize = evts.sizex() - expireCnt;
 
         for (int i = 0; i < queueOversize && evts.sizex() > expireCnt; i++) {
-            GridEvent expired = evts.poll();
+            IgniteEvent expired = evts.poll();
 
             if (log.isDebugEnabled())
                 log.debug("Event expired by count: " + expired);
         }
 
         while (true) {
-            ConcurrentLinkedDeque8.Node<GridEvent> node = evts.peekx();
+            ConcurrentLinkedDeque8.Node<IgniteEvent> node = evts.peekx();
 
             if (node == null) // Queue is empty.
                 break;
 
-            GridEvent evt = node.item();
+            IgniteEvent evt = node.item();
 
             if (evt == null) // Competing with another thread.
                 continue;

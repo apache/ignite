@@ -1208,12 +1208,12 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /** Event listener that collects all incoming events. */
-    protected static class CollectingEventListener implements IgnitePredicate<GridEvent> {
+    protected static class CollectingEventListener implements IgnitePredicate<IgniteEvent> {
         /** Collected events. */
         private final Collection<Object> affectedKeys = new GridConcurrentLinkedHashSet<>();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             assert evt.type() == EVT_CACHE_OBJECT_LOCKED || evt.type() == EVT_CACHE_OBJECT_UNLOCKED;
 
             GridCacheEvent cacheEvt = (GridCacheEvent)evt;

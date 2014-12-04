@@ -177,7 +177,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         });
 
         ggfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

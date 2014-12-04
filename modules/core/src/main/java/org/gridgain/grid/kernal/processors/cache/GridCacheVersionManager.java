@@ -56,7 +56,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
 
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

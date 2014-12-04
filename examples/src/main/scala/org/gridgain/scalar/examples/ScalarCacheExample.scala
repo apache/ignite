@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.events.{GridEventType, GridEvent}
+import org.apache.ignite.events.{GridEventType, IgniteEvent}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.scalar.scalar
 import scalar._
@@ -117,8 +117,8 @@ object ScalarCacheExample extends App {
         val g = grid$
 
         g *< (() => {
-            val lsnr = new IgnitePredicate[GridEvent] {
-                override def apply(e: GridEvent): Boolean = {
+            val lsnr = new IgnitePredicate[IgniteEvent] {
+                override def apply(e: IgniteEvent): Boolean = {
                     println(e.shortDisplay)
 
                     true

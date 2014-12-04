@@ -13,7 +13,7 @@ package org.gridgain.visor
 
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.{GridEvent, GridDiscoveryEvent, GridEventType}
+import org.apache.ignite.events.{IgniteEvent, GridDiscoveryEvent, GridEventType}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
@@ -126,7 +126,7 @@ object visor extends VisorTag {
     type NodeFilter = ClusterNode => Boolean
 
     /** Type alias for general event filter. */
-    type EventFilter = GridEvent => Boolean
+    type EventFilter = IgniteEvent => Boolean
 
     /** `Nil` is for empty list, `Til` is for empty tuple. */
     val Til: Arg = (null, null)
@@ -141,13 +141,13 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: IgnitePredicate[GridEvent] = null
+    private var nodeLeftLsnr: IgnitePredicate[IgniteEvent] = null
 
     /** Node join listener. */
-    private var nodeJoinLsnr: IgnitePredicate[GridEvent] = null
+    private var nodeJoinLsnr: IgnitePredicate[IgniteEvent] = null
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: IgnitePredicate[GridEvent] = null
+    private var nodeSegLsnr: IgnitePredicate[IgniteEvent] = null
 
     /** Node stop listener. */
     private var nodeStopLsnr: GridGainListener = null
@@ -1620,8 +1620,8 @@ object visor extends VisorTag {
                 setVarIfAbsent(ip.get, "h")
         })
 
-        nodeJoinLsnr = new IgnitePredicate[GridEvent]() {
-            override def apply(e: GridEvent): Boolean = {
+        nodeJoinLsnr = new IgnitePredicate[IgniteEvent]() {
+            override def apply(e: IgniteEvent): Boolean = {
                 e match {
                     case de: GridDiscoveryEvent =>
                         setVarIfAbsent(nid8(de.eventNode()), "n")
@@ -1649,8 +1649,8 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-        nodeLeftLsnr = new IgnitePredicate[GridEvent]() {
-            override def apply(e: GridEvent): Boolean = {
+        nodeLeftLsnr = new IgnitePredicate[IgniteEvent]() {
+            override def apply(e: IgniteEvent): Boolean = {
                 e match {
                     case (de: GridDiscoveryEvent) =>
                         val nv = mfind(nid8(de.eventNode()))
@@ -1680,8 +1680,8 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-        nodeSegLsnr = new IgnitePredicate[GridEvent] {
-            override def apply(e: GridEvent): Boolean = {
+        nodeSegLsnr = new IgnitePredicate[IgniteEvent] {
+            override def apply(e: IgniteEvent): Boolean = {
                 e match {
                     case de: GridDiscoveryEvent =>
                         if (de.eventNode().id() == grid.localNode.id) {

@@ -233,7 +233,7 @@ public class GridSpiTestContext implements GridSpiContext {
     /**
      * @param evt Event node.
      */
-    private void notifyListener(GridEvent evt) {
+    private void notifyListener(IgniteEvent evt) {
         assert evt.type() > 0;
 
         for (Map.Entry<GridLocalEventListener, Set<Integer>> entry : evtLsnrs.entrySet()) {
@@ -307,7 +307,7 @@ public class GridSpiTestContext implements GridSpiContext {
     /**
      * @param evt Event to trigger.
      */
-    public void triggerEvent(GridEvent evt) {
+    public void triggerEvent(IgniteEvent evt) {
         notifyListener(evt);
     }
 
@@ -339,7 +339,7 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void recordEvent(GridEvent evt) {
+    @Override public void recordEvent(IgniteEvent evt) {
         notifyListener(evt);
     }
 

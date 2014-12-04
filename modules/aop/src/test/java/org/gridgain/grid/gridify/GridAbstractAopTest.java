@@ -703,7 +703,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
     /**
      * Event listener.
      */
-    private static final class TestEventListener implements IgnitePredicate<GridEvent> {
+    private static final class TestEventListener implements IgnitePredicate<IgniteEvent> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -716,7 +716,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
         private TestEventListener(AtomicInteger cnt) { this.cnt = cnt; }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             if ((evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED) &&
                 evt.message() != null && !evt.message().contains("GridTopic"))
                 cnt.addAndGet(1);

@@ -61,8 +61,8 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJobSubjectId() throws Exception {
-        node2.events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        node2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 GridJobEvent evt0 = (GridJobEvent)evt;
 
                 assert evtSubjId == null;

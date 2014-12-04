@@ -157,10 +157,10 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Ignite g2 = startGrid(2);
 
-            Collection<GridEvent> evts = null;
+            Collection<IgniteEvent> evts = null;
 
             for (int i = 0; i < 3; i++) {
-                evts = g2.events().localQuery(F.<GridEvent>alwaysTrue(),
+                evts = g2.events().localQuery(F.<IgniteEvent>alwaysTrue(),
                     EVT_CACHE_PRELOAD_STARTED, EVT_CACHE_PRELOAD_STOPPED);
 
                 if (evts.size() != 2) {
@@ -174,7 +174,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             assert evts != null && evts.size() == 2 : "Wrong events received: " + evts;
 
-            Iterator<GridEvent> iter = evts.iterator();
+            Iterator<IgniteEvent> iter = evts.iterator();
 
             assertEquals(EVT_CACHE_PRELOAD_STARTED, iter.next().type());
             assertEquals(EVT_CACHE_PRELOAD_STOPPED, iter.next().type());

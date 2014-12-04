@@ -53,8 +53,8 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
         final int usrType = Integer.MAX_VALUE - 1;
 
-        IgniteFuture<GridEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        IgniteFuture<IgniteEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 return e.type() == usrType;
             }
         }, usrType);
@@ -87,7 +87,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
             // We'll never wait for nonexistent type of event.
             int usrType = Integer.MAX_VALUE - 1;
 
-            waitForLocalEvent(ignite.events(), F.<GridEvent>alwaysTrue(), usrType).get(1000);
+            waitForLocalEvent(ignite.events(), F.<IgniteEvent>alwaysTrue(), usrType).get(1000);
 
             fail("GridFutureTimeoutException must have been thrown.");
         }

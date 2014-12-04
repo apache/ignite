@@ -88,7 +88,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
 
         cctx.events().addListener(new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
                 Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.remove(nodeId);

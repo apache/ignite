@@ -88,8 +88,8 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         final AtomicReference<String> oldVal = new AtomicReference<>();
 
-        g.events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        g.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 GridCacheEvent e = (GridCacheEvent) evt;
 
                 oldVal.set((String) e.oldValue());

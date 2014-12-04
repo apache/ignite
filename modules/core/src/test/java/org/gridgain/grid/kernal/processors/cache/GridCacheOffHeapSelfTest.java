@@ -196,8 +196,8 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(1);
 
-            grid(0).events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     assert evt != null;
 
                     switch (evt.type()) {
@@ -600,7 +600,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class SwapListener implements IgnitePredicate<GridEvent> {
+    private class SwapListener implements IgnitePredicate<IgniteEvent> {
         /** */
         private final CountDownLatch swapLatch = new CountDownLatch(1);
 
@@ -608,7 +608,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         private final CountDownLatch unswapLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             assert evt != null;
 
             info("Received event: " + evt);

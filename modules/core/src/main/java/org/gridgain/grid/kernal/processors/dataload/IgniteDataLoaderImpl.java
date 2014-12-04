@@ -176,7 +176,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         portableEnabled = portableEnabled0 == null ? false : portableEnabled0;
 
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

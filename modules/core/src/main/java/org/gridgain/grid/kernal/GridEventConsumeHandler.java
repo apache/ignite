@@ -35,18 +35,18 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private static final long serialVersionUID = 0L;
 
     /** Default callback. */
-    private static final P2<UUID, GridEvent> DFLT_CALLBACK = new P2<UUID, GridEvent>() {
-        @Override public boolean apply(UUID uuid, GridEvent e) {
+    private static final P2<UUID, IgniteEvent> DFLT_CALLBACK = new P2<UUID, IgniteEvent>() {
+        @Override public boolean apply(UUID uuid, IgniteEvent e) {
             return true;
         }
     };
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private IgniteBiPredicate<UUID, GridEvent> cb;
+    private IgniteBiPredicate<UUID, IgniteEvent> cb;
 
     /** Filter. */
-    private IgnitePredicate<GridEvent> filter;
+    private IgnitePredicate<IgniteEvent> filter;
 
     /** Serialized filter. */
     private byte[] filterBytes;
@@ -75,7 +75,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
      * @param filter Filter.
      * @param types Types.
      */
-    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, GridEvent> cb, @Nullable IgnitePredicate<GridEvent> filter,
+    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, IgniteEvent> cb, @Nullable IgnitePredicate<IgniteEvent> filter,
         @Nullable int[] types) {
         this.cb = cb == null ? DFLT_CALLBACK : cb;
         this.filter = filter;
@@ -113,7 +113,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         lsnr = new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 if (filter == null || filter.apply(evt)) {
                     if (loc) {
                         if (!cb.apply(nodeId, evt))
@@ -300,7 +300,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             depInfo = (GridDeploymentInfo)in.readObject();
         }
         else
-            filter = (IgnitePredicate<GridEvent>)in.readObject();
+            filter = (IgnitePredicate<IgniteEvent>)in.readObject();
 
         types = (int[])in.readObject();
     }
@@ -313,7 +313,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         private static final long serialVersionUID = 0L;
 
         /** Event. */
-        private GridEvent evt;
+        private IgniteEvent evt;
 
         /** Serialized event. */
         private byte[] bytes;
@@ -334,7 +334,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         /**
          * @param evt Event.
          */
-        EventWrapper(GridEvent evt) {
+        EventWrapper(IgniteEvent evt) {
             assert evt != null;
 
             this.evt = evt;
@@ -401,7 +401,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 depInfo = (GridDeploymentInfo)in.readObject();
             }
             else
-                evt = (GridEvent)in.readObject();
+                evt = (IgniteEvent)in.readObject();
         }
     }
 }

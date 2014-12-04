@@ -791,7 +791,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         }
 
         if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-            GridEvent evt = new GridTaskEvent(
+            IgniteEvent evt = new GridTaskEvent(
                 ctx.discovery().localNode(),
                 "Changed attributes: " + attrs,
                 EVT_TASK_SESSION_ATTR_SET,
@@ -1154,7 +1154,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      */
     private class TaskDiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
             UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();

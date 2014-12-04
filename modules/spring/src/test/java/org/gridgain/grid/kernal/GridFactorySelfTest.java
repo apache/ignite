@@ -691,7 +691,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             if (exec)
                 // Execute any grid method.
-                G.grid(gridName).events().localQuery(F.<GridEvent>alwaysTrue());
+                G.grid(gridName).events().localQuery(F.<IgniteEvent>alwaysTrue());
         }
 
         /**

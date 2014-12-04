@@ -311,8 +311,8 @@ public class VisorTaskUtils {
     }
 
     /** */
-    private static final Comparator<GridEvent> EVENTS_ORDER_COMPARATOR = new Comparator<GridEvent>() {
-        @Override public int compare(GridEvent o1, GridEvent o2) {
+    private static final Comparator<IgniteEvent> EVENTS_ORDER_COMPARATOR = new Comparator<IgniteEvent>() {
+        @Override public int compare(IgniteEvent o1, IgniteEvent o2) {
             return Long.compare(o1.localOrder(), o2.localOrder());
         }
     };
@@ -343,8 +343,8 @@ public class VisorTaskUtils {
         // Flag for detecting gaps between events.
         final AtomicBoolean lastFound = new AtomicBoolean(lastOrder < 0);
 
-        IgnitePredicate<GridEvent> p = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        IgnitePredicate<IgniteEvent> p = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 // Detects that events were lost.
                 if (!lastFound.get() && (lastOrder == e.localOrder()))
                     lastFound.set(true);
@@ -355,11 +355,11 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<GridEvent> evts = g.events().localQuery(p);
+        Collection<IgniteEvent> evts = g.events().localQuery(p);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
-            GridEvent maxEvt = Collections.max(evts, EVENTS_ORDER_COMPARATOR);
+            IgniteEvent maxEvt = Collections.max(evts, EVENTS_ORDER_COMPARATOR);
 
             nl.put(evtOrderKey, maxEvt.localOrder());
         }
@@ -375,7 +375,7 @@ public class VisorTaskUtils {
         if (lost)
             res.add(new VisorGridEventsLost(g.cluster().localNode().id()));
 
-        for (GridEvent e : evts) {
+        for (IgniteEvent e : evts) {
             int tid = e.type();
             IgniteUuid id = e.id();
             String name = e.name();

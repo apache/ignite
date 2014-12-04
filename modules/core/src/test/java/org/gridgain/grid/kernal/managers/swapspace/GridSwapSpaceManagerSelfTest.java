@@ -73,8 +73,8 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
         final CountDownLatch storeCnt = new CountDownLatch(2);
         final CountDownLatch rmvCnt = new CountDownLatch(1);
 
-        ignite.events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 assert evt instanceof GridSwapSpaceEvent;
 
                 info("Received event: " + evt);

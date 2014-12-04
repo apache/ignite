@@ -755,7 +755,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * Local event listener.
      */
-    private static class TestEventListener implements IgnitePredicate<GridEvent> {
+    private static class TestEventListener implements IgnitePredicate<IgniteEvent> {
         /** Events count map. */
         private static ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 
@@ -811,7 +811,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             assert evt instanceof GridCacheEvent;
 
             if (!listen)

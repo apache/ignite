@@ -208,7 +208,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param e Event
          * @return {@code true} if not contains {@code visor} in task name.
          */
-        private boolean filterByTaskName(GridEvent e, String taskName) {
+        private boolean filterByTaskName(IgniteEvent e, String taskName) {
             if (e.getClass().equals(GridTaskEvent.class)) {
                 GridTaskEvent te = (GridTaskEvent)e;
 
@@ -236,7 +236,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param e Event
          * @return {@code true} if not contains {@code visor} in task name.
          */
-        private boolean filterByTaskSessionId(GridEvent e, IgniteUuid taskSessionId) {
+        private boolean filterByTaskSessionId(IgniteEvent e, IgniteUuid taskSessionId) {
             if (e.getClass().equals(GridTaskEvent.class)) {
                 GridTaskEvent te = (GridTaskEvent)e;
 
@@ -262,8 +262,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;
 
-            Collection<GridEvent> evts = g.events().localQuery(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent event) {
+            Collection<IgniteEvent> evts = g.events().localQuery(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent event) {
                     return event.localOrder() > startEvtOrder &&
                         (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
                         event.timestamp() >= startEvtTime &&
@@ -276,7 +276,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
             Long maxOrder = startEvtOrder;
 
-            for (GridEvent e : evts) {
+            for (IgniteEvent e : evts) {
                 int tid = e.type();
                 IgniteUuid id = e.id();
                 String name = e.name();

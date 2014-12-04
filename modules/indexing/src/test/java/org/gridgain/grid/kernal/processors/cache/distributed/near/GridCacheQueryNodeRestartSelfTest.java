@@ -174,12 +174,12 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** Listener that will wait for specified number of events received. */
-    private class CollectingEventListener implements IgnitePredicate<GridEvent> {
+    private class CollectingEventListener implements IgnitePredicate<IgniteEvent> {
         /** Registered events count. */
         private int evtCnt;
 
         /** {@inheritDoc} */
-        @Override public synchronized boolean apply(GridEvent evt) {
+        @Override public synchronized boolean apply(IgniteEvent evt) {
             evtCnt++;
 
             info("Processed event [evt=" + evt + ", evtCnt=" + evtCnt + ']');

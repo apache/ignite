@@ -1407,8 +1407,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final CountDownLatch latch = new CountDownLatch(50);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
-        IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 assert evt instanceof GridCacheQueryReadEvent;
 
                 GridCacheQueryReadEvent qe = (GridCacheQueryReadEvent)evt;
@@ -1431,8 +1431,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         };
 
-        IgnitePredicate<GridEvent> execLsnr = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        IgnitePredicate<IgniteEvent> execLsnr = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 assert evt instanceof GridCacheQueryExecutedEvent;
 
                 GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;

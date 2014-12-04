@@ -1703,7 +1703,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

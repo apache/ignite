@@ -60,8 +60,8 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testAddRemoveGlobalListener() throws Exception {
-        IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 info("Received local event: " + evt);
 
                 return true;
@@ -77,8 +77,8 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testAddRemoveDiscoListener() throws Exception {
-        IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 info("Received local event: " + evt);
 
                 return true;
@@ -97,7 +97,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     public void testLocalNodeEventStorage() throws Exception {
         TestEventListener lsnr = new TestEventListener();
 
-        IgnitePredicate<GridEvent> filter = new TestEventFilter();
+        IgnitePredicate<IgniteEvent> filter = new TestEventFilter();
 
         // Check that two same listeners may be added.
         ignite1.events().localListen(lsnr, EVT_TASK_STARTED);
@@ -108,7 +108,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         assert lsnr.getCounter() == 1;
 
-        Collection<GridEvent> evts = ignite1.events().localQuery(filter);
+        Collection<IgniteEvent> evts = ignite1.events().localQuery(filter);
 
         assert evts != null;
         assert evts.size() == 1;
@@ -142,13 +142,13 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testRemoteNodeEventStorage() throws Exception {
-        IgnitePredicate<GridEvent> filter = new TestEventFilter();
+        IgnitePredicate<IgniteEvent> filter = new TestEventFilter();
 
         generateEvents(ignite2);
 
         ClusterGroup prj = ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()));
 
-        Collection<GridEvent> evts = events(prj).remoteQuery(filter, 0);
+        Collection<IgniteEvent> evts = events(prj).remoteQuery(filter, 0);
 
         assert evts != null;
         assert evts.size() == 1;
@@ -158,13 +158,13 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testRemoteAndLocalNodeEventStorage() throws Exception {
-        IgnitePredicate<GridEvent> filter = new TestEventFilter();
+        IgnitePredicate<IgniteEvent> filter = new TestEventFilter();
 
         generateEvents(ignite1);
 
-        Collection<GridEvent> evts = ignite1.events().remoteQuery(filter, 0);
-        Collection<GridEvent> locEvts = ignite1.events().localQuery(filter);
-        Collection<GridEvent> remEvts =
+        Collection<IgniteEvent> evts = ignite1.events().remoteQuery(filter, 0);
+        Collection<IgniteEvent> locEvts = ignite1.events().localQuery(filter);
+        Collection<IgniteEvent> remEvts =
             events(ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()))).remoteQuery(filter, 0);
 
         assert evts != null;
@@ -218,12 +218,12 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * Test event listener.
      */
-    private class TestEventListener implements IgnitePredicate<GridEvent> {
+    private class TestEventListener implements IgnitePredicate<IgniteEvent> {
         /** Event counter. */
         private AtomicInteger cnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             info("Event storage event: evt=" + evt);
 
             // Count only started tasks.
@@ -251,9 +251,9 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * Test event filter.
      */
-    private static class TestEventFilter implements IgnitePredicate<GridEvent> {
+    private static class TestEventFilter implements IgnitePredicate<IgniteEvent> {
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             // Accept only predefined TASK_STARTED events.
             return evt.type() == EVT_TASK_STARTED;
         }

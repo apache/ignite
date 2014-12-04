@@ -34,7 +34,7 @@ public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstract
             }
         }, 10, "event-thread");
 
-        Collection<GridEvent> evts = getSpi().localEvents(F.<GridEvent>alwaysTrue());
+        Collection<IgniteEvent> evts = getSpi().localEvents(F.<IgniteEvent>alwaysTrue());
 
         info("Events count in memory: " + evts.size());
 

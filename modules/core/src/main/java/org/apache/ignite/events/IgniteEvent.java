@@ -75,7 +75,7 @@ import java.io.*;
  * @see GridTaskEvent
  * @see org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)
  */
-public interface GridEvent extends Comparable<GridEvent>, Serializable {
+public interface IgniteEvent extends Comparable<IgniteEvent>, Serializable {
     /**
      * Gets globally unique ID of this event.
      *

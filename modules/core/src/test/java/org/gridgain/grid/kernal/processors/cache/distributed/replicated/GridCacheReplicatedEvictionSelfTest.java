@@ -70,7 +70,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
                 assertNotNull(cache(g).peek(String.valueOf(i)));
         }
 
-        Collection<IgniteFuture<GridEvent>> futs = new ArrayList<>();
+        Collection<IgniteFuture<IgniteEvent>> futs = new ArrayList<>();
 
         for (int g = 0 ; g < gridCount(); g++)
             futs.add(waitForLocalEvent(grid(g).events(), nodeEvent(grid(g).localNode().id()), EVT_CACHE_ENTRY_EVICTED));
@@ -78,7 +78,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
         for (int i = 0; i < KEYS; i++)
             assertTrue(cache(0).evict(String.valueOf(i)));
 
-        for (IgniteFuture<GridEvent> fut : futs)
+        for (IgniteFuture<IgniteEvent> fut : futs)
             fut.get(3000);
 
         boolean evicted = GridTestUtils.waitForCondition(new PA() {
@@ -104,11 +104,11 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
      * @param nodeId Node id.
      * @return Predicate for events belonging to specified node.
      */
-    private IgnitePredicate<GridEvent> nodeEvent(final UUID nodeId) {
+    private IgnitePredicate<IgniteEvent> nodeEvent(final UUID nodeId) {
         assert nodeId != null;
 
-        return new P1<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        return new P1<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
 
                 return e.node().id().equals(nodeId);

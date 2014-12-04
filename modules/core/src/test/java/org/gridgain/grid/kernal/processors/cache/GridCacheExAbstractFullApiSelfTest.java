@@ -42,8 +42,8 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
     public void testGetOutTx() throws Exception {
         final AtomicInteger lockEvtCnt = new AtomicInteger();
 
-        IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 lockEvtCnt.incrementAndGet();
 
                 return true;

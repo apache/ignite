@@ -91,7 +91,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
 
         cache1.preloader().syncFuture().get();
 
-        Collection<GridEvent> evts = g1.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<IgniteEvent> evts = g1.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         assertEquals("Expected all entries are preloaded.", KEYS_NUM, evts.size());
 

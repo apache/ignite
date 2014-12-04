@@ -2091,7 +2091,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     private class FormatDiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
             GridDiscoveryEvent evt0 = (GridDiscoveryEvent)evt;

@@ -39,8 +39,8 @@ public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractT
      */
     public void testConcurrentAccess() {
         for (int i = 0; i < GRIDS; i++) {
-            grid(i).events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {

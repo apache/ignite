@@ -411,7 +411,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<GridEvent> {
+    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
         /** */
         @GridToStringExclude
         private final Ignite ignite;
@@ -459,7 +459,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             info("Grid cache event [type=" + evt.type() + ", latch=" + latch.getCount() + ", evt=" + evt + ']');
 
             if (evts.contains(evt.type()))

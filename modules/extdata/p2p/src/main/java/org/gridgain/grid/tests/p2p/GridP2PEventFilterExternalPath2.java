@@ -19,7 +19,7 @@ import org.gridgain.grid.resources.*;
  * Simple event filter
  */
 @SuppressWarnings({"ProhibitedExceptionThrown"})
-public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<GridEvent> {
+public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<IgniteEvent> {
     /** */
     @GridUserResource
     private transient GridTestUserResource rsrc;
@@ -29,7 +29,7 @@ public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<GridEven
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public boolean apply(GridEvent evt) {
+    @Override public boolean apply(IgniteEvent evt) {
         try {
             int[] res = new int[] {
                 System.identityHashCode(rsrc),

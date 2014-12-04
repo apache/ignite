@@ -45,7 +45,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
             // Executes task and creates events
             ignite1.compute().execute(TestTask.class, null);
 
-            List<GridEvent> evts = ignite1.events().remoteQuery(new CustomEventFilter1(), 0);
+            List<IgniteEvent> evts = ignite1.events().remoteQuery(new CustomEventFilter1(), 0);
 
             assert !F.isEmpty(evts);
 
@@ -73,13 +73,13 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
             // Executes task and creates events.
             ignite1.compute().execute(TestTask.class, null);
 
-            List<GridEvent> evts = ignite1.events().remoteQuery(new CustomEventFilter2(), 0);
+            List<IgniteEvent> evts = ignite1.events().remoteQuery(new CustomEventFilter2(), 0);
 
             assert evts != null;
             assert evts.size() == 3;
 
             // Checks event list. It should have only GridTaskEvent.
-            for (GridEvent evt : evts) {
+            for (IgniteEvent evt : evts) {
                 assert evt instanceof GridTaskEvent;
             }
 
@@ -106,7 +106,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      * Simple event filter.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class CustomEventFilter1 implements IgnitePredicate<GridEvent> {
+    public static final class CustomEventFilter1 implements IgnitePredicate<IgniteEvent> {
         /** User resource. */
         @SuppressWarnings("unused")
         @GridUserResource
@@ -118,7 +118,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         private UUID gridId;
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             return true;
         }
     }
@@ -127,7 +127,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      * Simple event filter.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    public static final class CustomEventFilter2 implements IgnitePredicate<GridEvent> {
+    public static final class CustomEventFilter2 implements IgnitePredicate<IgniteEvent> {
         /** User resource. */
         @SuppressWarnings("unused")
         @GridUserResource
@@ -138,7 +138,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         private GridLogger log;
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             if (evt instanceof GridTaskEvent) {
                 log.info("Received task event: [evt=" + evt + ']');
 

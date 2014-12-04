@@ -59,7 +59,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
+    @Override public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
         @Nullable int... types) throws GridException {
         A.notNull(p, "p");
 
@@ -74,13 +74,13 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
+    @Override public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws GridException {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
+    @Override public <T extends IgniteEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types) throws GridException {
         A.ensure(bufSize > 0, "bufSize > 0");
@@ -90,8 +90,8 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
 
         try {
             return saveOrGet(ctx.continuous().startRoutine(
-                new GridEventConsumeHandler((IgniteBiPredicate<UUID, GridEvent>)locLsnr,
-                    (IgnitePredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
+                new GridEventConsumeHandler((IgniteBiPredicate<UUID, IgniteEvent>)locLsnr,
+                    (IgnitePredicate<IgniteEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
         finally {
             unguard();
@@ -113,7 +113,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter,
+    @Override public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter,
         @Nullable int... types) throws GridException {
         guard();
 
@@ -126,7 +126,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
+    @Override public <T extends IgniteEvent> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
@@ -140,7 +140,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void recordLocal(GridEvent evt) {
+    @Override public void recordLocal(IgniteEvent evt) {
         A.notNull(evt, "evt");
 
         if (evt.type() <= 1000)
@@ -158,7 +158,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void localListen(IgnitePredicate<? extends GridEvent> lsnr, int[] types) {
+    @Override public void localListen(IgnitePredicate<? extends IgniteEvent> lsnr, int[] types) {
         A.notNull(lsnr, "lsnr");
         A.notEmpty(types, "types");
 
@@ -173,7 +173,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopLocalListen(IgnitePredicate<? extends GridEvent> lsnr, @Nullable int... types) {
+    @Override public boolean stopLocalListen(IgnitePredicate<? extends IgniteEvent> lsnr, @Nullable int... types) {
         A.notNull(lsnr, "lsnr");
 
         guard();
@@ -246,7 +246,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
      * @param types Event types.
      * @return Compound predicate.
      */
-    private static <T extends GridEvent> IgnitePredicate<T> compoundPredicate(final IgnitePredicate<T> p,
+    private static <T extends IgniteEvent> IgnitePredicate<T> compoundPredicate(final IgnitePredicate<T> p,
         @Nullable final int... types) {
 
         return F.isEmpty(types) ? p :

@@ -67,8 +67,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        ignite.events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
                 latch.countDown();
@@ -123,8 +123,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        ignite.events().localListen(new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
                 latch.countDown();

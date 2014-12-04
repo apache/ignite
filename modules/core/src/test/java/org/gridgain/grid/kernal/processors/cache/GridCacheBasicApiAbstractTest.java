@@ -525,7 +525,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<GridEvent> {
+    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
         /** Wait latch. */
         private CountDownLatch latch;
 
@@ -561,7 +561,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             info("Grid cache event: " + evt);
 
             if (U.containsIntArray(types, evt.type()))

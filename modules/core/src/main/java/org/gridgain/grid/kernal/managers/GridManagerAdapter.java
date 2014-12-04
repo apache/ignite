@@ -355,7 +355,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return true;
                     }
 
-                    @Override public void recordEvent(GridEvent evt) {
+                    @Override public void recordEvent(IgniteEvent evt) {
                         A.notNull(evt, "evt");
 
                         if (ctx.event().isRecordable(evt.type()))

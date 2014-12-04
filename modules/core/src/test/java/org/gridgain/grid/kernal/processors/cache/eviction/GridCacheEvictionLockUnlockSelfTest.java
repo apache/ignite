@@ -141,9 +141,9 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** Eviction event listener. */
-    private static class EvictListener implements IgnitePredicate<GridEvent> {
+    private static class EvictListener implements IgnitePredicate<IgniteEvent> {
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             assert evt.type() == EVT_CACHE_ENTRY_EVICTED;
 
             evictCnt.incrementAndGet();

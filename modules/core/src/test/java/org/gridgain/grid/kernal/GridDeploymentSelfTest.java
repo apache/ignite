@@ -491,7 +491,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Deployment listener.
      */
-    private static class DeploymentEventListener implements IgnitePredicate<GridEvent> {
+    private static class DeploymentEventListener implements IgnitePredicate<IgniteEvent> {
         /** */
         private int depCnt;
 
@@ -503,7 +503,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
          *
          * @param evt local grid event.
          */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             if (evt.type() == EVT_TASK_DEPLOYED)
                 depCnt++;
             else if (evt.type() == EVT_TASK_UNDEPLOYED)

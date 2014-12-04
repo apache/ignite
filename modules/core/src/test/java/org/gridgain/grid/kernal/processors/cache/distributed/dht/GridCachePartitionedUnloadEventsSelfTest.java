@@ -84,13 +84,13 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Thread.sleep(5000);
 
-        Collection<GridEvent> objEvts =
-            g1.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
+        Collection<IgniteEvent> objEvts =
+            g1.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
 
         checkObjectUnloadEvents(objEvts, g1, g2Keys);
 
-        Collection <GridEvent> partEvts =
-            g1.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_PART_UNLOADED);
+        Collection <IgniteEvent> partEvts =
+            g1.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_PART_UNLOADED);
 
         checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
     }
@@ -100,10 +100,10 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @param g Grid.
      * @param keys Keys.
      */
-    private void checkObjectUnloadEvents(Collection<GridEvent> evts, Ignite g, Collection<?> keys) {
+    private void checkObjectUnloadEvents(Collection<IgniteEvent> evts, Ignite g, Collection<?> keys) {
         assertEquals(keys.size(), evts.size());
 
-        for (GridEvent evt : evts) {
+        for (IgniteEvent evt : evts) {
             GridCacheEvent cacheEvt = ((GridCacheEvent)evt);
 
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_UNLOADED, cacheEvt.type());
@@ -119,11 +119,11 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @param g Grid.
      * @param parts Parts.
      */
-    private void checkPartitionUnloadEvents(Collection<GridEvent> evts, Ignite g,
+    private void checkPartitionUnloadEvents(Collection<IgniteEvent> evts, Ignite g,
         Collection<GridDhtLocalPartition<Object, Object>> parts) {
         assertEquals(parts.size(), evts.size());
 
-        for (GridEvent evt : evts) {
+        for (IgniteEvent evt : evts) {
             GridCachePreloadingEvent unloadEvt = (GridCachePreloadingEvent)evt;
 
             final int part = unloadEvt.partition();

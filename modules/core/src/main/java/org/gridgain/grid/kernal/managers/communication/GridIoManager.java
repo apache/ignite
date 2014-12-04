@@ -197,7 +197,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     @Override public void onKernalStart0() throws GridException {
         discoLsnr = new GridLocalEventListener() {
             @SuppressWarnings({"TooBroadScope", "fallthrough"})
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt instanceof GridDiscoveryEvent : "Invalid event: " + evt;
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;

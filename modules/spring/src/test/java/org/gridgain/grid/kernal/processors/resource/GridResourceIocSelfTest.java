@@ -130,8 +130,8 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
             final CountDownLatch latch = new CountDownLatch(2);
 
             ignite2.events().localListen(
-                new IgnitePredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
+                new IgnitePredicate<IgniteEvent>() {
+                    @Override public boolean apply(IgniteEvent evt) {
                         info("Received event: " + evt);
 
                         latch.countDown();

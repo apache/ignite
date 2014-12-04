@@ -178,11 +178,11 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @param nodeId Node id.
      * @return Predicate for events belonging to specified node.
      */
-    private IgnitePredicate<GridEvent> nodeEvent(final UUID nodeId) {
+    private IgnitePredicate<IgniteEvent> nodeEvent(final UUID nodeId) {
         assert nodeId != null;
 
-        return new P1<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        return new P1<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
 
                 return e.node().id().equals(nodeId);
@@ -248,13 +248,13 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert nearOther.peekExx(key) == null;
         assert dhtOther.peekExx(key) == null;
 
-        IgniteFuture<GridEvent> futOther =
+        IgniteFuture<IgniteEvent> futOther =
             waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<GridEvent> futBackup =
+        IgniteFuture<IgniteEvent> futBackup =
             waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<GridEvent> futPrimary =
+        IgniteFuture<IgniteEvent> futPrimary =
             waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Get value on other node, it should be loaded to near cache.

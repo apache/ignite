@@ -491,7 +491,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Future.
      * @throws GridException If failed.
      */
-    protected <T extends GridEvent> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
+    protected <T extends IgniteEvent> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
         @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws GridException {
         evts = evts.enableAsync();
 

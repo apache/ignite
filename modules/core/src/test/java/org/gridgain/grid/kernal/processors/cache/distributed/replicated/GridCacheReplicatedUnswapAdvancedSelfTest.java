@@ -84,8 +84,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
 
             final CountDownLatch putLatch = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() == EVT_CACHE_OBJECT_PUT;
 
                     putLatch.countDown();

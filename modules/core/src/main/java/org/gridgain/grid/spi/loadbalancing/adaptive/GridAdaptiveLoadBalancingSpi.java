@@ -303,7 +303,7 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 switch (evt.type()) {
                     case EVT_TASK_FINISHED:
                     case EVT_TASK_FAILED: {

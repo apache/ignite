@@ -2879,7 +2879,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"NullArgumentToVariableArgMethod"})
     public void testEventType() {
         // Always false.
-        IgnitePredicate<GridEvent> p = F.eventType();
+        IgnitePredicate<IgniteEvent> p = F.eventType();
 
         assert p != null;
 
@@ -2910,7 +2910,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"NullArgumentToVariableArgMethod"})
     public void testEventId() {
         // Always false.
-        IgnitePredicate<GridEvent> p = F.eventId();
+        IgnitePredicate<IgniteEvent> p = F.eventId();
 
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
@@ -2921,9 +2921,9 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
 
-        GridEvent evt1 = new TestEvent(1);
-        GridEvent evt2 = new TestEvent(2);
-        GridEvent evt3 = new TestEvent(3);
+        IgniteEvent evt1 = new TestEvent(1);
+        IgniteEvent evt2 = new TestEvent(2);
+        IgniteEvent evt3 = new TestEvent(3);
 
         p = F.eventId(evt1.id(), evt3.id());
 
@@ -2938,9 +2938,9 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEventAfter() throws Exception {
-        GridEvent evt1 = new TestEvent(1);
+        IgniteEvent evt1 = new TestEvent(1);
 
-        IgnitePredicate<GridEvent> p = F.eventAfter(U.currentTimeMillis() + 100);
+        IgnitePredicate<IgniteEvent> p = F.eventAfter(U.currentTimeMillis() + 100);
 
         assert p != null;
 
@@ -2948,7 +2948,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         p = F.eventAfter(U.currentTimeMillis() - 100);
 
-        GridEvent evt3 = new TestEvent(3);
+        IgniteEvent evt3 = new TestEvent(3);
 
         assert p.apply(evt3);
     }
@@ -2960,7 +2960,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     public void testEventNode1() throws Exception {
         // Always false.
-        IgnitePredicate<GridEvent> p = F.eventNode(null);
+        IgnitePredicate<IgniteEvent> p = F.eventNode(null);
 
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
@@ -2970,10 +2970,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Ignite g3 = startGrid(3);
 
         try {
-            GridEvent evt1 = new TestEvent(g1.cluster().localNode());
-            GridEvent evt2 = new TestEvent(g3.cluster().localNode());
-            GridEvent evt3 = new TestEvent(g1.cluster().localNode());
-            GridEvent evt4 = new TestEvent(g2.cluster().localNode());
+            IgniteEvent evt1 = new TestEvent(g1.cluster().localNode());
+            IgniteEvent evt2 = new TestEvent(g3.cluster().localNode());
+            IgniteEvent evt3 = new TestEvent(g1.cluster().localNode());
+            IgniteEvent evt4 = new TestEvent(g2.cluster().localNode());
 
             Collection<ClusterNode> nodes = Arrays.asList(g1.cluster().localNode(), g3.cluster().localNode());
 
@@ -3001,13 +3001,13 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         final Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        GridEvent evt1 = new TestEvent(g1.cluster().localNode());
-        GridEvent evt2 = new TestEvent(g1.cluster().localNode());
-        GridEvent evt3 = new TestEvent(g1.cluster().localNode());
-        GridEvent evt4 = new TestEvent(g2.cluster().localNode());
+        IgniteEvent evt1 = new TestEvent(g1.cluster().localNode());
+        IgniteEvent evt2 = new TestEvent(g1.cluster().localNode());
+        IgniteEvent evt3 = new TestEvent(g1.cluster().localNode());
+        IgniteEvent evt4 = new TestEvent(g2.cluster().localNode());
 
         try {
-            IgnitePredicate<GridEvent> p = F.eventNode(getTestGridName(1), null);
+            IgnitePredicate<IgniteEvent> p = F.eventNode(getTestGridName(1), null);
 
             assert p != null;
 
@@ -3053,7 +3053,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      */
     public void testEventNodeId() {
         // Always false.
-        IgnitePredicate<GridEvent> p = F.eventNodeId();
+        IgnitePredicate<IgniteEvent> p = F.eventNodeId();
 
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
@@ -3066,9 +3066,9 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
 
-        GridEvent evt1 = new TestEvent(1);
-        GridEvent evt2 = new TestEvent(2);
-        GridEvent evt3 = new TestEvent(3);
+        IgniteEvent evt1 = new TestEvent(1);
+        IgniteEvent evt2 = new TestEvent(2);
+        IgniteEvent evt3 = new TestEvent(3);
 
         p = F.eventNodeId(evt1.node().id());
 

@@ -112,7 +112,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     @Override protected void onKernalStart0() {
         cctx.gridEvents().addLocalEventListener(
             new GridLocalEventListener() {
-                @Override public void onEvent(GridEvent evt) {
+                @Override public void onEvent(IgniteEvent evt) {
                     assert evt instanceof GridDiscoveryEvent;
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 

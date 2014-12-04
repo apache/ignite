@@ -97,7 +97,7 @@ public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends GridDis
     /** */
     private class DiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             info("Discovery event [event=" + evt + ']');
         }
     }

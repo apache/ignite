@@ -122,9 +122,9 @@ public class GridContinuousOperationsLoadTest {
                         bufSize,
                         timeInterval,
                         true,
-                        new PX2<UUID, GridEvent>() {
+                        new PX2<UUID, IgniteEvent>() {
                             @Override
-                            public boolean applyx(UUID uuid, GridEvent evt)
+                            public boolean applyx(UUID uuid, IgniteEvent evt)
                                 throws GridInterruptedException {
                                 if (cbSleepMs > 0)
                                     U.sleep(cbSleepMs);
@@ -134,9 +134,9 @@ public class GridContinuousOperationsLoadTest {
                                 return true; // Continue listening.
                             }
                         },
-                        new PX1<GridEvent>() {
+                        new PX1<IgniteEvent>() {
                             @Override
-                            public boolean applyx(GridEvent evt) throws GridInterruptedException {
+                            public boolean applyx(IgniteEvent evt) throws GridInterruptedException {
                                 if (filterSleepMs > 0)
                                     U.sleep(filterSleepMs);
 

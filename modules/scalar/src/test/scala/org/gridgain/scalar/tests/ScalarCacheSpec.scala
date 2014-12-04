@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.tests
 
-import org.apache.ignite.events.{GridEventType, GridEvent}
+import org.apache.ignite.events.{GridEventType, IgniteEvent}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.scalar._
 import scalar._
@@ -53,8 +53,8 @@ class ScalarCacheSpec extends FlatSpec with ShouldMatchers {
         val g = grid$
 
         g *< (() => {
-            val lsnr = new IgnitePredicate[GridEvent]() {
-                override def apply(e: GridEvent): Boolean = {
+            val lsnr = new IgnitePredicate[IgniteEvent]() {
+                override def apply(e: IgniteEvent): Boolean = {
                     println(e.shortDisplay)
 
                     true

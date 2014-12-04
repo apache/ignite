@@ -174,8 +174,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         /** Left nodes counter. */
         final CountDownLatch leftCnt = new CountDownLatch(NODES_CNT);
 
-        IgnitePredicate<GridEvent> lsnr = new IgnitePredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
+        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent evt) {
                 if (EVT_NODE_JOINED == evt.type()) {
                     cnt.incrementAndGet();
 

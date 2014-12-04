@@ -48,10 +48,10 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
     public void testMemoryEventStorage() throws Exception {
         GridMemoryEventStorageSpi spi = getSpi();
 
-        IgnitePredicate<GridEvent> filter = F.alwaysTrue();
+        IgnitePredicate<IgniteEvent> filter = F.alwaysTrue();
 
         // Get all events.
-        Collection<GridEvent> evts = spi.localEvents(filter);
+        Collection<IgniteEvent> evts = spi.localEvents(filter);
 
         // Check.
         assert evts != null : "Events can't be null.";
@@ -98,7 +98,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
         try {
             spi.clearAll();
 
-            spi.setFilter(F.<GridEvent>alwaysFalse());
+            spi.setFilter(F.<IgniteEvent>alwaysFalse());
 
             // This event should not record.
             spi.record(createEvent());
@@ -108,7 +108,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
             spi.record(createEvent());
 
             // Get all events.
-            Collection<GridEvent> evts = spi.localEvents(F.<GridEvent>alwaysTrue());
+            Collection<IgniteEvent> evts = spi.localEvents(F.<IgniteEvent>alwaysTrue());
 
             assert evts != null : "Events can't be null.";
             assert evts.size() == 1 : "Invalid events count: " + evts.size();
@@ -123,7 +123,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
      * @return Discovery event.
      * @throws Exception If error occurred.
      */
-    private GridEvent createEvent() throws Exception {
+    private IgniteEvent createEvent() throws Exception {
         return new GridDiscoveryEvent(null, "Test Event", EVT_NODE_METRICS_UPDATED, null);
     }
 }

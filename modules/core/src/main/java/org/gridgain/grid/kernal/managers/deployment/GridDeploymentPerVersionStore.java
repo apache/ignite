@@ -75,7 +75,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt instanceof GridDiscoveryEvent;
 
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;

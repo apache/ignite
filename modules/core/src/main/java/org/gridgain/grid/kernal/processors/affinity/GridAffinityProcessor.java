@@ -57,7 +57,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             int evtType = evt.type();
 
             assert evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT || evtType == EVT_NODE_JOINED;

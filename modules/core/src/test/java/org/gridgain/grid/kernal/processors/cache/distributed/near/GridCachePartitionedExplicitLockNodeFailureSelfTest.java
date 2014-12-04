@@ -111,8 +111,8 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         for (int i = 1; i < GRID_CNT; i++) {
             futs.add(
-                waitForLocalEvent(grid(i).events(), new P1<GridEvent>() {
-                    @Override public boolean apply(GridEvent e) {
+                waitForLocalEvent(grid(i).events(), new P1<IgniteEvent>() {
+                    @Override public boolean apply(IgniteEvent e) {
                         info("Received grid event: " + e);
 
                         return true;

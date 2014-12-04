@@ -274,8 +274,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
         final CountDownLatch cnt = new CountDownLatch(1);
 
         pingingNode.events().localListen(
-            new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt.countDown();
 
                     return true;
@@ -308,8 +308,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new IgnitePredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
+                new IgnitePredicate<IgniteEvent>() {
+                    @Override public boolean apply(IgniteEvent evt) {
                         info("Node joined: " + evt.message());
 
                         GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
@@ -351,8 +351,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new IgnitePredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
+                new IgnitePredicate<IgniteEvent>() {
+                    @Override public boolean apply(IgniteEvent evt) {
                         cnt.countDown();
 
                         return true;
@@ -385,8 +385,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt.countDown();
 
                     return true;
@@ -402,8 +402,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             // Start new grid, ensure that added to topology
             final CountDownLatch cnt2 = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt2.countDown();
 
                     return true;
@@ -431,8 +431,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new IgnitePredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
+                new IgnitePredicate<IgniteEvent>() {
+                    @Override public boolean apply(IgniteEvent evt) {
                         cnt.countDown();
 
                         return true;
@@ -463,8 +463,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt.countDown();
 
                     return true;
@@ -493,8 +493,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final Ignite g1 = startGrid(1);
 
-            IgnitePredicate<GridEvent> lsnr1 = new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            IgnitePredicate<IgniteEvent> lsnr1 = new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     info(evt.message());
 
                     latch1.countDown();
@@ -517,8 +517,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final Ignite g2 = startGrid(2);
 
             g2.events().localListen(
-                new IgnitePredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
+                new IgnitePredicate<IgniteEvent>() {
+                    @Override public boolean apply(IgniteEvent evt) {
                         if (stopping.get())
                             return true;
 
@@ -539,8 +539,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 EVT_NODE_METRICS_UPDATED
             );
 
-            g1.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     if (stopping.get())
                         return true;
 
@@ -581,8 +581,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch joinCnt = new CountDownLatch(2);
             final CountDownLatch failCnt = new CountDownLatch(1);
 
-            g1.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     if (evt.type() == EVT_NODE_JOINED)
                         joinCnt.countDown();
                     else if (evt.type() == EVT_NODE_FAILED)
@@ -620,8 +620,8 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g3.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g3.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt.countDown();
 
                     return true;

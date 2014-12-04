@@ -172,11 +172,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @param nodeId Node id.
      * @return Predicate for events belonging to specified node.
      */
-    private IgnitePredicate<GridEvent> nodeEvent(final UUID nodeId) {
+    private IgnitePredicate<IgniteEvent> nodeEvent(final UUID nodeId) {
         assert nodeId != null;
 
-        return new P1<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        return new P1<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
 
                 return e.node().id().equals(nodeId);
@@ -236,10 +236,10 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         assertTrue(entryPrimary.readers().isEmpty());
         assertTrue(entryBackup.readers().isEmpty());
 
-        IgniteFuture<GridEvent> futBackup =
+        IgniteFuture<IgniteEvent> futBackup =
             waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<GridEvent> futPrimary =
+        IgniteFuture<IgniteEvent> futPrimary =
             waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Evict on primary node.
@@ -301,8 +301,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntBackup = new AtomicInteger();
 
-        IgniteFuture<GridEvent> futBackup = waitForLocalEvent(backupIgnite.events(), new P1<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        IgniteFuture<IgniteEvent> futBackup = waitForLocalEvent(backupIgnite.events(), new P1<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 return e.node().id().equals(backupIgnite.cluster().localNode().id()) &&
                     cntBackup.incrementAndGet() == keyCnt;
             }
@@ -310,8 +310,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntPrimary = new AtomicInteger();
 
-        IgniteFuture<GridEvent> futPrimary = waitForLocalEvent(primaryIgnite.events(), new P1<GridEvent>() {
-            @Override public boolean apply(GridEvent e) {
+        IgniteFuture<IgniteEvent> futPrimary = waitForLocalEvent(primaryIgnite.events(), new P1<IgniteEvent>() {
+            @Override public boolean apply(IgniteEvent e) {
                 return e.node().id().equals(primaryIgnite.cluster().localNode().id()) &&
                     cntPrimary.incrementAndGet() == keyCnt;
             }

@@ -57,8 +57,8 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
                         Ignite g = startGrid("first");
 
                         g.events().localListen(
-                            new IgnitePredicate<GridEvent>() {
-                                @Override public boolean apply(GridEvent evt) {
+                            new IgnitePredicate<IgniteEvent>() {
+                                @Override public boolean apply(IgniteEvent evt) {
                                     stopLatch.countDown();
 
                                     return true;

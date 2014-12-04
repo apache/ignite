@@ -153,7 +153,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         qry.execute();
 
         ctx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final GridEvent evt) {
+            @Override public void onEvent(final IgniteEvent evt) {
                 if (!busyLock.tryReadLock())
                     return;
 

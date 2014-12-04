@@ -15,9 +15,9 @@ import org.gridgain.grid.util.typedef.*;
 /**
  * Filter for event consume test.
  */
-public class GridEventConsumeFilter implements P1<GridEvent> {
+public class GridEventConsumeFilter implements P1<IgniteEvent> {
     /** {@inheritDoc} */
-    @Override public boolean apply(GridEvent e) {
+    @Override public boolean apply(IgniteEvent e) {
         return true;
     }
 }

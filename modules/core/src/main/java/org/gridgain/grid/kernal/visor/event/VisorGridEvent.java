@@ -17,7 +17,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Base class for lightweight counterpart for various {@link org.apache.ignite.events.GridEvent}.
+ * Base class for lightweight counterpart for various {@link org.apache.ignite.events.IgniteEvent}.
  */
 public class VisorGridEvent implements Serializable {
     /** */

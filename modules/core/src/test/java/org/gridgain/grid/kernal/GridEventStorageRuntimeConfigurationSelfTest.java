@@ -52,8 +52,8 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            g.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt.incrementAndGet();
 
                     return true;
@@ -86,8 +86,8 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            g.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt.incrementAndGet();
 
                     return true;
@@ -122,8 +122,8 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            g.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     cnt.incrementAndGet();
 
                     return true;

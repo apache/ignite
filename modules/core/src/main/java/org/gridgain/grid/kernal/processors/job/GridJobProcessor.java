@@ -428,7 +428,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         };
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
+            @Override public void onEvent(IgniteEvent evt) {
                 assert evt instanceof GridDiscoveryEvent &&
                     (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) : "Unexpected event: " + evt;
 
@@ -1383,7 +1383,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 (Map<?, ?>)marsh.unmarshal(req.getAttributesBytes(), ses.getClassLoader());
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-                GridEvent evt = new GridTaskEvent(
+                IgniteEvent evt = new GridTaskEvent(
                     ctx.discovery().localNode(),
                     "Changed attributes: " + attrs,
                     EVT_TASK_SESSION_ATTR_SET,
@@ -1732,7 +1732,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @SuppressWarnings("fallthrough")
-        @Override public void onEvent(GridEvent evt) {
+        @Override public void onEvent(IgniteEvent evt) {
             assert evt instanceof GridDiscoveryEvent;
 
             boolean handleCollisions = false;

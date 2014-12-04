@@ -64,7 +64,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return Collection of grid events returned from specified nodes.
      * @throws GridException If query failed.
      */
-    public <T extends GridEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
+    public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
         throws GridException;
 
     /**
@@ -91,7 +91,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws GridException If failed to add listener.
      */
-    public <T extends GridEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
+    public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws GridException;
 
     /**
@@ -129,7 +129,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @see #stopRemoteListen(UUID)
      * @throws GridException If failed to add listener.
      */
-    public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
+    public <T extends IgniteEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types) throws GridException;
 
@@ -157,7 +157,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return Grid event.
      * @throws GridException If wait was interrupted.
      */
-    public <T extends GridEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
+    public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
         throws GridException;
 
     /**
@@ -168,7 +168,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Event types to be queried.
      * @return Collection of grid events found on local node.
      */
-    public <T extends GridEvent> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types);
+    public <T extends IgniteEvent> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types);
 
     /**
      * Records customer user generated event. All registered local listeners will be notified.
@@ -182,7 +182,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @throws IllegalArgumentException If event type is within GridGain reserved range between {@code 1} and
      *      {@code 1000}.
      */
-    public void recordLocal(GridEvent evt);
+    public void recordLocal(IgniteEvent evt);
 
     /**
      * Adds an event listener for local events. Note that listener will be added regardless of whether
@@ -193,7 +193,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Event types for which this listener will be notified.
      * @throws IllegalArgumentException Thrown in case when passed in array of event types is empty.
      */
-    public void localListen(IgnitePredicate<? extends GridEvent> lsnr, int... types);
+    public void localListen(IgnitePredicate<? extends IgniteEvent> lsnr, int... types);
 
     /**
      * Removes local event listener.
@@ -203,7 +203,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      then listener will be removed for all types it was registered for.
      * @return {@code true} if listener was removed, {@code false} otherwise.
      */
-    public boolean stopLocalListen(IgnitePredicate<? extends GridEvent> lsnr, @Nullable int... types);
+    public boolean stopLocalListen(IgnitePredicate<? extends IgniteEvent> lsnr, @Nullable int... types);
 
     /**
      * Enables provided events. Allows to start recording events that

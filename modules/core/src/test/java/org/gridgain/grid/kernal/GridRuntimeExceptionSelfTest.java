@@ -84,7 +84,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         info("Job failed event: " + evts.get(0));
 
@@ -114,7 +114,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -144,7 +144,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -174,7 +174,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<GridEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -182,7 +182,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TaskFailedEventFilter implements IgnitePredicate<GridEvent> {
+    private static class TaskFailedEventFilter implements IgnitePredicate<IgniteEvent> {
         /** */
         private IgniteUuid sesId;
 
@@ -194,7 +194,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             return evt instanceof GridTaskEvent &&
                 ((GridTaskEvent)evt).taskSessionId() != null &&
                 ((GridTaskEvent)evt).taskSessionId().equals(sesId) &&

@@ -60,8 +60,8 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             final UUID grid1LocNodeId = ignite1.cluster().localNode().id();
 
-            ignite2.events().localListen(new IgnitePredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
+                @Override public boolean apply(IgniteEvent evt) {
                     assert evt.type() != EVT_NODE_FAILED :
                         "Node1 did not exit gracefully.";
 

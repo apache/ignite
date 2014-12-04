@@ -283,12 +283,12 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class JobFinishLock implements IgnitePredicate<GridEvent> {
+    private static class JobFinishLock implements IgnitePredicate<IgniteEvent> {
         /** Latch. */
         private final CountDownLatch latch = new CountDownLatch(NODES_CNT);
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             assert evt.type() == EVT_JOB_FINISHED;
 
             latch.countDown();
@@ -309,7 +309,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class MetricsUpdateLock implements IgnitePredicate<GridEvent> {
+    private static class MetricsUpdateLock implements IgnitePredicate<IgniteEvent> {
         /** Latch. */
         private final CountDownLatch latch = new CountDownLatch(NODES_CNT * 2);
 
@@ -317,7 +317,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         private final Map<UUID, Integer> metricsRcvdCnt = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
+        @Override public boolean apply(IgniteEvent evt) {
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
             Integer cnt = F.addIfAbsent(metricsRcvdCnt, discoEvt.eventNode().id(), 0);

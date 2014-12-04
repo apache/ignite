@@ -86,7 +86,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         if (depEnabled) {
             discoLsnr = new GridLocalEventListener() {
-                @Override public void onEvent(GridEvent evt) {
+                @Override public void onEvent(IgniteEvent evt) {
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT : "Unexpected event: " + evt;
 
                     UUID id = ((GridDiscoveryEvent)evt).eventNode().id();
