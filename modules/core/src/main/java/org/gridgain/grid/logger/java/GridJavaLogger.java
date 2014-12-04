@@ -10,8 +10,8 @@
 package org.gridgain.grid.logger.java;
 
 import org.apache.ignite.*;
+import org.apache.ignite.logger.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

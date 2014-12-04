@@ -9,9 +9,9 @@
 
 package org.gridgain.testframework.junits.logger;
 
+import org.apache.ignite.logger.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
