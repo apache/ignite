@@ -19,13 +19,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain</artifactId>
-        <version>${gridgain.version}</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite</artifactId>
+        <version>${ignite.version}</version>
         <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>gridgain-visor-trial</artifactId>
+    <artifactId>ignite-visor-trial</artifactId>
 
     <packaging>pom</packaging>
 
@@ -40,8 +40,8 @@
         <!-- Gridgain dependencies -->
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-visor</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-visor</artifactId>
             <version>RELEASE</version>
         </dependency>
 
@@ -92,7 +92,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration combine.self="override">
-                            <excludeArtifactIds>gridgain-core,jdk8-backport</excludeArtifactIds>
+                            <excludeArtifactIds>ignite-core,jdk8-backport</excludeArtifactIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>

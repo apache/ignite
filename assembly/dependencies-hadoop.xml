@@ -38,8 +38,8 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-spring</include>
-                <include>org.gridgain:gridgain-log4j</include>
+                <include>org.apache.ignite:ignite-spring</include>
+                <include>org.apache.ignite:ignite-log4j</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -74,7 +74,7 @@
 
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-hadoop</include>
+                <include>org.apache.ignite:ignite-hadoop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -120,7 +120,7 @@
 
     <files>
         <file>
-            <source>target/gridgain-core-${gridgain.version}.jar</source>
+            <source>target/ignite-core-${ignite.version}.jar</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>

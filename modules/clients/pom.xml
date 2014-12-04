@@ -19,9 +19,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain</artifactId>
-        <version>${gridgain.version}</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite</artifactId>
+        <version>${ignite.version}</version>
         <relativePath>../../</relativePath>
     </parent>
 
@@ -29,9 +29,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
@@ -48,23 +48,23 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-indexing</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-log4j</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j</artifactId>
+            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-rest-http</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-rest-http</artifactId>
+            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -77,9 +77,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

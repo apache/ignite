@@ -60,7 +60,6 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;

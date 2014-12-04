@@ -38,8 +38,8 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-spring</include>
-                <include>org.gridgain:gridgain-indexing</include>
+                <include>org.apache.ignite:ignite-spring</include>
+                <include>org.apache.ignite:ignite-indexing</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -82,7 +82,7 @@
 
     <files>
         <file>
-            <source>target/gridgain-core-${gridgain.version}.jar</source>
+            <source>target/ignite-core-${ignite.version}.jar</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>

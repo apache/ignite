@@ -38,8 +38,8 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:jdk8-backport</include>
-                <include>org.gridgain:gridgain-core</include>
+                <include>org.apache.ignite:jdk8-backport</include>
+                <include>org.apache.ignite:ignite-core</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>

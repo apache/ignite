@@ -19,31 +19,31 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain</artifactId>
-        <version>${gridgain.version}</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite</artifactId>
+        <version>${ignite.version}</version>
         <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>gridgain-visor-console</artifactId>
+    <artifactId>ignite-visor-console</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-ssh</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-ssh</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-spring</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <!-- Third party dependencies -->
@@ -86,9 +86,9 @@
 
         <!-- Test dependencies -->
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-indexing</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -155,7 +155,7 @@
                          <phase>prepare-package</phase>
                          <configuration>
                              <target>
-                                 <zip destfile="target/gridgain-visor-console-${gridgain.version}-javadoc.jar"
+                                 <zip destfile="target/ignite-visor-console-${ignite.version}-javadoc.jar"
                                       basedir="target/site/scaladocs"
                                       encoding="UTF-8"/>
                              </target>

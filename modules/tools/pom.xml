@@ -18,13 +18,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain</artifactId>
-        <version>${gridgain.version}</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite</artifactId>
+        <version>${ignite.version}</version>
         <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>gridgain-tools</artifactId>
+    <artifactId>ignite-tools</artifactId>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

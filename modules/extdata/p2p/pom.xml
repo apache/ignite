@@ -19,19 +19,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain</artifactId>
-        <version>${gridgain.version}</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite</artifactId>
+        <version>${ignite.version}</version>
         <relativePath>../../..</relativePath>
     </parent>
 
-    <artifactId>gridgain-extdata-p2p</artifactId>
+    <artifactId>ignite-extdata-p2p</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
     </dependencies>
 
@@ -63,9 +63,9 @@
                 <version>1.7</version>
                 <dependencies>
                     <dependency>
-                        <groupId>org.gridgain</groupId>
-                        <artifactId>gridgain-tools</artifactId>
-                        <version>${gridgain.version}</version>
+                        <groupId>org.apache.ignite</groupId>
+                        <artifactId>ignite-tools</artifactId>
+                        <version>${ignite.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>

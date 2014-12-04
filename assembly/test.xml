@@ -38,7 +38,7 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-aop</include>
+                <include>org.apache.ignite:ignite-aop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>

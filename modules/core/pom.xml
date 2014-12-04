@@ -19,13 +19,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain</artifactId>
-        <version>${gridgain.version}</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite</artifactId>
+        <version>${ignite.version}</version>
         <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>gridgain-core</artifactId>
+    <artifactId>ignite-core</artifactId>
 
     <dependencies>
         <dependency>
@@ -35,9 +35,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>jdk8-backport</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>

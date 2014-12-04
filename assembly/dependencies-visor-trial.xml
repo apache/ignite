@@ -38,7 +38,7 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-visor-trial</include>
+                <include>org.apache.ignite:ignite-visor-trial</include>
             </includes>
 
             <sources>
@@ -64,8 +64,8 @@
                         <directory>${basedir}/target/libs</directory>
                         <outputDirectory>/include/visorui</outputDirectory>
                         <excludes>
-                            <exclude>gridgain-spring-*.jar</exclude>
-                            <exclude>gridgain-ssh-*.jar</exclude>
+                            <exclude>ignite-spring-*.jar</exclude>
+                            <exclude>ignite-ssh-*.jar</exclude>
                             <exclude>commons-logging-*.jar</exclude>
                             <exclude>jsch-*.jar</exclude>
                             <exclude>scala-library-*.jar</exclude>

@@ -19,19 +19,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain</artifactId>
-        <version>${gridgain.version}</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite</artifactId>
+        <version>${ignite.version}</version>
         <relativePath>../../</relativePath>
     </parent>
 
-    <artifactId>gridgain-jta</artifactId>
+    <artifactId>ignite-jta</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
@@ -55,9 +55,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

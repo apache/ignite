@@ -18,7 +18,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;

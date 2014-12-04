@@ -38,7 +38,7 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-visor-console</include>
+                <include>org.apache.ignite:ignite-visor-console</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
@@ -87,8 +87,8 @@
 
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-ssh</include>
-                <include>org.gridgain:gridgain-spring</include>
+                <include>org.apache.ignite:ignite-ssh</include>
+                <include>org.apache.ignite:ignite-spring</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
