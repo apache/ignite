@@ -23,7 +23,7 @@ import org.gridgain.grid._
 import collection.JavaConversions._
 import java.util.UUID
 import org.junit.runner.RunWith
-import org.gridgain.grid.messaging.GridMessagingListenActor
+import org.gridgain.grid.messaging.MessagingListenActor
 
 /**
  * Scalar cache test.
@@ -87,13 +87,13 @@ class ScalarProjectionSpec extends FlatSpec with ShouldMatchers with BeforeAndAf
 
     it should "correctly send messages" in scalar(gridConfig("node-scalar", true)) {
 
-        grid$("node-1").get.message().remoteListen(null, new GridMessagingListenActor[Any]() {
+        grid$("node-1").get.message().remoteListen(null, new MessagingListenActor[Any]() {
             def receive(nodeId: UUID, msg: Any) {
                 println("node-1 received " + msg)
             }
         })
 
-        grid$("node-2").get.message().remoteListen(null, new GridMessagingListenActor[Any]() {
+        grid$("node-2").get.message().remoteListen(null, new MessagingListenActor[Any]() {
             def receive(nodeId: UUID, msg: Any) {
                 println("node-2 received " + msg)
             }

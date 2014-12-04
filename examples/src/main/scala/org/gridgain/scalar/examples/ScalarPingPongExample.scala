@@ -49,7 +49,7 @@ object ScalarPingPongExample extends App {
 
             // Set up remote player: configure remote node 'rmt' to listen
             // for messages from local node 'loc'.
-            g.message(nodeB).remoteListen(null, new GridMessagingListenActor[String]() {
+            g.message(nodeB).remoteListen(null, new MessagingListenActor[String]() {
                 def receive(nodeId: UUID, msg: String) {
                     println(msg)
 
@@ -64,7 +64,7 @@ object ScalarPingPongExample extends App {
 
             // Set up local player: configure local node 'loc'
             // to listen for messages from remote node 'rmt'.
-            grid$.message().localListen(null, new GridMessagingListenActor[String]() {
+            grid$.message().localListen(null, new MessagingListenActor[String]() {
                 def receive(nodeId: UUID, msg: String) {
                     println(msg)
 
@@ -105,7 +105,7 @@ object ScalarPingPongExample extends App {
             val n2p = g.cluster().forNode(n2)
 
             // Configure remote node 'n1' to receive messages from 'n2'.
-            g.message(n1p).remoteListen(null, new GridMessagingListenActor[String] {
+            g.message(n1p).remoteListen(null, new MessagingListenActor[String] {
                 def receive(nid: UUID, msg: String) {
                     println(msg)
 
@@ -117,7 +117,7 @@ object ScalarPingPongExample extends App {
             })
 
             // Configure remote node 'n2' to receive messages from 'n1'.
-            g.message(n2p).remoteListen(null, new GridMessagingListenActor[String] {
+            g.message(n2p).remoteListen(null, new MessagingListenActor[String] {
                 // Get local count down latch.
                 private lazy val latch: CountDownLatch = g.cluster().nodeLocalMap().get("latch")
 

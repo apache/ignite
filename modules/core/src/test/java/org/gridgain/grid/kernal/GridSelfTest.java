@@ -108,7 +108,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
         final UUID locNodeId = g.cluster().localNode().id();
 
-        g.message().remoteListen(null, new GridMessagingListenActor<String>() {
+        g.message().remoteListen(null, new MessagingListenActor<String>() {
             @Override protected void receive(UUID nodeId, String rcvMsg) throws Throwable {
                 assert locNodeId.equals(nodeId);
                 assert msg.equals(rcvMsg);

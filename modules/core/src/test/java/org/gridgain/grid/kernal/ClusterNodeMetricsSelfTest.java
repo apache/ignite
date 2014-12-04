@@ -182,13 +182,13 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(MSG_CNT);
 
-        ignite0.message().localListen(null, new GridMessagingListenActor<TestMessage>() {
+        ignite0.message().localListen(null, new MessagingListenActor<TestMessage>() {
             @Override protected void receive(UUID nodeId, TestMessage rcvMsg) throws Throwable {
                 latch.countDown();
             }
         });
 
-        ignite1.message().localListen(null, new GridMessagingListenActor<TestMessage>() {
+        ignite1.message().localListen(null, new MessagingListenActor<TestMessage>() {
             @Override protected void receive(UUID nodeId, TestMessage rcvMsg) throws Throwable {
                 respond(rcvMsg);
             }

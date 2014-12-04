@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates messaging with {@link GridMessagingListenActor} convenience adapter.
+ * Demonstrates messaging with {@link org.gridgain.grid.messaging.MessagingListenActor} convenience adapter.
  * <p>
  * To run this example you must have at least one remote node started.
  * <p>
@@ -56,7 +56,7 @@ public class MessagingPingPongListenActorExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            g.message(nodeB).remoteListen(null, new GridMessagingListenActor<String>() {
+            g.message(nodeB).remoteListen(null, new MessagingListenActor<String>() {
                 @Override public void receive(UUID nodeId, String rcvMsg) throws GridException {
                     System.out.println(rcvMsg);
 
@@ -72,7 +72,7 @@ public class MessagingPingPongListenActorExample {
             final CountDownLatch cnt = new CountDownLatch(MAX_PLAYS);
 
             // Set up local player.
-            g.message().localListen(null, new GridMessagingListenActor<String>() {
+            g.message().localListen(null, new MessagingListenActor<String>() {
                 @Override protected void receive(UUID nodeId, String rcvMsg) throws GridException {
                     System.out.println(rcvMsg);
 

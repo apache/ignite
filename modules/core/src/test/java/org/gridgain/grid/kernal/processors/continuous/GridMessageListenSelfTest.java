@@ -460,7 +460,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Actor extends GridMessagingListenActor<Object> {
+    private static class Actor extends MessagingListenActor<Object> {
         /** */
         private final ClusterGroup prj;
 

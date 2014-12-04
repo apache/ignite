@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Tests for {@link GridMessagingListenActor}.
+ * Tests for {@link org.gridgain.grid.messaging.MessagingListenActor}.
  */
 public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /** */
@@ -54,7 +54,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     public void testBasicFlow() throws Exception {
         final AtomicInteger cnt = new AtomicInteger(0);
 
-        grid().message().localListen(null, new GridMessagingListenActor<String>() {
+        grid().message().localListen(null, new MessagingListenActor<String>() {
             @Override
             public void receive(UUID uuid, String rcvMsg) {
                 if ("TEST".equals(rcvMsg)) {
@@ -97,7 +97,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Testing {@link GridMessagingListenActor#respond(UUID, Object)} method.
+     * Testing {@link org.gridgain.grid.messaging.MessagingListenActor#respond(UUID, Object)} method.
      *
      * @throws Exception If failed.
      */
@@ -107,7 +107,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
         try {
             final ClusterNode rmt = grid(1).localNode();
 
-            grid().message().localListen(null, new GridMessagingListenActor<String>() {
+            grid().message().localListen(null, new MessagingListenActor<String>() {
                 @Override protected void receive(UUID nodeId, String rcvMsg) throws GridException {
                     System.out.println("Local node received message: '" + rcvMsg + "'");
 
@@ -118,7 +118,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
             final AtomicInteger cnt = new AtomicInteger();
 
             // Response listener
-            grid(1).message().localListen(null, new GridMessagingListenActor<String>() {
+            grid(1).message().localListen(null, new MessagingListenActor<String>() {
                 @Override public void receive(UUID nodeId, String rcvMsg) {
                     if ("RESPONSE".equals(rcvMsg)) {
                         System.out.println("Remote node received message: '" + rcvMsg + "'");
@@ -150,7 +150,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(PING_PONG_STEPS);
 
-        grid().message().localListen(null, new GridMessagingListenActor<String>() {
+        grid().message().localListen(null, new MessagingListenActor<String>() {
             @Override
             protected void receive(UUID nodeId, String rcvMsg) throws GridException {
                 System.out.println("Received message: '" + rcvMsg + "'");
@@ -191,7 +191,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cnt = new AtomicInteger(0);
 
-        grid().message().localListen(null, new GridMessagingListenActor<String>() {
+        grid().message().localListen(null, new MessagingListenActor<String>() {
             @Override
             protected void receive(UUID nodeId, String rcvMsg) {
                 System.out.println(Thread.currentThread().getName() + "# Received message: '" + rcvMsg + "'");

@@ -24,7 +24,7 @@ import java.util.*;
  * Convenience actor-base adapter for {@link IgniteMessaging#localListen(Object, org.apache.ignite.lang.IgniteBiPredicate)}
  * method.
  */
-public abstract class GridMessagingListenActor<T> implements IgniteBiPredicate<UUID, T> {
+public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID, T> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -217,6 +217,6 @@ public abstract class GridMessagingListenActor<T> implements IgniteBiPredicate<U
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridMessagingListenActor.class, this);
+        return S.toString(MessagingListenActor.class, this);
     }
 }
