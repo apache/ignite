@@ -881,7 +881,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testProduct() throws Exception {
-        GridProduct product = grid().product();
+        IgniteProduct product = grid().product();
 
         GridMarshallerTestBean inBean = newTestBean(product);
 

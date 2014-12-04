@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * This exception is thrown when license violation is detected.
  */
-public class GridProductLicenseException extends GridException {
+public class IgniteProductLicenseException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -29,7 +29,7 @@ public class GridProductLicenseException extends GridException {
      * @param msg Error message.
      * @param shortMsg Short error message presentable to the user. Note it should contain just letter and dot.
      */
-    public GridProductLicenseException(String msg, @Nullable String shortMsg) {
+    public IgniteProductLicenseException(String msg, @Nullable String shortMsg) {
         super(msg);
 
         this.shortMsg = shortMsg;
@@ -42,7 +42,7 @@ public class GridProductLicenseException extends GridException {
      * @param shortMsg Short error message presentable to the user. Note it should contain just letter and dot.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridProductLicenseException(String msg, @Nullable String shortMsg, @Nullable Throwable cause) {
+    public IgniteProductLicenseException(String msg, @Nullable String shortMsg, @Nullable Throwable cause) {
         super(msg, cause);
 
         this.shortMsg = shortMsg;
@@ -57,6 +57,6 @@ public class GridProductLicenseException extends GridException {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridProductLicenseException.class, this, "msg", getMessage(), "shortMsg", shortMsg);
+        return S.toString(IgniteProductLicenseException.class, this, "msg", getMessage(), "shortMsg", shortMsg);
     }
 }

@@ -18,28 +18,28 @@ import org.jetbrains.annotations.*;
  * GridProduct p = GridGain.grid().product();
  * </pre>
  */
-public interface GridProduct {
+public interface IgniteProduct {
     /**
      * Gets license descriptor for enterprise edition or {@code null} for open source edition.
      *
      * @return License descriptor.
      */
-    @Nullable public GridProductLicense license();
+    @Nullable public IgniteProductLicense license();
 
     /**
      * Updates to a new license in enterprise edition. This method is no-op in open source edition.
      *
      * @param lic The content of the license.
-     * @throws GridProductLicenseException If license could not be updated.
+     * @throws IgniteProductLicenseException If license could not be updated.
      */
-    public void updateLicense(String lic) throws GridProductLicenseException;
+    public void updateLicense(String lic) throws IgniteProductLicenseException;
 
     /**
      * Gets product version for this release.
      *
      * @return Product version for this release.
      */
-    public GridProductVersion version();
+    public IgniteProductVersion version();
 
     /**
      * Copyright statement for GridGain code.

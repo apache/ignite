@@ -262,7 +262,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private ExecutorService utilityCachePool;
 
     /** */
-    private GridProduct product;
+    private IgniteProduct product;
 
     /** */
     private IgniteConfiguration cfg;
@@ -717,12 +717,12 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /**
      * @param product Product.
      */
-    public void product(GridProduct product) {
+    public void product(IgniteProduct product) {
         this.product = product;
     }
 
     /** {@inheritDoc} */
-    @Override public GridProduct product() {
+    @Override public IgniteProduct product() {
         return product;
     }
 

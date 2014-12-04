@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.product.GridProductVersion.*;
+import static org.apache.ignite.product.IgniteProductVersion.*;
 
 /**
  * P2P test.
@@ -81,7 +81,7 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridProductVersion version() {
+        @Override public IgniteProductVersion version() {
             return fromString("99.99.99");
         }
 

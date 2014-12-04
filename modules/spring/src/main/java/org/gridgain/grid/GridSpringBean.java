@@ -126,7 +126,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridProduct product() {
+    @Override public IgniteProduct product() {
         assert g != null;
 
         return g.product();

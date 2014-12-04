@@ -268,7 +268,7 @@ class GridUpdateNotifier {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
-                GridProductLicense lic = licProc != null ? licProc.license() : null;
+                IgniteProductLicense lic = licProc != null ? licProc.license() : null;
 
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 

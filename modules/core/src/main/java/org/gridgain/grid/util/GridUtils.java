@@ -5997,14 +5997,14 @@ public abstract class GridUtils {
      * @param node Node to get version from.
      * @return Version object.
      */
-    public static GridProductVersion productVersion(ClusterNode node) {
+    public static IgniteProductVersion productVersion(ClusterNode node) {
         String verStr = node.attribute(ATTR_BUILD_VER);
         String buildDate = node.attribute(ATTR_BUILD_DATE);
 
         if (buildDate != null)
             verStr += '-' + buildDate;
 
-        return GridProductVersion.fromString(verStr);
+        return IgniteProductVersion.fromString(verStr);
     }
 
     /**

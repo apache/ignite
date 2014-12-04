@@ -269,7 +269,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                     assert old == null;
 
-                    GridProductVersion locVer = getSpiContext().localNode().version();
+                    IgniteProductVersion locVer = getSpiContext().localNode().version();
 
                     ClusterNode rmtNode = getSpiContext().node(sndId);
 
@@ -279,7 +279,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                         return;
                     }
 
-                    GridProductVersion rmtVer = rmtNode.version();
+                    IgniteProductVersion rmtVer = rmtNode.version();
 
                     if (!locVer.equals(rmtVer))
                         ses.addMeta(GridNioServer.DIFF_VER_NODE_ID_META_KEY, sndId);
@@ -1680,8 +1680,8 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                         UUID diffVerNodeId = null;
 
-                        GridProductVersion locVer = getSpiContext().localNode().version();
-                        GridProductVersion rmtVer = node.version();
+                        IgniteProductVersion locVer = getSpiContext().localNode().version();
+                        IgniteProductVersion rmtVer = node.version();
 
                         if (!locVer.equals(rmtVer))
                             diffVerNodeId = node.id();

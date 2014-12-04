@@ -89,7 +89,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Grid product.
      */
-    public GridProduct product();
+    public IgniteProduct product();
 
     /**
      * Gets list of compatible versions.

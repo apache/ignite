@@ -43,7 +43,7 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
 
         // Override node attributes in discovery spi.
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi() {
-            @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
+            @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 
                 attrs.put(GridNodeAttributes.ATTR_BUILD_VER, idx + ".0.0" + "-ent");
@@ -74,16 +74,16 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
             for (int i = 3; i >= 0; i--) {
                 GridKernal g = (GridKernal)grid(i);
 
-                NavigableMap<GridProductVersion, Collection<ClusterNode>> verMap = g.context().discovery()
+                NavigableMap<IgniteProductVersion, Collection<ClusterNode>> verMap = g.context().discovery()
                     .topologyVersionMap();
 
                 assertEquals(4, verMap.size());
 
                 // Now check the map itself.
-                assertEquals(4, verMap.get(GridProductVersion.fromString("1.0.0")).size());
-                assertEquals(3, verMap.get(GridProductVersion.fromString("2.0.0")).size());
-                assertEquals(2, verMap.get(GridProductVersion.fromString("3.0.0-ent-1385099743")).size());
-                assertEquals(1, verMap.get(GridProductVersion.fromString("4.0.0-ent-1385099743")).size());
+                assertEquals(4, verMap.get(IgniteProductVersion.fromString("1.0.0")).size());
+                assertEquals(3, verMap.get(IgniteProductVersion.fromString("2.0.0")).size());
+                assertEquals(2, verMap.get(IgniteProductVersion.fromString("3.0.0-ent-1385099743")).size());
+                assertEquals(1, verMap.get(IgniteProductVersion.fromString("4.0.0-ent-1385099743")).size());
             }
         }
         finally {

@@ -17,10 +17,10 @@ import java.util.*;
 /**
  * GridGain license descriptor. GridGain license is available for
  * information purposes and is checked automatically by GridGain software.
- * License descriptor can be obtains by calling {@link GridProduct#license()} method.
- * @see GridProduct#license()
+ * License descriptor can be obtains by calling {@link IgniteProduct#license()} method.
+ * @see IgniteProduct#license()
  */
-public interface GridProductLicense extends Serializable {
+public interface IgniteProductLicense extends Serializable {
     /**
      * Gets a comma separated list of disabled subsystems.
      *

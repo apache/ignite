@@ -17,14 +17,14 @@ import org.gridgain.grid.util.lang.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.product.GridProductVersion.*;
+import static org.apache.ignite.product.IgniteProductVersion.*;
 
 /**
  * Test node.
  */
 public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNode {
     /** */
-    private static final GridProductVersion VERSION = fromString("99.99.99");
+    private static final IgniteProductVersion VERSION = fromString("99.99.99");
 
     /** */
     private static final AtomicInteger consistentIdCtr = new AtomicInteger();
@@ -181,7 +181,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @Override public GridProductVersion version() {
+    @Override public IgniteProductVersion version() {
         return VERSION;
     }
 

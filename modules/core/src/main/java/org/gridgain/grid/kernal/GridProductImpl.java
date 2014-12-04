@@ -18,9 +18,9 @@ import java.text.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.product.GridProduct} implementation.
+ * {@link org.apache.ignite.product.IgniteProduct} implementation.
  */
-public class GridProductImpl implements GridProduct, Externalizable {
+public class GridProductImpl implements IgniteProduct, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,7 +58,7 @@ public class GridProductImpl implements GridProduct, Externalizable {
     private GridKernalContext ctx;
 
     /** */
-    private GridProductVersion ver;
+    private IgniteProductVersion ver;
 
     /** Update notifier. */
     private GridUpdateNotifier verChecker;
@@ -111,11 +111,11 @@ public class GridProductImpl implements GridProduct, Externalizable {
 
         String releaseType = ctx.isEnterprise() ? "ent" : "os";
 
-        ver = GridProductVersion.fromString(VER + '-' + releaseType + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+        ver = IgniteProductVersion.fromString(VER + '-' + releaseType + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridProductLicense license() {
+    @Nullable @Override public IgniteProductLicense license() {
         ctx.gateway().readLock();
 
         try {
@@ -127,7 +127,7 @@ public class GridProductImpl implements GridProduct, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateLicense(String lic) throws GridProductLicenseException {
+    @Override public void updateLicense(String lic) throws IgniteProductLicenseException {
         ctx.gateway().readLock();
 
         try {
@@ -139,7 +139,7 @@ public class GridProductImpl implements GridProduct, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridProductVersion version() {
+    @Override public IgniteProductVersion version() {
         return ver;
     }
 

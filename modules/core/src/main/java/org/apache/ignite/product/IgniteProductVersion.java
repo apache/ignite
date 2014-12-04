@@ -26,7 +26,7 @@ import java.util.regex.*;
  * Two versions are compared in the following order: major number,
  * minor number, maintenance number, revision timestamp.
  */
-public class GridProductVersion implements Comparable<GridProductVersion>, Externalizable {
+public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,7 +55,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridProductVersion() {
+    public IgniteProductVersion() {
         // No-op.
     }
 
@@ -66,7 +66,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @param revTs Revision timestamp.
      * @param revHash Revision hash.
      */
-    public GridProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash) {
+    public IgniteProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash) {
         this(major, minor, maintenance, "", revTs, revHash);
     }
 
@@ -78,7 +78,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @param revTs Revision timestamp.
      * @param revHash Revision hash.
      */
-    public GridProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash) {
+    public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash) {
         if (revHash != null && revHash.length != 20)
             throw new IllegalArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.length);
 
@@ -166,7 +166,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull GridProductVersion o) {
+    @Override public int compareTo(@NotNull IgniteProductVersion o) {
         // NOTE: Unknown version is less than any other version.
         if (major == o.major) {
             if (minor == o.minor) {
@@ -187,10 +187,10 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         if (this == o)
             return true;
 
-        if (!(o instanceof GridProductVersion))
+        if (!(o instanceof IgniteProductVersion))
             return false;
 
-        GridProductVersion that = (GridProductVersion)o;
+        IgniteProductVersion that = (IgniteProductVersion)o;
 
         return revTs == that.revTs && maintenance == that.maintenance && minor == that.minor && major == that.major;
     }
@@ -242,7 +242,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @return Product version.
      */
     @SuppressWarnings({"MagicConstant", "TypeMayBeWeakened"})
-    public static GridProductVersion fromString(String verStr) {
+    public static IgniteProductVersion fromString(String verStr) {
         assert verStr != null;
 
         if (verStr.endsWith("-DEV")) // Development version, just cut it out.
@@ -271,7 +271,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
                 if (match.group(11) != null)
                     revHash = U.decodeHex(match.group(12).toCharArray());
 
-                return new GridProductVersion(major, minor, maintenance, stage, revTs, revHash);
+                return new IgniteProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }
             catch (IllegalStateException | IndexOutOfBoundsException | NumberFormatException | GridException e) {
                 throw new IllegalStateException("Failed to parse version: " + verStr, e);

@@ -44,7 +44,7 @@ import java.util.concurrent.*;
  * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
- * <li>{@link org.apache.ignite.product.GridProduct} - functionality for licence management and update and product related information.</li>
+ * <li>{@link org.apache.ignite.product.IgniteProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
  * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
@@ -176,7 +176,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Instance of product.
      */
-    public GridProduct product();
+    public IgniteProduct product();
 
     /**
      * Gets an instance of cron-based scheduler.

@@ -89,7 +89,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
     private boolean loc;
 
     /** Version. */
-    private GridProductVersion ver;
+    private IgniteProductVersion ver;
 
     /** Alive check (used by clients). */
     @GridToStringExclude
@@ -117,7 +117,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
      * @param ver Version.
      */
     public GridTcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
-        GridDiscoveryMetricsProvider metricsProvider, GridProductVersion ver) {
+        GridDiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -236,14 +236,14 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
     }
 
     /** {@inheritDoc} */
-    @Override public GridProductVersion version() {
+    @Override public IgniteProductVersion version() {
         return ver;
     }
 
     /**
      * @param ver Version.
      */
-    public void version(GridProductVersion ver) {
+    public void version(IgniteProductVersion ver) {
         assert ver != null;
 
         this.ver = ver;
@@ -423,7 +423,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
 
         order = in.readLong();
         intOrder = in.readLong();
-        ver = (GridProductVersion)in.readObject();
+        ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
     }
 

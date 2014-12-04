@@ -107,7 +107,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     protected Map<String, Object> locNodeAttrs;
 
     /** Local node version. */
-    protected GridProductVersion locNodeVer;
+    protected IgniteProductVersion locNodeVer;
 
     /** Local node. */
     protected GridTcpDiscoveryNode locNode;
@@ -287,7 +287,7 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
+    @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
         assert locNodeAttrs == null;
         assert locNodeVer == null;
 

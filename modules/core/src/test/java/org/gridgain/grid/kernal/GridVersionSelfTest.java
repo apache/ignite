@@ -31,7 +31,7 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid();
 
-            GridProductVersion currVer = ignite.product().version();
+            IgniteProductVersion currVer = ignite.product().version();
 
             String newVer = null;
 

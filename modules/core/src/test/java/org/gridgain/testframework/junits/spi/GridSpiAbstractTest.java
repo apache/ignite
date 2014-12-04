@@ -33,7 +33,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.product.GridProductVersion.*;
+import static org.apache.ignite.product.IgniteProductVersion.*;
 
 /**
  * Base SPI test class.
@@ -42,7 +42,7 @@ import static org.apache.ignite.product.GridProductVersion.*;
 @SuppressWarnings({"JUnitTestCaseWithNonTrivialConstructors"})
 public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstractTest {
     /** */
-    private static final GridProductVersion VERSION = fromString("99.99.99");
+    private static final IgniteProductVersion VERSION = fromString("99.99.99");
 
     /** */
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();

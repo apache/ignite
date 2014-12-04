@@ -27,7 +27,7 @@ public class GridOsLicenseProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void updateLicense(String licTxt) throws GridProductLicenseException {
+    @Override public void updateLicense(String licTxt) throws IgniteProductLicenseException {
         // No-op.
     }
 
@@ -37,7 +37,7 @@ public class GridOsLicenseProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void checkLicense() throws GridProductLicenseException {
+    @Override public void checkLicense() throws IgniteProductLicenseException {
         // No-op.
     }
 
@@ -47,7 +47,7 @@ public class GridOsLicenseProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridProductLicense license() {
+    @Nullable @Override public IgniteProductLicense license() {
         return null;
     }
 

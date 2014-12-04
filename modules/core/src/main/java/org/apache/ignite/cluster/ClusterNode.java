@@ -215,7 +215,7 @@ public interface ClusterNode extends GridMetadataAware {
      *
      * @return Node version.
      */
-    public GridProductVersion version();
+    public IgniteProductVersion version();
 
     /**
      * Tests whether or not this node is a local node.

@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.product.GridProductVersion.*;
+import static org.apache.ignite.product.IgniteProductVersion.*;
 
 /**
  * Base discovery self-test class.

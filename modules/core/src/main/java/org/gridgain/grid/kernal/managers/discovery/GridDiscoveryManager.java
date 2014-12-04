@@ -189,7 +189,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param attrs Attributes to set.
      * @param ver Version.
      */
-    public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
+    public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
         // TODO GG-7574 move to metrics processor?
         long totSysMemory = -1;
 
@@ -984,7 +984,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      *
      * @return Version to collection of nodes map.
      */
-    public NavigableMap<GridProductVersion, Collection<ClusterNode>> topologyVersionMap() {
+    public NavigableMap<IgniteProductVersion, Collection<ClusterNode>> topologyVersionMap() {
         return discoCache().versionsMap();
     }
 
@@ -1740,7 +1740,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         private final Set<String> nearEnabledCaches;
 
         /** Nodes grouped by version. */
-        private final NavigableMap<GridProductVersion, Collection<ClusterNode>> nodesByVer;
+        private final NavigableMap<IgniteProductVersion, Collection<ClusterNode>> nodesByVer;
 
         /** Daemon nodes. */
         private final List<ClusterNode> daemonNodes;
@@ -1858,7 +1858,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     }
                 }
 
-                GridProductVersion nodeVer = U.productVersion(node);
+                IgniteProductVersion nodeVer = U.productVersion(node);
 
                 // Create collection for this version if it does not exist.
                 Collection<ClusterNode> nodes = nodesByVer.get(nodeVer);
@@ -1874,10 +1874,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
             // Need second iteration to add this node to all previous node versions.
             for (ClusterNode node : allNodes) {
-                GridProductVersion nodeVer = U.productVersion(node);
+                IgniteProductVersion nodeVer = U.productVersion(node);
 
                 // Get all versions lower or equal node's version.
-                NavigableMap<GridProductVersion, Collection<ClusterNode>> updateView =
+                NavigableMap<IgniteProductVersion, Collection<ClusterNode>> updateView =
                     nodesByVer.headMap(nodeVer, false);
 
                 for (Collection<ClusterNode> prevVersions : updateView.values())
@@ -1951,8 +1951,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          * @param ver Version to check.
          * @return Collection of nodes with version equal or greater than {@code ver}.
          */
-        Collection<ClusterNode> elderNodes(GridProductVersion ver) {
-            Map.Entry<GridProductVersion, Collection<ClusterNode>> entry = nodesByVer.ceilingEntry(ver);
+        Collection<ClusterNode> elderNodes(IgniteProductVersion ver) {
+            Map.Entry<IgniteProductVersion, Collection<ClusterNode>> entry = nodesByVer.ceilingEntry(ver);
 
             if (entry == null)
                 return Collections.emptyList();
@@ -1963,7 +1963,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         /**
          * @return Versions map.
          */
-        NavigableMap<GridProductVersion, Collection<ClusterNode>> versionsMap() {
+        NavigableMap<IgniteProductVersion, Collection<ClusterNode>> versionsMap() {
             return nodesByVer;
         }
 

@@ -73,7 +73,7 @@ public interface GridDiscoverySpi extends GridSpi {
      * @param attrs Map of node attributes.
      * @param ver Product version.
      */
-    public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver);
+    public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver);
 
     /**
      * Sets a listener for discovery events. Refer to

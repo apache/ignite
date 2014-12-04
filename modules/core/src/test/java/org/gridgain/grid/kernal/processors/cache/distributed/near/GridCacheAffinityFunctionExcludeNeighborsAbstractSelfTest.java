@@ -47,7 +47,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi() {
-            @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
+            @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 
                 // Set unique mac addresses for every group of three nodes.

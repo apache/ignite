@@ -915,7 +915,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                     //
                     // This exception thrown here means that grace period, if any,
                     // has expired and license violation is still unresolved.
-                    catch (GridProductLicenseException ignored) {
+                    catch (IgniteProductLicenseException ignored) {
                         U.error(log, "License violation is unresolved. GridGain node will shutdown in " +
                             (SHUTDOWN_DELAY / 1000) + " sec.");
                         U.error(log, "  ^-- Contact your support for immediate assistance (!)");
@@ -1049,7 +1049,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             String nid = localNode().id().toString().toUpperCase();
             String nid8 = U.id8(localNode().id()).toUpperCase();
 
-            GridProductLicense lic = ctx.license().license();
+            IgniteProductLicense lic = ctx.license().license();
 
             String body =
                 "GridGain node started with the following parameters:" + NL +
@@ -2045,7 +2045,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                     " stopped " + errOk + ":";
                 String subj = "GridGain node stopped " + errOk + ": " + nid8;
 
-                GridProductLicense lic = ctx.license() != null ? ctx.license().license() : null;
+                IgniteProductLicense lic = ctx.license() != null ? ctx.license().license() : null;
 
                 String body =
                     headline + NL + NL +
@@ -3163,7 +3163,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public GridProduct product() {
+    @Override public IgniteProduct product() {
         return ctx.product();
     }
 
