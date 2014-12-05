@@ -230,7 +230,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
      */
     private static class Task extends GridGgfsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
-        @Override public GridGgfsJob createJob(IgniteFsPath path, GridGgfsFileRange range,
+        @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
             GridGgfsTaskArgs<String> args) throws GridException {
             return new Job();
         }
@@ -256,7 +256,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * Job.
      */
-    private static class Job implements GridGgfsJob, Serializable {
+    private static class Job implements IgniteFsJob, Serializable {
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -267,7 +267,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, GridGgfsFileRange range, IgniteFsInputStream in)
+        @Override public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
             throws GridException, IOException {
             assert ignite != null;
             assert ses != null;

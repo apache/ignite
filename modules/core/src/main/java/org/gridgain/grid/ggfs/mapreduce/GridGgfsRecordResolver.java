@@ -18,8 +18,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS record resolver. When {@link GridGgfsTask} is split into {@link GridGgfsJob}s each produced job will obtain
- * {@link GridGgfsFileRange} based on file data location. Record resolver is invoked in each job before actual
+ * GGFS record resolver. When {@link GridGgfsTask} is split into {@link IgniteFsJob}s each produced job will obtain
+ * {@link IgniteFsFileRange} based on file data location. Record resolver is invoked in each job before actual
  * execution in order to adjust record boundaries in a way consistent with user data.
  * <p>
  * E.g., you may want to split your task into jobs so that each job process zero, one or several lines from that file.
@@ -45,6 +45,6 @@ public interface GridGgfsRecordResolver extends Serializable {
      * @throws GridException If resolve failed.
      * @throws IOException If resolve failed.
      */
-    @Nullable public GridGgfsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
-        GridGgfsFileRange suggestedRecord) throws GridException, IOException;
+    @Nullable public IgniteFsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
+        IgniteFsFileRange suggestedRecord) throws GridException, IOException;
 }

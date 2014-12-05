@@ -76,7 +76,7 @@ public class GridGgfsNewLineDelimiterRecordResolverSelfTest extends GridGgfsAbst
 
         GridGgfsNewLineRecordResolver rslvr = resolver();
 
-        GridGgfsFileRange split;
+        IgniteFsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -101,7 +101,7 @@ public class GridGgfsNewLineDelimiterRecordResolverSelfTest extends GridGgfsAbst
 
         GridGgfsNewLineRecordResolver rslvr = resolver();
 
-        GridGgfsFileRange split;
+        IgniteFsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));

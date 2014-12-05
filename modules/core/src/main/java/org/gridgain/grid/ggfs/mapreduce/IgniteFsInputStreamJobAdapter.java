@@ -17,15 +17,15 @@ import org.gridgain.grid.util.*;
 import java.io.*;
 
 /**
- * Convenient {@link GridGgfsJob} adapter. It limits data returned from {@link org.gridgain.grid.ggfs.IgniteFsInputStream} to bytes within
- * the {@link GridGgfsFileRange} assigned to the job.
+ * Convenient {@link IgniteFsJob} adapter. It limits data returned from {@link org.gridgain.grid.ggfs.IgniteFsInputStream} to bytes within
+ * the {@link IgniteFsFileRange} assigned to the job.
  * <p>
  * Under the covers it simply puts job's {@code GridGgfsInputStream} position to range start and wraps in into
  * {@link GridFixedSizeInputStream} limited to range length.
  */
-public abstract class GridGgfsInputStreamJobAdapter extends GridGgfsJobAdapter {
+public abstract class IgniteFsInputStreamJobAdapter extends IgniteFsJobAdapter {
     /** {@inheritDoc} */
-    @Override public final Object execute(IgniteFs ggfs, GridGgfsFileRange range, IgniteFsInputStream in)
+    @Override public final Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
         throws GridException, IOException {
         in.seek(range.start());
 

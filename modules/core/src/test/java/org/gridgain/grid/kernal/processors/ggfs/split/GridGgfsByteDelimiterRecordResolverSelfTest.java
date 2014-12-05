@@ -280,7 +280,7 @@ public class GridGgfsByteDelimiterRecordResolverSelfTest extends GridGgfsAbstrac
 
         GridGgfsByteDelimiterRecordResolver rslvr = resolver(delims);
 
-        GridGgfsFileRange split;
+        IgniteFsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -306,7 +306,7 @@ public class GridGgfsByteDelimiterRecordResolverSelfTest extends GridGgfsAbstrac
 
         GridGgfsByteDelimiterRecordResolver rslvr = resolver(delims);
 
-        GridGgfsFileRange split;
+        IgniteFsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));

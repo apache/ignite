@@ -10,9 +10,9 @@
 package org.gridgain.grid.ggfs.mapreduce;
 
 /**
- * Adapter for {@link GridGgfsJob} with no-op implementation of {@link #cancel()} method.
+ * Adapter for {@link IgniteFsJob} with no-op implementation of {@link #cancel()} method.
  */
-public abstract class GridGgfsJobAdapter implements GridGgfsJob {
+public abstract class IgniteFsJobAdapter implements IgniteFsJob {
     /** {@inheritDoc} */
     @Override public void cancel() {
         // No-op.

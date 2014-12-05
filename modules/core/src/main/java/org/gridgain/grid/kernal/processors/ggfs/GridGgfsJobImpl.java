@@ -22,12 +22,12 @@ import java.io.*;
 /**
  * GGFS job implementation.
  */
-public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfsJob> {
+public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** GGFS job. */
-    private GridGgfsJob job;
+    private IgniteFsJob job;
 
     /** GGFS name. */
     private String ggfsName;
@@ -60,7 +60,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
      * @param len Split length.
      * @param rslvr GGFS split resolver.
      */
-    public GridGgfsJobImpl(GridGgfsJob job, String ggfsName, IgniteFsPath path, long start, long len,
+    public GridGgfsJobImpl(IgniteFsJob job, String ggfsName, IgniteFsPath path, long start, long len,
         GridGgfsRecordResolver rslvr) {
         this.job = job;
         this.ggfsName = ggfsName;
@@ -75,7 +75,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
         IgniteFs ggfs = ignite.fileSystem(ggfsName);
 
         try (IgniteFsInputStream in = ggfs.open(path)) {
-            GridGgfsFileRange split = new GridGgfsFileRange(path, start, len);
+            IgniteFsFileRange split = new IgniteFsFileRange(path, start, len);
 
             if (rslvr != null) {
                 split = rslvr.resolveRecords(ggfs, in, split);
@@ -90,7 +90,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
 
             in.seek(split.start());
 
-            return job.execute(ggfs, new GridGgfsFileRange(path, split.start(), split.length()), in);
+            return job.execute(ggfs, new IgniteFsFileRange(path, split.start(), split.length()), in);
         }
         catch (IOException e) {
             throw new GridException("Failed to execute GGFS job for file split [ggfsName=" + ggfsName +
@@ -104,7 +104,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsJob userObject() {
+    @Override public IgniteFsJob userObject() {
         return job;
     }
 }

@@ -70,8 +70,8 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
-        GridGgfsFileRange suggestedRecord) throws GridException, IOException {
+    @Override public IgniteFsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
+        IgniteFsFileRange suggestedRecord) throws GridException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();
 
@@ -102,7 +102,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
 
             long end = curDelim != null ? curDelim.end : stream.position();
 
-            return new GridGgfsFileRange(suggestedRecord.path(), start, end - start);
+            return new IgniteFsFileRange(suggestedRecord.path(), start, end - start);
         }
         else
             // We failed to find any delimiters up to the EOS.

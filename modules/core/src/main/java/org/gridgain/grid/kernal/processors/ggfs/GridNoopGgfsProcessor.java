@@ -56,7 +56,7 @@ public class GridNoopGgfsProcessor extends GridGgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ComputeJob createJob(GridGgfsJob job, @Nullable String ggfsName, IgniteFsPath path,
+    @Nullable @Override public ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
         long start, long length, GridGgfsRecordResolver recRslv) {
         return null;
     }

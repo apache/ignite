@@ -173,7 +173,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
      * @param len Length.
      * @return Split.
      */
-    protected GridGgfsFileRange split(long start, long len) {
-        return new GridGgfsFileRange(FILE, start, len);
+    protected IgniteFsFileRange split(long start, long len) {
+        return new IgniteFsFileRange(FILE, start, len);
     }
 }

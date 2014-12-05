@@ -26,15 +26,15 @@ import java.util.*;
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
- * {@link GridGgfsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
+ * {@link GridGgfsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
  * <p>
- * Each file participating in GGFS task is split into {@link GridGgfsFileRange}s first. Normally range is a number of
+ * Each file participating in GGFS task is split into {@link IgniteFsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
  * Once file is split into ranges, each range is passed to {@code GridGgfsTask.createJob()} method in order to create a
- * {@link GridGgfsJob}.
+ * {@link IgniteFsJob}.
  * <p>
  * Finally all generated jobs are sent to Grid nodes for execution.
  * <p>
@@ -116,7 +116,7 @@ public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
                     throw new GridException("Failed to find any of block affinity nodes in subgrid [loc=" + loc +
                         ", subgrid=" + subgrid + ']');
 
-                GridGgfsJob job = createJob(path, new GridGgfsFileRange(file.path(), loc.start(), loc.length()), args);
+                IgniteFsJob job = createJob(path, new IgniteFsFileRange(file.path(), loc.start(), loc.length()), args);
 
                 if (job != null) {
                     ComputeJob jobImpl = ggfsProc.createJob(job, ggfs.name(), file.path(), loc.start(),
@@ -145,7 +145,7 @@ public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
      * @return GGFS job. If {@code null} is returned, the passed in file range will be skipped.
      * @throws GridException If job creation failed.
      */
-    @Nullable public abstract GridGgfsJob createJob(IgniteFsPath path, GridGgfsFileRange range,
+    @Nullable public abstract IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
         GridGgfsTaskArgs<T> args) throws GridException;
 
     /**

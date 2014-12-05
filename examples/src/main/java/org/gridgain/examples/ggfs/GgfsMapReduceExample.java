@@ -121,7 +121,7 @@ public class GgfsMapReduceExample {
      */
     private static class GrepTask extends GridGgfsTask<String, Collection<Line>> {
         /** {@inheritDoc} */
-        @Override public GridGgfsJob createJob(IgniteFsPath path, GridGgfsFileRange range,
+        @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
             GridGgfsTaskArgs<String> args) throws GridException {
             return new GrepJob(args.userArgument());
         }
@@ -152,7 +152,7 @@ public class GgfsMapReduceExample {
     /**
      * Grep job.
      */
-    private static class GrepJob extends GridGgfsInputStreamJobAdapter {
+    private static class GrepJob extends IgniteFsInputStreamJobAdapter {
         /** Regex string. */
         private final String regex;
 

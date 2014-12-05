@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Entity representing part of GGFS file identified by file path, start position, and length.
  */
-public class GridGgfsFileRange {
+public class IgniteFsFileRange {
     /** File path. */
     private IgniteFsPath path;
 
@@ -32,7 +32,7 @@ public class GridGgfsFileRange {
      * @param start Start position.
      * @param len Length.
      */
-    public GridGgfsFileRange(IgniteFsPath path, long start, long len) {
+    public IgniteFsFileRange(IgniteFsPath path, long start, long len) {
         this.path = path;
         this.start = start;
         this.len = len;
@@ -67,6 +67,6 @@ public class GridGgfsFileRange {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsFileRange.class, this);
+        return S.toString(IgniteFsFileRange.class, this);
     }
 }

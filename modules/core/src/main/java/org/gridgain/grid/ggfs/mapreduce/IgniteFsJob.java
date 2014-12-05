@@ -19,7 +19,7 @@ import java.io.*;
  * Defines executable unit for {@link GridGgfsTask}. Before this job is executed, it is assigned one of the
  * ranges provided by the {@link GridGgfsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
  * <p>
- * {@link #execute(org.apache.ignite.IgniteFs, GridGgfsFileRange, org.gridgain.grid.ggfs.IgniteFsInputStream)} method is given {@link GridGgfsFileRange} this
+ * {@link #execute(org.apache.ignite.IgniteFs, IgniteFsFileRange, org.gridgain.grid.ggfs.IgniteFsInputStream)} method is given {@link IgniteFsFileRange} this
  * job is expected to operate on, and already opened {@link org.gridgain.grid.ggfs.IgniteFsInputStream} for the file this range belongs to.
  * <p>
  * Note that provided input stream has position already adjusted to range start. However, it will not
@@ -27,13 +27,13 @@ import java.io.*;
  * the range end or seek position before the reange start.
  * <p>
  * In majority of the cases, when you want to process only provided range, you should explicitly control amount
- * of returned data and stop at range end. You can also use {@link GridGgfsInputStreamJobAdapter}, which operates
+ * of returned data and stop at range end. You can also use {@link IgniteFsInputStreamJobAdapter}, which operates
  * on {@link GridGgfsRangeInputStream} bounded to range start and end, or manually wrap provided input stream with
  * {@link GridGgfsRangeInputStream}.
  * <p>
  * You can inject any resources in concrete implementation, just as with regular {@link org.apache.ignite.compute.ComputeJob} implementations.
  */
-public interface GridGgfsJob {
+public interface IgniteFsJob {
     /**
      * Executes this job.
      *
@@ -45,7 +45,7 @@ public interface GridGgfsJob {
      * @throws GridException If execution failed.
      * @throws IOException If file system operation resulted in IO exception.
      */
-    public Object execute(IgniteFs ggfs, GridGgfsFileRange range, IgniteFsInputStream in) throws GridException,
+    public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in) throws GridException,
         IOException;
 
     /**

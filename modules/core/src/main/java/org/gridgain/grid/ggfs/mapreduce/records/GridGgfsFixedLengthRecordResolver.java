@@ -45,8 +45,8 @@ public class GridGgfsFixedLengthRecordResolver implements GridGgfsRecordResolver
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
-        GridGgfsFileRange suggestedRecord)
+    @Override public IgniteFsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
+        IgniteFsFileRange suggestedRecord)
         throws GridException, IOException {
         long suggestedEnd = suggestedRecord.start() + suggestedRecord.length();
 
@@ -59,7 +59,7 @@ public class GridGgfsFixedLengthRecordResolver implements GridGgfsRecordResolver
 
         assert end >= start;
 
-        return start != end ? new GridGgfsFileRange(suggestedRecord.path(), start, end - start) : null;
+        return start != end ? new IgniteFsFileRange(suggestedRecord.path(), start, end - start) : null;
     }
 
     /** {@inheritDoc} */

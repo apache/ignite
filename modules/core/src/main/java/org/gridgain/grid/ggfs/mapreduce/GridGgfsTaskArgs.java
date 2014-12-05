@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * GGFS task arguments. When you initiate new GGFS task execution using one of {@code GridGgfs.execute(...)} methods,
  * all passed parameters are encapsulated in a single {@code GridGgfsTaskArgs} object. Later on this object is
- * passed to {@link GridGgfsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
+ * passed to {@link GridGgfsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Task arguments encapsulates the following data:
  * <ul>

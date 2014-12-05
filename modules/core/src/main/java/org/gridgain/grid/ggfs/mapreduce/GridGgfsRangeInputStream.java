@@ -17,9 +17,9 @@ import java.io.*;
 
 /**
  * Decorator for regular {@link org.gridgain.grid.ggfs.IgniteFsInputStream} which streams only data within the given range.
- * This stream is used for {@link GridGgfsInputStreamJobAdapter} convenience adapter to create
+ * This stream is used for {@link IgniteFsInputStreamJobAdapter} convenience adapter to create
  * jobs which will be working only with the assigned range. You can also use it explicitly when
- * working with {@link GridGgfsJob} directly.
+ * working with {@link IgniteFsJob} directly.
  */
 public final class GridGgfsRangeInputStream extends IgniteFsInputStream {
     /** Base input stream. */
@@ -77,7 +77,7 @@ public final class GridGgfsRangeInputStream extends IgniteFsInputStream {
      * @param range File range.
      * @throws IOException In case of exception.
      */
-    public GridGgfsRangeInputStream(IgniteFsInputStream is, GridGgfsFileRange range) throws IOException {
+    public GridGgfsRangeInputStream(IgniteFsInputStream is, IgniteFsFileRange range) throws IOException {
         this(is, range.start(), range.length());
     }
 
