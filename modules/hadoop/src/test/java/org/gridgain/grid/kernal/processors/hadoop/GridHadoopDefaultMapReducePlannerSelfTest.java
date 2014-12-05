@@ -762,7 +762,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridGgfsFile info(IgniteFsPath path) throws GridException {
+        @Nullable @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
             return null;
         }
 
@@ -772,7 +772,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props)
+        @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props)
             throws GridException {
             return null;
         }
@@ -803,7 +803,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException {
+        @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
             return null;
         }
 

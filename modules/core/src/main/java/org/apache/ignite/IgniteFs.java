@@ -48,7 +48,7 @@ import java.util.*;
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
-public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
+public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
     /** GGFS scheme name. */
     public static final String GGFS_SCHEME = "ggfs";
 
@@ -75,7 +75,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      *
      * @param path Path to get information for.
      * @return Summary object.
-     * @throws GridGgfsFileNotFoundException If path is not found.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path is not found.
      * @throws GridException If failed.
      */
     public IgniteFsPathSummary summary(IgniteFsPath path) throws GridException;
@@ -86,7 +86,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param path File path to read.
      * @return File input stream to read data from.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
     public GridGgfsInputStream open(IgniteFsPath path) throws GridException;
 
@@ -97,7 +97,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @return File input stream to read data from.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
     @Override public GridGgfsInputStream open(IgniteFsPath path, int bufSize) throws GridException;
 
@@ -109,7 +109,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is started.
      * @return File input stream to read data from.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
     public GridGgfsInputStream open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
 
@@ -163,7 +163,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param create Create file if it doesn't exist yet.
      * @return File output stream to append data to.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     public GridGgfsOutputStream append(IgniteFsPath path, boolean create) throws GridException;
 
@@ -176,7 +176,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param props File properties to set only in case it file was just created.
      * @return File output stream to append data to.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     @Override public GridGgfsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException;
@@ -189,7 +189,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param accessTime Optional last access time to set. Value {@code -1} does not update access time.
      * @param modificationTime Optional last modification time to set. Value {@code -1} does not update
      *      modification time.
-     * @throws GridGgfsFileNotFoundException If target was not found.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If target was not found.
      * @throws GridException If error occurred.
      */
     public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException;
@@ -203,7 +203,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param len Size of data in the file to resolve affinity for.
      * @return Affinity block locations.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
     public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws GridException;
 
@@ -218,7 +218,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @param maxLen Maximum length of a single returned block location length.
      * @return Affinity block locations.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
     public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len, long maxLen)
         throws GridException;

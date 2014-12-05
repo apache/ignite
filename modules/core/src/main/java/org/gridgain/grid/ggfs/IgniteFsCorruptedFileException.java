@@ -9,28 +9,34 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.jetbrains.annotations.*;
+
 /**
- * {@code GGFS} exception indicating that target resource is not found.
+ * Exception thrown when target file's block is not found in data cache.
  */
-public class GridGgfsFileNotFoundException extends GridGgfsInvalidPathException {
+public class IgniteFsCorruptedFileException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates exception with error message specified.
-     *
      * @param msg Error message.
      */
-    public GridGgfsFileNotFoundException(String msg) {
+    public IgniteFsCorruptedFileException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates exception with given exception cause.
-     *
-     * @param cause Exception cause.
+     * @param cause Error cause.
      */
-    public GridGgfsFileNotFoundException(Throwable cause) {
+    public IgniteFsCorruptedFileException(Throwable cause) {
         super(cause);
+    }
+
+    /**
+     * @param msg Error message.
+     * @param cause Error cause.
+     */
+    public IgniteFsCorruptedFileException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

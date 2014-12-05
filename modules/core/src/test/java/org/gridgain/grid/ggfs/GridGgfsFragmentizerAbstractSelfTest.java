@@ -103,7 +103,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(0);
-        cfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(GGFS_GROUP_SIZE));
+        cfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(GGFS_GROUP_SIZE));
         cfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         cfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setQueryIndexEnabled(false);
@@ -125,13 +125,13 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
         IgniteUuid fileId = meta.fileId(path);
 
         if (fileId == null)
-            throw new GridGgfsFileNotFoundException("File not found: " + path);
+            throw new IgniteFsFileNotFoundException("File not found: " + path);
 
         GridGgfsFileInfo fileInfo = meta.info(fileId);
 
         do {
             if (fileInfo == null)
-                throw new GridGgfsFileNotFoundException("File not found: " + path);
+                throw new IgniteFsFileNotFoundException("File not found: " + path);
 
             if (fileInfo.fileMap().ranges().isEmpty())
                 return;

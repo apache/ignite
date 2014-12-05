@@ -30,7 +30,7 @@ public class GridGgfsAttributes implements Externalizable {
     /** File's data block size (bytes). */
     private int blockSize;
 
-    /** Size of the group figured in {@link GridGgfsGroupDataBlocksKeyMapper}. */
+    /** Size of the group figured in {@link org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper}. */
     private int grpSize;
 
     /** Meta cache name. */
@@ -51,7 +51,7 @@ public class GridGgfsAttributes implements Externalizable {
     /**
      * @param ggfsName GGFS name.
      * @param blockSize File's data block size (bytes).
-     * @param grpSize Size of the group figured in {@link GridGgfsGroupDataBlocksKeyMapper}.
+     * @param grpSize Size of the group figured in {@link org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper}.
      * @param metaCacheName Meta cache name.
      * @param dataCacheName Data cache name.
      * @param dfltMode Default mode.
@@ -91,7 +91,7 @@ public class GridGgfsAttributes implements Externalizable {
     }
 
     /**
-     * @return Size of the group figured in {@link GridGgfsGroupDataBlocksKeyMapper}.
+     * @return Size of the group figured in {@link org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper}.
      */
     public int groupSize() {
         return grpSize;

@@ -123,7 +123,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
 
         cc.setName("partitioned");
         cc.setCacheMode(GridCacheMode.PARTITIONED);
-        cc.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        cc.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         cc.setBackups(0);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setQueryIndexEnabled(false);

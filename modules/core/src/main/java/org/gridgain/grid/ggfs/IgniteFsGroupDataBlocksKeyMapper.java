@@ -45,7 +45,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * &lt;/bean&gt;
  * </pre>
  */
-public class GridGgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMapper {
+public class IgniteFsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMapper {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,7 +57,7 @@ public class GridGgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKe
      *
      * @param grpSize Size of the group in blocks.
      */
-    public GridGgfsGroupDataBlocksKeyMapper(int grpSize) {
+    public IgniteFsGroupDataBlocksKeyMapper(int grpSize) {
         A.ensure(grpSize >= 1, "grpSize >= 1");
 
         this.grpSize = grpSize;
@@ -88,6 +88,6 @@ public class GridGgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsGroupDataBlocksKeyMapper.class, this);
+        return S.toString(IgniteFsGroupDataBlocksKeyMapper.class, this);
     }
 }

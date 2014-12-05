@@ -488,7 +488,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo oldInfo = info(fileId);
 
                     if (oldInfo == null)
-                        throw new GridGgfsFileNotFoundException("Failed to unlock file (file not found): " + fileId);
+                        throw new IgniteFsFileNotFoundException("Failed to unlock file (file not found): " + fileId);
 
                     if (!info.lockId().equals(oldInfo.lockId()))
                         throw new GridException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
@@ -727,7 +727,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert validTxState(true);
 
         if (parentInfo == null)
-            throw new GridGgfsFileNotFoundException("Failed to lock parent directory (not found): " + parentId);
+            throw new IgniteFsFileNotFoundException("Failed to lock parent directory (not found): " + parentId);
 
         if (!parentInfo.isDirectory())
             throw new GridGgfsInvalidPathException("Parent file is not a directory: " + parentInfo);
@@ -827,7 +827,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         GridGgfsFileInfo srcInfo = infoMap.get(srcParentId);
 
         if (srcInfo == null)
-            throw new GridGgfsFileNotFoundException("Failed to lock source directory (not found?)" +
+            throw new IgniteFsFileNotFoundException("Failed to lock source directory (not found?)" +
                 " [srcParentId=" + srcParentId + ']');
 
         if (!srcInfo.isDirectory())
@@ -836,7 +836,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         GridGgfsFileInfo destInfo = infoMap.get(destParentId);
 
         if (destInfo == null)
-            throw new GridGgfsFileNotFoundException("Failed to lock destination directory (not found?)" +
+            throw new IgniteFsFileNotFoundException("Failed to lock destination directory (not found?)" +
                 " [destParentId=" + destParentId + ']');
 
         if (!destInfo.isDirectory())
@@ -845,7 +845,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         GridGgfsFileInfo fileInfo = infoMap.get(fileId);
 
         if (fileInfo == null)
-            throw new GridGgfsFileNotFoundException("Failed to lock target file (not found?) [fileId=" +
+            throw new IgniteFsFileNotFoundException("Failed to lock target file (not found?) [fileId=" +
                 fileId + ']');
 
         GridGgfsListingEntry srcEntry = srcInfo.listing().get(srcFileName);
@@ -853,7 +853,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         // If source file does not exist or was re-created.
         if (srcEntry == null || !srcEntry.fileId().equals(fileId))
-            throw new GridGgfsFileNotFoundException("Failed to remove file name from the source directory" +
+            throw new IgniteFsFileNotFoundException("Failed to remove file name from the source directory" +
                 " (file not found) [fileId=" + fileId + ", srcFileName=" + srcFileName +
                 ", srcParentId=" + srcParentId + ", srcEntry=" + srcEntry + ']');
 
@@ -1577,7 +1577,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Output stream descriptor.
      * @throws GridException If file creation failed.
      */
-    public GridGgfsSecondaryOutputStreamDescriptor createDual(final GridGgfsFileSystem fs, final IgniteFsPath path,
+    public GridGgfsSecondaryOutputStreamDescriptor createDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
         final boolean simpleCreate, @Nullable final Map<String, String> props, final boolean overwrite, final int bufSize,
         final short replication, final long blockSize, final IgniteUuid affKey)
         throws GridException {
@@ -1637,7 +1637,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             }
 
                             // Get created file info.
-                            GridGgfsFile status = fs.info(path);
+                            IgniteFsFile status = fs.info(path);
 
                             if (status == null)
                                 throw new IgniteFsException("Failed to open output stream to the file created in " +
@@ -1737,7 +1737,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Output stream descriptor.
      * @throws GridException If output stream open for append has failed.
      */
-    public GridGgfsSecondaryOutputStreamDescriptor appendDual(final GridGgfsFileSystem fs, final IgniteFsPath path,
+    public GridGgfsSecondaryOutputStreamDescriptor appendDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
         final int bufSize) throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -1820,7 +1820,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Input stream descriptor.
      * @throws GridException If input stream open has failed.
      */
-    public GridGgfsSecondaryInputStreamDescriptor openDual(final GridGgfsFileSystem fs, final IgniteFsPath path,
+    public GridGgfsSecondaryInputStreamDescriptor openDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
         final int bufSize)
         throws GridException {
         if (busyLock.enterBusy()) {
@@ -1846,7 +1846,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo info = infos.get(path);
 
                             if (info == null)
-                                throw new GridGgfsFileNotFoundException("File not found: " + path);
+                                throw new IgniteFsFileNotFoundException("File not found: " + path);
                             if (!info.isFile())
                                 throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
 
@@ -1884,7 +1884,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File info or {@code null} if file not found.
      * @throws GridException If sync task failed.
      */
-    @Nullable public GridGgfsFileInfo synchronizeFileDual(final GridGgfsFileSystem fs, final IgniteFsPath path)
+    @Nullable public GridGgfsFileInfo synchronizeFileDual(final IgniteFsFileSystem fs, final IgniteFsPath path)
         throws GridException {
         assert fs != null;
         assert path != null;
@@ -1935,7 +1935,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return {@code True} in case rename was successful.
      * @throws GridException If directory creation failed.
      */
-    public boolean mkdirsDual(final GridGgfsFileSystem fs, final IgniteFsPath path, final Map<String, String> props)
+    public boolean mkdirsDual(final IgniteFsFileSystem fs, final IgniteFsPath path, final Map<String, String> props)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -2019,7 +2019,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Operation result.
      * @throws GridException If failed.
      */
-    public boolean renameDual(final GridGgfsFileSystem fs, final IgniteFsPath src, final IgniteFsPath dest) throws
+    public boolean renameDual(final IgniteFsFileSystem fs, final IgniteFsPath src, final IgniteFsPath dest) throws
         GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -2042,10 +2042,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                         // Source path and destination (or destination parent) must exist.
                         if (srcInfo == null)
-                            throw new GridGgfsFileNotFoundException("Failed to rename (source path not found): " + src);
+                            throw new IgniteFsFileNotFoundException("Failed to rename (source path not found): " + src);
 
                         if (destInfo == null && destParentInfo == null)
-                            throw new GridGgfsFileNotFoundException("Failed to rename (destination path not found): " +
+                            throw new IgniteFsFileNotFoundException("Failed to rename (destination path not found): " +
                                 dest);
 
                         // Delegate to the secondary file system.
@@ -2120,7 +2120,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Operation result.
      * @throws GridException If delete failed.
      */
-    public boolean deleteDual(final GridGgfsFileSystem fs, final IgniteFsPath path, final boolean recursive)
+    public boolean deleteDual(final IgniteFsFileSystem fs, final IgniteFsPath path, final boolean recursive)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -2186,7 +2186,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Update file info.
      * @throws GridException If update failed.
      */
-    public GridGgfsFileInfo updateDual(final GridGgfsFileSystem fs, final IgniteFsPath path, final Map<String, String> props)
+    public GridGgfsFileInfo updateDual(final IgniteFsFileSystem fs, final IgniteFsPath path, final Map<String, String> props)
         throws GridException {
         assert fs != null;
         assert path != null;
@@ -2239,7 +2239,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File info of the end path.
      * @throws GridException If failed.
      */
-    private GridGgfsFileInfo synchronize(GridGgfsFileSystem fs, IgniteFsPath startPath, GridGgfsFileInfo startPathInfo,
+    private GridGgfsFileInfo synchronize(IgniteFsFileSystem fs, IgniteFsPath startPath, GridGgfsFileInfo startPathInfo,
         IgniteFsPath endPath, boolean strict, @Nullable Map<IgniteFsPath, GridGgfsFileInfo> created)
         throws GridException {
         assert fs != null;
@@ -2261,7 +2261,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 parentInfo = created.get(curPath);
             else {
                 // Get file status from the secondary file system.
-                GridGgfsFile status = fs.info(curPath);
+                IgniteFsFile status = fs.info(curPath);
 
                 if (status != null) {
                     if (!status.isDirectory() && !curPath.equals(endPath))
@@ -2311,7 +2311,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Result of task execution.
      * @throws GridException If failed.
      */
-    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, GridGgfsFileSystem fs, boolean strict,
+    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgniteFsFileSystem fs, boolean strict,
         IgniteFsPath... paths)
         throws GridException {
         return synchronizeAndExecute(task, fs, strict, null, paths);
@@ -2329,7 +2329,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Result of task execution.
      * @throws GridException If failed.
      */
-    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, GridGgfsFileSystem fs, boolean strict,
+    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgniteFsFileSystem fs, boolean strict,
         @Nullable Collection<IgniteUuid> extraLockIds, IgniteFsPath... paths) throws GridException {
         assert task != null;
         assert fs != null;
@@ -2581,7 +2581,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo fileInfo = infoMap.get(fileId);
 
                     if (fileInfo == null)
-                        throw new GridGgfsFileNotFoundException("Failed to update times (path was not found): " +
+                        throw new IgniteFsFileNotFoundException("Failed to update times (path was not found): " +
                             fileName);
 
                     GridGgfsFileInfo parentInfo = infoMap.get(parentId);

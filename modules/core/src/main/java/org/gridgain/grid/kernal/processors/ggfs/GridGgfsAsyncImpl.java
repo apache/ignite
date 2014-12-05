@@ -239,7 +239,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
         return ggfs.update(path, props);
     }
 
@@ -269,12 +269,12 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
         return ggfs.listFiles(path);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridGgfsFile info(IgniteFsPath path) throws GridException {
+    @Nullable @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
         return ggfs.info(path);
     }
 

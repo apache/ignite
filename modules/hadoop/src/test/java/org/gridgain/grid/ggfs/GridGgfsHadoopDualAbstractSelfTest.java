@@ -107,7 +107,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
      * @throws Exception If failed.
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
-        @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
+        @Nullable IgniteFsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -126,7 +126,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(2));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -167,7 +167,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
 
         Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
-        GridGgfsFileSystem hadoopFs = new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG);
+        IgniteFsFileSystem hadoopFs = new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG);
 
         Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, hadoopFs, PRIMARY_REST_CFG);
 

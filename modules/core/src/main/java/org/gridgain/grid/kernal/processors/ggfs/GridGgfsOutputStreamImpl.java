@@ -358,7 +358,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
                 try {
                     meta.unlock(fileInfo, modificationTime);
                 }
-                catch (GridGgfsFileNotFoundException ignore) {
+                catch (IgniteFsFileNotFoundException ignore) {
                     data.delete(fileInfo); // Safety to ensure that all data blocks are deleted.
 
                     throw new IOException("File was concurrently deleted: " + path);

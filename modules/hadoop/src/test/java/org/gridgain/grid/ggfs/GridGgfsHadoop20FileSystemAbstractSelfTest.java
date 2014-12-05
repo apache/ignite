@@ -152,7 +152,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
             cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-            cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(GRP_SIZE));
             cacheCfg.setBackups(0);
             cacheCfg.setQueryIndexEnabled(false);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -222,7 +222,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(GRP_SIZE));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -1295,7 +1295,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
 
             IgniteFsPath filePath = new IgniteFsPath("/someFile");
 
-            GridGgfsFile fileInfo = igniteFs.info(filePath);
+            IgniteFsFile fileInfo = igniteFs.info(filePath);
 
             Collection<IgniteFsBlockLocation> locations = igniteFs.affinity(filePath, 0, fileInfo.length());
 

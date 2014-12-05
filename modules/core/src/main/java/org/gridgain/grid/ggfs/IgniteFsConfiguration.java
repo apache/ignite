@@ -115,7 +115,7 @@ public class IgniteFsConfiguration {
     private int mgmtPort = DFLT_MGMT_PORT;
 
     /** Secondary file system */
-    private GridGgfsFileSystem secondaryFs;
+    private IgniteFsFileSystem secondaryFs;
 
     /** GGFS mode. */
     private GridGgfsMode dfltMode = DFLT_MODE;
@@ -511,7 +511,7 @@ public class IgniteFsConfiguration {
      *
      * @return Secondary file system.
      */
-    public GridGgfsFileSystem getSecondaryFileSystem() {
+    public IgniteFsFileSystem getSecondaryFileSystem() {
         return secondaryFs;
     }
 
@@ -521,7 +521,7 @@ public class IgniteFsConfiguration {
      *
      * @param fileSystem
      */
-    public void setSecondaryFileSystem(GridGgfsFileSystem fileSystem) {
+    public void setSecondaryFileSystem(IgniteFsFileSystem fileSystem) {
         secondaryFs = fileSystem;
     }
 

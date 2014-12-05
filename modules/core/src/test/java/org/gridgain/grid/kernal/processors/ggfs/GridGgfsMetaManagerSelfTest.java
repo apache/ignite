@@ -92,7 +92,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         }
 
         cacheCfg.setQueryIndexEnabled(false);

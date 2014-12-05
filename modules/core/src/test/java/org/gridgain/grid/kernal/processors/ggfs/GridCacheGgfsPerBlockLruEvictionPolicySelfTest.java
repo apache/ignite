@@ -102,7 +102,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         evictPlc = new GridCacheGgfsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
 
@@ -159,7 +159,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);

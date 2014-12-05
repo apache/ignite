@@ -112,7 +112,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -164,7 +164,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);

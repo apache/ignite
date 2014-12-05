@@ -88,9 +88,9 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile info(final IgniteFsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<GridGgfsFile>() {
-            @Override public GridGgfsFile apply(GridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+    @Override public IgniteFsFile info(final IgniteFsPath path) throws IOException {
+        return withReconnectHandling(new FileSystemClosure<IgniteFsFile>() {
+            @Override public IgniteFsFile apply(GridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
                 return hadoop.info(path);
             }
@@ -98,9 +98,9 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile update(final IgniteFsPath path, final Map<String, String> props) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<GridGgfsFile>() {
-            @Override public GridGgfsFile apply(GridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+    @Override public IgniteFsFile update(final IgniteFsPath path, final Map<String, String> props) throws IOException {
+        return withReconnectHandling(new FileSystemClosure<IgniteFsFile>() {
+            @Override public IgniteFsFile apply(GridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
                 return hadoop.update(path, props);
             }
@@ -170,9 +170,9 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(final IgniteFsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Collection<GridGgfsFile>>() {
-            @Override public Collection<GridGgfsFile> apply(GridGgfsHadoopEx hadoop,
+    @Override public Collection<IgniteFsFile> listFiles(final IgniteFsPath path) throws IOException {
+        return withReconnectHandling(new FileSystemClosure<Collection<IgniteFsFile>>() {
+            @Override public Collection<IgniteFsFile> apply(GridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
                 return hadoop.listFiles(path);
             }

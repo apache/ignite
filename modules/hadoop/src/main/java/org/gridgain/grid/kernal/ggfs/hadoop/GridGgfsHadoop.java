@@ -44,7 +44,7 @@ public interface GridGgfsHadoop {
      * @return Future for info operation.
      * @throws GridException If failed.
      */
-    public GridGgfsFile info(IgniteFsPath path) throws GridException, IOException;
+    public IgniteFsFile info(IgniteFsPath path) throws GridException, IOException;
 
     /**
      * Command to update file properties.
@@ -54,7 +54,7 @@ public interface GridGgfsHadoop {
      * @return Future for update operation.
      * @throws GridException If failed.
      */
-    public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException, IOException;
+    public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException, IOException;
 
     /**
      * Sets last access time and last modification time for a file.
@@ -124,7 +124,7 @@ public interface GridGgfsHadoop {
      * @return Future for listFiles operation.
      * @throws GridException If failed.
      */
-    public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException, IOException;
+    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException, IOException;
 
     /**
      * Command to get directory listing.

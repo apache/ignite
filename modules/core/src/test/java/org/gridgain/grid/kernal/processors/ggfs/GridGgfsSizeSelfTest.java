@@ -125,7 +125,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         dataCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         dataCfg.setPreloadMode(SYNC);
-        dataCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        dataCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCfg.setQueryIndexEnabled(false);
         dataCfg.setAtomicityMode(TRANSACTIONAL);
 

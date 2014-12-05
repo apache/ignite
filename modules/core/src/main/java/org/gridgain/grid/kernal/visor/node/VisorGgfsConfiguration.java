@@ -128,7 +128,7 @@ public class VisorGgfsConfiguration implements Serializable {
         cfg.perNodeBatchSize(ggfs.getPerNodeBatchSize());
         cfg.perNodeParallelBatchCount(ggfs.getPerNodeParallelBatchCount());
 
-        GridGgfsFileSystem secFs = ggfs.getSecondaryFileSystem();
+        IgniteFsFileSystem secFs = ggfs.getSecondaryFileSystem();
 
         if (secFs != null) {
             Map<String, String> props = secFs.properties();

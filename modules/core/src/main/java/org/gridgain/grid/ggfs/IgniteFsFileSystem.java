@@ -25,7 +25,7 @@ import java.util.*;
  *
  * This is the minimum of functionality that is needed to work as secondary file system in dual modes of GGFS.
  */
-public interface GridGgfsFileSystem {
+public interface IgniteFsFileSystem {
     /** File property: user name. */
     public static final String PROP_USER_NAME = "usrName";
 
@@ -62,7 +62,7 @@ public interface GridGgfsFileSystem {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws GridException In case of error.
      */
-    @Nullable public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException;
+    @Nullable public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException;
 
     /**
      * Renames/moves a file.
@@ -81,7 +81,7 @@ public interface GridGgfsFileSystem {
      * @param dest Destination file path. If destination path is a directory, then source file will be placed
      *     into destination directory with original name.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If source file doesn't exist.
+     * @throws IgniteFsFileNotFoundException If source file doesn't exist.
      */
     public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException;
 
@@ -118,7 +118,7 @@ public interface GridGgfsFileSystem {
      * @param path Path to list files under.
      * @return List of files under the specified path.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
     public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException;
 
@@ -128,9 +128,9 @@ public interface GridGgfsFileSystem {
      * @param path Path to list files under.
      * @return List of files under the specified path.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException;
+    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -139,7 +139,7 @@ public interface GridGgfsFileSystem {
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @return File input stream to read data from.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
     public IgniteFsReader open(IgniteFsPath path, int bufSize) throws GridException;
 
@@ -177,7 +177,7 @@ public interface GridGgfsFileSystem {
      * @param props File properties to set only in case it file was just created.
      * @return File output stream to append data to.
      * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     * @throws IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     public OutputStream append(IgniteFsPath path, int bufSize, boolean create, @Nullable Map<String, String> props)
         throws GridException;
@@ -189,7 +189,7 @@ public interface GridGgfsFileSystem {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws GridException In case of error.
      */
-    @Nullable public GridGgfsFile info(IgniteFsPath path) throws GridException;
+    @Nullable public IgniteFsFile info(IgniteFsPath path) throws GridException;
 
     /**
      * Gets used space in bytes.

@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * File or directory information.
  */
-public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
+public final class IgniteFsFileImpl implements IgniteFsFile, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +51,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsFileImpl() {
+    public IgniteFsFileImpl() {
         // No-op.
     }
 
@@ -60,7 +60,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
      *
      * @param path Path.
      */
-    public GridGgfsFileImpl(IgniteFsPath path, GridGgfsFileInfo info, long globalGrpBlockSize) {
+    public IgniteFsFileImpl(IgniteFsPath path, GridGgfsFileInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
@@ -90,7 +90,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
      * @param path Path.
      * @param entry Listing entry.
      */
-    public GridGgfsFileImpl(IgniteFsPath path, GridGgfsListingEntry entry, long globalGrpSize) {
+    public IgniteFsFileImpl(IgniteFsPath path, GridGgfsListingEntry entry, long globalGrpSize) {
         A.notNull(path, "path");
         A.notNull(entry, "entry");
 
@@ -225,13 +225,13 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridGgfsFileImpl that = (GridGgfsFileImpl)o;
+        IgniteFsFileImpl that = (IgniteFsFileImpl)o;
 
         return path.equals(that.path);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsFileImpl.class, this);
+        return S.toString(IgniteFsFileImpl.class, this);
     }
 }

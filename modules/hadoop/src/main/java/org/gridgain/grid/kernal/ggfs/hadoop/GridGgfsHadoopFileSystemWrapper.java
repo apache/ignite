@@ -26,9 +26,9 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link GridGgfsFileSystem}.
+ * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.gridgain.grid.ggfs.IgniteFsFileSystem}.
  */
-public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, AutoCloseable {
+public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoCloseable {
     /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 
@@ -110,7 +110,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
      */
     public static IgniteFsException cast(String msg, IOException e) {
         if (e instanceof FileNotFoundException)
-            return new GridGgfsFileNotFoundException(e);
+            return new IgniteFsFileNotFoundException(e);
         else if (e instanceof ParentNotDirectoryException)
             return new GridGgfsParentNotDirectoryException(msg, e);
         else if (e instanceof PathIsNotEmptyDirectoryException)
@@ -148,7 +148,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
         GridGgfsHadoopFSProperties props0 = new GridGgfsHadoopFSProperties(props);
 
         try {
@@ -217,7 +217,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
 
             Collection<IgniteFsPath> res = new ArrayList<>(statuses.length);
 
@@ -227,7 +227,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
@@ -235,27 +235,27 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
 
-            Collection<GridGgfsFile> res = new ArrayList<>(statuses.length);
+            Collection<IgniteFsFile> res = new ArrayList<>(statuses.length);
 
             for (FileStatus status : statuses) {
                 GridGgfsFileInfo fsInfo = status.isDirectory() ? new GridGgfsFileInfo(true, properties(status)) :
                     new GridGgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false,
                     properties(status));
 
-                res.add(new GridGgfsFileImpl(new IgniteFsPath(path, status.getPath().getName()), fsInfo, 1));
+                res.add(new IgniteFsFileImpl(new IgniteFsPath(path, status.getPath().getName()), fsInfo, 1));
             }
 
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
@@ -306,7 +306,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile info(final IgniteFsPath path) throws GridException {
+    @Override public IgniteFsFile info(final IgniteFsPath path) throws GridException {
         try {
             final FileStatus status = fileSys.getFileStatus(convert(path));
 
@@ -315,7 +315,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
 
             final Map<String, String> props = properties(status);
 
-            return new GridGgfsFile() {
+            return new IgniteFsFile() {
                 @Override public IgniteFsPath path() {
                     return path;
                 }

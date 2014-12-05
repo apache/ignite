@@ -111,7 +111,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(DATA_BLOCK_GROUP_CNT));
+            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(DATA_BLOCK_GROUP_CNT));
         }
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);

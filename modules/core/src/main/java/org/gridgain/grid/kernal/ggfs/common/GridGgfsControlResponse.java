@@ -160,7 +160,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Response.
      */
-    public void response(GridGgfsFile res) {
+    public void response(IgniteFsFile res) {
         resType = RES_TYPE_GGFS_FILE;
 
         this.res = res;
@@ -187,7 +187,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Response.
      */
-    public void files(Collection<GridGgfsFile> res) {
+    public void files(Collection<IgniteFsFile> res) {
         resType = RES_TYPE_COL_GGFS_FILE;
 
         this.res = res;
@@ -253,7 +253,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         assert errCode != -1;
 
         if (errCode == ERR_FILE_NOT_FOUND)
-            throw new GridGgfsFileNotFoundException(err);
+            throw new IgniteFsFileNotFoundException(err);
         else if (errCode == ERR_PATH_ALREADY_EXISTS)
             throw new IgniteFsPathAlreadyExistsException(err);
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
@@ -263,7 +263,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (errCode == ERR_INVALID_HDFS_VERSION)
             throw new GridGgfsInvalidHdfsVersionException(err);
         else if (errCode == ERR_CORRUPTED_FILE)
-            throw new GridGgfsCorruptedFileException(err);
+            throw new IgniteFsCorruptedFileException(err);
         else if (errCode == ERR_GGFS_GENERIC)
             throw new IgniteFsException(err);
 
@@ -324,7 +324,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
      */
     @SuppressWarnings("unchecked")
     private int errorCode(GridException e, boolean checkIo) {
-        if (X.hasCause(e, GridGgfsFileNotFoundException.class))
+        if (X.hasCause(e, IgniteFsFileNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
         else if (IgniteFsPathAlreadyExistsException.class.isInstance(e))
             return ERR_PATH_ALREADY_EXISTS;
@@ -334,7 +334,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             return ERR_PARENT_NOT_DIRECTORY;
         else if (GridGgfsInvalidHdfsVersionException.class.isInstance(e))
             return ERR_INVALID_HDFS_VERSION;
-        else if (X.hasCause(e, GridGgfsCorruptedFileException.class))
+        else if (X.hasCause(e, IgniteFsCorruptedFileException.class))
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
         else if (IgniteFsException.class.isInstance(e))
@@ -495,7 +495,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    GridGgfsFileImpl file = new GridGgfsFileImpl();
+                    IgniteFsFileImpl file = new IgniteFsFileImpl();
 
                     file.readExternal(in);
 
@@ -548,7 +548,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             }
 
             case RES_TYPE_COL_GGFS_FILE: {
-                Collection<GridGgfsFile> files = null;
+                Collection<IgniteFsFile> files = null;
 
                 int size = in.readInt();
 
@@ -556,7 +556,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                     files = new ArrayList<>(size);
 
                     for (int i = 0; i < size; i++) {
-                        GridGgfsFileImpl file = new GridGgfsFileImpl();
+                        IgniteFsFileImpl file = new IgniteFsFileImpl();
 
                         file.readExternal(in);
 

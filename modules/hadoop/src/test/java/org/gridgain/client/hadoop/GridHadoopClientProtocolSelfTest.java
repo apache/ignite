@@ -393,7 +393,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      */
     @SuppressWarnings("ConstantConditions")
     private static void dumpGgfs(IgniteFs ggfs, IgniteFsPath path) throws Exception {
-        GridGgfsFile file = ggfs.info(path);
+        IgniteFsFile file = ggfs.info(path);
 
         assert file != null;
 

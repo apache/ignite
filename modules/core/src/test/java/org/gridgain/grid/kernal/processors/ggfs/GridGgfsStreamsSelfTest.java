@@ -129,7 +129,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(CFG_GRP_SIZE));
+            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(CFG_GRP_SIZE));
         }
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
@@ -200,7 +200,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
                 out.write(new byte[1024 * 1024]);
         }
 
-        GridGgfsFile info = fs.info(path);
+        IgniteFsFile info = fs.info(path);
 
         Collection<IgniteFsBlockLocation> affNodes = fs.affinity(path, 0, info.length());
 
@@ -246,7 +246,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             }
 
             // After this we should have first two block colocated with grid 0 and last block colocated with grid 1.
-            GridGgfsFileImpl fileImpl = (GridGgfsFileImpl)fs.info(path);
+            IgniteFsFileImpl fileImpl = (IgniteFsFileImpl)fs.info(path);
 
             GridCache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
 
@@ -364,7 +364,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
         info("Get stored file info: " + path);
 
-        GridGgfsFile desc = fs.info(path);
+        IgniteFsFile desc = fs.info(path);
 
         info("Validate stored file info: " + desc);
 

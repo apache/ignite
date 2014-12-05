@@ -168,7 +168,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
-        @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
+        @Nullable IgniteFsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -187,7 +187,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(2));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -271,15 +271,15 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testListFiles() throws Exception {
         create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        Collection<GridGgfsFile> paths = ggfs.listFiles(SUBDIR);
+        Collection<IgniteFsFile> paths = ggfs.listFiles(SUBDIR);
 
         assert paths != null;
         assert paths.size() == 2;
 
-        Iterator<GridGgfsFile> iter = paths.iterator();
+        Iterator<IgniteFsFile> iter = paths.iterator();
 
-        GridGgfsFile path1 = iter.next();
-        GridGgfsFile path2 = iter.next();
+        IgniteFsFile path1 = iter.next();
+        IgniteFsFile path2 = iter.next();
 
         assert (SUBSUBDIR.equals(path1.path()) && FILE.equals(path2.path())) ||
             (FILE.equals(path1.path()) && SUBSUBDIR.equals(path2.path()));
@@ -291,7 +291,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testListFilesPathDoesNotExist() throws Exception {
-        Collection<GridGgfsFile> paths = null;
+        Collection<IgniteFsFile> paths = null;
 
         try {
             paths = ggfs.listFiles(SUBDIR);
@@ -311,7 +311,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testInfo() throws Exception {
         create(ggfs, paths(DIR), null);
 
-        GridGgfsFile info = ggfs.info(DIR);
+        IgniteFsFile info = ggfs.info(DIR);
 
         assert info != null;
 
@@ -324,7 +324,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testInfoPathDoesNotExist() throws Exception {
-        GridGgfsFile info = null;
+        IgniteFsFile info = null;
 
         try {
             info = ggfs.info(DIR);
@@ -864,7 +864,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                 return null;
             }
-        }, GridGgfsFileNotFoundException.class, "File not found: " + FILE);
+        }, IgniteFsFileNotFoundException.class, "File not found: " + FILE);
     }
 
     /**
@@ -2124,7 +2124,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param files Files.
      * @throws Exception If failed.
      */
-    public static void create(GridGgfsFileSystem ggfs, @Nullable IgniteFsPath[] dirs, @Nullable IgniteFsPath[] files)
+    public static void create(IgniteFsFileSystem ggfs, @Nullable IgniteFsPath[] dirs, @Nullable IgniteFsPath[] files)
         throws Exception {
         if (dirs != null) {
             for (IgniteFsPath dir : dirs)
@@ -2150,7 +2150,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws IOException In case of IO exception.
      * @throws GridException In case of Grid exception.
      */
-    protected static void createFile(GridGgfsFileSystem ggfs, IgniteFsPath file, boolean overwrite,
+    protected static void createFile(IgniteFsFileSystem ggfs, IgniteFsPath file, boolean overwrite,
         @Nullable byte[]... chunks) throws IOException, GridException {
         OutputStream os = null;
 
@@ -2236,7 +2236,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfs GGFS.
      * @param file File.
      */
-    public static void awaitFileClose(GridGgfsFileSystem ggfs, IgniteFsPath file) {
+    public static void awaitFileClose(IgniteFsFileSystem ggfs, IgniteFsPath file) {
         try {
             ggfs.update(file, Collections.singletonMap("prop", "val"));
         }

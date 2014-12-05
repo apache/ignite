@@ -127,7 +127,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         }
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
@@ -198,7 +198,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         try (GridGgfsOutputStream os = ggfs.create(path, false)) {
             assert os != null;
 
-            GridGgfsFileImpl info = (GridGgfsFileImpl)ggfs.info(path);
+            IgniteFsFileImpl info = (IgniteFsFileImpl)ggfs.info(path);
 
             for (int i = 0; i < nodesCount(); i++) {
                 GridGgfsFileInfo fileInfo = (GridGgfsFileInfo)grid(i).cachex(metaCacheName).peek(info.fileId());
@@ -300,7 +300,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int cur = cnt.incrementAndGet(); cur < max; cur = cnt.incrementAndGet()) {
-                    GridGgfsFile info = ggfs.info(path(cur));
+                    IgniteFsFile info = ggfs.info(path(cur));
 
                     assertNotNull("Expects file exist: " + cur, info);
                     assertTrue("Expects file is a directory: " + cur, info.isDirectory());
@@ -955,11 +955,11 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @throws GridException If failed.
      */
     private void assertListDir(String path, String... item) throws GridException {
-        Collection<GridGgfsFile> files = ggfs.listFiles(new IgniteFsPath(path));
+        Collection<IgniteFsFile> files = ggfs.listFiles(new IgniteFsPath(path));
 
         List<String> names = new ArrayList<>(item.length);
 
-        for (GridGgfsFile file : files)
+        for (IgniteFsFile file : files)
             names.add(file.path().name());
 
         Arrays.sort(item);

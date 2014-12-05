@@ -72,7 +72,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile info(IgniteFsPath path) throws GridException {
+    @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
         try {
             return ggfs.info(path);
         }
@@ -82,7 +82,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
         try {
             return ggfs.update(path, props);
         }
@@ -148,7 +148,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
         try {
             return ggfs.listFiles(path);
         }

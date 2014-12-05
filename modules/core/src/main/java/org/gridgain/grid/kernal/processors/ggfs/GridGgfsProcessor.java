@@ -262,7 +262,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
 
             GridCacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
-            if (!(affMapper instanceof GridGgfsGroupDataBlocksKeyMapper))
+            if (!(affMapper instanceof IgniteFsGroupDataBlocksKeyMapper))
                 // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
                 // Configuration will be validated later, while starting GridGgfsProcessor.
                 continue;
@@ -270,7 +270,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
             attrVals.add(new GridGgfsAttributes(
                 ggfsCfg.getName(),
                 ggfsCfg.getBlockSize(),
-                ((GridGgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
+                ((IgniteFsGroupDataBlocksKeyMapper)affMapper).groupSize(),
                 ggfsCfg.getMetaCacheName(),
                 ggfsCfg.getDataCacheName(),
                 ggfsCfg.getDefaultMode(),
@@ -323,9 +323,9 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
                 throw new GridException("Cannot use same cache as both data and meta cache: " + cfg.getName());
 
-            if (!(dataCache.configuration().getAffinityMapper() instanceof GridGgfsGroupDataBlocksKeyMapper))
+            if (!(dataCache.configuration().getAffinityMapper() instanceof IgniteFsGroupDataBlocksKeyMapper))
                 throw new GridException("Invalid GGFS data cache configuration (key affinity mapper class should be " +
-                    GridGgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
+                    IgniteFsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 
             long maxSpaceSize = cfg.getMaxSpaceSize();
 

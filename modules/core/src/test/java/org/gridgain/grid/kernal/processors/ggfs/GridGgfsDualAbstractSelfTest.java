@@ -74,15 +74,15 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
     public void testListFilesPathMissing() throws Exception {
         create(ggfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        Collection<GridGgfsFile> paths = ggfs.listFiles(SUBDIR);
+        Collection<IgniteFsFile> paths = ggfs.listFiles(SUBDIR);
 
         assert paths != null;
         assert paths.size() == 2;
 
-        Iterator<GridGgfsFile> iter = paths.iterator();
+        Iterator<IgniteFsFile> iter = paths.iterator();
 
-        GridGgfsFile path1 = iter.next();
-        GridGgfsFile path2 = iter.next();
+        IgniteFsFile path1 = iter.next();
+        IgniteFsFile path2 = iter.next();
 
         assert (SUBSUBDIR.equals(path1.path()) && FILE.equals(path2.path())) ||
             (FILE.equals(path1.path()) && SUBSUBDIR.equals(path2.path()));
@@ -97,7 +97,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         create(ggfsSecondary, paths(DIR), null);
         create(ggfs, null, null);
 
-        GridGgfsFile info = ggfs.info(DIR);
+        IgniteFsFile info = ggfs.info(DIR);
 
         assert info != null;
 

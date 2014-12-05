@@ -814,12 +814,12 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 return arr;
             }
             else {
-                Collection<GridGgfsFile> list = rmtClient.listFiles(path);
+                Collection<IgniteFsFile> list = rmtClient.listFiles(path);
 
                 if (list == null)
                     throw new FileNotFoundException("File " + f + " does not exist.");
 
-                List<GridGgfsFile> files = new ArrayList<>(list);
+                List<IgniteFsFile> files = new ArrayList<>(list);
 
                 FileStatus[] arr = new FileStatus[files.size()];
 
@@ -952,7 +952,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 return toPrimary(secondaryFs.getFileStatus(toSecondary(f)));
             }
             else {
-                GridGgfsFile info = rmtClient.info(convert(f));
+                IgniteFsFile info = rmtClient.info(convert(f));
 
                 if (info == null)
                     throw new FileNotFoundException("File not found: " + f);
@@ -1185,7 +1185,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @return Hadoop file status.
      */
     @SuppressWarnings("deprecation")
-    private FileStatus convert(GridGgfsFile file) {
+    private FileStatus convert(IgniteFsFile file) {
         return new FileStatus(file.length(), file.isDirectory(), getDefaultReplication(),
             file.groupBlockSize(), file.modificationTime(), file.accessTime(), permission(file),
             file.property(PROP_USER_NAME, DFLT_USER_NAME), file.property(PROP_GROUP_NAME, "users"),
@@ -1224,7 +1224,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @param file File info.
      * @return Hadoop permission.
      */
-    private FsPermission permission(GridGgfsFile file) {
+    private FsPermission permission(IgniteFsFile file) {
         String perm = file.property(PROP_PERMISSION, null);
 
         if (perm == null)

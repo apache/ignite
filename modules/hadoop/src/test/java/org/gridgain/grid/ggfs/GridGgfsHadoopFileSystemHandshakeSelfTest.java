@@ -211,7 +211,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);

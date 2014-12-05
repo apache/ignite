@@ -119,7 +119,7 @@
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="0"/>
                     <property name="affinityMapper">
-                        <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
+                        <bean class="org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper">
                             <!-- Haw many blocks in row will be stored on the same node. -->
                             <constructor-arg value="512"/>
                         </bean>

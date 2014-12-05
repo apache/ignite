@@ -87,7 +87,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

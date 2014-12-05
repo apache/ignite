@@ -58,7 +58,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setDistributionMode(NEAR_PARTITIONED);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
 

@@ -157,8 +157,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
         GridCacheAffinityKeyMapper mapper = ggfsCtx.kernalContext().cache()
             .internalCache(ggfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
-        grpSize = mapper instanceof GridGgfsGroupDataBlocksKeyMapper ?
-            ((GridGgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
+        grpSize = mapper instanceof IgniteFsGroupDataBlocksKeyMapper ?
+            ((IgniteFsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
 
         grpBlockSize = ggfsCtx.configuration().getBlockSize() * grpSize;
 

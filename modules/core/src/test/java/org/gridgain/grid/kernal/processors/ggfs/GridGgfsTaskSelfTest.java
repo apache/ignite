@@ -106,7 +106,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(1));
+        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(1));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
 

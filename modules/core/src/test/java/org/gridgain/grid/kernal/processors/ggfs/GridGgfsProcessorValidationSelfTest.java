@@ -474,7 +474,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     }
 
     /**
-     * @param grpSize Group size to use in {@link GridGgfsGroupDataBlocksKeyMapper}.
+     * @param grpSize Group size to use in {@link org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper}.
      * @param cacheNames 2 Optional caches names.
      * @return 2 preconfigured data caches.
      */
@@ -490,7 +490,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
             GridCacheConfiguration dataCache = defaultCacheConfiguration();
 
             dataCache.setName(cacheNames[i]);
-            dataCache.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(grpSize));
+            dataCache.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(grpSize));
             dataCache.setAtomicityMode(TRANSACTIONAL);
             dataCache.setQueryIndexEnabled(false);
 

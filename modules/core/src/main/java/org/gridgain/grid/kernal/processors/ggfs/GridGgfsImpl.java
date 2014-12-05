@@ -81,7 +81,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private final GridGgfsModeResolver modeRslvr;
 
     /** Connection to the secondary file system. */
-    private GridGgfsFileSystem secondaryFs;
+    private IgniteFsFileSystem secondaryFs;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -497,7 +497,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile info(IgniteFsPath path) throws GridException {
+    @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -515,7 +515,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (info == null)
                     return null;
 
-                return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+                return new IgniteFsFileImpl(path, info, data.groupBlockSize());
             }
             finally {
                 busyLock.leaveBusy();
@@ -537,7 +537,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteUuid fileId = meta.fileId(path);
 
                 if (fileId == null)
-                    throw new GridGgfsFileNotFoundException("Failed to get path summary (path not found): " + path);
+                    throw new IgniteFsFileNotFoundException("Failed to get path summary (path not found): " + path);
 
                 IgniteFsPathSummary sum = new IgniteFsPathSummary(path);
 
@@ -554,7 +554,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -578,7 +578,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (info == null)
                         return null;
 
-                    return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+                    return new IgniteFsFileImpl(path, info, data.groupBlockSize());
                 }
 
                 List<IgniteUuid> fileIds = meta.fileIds(path);
@@ -596,7 +596,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (evts.isRecordable(EVT_GGFS_META_UPDATED))
                         evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_META_UPDATED, props));
 
-                    return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+                    return new IgniteFsFileImpl(path, info, data.groupBlockSize());
                 }
                 else
                     return null;
@@ -661,7 +661,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (mode == PRIMARY)
                         checkConflictWithPrimary(src);
 
-                    throw new GridGgfsFileNotFoundException("Failed to rename (source path not found): " + src);
+                    throw new IgniteFsFileNotFoundException("Failed to rename (source path not found): " + src);
                 }
 
                 String srcFileName = src.name();
@@ -681,7 +681,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                     // Destination directory doesn't exist.
                     if (destDesc == null)
-                        throw new GridGgfsFileNotFoundException("Failed to rename (destination directory does not " +
+                        throw new IgniteFsFileNotFoundException("Failed to rename (destination directory does not " +
                             "exist): " + dest);
 
                     destFileName = dest.name();
@@ -940,7 +940,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
                 }
 
                 return F.viewReadOnly(files, new C1<String, IgniteFsPath>() {
@@ -959,7 +959,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(final IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(final IgniteFsPath path) throws GridException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -974,18 +974,18 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-                Collection<GridGgfsFile> files = new HashSet<>();
+                Collection<IgniteFsFile> files = new HashSet<>();
 
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    Collection<GridGgfsFile> children = secondaryFs.listFiles(path);
+                    Collection<IgniteFsFile> children = secondaryFs.listFiles(path);
 
-                    for (GridGgfsFile child : children) {
+                    for (IgniteFsFile child : children) {
                         GridGgfsFileInfo fsInfo = new GridGgfsFileInfo(cfg.getBlockSize(), child.length(),
                             evictExclude(path, false), child.properties());
 
-                        files.add(new GridGgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
+                        files.add(new IgniteFsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
                     }
                 }
 
@@ -998,21 +998,21 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (info != null) {
                         if (info.isFile())
                             // If this is a file, return its description.
-                            return Collections.<GridGgfsFile>singleton(new GridGgfsFileImpl(path, info,
+                            return Collections.<IgniteFsFile>singleton(new IgniteFsFileImpl(path, info,
                                 data.groupBlockSize()));
 
                         // Perform the listing.
                         for (Map.Entry<String, GridGgfsListingEntry> e : info.listing().entrySet()) {
                             IgniteFsPath p = new IgniteFsPath(path, e.getKey());
 
-                            files.add(new GridGgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
+                            files.add(new IgniteFsFileImpl(p, e.getValue(), data.groupBlockSize()));
                         }
                     }
                 }
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
                 }
 
                 return files;
@@ -1083,7 +1083,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (info == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new GridGgfsFileNotFoundException("File not found: " + path);
+                    throw new IgniteFsFileNotFoundException("File not found: " + path);
                 }
 
                 if (!info.isFile())
@@ -1294,7 +1294,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (!create) {
                         checkConflictWithPrimary(path);
 
-                        throw new GridGgfsFileNotFoundException("File not found: " + path);
+                        throw new IgniteFsFileNotFoundException("File not found: " + path);
                     }
 
                     if (parentId == null)
@@ -1346,7 +1346,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (desc == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new GridGgfsFileNotFoundException("Failed to update times (path not found): " + path);
+                    throw new IgniteFsFileNotFoundException("Failed to update times (path not found): " + path);
                 }
 
                 // Cannot update times for root.
@@ -1414,7 +1414,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 }
 
                 if (info == null)
-                    throw new GridGgfsFileNotFoundException("File not found: " + path);
+                    throw new IgniteFsFileNotFoundException("File not found: " + path);
 
                 if (!info.isFile())
                     throw new GridGgfsInvalidPathException("Failed to get affinity info for file (not a file): " +
@@ -1800,7 +1800,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 info = meta.info(meta.fileId(path));
 
                 if (info == null) {
-                    GridGgfsFile status = secondaryFs.info(path);
+                    IgniteFsFile status = secondaryFs.info(path);
 
                     if (status != null)
                         info = status.isDirectory() ? new GridGgfsFileInfo(true, status.properties()) :

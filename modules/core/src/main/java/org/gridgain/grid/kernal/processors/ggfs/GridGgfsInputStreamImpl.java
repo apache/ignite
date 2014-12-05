@@ -377,7 +377,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
             try {
                 return block(blockIdx);
             }
-            catch (GridGgfsCorruptedFileException e) {
+            catch (IgniteFsCorruptedFileException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to fetch file block [path=" + path + ", fileInfo=" + fileInfo +
                         ", blockIdx=" + blockIdx + ", errMsg=" + e.getMessage() + ']');
@@ -388,7 +388,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
 
                     // File was deleted.
                     if (newInfo == null)
-                        throw new GridGgfsFileNotFoundException("Failed to read file block (file was concurrently " +
+                        throw new IgniteFsFileNotFoundException("Failed to read file block (file was concurrently " +
                                 "deleted) [path=" + path + ", blockIdx=" + blockIdx + ']');
 
                     fileInfo = newInfo;
@@ -451,7 +451,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
         byte[] bytes = bytesFut.get();
 
         if (bytes == null)
-            throw new GridGgfsCorruptedFileException("Failed to retrieve file's data block (corrupted file?) " +
+            throw new IgniteFsCorruptedFileException("Failed to retrieve file's data block (corrupted file?) " +
                 "[path=" + path + ", blockIdx=" + blockIdx + ']');
 
         int blockSize = fileInfo.blockSize();

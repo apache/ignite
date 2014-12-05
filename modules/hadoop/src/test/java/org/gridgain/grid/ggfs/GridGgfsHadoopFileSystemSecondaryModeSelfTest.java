@@ -96,7 +96,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -155,7 +155,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

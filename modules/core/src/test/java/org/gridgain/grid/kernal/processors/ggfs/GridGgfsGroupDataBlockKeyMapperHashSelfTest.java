@@ -16,7 +16,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.concurrent.*;
 
 /**
- * Tests for {@link GridGgfsGroupDataBlocksKeyMapper} hash.
+ * Tests for {@link org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper} hash.
  */
 public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonAbstractTest {
     /**
@@ -46,7 +46,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
      * @param partCnt Total partitions count.
      * @return Partition index.
      */
-    private int partition(GridGgfsGroupDataBlocksKeyMapper mapper, IgniteUuid fileId, long blockId, int partCnt) {
+    private int partition(IgniteFsGroupDataBlocksKeyMapper mapper, IgniteUuid fileId, long blockId, int partCnt) {
         return U.safeAbs((Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false, blockId)) % partCnt);
     }
 
@@ -58,7 +58,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
     public void checkDistribution(int grpSize, int partCnt) throws Exception {
         IgniteUuid fileId = IgniteUuid.randomUuid();
 
-        GridGgfsGroupDataBlocksKeyMapper mapper = new GridGgfsGroupDataBlocksKeyMapper(grpSize);
+        IgniteFsGroupDataBlocksKeyMapper mapper = new IgniteFsGroupDataBlocksKeyMapper(grpSize);
 
         int lastPart = 0;
 
@@ -98,7 +98,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
     public void checkIntOverflowDistribution(int partCnt) throws Exception {
         IgniteUuid fileId = IgniteUuid.randomUuid();
 
-        GridGgfsGroupDataBlocksKeyMapper mapper = new GridGgfsGroupDataBlocksKeyMapper(1);
+        IgniteFsGroupDataBlocksKeyMapper mapper = new IgniteFsGroupDataBlocksKeyMapper(1);
 
         int part1 = partition(mapper, fileId, Integer.MAX_VALUE - 1, partCnt);
         int part2 = partition(mapper, fileId, Integer.MAX_VALUE, partCnt);

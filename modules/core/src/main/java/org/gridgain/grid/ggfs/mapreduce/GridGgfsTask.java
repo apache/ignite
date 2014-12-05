@@ -89,7 +89,7 @@ public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
         Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
         for (IgniteFsPath path : args.paths()) {
-            GridGgfsFile file = ggfs.info(path);
+            IgniteFsFile file = ggfs.info(path);
 
             if (file == null) {
                 if (args.skipNonExistentFiles())
