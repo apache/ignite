@@ -671,7 +671,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Swap Space</title>
-                                            <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
+                                            <packages>org.gridgain.grid.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Discovery</title>
@@ -873,7 +873,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Swap Space</title>
-                                            <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
+                                            <packages>org.gridgain.grid.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Discovery</title>

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
-import org.gridgain.grid.spi.swapspace.file.*;
+import org.apache.ignite.spi.swapspace.file.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;

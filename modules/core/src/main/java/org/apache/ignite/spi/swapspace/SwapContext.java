@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.swapspace;
+package org.apache.ignite.spi.swapspace;
 
 import org.gridgain.grid.util.typedef.internal.*;
 

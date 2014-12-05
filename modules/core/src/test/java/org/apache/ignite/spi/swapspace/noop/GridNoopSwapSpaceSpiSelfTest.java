@@ -7,17 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.swapspace.noop;
+package org.apache.ignite.spi.swapspace.noop;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.swapspace.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.testframework.junits.common.*;
 
 /**
- * Tests for "noop" realization of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi}.
+ * Tests for "noop" realization of {@link org.apache.ignite.spi.swapspace.SwapSpaceSpi}.
  */
 public class GridNoopSwapSpaceSpiSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */

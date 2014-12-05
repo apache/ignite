@@ -7,13 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.swapspace.noop;
+package org.apache.ignite.spi.swapspace.noop;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.swapspace.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * No-op implementation of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi}. Exists for testing and benchmarking purposes.
+ * No-op implementation of {@link org.apache.ignite.spi.swapspace.SwapSpaceSpi}. Exists for testing and benchmarking purposes.
  */
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(true)

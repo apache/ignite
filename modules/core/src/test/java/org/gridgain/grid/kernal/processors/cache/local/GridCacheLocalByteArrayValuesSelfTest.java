@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.spi.swapspace.file.*;
+import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

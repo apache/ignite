@@ -37,7 +37,7 @@ import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
-import org.gridgain.grid.spi.swapspace.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -2123,9 +2123,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi}.
+     * Sets fully configured instances of {@link org.apache.ignite.spi.swapspace.SwapSpaceSpi}.
      *
-     * @param swapSpaceSpi Fully configured instances of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi} or
+     * @param swapSpaceSpi Fully configured instances of {@link org.apache.ignite.spi.swapspace.SwapSpaceSpi} or
      *      <tt>null</tt> if no SPI provided.
      * @see IgniteConfiguration#getSwapSpaceSpi()
      */
@@ -2135,7 +2135,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured swap space SPI implementation. If not provided,
-     * {@link org.gridgain.grid.spi.swapspace.file.FileSwapSpaceSpi} will be used.
+     * {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).

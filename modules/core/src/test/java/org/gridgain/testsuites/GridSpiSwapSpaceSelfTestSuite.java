@@ -10,8 +10,8 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.swapspace.file.*;
-import org.gridgain.grid.spi.swapspace.noop.*;
+import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.spi.swapspace.noop.*;
 
 /**
  *

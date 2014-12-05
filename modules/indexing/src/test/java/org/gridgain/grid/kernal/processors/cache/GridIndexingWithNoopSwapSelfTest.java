@@ -19,7 +19,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;
-import org.gridgain.grid.spi.swapspace.noop.*;
+import org.apache.ignite.spi.swapspace.noop.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

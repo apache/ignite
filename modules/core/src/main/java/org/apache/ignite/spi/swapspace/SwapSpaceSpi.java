@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.swapspace;
+package org.apache.ignite.spi.swapspace;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
@@ -23,16 +23,16 @@ import java.util.*;
  * <p>
  * All swap space implementations can be configured to prevent infinite growth and evict oldest entries.
  * <p>
- * The default swap space SPI is {@link org.gridgain.grid.spi.swapspace.file.FileSwapSpaceSpi} which stores values on disk in files and keeps keys in
+ * The default swap space SPI is {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} which stores values on disk in files and keeps keys in
  * memory.
  * <p>
  * Gridgain provides the following {@code GridSwapSpaceSpi} implementations:
  * <ul>
  * <li>
- *     {@link org.gridgain.grid.spi.swapspace.file.FileSwapSpaceSpi} - pure Java implementation with in-memory keys. This SPI is used by default.
+ *     {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} - pure Java implementation with in-memory keys. This SPI is used by default.
  * </li>
  * <li>
- *     {@link org.gridgain.grid.spi.swapspace.noop.NoopSwapSpaceSpi} - no-op SPI mainly for testing.
+ *     {@link org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi} - no-op SPI mainly for testing.
  * </li>
  * </ul>
  * <p>

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.swapspace.file;
+package org.apache.ignite.spi.swapspace.file;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
@@ -15,7 +15,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.swapspace.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -90,7 +90,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see org.gridgain.grid.spi.swapspace.SwapSpaceSpi
+ * @see org.apache.ignite.spi.swapspace.SwapSpaceSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
@@ -208,7 +208,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
     /**
      * Sets max write queue size in bytes. If there are more values are waiting for being written to disk then specified
-     * size, SPI will block on {@link #store(String, org.gridgain.grid.spi.swapspace.SwapKey, byte[], org.gridgain.grid.spi.swapspace.SwapContext)} operation. Default is
+     * size, SPI will block on {@link #store(String, org.apache.ignite.spi.swapspace.SwapKey, byte[], org.apache.ignite.spi.swapspace.SwapContext)} operation. Default is
      * {@link #DFLT_QUE_SIZE}.
      *
      * @param maxWriteQueSize Max write queue size in bytes.
