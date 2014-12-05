@@ -13,7 +13,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.loadbalancing.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -52,7 +51,7 @@ import java.util.concurrent.*;
  * {@link Serializable} and should be used to run computations on the grid.
  * <h1 class="header">Load Balancing</h1>
  * In all cases other than {@code broadcast(...)}, GridGain must select a node for a computation
- * to be executed. The node will be selected based on the underlying {@link GridLoadBalancingSpi},
+ * to be executed. The node will be selected based on the underlying {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi},
  * which by default sequentially picks next available node from grid projection. Other load balancing
  * policies, such as {@code random} or {@code adaptive}, can be configured as well by selecting
  * a different load balancing SPI in grid configuration. If your logic requires some custom

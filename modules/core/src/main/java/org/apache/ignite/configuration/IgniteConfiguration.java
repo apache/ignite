@@ -36,7 +36,6 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
 import org.gridgain.grid.spi.loadbalancing.*;
-import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -367,7 +366,7 @@ public class IgniteConfiguration {
     private FailoverSpi[] failSpi;
 
     /** Load balancing SPI. */
-    private GridLoadBalancingSpi[] loadBalancingSpi;
+    private LoadBalancingSpi[] loadBalancingSpi;
 
     /** Checkpoint SPI. */
     private GridSwapSpaceSpi swapSpaceSpi;
@@ -2074,11 +2073,11 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured load balancing SPI implementation. If not provided,
-     * {@link GridRoundRobinLoadBalancingSpi} will be used.
+     * {@link org.gridgain.grid.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi} will be used.
      *
      * @return Grid load balancing SPI implementation or {@code null} to use default implementation.
      */
-    public GridLoadBalancingSpi[] getLoadBalancingSpi() {
+    public LoadBalancingSpi[] getLoadBalancingSpi() {
         return loadBalancingSpi;
     }
 
@@ -2115,13 +2114,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link GridLoadBalancingSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi}.
      *
-     * @param loadBalancingSpi Fully configured instance of {@link GridLoadBalancingSpi} or
+     * @param loadBalancingSpi Fully configured instance of {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getLoadBalancingSpi()
      */
-    public void setLoadBalancingSpi(GridLoadBalancingSpi... loadBalancingSpi) {
+    public void setLoadBalancingSpi(LoadBalancingSpi... loadBalancingSpi) {
         this.loadBalancingSpi = loadBalancingSpi;
     }
 

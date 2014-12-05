@@ -13,8 +13,8 @@ import org.apache.ignite.cluster.*;
 
 /**
  * Pluggable implementation of node load probing. Implementations
- * of this can be configured to be used with {@link GridAdaptiveLoadBalancingSpi}
- * by setting {@link GridAdaptiveLoadBalancingSpi#setLoadProbe(GridAdaptiveLoadProbe)}
+ * of this can be configured to be used with {@link AdaptiveLoadBalancingSpi}
+ * by setting {@link AdaptiveLoadBalancingSpi#setLoadProbe(AdaptiveLoadProbe)}
  * configuration parameter.
  * <p>
  * Note that if {@link #getLoad(org.apache.ignite.cluster.ClusterNode, int)} returns a value of {@code 0},
@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.*;
  * average cannot be obtained (all node load values are {@code 0}), then a value
  * of {@code 1} will be used.
  * <p>
- * By default, {@link GridAdaptiveCpuLoadProbe} probing implementation is used.
+ * By default, {@link AdaptiveCpuLoadProbe} probing implementation is used.
  * <p>
  * <h1 class="header">Example</h1>
  * Here is an example of how probing can be implemented to use
@@ -53,7 +53,7 @@ import org.apache.ignite.cluster.*;
  *     }
  * }
  * </pre>
- * Below is an example of how a probe shown above would be configured with {@link GridAdaptiveLoadBalancingSpi}
+ * Below is an example of how a probe shown above would be configured with {@link AdaptiveLoadBalancingSpi}
  * SPI:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
@@ -67,7 +67,7 @@ import org.apache.ignite.cluster.*;
  * &lt;/property&gt;
  * </pre>
  */
-public interface GridAdaptiveLoadProbe {
+public interface AdaptiveLoadProbe {
     /**
      * Calculates load value for a given node. Specific implementations would
      * usually take into account some of the values provided by

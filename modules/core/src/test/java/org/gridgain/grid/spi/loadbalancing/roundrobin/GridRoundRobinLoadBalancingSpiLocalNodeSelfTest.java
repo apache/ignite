@@ -18,9 +18,9 @@ import java.util.*;
 /**
  * Tests Round Robin load balancing for single node.
  */
-@GridSpiTest(spi = GridRoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI", triggerDiscovery = true)
+@GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI", triggerDiscovery = true)
 public class GridRoundRobinLoadBalancingSpiLocalNodeSelfTest extends
-    GridSpiAbstractTest<GridRoundRobinLoadBalancingSpi> {
+    GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /**
      * @throws Exception If failed.
      */

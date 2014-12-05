@@ -153,7 +153,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private class GridTestLoadBalancingSpi extends GridRoundRobinLoadBalancingSpi {
+    private class GridTestLoadBalancingSpi extends RoundRobinLoadBalancingSpi {
         /** */
         private String expName;
 

@@ -187,7 +187,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopLoadBalancingManager() throws Exception {
-        GridRoundRobinLoadBalancingSpi spi = new GridRoundRobinLoadBalancingSpi();
+        RoundRobinLoadBalancingSpi spi = new RoundRobinLoadBalancingSpi();
 
         injectLogger(spi);
 

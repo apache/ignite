@@ -12,7 +12,7 @@ package org.apache.ignite.spi.failover;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.loadbalancing.*;
+
 import java.util.*;
 
 /**
@@ -36,7 +36,7 @@ public interface FailoverContext {
 
     /**
      * Gets the next balanced node for failed job. Internally this method will
-     * delegate to load balancing SPI (see {@link GridLoadBalancingSpi} to
+     * delegate to load balancing SPI (see {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi} to
      * determine the optimal node for execution.
      *
      * @param top Topology to pick balanced node from.

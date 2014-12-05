@@ -33,14 +33,14 @@ import org.gridgain.grid.util.typedef.internal.*;
  * &lt;/property&gt;
  * </pre>
  */
-public class GridAdaptiveJobCountLoadProbe implements GridAdaptiveLoadProbe {
+public class AdaptiveJobCountLoadProbe implements AdaptiveLoadProbe {
     /** Flag indicating whether to use average CPU load vs. current. */
     private boolean useAvg = true;
 
     /**
      * Initializes active job probe.
      */
-    public GridAdaptiveJobCountLoadProbe() {
+    public AdaptiveJobCountLoadProbe() {
         // No-op.
     }
 
@@ -50,7 +50,7 @@ public class GridAdaptiveJobCountLoadProbe implements GridAdaptiveLoadProbe {
      *
      * @param useAvg Flag indicating whether to use average job counts vs. current.
      */
-    public GridAdaptiveJobCountLoadProbe(boolean useAvg) {
+    public AdaptiveJobCountLoadProbe(boolean useAvg) {
         this.useAvg = useAvg;
     }
 
@@ -91,6 +91,6 @@ public class GridAdaptiveJobCountLoadProbe implements GridAdaptiveLoadProbe {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridAdaptiveJobCountLoadProbe.class, this);
+        return S.toString(AdaptiveJobCountLoadProbe.class, this);
     }
 }

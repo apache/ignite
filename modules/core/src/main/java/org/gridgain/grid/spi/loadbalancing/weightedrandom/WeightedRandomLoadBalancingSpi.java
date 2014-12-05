@@ -151,8 +151,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
-    GridWeightedRandomLoadBalancingSpiMBean {
+public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
+    WeightedRandomLoadBalancingSpiMBean {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -235,7 +235,7 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
             log.debug(configInfo("nodeWeight", nodeWeight));
         }
 
-        registerMBean(gridName, this, GridWeightedRandomLoadBalancingSpiMBean.class);
+        registerMBean(gridName, this, WeightedRandomLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -389,6 +389,6 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridWeightedRandomLoadBalancingSpi.class, this);
+        return S.toString(WeightedRandomLoadBalancingSpi.class, this);
     }
 }

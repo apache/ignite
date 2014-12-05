@@ -49,9 +49,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  * &lt;/property&gt;
  * </pre>
  * <p>
- * This implementation is used by default by {@link GridAdaptiveLoadBalancingSpi} SPI.
+ * This implementation is used by default by {@link AdaptiveLoadBalancingSpi} SPI.
  */
-public class GridAdaptiveCpuLoadProbe implements GridAdaptiveLoadProbe {
+public class AdaptiveCpuLoadProbe implements AdaptiveLoadProbe {
     /** Flag indicating whether to use average CPU load vs. current. */
     private boolean useAvg = true;
 
@@ -73,7 +73,7 @@ public class GridAdaptiveCpuLoadProbe implements GridAdaptiveLoadProbe {
     /**
      * Initializes CPU load probe to use CPU load average by default.
      */
-    public GridAdaptiveCpuLoadProbe() {
+    public AdaptiveCpuLoadProbe() {
         // No-op.
     }
 
@@ -90,7 +90,7 @@ public class GridAdaptiveCpuLoadProbe implements GridAdaptiveLoadProbe {
      * @param useProcs Flag indicating whether to divide each node's CPU load
      *      by the number of processors on that node (default is {@code true}).
      */
-    public GridAdaptiveCpuLoadProbe(boolean useAvg, boolean useProcs) {
+    public AdaptiveCpuLoadProbe(boolean useAvg, boolean useProcs) {
         this.useAvg = useAvg;
         this.useProcs = useProcs;
     }
@@ -115,7 +115,7 @@ public class GridAdaptiveCpuLoadProbe implements GridAdaptiveLoadProbe {
      *      by the number of processors on that node (default is {@code true}).
      * @param procCoefficient Coefficient of every CPU processor (default value is {@code 1}).
      */
-    public GridAdaptiveCpuLoadProbe(boolean useAvg, boolean useProcs, double procCoefficient) {
+    public AdaptiveCpuLoadProbe(boolean useAvg, boolean useProcs, double procCoefficient) {
         this.useAvg = useAvg;
         this.useProcs = useProcs;
         this.procCoefficient = procCoefficient;
@@ -224,6 +224,6 @@ public class GridAdaptiveCpuLoadProbe implements GridAdaptiveLoadProbe {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridAdaptiveCpuLoadProbe.class, this);
+        return S.toString(AdaptiveCpuLoadProbe.class, this);
     }
 }

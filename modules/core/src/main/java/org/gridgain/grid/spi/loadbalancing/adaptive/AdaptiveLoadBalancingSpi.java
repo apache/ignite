@@ -39,19 +39,19 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <h1 class="header">Adaptive Node Probe</h1>
  * This SPI comes with pluggable algorithm to calculate a node load
  * at any given point of time. The algorithm is defined by
- * {@link GridAdaptiveLoadProbe} interface and user is
+ * {@link AdaptiveLoadProbe} interface and user is
  * free to provide custom implementations. By default
- * {@link GridAdaptiveCpuLoadProbe} implementation is used
+ * {@link AdaptiveCpuLoadProbe} implementation is used
  * which distributes jobs to nodes based on average CPU load
  * on every node.
  * <p>
  * The following load probes are available with the product:
  * <ul>
- * <li>{@link GridAdaptiveCpuLoadProbe} - default</li>
- * <li>{@link GridAdaptiveProcessingTimeLoadProbe}</li>
- * <li>{@link GridAdaptiveJobCountLoadProbe}</li>
+ * <li>{@link AdaptiveCpuLoadProbe} - default</li>
+ * <li>{@link AdaptiveProcessingTimeLoadProbe}</li>
+ * <li>{@link AdaptiveJobCountLoadProbe}</li>
  * </ul>
- * Note that if {@link GridAdaptiveLoadProbe#getLoad(org.apache.ignite.cluster.ClusterNode, int)} returns a value of {@code 0},
+ * Note that if {@link AdaptiveLoadProbe#getLoad(org.apache.ignite.cluster.ClusterNode, int)} returns a value of {@code 0},
  * then implementation will assume that load value is simply not available and
  * will try to calculate an average of load values for other nodes. If such
  * average cannot be obtained (all node load values are {@code 0}), then a value
@@ -180,9 +180,9 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * This SPI has the following optional configuration parameters:
  * <ul>
  * <li>
- *      Adaptive node load probing implementation (see {@link #setLoadProbe(GridAdaptiveLoadProbe)}).
+ *      Adaptive node load probing implementation (see {@link #setLoadProbe(AdaptiveLoadProbe)}).
  *      This configuration parameter supplies a custom algorithm for probing a node's load.
- *      By default, {@link GridAdaptiveCpuLoadProbe} implementation is used which
+ *      By default, {@link AdaptiveCpuLoadProbe} implementation is used which
  *      takes every node's CPU load and tries to send proportionally more jobs to less loaded nodes.
  * </li>
  * </ul>
@@ -222,8 +222,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
-    GridAdaptiveLoadBalancingSpiMBean {
+public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
+    AdaptiveLoadBalancingSpiMBean {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -232,7 +232,7 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
     private IgniteLogger log;
 
     /** */
-    private GridAdaptiveLoadProbe probe = new GridAdaptiveCpuLoadProbe();
+    private AdaptiveLoadProbe probe = new AdaptiveCpuLoadProbe();
 
     /** Local event listener to listen to task completion events. */
     private GridLocalEventListener evtLsnr;
@@ -253,14 +253,14 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
     }
 
     /**
-     * Sets implementation of node load probe. By default {@link GridAdaptiveProcessingTimeLoadProbe}
+     * Sets implementation of node load probe. By default {@link AdaptiveProcessingTimeLoadProbe}
      * is used which proportionally distributes load based on the average job execution
      * time on every node.
      *
      * @param probe Implementation of node load probe
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setLoadProbe(GridAdaptiveLoadProbe probe) {
+    public void setLoadProbe(AdaptiveLoadProbe probe) {
         A.ensure(probe != null, "probe != null");
 
         this.probe = probe;
@@ -275,7 +275,7 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
         if (log.isDebugEnabled())
             log.debug(configInfo("loadProbe", probe));
 
-        registerMBean(gridName, this, GridAdaptiveLoadBalancingSpiMBean.class);
+        registerMBean(gridName, this, AdaptiveLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -576,6 +576,6 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridAdaptiveLoadBalancingSpi.class, this);
+        return S.toString(AdaptiveLoadBalancingSpi.class, this);
     }
 }

@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.*;
 /**
  * Multithreaded tests for global load balancer.
  */
-@GridSpiTest(spi = GridRoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
 public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
-    extends GridSpiAbstractTest<GridRoundRobinLoadBalancingSpi> {
+    extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /** Thread count. */
     public static final int THREAD_CNT = 8;
 
@@ -60,7 +60,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
      * @throws Exception If failed.
      */
     public void testMultipleTaskSessionsMultithreaded() throws Exception {
-        final GridRoundRobinLoadBalancingSpi spi = getSpi();
+        final RoundRobinLoadBalancingSpi spi = getSpi();
 
         final List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 

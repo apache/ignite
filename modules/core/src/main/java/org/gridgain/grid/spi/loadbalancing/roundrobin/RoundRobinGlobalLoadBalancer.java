@@ -27,7 +27,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Load balancer that works in global (not-per-task) mode.
  */
-class GridRoundRobinGlobalLoadBalancer {
+class RoundRobinGlobalLoadBalancer {
     /** SPI context. */
     private IgniteSpiContext ctx;
 
@@ -49,7 +49,7 @@ class GridRoundRobinGlobalLoadBalancer {
     /**
      * @param log Grid logger.
      */
-    GridRoundRobinGlobalLoadBalancer(IgniteLogger log) {
+    RoundRobinGlobalLoadBalancer(IgniteLogger log) {
         assert log != null;
 
         this.log = log;
@@ -300,6 +300,6 @@ class GridRoundRobinGlobalLoadBalancer {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRoundRobinGlobalLoadBalancer.class, this);
+        return S.toString(RoundRobinGlobalLoadBalancer.class, this);
     }
 }

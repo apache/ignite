@@ -13,10 +13,10 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management MBean for {@link GridAdaptiveLoadBalancingSpi} SPI.
+ * Management MBean for {@link AdaptiveLoadBalancingSpi} SPI.
  */
 @IgniteMBeanDescription("MBean that provides access to adaptive load balancing SPI configuration.")
-public interface GridAdaptiveLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
+public interface AdaptiveLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets text description of current load probing implementation used.
      *

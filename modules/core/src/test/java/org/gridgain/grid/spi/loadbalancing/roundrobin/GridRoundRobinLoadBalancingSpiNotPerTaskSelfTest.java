@@ -25,9 +25,9 @@ import static org.gridgain.grid.spi.loadbalancing.roundrobin.GridRoundRobinTestU
 /**
  * Tests round robin load balancing.
  */
-@GridSpiTest(spi = GridRoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
 public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
-    extends GridSpiAbstractTest<GridRoundRobinLoadBalancingSpi> {
+    extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /**
      * @return Per-task configuration parameter.
      */

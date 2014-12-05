@@ -16,8 +16,8 @@ import org.gridgain.testframework.junits.spi.*;
  * Adaptive load balancing SPI start-stop test.
  */
 @SuppressWarnings({"JUnitTestCaseWithNoTests"})
-@GridSpiTest(spi = GridAdaptiveLoadBalancingSpi.class, group = "LoadBalancing SPI")
+@GridSpiTest(spi = AdaptiveLoadBalancingSpi.class, group = "LoadBalancing SPI")
 public class GridAdaptiveLoadBalancingSpiStartStopSelfTest extends
-    GridSpiStartStopAbstractTest<GridAdaptiveLoadBalancingSpi> {
+    GridSpiStartStopAbstractTest<AdaptiveLoadBalancingSpi> {
     // No configs.
 }

@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Load balancing manager.
  */
-public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancingSpi> {
+public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi> {
     /**
      * @param ctx Grid kernal context.
      */

@@ -19,8 +19,8 @@ import java.util.*;
 /**
  * Tests adaptive load balancing SPI.
  */
-@GridSpiTest(spi = GridAdaptiveLoadBalancingSpi.class, group = "Load Balancing SPI")
-public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbstractTest<GridAdaptiveLoadBalancingSpi> {
+@GridSpiTest(spi = AdaptiveLoadBalancingSpi.class, group = "Load Balancing SPI")
+public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbstractTest<AdaptiveLoadBalancingSpi> {
     /** */
     private static final int RMT_NODE_CNT = 10;
 
@@ -43,8 +43,8 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
      * @return {@code True} if node weights should be considered.
      */
     @GridSpiTestConfig
-    public GridAdaptiveLoadProbe getLoadProbe() {
-        return new GridAdaptiveLoadProbe() {
+    public AdaptiveLoadProbe getLoadProbe() {
+        return new AdaptiveLoadProbe() {
             @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
                 boolean isFirstTime = node.attribute("used") == null;
 

@@ -16,8 +16,8 @@ import org.gridgain.testframework.junits.spi.*;
  * Wighted random load balancing SPI start-stop test.
  */
 @SuppressWarnings({"JUnitTestCaseWithNoTests"})
-@GridSpiTest(spi = GridWeightedRandomLoadBalancingSpi.class, group = "LoadBalancing SPI")
+@GridSpiTest(spi = WeightedRandomLoadBalancingSpi.class, group = "LoadBalancing SPI")
 public class GridWeightedRandomLoadBalancingSpiStartStopSelfTest extends
-    GridSpiStartStopAbstractTest<GridWeightedRandomLoadBalancingSpi> {
+    GridSpiStartStopAbstractTest<WeightedRandomLoadBalancingSpi> {
     // No configs.
 }

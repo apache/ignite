@@ -33,7 +33,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * &lt;/property&gt;
  * </pre>
  */
-public class GridAdaptiveProcessingTimeLoadProbe implements GridAdaptiveLoadProbe {
+public class AdaptiveProcessingTimeLoadProbe implements AdaptiveLoadProbe {
     /** Flag indicating whether to use average execution time vs. current. */
     private boolean useAvg = true;
 
@@ -41,7 +41,7 @@ public class GridAdaptiveProcessingTimeLoadProbe implements GridAdaptiveLoadProb
      * Initializes execution time load probe to use
      * execution time average by default.
      */
-    public GridAdaptiveProcessingTimeLoadProbe() {
+    public AdaptiveProcessingTimeLoadProbe() {
         // No-op.
     }
 
@@ -50,7 +50,7 @@ public class GridAdaptiveProcessingTimeLoadProbe implements GridAdaptiveLoadProb
      *
      * @param useAvg Flag indicating whether to use average execution time vs. current.
      */
-    public GridAdaptiveProcessingTimeLoadProbe(boolean useAvg) {
+    public AdaptiveProcessingTimeLoadProbe(boolean useAvg) {
         this.useAvg = useAvg;
     }
 
@@ -93,6 +93,6 @@ public class GridAdaptiveProcessingTimeLoadProbe implements GridAdaptiveLoadProb
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridAdaptiveProcessingTimeLoadProbe.class, this);
+        return S.toString(AdaptiveProcessingTimeLoadProbe.class, this);
     }
 }

@@ -24,11 +24,11 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Tests round robin load balancing SPI.
  */
-@GridSpiTest(spi = GridRoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
 public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
-    extends GridSpiAbstractTest<GridRoundRobinLoadBalancingSpi> {
+    extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridRoundRobinLoadBalancingSpi spi) throws Exception {
+    @Override protected void spiConfigure(RoundRobinLoadBalancingSpi spi) throws Exception {
         super.spiConfigure(spi);
 
         spi.setPerTask(true);

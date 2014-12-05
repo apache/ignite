@@ -9,14 +9,12 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.spi.loadbalancing.*;
-
 import java.lang.annotation.*;
 
 /**
  * This annotation allows task to specify what SPIs it wants to use.
  * Starting with {@code GridGain 2.1} you can start multiple instances
- * of {@link GridLoadBalancingSpi},
+ * of {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi},
  * {@link org.apache.ignite.spi.failover.FailoverSpi}, and {@link org.apache.ignite.spi.checkpoint.CheckpointSpi}. If you do that,
  * you need to tell a task which SPI to use (by default it will use the fist
  * SPI in the list).

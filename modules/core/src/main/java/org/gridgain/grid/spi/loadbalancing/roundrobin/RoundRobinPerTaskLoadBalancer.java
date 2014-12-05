@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Load balancer for per-task configuration.
  */
-class GridRoundRobinPerTaskLoadBalancer {
+class RoundRobinPerTaskLoadBalancer {
     /** Balancing nodes. */
     private ArrayDeque<ClusterNode> nodeQueue;
 

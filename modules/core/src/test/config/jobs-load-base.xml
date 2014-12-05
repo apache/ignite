@@ -97,7 +97,7 @@
         </property>
 
         <property name="loadBalancingSpi">
-            <bean class="org.gridgain.grid.spi.loadbalancing.roundrobin.GridRoundRobinLoadBalancingSpi">
+            <bean class="org.gridgain.grid.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
                 <property name="perTask" value="false"/>
             </bean>
         </property>

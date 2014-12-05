@@ -13,10 +13,10 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link GridRoundRobinLoadBalancingSpi} SPI.
+ * Management bean for {@link RoundRobinLoadBalancingSpi} SPI.
  */
 @IgniteMBeanDescription("MBean that provides access to round robin load balancing SPI configuration.")
-public interface GridRoundRobinLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
+public interface RoundRobinLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Configuration parameter indicating whether a new round robin order should be
      * created for every task. If {@code true} then load balancer is guaranteed

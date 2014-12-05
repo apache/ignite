@@ -14,13 +14,13 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  *
  */
-@GridSpiTest(spi = GridWeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
+@GridSpiTest(spi = WeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
 public class GridWeightedRandomLoadBalancingSpiConfigSelfTest extends
-    GridSpiAbstractConfigTest<GridWeightedRandomLoadBalancingSpi> {
+    GridSpiAbstractConfigTest<WeightedRandomLoadBalancingSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridWeightedRandomLoadBalancingSpi(), "nodeWeight", 0);
+        checkNegativeSpiProperty(new WeightedRandomLoadBalancingSpi(), "nodeWeight", 0);
     }
 }

@@ -13,10 +13,10 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management MBean for {@link GridWeightedRandomLoadBalancingSpi} SPI.
+ * Management MBean for {@link WeightedRandomLoadBalancingSpi} SPI.
  */
 @IgniteMBeanDescription("MBean that provides access to weighted random load balancing SPI configuration.")
-public interface GridWeightedRandomLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
+public interface WeightedRandomLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Checks whether node weights are considered when doing
      * random load balancing.

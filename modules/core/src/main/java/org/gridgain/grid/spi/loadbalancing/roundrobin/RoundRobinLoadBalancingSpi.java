@@ -153,20 +153,20 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
-    GridRoundRobinLoadBalancingSpiMBean {
+public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
+    RoundRobinLoadBalancingSpiMBean {
     /** Grid logger. */
     @IgniteLoggerResource
     private IgniteLogger log;
 
     /** */
-    private GridRoundRobinGlobalLoadBalancer balancer;
+    private RoundRobinGlobalLoadBalancer balancer;
 
     /** */
     private boolean isPerTask;
 
     /** */
-    private final Map<IgniteUuid, GridRoundRobinPerTaskLoadBalancer> perTaskBalancers =
+    private final Map<IgniteUuid, RoundRobinPerTaskLoadBalancer> perTaskBalancers =
         new ConcurrentHashMap8<>();
 
     /** Event listener. */
@@ -176,7 +176,7 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
                 evt.type() == EVT_TASK_FINISHED)
                 perTaskBalancers.remove(((IgniteTaskEvent)evt).taskSessionId());
             else if (evt.type() == EVT_JOB_MAPPED) {
-                GridRoundRobinPerTaskLoadBalancer balancer =
+                RoundRobinPerTaskLoadBalancer balancer =
                     perTaskBalancers.get(((IgniteJobEvent)evt).taskSessionId());
 
                 if (balancer != null)
@@ -217,9 +217,9 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
         if (log.isDebugEnabled())
             log.debug(configInfo("isPerTask", isPerTask));
 
-        registerMBean(gridName, this, GridRoundRobinLoadBalancingSpiMBean.class);
+        registerMBean(gridName, this, RoundRobinLoadBalancingSpiMBean.class);
 
-        balancer = new GridRoundRobinGlobalLoadBalancer(log);
+        balancer = new RoundRobinGlobalLoadBalancer(log);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -276,10 +276,10 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
         if (isPerTask) {
             // Note that every session operates from single thread which
             // allows us to use concurrent map and avoid synchronization.
-            GridRoundRobinPerTaskLoadBalancer taskBalancer = perTaskBalancers.get(ses.getId());
+            RoundRobinPerTaskLoadBalancer taskBalancer = perTaskBalancers.get(ses.getId());
 
             if (taskBalancer == null)
-                perTaskBalancers.put(ses.getId(), taskBalancer = new GridRoundRobinPerTaskLoadBalancer());
+                perTaskBalancers.put(ses.getId(), taskBalancer = new RoundRobinPerTaskLoadBalancer());
 
             return taskBalancer.getBalancedNode(top);
         }
@@ -295,7 +295,7 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
      */
     List<UUID> getNodeIds(ComputeTaskSession ses) {
         if (isPerTask) {
-            GridRoundRobinPerTaskLoadBalancer balancer = perTaskBalancers.get(ses.getId());
+            RoundRobinPerTaskLoadBalancer balancer = perTaskBalancers.get(ses.getId());
 
             if (balancer == null)
                 return Collections.emptyList();
@@ -314,6 +314,6 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRoundRobinLoadBalancingSpi.class, this);
+        return S.toString(RoundRobinLoadBalancingSpi.class, this);
     }
 }

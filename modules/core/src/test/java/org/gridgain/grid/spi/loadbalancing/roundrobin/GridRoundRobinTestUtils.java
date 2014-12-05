@@ -30,7 +30,7 @@ class GridRoundRobinTestUtils {
      * @param ses Task session.
      * @throws GridException If balancer failed.
      */
-    static void checkCyclicBalancing(GridRoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
+    static void checkCyclicBalancing(RoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
         List<UUID> orderedNodes, ComputeTaskSession ses) throws GridException {
 
         ClusterNode firstNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
@@ -58,7 +58,7 @@ class GridRoundRobinTestUtils {
      * @param ses2 Second task session.
      * @throws GridException If balancer failed.
      */
-    static void checkCyclicBalancing(GridRoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
+    static void checkCyclicBalancing(RoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
         List<UUID> orderedNodes, ComputeTaskSession ses1, ComputeTaskSession ses2) throws GridException {
 
         ClusterNode firstNode = spi.getBalancedNode(ses1, allNodes, new GridTestJob());

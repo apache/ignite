@@ -17,14 +17,14 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
 import java.util.*;
 
-import static org.gridgain.grid.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi.*;
+import static org.gridgain.grid.spi.loadbalancing.weightedrandom.WeightedRandomLoadBalancingSpi.*;
 
 /**
- * {@link GridWeightedRandomLoadBalancingSpi} self test.
+ * {@link WeightedRandomLoadBalancingSpi} self test.
  */
-@GridSpiTest(spi = GridWeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
+@GridSpiTest(spi = WeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
 public class GridWeightedRandomLoadBalancingSpiWeightedSelfTest
-    extends GridSpiAbstractTest<GridWeightedRandomLoadBalancingSpi> {
+    extends GridSpiAbstractTest<WeightedRandomLoadBalancingSpi> {
     /**
      * @return {@code True} if node weights should be considered.
      */

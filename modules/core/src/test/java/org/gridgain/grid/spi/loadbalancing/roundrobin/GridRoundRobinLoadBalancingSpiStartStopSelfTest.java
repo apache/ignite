@@ -13,11 +13,11 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.testframework.junits.spi.*;
 
 /**
- * Tests correct start of {@link GridRoundRobinLoadBalancingSpi}.
+ * Tests correct start of {@link RoundRobinLoadBalancingSpi}.
  */
 @SuppressWarnings({"JUnitTestCaseWithNoTests"})
-@GridSpiTest(spi = GridRoundRobinLoadBalancingSpi.class, group = "LoadBalancing SPI")
+@GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "LoadBalancing SPI")
 public class GridRoundRobinLoadBalancingSpiStartStopSelfTest
-    extends GridSpiStartStopAbstractTest<GridRoundRobinLoadBalancingSpi> {
+    extends GridSpiStartStopAbstractTest<RoundRobinLoadBalancingSpi> {
     // No configs.
 }

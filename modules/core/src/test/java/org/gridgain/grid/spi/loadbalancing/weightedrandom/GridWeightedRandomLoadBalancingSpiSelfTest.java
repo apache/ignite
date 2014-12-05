@@ -18,9 +18,9 @@ import java.util.*;
 /**
  * Weighted random load balancing SPI.
  */
-@GridSpiTest(spi = GridWeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
+@GridSpiTest(spi = WeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
 public class GridWeightedRandomLoadBalancingSpiSelfTest extends
-    GridSpiAbstractTest<GridWeightedRandomLoadBalancingSpi> {
+    GridSpiAbstractTest<WeightedRandomLoadBalancingSpi> {
     /**
      * @throws Exception If failed.
      */

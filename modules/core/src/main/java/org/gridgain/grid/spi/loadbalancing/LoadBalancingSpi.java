@@ -13,9 +13,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.loadbalancing.adaptive.*;
-import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
-import org.gridgain.grid.spi.loadbalancing.weightedrandom.*;
 
 import java.util.*;
 
@@ -92,9 +89,9 @@ import java.util.*;
  * <p>
  * GridGain comes with the following load balancing SPI implementations out of the box:
  * <ul>
- * <li>{@link GridRoundRobinLoadBalancingSpi} - default</li>
- * <li>{@link GridAdaptiveLoadBalancingSpi}</li>
- * <li>{@link GridWeightedRandomLoadBalancingSpi}</li>
+ * <li>{@link org.gridgain.grid.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi} - default</li>
+ * <li>{@link org.gridgain.grid.spi.loadbalancing.adaptive.AdaptiveLoadBalancingSpi}</li>
+ * <li>{@link org.gridgain.grid.spi.loadbalancing.weightedrandom.WeightedRandomLoadBalancingSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -103,7 +100,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridLoadBalancingSpi extends IgniteSpi {
+public interface LoadBalancingSpi extends IgniteSpi {
     /**
      * Gets balanced node for specified job within given task session.
      *
