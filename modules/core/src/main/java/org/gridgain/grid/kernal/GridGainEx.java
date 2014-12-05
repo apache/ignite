@@ -120,7 +120,7 @@ public class GridGainEx {
     private static volatile IgniteState dfltGridState;
 
     /** List of state listeners. */
-    private static final Collection<GridGainListener> lsnrs = new GridConcurrentHashSet<>(4);
+    private static final Collection<IgniteListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
     private static volatile boolean daemon;
@@ -978,19 +978,19 @@ public class GridGainEx {
      * @param lsnr Listener for grid life cycle events. If this listener was already added
      *      this method is no-op.
      */
-    public static void addListener(GridGainListener lsnr) {
+    public static void addListener(IgniteListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
         lsnrs.add(lsnr);
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(GridGainListener)} method.
+     * Removes lsnr added by {@link #addListener(org.gridgain.grid.IgniteListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
      */
-    public static boolean removeListener(GridGainListener lsnr) {
+    public static boolean removeListener(IgniteListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
         return lsnrs.remove(lsnr);
@@ -1006,7 +1006,7 @@ public class GridGainEx {
         else
             dfltGridState = state;
 
-        for (GridGainListener lsnr : lsnrs)
+        for (IgniteListener lsnr : lsnrs)
             lsnr.onStateChange(gridName, state);
     }
 

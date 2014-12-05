@@ -42,7 +42,7 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
 
         info("Loading Grid from configuration file: " + path);
 
-        G.addListener(new GridGainListener() {
+        G.addListener(new IgniteListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 if (state == STARTED) {
                     info("Received started notification from grid: " + name);

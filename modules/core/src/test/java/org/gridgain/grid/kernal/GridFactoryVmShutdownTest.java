@@ -37,7 +37,7 @@ public class GridFactoryVmShutdownTest {
     public static void main(String[] args) throws Exception {
         final ConcurrentMap<String, IgniteState> states = new ConcurrentHashMap<>();
 
-        G.addListener(new GridGainListener() {
+        G.addListener(new IgniteListener() {
             @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 if (state == STARTED) {
                     IgniteState state0 = states.put(maskNull(name), STARTED);

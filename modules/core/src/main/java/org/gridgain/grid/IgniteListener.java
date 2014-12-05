@@ -15,10 +15,10 @@ import java.util.*;
 
 /**
  * Listener for gird state change notifications. Use
- * {@link org.apache.ignite.Ignition#addListener(GridGainListener)} to register this
+ * {@link org.apache.ignite.Ignition#addListener(IgniteListener)} to register this
  * listener with grid factory.
  */
-public interface GridGainListener extends EventListener {
+public interface IgniteListener extends EventListener {
     /**
      * Listener for grid factory state change notifications.
      *

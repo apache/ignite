@@ -295,7 +295,7 @@ public final class CommandLineStartup {
         // Exit latch for the grid loaded from the command line.
         final CountDownLatch latch = new CountDownLatch(1);
 
-        G.addListener(new GridGainListener() {
+        G.addListener(new IgniteListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 // Skip all grids except loaded from the command line.
                 if (!F.eq(gridName, name))

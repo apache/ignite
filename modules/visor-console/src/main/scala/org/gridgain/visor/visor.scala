@@ -150,7 +150,7 @@ object visor extends VisorTag {
     private var nodeSegLsnr: IgnitePredicate[IgniteEvent] = null
 
     /** Node stop listener. */
-    private var nodeStopLsnr: GridGainListener = null
+    private var nodeStopLsnr: IgniteListener = null
 
     /** Visor copyright blurb. */
     private final val COPYRIGHT = GridProductImpl.COPYRIGHT
@@ -1700,7 +1700,7 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
-        nodeStopLsnr = new GridGainListener {
+        nodeStopLsnr = new IgniteListener {
             def onStateChange(name: String, state: IgniteState) {
                 if (name == grid.name && state == IgniteState.STOPPED) {
                     warn("Closing Visor console due to stopping of host grid instance.")

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 
 /**
  * Possible states of {@link org.apache.ignite.Ignition}. You can register a listener for
- * state change notifications via {@link org.apache.ignite.Ignition#addListener(org.gridgain.grid.GridGainListener)}
+ * state change notifications via {@link org.apache.ignite.Ignition#addListener(org.gridgain.grid.IgniteListener)}
  * method.
  */
 public enum IgniteState {

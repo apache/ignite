@@ -216,7 +216,7 @@ public final class GridRandomCommandLineLoader {
         System.out.println("Minimum TTL: " + minTtl);
         System.out.println("Maximum TTL: " + maxTtl);
 
-        G.addListener(new GridGainListener() {
+        G.addListener(new IgniteListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 if (state == STOPPED && latch != null)
                     latch.countDown();

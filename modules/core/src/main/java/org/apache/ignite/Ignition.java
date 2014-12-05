@@ -393,17 +393,17 @@ public class Ignition {
      * @param lsnr Listener for grid life cycle events. If this listener was already added
      *      this method is no-op.
      */
-    public static void addListener(GridGainListener lsnr) {
+    public static void addListener(IgniteListener lsnr) {
         GridGainEx.addListener(lsnr);
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(GridGainListener)} method.
+     * Removes lsnr added by {@link #addListener(org.gridgain.grid.IgniteListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
      */
-    public static boolean removeListener(GridGainListener lsnr) {
+    public static boolean removeListener(IgniteListener lsnr) {
         return GridGainEx.removeListener(lsnr);
     }
 }
