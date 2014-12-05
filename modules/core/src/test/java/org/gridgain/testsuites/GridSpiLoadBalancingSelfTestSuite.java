@@ -10,9 +10,9 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.loadbalancing.adaptive.*;
-import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
-import org.gridgain.grid.spi.loadbalancing.weightedrandom.*;
+import org.apache.ignite.spi.loadbalancing.adaptive.*;
+import org.apache.ignite.spi.loadbalancing.roundrobin.*;
+import org.apache.ignite.spi.loadbalancing.weightedrandom.*;
 
 /**
  * Load balancing SPI self-test suite.

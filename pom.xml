@@ -659,7 +659,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
-                                            <packages>org.gridgain.grid.spi.loadbalancing:org.gridgain.grid.spi.loadbalancing.adaptive:org.gridgain.grid.spi.loadbalancing.weightedrandom:org.gridgain.grid.spi.loadbalancing.roundrobin</packages>
+                                            <packages>org.gridgain.grid.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Communication</title>
@@ -861,7 +861,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
-                                            <packages>org.gridgain.grid.spi.loadbalancing:org.gridgain.grid.spi.loadbalancing.adaptive:org.gridgain.grid.spi.loadbalancing.weightedrandom:org.gridgain.grid.spi.loadbalancing.roundrobin</packages>
+                                            <packages>org.gridgain.grid.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Communication</title>

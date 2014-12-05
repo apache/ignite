@@ -128,7 +128,7 @@
         </property>
 
         <property name="loadBalancingSpi">
-            <bean class="org.gridgain.grid.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
+            <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
                 <property name="perTask" value="false"/>
             </bean>
         </property>

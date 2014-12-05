@@ -14,7 +14,7 @@ import java.lang.annotation.*;
 /**
  * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeLoadBalancer}.
  * Specific implementation for grid load balancer is defined by
- * {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi}
+ * {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}
  * which is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}..
  * <p>
  * Load balancer can be injected into instances of following classes:

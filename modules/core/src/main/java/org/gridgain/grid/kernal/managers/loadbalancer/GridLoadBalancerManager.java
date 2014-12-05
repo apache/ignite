@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.spi.loadbalancing.*;
+import org.apache.ignite.spi.loadbalancing.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

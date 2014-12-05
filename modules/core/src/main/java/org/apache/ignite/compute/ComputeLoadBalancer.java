@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Load balancer is used for finding the best balanced node according
  * to load balancing policy. Internally load balancer will
- * query the {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi}
+ * query the {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}
  * to get the balanced node.
  * <p>
  * Load balancer can be used <i>explicitly</i> from inside {@link ComputeTask#map(List, Object)}

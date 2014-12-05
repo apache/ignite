@@ -19,7 +19,7 @@ import org.gridgain.grid.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
-import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
+import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

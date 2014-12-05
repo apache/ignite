@@ -35,7 +35,7 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.gridgain.grid.spi.loadbalancing.*;
+import org.apache.ignite.spi.loadbalancing.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -2073,7 +2073,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured load balancing SPI implementation. If not provided,
-     * {@link org.gridgain.grid.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi} will be used.
+     * {@link org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi} will be used.
      *
      * @return Grid load balancing SPI implementation or {@code null} to use default implementation.
      */
@@ -2114,9 +2114,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi}.
+     * Sets fully configured instance of {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}.
      *
-     * @param loadBalancingSpi Fully configured instance of {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi} or
+     * @param loadBalancingSpi Fully configured instance of {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getLoadBalancingSpi()
      */

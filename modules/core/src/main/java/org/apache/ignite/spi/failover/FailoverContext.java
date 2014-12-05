@@ -36,7 +36,7 @@ public interface FailoverContext {
 
     /**
      * Gets the next balanced node for failed job. Internally this method will
-     * delegate to load balancing SPI (see {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi} to
+     * delegate to load balancing SPI (see {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi} to
      * determine the optimal node for execution.
      *
      * @param top Topology to pick balanced node from.

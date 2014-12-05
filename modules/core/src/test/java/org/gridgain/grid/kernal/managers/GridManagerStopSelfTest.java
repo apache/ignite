@@ -35,7 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.eventstorage.memory.*;
 import org.apache.ignite.spi.failover.always.*;
-import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
+import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.testframework.junits.*;

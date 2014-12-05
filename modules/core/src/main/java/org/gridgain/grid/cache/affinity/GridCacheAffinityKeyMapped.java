@@ -83,7 +83,7 @@ import java.util.concurrent.*;
  * {@link org.apache.ignite.compute.ComputeJob} or any other grid computation, such as {@link Runnable}, {@link Callable}, or
  * {@link org.apache.ignite.lang.IgniteClosure}. It should be attached to a method or field that provides affinity key
  * for the computation. Only one annotation per class is allowed. Whenever such annotation is detected,
- * then {@link org.gridgain.grid.spi.loadbalancing.LoadBalancingSpi} will be bypassed, and computation will be routed to the grid node
+ * then {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi} will be bypassed, and computation will be routed to the grid node
  * where the specified affinity key is cached. You can also use optional {@link GridCacheName @GridCacheName}
  * annotation whenever non-default cache name needs to be specified.
  * <p>
