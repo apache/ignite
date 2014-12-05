@@ -1474,7 +1474,7 @@ public class GridGainEx {
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
             GridLoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             GridSwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            GridIndexingSpi[] indexingSpi = cfg.getIndexingSpi();
+            IndexingSpi[] indexingSpi = cfg.getIndexingSpi();
 
             execSvc = cfg.getExecutorService();
             sysExecSvc = cfg.getSystemExecutorService();
@@ -1722,7 +1722,7 @@ public class GridGainEx {
             }
 
             if (indexingSpi == null)
-                indexingSpi = new GridIndexingSpi[] {(GridIndexingSpi)H2_INDEXING.createOptional()};
+                indexingSpi = new IndexingSpi[] {(IndexingSpi)H2_INDEXING.createOptional()};
 
             myCfg.setCommunicationSpi(commSpi);
             myCfg.setDiscoverySpi(discoSpi);

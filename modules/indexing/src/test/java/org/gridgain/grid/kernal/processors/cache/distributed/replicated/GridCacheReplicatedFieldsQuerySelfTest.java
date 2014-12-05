@@ -51,7 +51,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
         hasCache = true;
 
         try {
-            final Map<UUID, Map<Long, GridFutureAdapter<GridIndexingFieldsResult>>> map =
+            final Map<UUID, Map<Long, GridFutureAdapter<IndexingFieldsResult>>> map =
                 U.field(((GridKernal)grid(0)).internalCache().context().queries(), "fieldsQryRes");
 
             // Ensure that iterators map empty.
@@ -82,7 +82,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
                 }
             }, getTestTimeout()));
 
-            Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> futs = map.get(g.cluster().localNode().id());
+            Map<Long, GridFutureAdapter<IndexingFieldsResult>> futs = map.get(g.cluster().localNode().id());
 
             assertEquals(1, futs.size());
 

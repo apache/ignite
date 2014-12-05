@@ -26,7 +26,7 @@ import java.util.concurrent.*;
 /**
  * Tests for all SQL based indexing SPI implementations.
  */
-public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
+public abstract class GridIndexingSpiAbstractSelfTest<X extends IndexingSpi>
     extends GridSpiAbstractTest<X> {
     /** */
     private static final TextIndex textIdx = new TextIndex(F.asList("txt"));
@@ -126,8 +126,8 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
      * @return Indexing entity.
      * @throws GridException If failed.
      */
-    private <T> GridIndexingEntity<T> entity(T val) throws GridException {
-        return new GridIndexingEntityAdapter<>(val, getTestResources().getMarshaller().marshal(val));
+    private <T> IndexingEntity<T> entity(T val) throws GridException {
+        return new IndexingEntityAdapter<>(val, getTestResources().getMarshaller().marshal(val));
     }
 
     /**
@@ -135,7 +135,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
      * @return Value.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    private Map<String, Object> value(GridIndexingKeyValueRow<Integer, Map<String, Object>> row) throws IgniteSpiException {
+    private Map<String, Object> value(IndexingKeyValueRow<Integer, Map<String, Object>> row) throws IgniteSpiException {
         return row.value().value();
     }
 
@@ -173,8 +173,8 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         assertFalse(spi.query(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA, null).hasNext());
 
         // Nothing to remove.
-        assertFalse(spi.remove("A", new GridIndexingEntityAdapter<>(1, null)));
-        assertFalse(spi.remove("B", new GridIndexingEntityAdapter<>(1, null)));
+        assertFalse(spi.remove("A", new IndexingEntityAdapter<>(1, null)));
+        assertFalse(spi.remove("B", new IndexingEntityAdapter<>(1, null)));
 
         spi.store(typeAA.space(), typeAA, entity(1), entity(aa(1, "Vasya", 10)), "v1".getBytes(), 0);
 
@@ -223,7 +223,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         assertEquals(1, spi.size(typeBA.space(), typeBA));
 
         // Query data.
-        Iterator<GridIndexingKeyValueRow<Integer, Map<String, Object>>> res =
+        Iterator<IndexingKeyValueRow<Integer, Map<String, Object>>> res =
             spi.query(typeAA.space(), "select * from a order by age", Collections.emptySet(), typeAA, null);
 
         assertTrue(res.hasNext());
@@ -247,7 +247,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         assertFalse(res.hasNext());
 
         // Text queries
-        Iterator<GridIndexingKeyValueRow<Integer, Map<String, Object>>> txtRes = spi.queryText(typeAB.space(), "good",
+        Iterator<IndexingKeyValueRow<Integer, Map<String, Object>>> txtRes = spi.queryText(typeAB.space(), "good",
             typeAB, null);
 
         assertTrue(txtRes.hasNext());
@@ -255,7 +255,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         assertFalse(txtRes.hasNext());
 
         // Fields query
-        GridIndexingFieldsResult fieldsRes =
+        IndexingFieldsResult fieldsRes =
             spi.queryFields(null, "select a.a.name n1, a.a.age a1, b.a.name n2, " +
             "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null);
 
@@ -264,13 +264,13 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
         assertTrue(fieldsRes.iterator().hasNext());
 
-        List<GridIndexingEntity<?>> fields = fieldsRes.iterator().next();
+        List<IndexingEntity<?>> fields = fieldsRes.iterator().next();
 
         assertEquals(4, fields.size());
 
         int i = 0;
 
-        for (GridIndexingEntity<?> f : fields) {
+        for (IndexingEntity<?> f : fields) {
             assertEquals(aliases[i], fieldsRes.metaData().get(i).fieldName());
             assertEquals(vals[i++], f.value());
         }
@@ -366,7 +366,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
                 time = now;
                 range *= 3;
 
-                GridIndexingFieldsResult res = spi.queryFields(null, sql, Arrays.<Object>asList(1, range), null);
+                IndexingFieldsResult res = spi.queryFields(null, sql, Arrays.<Object>asList(1, range), null);
 
                 assert res.iterator().hasNext();
 
@@ -420,7 +420,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
             String sql = "SELECT * FROM MyNonExistingTable";
 
-            GridIndexingFieldsResult res = spi.queryFields(null, sql, Collections.emptyList(), null);
+            IndexingFieldsResult res = spi.queryFields(null, sql, Collections.emptyList(), null);
 
             assertFalse(res.iterator().hasNext());
 
@@ -439,7 +439,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
     /**
      * Index descriptor.
      */
-    private static class TextIndex implements GridIndexDescriptor {
+    private static class TextIndex implements IndexDescriptor {
         /** */
         private final Collection<String> fields;
 
@@ -461,15 +461,15 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         }
 
         /** {@inheritDoc} */
-        @Override public GridIndexType type() {
-            return GridIndexType.FULLTEXT;
+        @Override public IndexType type() {
+            return IndexType.FULLTEXT;
         }
     }
 
     /**
      * Type descriptor.
      */
-    private static class TypeDesc implements GridIndexingTypeDescriptor {
+    private static class TypeDesc implements IndexingTypeDescriptor {
         /** */
         private final String name;
 
@@ -480,7 +480,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         private final Map<String, Class<?>> valFields;
 
         /** */
-        private final GridIndexDescriptor textIdx;
+        private final IndexDescriptor textIdx;
 
         /**
          * @param space Space name.
@@ -488,7 +488,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
          * @param valFields Fields.
          * @param textIdx Fulltext index.
          */
-        private TypeDesc(String space, String name, Map<String, Class<?>> valFields, GridIndexDescriptor textIdx) {
+        private TypeDesc(String space, String name, Map<String, Class<?>> valFields, IndexDescriptor textIdx) {
             this.name = name;
             this.space = space;
             this.valFields = Collections.unmodifiableMap(valFields);
@@ -526,8 +526,8 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         }
 
         /** */
-        @Override public Map<String, GridIndexDescriptor> indexes() {
-            return textIdx == null ? Collections.<String, GridIndexDescriptor>emptyMap() :
+        @Override public Map<String, IndexDescriptor> indexes() {
+            return textIdx == null ? Collections.<String, IndexDescriptor>emptyMap() :
                 Collections.singletonMap("index", textIdx);
         }
 
@@ -550,7 +550,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
     /**
      * Indexing marshaller.
      */
-    private static class IdxMarshaller implements GridIndexingMarshaller {
+    private static class IdxMarshaller implements IndexingMarshaller {
         /** */
         private final IgniteMarshaller marshaller;
 
@@ -562,9 +562,9 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         }
 
         /** {@inheritDoc} */
-        @Override public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException {
+        @Override public <T> IndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException {
             try {
-                return new GridIndexingEntityAdapter<>(
+                return new IndexingEntityAdapter<>(
                     (T)marshaller.unmarshal(bytes, getClass().getClassLoader()), bytes);
             }
             catch (GridException e) {
@@ -573,7 +573,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException {
+        @Override public byte[] marshal(IndexingEntity<?> entity) throws IgniteSpiException {
             if (entity.bytes() != null)
                 return entity.bytes();
 

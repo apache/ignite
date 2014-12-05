@@ -14,9 +14,9 @@ import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Convenience adapter for {@link GridIndexingEntity}.
+ * Convenience adapter for {@link IndexingEntity}.
  */
-public class GridIndexingEntityAdapter<T> implements GridIndexingEntity<T> {
+public class IndexingEntityAdapter<T> implements IndexingEntity<T> {
     /** */
     @GridToStringInclude
     private final T val;
@@ -29,7 +29,7 @@ public class GridIndexingEntityAdapter<T> implements GridIndexingEntity<T> {
      * @param val Value.
      * @param bytes Value marshalled by {@link org.apache.ignite.marshaller.IgniteMarshaller}.
      */
-    public GridIndexingEntityAdapter(T val, @Nullable byte[] bytes) {
+    public IndexingEntityAdapter(T val, @Nullable byte[] bytes) {
         this.val = val;
         this.bytes = bytes;
     }
@@ -51,7 +51,7 @@ public class GridIndexingEntityAdapter<T> implements GridIndexingEntity<T> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIndexingEntityAdapter.class, this,
+        return S.toString(IndexingEntityAdapter.class, this,
             "bytesLength", (bytes == null ? 0 : bytes.length));
     }
 }

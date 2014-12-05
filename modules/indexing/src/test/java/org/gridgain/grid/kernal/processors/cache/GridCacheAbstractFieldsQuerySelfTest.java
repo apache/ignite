@@ -107,7 +107,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @param primitives Whether to index primitives.
      * @return Indexing SPI.
      */
-    private GridIndexingSpi indexing(@Nullable String name, boolean primitives) {
+    private IndexingSpi indexing(@Nullable String name, boolean primitives) {
         GridH2IndexingSpi spi = new GridH2IndexingSpi();
 
         if (name != null)
@@ -379,17 +379,17 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         GridCacheQueryFuture<List<?>> fut = qry.execute();
 
-        List<GridIndexingFieldMetadata> meta = metadata(fut);
+        List<IndexingFieldMetadata> meta = metadata(fut);
 
         assert meta != null;
         assert meta.size() == 4;
 
-        Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
+        Iterator<IndexingFieldMetadata> metaIt = meta.iterator();
 
         assert metaIt != null;
         assert metaIt.hasNext();
 
-        GridIndexingFieldMetadata field = metaIt.next();
+        IndexingFieldMetadata field = metaIt.next();
 
         assert field != null;
         assert "PUBLIC".equals(field.schemaName());
@@ -479,17 +479,17 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         GridCacheQueryFuture<List<?>> fut = qry.execute();
 
-        List<GridIndexingFieldMetadata> meta = metadata(fut);
+        List<IndexingFieldMetadata> meta = metadata(fut);
 
         assert meta != null;
         assert meta.size() == 9;
 
-        Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
+        Iterator<IndexingFieldMetadata> metaIt = meta.iterator();
 
         assert metaIt != null;
         assert metaIt.hasNext();
 
-        GridIndexingFieldMetadata field = metaIt.next();
+        IndexingFieldMetadata field = metaIt.next();
 
         assert field != null;
         assert "PUBLIC".equals(field.schemaName());
@@ -645,12 +645,12 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         assert fut != null;
 
-        List<GridIndexingFieldMetadata> meta = metadata(fut);
+        List<IndexingFieldMetadata> meta = metadata(fut);
 
         assert meta != null;
         assert meta.size() == 1;
 
-        GridIndexingFieldMetadata field = F.first(meta);
+        IndexingFieldMetadata field = F.first(meta);
 
         assert field != null;
         assert "PUBLIC".equals(field.schemaName());
@@ -689,16 +689,16 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         GridCacheQueryFuture<List<?>> fut = qry.execute();
 
-        List<GridIndexingFieldMetadata> meta = metadata(fut);
+        List<IndexingFieldMetadata> meta = metadata(fut);
 
         assert meta != null;
         assert meta.size() == 4;
 
-        Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
+        Iterator<IndexingFieldMetadata> metaIt = meta.iterator();
 
         assert metaIt.hasNext();
 
-        GridIndexingFieldMetadata field = metaIt.next();
+        IndexingFieldMetadata field = metaIt.next();
 
         assert field != null;
         assert "INTEGER".equals(field.typeName());
@@ -1109,7 +1109,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @return Metadata.
      * @throws GridException In case of error.
      */
-    private List<GridIndexingFieldMetadata> metadata(GridCacheQueryFuture<List<?>> fut) throws GridException {
+    private List<IndexingFieldMetadata> metadata(GridCacheQueryFuture<List<?>> fut) throws GridException {
         assert fut != null;
 
         return ((GridCacheQueryMetadataAware)fut).metadata().get();

@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * Space name and key filter.
  */
-public interface GridIndexingQueryFilter {
+public interface IndexingQueryFilter {
     /**
      * Creates optional predicate for space.
      *

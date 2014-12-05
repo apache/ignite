@@ -15,9 +15,9 @@ import java.util.*;
  * Describes an index to be created for a certain type. It contains all necessary
  * information about fields, order, uniqueness, and specified
  * whether this is SQL or Text index.
- * See also {@link GridIndexingTypeDescriptor#indexes()}.
+ * See also {@link IndexingTypeDescriptor#indexes()}.
  */
-public interface GridIndexDescriptor {
+public interface IndexDescriptor {
     /**
      * Gets all fields to be indexed.
      *
@@ -38,5 +38,5 @@ public interface GridIndexDescriptor {
      *
      * @return Type.
      */
-    public GridIndexType type();
+    public IndexType type();
 }

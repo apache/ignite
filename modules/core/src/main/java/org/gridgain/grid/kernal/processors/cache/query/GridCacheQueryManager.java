@@ -473,7 +473,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         else
             res = new QueryResult<>(qry.type(), recipient);
 
-        GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
+        GridCloseableIterator<IndexingKeyValueRow<K, V>> iter;
 
         try {
             switch (qry.type()) {
@@ -621,7 +621,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         boolean cached = qryResCache.putIfAbsent(resKey, res) == null;
 
         try {
-            GridIndexingFieldsResult qryRes = idxMgr.queryFields(spi, space, qry.clause(), F.asList(args),
+            IndexingFieldsResult qryRes = idxMgr.queryFields(spi, space, qry.clause(), F.asList(args),
                 qry.includeBackups(), projectionFilter(qry));
 
             res.metaData(qryRes.metaData());
@@ -643,7 +643,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Cache set items iterator.
      */
-    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> setIterator(GridCacheQueryAdapter<?> qry) {
+    private GridCloseableIterator<IndexingKeyValueRow<K, V>> setIterator(GridCacheQueryAdapter<?> qry) {
         final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
 
         filter.init(cctx);
@@ -655,11 +655,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (data == null)
             data = Collections.emptyList();
 
-        final GridIterator<GridIndexingKeyValueRow<K, V>> it = F.iterator(
+        final GridIterator<IndexingKeyValueRow<K, V>> it = F.iterator(
             data,
-            new C1<GridCacheSetItemKey, GridIndexingKeyValueRow<K, V>>() {
-                @Override public GridIndexingKeyValueRow<K, V> apply(GridCacheSetItemKey e) {
-                    return new GridIndexingKeyValueRowAdapter<>((K)e.item(), (V)Boolean.TRUE);
+            new C1<GridCacheSetItemKey, IndexingKeyValueRow<K, V>>() {
+                @Override public IndexingKeyValueRow<K, V> apply(GridCacheSetItemKey e) {
+                    return new IndexingKeyValueRowAdapter<>((K)e.item(), (V)Boolean.TRUE);
                 }
             },
             true,
@@ -669,12 +669,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             });
 
-        return new GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+        return new GridCloseableIteratorAdapter<IndexingKeyValueRow<K, V>>() {
             @Override protected boolean onHasNext() {
                 return it.hasNext();
             }
 
-            @Override protected GridIndexingKeyValueRow<K, V> onNext() {
+            @Override protected IndexingKeyValueRow<K, V> onNext() {
                 return it.next();
             }
 
@@ -694,7 +694,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridException If failed to get iterator.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
+    private GridCloseableIterator<IndexingKeyValueRow<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws GridException {
         IgnitePredicate<GridCacheEntry<K, V>> filter = null;
 
@@ -717,8 +717,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         injectResources(keyValFilter);
 
-        GridIterator<GridIndexingKeyValueRow<K, V>> heapIt = new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
-            private GridIndexingKeyValueRow<K, V> next;
+        GridIterator<IndexingKeyValueRow<K, V>> heapIt = new GridIteratorAdapter<IndexingKeyValueRow<K, V>>() {
+            private IndexingKeyValueRow<K, V> next;
 
             private Iterator<K> iter = prj.keySet().iterator();
 
@@ -730,11 +730,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 return next != null;
             }
 
-            @Override public GridIndexingKeyValueRow<K, V> nextX() {
+            @Override public IndexingKeyValueRow<K, V> nextX() {
                 if (next == null)
                     throw new NoSuchElementException();
 
-                GridIndexingKeyValueRow<K, V> next0 = next;
+                IndexingKeyValueRow<K, V> next0 = next;
 
                 advance();
 
@@ -766,7 +766,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 next = next0 != null ?
-                    new GridIndexingKeyValueRowAdapter<>(next0.getKey(), next0.getValue()) :
+                    new IndexingKeyValueRowAdapter<>(next0.getKey(), next0.getValue()) :
                     null;
             }
 
@@ -781,10 +781,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         };
 
-        final GridIterator<GridIndexingKeyValueRow<K, V>> it;
+        final GridIterator<IndexingKeyValueRow<K, V>> it;
 
         if (cctx.isSwapOrOffheapEnabled()) {
-            List<GridIterator<GridIndexingKeyValueRow<K, V>>> iters = new ArrayList<>(3);
+            List<GridIterator<IndexingKeyValueRow<K, V>>> iters = new ArrayList<>(3);
 
             iters.add(heapIt);
 
@@ -799,12 +799,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         else
             it = heapIt;
 
-        return new GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+        return new GridCloseableIteratorAdapter<IndexingKeyValueRow<K, V>>() {
             @Override protected boolean onHasNext() {
                 return it.hasNext();
             }
 
-            @Override protected GridIndexingKeyValueRow<K, V> onNext() {
+            @Override protected IndexingKeyValueRow<K, V> onNext() {
                 return it.next();
             }
 
@@ -819,7 +819,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Swap iterator.
      * @throws GridException If failed.
      */
-    private GridIterator<GridIndexingKeyValueRow<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
+    private GridIterator<IndexingKeyValueRow<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
         throws GridException {
         IgnitePredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
 
@@ -834,7 +834,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Offheap iterator.
      */
-    private GridIterator<GridIndexingKeyValueRow<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
+    private GridIterator<IndexingKeyValueRow<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
         IgnitePredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
@@ -858,7 +858,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param keepPortable Keep portable flag.
      * @return Iterator.
      */
-    private GridIteratorAdapter<GridIndexingKeyValueRow<K, V>> scanIterator(
+    private GridIteratorAdapter<IndexingKeyValueRow<K, V>> scanIterator(
         @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
         @Nullable final IgnitePredicate<GridCacheEntry<Object, Object>> prjPred,
         @Nullable final IgniteBiPredicate<K, V> filter,
@@ -866,8 +866,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (it == null)
             return new GridEmptyCloseableIterator<>();
 
-        return new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
-            private GridIndexingKeyValueRow<K, V> next;
+        return new GridIteratorAdapter<IndexingKeyValueRow<K, V>>() {
+            private IndexingKeyValueRow<K, V> next;
 
             {
                 advance();
@@ -877,11 +877,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 return next != null;
             }
 
-            @Override public GridIndexingKeyValueRow<K, V> nextX() {
+            @Override public IndexingKeyValueRow<K, V> nextX() {
                 if (next == null)
                     throw new NoSuchElementException();
 
-                GridIndexingKeyValueRow<K, V> next0 = next;
+                IndexingKeyValueRow<K, V> next0 = next;
 
                 advance();
 
@@ -913,7 +913,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             continue;
                     }
 
-                    next = new GridIndexingKeyValueRowAdapter<>(e.key(), e.value());
+                    next = new IndexingKeyValueRowAdapter<>(e.key(), e.value());
 
                     break;
                 }
@@ -974,7 +974,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 int pageSize = qry.pageSize();
 
                 Collection<Object> data = null;
-                Collection<List<GridIndexingEntity<?>>> entities = null;
+                Collection<List<IndexingEntity<?>>> entities = null;
 
                 if (qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))
                     data = new ArrayList<>(pageSize);
@@ -989,14 +989,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     fieldsQueryResult(qryInfo, taskName);
 
                 // If metadata needs to be returned to user and cleaned from internal fields - copy it.
-                List<GridIndexingFieldMetadata> meta = qryInfo.includeMetaData() ?
+                List<IndexingFieldMetadata> meta = qryInfo.includeMetaData() ?
                     (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                     res.metaData();
 
                 if (!qryInfo.includeMetaData())
                     meta = null;
 
-                GridCloseableIterator<List<GridIndexingEntity<?>>> it = new GridSpiCloseableIteratorWrapper<>(
+                GridCloseableIterator<List<IndexingEntity<?>>> it = new GridSpiCloseableIteratorWrapper<>(
                     res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId())));
 
                 if (log.isDebugEnabled())
@@ -1015,7 +1015,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 boolean metaSent = false;
 
                 while (!Thread.currentThread().isInterrupted() && it.hasNext()) {
-                    List<GridIndexingEntity<?>> row = it.next();
+                    List<IndexingEntity<?>> row = it.next();
 
                     // Query is cancelled.
                     if (row == null) {
@@ -1041,8 +1041,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             null,
                             null,
                             null,
-                            F.viewListReadOnly(row, new CX1<GridIndexingEntity<?>, Object>() {
-                                @Override public Object applyx(GridIndexingEntity<?> ent) throws GridException {
+                            F.viewListReadOnly(row, new CX1<IndexingEntity<?>, Object>() {
+                                @Override public Object applyx(IndexingEntity<?> ent) throws GridException {
                                     return ent.value();
                                 }
                             })));
@@ -1051,7 +1051,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if ((qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))) {
                         List<Object> fields = new ArrayList<>(row.size());
 
-                        for (GridIndexingEntity<?> ent : row)
+                        for (IndexingEntity<?> ent : row)
                             fields.add(ent.value());
 
                         // Reduce.
@@ -1153,7 +1153,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
-                IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
+                IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> iter;
                 GridCacheQueryType type;
 
                 QueryResult<K, V> res;
@@ -1182,7 +1182,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 long topVer = cctx.affinity().affinityTopologyVersion();
 
                 while (!Thread.currentThread().isInterrupted() && iter.hasNext()) {
-                    GridIndexingKeyValueRow<K, V> row = iter.next();
+                    IndexingKeyValueRow<K, V> row = iter.next();
 
                     // Query is cancelled.
                     if (row == null) {
@@ -1204,7 +1204,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         continue;
                     }
 
-                    GridIndexingEntity<V> v = row.value();
+                    IndexingEntity<V> v = row.value();
 
                     assert v != null && v.hasValue();
 
@@ -1623,8 +1623,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return {@code true} if page was processed right.
      */
     protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        @Nullable List<GridIndexingFieldMetadata> metaData,
-        @Nullable Collection<List<GridIndexingEntity<?>>> entities,
+        @Nullable List<IndexingFieldMetadata> metaData,
+        @Nullable Collection<List<IndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e);
 
@@ -1641,7 +1641,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return;
 
         if (GridUtils.isPrimitiveOrWrapper(cls)) {
-            for (GridIndexingSpi indexingSpi : cctx.gridConfig().getIndexingSpi()) {
+            for (IndexingSpi indexingSpi : cctx.gridConfig().getIndexingSpi()) {
                 if (!isDefaultIndexPrimitiveKey(indexingSpi))
                     throw new IllegalStateException("Invalid use of primitive class type in queries when " +
                         "GridH2IndexingSpi.isDefaultIndexPrimitiveKey() is disabled " +
@@ -1747,7 +1747,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
+    @Nullable private IndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
         final IgnitePredicate<GridCacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
@@ -1755,7 +1755,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (prjFilter == null || F.isAlwaysTrue(prjFilter))
             return null;
 
-        return new GridIndexingQueryFilter() {
+        return new IndexingQueryFilter() {
             @Nullable @Override public IgniteBiPredicate<K, V> forSpace(String spaceName) throws GridException {
                 if (!F.eq(space, spaceName))
                     return null;
@@ -1780,7 +1780,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param indexingSpi Indexing SPI.
      * @return {@code True} if given SPI is GridH2IndexingSpi with enabled property {@code isDefaultIndexPrimitiveKey}.
      */
-    private static boolean isDefaultIndexPrimitiveKey(GridIndexingSpi indexingSpi) {
+    private static boolean isDefaultIndexPrimitiveKey(IndexingSpi indexingSpi) {
         if (indexingSpi.getClass().getName().equals(GridComponentType.H2_INDEXING.className())) {
             try {
                 Method method = indexingSpi.getClass().getMethod("isDefaultIndexPrimitiveKey");
@@ -1855,7 +1855,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             return F.transform(cacheNames, new C1<String, CacheSqlMetadata>() {
                 @Override public CacheSqlMetadata apply(String cacheName) {
-                    Collection<GridIndexingTypeDescriptor> types = ctx.indexing().types(cacheName);
+                    Collection<IndexingTypeDescriptor> types = ctx.indexing().types(cacheName);
 
                     Collection<String> names = U.newHashSet(types.size());
                     Map<String, String> keyClasses = U.newHashMap(types.size());
@@ -1863,7 +1863,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     Map<String, Map<String, String>> fields = U.newHashMap(types.size());
                     Map<String, Collection<GridCacheSqlIndexMetadata>> indexes = U.newHashMap(types.size());
 
-                    for (GridIndexingTypeDescriptor type : types) {
+                    for (IndexingTypeDescriptor type : types) {
                         // Filter internal types (e.g., data structures).
                         if (type.name().startsWith("GridCache"))
                             continue;
@@ -1892,11 +1892,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         Collection<GridCacheSqlIndexMetadata> indexesCol =
                             new ArrayList<>(type.indexes().size());
 
-                        for (Map.Entry<String, GridIndexDescriptor> e : type.indexes().entrySet()) {
-                            GridIndexDescriptor desc = e.getValue();
+                        for (Map.Entry<String, IndexDescriptor> e : type.indexes().entrySet()) {
+                            IndexDescriptor desc = e.getValue();
 
                             // Add only SQL indexes.
-                            if (desc.type() == GridIndexType.SORTED) {
+                            if (desc.type() == IndexType.SORTED) {
                                 Collection<String> idxFields = e.getValue().fields();
                                 Collection<String> descendings = new LinkedList<>();
 
@@ -2143,7 +2143,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      */
-    private static class QueryResult<K, V> extends CachedResult<GridIndexingKeyValueRow<K, V>> {
+    private static class QueryResult<K, V> extends CachedResult<IndexingKeyValueRow<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2171,12 +2171,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      *
      */
-    private static class FieldsResult extends CachedResult<List<GridIndexingEntity<?>>> {
+    private static class FieldsResult extends CachedResult<List<IndexingEntity<?>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private List<GridIndexingFieldMetadata> meta;
+        private List<IndexingFieldMetadata> meta;
 
         /**
          * @param recipient ID of the recipient.
@@ -2188,7 +2188,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @return Metadata.
          */
-        public List<GridIndexingFieldMetadata> metaData() throws GridException {
+        public List<IndexingFieldMetadata> metaData() throws GridException {
             get(); // Ensure that result is ready.
 
             return meta;
@@ -2197,7 +2197,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @param meta Metadata.
          */
-        public void metaData(List<GridIndexingFieldMetadata> meta) {
+        public void metaData(List<IndexingFieldMetadata> meta) {
             this.meta = meta;
         }
     }
@@ -2387,7 +2387,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      */
     private class OffheapIteratorClosure
-        extends CX2<T2<Long, Integer>, T2<Long, Integer>, GridIndexingKeyValueRow<K, V>> {
+        extends CX2<T2<Long, Integer>, T2<Long, Integer>, IndexingKeyValueRow<K, V>> {
         /** */
         private static final long serialVersionUID = 7410163202728985912L;
 
@@ -2417,7 +2417,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridIndexingKeyValueRow<K, V> applyx(T2<Long, Integer> keyPtr,
+        @Nullable @Override public IndexingKeyValueRow<K, V> applyx(T2<Long, Integer> keyPtr,
             T2<Long, Integer> valPtr)
             throws GridException {
             LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
@@ -2437,7 +2437,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     return null;
             }
 
-            return new GridIndexingKeyValueRowAdapter<>(e.key(), (V)cctx.unwrapTemporary(e.value())) ;
+            return new IndexingKeyValueRowAdapter<>(e.key(), (V)cctx.unwrapTemporary(e.value())) ;
         }
     }
 

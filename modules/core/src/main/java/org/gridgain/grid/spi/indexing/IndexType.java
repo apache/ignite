@@ -12,7 +12,7 @@ package org.gridgain.grid.spi.indexing;
 /**
  * Index types.
  */
-public enum GridIndexType {
+public enum IndexType {
     /** Sorted SQL index. */
     SORTED,
 

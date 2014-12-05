@@ -15,14 +15,14 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Convenience adapter for {@link GridIndexingFieldsResult}.
+ * Convenience adapter for {@link IndexingFieldsResult}.
  */
-public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult {
+public class IndexingFieldsResultAdapter implements IndexingFieldsResult {
     /** Meta data. */
-    private final List<GridIndexingFieldMetadata> metaData;
+    private final List<IndexingFieldMetadata> metaData;
 
     /** Result iterator. */
-    private final IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> it;
+    private final IgniteSpiCloseableIterator<List<IndexingEntity<?>>> it;
 
     /**
      * Creates query field result composed of field metadata and iterator
@@ -31,19 +31,19 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
      * @param metaData Meta data.
      * @param it Result iterator.
      */
-    public GridIndexingFieldsResultAdapter(@Nullable List<GridIndexingFieldMetadata> metaData,
-        IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> it) {
+    public IndexingFieldsResultAdapter(@Nullable List<IndexingFieldMetadata> metaData,
+                                       IgniteSpiCloseableIterator<List<IndexingEntity<?>>> it) {
         this.metaData = metaData != null ? Collections.unmodifiableList(metaData) : null;
         this.it = it;
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridIndexingFieldMetadata> metaData() {
+    @Override public List<IndexingFieldMetadata> metaData() {
         return metaData;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> iterator() {
+    @Override public IgniteSpiCloseableIterator<List<IndexingEntity<?>>> iterator() {
         return it;
     }
 }

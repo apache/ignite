@@ -16,9 +16,9 @@ import java.util.*;
 
 /**
  * Value descriptor which allows to extract fields from value object of given type.
- * See also {@link GridIndexingSpi#registerType(String, GridIndexingTypeDescriptor)}.
+ * See also {@link IndexingSpi#registerType(String, IndexingTypeDescriptor)}.
  */
-public interface GridIndexingTypeDescriptor {
+public interface IndexingTypeDescriptor {
     /**
      * Gets type name which uniquely identifies this type.
      *
@@ -30,7 +30,7 @@ public interface GridIndexingTypeDescriptor {
      * Gets mapping from values field name to its type.
      *
      * @return Fields that can be indexed, participate in queries and can be queried using
-     *      {@link GridIndexingSpi#queryFields(String, String, Collection, GridIndexingQueryFilter[])}
+     *      {@link IndexingSpi#queryFields(String, String, Collection, IndexingQueryFilter[])}
      *      method.
      */
     public Map<String, Class<?>> valueFields();
@@ -39,7 +39,7 @@ public interface GridIndexingTypeDescriptor {
      * Gets mapping from keys field name to its type.
      *
      * @return Fields that can be indexed, participate in queries and can be queried using
-     *      {@link GridIndexingSpi#queryFields(String, String, Collection, GridIndexingQueryFilter[])}
+     *      {@link IndexingSpi#queryFields(String, String, Collection, IndexingQueryFilter[])}
      *      method.
      */
     public Map<String, Class<?>> keyFields();
@@ -59,7 +59,7 @@ public interface GridIndexingTypeDescriptor {
      *
      * @return Indexes for this type.
      */
-    public Map<String, GridIndexDescriptor> indexes();
+    public Map<String, IndexDescriptor> indexes();
 
     /**
      * Gets value class.

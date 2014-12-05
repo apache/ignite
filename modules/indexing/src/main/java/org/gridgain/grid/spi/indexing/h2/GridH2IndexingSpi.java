@@ -45,7 +45,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.spi.indexing.GridIndexType.*;
+import static org.gridgain.grid.spi.indexing.IndexType.*;
 import static org.gridgain.grid.spi.indexing.h2.opt.GridH2AbstractKeyValueRow.*;
 import static org.h2.result.SortOrder.*;
 
@@ -56,10 +56,10 @@ import static org.h2.result.SortOrder.*;
  * with name {@code PUBLIC} will be used. To avoid name conflicts user should not explicitly name
  * a schema {@code PUBLIC}.
  * <p>
- * For each registered {@link GridIndexingTypeDescriptor} this SPI will create respective SQL table with
+ * For each registered {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor} this SPI will create respective SQL table with
  * {@code '_key'} and {@code '_val'} fields for key and value, and fields from
- * {@link GridIndexingTypeDescriptor#keyFields()} and {@link GridIndexingTypeDescriptor#valueFields()}.
- * For each table it will create indexes declared in {@link GridIndexingTypeDescriptor#indexes()}.
+ * {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor#keyFields()} and {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor#valueFields()}.
+ * For each table it will create indexes declared in {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor#indexes()}.
  * <p>
  * Note that you can monitor longer queries by setting {@link #setLongQueryExplain(boolean)} to {@code true}.
  * In this case a warning and execution plan are printed out if query exceeds certain time threshold. The
@@ -131,11 +131,11 @@ import static org.h2.result.SortOrder.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridIndexingSpi
+ * @see org.gridgain.grid.spi.indexing.IndexingSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
-public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi, GridH2IndexingSpiMBean {
+public class GridH2IndexingSpi extends IgniteSpiAdapter implements IndexingSpi, GridH2IndexingSpiMBean {
     /** Default query execution time interpreted as long query (3 seconds). */
     public static final long DFLT_LONG_QRY_EXEC_TIMEOUT = 3000;
 
@@ -244,7 +244,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
 
     /** Marshaller. */
-    private GridIndexingMarshaller marshaller;
+    private IndexingMarshaller marshaller;
 
     /** */
     private GridUnsafeMemory offheap;
@@ -406,7 +406,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param tblToUpdate Table to update.
      * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
-    private <K> void removeKey(@Nullable String spaceName, GridIndexingEntity<K> k, TableDescriptor tblToUpdate)
+    private <K> void removeKey(@Nullable String spaceName, IndexingEntity<K> k, TableDescriptor tblToUpdate)
         throws IgniteSpiException {
         K key = k.value();
 
@@ -471,8 +471,8 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type,
-        GridIndexingEntity<K> k, GridIndexingEntity<V> v, byte[] ver, long expirationTime)
+    @Override public <K, V> void store(@Nullable String spaceName, IndexingTypeDescriptor type,
+        IndexingEntity<K> k, IndexingEntity<V> v, byte[] ver, long expirationTime)
         throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
@@ -498,7 +498,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> k) throws IgniteSpiException {
+    @Override public <K> boolean remove(@Nullable String spaceName, IndexingEntity<K> k) throws IgniteSpiException {
         assert k != null;
 
         K key = k.value();
@@ -652,9 +652,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
-        @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
-        GridIndexingQueryFilter filters) throws IgniteSpiException {
+    @Override public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> queryText(
+        @Nullable String spaceName, String qry, IndexingTypeDescriptor type,
+        IndexingQueryFilter filters) throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl != null && tbl.luceneIdx != null)
@@ -664,7 +664,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type)
+    @Override public void unregisterType(@Nullable String spaceName, IndexingTypeDescriptor type)
         throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
@@ -674,8 +674,8 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final GridIndexingQueryFilter filters)
+    @Override public <K, V> IndexingFieldsResult queryFields(@Nullable final String spaceName, final String qry,
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filters)
         throws IgniteSpiException {
         localSpi.set(this);
 
@@ -686,7 +686,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
             ResultSet rs = executeSqlQueryWithTimer(conn, qry, params);
 
-            List<GridIndexingFieldMetadata> meta = null;
+            List<IndexingFieldMetadata> meta = null;
 
             if (rs != null) {
                 try {
@@ -708,7 +708,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                 }
             }
 
-            return new GridIndexingFieldsResultAdapter(meta, new FieldsIterator(rs));
+            return new IndexingFieldsResultAdapter(meta, new FieldsIterator(rs));
         }
         finally {
             setFilters(null);
@@ -869,9 +869,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
-        final String qry, @Nullable final Collection<Object> params, GridIndexingTypeDescriptor type,
-        final GridIndexingQueryFilter filters) throws IgniteSpiException {
+    @Override public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
+        final String qry, @Nullable final Collection<Object> params, IndexingTypeDescriptor type,
+        final IndexingQueryFilter filters) throws IgniteSpiException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -900,7 +900,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param filters Filters.
      */
-    private void setFilters(@Nullable GridIndexingQueryFilter filters) {
+    private void setFilters(@Nullable IndexingQueryFilter filters) {
         GridH2IndexBase.setFiltersForThread(filters);
     }
 
@@ -962,7 +962,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param type Type description.
      * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
-    @Override public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor type)
+    @Override public boolean registerType(@Nullable String spaceName, IndexingTypeDescriptor type)
         throws IgniteSpiException {
         if (!validateTypeDescriptor(spaceName, type))
             return false;
@@ -1023,7 +1023,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @return True if type is valid.
      * @throws org.apache.ignite.spi.IgniteSpiException If validation failed.
      */
-    private boolean validateTypeDescriptor(@Nullable String spaceName, GridIndexingTypeDescriptor type)
+    private boolean validateTypeDescriptor(@Nullable String spaceName, IndexingTypeDescriptor type)
         throws IgniteSpiException {
         assert type != null;
 
@@ -1152,7 +1152,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param type Value type descriptor.
      * @return Table descriptor or {@code null} if not found.
      */
-    @Nullable private TableDescriptor tableDescriptor(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+    @Nullable private TableDescriptor tableDescriptor(@Nullable String spaceName, IndexingTypeDescriptor type) {
         return tableDescriptor(type.name(), spaceName);
     }
 
@@ -1201,7 +1201,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public void rebuildIndexes(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+    @Override public void rebuildIndexes(@Nullable String spaceName, IndexingTypeDescriptor type) {
         if (offheap != null)
             throw new UnsupportedOperationException("Index rebuilding is not supported when off-heap memory is used");
 
@@ -1214,19 +1214,19 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public long size(@Nullable String spaceName, GridIndexingTypeDescriptor type) throws IgniteSpiException {
+    @Override public long size(@Nullable String spaceName, IndexingTypeDescriptor type) throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
             return -1;
 
-        IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> iter = queryFields(spaceName,
+        IgniteSpiCloseableIterator<List<IndexingEntity<?>>> iter = queryFields(spaceName,
             "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null).iterator();
 
         if (!iter.hasNext())
             throw new IllegalStateException();
 
-        return ((GridIndexingEntityAdapter<Number>)iter.next().get(0)).value().longValue();
+        return ((IndexingEntityAdapter<Number>)iter.next().get(0)).value().longValue();
     }
 
     /** {@inheritDoc} */
@@ -1724,7 +1724,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public void registerMarshaller(GridIndexingMarshaller marshaller) {
+    @Override public void registerMarshaller(IndexingMarshaller marshaller) {
         this.marshaller = marshaller;
     }
 
@@ -1943,7 +1943,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         private final String fullTblName;
 
         /** */
-        private final GridIndexingTypeDescriptor type;
+        private final IndexingTypeDescriptor type;
 
         /** */
         private final String spaceName;
@@ -1961,7 +1961,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
          * @param spaceName Space name.
          * @param type Type descriptor.
          */
-        TableDescriptor(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+        TableDescriptor(@Nullable String spaceName, IndexingTypeDescriptor type) {
             this.spaceName = spaceName;
             this.type = type;
 
@@ -1994,7 +1994,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         /**
          * @return Type.
          */
-        GridIndexingTypeDescriptor type() {
+        IndexingTypeDescriptor type() {
             return type;
         }
 
@@ -2020,9 +2020,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                 }
             }
 
-            for (Map.Entry<String, GridIndexDescriptor> e : type.indexes().entrySet()) {
+            for (Map.Entry<String, IndexDescriptor> e : type.indexes().entrySet()) {
                 String name = e.getKey();
-                GridIndexDescriptor idx = e.getValue();
+                IndexDescriptor idx = e.getValue();
 
                 if (idx.type() == FULLTEXT) {
                     try {
@@ -2064,7 +2064,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     /**
      * Special field set iterator based on database result set.
      */
-    private static class FieldsIterator extends GridH2ResultSetIterator<List<GridIndexingEntity<?>>> {
+    private static class FieldsIterator extends GridH2ResultSetIterator<List<IndexingEntity<?>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2077,12 +2077,12 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         }
 
         /** {@inheritDoc} */
-        @Override protected List<GridIndexingEntity<?>> createRow() {
-            List<GridIndexingEntity<?>> res = new ArrayList<>(row.length);
+        @Override protected List<IndexingEntity<?>> createRow() {
+            List<IndexingEntity<?>> res = new ArrayList<>(row.length);
 
             for (Object val : row) {
-                res.add(val instanceof GridIndexingEntity ? (GridIndexingEntity<?>)val :
-                    new GridIndexingEntityAdapter<>(val, null));
+                res.add(val instanceof IndexingEntity ? (IndexingEntity<?>)val :
+                    new IndexingEntityAdapter<>(val, null));
             }
 
             return res;
@@ -2092,7 +2092,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     /**
      * Special key/value iterator based on database result set.
      */
-    private static class KeyValIterator<K, V> extends GridH2ResultSetIterator<GridIndexingKeyValueRow<K, V>> {
+    private static class KeyValIterator<K, V> extends GridH2ResultSetIterator<IndexingKeyValueRow<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2105,19 +2105,19 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         }
 
         /** {@inheritDoc} */
-        @Override protected GridIndexingKeyValueRow<K, V> createRow() {
+        @Override protected IndexingKeyValueRow<K, V> createRow() {
             K key = (K)row[0];
             V val = (V)row[1];
 
-            return new GridIndexingKeyValueRowAdapter<>(new GridIndexingEntityAdapter<>(key, null),
-                new GridIndexingEntityAdapter<>(val, null), null);
+            return new IndexingKeyValueRowAdapter<>(new IndexingEntityAdapter<>(key, null),
+                new IndexingEntityAdapter<>(val, null), null);
         }
     }
 
     /**
      * Field descriptor.
      */
-    private static class SqlFieldMetadata implements GridIndexingFieldMetadata {
+    private static class SqlFieldMetadata implements IndexingFieldMetadata {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2221,7 +2221,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      */
     private class RowDescriptor implements GridH2RowDescriptor {
         /** */
-        private final GridIndexingTypeDescriptor type;
+        private final IndexingTypeDescriptor type;
 
         /** */
         private final String[] fields;
@@ -2252,7 +2252,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
          * @param schema Schema.
          * @param keyAsObj Store key as java object.
          */
-        RowDescriptor(GridIndexingTypeDescriptor type, Schema schema, boolean keyAsObj) {
+        RowDescriptor(IndexingTypeDescriptor type, Schema schema, boolean keyAsObj) {
             assert type != null;
             assert schema != null;
 
@@ -2387,7 +2387,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     private static class H2Serializer implements JavaObjectSerializer {
         /** {@inheritDoc} */
         @Override public byte[] serialize(Object o) throws Exception {
-            return localSpi.get().marshaller.marshal(new GridIndexingEntityAdapter<>(o, null));
+            return localSpi.get().marshaller.marshal(new IndexingEntityAdapter<>(o, null));
         }
 
         /** {@inheritDoc} */

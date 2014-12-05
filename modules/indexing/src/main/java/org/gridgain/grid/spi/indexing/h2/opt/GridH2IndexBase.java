@@ -27,7 +27,7 @@ import java.util.*;
  */
 public abstract class GridH2IndexBase extends BaseIndex {
     /** */
-    protected static final ThreadLocal<GridIndexingQueryFilter> filters = new ThreadLocal<>();
+    protected static final ThreadLocal<IndexingQueryFilter> filters = new ThreadLocal<>();
 
     /** */
     protected final int keyCol;
@@ -49,7 +49,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      *
      * @param fs Filters.
      */
-    public static void setFiltersForThread(GridIndexingQueryFilter fs) {
+    public static void setFiltersForThread(IndexingQueryFilter fs) {
         filters.set(fs);
     }
 
@@ -105,7 +105,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
         IgniteBiPredicate<Object, Object> p = null;
 
-        GridIndexingQueryFilter f = filters.get();
+        IndexingQueryFilter f = filters.get();
 
         if (f != null) {
             String spaceName = ((GridH2Table)getTable()).spaceName();

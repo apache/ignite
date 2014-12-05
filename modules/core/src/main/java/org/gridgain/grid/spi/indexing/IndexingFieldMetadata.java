@@ -15,7 +15,7 @@ import java.io.*;
  * Query field descriptor. This descriptor is used to provide metadata
  * about fields returned in query result.
  */
-public interface GridIndexingFieldMetadata extends Externalizable {
+public interface IndexingFieldMetadata extends Externalizable {
     /**
      * Gets schema name.
      *

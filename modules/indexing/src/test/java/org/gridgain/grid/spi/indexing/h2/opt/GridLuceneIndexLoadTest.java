@@ -29,7 +29,7 @@ public class GridLuceneIndexLoadTest {
     public static void main(String ... args) throws IgniteSpiException, FileNotFoundException {
         final IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();
 
-        GridIndexingTypeDescriptor desc = new GridIndexingTypeDescriptor() {
+        IndexingTypeDescriptor desc = new IndexingTypeDescriptor() {
             @Override public String name() {
                 return "StrType";
             }
@@ -46,8 +46,8 @@ public class GridLuceneIndexLoadTest {
                 throw new IllegalStateException();
             }
 
-            @Override public Map<String, GridIndexDescriptor> indexes() {
-                return Collections.<String, GridIndexDescriptor>singletonMap("txt_idx", new GridIndexDescriptor() {
+            @Override public Map<String, IndexDescriptor> indexes() {
+                return Collections.<String, IndexDescriptor>singletonMap("txt_idx", new IndexDescriptor() {
                     @Override public Collection<String> fields() {
                         return Collections.emptyList();
                     }
@@ -56,8 +56,8 @@ public class GridLuceneIndexLoadTest {
                         return false;
                     }
 
-                    @Override public GridIndexType type() {
-                        return GridIndexType.FULLTEXT;
+                    @Override public IndexType type() {
+                        return IndexType.FULLTEXT;
                     }
                 });
             }
@@ -75,17 +75,17 @@ public class GridLuceneIndexLoadTest {
             }
         };
 
-        GridLuceneIndex idx = new GridLuceneIndex(new GridIndexingMarshaller() {
-            @Override public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException {
+        GridLuceneIndex idx = new GridLuceneIndex(new IndexingMarshaller() {
+            @Override public <T> IndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException {
                 try {
-                    return new GridIndexingEntityAdapter<>(m.<T>unmarshal(bytes, null), bytes);
+                    return new IndexingEntityAdapter<>(m.<T>unmarshal(bytes, null), bytes);
                 }
                 catch (GridException e) {
                     throw new IgniteSpiException(e);
                 }
             }
 
-            @Override public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException {
+            @Override public byte[] marshal(IndexingEntity<?> entity) throws IgniteSpiException {
                 try {
                     return m.marshal(entity.value());
                 }
@@ -104,8 +104,8 @@ public class GridLuceneIndexLoadTest {
         long begin = System.currentTimeMillis();
 
         for (int i = 0, len = 10000000 ; i < len; i++) {
-            idx.store(new GridIndexingEntityAdapter<>(i, null),
-                new GridIndexingEntityAdapter<Object>(sentence(rnd, ws), null),
+            idx.store(new IndexingEntityAdapter<>(i, null),
+                new IndexingEntityAdapter<Object>(sentence(rnd, ws), null),
                 ver, 0L);
 
             if (i % 10000 == 0) {

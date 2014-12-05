@@ -46,7 +46,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridIndexingSpi extends IgniteSpi {
+public interface IndexingSpi extends IgniteSpi {
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
@@ -57,8 +57,8 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return Query result.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingQueryFilter filters) throws IgniteSpiException;
+    public <K, V> IndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
+        Collection<Object> params, IndexingQueryFilter filters) throws IgniteSpiException;
 
     /**
      * Executes regular query.
@@ -71,8 +71,8 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return Queried rows.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters)
+    public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> query(@Nullable String spaceName, String qry,
+        Collection<Object> params, IndexingTypeDescriptor type, IndexingQueryFilter filters)
         throws IgniteSpiException;
 
     /**
@@ -85,8 +85,8 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return Queried rows.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable String spaceName, String qry,
-        GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters) throws IgniteSpiException;
+    public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> queryText(@Nullable String spaceName, String qry,
+        IndexingTypeDescriptor type, IndexingQueryFilter filters) throws IgniteSpiException;
 
     /**
      * Gets size of index for given type or -1 if it is a unknown type.
@@ -96,7 +96,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return Objects number.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public long size(@Nullable String spaceName, GridIndexingTypeDescriptor desc) throws IgniteSpiException;
+    public long size(@Nullable String spaceName, IndexingTypeDescriptor desc) throws IgniteSpiException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -106,7 +106,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor desc) throws IgniteSpiException;
+    public boolean registerType(@Nullable String spaceName, IndexingTypeDescriptor desc) throws IgniteSpiException;
 
     /**
      * Unregisters type and removes all corresponding data.
@@ -115,7 +115,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param type Type descriptor.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type) throws IgniteSpiException;
+    public void unregisterType(@Nullable String spaceName, IndexingTypeDescriptor type) throws IgniteSpiException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
@@ -129,8 +129,8 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type, GridIndexingEntity<K> key,
-        GridIndexingEntity<V> val, byte[] ver, long expirationTime) throws IgniteSpiException;
+    public <K, V> void store(@Nullable String spaceName, IndexingTypeDescriptor type, IndexingEntity<K> key,
+        IndexingEntity<V> val, byte[] ver, long expirationTime) throws IgniteSpiException;
 
     /**
      * Removes index entry by key.
@@ -140,7 +140,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return {@code True} if removed by this operation, {@code false} otherwise.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> key) throws IgniteSpiException;
+    public <K> boolean remove(@Nullable String spaceName, IndexingEntity<K> key) throws IgniteSpiException;
 
     /**
      * Will be called when entry with given key is swapped.
@@ -168,7 +168,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      *
      * @param marshaller Marshaller.
      */
-    public void registerMarshaller(GridIndexingMarshaller marshaller);
+    public void registerMarshaller(IndexingMarshaller marshaller);
 
     /**
      * Registers space in this SPI.
@@ -184,5 +184,5 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param spaceName Space name.
      * @param type Type descriptor.
      */
-    public void rebuildIndexes(@Nullable String spaceName, GridIndexingTypeDescriptor type);
+    public void rebuildIndexes(@Nullable String spaceName, IndexingTypeDescriptor type);
 }

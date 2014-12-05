@@ -54,7 +54,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private List<GridIndexingFieldMetadata> metadata;
+    private List<IndexingFieldMetadata> metadata;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -133,14 +133,14 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /**
      * @return Metadata.
      */
-    public List<GridIndexingFieldMetadata> metadata() {
+    public List<IndexingFieldMetadata> metadata() {
         return metadata;
     }
 
     /**
      * @param metadata Metadata.
      */
-    public void metadata(@Nullable List<GridIndexingFieldMetadata> metadata) {
+    public void metadata(@Nullable List<IndexingFieldMetadata> metadata) {
         this.metadata = metadata;
     }
 
@@ -206,10 +206,10 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
         Collection<List<Object>> col0 = new ArrayList<>(col.size());
 
         for (Object o : col) {
-            List<GridIndexingEntity<?>> list = (List<GridIndexingEntity<?>>)o;
+            List<IndexingEntity<?>> list = (List<IndexingEntity<?>>)o;
             List<Object> list0 = new ArrayList<>(list.size());
 
-            for (GridIndexingEntity<?> ent : list) {
+            for (IndexingEntity<?> ent : list) {
                 if (ent.bytes() != null)
                     list0.add(ent.bytes());
                 else {
@@ -267,11 +267,11 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
             return;
 
         for (Object o : data) {
-            List<GridIndexingEntity<?>> list = (List<GridIndexingEntity<?>>)o;
+            List<IndexingEntity<?>> list = (List<IndexingEntity<?>>)o;
 
             out.writeInt(list.size());
 
-            for (GridIndexingEntity<?> idxEnt : list) {
+            for (IndexingEntity<?> idxEnt : list) {
                 try {
                     out.writeObject(idxEnt.value());
                 }

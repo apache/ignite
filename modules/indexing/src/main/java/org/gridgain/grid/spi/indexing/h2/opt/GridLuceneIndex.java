@@ -46,13 +46,13 @@ public class GridLuceneIndex implements Closeable {
     public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
 
     /** */
-    private final GridIndexingMarshaller marshaller;
+    private final IndexingMarshaller marshaller;
 
     /** */
     private final String spaceName;
 
     /** */
-    private final GridIndexingTypeDescriptor type;
+    private final IndexingTypeDescriptor type;
 
     /** */
     private final IndexWriter writer;
@@ -82,8 +82,8 @@ public class GridLuceneIndex implements Closeable {
      * @param storeVal Store value in index.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public GridLuceneIndex(GridIndexingMarshaller marshaller, @Nullable GridUnsafeMemory mem,
-        @Nullable String spaceName, GridIndexingTypeDescriptor type, boolean storeVal) throws IgniteSpiException {
+    public GridLuceneIndex(IndexingMarshaller marshaller, @Nullable GridUnsafeMemory mem,
+        @Nullable String spaceName, IndexingTypeDescriptor type, boolean storeVal) throws IgniteSpiException {
         this.marshaller = marshaller;
         this.spaceName = spaceName;
         this.type = type;
@@ -99,10 +99,10 @@ public class GridLuceneIndex implements Closeable {
             throw new IgniteSpiException(e);
         }
 
-        GridIndexDescriptor idx = null;
+        IndexDescriptor idx = null;
 
-        for (GridIndexDescriptor descriptor : type.indexes().values()) {
-            if (descriptor.type() == GridIndexType.FULLTEXT) {
+        for (IndexDescriptor descriptor : type.indexes().values()) {
+            if (descriptor.type() == IndexType.FULLTEXT) {
                 idx = descriptor;
 
                 break;
@@ -137,7 +137,7 @@ public class GridLuceneIndex implements Closeable {
      * @param expires Expiration time.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public void store(GridIndexingEntity<?> key, GridIndexingEntity<?> val, byte[] ver, long expires)
+    public void store(IndexingEntity<?> key, IndexingEntity<?> val, byte[] ver, long expires)
         throws IgniteSpiException {
         Document doc = new Document();
 
@@ -197,7 +197,7 @@ public class GridLuceneIndex implements Closeable {
      * @param key Key.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public void remove(GridIndexingEntity<?> key) throws IgniteSpiException {
+    public void remove(IndexingEntity<?> key) throws IgniteSpiException {
         try {
             writer.deleteDocuments(new Term(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key))));
         }
@@ -217,8 +217,8 @@ public class GridLuceneIndex implements Closeable {
      * @return Query result.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String qry,
-        GridIndexingQueryFilter filters) throws IgniteSpiException {
+    public <K, V> GridCloseableIterator<IndexingKeyValueRow<K, V>> query(String qry,
+        IndexingQueryFilter filters) throws IgniteSpiException {
         IndexReader reader;
 
         try {
@@ -277,7 +277,7 @@ public class GridLuceneIndex implements Closeable {
     /**
      * Key-value iterator over fulltext search result.
      */
-    private class It<K, V> extends GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>> {
+    private class It<K, V> extends GridCloseableIteratorAdapter<IndexingKeyValueRow<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -297,7 +297,7 @@ public class GridLuceneIndex implements Closeable {
         private int idx;
 
         /** */
-        private GridIndexingKeyValueRow<K, V> curr;
+        private IndexingKeyValueRow<K, V> curr;
 
         /**
          * Constructor.
@@ -349,28 +349,28 @@ public class GridLuceneIndex implements Closeable {
 
                 String keyStr = doc.get(KEY_FIELD_NAME);
 
-                GridIndexingEntity<K> k = marshaller.unmarshal(Base64.decodeBase64(keyStr));
+                IndexingEntity<K> k = marshaller.unmarshal(Base64.decodeBase64(keyStr));
 
                 byte[] valBytes = doc.getBinaryValue(VAL_FIELD_NAME);
 
-                GridIndexingEntity<V> v = valBytes != null ? marshaller.<V>unmarshal(valBytes) :
+                IndexingEntity<V> v = valBytes != null ? marshaller.<V>unmarshal(valBytes) :
                     type.valueClass() == String.class ?
-                    new GridIndexingEntityAdapter<>((V)doc.get(VAL_STR_FIELD_NAME), null): null;
+                    new IndexingEntityAdapter<>((V)doc.get(VAL_STR_FIELD_NAME), null): null;
 
                 if (!filter(k.value(), v == null ? null : v.value()))
                     continue;
 
                 byte[] ver = doc.getBinaryValue(VER_FIELD_NAME);
 
-                curr = new GridIndexingKeyValueRowAdapter<>(k, v, ver);
+                curr = new IndexingKeyValueRowAdapter<>(k, v, ver);
 
                 break;
             }
         }
 
         /** {@inheritDoc} */
-        @Override protected GridIndexingKeyValueRow<K, V> onNext() throws GridException {
-            GridIndexingKeyValueRow<K, V> res = curr;
+        @Override protected IndexingKeyValueRow<K, V> onNext() throws GridException {
+            IndexingKeyValueRow<K, V> res = curr;
 
             findNext();
 

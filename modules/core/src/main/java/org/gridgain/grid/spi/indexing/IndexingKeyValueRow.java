@@ -13,25 +13,25 @@ import java.util.*;
 
 /**
  * This class represents a single row returned by key-value query. For example, it is returned
- * by query such as {@link GridIndexingSpi#query(String, String, Collection, GridIndexingTypeDescriptor, GridIndexingQueryFilter[])}
+ * by query such as {@link IndexingSpi#query(String, String, Collection, IndexingTypeDescriptor, IndexingQueryFilter[])}
  * method. Key-value queries are different from fields query in a way that they
  * return the whole cached value, not its individual fields.
- * See also {@link GridIndexingSpi#query(String, String, Collection, GridIndexingTypeDescriptor, GridIndexingQueryFilter[])}.
+ * See also {@link IndexingSpi#query(String, String, Collection, IndexingTypeDescriptor, IndexingQueryFilter[])}.
  */
-public interface GridIndexingKeyValueRow<K, V> {
+public interface IndexingKeyValueRow<K, V> {
     /**
      * Gets cache key.
      *
      * @return Cache key.
      */
-    public GridIndexingEntity<K> key();
+    public IndexingEntity<K> key();
 
     /**
      * Gets cache value.
      *
      * @return Cache value.
      */
-    public GridIndexingEntity<V> value();
+    public IndexingEntity<V> value();
 
     /**
      * Gets version of cache value.

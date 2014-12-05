@@ -15,16 +15,16 @@ import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Convenience adapter for {@link GridIndexingKeyValueRow}.
+ * Convenience adapter for {@link IndexingKeyValueRow}.
  */
-public class GridIndexingKeyValueRowAdapter<K, V> implements GridIndexingKeyValueRow<K, V> {
+public class IndexingKeyValueRowAdapter<K, V> implements IndexingKeyValueRow<K, V> {
     /** Key. */
     @GridToStringInclude
-    private GridIndexingEntity<K> key;
+    private IndexingEntity<K> key;
 
     /** Value. */
     @GridToStringInclude
-    private GridIndexingEntity<V> val;
+    private IndexingEntity<V> val;
 
     /** Version. */
     @GridToStringInclude
@@ -36,12 +36,12 @@ public class GridIndexingKeyValueRowAdapter<K, V> implements GridIndexingKeyValu
      * @param key Key.
      * @param val Value.
      */
-    public GridIndexingKeyValueRowAdapter(K key, V val) {
+    public IndexingKeyValueRowAdapter(K key, V val) {
         assert key != null;
         assert val != null;
 
-        this.key = new GridIndexingEntityAdapter<>(key, null);
-        this.val = new GridIndexingEntityAdapter<>(val, null);
+        this.key = new IndexingEntityAdapter<>(key, null);
+        this.val = new IndexingEntityAdapter<>(val, null);
     }
 
     /**
@@ -51,8 +51,8 @@ public class GridIndexingKeyValueRowAdapter<K, V> implements GridIndexingKeyValu
      * @param val Value.
      * @param ver Version. It is {@code null} in case of {@link GridCacheQueryType#SCAN} query.
      */
-    public GridIndexingKeyValueRowAdapter(GridIndexingEntity<K> key, @Nullable GridIndexingEntity<V> val,
-        @Nullable byte[] ver) {
+    public IndexingKeyValueRowAdapter(IndexingEntity<K> key, @Nullable IndexingEntity<V> val,
+                                      @Nullable byte[] ver) {
         assert key != null;
 
         this.key = key;
@@ -61,12 +61,12 @@ public class GridIndexingKeyValueRowAdapter<K, V> implements GridIndexingKeyValu
     }
 
     /** {@inheritDoc} */
-    @Override public GridIndexingEntity<K> key() {
+    @Override public IndexingEntity<K> key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public GridIndexingEntity<V> value() {
+    @Override public IndexingEntity<V> value() {
         return val;
     }
 
@@ -77,6 +77,6 @@ public class GridIndexingKeyValueRowAdapter<K, V> implements GridIndexingKeyValu
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIndexingKeyValueRowAdapter.class, this);
+        return S.toString(IndexingKeyValueRowAdapter.class, this);
     }
 }

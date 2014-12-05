@@ -16,20 +16,20 @@ import java.util.*;
 /**
  * Field query result. It is composed of
  * fields metadata and iterator over queried fields.
- * See also {@link GridIndexingSpi#queryFields(String, String, Collection, GridIndexingQueryFilter)}.
+ * See also {@link IndexingSpi#queryFields(String, String, Collection, IndexingQueryFilter)}.
  */
-public interface GridIndexingFieldsResult {
+public interface IndexingFieldsResult {
     /**
      * Gets metadata for queried fields.
      *
      * @return Meta data for queried fields.
      */
-    List<GridIndexingFieldMetadata> metaData();
+    List<IndexingFieldMetadata> metaData();
 
     /**
      * Gets iterator over queried fields.
      *
      * @return Iterator over queried fields.
      */
-    IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> iterator();
+    IgniteSpiCloseableIterator<List<IndexingEntity<?>>> iterator();
 }

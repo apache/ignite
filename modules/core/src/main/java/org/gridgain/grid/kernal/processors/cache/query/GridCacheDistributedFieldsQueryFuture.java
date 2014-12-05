@@ -29,7 +29,7 @@ public class GridCacheDistributedFieldsQueryFuture
     private static final long serialVersionUID = 0L;
 
     /** Meta data future. */
-    private final GridFutureAdapter<List<GridIndexingFieldMetadata>> metaFut;
+    private final GridFutureAdapter<List<IndexingFieldMetadata>> metaFut;
 
     /**
      * Required by {@link Externalizable}.
@@ -61,7 +61,7 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable List<GridIndexingFieldMetadata> metaData,
+    public void onPage(@Nullable UUID nodeId, @Nullable List<IndexingFieldMetadata> metaData,
         @Nullable Collection<Map<String, Object>> data, @Nullable Throwable err, boolean finished) {
         if (!metaFut.isDone() && metaData != null)
             metaFut.onDone(metaData);
@@ -86,7 +86,7 @@ public class GridCacheDistributedFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<List<GridIndexingFieldMetadata>> metadata() {
+    @Override public IgniteFuture<List<IndexingFieldMetadata>> metadata() {
         return metaFut;
     }
 

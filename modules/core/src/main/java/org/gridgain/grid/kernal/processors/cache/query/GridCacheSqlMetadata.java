@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,7 +34,7 @@ public interface GridCacheSqlMetadata extends Externalizable {
      * <p>
      * By default, type name is equal to simple class name
      * of stored object, but it can depend on implementation
-     * of {@link GridIndexingSpi}.
+     * of {@link org.gridgain.grid.spi.indexing.IndexingSpi}.
      *
      * @return Collection of available types.
      */

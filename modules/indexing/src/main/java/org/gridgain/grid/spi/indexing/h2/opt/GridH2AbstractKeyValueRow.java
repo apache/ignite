@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.indexing.h2.opt;
 
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.message.*;
 import org.h2.result.*;
@@ -25,7 +24,7 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * Table row implementation based on {@link GridIndexingTypeDescriptor}.
+ * Table row implementation based on {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor}.
  */
 public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** */

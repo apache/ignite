@@ -162,7 +162,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
-        GridIndexingQueryFilter f = filters.get();
+        IndexingQueryFilter f = filters.get();
 
         try { // Fast path if we don't need to perform any filtering.
             if (f == null || f.forSpace(((GridH2Table)getTable()).spaceName()) == null)

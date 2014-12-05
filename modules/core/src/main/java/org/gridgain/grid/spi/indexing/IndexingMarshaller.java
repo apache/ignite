@@ -14,9 +14,9 @@ import org.apache.ignite.spi.*;
 /**
  * Marshaller to be used in indexing SPI. This marshaller automatically
  * takes care of class loading of unmarshalled classes.
- * See also {@link GridIndexingSpi#registerMarshaller(GridIndexingMarshaller)}.
+ * See also {@link IndexingSpi#registerMarshaller(IndexingMarshaller)}.
  */
-public interface GridIndexingMarshaller {
+public interface IndexingMarshaller {
     /**
      * Unmarshalls bytes to object.
      *
@@ -25,7 +25,7 @@ public interface GridIndexingMarshaller {
      * @return Value.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException;
+    public <T> IndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException;
 
     /**
      * Marshals object to bytes.
@@ -34,5 +34,5 @@ public interface GridIndexingMarshaller {
      * @return Bytes.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException;
+    public byte[] marshal(IndexingEntity<?> entity) throws IgniteSpiException;
 }

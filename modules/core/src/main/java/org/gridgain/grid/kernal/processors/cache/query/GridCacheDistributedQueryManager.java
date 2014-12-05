@@ -432,8 +432,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @Override protected boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        @Nullable List<GridIndexingFieldMetadata> metadata,
-        @Nullable Collection<List<GridIndexingEntity<?>>> entities,
+        @Nullable List<IndexingFieldMetadata> metadata,
+        @Nullable Collection<List<IndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e) {
         assert qryInfo != null;

@@ -239,7 +239,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @return {@code qryIters} of {@link GridCacheQueryManager}.
      */
     private ConcurrentMap<UUID,
-        Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<CacheKey, CacheValue>>>>>
+        Map<Long, GridFutureAdapter<GridCloseableIterator<IndexingKeyValueRow<CacheKey, CacheValue>>>>>
         distributedQueryManagerQueryItersMap(Ignite g) {
         GridCacheContext ctx = ((GridKernal)g).internalCache().context();
 
@@ -248,7 +248,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         qryItersField.setAccessible(true);
 
         return (ConcurrentMap<UUID,
-            Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<CacheKey, CacheValue>>>>>)
+            Map<Long, GridFutureAdapter<GridCloseableIterator<IndexingKeyValueRow<CacheKey, CacheValue>>>>>)
             ReflectionUtils.getField(qryItersField, ctx.queries());
     }
 
@@ -397,7 +397,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             assertEquals(0, (int)fut.next().getKey());
 
             final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridCloseableIterator<
-                GridIndexingKeyValueRow<Integer, Integer>>>>> map =
+                IndexingKeyValueRow<Integer, Integer>>>>> map =
                 U.field(((GridKernal)grid(0)).internalCache().context().queries(), "qryIters");
 
             // fut.nextX() does not guarantee the request has completed on remote node
@@ -408,12 +408,12 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
                 }
             }, getTestTimeout()));
 
-            Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<Integer, Integer>>>> futs =
+            Map<Long, GridFutureAdapter<GridCloseableIterator<IndexingKeyValueRow<Integer, Integer>>>> futs =
                 map.get(g.cluster().localNode().id());
 
             assertEquals(1, futs.size());
 
-            IgniteSpiCloseableIterator<GridIndexingKeyValueRow<Integer, Integer>> iter =
+            IgniteSpiCloseableIterator<IndexingKeyValueRow<Integer, Integer>> iter =
                 U.field(((IgniteFuture)F.first(futs.values()).get()).get(), "iter");
 
             ResultSet rs = U.field(iter, "data");

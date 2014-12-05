@@ -45,7 +45,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         private volatile boolean interrupted;
 
         /** {@inheritDoc} */
-        @Override public void rebuildIndexes(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+        @Override public void rebuildIndexes(@Nullable String spaceName, IndexingTypeDescriptor type) {
             if (sleepInRebuild) {
                 try {
                     U.sleep(Long.MAX_VALUE);

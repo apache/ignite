@@ -571,7 +571,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
     /**
      * Indexing SPI that can fail on demand.
      */
-    private static class TestIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
+    private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** Fail flag. */
         private volatile boolean fail;
 
@@ -583,37 +583,37 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-            Collection<Object> params, GridIndexingQueryFilter filters) {
+        @Override public <K, V> IndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
+            Collection<Object> params, IndexingQueryFilter filters) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(
-            @Nullable String spaceName, String qry, Collection<Object> params, GridIndexingTypeDescriptor type,
-            GridIndexingQueryFilter filters) {
+        @Override public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> query(
+            @Nullable String spaceName, String qry, Collection<Object> params, IndexingTypeDescriptor type,
+            IndexingQueryFilter filters) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
-            @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
-            GridIndexingQueryFilter filters) {
+        @Override public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> queryText(
+            @Nullable String spaceName, String qry, IndexingTypeDescriptor type,
+            IndexingQueryFilter filters) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public long size(@Nullable String spaceName, GridIndexingTypeDescriptor desc) {
+        @Override public long size(@Nullable String spaceName, IndexingTypeDescriptor desc) {
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor desc) {
+        @Override public boolean registerType(@Nullable String spaceName, IndexingTypeDescriptor desc) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+        @Override public void unregisterType(@Nullable String spaceName, IndexingTypeDescriptor type) {
             // No-op.
         }
 
@@ -628,18 +628,18 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Override public void registerMarshaller(GridIndexingMarshaller marshaller) {
+        @Override public void registerMarshaller(IndexingMarshaller marshaller) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void rebuildIndexes(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+        @Override public void rebuildIndexes(@Nullable String spaceName, IndexingTypeDescriptor type) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type,
-                                           GridIndexingEntity<K> key, GridIndexingEntity<V> val, byte[] ver, long expirationTime)
+        @Override public <K, V> void store(@Nullable String spaceName, IndexingTypeDescriptor type,
+                                           IndexingEntity<K> key, IndexingEntity<V> val, byte[] ver, long expirationTime)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;
@@ -649,7 +649,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Override public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> k)
+        @Override public <K> boolean remove(@Nullable String spaceName, IndexingEntity<K> k)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;

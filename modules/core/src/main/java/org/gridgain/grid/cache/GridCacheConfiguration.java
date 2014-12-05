@@ -16,7 +16,6 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -1558,7 +1557,7 @@ public class GridCacheConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @return Name of SPI to use for indexing.
-     * @see GridIndexingSpi
+     * @see org.gridgain.grid.spi.indexing.IndexingSpi
      */
     public String getIndexingSpiName() {
         return indexingSpiName;
@@ -1572,7 +1571,7 @@ public class GridCacheConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @param indexingSpiName Name.
-     * @see GridIndexingSpi
+     * @see org.gridgain.grid.spi.indexing.IndexingSpi
      */
     public void setIndexingSpiName(String indexingSpiName) {
         this.indexingSpiName = indexingSpiName;

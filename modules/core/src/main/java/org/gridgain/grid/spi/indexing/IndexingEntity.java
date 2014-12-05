@@ -18,9 +18,9 @@ import java.util.*;
  * Wrapper around indexed key or value which also may contain the value in
  * unmarshalled form. It exists to avoid unnecessary unmarshalling whenever
  * it is not needed.
- * See also {@link GridIndexingSpi#queryFields(String, String, Collection, GridIndexingQueryFilter[])}.
+ * See also {@link IndexingSpi#queryFields(String, String, Collection, IndexingQueryFilter[])}.
  */
-public interface GridIndexingEntity<T> {
+public interface IndexingEntity<T> {
     /**
      * Gets indexed value. This method may return {@code null} only
      * if actual value is {@code null}. Otherwise, it will unmarshal

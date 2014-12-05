@@ -36,12 +36,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.spi.indexing.GridIndexType.*;
+import static org.gridgain.grid.spi.indexing.IndexType.*;
 
 /**
  * Manages cache indexing.
  */
-public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
+public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** */
     private IgniteMarshaller marsh;
 
@@ -97,9 +97,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         if (!enabled())
             U.warn(log, "Indexing is disabled (to enable please configure GridH2IndexingSpi).");
 
-        GridIndexingMarshaller m = new IdxMarshaller();
+        IndexingMarshaller m = new IdxMarshaller();
 
-        for (GridIndexingSpi spi : getSpis()) {
+        for (IndexingSpi spi : getSpis()) {
             spi.registerMarshaller(m);
 
             for (GridCacheConfiguration cacheCfg : ctx.config().getCacheConfiguration())
@@ -263,11 +263,11 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param name SPI Name.
      * @return SPI.
      */
-    public GridIndexingSpi spi(@Nullable String name) {
+    public IndexingSpi spi(@Nullable String name) {
         if (F.isEmpty(name))
             return getSpis()[0];
 
-        for (GridIndexingSpi s : getSpis()) {
+        for (IndexingSpi s : getSpis()) {
             if (name.equals(s.getName()))
                 return s;
         }
@@ -281,8 +281,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param <T> Value type.
      * @return Index entry.
      */
-    private <T> GridIndexingEntity<T> entry(T x, @Nullable byte[] bytes) {
-        return new GridIndexingEntityAdapter<>(x, bytes);
+    private <T> IndexingEntity<T> entry(T x, @Nullable byte[] bytes) {
+        return new IndexingEntityAdapter<>(x, bytes);
     }
 
     /**
@@ -426,8 +426,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            GridIndexingEntity<K> k = entry(key, keyBytes);
-            GridIndexingEntity<V> v = entry(val, valBytes);
+            IndexingEntity<K> k = entry(key, keyBytes);
+            IndexingEntity<V> v = entry(val, valBytes);
 
             getSpi(spi).store(space, desc, k, v, ver, expirationTime);
         }
@@ -539,7 +539,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            GridIndexingEntity<K> k = entry(key, keyBytes);
+            IndexingEntity<K> k = entry(key, keyBytes);
 
             return getSpi(spi).remove(space, k);
         }
@@ -558,14 +558,14 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @return Field rows.
      * @throws GridException If failed.
      */
-    public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spi, @Nullable String space,
+    public <K, V> IndexingFieldsResult queryFields(@Nullable String spi, @Nullable String space,
         String clause, Collection<Object> params, boolean includeBackups,
-        GridIndexingQueryFilter filters) throws GridException {
+        IndexingQueryFilter filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            GridIndexingQueryFilter backupFilter = backupsFilter(includeBackups);
+            IndexingQueryFilter backupFilter = backupsFilter(includeBackups);
 
             return getSpi(spi).queryFields(space, clause, params,
                 and(filters, backupFilter));
@@ -580,15 +580,15 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param f2 Second filter.
      * @return And filter of the given two.
      */
-    @Nullable private static GridIndexingQueryFilter and(@Nullable final GridIndexingQueryFilter f1,
-        @Nullable final GridIndexingQueryFilter f2) {
+    @Nullable private static IndexingQueryFilter and(@Nullable final IndexingQueryFilter f1,
+        @Nullable final IndexingQueryFilter f2) {
         if (f1 == null)
             return f2;
 
         if (f2 == null)
             return f1;
 
-        return new GridIndexingQueryFilter() {
+        return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) throws GridException {
                 final IgniteBiPredicate<K, V> fltr1 = f1.forSpace(spaceName);
                 final IgniteBiPredicate<K, V> fltr2 = f2.forSpace(spaceName);
@@ -622,9 +622,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String spi, String space, String clause,
+    public <K, V> GridCloseableIterator<IndexingKeyValueRow<K, V>> query(String spi, String space, String clause,
         Collection<Object> params, String resType, boolean includeBackups,
-        GridIndexingQueryFilter filters) throws GridException {
+        IndexingQueryFilter filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -634,7 +634,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter backupFilter = backupsFilter(includeBackups);
+            IndexingQueryFilter backupFilter = backupsFilter(includeBackups);
 
             return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).<K,V>query(space, clause, params, type,
                 and(filters, backupFilter)));
@@ -657,9 +657,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(String spi, String space,
+    public <K, V> GridCloseableIterator<IndexingKeyValueRow<K, V>> queryText(String spi, String space,
         String clause, String resType, boolean includeBackups,
-        GridIndexingQueryFilter filters) throws GridException {
+        IndexingQueryFilter filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -669,7 +669,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter backupFilter = backupsFilter(includeBackups);
+            IndexingQueryFilter backupFilter = backupsFilter(includeBackups);
 
             return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).<K,V>queryText(space, clause, type,
                 and(filters, backupFilter)));
@@ -686,11 +686,11 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param includeBackups Include backups.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <K, V> GridIndexingQueryFilter backupsFilter(boolean includeBackups) {
+    @Nullable private <K, V> IndexingQueryFilter backupsFilter(boolean includeBackups) {
         if (includeBackups)
             return null;
 
-        return new GridIndexingQueryFilter() {
+        return new IndexingQueryFilter() {
             @Nullable @Override public IgniteBiPredicate<K, V> forSpace(final String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
@@ -774,7 +774,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                     TypeDescriptor desc = e.getValue();
 
                     if (ldr.equals(U.detectClassLoader(desc.valCls)) || ldr.equals(U.detectClassLoader(desc.keyCls))) {
-                        for (GridIndexingSpi spi : getSpis()) {
+                        for (IndexingSpi spi : getSpis()) {
                             if (desc.await() && desc.registered())
                                 spi.unregisterType(e.getKey().space, desc);
                         }
@@ -1132,8 +1132,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param space Space name.
      * @return Descriptors.
      */
-    public Collection<GridIndexingTypeDescriptor> types(@Nullable String space) {
-        Collection<GridIndexingTypeDescriptor> spaceTypes = new ArrayList<>(
+    public Collection<IndexingTypeDescriptor> types(@Nullable String space) {
+        Collection<IndexingTypeDescriptor> spaceTypes = new ArrayList<>(
             Math.min(10, types.size()));
 
         for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet()) {
@@ -1154,7 +1154,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @return Type.
      * @throws GridException If failed.
      */
-    public GridIndexingTypeDescriptor type(@Nullable String space, String typeName) throws GridException {
+    public IndexingTypeDescriptor type(@Nullable String space, String typeName) throws GridException {
         TypeDescriptor type = typesByName.get(new TypeName(space, typeName));
 
         if (type == null || !type.registered())
@@ -1367,7 +1367,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /**
      * Descriptor of type.
      */
-    private static class TypeDescriptor implements GridIndexingTypeDescriptor {
+    private static class TypeDescriptor implements IndexingTypeDescriptor {
         /** */
         private String name;
 
@@ -1480,8 +1480,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, GridIndexDescriptor> indexes() {
-            return Collections.<String, GridIndexDescriptor>unmodifiableMap(indexes);
+        @Override public Map<String, org.gridgain.grid.spi.indexing.IndexDescriptor> indexes() {
+            return Collections.<String, org.gridgain.grid.spi.indexing.IndexDescriptor>unmodifiableMap(indexes);
         }
 
         /**
@@ -1492,7 +1492,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @return Index descriptor.
          * @throws GridException In case of error.
          */
-        public IndexDescriptor addIndex(String idxName, GridIndexType type) throws GridException {
+        public IndexDescriptor addIndex(String idxName, IndexType type) throws GridException {
             IndexDescriptor idx = new IndexDescriptor(type);
 
             if (indexes.put(idxName, idx) != null)
@@ -1606,7 +1606,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /**
      * Index descriptor.
      */
-    private static class IndexDescriptor implements GridIndexDescriptor {
+    private static class IndexDescriptor implements org.gridgain.grid.spi.indexing.IndexDescriptor {
         /** Fields sorted by order number. */
         private final Collection<T2<String, Integer>> fields = new TreeSet<>(
             new Comparator<T2<String, Integer>>() {
@@ -1622,12 +1622,12 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         private Collection<String> descendings;
 
         /** */
-        private final GridIndexType type;
+        private final IndexType type;
 
         /**
          * @param type Type.
          */
-        private IndexDescriptor(GridIndexType type) {
+        private IndexDescriptor(IndexType type) {
             assert type != null;
 
             this.type = type;
@@ -1667,7 +1667,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridIndexType type() {
+        @Override public IndexType type() {
             return type;
         }
 
@@ -1793,9 +1793,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /**
      * Indexing marshaller which also stores information about class loader and allows lazy unmarshalling.
      */
-    private class IdxMarshaller implements GridIndexingMarshaller {
+    private class IdxMarshaller implements IndexingMarshaller {
         /** {@inheritDoc} */
-        @Override public <T> GridIndexingEntity<T> unmarshal(final byte[] bytes) {
+        @Override public <T> IndexingEntity<T> unmarshal(final byte[] bytes) {
             long ldrId = bytes[0] == -1 ? 0 : U.bytesToLong(bytes, 0);
 
             final ClassLoader ldr = ldrId == 0 ? null : ldrById.get(ldrId);
@@ -1804,7 +1804,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             final int len = bytes.length - off;
 
-            return new GridIndexingEntity<T>() {
+            return new IndexingEntity<T>() {
                 /** */
                 private T val;
 
@@ -1843,7 +1843,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException {
+        @Override public byte[] marshal(IndexingEntity<?> entity) throws IgniteSpiException {
             Object val = entity.value();
 
             ClassLoader ldr = val.getClass().getClassLoader();

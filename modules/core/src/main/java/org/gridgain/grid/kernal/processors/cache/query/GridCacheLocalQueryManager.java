@@ -45,8 +45,8 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     /** {@inheritDoc} */
     @Override protected boolean onFieldsPageReady(boolean loc,
         GridCacheQueryInfo qryInfo,
-        @Nullable List<GridIndexingFieldMetadata> metaData,
-        @Nullable Collection<List<GridIndexingEntity<?>>> entities,
+        @Nullable List<IndexingFieldMetadata> metaData,
+        @Nullable Collection<List<IndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished,
         @Nullable Throwable e) {
