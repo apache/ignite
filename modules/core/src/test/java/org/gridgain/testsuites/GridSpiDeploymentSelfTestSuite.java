@@ -10,7 +10,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.deployment.local.*;
+import org.apache.ignite.spi.deployment.local.*;
 
 /**
  * Test suit for deployment SPIs.

@@ -667,7 +667,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Deployment</title>
-                                            <packages>org.gridgain.grid.spi.deployment:org.gridgain.grid.spi.deployment.local:org.gridgain.grid.spi.deployment.uri</packages>
+                                            <packages>org.gridgain.grid.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Swap Space</title>
@@ -869,7 +869,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Deployment</title>
-                                            <packages>org.gridgain.grid.spi.deployment:org.gridgain.grid.spi.deployment.local:org.gridgain.grid.spi.deployment.uri</packages>
+                                            <packages>org.gridgain.grid.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Swap Space</title>

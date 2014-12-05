@@ -18,7 +18,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.deployment.protocol.gg.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.spi.deployment.*;
+import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

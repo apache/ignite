@@ -12,9 +12,9 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.p2p.*;
-import org.gridgain.grid.spi.deployment.uri.*;
-import org.gridgain.grid.spi.deployment.uri.scanners.file.*;
-import org.gridgain.grid.spi.deployment.uri.scanners.http.*;
+import org.apache.ignite.spi.deployment.uri.*;
+import org.apache.ignite.spi.deployment.uri.scanners.file.*;
+import org.apache.ignite.spi.deployment.uri.scanners.http.*;
 import org.gridgain.testsuites.*;
 
 /**

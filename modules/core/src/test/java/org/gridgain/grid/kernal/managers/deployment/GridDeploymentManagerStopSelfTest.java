@@ -13,7 +13,7 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.spi.deployment.*;
+import org.apache.ignite.spi.deployment.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 

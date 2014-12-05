@@ -12,7 +12,7 @@ package org.gridgain.grid.p2p;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.deployment.uri.*;
+import org.apache.ignite.spi.deployment.uri.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
