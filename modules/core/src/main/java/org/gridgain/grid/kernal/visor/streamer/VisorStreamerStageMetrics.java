@@ -10,14 +10,14 @@
 package org.gridgain.grid.kernal.visor.streamer;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.streamer.*;
+import org.apache.ignite.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link org.gridgain.grid.streamer.StreamerStageMetrics}.
+ * Data transfer object for {@link org.apache.ignite.streamer.StreamerStageMetrics}.
  */
 public class VisorStreamerStageMetrics implements Serializable {
     /** */

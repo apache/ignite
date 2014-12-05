@@ -59,7 +59,7 @@
                 <!--
                     Streamer for GridStreamingRunningAverageExample.
                 -->
-                <bean class="org.gridgain.grid.streamer.StreamerConfiguration">
+                <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="running-average"/>
 
                     <property name="windows">
@@ -102,7 +102,7 @@
                 <!--
                     Streamer for GridStreamingPopularNumbersExample.
                 -->
-                <bean class="org.gridgain.grid.streamer.StreamerConfiguration">
+                <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="popular-numbers"/>
 
                     <property name="windows">
@@ -157,7 +157,7 @@
                 <!--
                     Streamer for GridStreamingOpenHighLowCloseExample.
                 -->
-                <bean class="org.gridgain.grid.streamer.StreamerConfiguration">
+                <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="priceBars"/>
 
                     <property name="windows">
@@ -205,7 +205,7 @@
                 <!--
                     Streamer for GridStreamingCheckInExample.
                 -->
-                <bean class="org.gridgain.grid.streamer.StreamerConfiguration">
+                <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="check-in"/>
 
                     <property name="windows">

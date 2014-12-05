@@ -11,9 +11,9 @@ package org.gridgain.examples.streaming;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.streamer.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.index.*;
 import org.jetbrains.annotations.*;
 

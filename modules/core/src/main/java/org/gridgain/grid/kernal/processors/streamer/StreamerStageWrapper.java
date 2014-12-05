@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.streamer.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

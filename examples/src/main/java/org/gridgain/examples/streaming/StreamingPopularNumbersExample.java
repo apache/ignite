@@ -11,9 +11,9 @@ package org.gridgain.examples.streaming;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.streamer.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.index.*;
 import org.jetbrains.annotations.*;
 
@@ -193,7 +193,7 @@ public class StreamingPopularNumbersExample {
      * Sample streamer stage to compute average.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class StreamerStage implements org.gridgain.grid.streamer.StreamerStage<Integer> {
+    public static class StreamerStage implements org.apache.ignite.streamer.StreamerStage<Integer> {
         /** {@inheritDoc} */
         @Override public String name() {
             return "exampleStage";

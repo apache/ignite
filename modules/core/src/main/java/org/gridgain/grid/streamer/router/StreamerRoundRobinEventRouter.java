@@ -10,7 +10,7 @@
 package org.gridgain.grid.streamer.router;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.streamer.*;
+import org.apache.ignite.streamer.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;

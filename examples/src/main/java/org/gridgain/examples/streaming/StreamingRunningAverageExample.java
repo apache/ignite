@@ -11,8 +11,8 @@ package org.gridgain.examples.streaming;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.streamer.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -141,7 +141,7 @@ public class StreamingRunningAverageExample {
     /**
      * Sample streamer stage to compute average.
      */
-    public static class StreamerStage implements org.gridgain.grid.streamer.StreamerStage<Integer> {
+    public static class StreamerStage implements org.apache.ignite.streamer.StreamerStage<Integer> {
         /** {@inheritDoc} */
         @Override public String name() {
             return "exampleStage";

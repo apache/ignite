@@ -3,6 +3,7 @@ package org.gridgain.grid.kernal.visor.node;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.streamer.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -12,7 +13,6 @@ import org.gridgain.grid.kernal.visor.cache.*;
 import org.gridgain.grid.kernal.visor.compute.*;
 import org.gridgain.grid.kernal.visor.ggfs.*;
 import org.gridgain.grid.kernal.visor.streamer.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

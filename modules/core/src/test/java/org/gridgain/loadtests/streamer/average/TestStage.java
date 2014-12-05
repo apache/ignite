@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.streamer.average;
 
+import org.apache.ignite.streamer.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;

@@ -11,9 +11,9 @@ package org.gridgain.grid.streamer.window;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.streamer.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.index.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
