@@ -80,8 +80,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /** Last created plan. */
     private static final ThreadLocal<GridHadoopMapReducePlan> PLAN = new ThreadLocal<>();
 
+    /**
+     *
+     */
     static {
-        GridTestUtils.setFieldValue(PLANNER, "grid", GRID);
+        GridTestUtils.setFieldValue(PLANNER, "ignite", GRID);
     }
 
     /** {@inheritDoc} */
