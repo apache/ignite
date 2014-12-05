@@ -10,6 +10,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lifecycle.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
@@ -398,7 +399,7 @@ public class Ignition {
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(org.gridgain.grid.IgniteListener)} method.
+     * Removes lsnr added by {@link #addListener(org.apache.ignite.lifecycle.IgniteListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.

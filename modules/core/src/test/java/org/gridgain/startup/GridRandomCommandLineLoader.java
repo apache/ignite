@@ -12,6 +12,7 @@ package org.gridgain.startup;
 import org.apache.commons.cli.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.gridgain.grid.*;
