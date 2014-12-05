@@ -2953,7 +2953,7 @@ public class IgniteConfiguration {
      * <p>
      * Default value is {@code null}.
      *
-     * @see org.gridgain.grid.ClientMessageInterceptor
+     * @see ClientMessageInterceptor
      * @return Interceptor.
      * @deprecated Use {@link ClientConnectionConfiguration#getClientMessageInterceptor()}.
      */
@@ -2971,7 +2971,7 @@ public class IgniteConfiguration {
      * access them from java code directly.
      *
      * @param interceptor Interceptor.
-     * @deprecated Use {@link ClientConnectionConfiguration#setClientMessageInterceptor(org.gridgain.grid.ClientMessageInterceptor)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setClientMessageInterceptor(ClientMessageInterceptor)}.
      */
     @Deprecated
     public void setClientMessageInterceptor(ClientMessageInterceptor interceptor) {

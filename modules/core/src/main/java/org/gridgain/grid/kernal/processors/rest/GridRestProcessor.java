@@ -321,7 +321,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.gridgain.grid.ClientMessageInterceptor}
+     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor}
      * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user parameters in the request.
      *
@@ -368,7 +368,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.gridgain.grid.ClientMessageInterceptor} from
+     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor} from
      * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user objects in the response.
      *

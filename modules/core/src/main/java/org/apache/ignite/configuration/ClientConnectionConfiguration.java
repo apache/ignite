@@ -10,7 +10,6 @@
 package org.apache.ignite.configuration;
 
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -547,7 +546,7 @@ public class ClientConnectionConfiguration {
      * <p>
      * Default value is {@code null}.
      *
-     * @see org.gridgain.grid.ClientMessageInterceptor
+     * @see ClientMessageInterceptor
      * @return Interceptor.
      */
     @Nullable public ClientMessageInterceptor getClientMessageInterceptor() {
