@@ -13,10 +13,10 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 

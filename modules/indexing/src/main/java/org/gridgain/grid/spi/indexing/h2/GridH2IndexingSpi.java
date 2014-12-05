@@ -13,9 +13,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.indexing.h2.opt.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -45,7 +45,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.spi.indexing.IndexType.*;
+import static org.apache.ignite.spi.indexing.IndexType.*;
 import static org.gridgain.grid.spi.indexing.h2.opt.GridH2AbstractKeyValueRow.*;
 import static org.h2.result.SortOrder.*;
 
@@ -56,10 +56,10 @@ import static org.h2.result.SortOrder.*;
  * with name {@code PUBLIC} will be used. To avoid name conflicts user should not explicitly name
  * a schema {@code PUBLIC}.
  * <p>
- * For each registered {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor} this SPI will create respective SQL table with
+ * For each registered {@link org.apache.ignite.spi.indexing.IndexingTypeDescriptor} this SPI will create respective SQL table with
  * {@code '_key'} and {@code '_val'} fields for key and value, and fields from
- * {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor#keyFields()} and {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor#valueFields()}.
- * For each table it will create indexes declared in {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor#indexes()}.
+ * {@link org.apache.ignite.spi.indexing.IndexingTypeDescriptor#keyFields()} and {@link org.apache.ignite.spi.indexing.IndexingTypeDescriptor#valueFields()}.
+ * For each table it will create indexes declared in {@link org.apache.ignite.spi.indexing.IndexingTypeDescriptor#indexes()}.
  * <p>
  * Note that you can monitor longer queries by setting {@link #setLongQueryExplain(boolean)} to {@code true}.
  * In this case a warning and execution plan are printed out if query exceeds certain time threshold. The
@@ -131,7 +131,7 @@ import static org.h2.result.SortOrder.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see org.gridgain.grid.spi.indexing.IndexingSpi
+ * @see org.apache.ignite.spi.indexing.IndexingSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})

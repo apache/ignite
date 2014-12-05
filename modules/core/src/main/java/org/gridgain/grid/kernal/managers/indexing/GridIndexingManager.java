@@ -13,13 +13,13 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.spi.indexing.IndexType.*;
+import static org.apache.ignite.spi.indexing.IndexType.*;
 
 /**
  * Manages cache indexing.
@@ -1480,8 +1480,8 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, org.gridgain.grid.spi.indexing.IndexDescriptor> indexes() {
-            return Collections.<String, org.gridgain.grid.spi.indexing.IndexDescriptor>unmodifiableMap(indexes);
+        @Override public Map<String, org.apache.ignite.spi.indexing.IndexDescriptor> indexes() {
+            return Collections.<String, org.apache.ignite.spi.indexing.IndexDescriptor>unmodifiableMap(indexes);
         }
 
         /**
@@ -1606,7 +1606,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /**
      * Index descriptor.
      */
-    private static class IndexDescriptor implements org.gridgain.grid.spi.indexing.IndexDescriptor {
+    private static class IndexDescriptor implements org.apache.ignite.spi.indexing.IndexDescriptor {
         /** Fields sorted by order number. */
         private final Collection<T2<String, Integer>> fields = new TreeSet<>(
             new Comparator<T2<String, Integer>>() {

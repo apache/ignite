@@ -1557,7 +1557,7 @@ public class GridCacheConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @return Name of SPI to use for indexing.
-     * @see org.gridgain.grid.spi.indexing.IndexingSpi
+     * @see org.apache.ignite.spi.indexing.IndexingSpi
      */
     public String getIndexingSpiName() {
         return indexingSpiName;
@@ -1571,7 +1571,7 @@ public class GridCacheConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @param indexingSpiName Name.
-     * @see org.gridgain.grid.spi.indexing.IndexingSpi
+     * @see org.apache.ignite.spi.indexing.IndexingSpi
      */
     public void setIndexingSpiName(String indexingSpiName) {
         this.indexingSpiName = indexingSpiName;

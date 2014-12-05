@@ -19,6 +19,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.authentication.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
@@ -34,7 +35,6 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
 import org.gridgain.grid.spi.securesession.*;
@@ -2150,9 +2150,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link org.gridgain.grid.spi.indexing.IndexingSpi}.
+     * Sets fully configured instances of {@link org.apache.ignite.spi.indexing.IndexingSpi}.
      *
-     * @param indexingSpi Fully configured instances of {@link org.gridgain.grid.spi.indexing.IndexingSpi}.
+     * @param indexingSpi Fully configured instances of {@link org.apache.ignite.spi.indexing.IndexingSpi}.
      * @see IgniteConfiguration#getIndexingSpi()
      */
     public void setIndexingSpi(IndexingSpi... indexingSpi) {

@@ -24,7 +24,7 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * Table row implementation based on {@link org.gridgain.grid.spi.indexing.IndexingTypeDescriptor}.
+ * Table row implementation based on {@link org.apache.ignite.spi.indexing.IndexingTypeDescriptor}.
  */
 public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** */

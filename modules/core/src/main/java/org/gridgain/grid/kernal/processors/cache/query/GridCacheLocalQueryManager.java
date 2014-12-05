@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

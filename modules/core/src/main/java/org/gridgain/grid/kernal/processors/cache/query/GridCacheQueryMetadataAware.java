@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.spi.indexing.*;
+import org.apache.ignite.spi.indexing.*;
 
 import java.util.*;
 

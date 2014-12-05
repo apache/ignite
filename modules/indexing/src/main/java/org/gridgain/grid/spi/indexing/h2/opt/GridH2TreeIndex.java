@@ -9,14 +9,15 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.h2.engine.*;
 import org.h2.index.*;
+import org.h2.index.IndexType;
 import org.h2.result.*;
 import org.h2.table.*;
 import org.h2.value.*;
