@@ -67,7 +67,7 @@
                             Window size is 500, which means that we will be
                             computing running average over the last 500 events.
                         -->
-                        <bean class="org.gridgain.grid.streamer.window.StreamerBoundedSizeWindow">
+                        <bean class="org.apache.ignite.streamer.window.StreamerBoundedSizeWindow">
                             <property name="maximumSize" value="500"/>
                         </bean>
                     </property>
@@ -110,7 +110,7 @@
                             For this example we use a running window with upper bound of 10,000 events.
                             This means that streamer will find most popular numbers among last 10,000 events.
                         -->
-                        <bean class="org.gridgain.grid.streamer.window.StreamerBoundedSizeWindow">
+                        <bean class="org.apache.ignite.streamer.window.StreamerBoundedSizeWindow">
                             <property name="maximumSize" value="10000"/>
 
                             <property name="indexes">
@@ -166,7 +166,7 @@
                                 For this example we use a running batch window with upper bound of 1 second.
                                 This means that streamer composes a batch with events within 1 second time interval.
                             -->
-                            <bean class="org.gridgain.grid.streamer.window.StreamerBoundedTimeBatchWindow">
+                            <bean class="org.apache.ignite.streamer.window.StreamerBoundedTimeBatchWindow">
                                 <property name="name" value="stage1"/>
                                 <property name="batchTimeInterval" value="1000"/>
                                 <property name="batchSize" value="2147483647"/>
@@ -177,7 +177,7 @@
                                 For this example we use a running batch window with upper bound of 2 seconds.
                                 This means that streamer composes a batch with events within 2 seconds time interval.
                             -->
-                            <bean class="org.gridgain.grid.streamer.window.StreamerBoundedTimeBatchWindow">
+                            <bean class="org.apache.ignite.streamer.window.StreamerBoundedTimeBatchWindow">
                                 <property name="name" value="stage2"/>
                                 <property name="batchTimeInterval" value="2000"/>
                                 <property name="batchSize" value="2147483647"/>
@@ -215,7 +215,7 @@
                                 This means that only events for last 10 seconds will be present in
                                 these windows (other events are marked for eviction).
                             -->
-                            <bean class="org.gridgain.grid.streamer.window.StreamerBoundedTimeWindow">
+                            <bean class="org.apache.ignite.streamer.window.StreamerBoundedTimeWindow">
                                 <property name="name" value="AddToWindowStage"/>
                                 <property name="timeInterval" value="10000"/>
 
@@ -235,7 +235,7 @@
                                     </list>
                                 </property>
                             </bean>
-                            <bean class="org.gridgain.grid.streamer.window.StreamerBoundedTimeWindow">
+                            <bean class="org.apache.ignite.streamer.window.StreamerBoundedTimeWindow">
                                 <property name="name" value="DetectPlacesStage"/>
                                 <property name="timeInterval" value="10000"/>
 

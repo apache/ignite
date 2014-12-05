@@ -24,12 +24,12 @@ import java.util.*;
  * <p>
  * GridGain comes with following rolling windows implementations out of the box:
  * <ul>
- * <li>{@link org.gridgain.grid.streamer.window.StreamerUnboundedWindow}</li>
- * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedSizeWindow}</li>
- * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedSizeBatchWindow}</li>
- * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedSizeSortedWindow}</li>
- * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedTimeWindow}</li>
- * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedTimeBatchWindow}</li>
+ * <li>{@link org.apache.ignite.streamer.window.StreamerUnboundedWindow}</li>
+ * <li>{@link org.apache.ignite.streamer.window.StreamerBoundedSizeWindow}</li>
+ * <li>{@link org.apache.ignite.streamer.window.StreamerBoundedSizeBatchWindow}</li>
+ * <li>{@link org.apache.ignite.streamer.window.StreamerBoundedSizeSortedWindow}</li>
+ * <li>{@link org.apache.ignite.streamer.window.StreamerBoundedTimeWindow}</li>
+ * <li>{@link org.apache.ignite.streamer.window.StreamerBoundedTimeBatchWindow}</li>
  * </ul>
  * <p>
  * Streamer window is configured via {@link StreamerConfiguration#getWindows()} method.

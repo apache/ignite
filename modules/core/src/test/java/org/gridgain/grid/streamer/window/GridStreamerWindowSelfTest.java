@@ -11,6 +11,7 @@ package org.gridgain.grid.streamer.window;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;

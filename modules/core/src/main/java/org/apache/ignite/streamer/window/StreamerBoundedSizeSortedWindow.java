@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer.window;
+package org.apache.ignite.streamer.window;
 
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.util.*;

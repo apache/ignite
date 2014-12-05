@@ -16,7 +16,7 @@ import org.gridgain.grid.*;
  * to perform event indexing.
  * <p>
  * To configure index for a streamer window, use
- * {@link org.gridgain.grid.streamer.window.StreamerWindowAdapter#setIndexes(StreamerIndexProvider[])}.
+ * {@link org.apache.ignite.streamer.window.StreamerWindowAdapter#setIndexes(StreamerIndexProvider[])}.
  */
 public interface StreamerIndexProvider<E, K, V> extends StreamerIndexProviderMBean {
     /**

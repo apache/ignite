@@ -35,7 +35,7 @@
             <list>
                 <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="windows">
-                        <bean class="org.gridgain.grid.streamer.window.StreamerBoundedSizeWindow">
+                        <bean class="org.apache.ignite.streamer.window.StreamerBoundedSizeWindow">
                             <property name="maximumSize" value="500"/>
                             <property name="indexes">
                                 <list>

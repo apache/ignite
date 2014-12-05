@@ -12,11 +12,11 @@ package org.gridgain.grid.kernal.processors.streamer;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.streamer.window.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
