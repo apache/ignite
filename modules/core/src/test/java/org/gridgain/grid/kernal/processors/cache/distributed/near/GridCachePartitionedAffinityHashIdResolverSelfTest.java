@@ -30,7 +30,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridCommonAbstractTest {
     /** Shared IP finder. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Hash ID resolver. */
     private GridCacheAffinityNodeHashResolver rslvr;

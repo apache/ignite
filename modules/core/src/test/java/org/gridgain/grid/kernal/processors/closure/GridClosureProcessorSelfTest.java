@@ -45,7 +45,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     private static final long JOB_TIMEOUT = 100;
 
     /** IP finder. */
-    private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

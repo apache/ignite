@@ -84,7 +84,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private int retries = DFLT_RETRIES;
 
     /** */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

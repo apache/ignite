@@ -74,7 +74,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected String locAddr;
 
     /** IP finder. */
-    protected GridTcpDiscoveryIpFinder ipFinder;
+    protected TcpDiscoveryIpFinder ipFinder;
 
     /** Socket operations timeout. */
     protected long sockTimeout = DFLT_SOCK_TIMEOUT;
@@ -176,7 +176,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      *
      * @return IP finder for IP addresses sharing and storing.
      */
-    public GridTcpDiscoveryIpFinder getIpFinder() {
+    public TcpDiscoveryIpFinder getIpFinder() {
         return ipFinder;
     }
 
@@ -188,7 +188,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param ipFinder IP finder.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setIpFinder(GridTcpDiscoveryIpFinder ipFinder) {
+    public void setIpFinder(TcpDiscoveryIpFinder ipFinder) {
         this.ipFinder = ipFinder;
     }
 

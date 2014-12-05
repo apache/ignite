@@ -56,7 +56,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
     private final Condition putCond = lock.newCondition();
 
     /** Shared IP finder. */
-    private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Caches comparison start latch. */
     private CountDownLatch cmpLatch;

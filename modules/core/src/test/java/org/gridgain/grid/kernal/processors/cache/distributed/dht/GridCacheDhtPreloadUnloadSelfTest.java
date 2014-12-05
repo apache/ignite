@@ -57,7 +57,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     private LifecycleBean lbean;
 
     /** IP finder. */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Network timeout. */
     private long netTimeout = 1000;

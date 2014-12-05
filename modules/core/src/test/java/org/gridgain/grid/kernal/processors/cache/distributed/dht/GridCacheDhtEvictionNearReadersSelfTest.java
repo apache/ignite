@@ -42,7 +42,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     private static final int GRID_CNT = 4;
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Default constructor. */
     public GridCacheDhtEvictionNearReadersSelfTest() {

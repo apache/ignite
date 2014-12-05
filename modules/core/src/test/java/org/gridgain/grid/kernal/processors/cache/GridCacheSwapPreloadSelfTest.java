@@ -34,7 +34,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     private static final int ENTRY_CNT = 15000;
 
     /** */
-    private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private GridCacheMode cacheMode;

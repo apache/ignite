@@ -29,7 +29,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     private boolean storeValBytes;
 
     /** VM ip finder for TCP discovery. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

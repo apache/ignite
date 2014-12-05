@@ -43,7 +43,7 @@ import static java.sql.Connection.*;
  * <p>
  * The database will contain 1 table which will hold IP addresses.
  */
-public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapter {
+public class GridTcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Query to get addresses. */
     public static final String GET_ADDRS_QRY = "select hostname, port from tbl_addrs";
 

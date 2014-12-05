@@ -46,7 +46,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
     private static final int THREADS_CNT = 5;
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final Random RND = new Random();

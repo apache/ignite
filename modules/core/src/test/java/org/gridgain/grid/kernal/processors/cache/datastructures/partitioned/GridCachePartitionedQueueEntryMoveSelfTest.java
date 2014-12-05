@@ -37,7 +37,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
  */
 public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Queue capacity. */
     private static final int QUEUE_CAP = 5;

@@ -36,7 +36,7 @@ import static org.apache.ignite.fs.IgniteFsConfiguration.*;
  */
 public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     private static final AtomicInteger mgmtPort = new AtomicInteger(DFLT_MGMT_PORT);
 

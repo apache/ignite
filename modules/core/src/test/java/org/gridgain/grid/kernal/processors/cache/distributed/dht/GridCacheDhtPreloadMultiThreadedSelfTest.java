@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  */
 public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private boolean cacheEnabled = true;

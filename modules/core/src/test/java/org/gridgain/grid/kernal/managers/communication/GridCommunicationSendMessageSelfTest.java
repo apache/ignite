@@ -29,7 +29,7 @@ import static java.util.concurrent.TimeUnit.*;
  */
 public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Sample count. */
     private static final int SAMPLE_CNT = 1;

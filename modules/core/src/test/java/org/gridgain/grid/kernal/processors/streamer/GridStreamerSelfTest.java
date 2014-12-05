@@ -42,7 +42,7 @@ import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
  */
 public class GridStreamerSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private boolean atLeastOnce = true;

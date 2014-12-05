@@ -31,7 +31,7 @@ public class GridCacheReplicatedTxSingleThreadedSelfTest extends GridCacheTxSing
     private static final boolean LOG_TO_FILE = true;
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})

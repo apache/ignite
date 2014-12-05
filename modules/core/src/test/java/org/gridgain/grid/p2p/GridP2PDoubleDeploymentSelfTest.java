@@ -30,7 +30,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     private IgniteDeploymentMode depMode;
 
     /** IP finder. */
-    private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

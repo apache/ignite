@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * IP finder interface implementation adapter.
  */
-public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscoveryIpFinder {
+public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinder {
     /** Shared flag. */
     private boolean shared;
 
@@ -60,7 +60,7 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryIpFinderAdapter.class, this);
+        return S.toString(TcpDiscoveryIpFinderAdapter.class, this);
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,7 @@ public class GridCacheReplicatedTxTimeoutSelfTest extends GridCacheTxTimeoutAbst
     private static final long TIMEOUT = 50;
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

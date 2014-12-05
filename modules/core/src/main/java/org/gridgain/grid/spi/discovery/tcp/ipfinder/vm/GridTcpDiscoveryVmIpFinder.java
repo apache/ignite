@@ -37,7 +37,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  * </ul>
  */
-public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter {
+public class GridTcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
     @IgniteLoggerResource
     private IgniteLogger log;

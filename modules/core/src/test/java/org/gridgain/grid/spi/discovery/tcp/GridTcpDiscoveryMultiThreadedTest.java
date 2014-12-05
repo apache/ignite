@@ -49,7 +49,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * @throws Exception If fails.

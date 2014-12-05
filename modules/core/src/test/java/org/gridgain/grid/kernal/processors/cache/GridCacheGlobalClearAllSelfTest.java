@@ -41,7 +41,7 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME_OTHER = "cache_name_other";
 
     /** VM IP finder for TCP discovery SPI. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Cache name which will be passed to grid configuration. */
     private GridCacheMode cacheMode = PARTITIONED;

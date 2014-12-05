@@ -48,7 +48,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
     }
 
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructs a test.

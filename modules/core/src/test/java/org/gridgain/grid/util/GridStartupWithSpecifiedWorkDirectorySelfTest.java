@@ -30,7 +30,7 @@ import static org.gridgain.grid.util.GridUtils.*;
  */
 public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int GRID_COUNT = 2;

@@ -37,7 +37,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     private static final String CACHE_NAME = "cache";
 
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Flag to start grid with cache. */
     private boolean withCache;

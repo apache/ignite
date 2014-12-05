@@ -36,7 +36,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
     protected static final IgniteFsPath FILE = new IgniteFsPath("/file");
 
     /** Shared IP finder. */
-    private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** GGFS. */
     protected static IgniteFs ggfs;

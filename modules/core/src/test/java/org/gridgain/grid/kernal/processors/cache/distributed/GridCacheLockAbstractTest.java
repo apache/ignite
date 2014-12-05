@@ -47,7 +47,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     private static GridCache<Integer, String> cache2;
 
     /** Ip-finder. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      *

@@ -34,7 +34,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
     private static final Random RAND = new Random();
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Constructs test. */
     public GridCacheVariableTopologySelfTest() {

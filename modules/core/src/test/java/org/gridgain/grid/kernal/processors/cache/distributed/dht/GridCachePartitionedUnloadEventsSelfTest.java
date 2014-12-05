@@ -32,7 +32,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstractTest {
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

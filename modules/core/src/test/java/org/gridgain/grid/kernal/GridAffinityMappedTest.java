@@ -31,7 +31,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridAffinityMappedTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      *

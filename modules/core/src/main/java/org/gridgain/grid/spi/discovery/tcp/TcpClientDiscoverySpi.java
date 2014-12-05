@@ -16,7 +16,6 @@ import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
 import org.gridgain.grid.util.typedef.*;
@@ -38,7 +37,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeart
  * <p>
  * This discovery SPI requires at least on server node configured with
  * {@link TcpDiscoverySpi}. It will try to connect to random IP taken from
- * {@link GridTcpDiscoveryIpFinder} which should point to one of these server
+ * {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} which should point to one of these server
  * nodes and will maintain connection only with this node (will not enter the ring).
  * If this connection is broken, it will try to reconnect using addresses from
  * the same IP finder.

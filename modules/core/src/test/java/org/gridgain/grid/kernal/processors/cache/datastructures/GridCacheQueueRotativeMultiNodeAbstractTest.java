@@ -35,7 +35,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     protected static final int GRID_CNT = 4;
 
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final int RETRIES = 133;

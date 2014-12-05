@@ -53,7 +53,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
     private static GridCacheAtomicSequence[] seqArr = new GridCacheAtomicSequence[SEQ_NUM];
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructor.

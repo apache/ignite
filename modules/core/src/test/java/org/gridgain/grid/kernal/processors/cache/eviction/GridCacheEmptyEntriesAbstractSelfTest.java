@@ -18,7 +18,7 @@ import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
 import org.gridgain.grid.cache.store.GridCacheStore;
 import org.gridgain.grid.cache.store.GridCacheStoreAdapter;
 import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.GridTcpDiscoveryIpFinder;
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.U;
@@ -32,7 +32,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
  */
 public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private GridCacheEvictionPolicy<?, ?> plc;

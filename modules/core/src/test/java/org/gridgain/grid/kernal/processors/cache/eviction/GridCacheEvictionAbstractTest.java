@@ -37,7 +37,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionPolicy<?, ?>>
     extends GridCommonAbstractTest {
     /** IP finder. */
-    protected static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Replicated cache. */
     protected GridCacheMode mode = REPLICATED;

@@ -24,7 +24,7 @@ public class GridTcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest 
     private static final int TOP_SIZE = 1;
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static volatile boolean client;

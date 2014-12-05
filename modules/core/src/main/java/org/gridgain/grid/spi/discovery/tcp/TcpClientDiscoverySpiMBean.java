@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.discovery.tcp;
 
 import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 
 import java.util.*;
 
@@ -68,7 +67,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
     public long getHeartbeatFrequency();
 
     /**
-     * Gets {@link GridTcpDiscoveryIpFinder} (string representation).
+     * Gets {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
      *
      * @return IPFinder (string representation).
      */

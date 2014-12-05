@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 @SuppressWarnings("deprecation")
 public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder;
+    private TcpDiscoveryIpFinder ipFinder;
 
     /** */
     private boolean swapEnabled;

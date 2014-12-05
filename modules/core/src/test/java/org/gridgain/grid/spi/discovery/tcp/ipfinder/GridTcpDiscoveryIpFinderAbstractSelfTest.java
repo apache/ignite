@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Abstract test for ip finder.
  */
-public abstract class GridTcpDiscoveryIpFinderAbstractSelfTest<T extends GridTcpDiscoveryIpFinder>
+public abstract class GridTcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscoveryIpFinder>
     extends GridCommonAbstractTest {
     /** */
     private T finder;

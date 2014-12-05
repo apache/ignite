@@ -41,7 +41,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
     private static final AtomicInteger cntr = new AtomicInteger();
 
     /** */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * Start grid by default.

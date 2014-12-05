@@ -34,7 +34,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private static final Random RND = new Random();
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

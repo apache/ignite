@@ -10,7 +10,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.spi.IgniteSpiException;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.GridTcpDiscoveryIpFinderAdapter;
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -18,7 +18,7 @@ import java.util.Collection;
 /**
  * Test TCP discovery IP finder adapter.
  */
-public class GridTestTcpDiscoveryIpFinderAdapter extends GridTcpDiscoveryIpFinderAdapter {
+public class GridTestTcpDiscoveryIpFinderAdapter extends TcpDiscoveryIpFinderAdapter {
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         return null;

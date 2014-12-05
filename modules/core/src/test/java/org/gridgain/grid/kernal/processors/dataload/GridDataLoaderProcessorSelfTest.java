@@ -40,7 +40,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private GridCacheMode mode = PARTITIONED;

@@ -22,7 +22,6 @@ import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.*;
@@ -57,7 +56,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * done across it.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
- * {@link GridTcpDiscoveryIpFinder} about self start (stops when send succeeds)
+ * {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} about self start (stops when send succeeds)
  * and then this info goes to coordinator. When coordinator processes join request
  * and issues node added messages and all other nodes then receive info about new node.
  * <h1 class="header">Configuration</h1>
@@ -67,7 +66,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * The following configuration parameters are optional:
  * <ul>
  * <li>IP finder to share info about nodes IP addresses
- * (see {@link #setIpFinder(GridTcpDiscoveryIpFinder)}).
+ * (see {@link #setIpFinder(org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder)}).
  * See the following IP finder implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsIpFinder}</li>
@@ -365,7 +364,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @param joinTimeout Join timeout ({@code 0} means wait forever).
      *
-     * @see GridTcpDiscoveryIpFinder#isShared()
+     * @see org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()
      */
     @IgniteSpiConfiguration(optional = true)
     public void setJoinTimeout(long joinTimeout) {
@@ -1389,7 +1388,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * Tries to send join request message to a random node presenting in topology.
-     * Address is provided by {@link GridTcpDiscoveryIpFinder} and message is
+     * Address is provided by {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} and message is
      * sent to first node connection succeeded to.
      *
      * @return {@code true} if send succeeded.
@@ -2272,7 +2271,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * addresses of the nodes that has left the topology.
      * <p>
      * This thread should run only on coordinator node and will clean IP finder
-     * if and only if {@link GridTcpDiscoveryIpFinder#isShared()} is {@code true}.
+     * if and only if {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
     private class IpFinderCleaner extends IgniteSpiThread {
         /**

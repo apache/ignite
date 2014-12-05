@@ -43,7 +43,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     private static final long OFFHEAP = 0;// 4 * 1024 * 1024;
 
     /** */
-    private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private final AtomicInteger idxGen = new AtomicInteger();

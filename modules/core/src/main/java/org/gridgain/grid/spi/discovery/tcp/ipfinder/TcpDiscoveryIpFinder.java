@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * IP finder interface for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
  */
-public interface GridTcpDiscoveryIpFinder {
+public interface TcpDiscoveryIpFinder {
     /**
      * Callback invoked when SPI context is initialized after {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi#spiStart(String)}
      * method is completed, SPI context can be stored for future access.

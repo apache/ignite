@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 @SuppressWarnings({"PointlessArithmeticExpression"})
 public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Backup count. */
     private static final int BACKUPS = 1;

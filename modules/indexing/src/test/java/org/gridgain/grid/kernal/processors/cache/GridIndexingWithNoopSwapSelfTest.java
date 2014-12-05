@@ -33,7 +33,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
  */
 public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     protected Ignite ignite;

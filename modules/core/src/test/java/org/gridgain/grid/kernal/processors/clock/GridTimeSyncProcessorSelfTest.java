@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Number of grids in test. */
     public static final int GRID_CNT = 4;

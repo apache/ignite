@@ -34,7 +34,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
  */
 public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Cache mode for the current test. */
     private GridCacheMode mode;

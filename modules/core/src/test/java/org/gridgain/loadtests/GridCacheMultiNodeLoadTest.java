@@ -37,7 +37,7 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
     private static Ignite ignite1;
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

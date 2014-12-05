@@ -33,7 +33,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.gridgain.grid.tests.p2p.GridExternalAffinityMapper";

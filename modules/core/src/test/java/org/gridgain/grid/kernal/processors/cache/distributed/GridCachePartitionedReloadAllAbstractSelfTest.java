@@ -41,7 +41,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private static final int BACKUP_CNT = 1;
 
     /** IP finder. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Map where dummy cache store values are stored. */
     private final Map<Integer, String> map = new ConcurrentHashMap8<>();

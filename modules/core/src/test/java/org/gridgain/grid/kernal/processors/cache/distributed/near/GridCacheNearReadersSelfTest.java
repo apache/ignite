@@ -39,7 +39,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     private int grids = 2;
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Grid counter. */
     private static AtomicInteger cntr = new AtomicInteger(0);

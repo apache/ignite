@@ -48,7 +48,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     private int poolSize = 2;
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

@@ -39,7 +39,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
  */
 public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
     private static final String CACHE = "cache";

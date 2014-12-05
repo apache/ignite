@@ -48,12 +48,12 @@ import java.util.concurrent.atomic.*;
  * like the following: {@code 192.168.1.136#1001}.
  * <p>
  * Note that storing data in AWS S3 service will result in charges to your AWS account.
- * Choose another implementation of {@link GridTcpDiscoveryIpFinder} for local
+ * Choose another implementation of {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} for local
  * or home network tests.
  * <p>
- * Note that this finder is shared by default (see {@link GridTcpDiscoveryIpFinder#isShared()}.
+ * Note that this finder is shared by default (see {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
-public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter {
+public class GridTcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Delimiter to use in S3 entries name. */
     public static final String DELIM = "#";
 

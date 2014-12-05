@@ -39,7 +39,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Path to test hadoop configuration. */
     private static final String HADOOP_FS_CFG = "modules/core/src/test/config/hadoop/core-site.xml";

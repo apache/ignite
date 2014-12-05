@@ -43,7 +43,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 3;
 
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})

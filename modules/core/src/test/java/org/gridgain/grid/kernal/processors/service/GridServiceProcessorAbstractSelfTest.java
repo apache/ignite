@@ -39,7 +39,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public static final String CACHE_NAME = "testServiceCache";
 
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Random generator. */
     private static final Random RAND = new Random();

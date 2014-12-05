@@ -24,7 +24,7 @@ import org.gridgain.testframework.junits.common.*;
  */
 public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Marshaller. */
     private static final IgniteMarshaller MARSHALLER = new IgniteOptimizedMarshaller();

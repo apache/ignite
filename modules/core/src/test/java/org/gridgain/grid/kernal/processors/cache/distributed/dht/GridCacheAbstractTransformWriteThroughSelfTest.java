@@ -52,7 +52,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     public static final int KEYS_CNT = 30;
 
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Value increment closure. */
     private static final IgniteClosure<Integer, Integer> INCR_CLOS = new IgniteClosure<Integer, Integer>() {

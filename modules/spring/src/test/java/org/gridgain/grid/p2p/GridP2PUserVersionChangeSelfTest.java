@@ -52,7 +52,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     private static final String TEST_RCRS_NAME = "org.gridgain.grid.tests.p2p.GridTestUserResource";
 
     /** IP finder. */
-    private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     public GridP2PUserVersionChangeSelfTest() {

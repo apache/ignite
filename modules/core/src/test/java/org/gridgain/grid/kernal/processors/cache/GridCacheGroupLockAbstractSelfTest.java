@@ -43,7 +43,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Event wait timeout. */
     private static final int WAIT_TIMEOUT = 3000;

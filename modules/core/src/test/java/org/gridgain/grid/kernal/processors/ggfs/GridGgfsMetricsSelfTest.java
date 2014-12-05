@@ -43,7 +43,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
     private static final int NODES_CNT = 3;
 
     /** IP finder for the grid with the primary file system. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Primary GGFS instances. */
     private static IgniteFs[] ggfsPrimary;

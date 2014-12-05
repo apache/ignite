@@ -42,7 +42,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 @SuppressWarnings("ErrorNotRethrown")
 public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Delay flag. */
     private static volatile boolean delay;

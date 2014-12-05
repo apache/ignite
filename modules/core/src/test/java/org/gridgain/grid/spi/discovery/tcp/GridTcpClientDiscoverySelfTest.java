@@ -36,7 +36,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final AtomicInteger srvIdx = new AtomicInteger();

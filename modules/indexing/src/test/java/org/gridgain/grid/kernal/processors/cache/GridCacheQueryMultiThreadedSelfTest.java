@@ -48,7 +48,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
     private static final int GRID_CNT = 2;
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static AtomicInteger idxSwapCnt = new AtomicInteger();

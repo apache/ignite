@@ -87,7 +87,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private static final String SES_VAL_OVERWRITTEN = SES_VAL + "-overwritten";
 
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * Static variable to control whether test should retry checkpoint read attempts.

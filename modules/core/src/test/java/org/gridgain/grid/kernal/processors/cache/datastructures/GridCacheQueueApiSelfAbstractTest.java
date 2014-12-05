@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int QUEUE_CAPACITY = 3;

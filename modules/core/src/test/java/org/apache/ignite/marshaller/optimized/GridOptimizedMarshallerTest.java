@@ -49,7 +49,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
         byte[] bytes = marsh.marshal(new GridTcpDiscoveryVmIpFinder());
 
-        GridTcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
+        TcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
 
         assertFalse(ipFinder.isShared());
 
@@ -68,7 +68,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
         marsh.setRequireSerializable(false);
 
-        GridTcpDiscoveryIpFinderAdapter ipFinder = new GridTcpDiscoveryIpFinderAdapter() {
+        TcpDiscoveryIpFinderAdapter ipFinder = new TcpDiscoveryIpFinderAdapter() {
             @Override public Collection<InetSocketAddress> getRegisteredAddresses() {
                 return null;
             }
@@ -103,7 +103,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
         byte[] bytes = marsh.marshal(new GridTestTcpDiscoveryIpFinderAdapter());
 
-        GridTcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
+        TcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
 
         assertFalse(ipFinder.isShared());
     }

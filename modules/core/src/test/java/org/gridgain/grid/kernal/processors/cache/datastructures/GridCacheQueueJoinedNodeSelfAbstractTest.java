@@ -35,7 +35,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     protected static final int GRID_CNT = 3;
 
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final int ITEMS_CNT = 300;

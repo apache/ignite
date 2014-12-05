@@ -32,7 +32,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  */
 public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Near enabled flag. */
     private boolean nearEnabled;

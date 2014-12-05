@@ -35,7 +35,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
  */
 public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Number of grids to start. */
     private static final int GRID_CNT = 5;

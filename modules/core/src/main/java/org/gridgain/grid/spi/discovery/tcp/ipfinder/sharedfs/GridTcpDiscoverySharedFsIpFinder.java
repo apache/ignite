@@ -41,9 +41,9 @@ import java.util.concurrent.atomic.*;
  * <p>
  * The directory will contain empty files named like the following 192.168.1.136#1001.
  * <p>
- * Note that this finder is shared by default (see {@link GridTcpDiscoveryIpFinder#isShared()}.
+ * Note that this finder is shared by default (see {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
-public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAdapter {
+public class GridTcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Default path for discovering of local nodes (testing only). Note that this path is relative to
      * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,

@@ -30,7 +30,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
     protected static final int GRID_CNT = 4;
 
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructs test.

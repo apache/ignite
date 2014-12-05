@@ -34,7 +34,7 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
     private static final boolean DEBUG = false;
 
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int THREAD_NUM = 20;

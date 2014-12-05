@@ -30,7 +30,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  */
 public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCommonAbstractTest {
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructs a test.

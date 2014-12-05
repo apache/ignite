@@ -30,7 +30,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     private static Collection<Integer> ids;

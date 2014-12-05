@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
  */
 public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

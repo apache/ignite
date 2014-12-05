@@ -37,7 +37,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     private static final int CNT = 2000;
 
     /** IP Finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

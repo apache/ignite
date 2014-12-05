@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Test p2p task. */
     private static final String TEST_TASK = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask";

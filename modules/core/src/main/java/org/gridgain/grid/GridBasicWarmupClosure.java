@@ -188,7 +188,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
         try {
             System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
 
-            GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+            TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
             for (int i = 0; i < gridCnt; i++) {
                 IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);

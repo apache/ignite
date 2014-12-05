@@ -37,7 +37,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     protected static final int BATCH_SIZE = 33;
 
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final int RETRIES = 1111;

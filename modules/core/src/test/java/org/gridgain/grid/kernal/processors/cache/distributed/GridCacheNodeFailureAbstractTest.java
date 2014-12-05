@@ -47,7 +47,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     private static final String VALUE = "test";
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Grid instances. */
     private static final List<Ignite> IGNITEs = new ArrayList<>();

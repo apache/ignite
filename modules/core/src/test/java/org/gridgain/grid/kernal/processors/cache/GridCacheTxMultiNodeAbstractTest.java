@@ -50,7 +50,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     protected static final int GRID_CNT = 4;
 
     /** */
-    protected static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final int RETRIES = 300;

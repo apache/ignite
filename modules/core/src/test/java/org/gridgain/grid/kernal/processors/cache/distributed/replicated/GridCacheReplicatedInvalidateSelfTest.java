@@ -49,7 +49,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
     private static final String VAL = "test";
 
     /** */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /**
      * Don't start grid by default.

@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
-    private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Cache mode for test. */
     private GridCacheMode cacheMode;

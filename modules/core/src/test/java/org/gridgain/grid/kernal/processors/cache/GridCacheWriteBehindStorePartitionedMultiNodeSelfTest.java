@@ -33,7 +33,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private static final int GRID_CNT = 5;
 
     /** Ip finder. */
-    private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Flush frequency. */
     public static final int WRITE_BEHIND_FLUSH_FREQ = 1000;
