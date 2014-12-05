@@ -148,7 +148,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                     sendWithRetries(nodeId, req, null);
                                 }
                             }
-                            catch (GridTopologyException ignored) {
+                            catch (ClusterTopologyException ignored) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to send pending start request to node (is node alive?): " +
                                         nodeId);
@@ -420,7 +420,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             // Stop with exception if projection is empty.
             if (nodes.isEmpty() && !locIncluded) {
                 return new GridFinishedFuture<>(ctx,
-                    new GridTopologyException("Failed to register remote continuous listener (projection is empty)."));
+                    new ClusterTopologyException("Failed to register remote continuous listener (projection is empty)."));
             }
 
             // IDs of nodes where request will be sent.
@@ -597,7 +597,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         try {
                             sendWithRetries(node.id(), new GridContinuousMessage(MSG_STOP_REQ, routineId, null), null);
                         }
-                        catch (GridTopologyException ignored) {
+                        catch (ClusterTopologyException ignored) {
                             U.warn(log, "Failed to send stop request (node left topology): " + node.id());
                         }
                     }
@@ -723,7 +723,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, err), null);
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send start acknowledgement to node (is node alive?): " + nodeId);
         }
@@ -784,7 +784,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             sendWithRetries(nodeId, new GridContinuousMessage(MSG_STOP_ACK, routineId, null), null);
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send stop acknowledgement to node (is node alive?): " + nodeId);
         }
@@ -916,7 +916,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 try {
                                     sendNotification(nodeId, routineId, toSnd, hnd.orderedTopic());
                                 }
-                                catch (GridTopologyException ignored) {
+                                catch (ClusterTopologyException ignored) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to send notification to node (is node alive?): " + nodeId);
                                 }
@@ -996,7 +996,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (node != null)
             sendWithRetries(node, msg, orderedTopic);
         else
-            throw new GridTopologyException("Node for provided ID doesn't exist (did it leave the grid?): " + nodeId);
+            throw new ClusterTopologyException("Node for provided ID doesn't exist (did it leave the grid?): " + nodeId);
     }
 
     /**
@@ -1062,7 +1062,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
                 catch (GridException e) {
                     if (!ctx.discovery().alive(node.id()))
-                        throw new GridTopologyException("Node left grid while sending message to: " + node.id(), e);
+                        throw new ClusterTopologyException("Node left grid while sending message to: " + node.id(), e);
 
                     if (cnt == retryCnt)
                         throw e;
@@ -1683,7 +1683,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             try {
                                 sendWithRetries(id, req, null);
                             }
-                            catch (GridTopologyException ignored) {
+                            catch (ClusterTopologyException ignored) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to resend stop request to node (is node alive?): " + id);
                             }

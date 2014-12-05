@@ -129,7 +129,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     // Remove previous mapping.
                     mappings.remove(nodeId);
 
-                    f.onResult(new GridTopologyException("Remote node left grid (will fail): " + nodeId));
+                    f.onResult(new ClusterTopologyException("Remote node left grid (will fail): " + nodeId));
 
                     return true;
                 }
@@ -379,7 +379,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (!isSync() && !m.explicitLock())
                     fut.onDone();
             }
-            catch (GridTopologyException e) {
+            catch (ClusterTopologyException e) {
                 // Remove previous mapping.
                 mappings.remove(m.node().id());
 
@@ -463,7 +463,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param e Node failure.
          */
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will fail): " + this);
 

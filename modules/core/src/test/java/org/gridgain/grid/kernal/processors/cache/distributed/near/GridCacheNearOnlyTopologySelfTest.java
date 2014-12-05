@@ -171,7 +171,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                     @Override public Object call() throws Exception {
                         return nearOnly.get(key);
                     }
-                }, GridTopologyException.class, null);
+                }, ClusterTopologyException.class, null);
             }
 
             // Test optimistic transaction.
@@ -185,7 +185,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, GridTopologyException.class, null);
+            }, ClusterTopologyException.class, null);
 
             // Test pessimistic transaction.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -198,7 +198,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, GridTopologyException.class, null);
+            }, ClusterTopologyException.class, null);
 
         }
         finally {

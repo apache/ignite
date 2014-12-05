@@ -146,7 +146,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                     break;
                 }
                 catch (Exception e) {
-                    if (X.hasCause(e, GridTopologyException.class)) {
+                    if (X.hasCause(e, ClusterTopologyException.class)) {
                         info("Got topology exception while tear down (will retry in 1000ms).");
 
                         U.sleep(1000);

@@ -70,7 +70,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
                     reduceJobResult(taskResult, jobResult, nid);
                 else {
                     // Ignore nodes that left topology.
-                    if (!(unhandledEx instanceof GridEmptyProjectionException))
+                    if (!(unhandledEx instanceof ClusterGroupEmptyException))
                         taskResult.unhandledEx().put(nid, unhandledEx);
                 }
             }

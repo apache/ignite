@@ -155,7 +155,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
 
                     break;
                 }
-                catch (GridTopologyException ignored) {
+                catch (ClusterTopologyException ignored) {
                     U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
                         "continue to another node): " + node);
                 }

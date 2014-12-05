@@ -380,12 +380,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (GridTopologyException e) {
+            catch (ClusterTopologyException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
             catch (GridException e) {
-                if (e.hasCause(GridTopologyException.class)) {
+                if (e.hasCause(ClusterTopologyException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
 
@@ -425,7 +425,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (GridTopologyException e) {
+            catch (ClusterTopologyException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
@@ -726,7 +726,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 break;
             }
-            catch (GridTopologyException e) {
+            catch (ClusterTopologyException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while reassigning (will retry): " + e.getMessage());
 
@@ -999,7 +999,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     reassign(dep, topVer);
             }
             catch (GridException e) {
-                if (!(e instanceof GridTopologyException))
+                if (!(e instanceof ClusterTopologyException))
                     log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
                 long newTopVer = ctx.discovery().topologyVersion();
@@ -1079,7 +1079,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                         reassign(dep, topVer);
                                     }
                                     catch (GridException ex) {
-                                        if (!(e instanceof GridTopologyException))
+                                        if (!(e instanceof ClusterTopologyException))
                                             LT.error(log, ex, "Failed to do service reassignment (will retry): " +
                                                 dep.configuration().getName());
 
@@ -1149,7 +1149,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         it.remove();
                     }
                     catch (GridException e) {
-                        if (!(e instanceof GridTopologyException))
+                        if (!(e instanceof ClusterTopologyException))
                             LT.error(log, e, "Failed to do service reassignment (will retry): " +
                                 dep.configuration().getName());
                     }

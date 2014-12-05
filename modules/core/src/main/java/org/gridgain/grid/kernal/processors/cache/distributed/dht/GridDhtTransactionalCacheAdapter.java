@@ -423,7 +423,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 // Reply back to sender.
                 ctx.io().send(nodeId, res);
             }
-            catch (GridTopologyException ignored) {
+            catch (ClusterTopologyException ignored) {
                 U.warn(log, "Failed to send lock reply to remote node because it left grid: " + nodeId);
 
                 fail = true;
@@ -1377,7 +1377,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 ctx.io().send(n, req);
             }
-            catch (GridTopologyException ignore) {
+            catch (ClusterTopologyException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Node left while sending unlock request: " + n);
             }
@@ -1405,7 +1405,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     ctx.io().send(n, req);
                 }
-                catch (GridTopologyException ignore) {
+                catch (ClusterTopologyException ignore) {
                     if (log.isDebugEnabled())
                         log.debug("Node left while sending unlock request: " + n);
                 }

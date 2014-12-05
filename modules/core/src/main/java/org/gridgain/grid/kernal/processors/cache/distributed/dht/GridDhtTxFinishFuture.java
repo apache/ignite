@@ -129,7 +129,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new GridTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
 
                     return true;
                 }
@@ -334,8 +334,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             }
             catch (GridException e) {
                 // Fail the whole thing.
-                if (e instanceof GridTopologyException)
-                    fut.onResult((GridTopologyException)e);
+                if (e instanceof ClusterTopologyException)
+                    fut.onResult((ClusterTopologyException)e);
                 else
                     fut.onResult(e);
             }
@@ -391,8 +391,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 }
                 catch (GridException e) {
                     // Fail the whole thing.
-                    if (e instanceof GridTopologyException)
-                        fut.onResult((GridTopologyException)e);
+                    if (e instanceof ClusterTopologyException)
+                        fut.onResult((ClusterTopologyException)e);
                     else
                         fut.onResult(e);
                 }
@@ -474,7 +474,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @param e Node failure.
          */
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

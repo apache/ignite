@@ -160,7 +160,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new GridTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
 
                     found = true;
                 }
@@ -440,7 +440,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
             if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
-                onDone(new GridTopologyException("Failed to map keys for cache (all " +
+                onDone(new ClusterTopologyException("Failed to map keys for cache (all " +
                     "partition nodes left the grid): " + cacheCtx.name()));
 
                 return;
@@ -772,7 +772,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         /**
          * @param e Node failure.
          */
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (isDone())
                 return;
 

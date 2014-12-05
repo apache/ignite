@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.gc
 
-import org.apache.ignite.cluster.{GridEmptyProjectionException, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.gridgain.grid.kernal.visor.node.VisorNodeGcTask
 
 import java.lang.{Boolean => JavaBoolean}
@@ -157,7 +157,7 @@ class VisorGcCommand {
                 t.render()
             }
             catch {
-                case e: GridEmptyProjectionException => scold("Topology is empty.")
+                case e: ClusterGroupEmptyException => scold("Topology is empty.")
                 case e: GridException => scold(e.getMessage)
             }
         }

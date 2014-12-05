@@ -587,7 +587,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         try {
             sendLocalPartitions(oldestNode, exchId);
         }
-        catch (GridTopologyException ignore) {
+        catch (ClusterTopologyException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Oldest node left during partition exchange [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');

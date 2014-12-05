@@ -494,7 +494,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (GridCacheTxRollbackException | GridTopologyException ignored) {
+                                catch (GridCacheTxRollbackException | ClusterTopologyException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -642,11 +642,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                         tx.commit();
                                     }
-                                    catch (GridTopologyException ignored) {
+                                    catch (ClusterTopologyException ignored) {
                                         // It is ok if primary node leaves grid.
                                     }
                                 }
-                                catch (GridTopologyException ignored) {
+                                catch (ClusterTopologyException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -787,7 +787,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                     tx.commit();
                                 }
-                                catch (GridTopologyException ignored) {
+                                catch (ClusterTopologyException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 

@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.ack
 
-import org.apache.ignite.cluster.GridEmptyProjectionException
+import org.apache.ignite.cluster.ClusterGroupEmptyException
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.misc.VisorAckTask
 
@@ -109,7 +109,7 @@ class VisorAckCommand {
                     .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))
             }
             catch {
-                case _: GridEmptyProjectionException => scold("Topology is empty.")
+                case _: ClusterGroupEmptyException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
             }
     }

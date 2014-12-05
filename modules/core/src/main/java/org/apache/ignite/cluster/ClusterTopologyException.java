@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 /**
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
-public class GridTopologyException extends GridException {
+public class ClusterTopologyException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class GridTopologyException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridTopologyException(String msg) {
+    public ClusterTopologyException(String msg) {
         super(msg);
     }
 
@@ -35,7 +35,7 @@ public class GridTopologyException extends GridException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridTopologyException(String msg, @Nullable Throwable cause) {
+    public ClusterTopologyException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

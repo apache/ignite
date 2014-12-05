@@ -9,22 +9,21 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.cluster.*;
 import org.jetbrains.annotations.*;
 
 /**
  * This exception defines illegal call on empty projection. Thrown by projection when operation
  * that requires at least one node is called on empty projection.
  */
-public class GridEmptyProjectionException extends GridTopologyException {
+public class ClusterGroupEmptyException extends ClusterTopologyException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Creates new exception with default error message.
      */
-    public GridEmptyProjectionException() {
-        super("Grid projection is empty.");
+    public ClusterGroupEmptyException() {
+        super("Cluster group is empty.");
     }
 
     /**
@@ -32,7 +31,7 @@ public class GridEmptyProjectionException extends GridTopologyException {
      *
      * @param msg Error message.
      */
-    public GridEmptyProjectionException(String msg) {
+    public ClusterGroupEmptyException(String msg) {
         super(msg);
     }
 
@@ -42,7 +41,7 @@ public class GridEmptyProjectionException extends GridTopologyException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridEmptyProjectionException(String msg, @Nullable Throwable cause) {
+    public ClusterGroupEmptyException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

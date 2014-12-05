@@ -43,7 +43,7 @@ import java.util.concurrent.*;
  * <li>{@code affinity(...)} methods colocate jobs with nodes on which a specified key is cached.</li>
  * </ul>
  * Note that if attempt is made to execute a computation over an empty projection (i.e. projection that does
- * not have any alive nodes), then {@link GridEmptyProjectionException} will be thrown out of result future.
+ * not have any alive nodes), then {@link org.apache.ignite.cluster.ClusterGroupEmptyException} will be thrown out of result future.
  * <h1 class="header">Serializable</h1>
  * Also note that {@link Runnable} and {@link Callable} implementations must support serialization as required
  * by the configured marshaller. For example, {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} requires {@link Serializable}

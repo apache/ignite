@@ -4110,8 +4110,8 @@ public abstract class GridUtils {
      *
      * @return Empty projection exception.
      */
-    public static GridEmptyProjectionException emptyTopologyException() {
-        return new GridEmptyProjectionException("Topology projection is empty. Note that predicate based " +
+    public static ClusterGroupEmptyException emptyTopologyException() {
+        return new ClusterGroupEmptyException("Topology projection is empty. Note that predicate based " +
             "projection can be empty from call to call.");
     }
 

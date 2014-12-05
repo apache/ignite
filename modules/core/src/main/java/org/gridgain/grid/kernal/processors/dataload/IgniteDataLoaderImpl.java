@@ -439,7 +439,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             }
 
             if (node == null) {
-                resFut.onDone(new GridTopologyException("Failed to map key to node " +
+                resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
                     "(no nodes with cache found in topology) [infos=" + entries.size() +
                     ", cacheName=" + cacheName + ']'));
 
@@ -509,7 +509,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     buf.onNodeLeft();
 
                 if (f != null)
-                    f.onDone(new GridTopologyException("Failed to wait for request completion " +
+                    f.onDone(new ClusterTopologyException("Failed to wait for request completion " +
                         "(node has left): " + nodeId));
             }
         }
@@ -1011,7 +1011,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
                         ((GridFutureAdapter<Object>)fut).onDone(e);
                     else
-                        ((GridFutureAdapter<Object>)fut).onDone(new GridTopologyException("Failed to send " +
+                        ((GridFutureAdapter<Object>)fut).onDone(new ClusterTopologyException("Failed to send " +
                             "request (node has left): " + node.id()));
                 }
             }
@@ -1027,7 +1027,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             if (log.isDebugEnabled())
                 log.debug("Forcibly completing futures (node has left): " + node.id());
 
-            Exception e = new GridTopologyException("Failed to wait for request completion " +
+            Exception e = new ClusterTopologyException("Failed to wait for request completion " +
                 "(node has left): " + node.id());
 
             for (GridFutureAdapter<Object> f : reqs.values())

@@ -413,7 +413,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             processDelayedResponses();
         }
-        catch (GridEmptyProjectionException e) {
+        catch (ClusterGroupEmptyException e) {
             U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
 
             finishTask(null, e);
@@ -534,7 +534,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         int size = subgrid.size();
 
         if (size == 0)
-            throw new GridEmptyProjectionException("Topology projection is empty.");
+            throw new ClusterGroupEmptyException("Topology projection is empty.");
 
         List<ClusterNode> shuffledNodes = new ArrayList<>(size);
 
@@ -922,7 +922,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
-        catch (GridTopologyException e) {
+        catch (ClusterTopologyException e) {
             U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
 
             userE = e;
@@ -968,7 +968,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 if (log.isDebugEnabled())
                     log.debug(msg);
 
-                Throwable e = new GridTopologyException(msg, jobRes.getException());
+                Throwable e = new ClusterTopologyException(msg, jobRes.getException());
 
                 finishTask(null, e);
 
@@ -1094,7 +1094,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
                     res.getJobContext().getJobId(), null, null, null, null, null, null, false);
 
-                fakeRes.setFakeException(new GridTopologyException("Failed to send job due to node failure: " + node));
+                fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " + node));
 
                 onResponse(fakeRes);
             }
@@ -1197,7 +1197,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 res.getJobContext().getJobId(), null, null, null, null, null, null, false);
 
             if (deadNode)
-                fakeRes.setFakeException(new GridTopologyException("Failed to send job due to node failure: " +
+                fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " +
                     node, e));
             else
                 fakeRes.setFakeException(e);
@@ -1229,7 +1229,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(nodeId, ses.getId(),
                             jr.getJobContext().getJobId(), null, null, null, null, null, null, false);
 
-                        fakeRes.setFakeException(new GridTopologyException("Node has left grid: " + nodeId));
+                        fakeRes.setFakeException(new ClusterTopologyException("Node has left grid: " + nodeId));
 
                         if (resList == null)
                             resList = new ArrayList<>();

@@ -149,7 +149,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                     try {
                         cctx.io().send(id, req);
                     }
-                    catch (GridTopologyException ignored) {
+                    catch (ClusterTopologyException ignored) {
                         fut.onNodeLeft();
                     }
                     catch (GridException e) {
@@ -170,7 +170,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 try {
                     cctx.io().send(nodeId, req);
                 }
-                catch (GridTopologyException ignored) {
+                catch (ClusterTopologyException ignored) {
                     fut.onNodeLeft();
                 }
                 catch (GridException e) {

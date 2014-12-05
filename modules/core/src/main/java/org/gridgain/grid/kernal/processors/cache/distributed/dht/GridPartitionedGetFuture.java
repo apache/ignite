@@ -198,7 +198,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new GridTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
 
                     return true;
                 }
@@ -252,7 +252,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      */
     private void map(Collection<? extends K> keys, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, long topVer) {
         if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-            onDone(new GridTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
+            onDone(new ClusterTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
 
             return;
         }
@@ -355,8 +355,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 }
                 catch (GridException e) {
                     // Fail the whole thing.
-                    if (e instanceof GridTopologyException)
-                        fut.onResult((GridTopologyException)e);
+                    if (e instanceof ClusterTopologyException)
+                        fut.onResult((ClusterTopologyException)e);
                     else
                         fut.onResult(e);
                 }
@@ -438,7 +438,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                 if (keys != null && keys.containsKey(key)) {
                     if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
-                        onDone(new GridTopologyException("Failed to remap key to a new node after " + MAX_REMAP_CNT
+                        onDone(new ClusterTopologyException("Failed to remap key to a new node after " + MAX_REMAP_CNT
                             + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
                             U.toShortString(node) + ", mappings=" + mapped + ']'));
 
@@ -598,7 +598,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param e Failure exception.
          */
         @SuppressWarnings("UnusedParameters")
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 

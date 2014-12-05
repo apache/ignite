@@ -333,7 +333,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws GridException If sending failed.
-     * @throws GridTopologyException If receiver left.
+     * @throws org.apache.ignite.cluster.ClusterTopologyException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws GridException {
         send(node, msg, SYSTEM_POOL);
@@ -345,7 +345,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws GridException If sending failed.
-     * @throws GridTopologyException If receiver left.
+     * @throws org.apache.ignite.cluster.ClusterTopologyException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
         assert !node.isLocal();
@@ -378,7 +378,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             }
             catch (GridException e) {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
-                    throw new GridTopologyException("Node left grid while sending message to: " + node.id(), e);
+                    throw new ClusterTopologyException("Node left grid while sending message to: " + node.id(), e);
 
                 if (cnt == retryCnt)
                     throw e;
@@ -530,7 +530,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new GridTopologyException("Failed to send message because node left grid [node=" + n + ", msg=" +
+            throw new ClusterTopologyException("Failed to send message because node left grid [node=" + n + ", msg=" +
                 msg + ']');
 
         send(n, msg);
@@ -564,7 +564,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             }
             catch (GridException e) {
                 if (cctx.discovery().node(node.id()) == null)
-                    throw new GridTopologyException("Node left grid while sending ordered message to: " + node.id(), e);
+                    throw new ClusterTopologyException("Node left grid while sending ordered message to: " + node.id(), e);
 
                 if (cnt == retryCnt)
                     throw e;

@@ -86,7 +86,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
 
             compute(ignite1.cluster().forPredicate(p)).withTimeout(10000).execute(JobFailTask.class.getName(), "1");
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             failed.set(true);
         }
         finally {
@@ -122,7 +122,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
 
             assert res == 1;
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             failed.set(true);
         }
         finally {
@@ -165,7 +165,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
 
             assert res == 1;
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             failed.set(true);
         }
         finally {

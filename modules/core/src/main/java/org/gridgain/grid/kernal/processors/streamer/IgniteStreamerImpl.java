@@ -805,7 +805,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                     sendWithRetries(dstNodeId, new GridStreamerResponse(futId, errBytes));
                 }
                 catch (GridException e) {
-                    if (!e.hasCause(GridTopologyException.class))
+                    if (!e.hasCause(ClusterTopologyException.class))
                         log.error("Failed to complete parent stage [futId=" + futId + ", err=" + e + ']');
                 }
             }
@@ -860,7 +860,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 sendWithRetries(nodeId, new GridStreamerCancelRequest(cancelledFutId));
             }
             catch (GridException e) {
-                if (!e.hasCause(GridTopologyException.class))
+                if (!e.hasCause(ClusterTopologyException.class))
                     log.error("Failed to send streamer cancel request to remote node [nodeId=" + nodeId +
                         ", cancelledFutId=" + cancelledFutId + ']', e);
             }
@@ -1115,7 +1115,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                         ", msg=" + msg + ", err=" + e + ']');
 
                 if (!ctx.discovery().alive(dstNodeId))
-                    throw new GridTopologyException("Failed to send message (destination node left grid): " +
+                    throw new ClusterTopologyException("Failed to send message (destination node left grid): " +
                         dstNodeId);
 
                 if (i == SEND_RETRY_COUNT - 1)

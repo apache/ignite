@@ -49,7 +49,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
 
             assert false : "Should never be reached due to exception thrown.";
         }
-        catch (GridTopologyException e) {
+        catch (ClusterTopologyException e) {
             info("Received correct exception: " + e);
         }
         finally {

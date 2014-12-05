@@ -160,7 +160,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             }
             catch (GridException e) {
                 if (!ggfsCtx.kernalContext().discovery().alive(nodeId))
-                    throw new GridTopologyException("Failed to send message (node left the grid) " +
+                    throw new ClusterTopologyException("Failed to send message (node left the grid) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
 
                 if (i == MESSAGE_SEND_RETRY_COUNT - 1)
@@ -568,7 +568,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                             startSync0.remove(nodeId);
                     }
                     catch (GridException e) {
-                        if (e.hasCause(GridTopologyException.class)) {
+                        if (e.hasCause(ClusterTopologyException.class)) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send sync message to remote node (node has left the grid): " +
                                     nodeId);
@@ -644,7 +644,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     sendWithRetries(nodeId, msg);
                 }
                 catch (GridException e) {
-                    if (e.hasCause(GridTopologyException.class)) {
+                    if (e.hasCause(ClusterTopologyException.class)) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send fragmentizer request to remote node (node left grid): " +
                                 nodeId);
@@ -739,7 +739,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                             processFragmentizerRequest(fragmentizerReq);
                         }
                         catch (GridException e) {
-                            if (e.hasCause(GridTopologyException.class)) {
+                            if (e.hasCause(ClusterTopologyException.class)) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to process fragmentizer request (remote node left the grid) " +
                                         "[req=" + req + ", err=" + e.getMessage() + ']');
@@ -785,7 +785,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                 sendWithRetries(nodeId, msg);
             }
             catch (GridException e) {
-                if (e.hasCause(GridTopologyException.class)) {
+                if (e.hasCause(ClusterTopologyException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to send sync response to GGFS fragmentizer coordinator " +
                             "(originating node left the grid): " + nodeId);

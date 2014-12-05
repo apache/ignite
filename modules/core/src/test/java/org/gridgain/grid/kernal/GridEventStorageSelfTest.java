@@ -133,7 +133,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
         try {
             events(ignite1.cluster().forPredicate(F.<ClusterNode>alwaysFalse())).remoteQuery(filter, 0);
         }
-        catch (GridEmptyProjectionException ignored) {
+        catch (ClusterGroupEmptyException ignored) {
             // No-op
         }
     }

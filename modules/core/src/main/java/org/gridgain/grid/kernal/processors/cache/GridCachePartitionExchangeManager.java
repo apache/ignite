@@ -500,7 +500,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             return true;
         }
-        catch (GridTopologyException ignore) {
+        catch (ClusterTopologyException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
                     node.id() + ", msg=" + m + ']');

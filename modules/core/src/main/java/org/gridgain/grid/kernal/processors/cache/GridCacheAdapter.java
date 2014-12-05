@@ -1244,7 +1244,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             if (fut != null)
                 fut.get();
         }
-        catch (GridEmptyProjectionException ignore) {
+        catch (ClusterGroupEmptyException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
         }
@@ -3687,7 +3687,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             return globalSize;
         }
-        catch (GridEmptyProjectionException ignore) {
+        catch (ClusterGroupEmptyException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
 
@@ -4589,7 +4589,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             ctx.io().send(nodeId, res);
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send check prepared transaction response (did node leave grid?) [nodeId=" +
                     nodeId + ", res=" + res + ']');
@@ -4712,7 +4712,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             ctx.io().send(nodeId, res);
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send check committed transaction response (did node leave grid?) [nodeId=" +
                     nodeId + ", res=" + res + ']');

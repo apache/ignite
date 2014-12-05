@@ -269,7 +269,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                 return true;
             }
-            catch (GridTopologyException ignored) {
+            catch (ClusterTopologyException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send query response since node left grid [nodeId=" + nodeId +
                         ", res=" + res + "]");

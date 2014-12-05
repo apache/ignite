@@ -184,7 +184,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 if (ggfsCtx.ggfsNode(discoEvt.eventNode())) {
                     for (WriteCompletionFuture future : pendingWrites.values()) {
                         future.onError(discoEvt.eventNode().id(),
-                            new GridTopologyException("Node left grid before write completed: " + evt.node().id()));
+                            new ClusterTopologyException("Node left grid before write completed: " + evt.node().id()));
                     }
                 }
             }

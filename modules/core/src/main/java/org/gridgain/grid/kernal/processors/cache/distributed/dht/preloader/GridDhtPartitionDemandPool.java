@@ -568,7 +568,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param exchFut Exchange future.
          * @return Missed partitions.
          * @throws InterruptedException If interrupted.
-         * @throws GridTopologyException If node left.
+         * @throws org.apache.ignite.cluster.ClusterTopologyException If node left.
          * @throws GridException If failed to send message.
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
@@ -906,7 +906,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 catch (GridInterruptedException e) {
                                     throw e;
                                 }
-                                catch (GridTopologyException e) {
+                                catch (ClusterTopologyException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Node left during preloading (will retry) [node=" + node.id() +
                                             ", msg=" + e.getMessage() + ']');

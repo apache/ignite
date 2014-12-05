@@ -14,7 +14,7 @@ package org.gridgain.visor
 import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.{IgniteSystemProperties, IgniteState, Ignition}
-import org.apache.ignite.cluster.{GridEmptyProjectionException, ClusterGroup, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
 import org.apache.ignite.lang.IgnitePredicate
@@ -2455,7 +2455,7 @@ object visor extends VisorTag {
                         }
                     }
                     catch {
-                        case _: GridEmptyProjectionException => // Ignore.
+                        case _: ClusterGroupEmptyException => // Ignore.
                         case e: Exception => logText("Failed to collect log.")
                     }
                 }
@@ -2487,7 +2487,7 @@ object visor extends VisorTag {
             try
                 drawBar(g.metrics())
             catch {
-                case e: GridEmptyProjectionException => logText("Topology is empty.")
+                case e: ClusterGroupEmptyException => logText("Topology is empty.")
                 case e: Exception => ()
             }
     }

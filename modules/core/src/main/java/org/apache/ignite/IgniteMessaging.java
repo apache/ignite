@@ -58,7 +58,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
      * @throws GridException If failed to send a message to any of the nodes.
-     * @throws GridEmptyProjectionException Thrown in case when this projection is empty.
+     * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
      */
     public void send(@Nullable Object topic, Object msg) throws GridException;
 
@@ -69,7 +69,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
      *      the exception none or some messages could have been sent already.
      * @throws GridException If failed to send a message to any of the nodes.
-     * @throws GridEmptyProjectionException Thrown in case when this projection is empty.
+     * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
      */
     public void send(@Nullable Object topic, Collection<?> msgs) throws GridException;
 
@@ -88,7 +88,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param timeout Message timeout in milliseconds, {@code 0} for default
      *      which is {@link org.apache.ignite.configuration.IgniteConfiguration#getNetworkTimeout()}.
      * @throws GridException If failed to send a message to any of the nodes.
-     * @throws GridEmptyProjectionException Thrown in case when this projection is empty.
+     * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
      */
     public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws GridException;
 

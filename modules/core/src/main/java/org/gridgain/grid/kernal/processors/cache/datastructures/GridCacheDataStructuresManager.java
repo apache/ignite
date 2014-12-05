@@ -1207,7 +1207,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         nodes,
                         true).get();
                 }
-                catch (GridTopologyException e) {
+                catch (ClusterTopologyException e) {
                     if (log.isDebugEnabled())
                         log.debug("BlockSet job failed, will retry: " + e);
 
@@ -1220,7 +1220,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         nodes,
                         true).get();
                 }
-                catch (GridTopologyException e) {
+                catch (ClusterTopologyException e) {
                     if (log.isDebugEnabled())
                         log.debug("RemoveSetData job failed, will retry: " + e);
 
@@ -1311,10 +1311,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 try {
                     return call.call();
                 }
-                catch (GridEmptyProjectionException e) {
+                catch (ClusterGroupEmptyException e) {
                     throw new GridRuntimeException(e);
                 }
-                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {

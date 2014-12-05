@@ -717,7 +717,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             assert topVer > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-                onDone(new GridTopologyException("Failed to map keys for near-only cache (all " +
+                onDone(new ClusterTopologyException("Failed to map keys for near-only cache (all " +
                     "partition nodes left the grid)."));
 
                 return;
@@ -1101,7 +1101,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                     cctx.io().send(node, req);
                 }
-                catch (GridTopologyException ex) {
+                catch (ClusterTopologyException ex) {
                     assert fut != null;
 
                     fut.onResult(ex);
@@ -1116,7 +1116,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             cctx.io().send(node, req);
                         }
-                        catch (GridTopologyException ex) {
+                        catch (ClusterTopologyException ex) {
                             assert fut != null;
 
                             fut.onResult(ex);
@@ -1173,8 +1173,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param nodeId Node ID.
      * @return Topology exception with user-friendly message.
      */
-    private GridTopologyException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
-        return new GridTopologyException("Failed to acquire lock for keys (primary node left grid, " +
+    private ClusterTopologyException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
+        return new ClusterTopologyException("Failed to acquire lock for keys (primary node left grid, " +
             "retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested);
     }
 
@@ -1293,7 +1293,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         /**
          * @param e Node left exception.
          */
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (isDone())
                 return;
 

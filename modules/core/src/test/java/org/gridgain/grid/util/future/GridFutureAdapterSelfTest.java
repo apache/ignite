@@ -269,14 +269,14 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             fut = new GridFutureAdapter<>(ctx);
             chain = fut.chain(passThrough);
 
-            fut.onDone(new GridEmptyProjectionException("test exception"));
+            fut.onDone(new ClusterGroupEmptyException("test exception"));
 
             try {
                 chain.get();
 
                 fail("Expects failed with exception.");
             }
-            catch (GridEmptyProjectionException e) {
+            catch (ClusterGroupEmptyException e) {
                 info("Expected exception: " + e.getMessage());
             }
 

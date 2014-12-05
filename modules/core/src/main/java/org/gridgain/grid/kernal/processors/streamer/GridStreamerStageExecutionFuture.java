@@ -295,7 +295,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
      */
     public void onNodeLeft(UUID leftNodeId) {
         if (execNodeIds.contains(leftNodeId))
-            onFailed(leftNodeId, new GridTopologyException("Failed to wait for streamer pipeline future completion " +
+            onFailed(leftNodeId, new ClusterTopologyException("Failed to wait for streamer pipeline future completion " +
                 "(execution node has left the grid). All running stages will be cancelled " +
                 "[fut=" + this + ", leftNodeId=" + leftNodeId + ']'));
     }

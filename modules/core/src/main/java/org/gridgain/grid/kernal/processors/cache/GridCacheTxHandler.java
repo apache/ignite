@@ -638,7 +638,7 @@ public class GridCacheTxHandler<K, V> {
             ctx.io().send(nodeId, res);
         }
         catch (GridException e) {
-            if (e instanceof GridTopologyException) {
+            if (e instanceof ClusterTopologyException) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send tx response to remote node (node left grid) [node=" + nodeId +
                         ", xid=" + req.version());

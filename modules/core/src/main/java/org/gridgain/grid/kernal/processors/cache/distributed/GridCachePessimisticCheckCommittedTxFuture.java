@@ -108,7 +108,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
 
                 if (nearNode == null) {
                     // Near node failed, separate check prepared future will take care of it.
-                    onDone(new GridTopologyException("Failed to check near transaction state (near node left grid): " +
+                    onDone(new ClusterTopologyException("Failed to check near transaction state (near node left grid): " +
                         tx.eventNodeId()));
 
                     return;
@@ -137,7 +137,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
             try {
                 cctx.io().send(rmtNode.id(), req);
             }
-            catch (GridTopologyException ignored) {
+            catch (ClusterTopologyException ignored) {
                 fut.onNodeLeft();
             }
             catch (GridException e) {
@@ -315,7 +315,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
                 log.debug("Transaction node left grid (will ignore) [fut=" + this + ']');
 
             if (nearCheck) {
-                onDone(new GridTopologyException("Failed to check near transaction state (near node left grid): " +
+                onDone(new ClusterTopologyException("Failed to check near transaction state (near node left grid): " +
                     nodeId));
 
                 return;

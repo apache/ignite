@@ -625,7 +625,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
             try {
                 cctx.io().send(nearNodeId, res);
             }
-            catch (GridTopologyException ignored) {
+            catch (ClusterTopologyException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Node left before sending finish response (transaction was committed) [node=" +
                         nearNodeId + ", res=" + res + ']');

@@ -67,10 +67,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         break;
                     }
                 }
-                catch (GridEmptyProjectionException e) {
+                catch (ClusterGroupEmptyException e) {
                     throw e;
                 }
-                catch (GridTopologyException e) {
+                catch (ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -114,10 +114,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (GridEmptyProjectionException e) {
+                catch (ClusterGroupEmptyException e) {
                     throw e;
                 }
-                catch(GridTopologyException e) {
+                catch(ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -171,10 +171,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (GridEmptyProjectionException e) {
+                catch (ClusterGroupEmptyException e) {
                     throw e;
                 }
-                catch(GridTopologyException e) {
+                catch(ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -214,10 +214,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (GridEmptyProjectionException e) {
+                catch (ClusterGroupEmptyException e) {
                     throw e;
                 }
-                catch(GridTopologyException e) {
+                catch(ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {

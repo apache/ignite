@@ -256,7 +256,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     return null;
                 }
             },
-            GridTopologyException.class,
+            ClusterTopologyException.class,
             null
         );
 

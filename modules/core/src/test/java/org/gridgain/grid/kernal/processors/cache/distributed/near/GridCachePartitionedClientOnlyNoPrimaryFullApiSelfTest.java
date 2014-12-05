@@ -46,7 +46,7 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     @Override protected IgniteClosure<Throwable, Throwable> errorHandler() {
         return new IgniteClosure<Throwable, Throwable>() {
             @Override public Throwable apply(Throwable e) {
-                if (e instanceof GridException || X.hasCause(e, GridTopologyException.class)) {
+                if (e instanceof GridException || X.hasCause(e, ClusterTopologyException.class)) {
                     info("Discarding exception: " + e);
 
                     return null;

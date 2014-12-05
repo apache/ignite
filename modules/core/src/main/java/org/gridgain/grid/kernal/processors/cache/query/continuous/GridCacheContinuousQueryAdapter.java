@@ -240,7 +240,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         prj = prj.forCache(ctx.name());
 
         if (prj.nodes().isEmpty())
-            throw new GridTopologyException("Failed to execute query (projection is empty): " + this);
+            throw new ClusterTopologyException("Failed to execute query (projection is empty): " + this);
 
         GridCacheMode mode = ctx.config().getCacheMode();
 

@@ -512,7 +512,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                 return true;
             }
-            catch (GridTopologyException ignore) {
+            catch (ClusterTopologyException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send partition supply message because node left grid: " + n.id());
 

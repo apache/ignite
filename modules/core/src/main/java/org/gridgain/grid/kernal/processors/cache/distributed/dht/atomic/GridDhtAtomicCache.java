@@ -2098,7 +2098,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 sendDeferredUpdateResponse(nodeId, req.futureVersion());
             }
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             U.warn(log, "Failed to send DHT atomic update response to node because it left grid: " +
                 req.nodeId());
         }
@@ -2203,7 +2203,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             ctx.io().send(nodeId, res);
         }
-        catch (GridTopologyException ignored) {
+        catch (ClusterTopologyException ignored) {
             U.warn(log, "Failed to send near update reply to node because it left grid: " +
                 nodeId);
         }
@@ -2477,7 +2477,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     log.debug("Failed to send deferred dht update response to remote node (grid is stopping) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
             }
-            catch (GridTopologyException ignored) {
+            catch (ClusterTopologyException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send deferred dht update response to remote node (did node leave grid?) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');

@@ -2708,7 +2708,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                         try {
                             compute(forNodes(neighbors)).execute(GridKillTask.class, false);
                         }
-                        catch (GridEmptyProjectionException ignored) {
+                        catch (ClusterGroupEmptyException ignored) {
                             // No-op, nothing to restart.
                         }
                     }

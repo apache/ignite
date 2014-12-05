@@ -140,7 +140,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         GridDhtAtomicUpdateRequest<K, V> req = mappings.get(nodeId);
 
         if (req != null) {
-            updateRes.addFailedKeys(req.keys(), new GridTopologyException("Failed to write keys on backup (node left" +
+            updateRes.addFailedKeys(req.keys(), new ClusterTopologyException("Failed to write keys on backup (node left" +
                 " grid before response is received): " + nodeId));
 
             // Remove only after added keys to failed set.
@@ -321,7 +321,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
                     cctx.io().send(req.nodeId(), req);
                 }
-                catch (GridTopologyException ignored) {
+                catch (ClusterTopologyException ignored) {
                     U.warn(log, "Failed to send update request to backup node because it left grid: " +
                         req.nodeId());
 

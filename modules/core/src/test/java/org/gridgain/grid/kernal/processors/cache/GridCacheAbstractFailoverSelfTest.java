@@ -300,7 +300,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (GridException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, GridTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
         }
     }
@@ -327,7 +327,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (GridException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, GridTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
             else
                 info("Failed to put values to cache due to topology exception [0," + cnt + ')');
@@ -346,7 +346,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (GridException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, GridTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
         }
     }
@@ -373,7 +373,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (GridException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, GridTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
             else
                 info("Failed to remove values from cache due to topology exception [0," + cnt + ')');

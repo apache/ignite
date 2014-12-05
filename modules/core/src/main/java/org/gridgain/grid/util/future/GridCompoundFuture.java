@@ -330,7 +330,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
                 err.compareAndSet(null, e);
             }
-            catch (GridTopologyException e) {
+            catch (ClusterTopologyException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology exception [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
 

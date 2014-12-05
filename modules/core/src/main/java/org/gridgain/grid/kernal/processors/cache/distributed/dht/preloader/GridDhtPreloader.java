@@ -364,7 +364,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
             cctx.io().send(node, res);
         }
-        catch (GridTopologyException ignore) {
+        catch (ClusterTopologyException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Received force key request form failed node (will ignore) [nodeId=" + node.id() +
                     ", req=" + msg + ']');

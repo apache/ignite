@@ -199,7 +199,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new GridTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
 
                     return true;
                 }
@@ -257,7 +257,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         if (affNodes.isEmpty()) {
             assert !isAffinityNode(cctx.config());
 
-            onDone(new GridTopologyException("Failed to map keys for near-only cache (all partition " +
+            onDone(new ClusterTopologyException("Failed to map keys for near-only cache (all partition " +
                 "nodes left the grid)."));
 
             return;
@@ -358,8 +358,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 }
                 catch (GridException e) {
                     // Fail the whole thing.
-                    if (e instanceof GridTopologyException)
-                        fut.onResult((GridTopologyException)e);
+                    if (e instanceof ClusterTopologyException)
+                        fut.onResult((ClusterTopologyException)e);
                     else
                         fut.onResult(e);
                 }
@@ -479,7 +479,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     if (keys != null && keys.containsKey(key)) {
                         if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
-                            onDone(new GridTopologyException("Failed to remap key to a new node after " + MAX_REMAP_CNT
+                            onDone(new ClusterTopologyException("Failed to remap key to a new node after " + MAX_REMAP_CNT
                                 + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
                                 U.toShortString(primary) + ", mappings=" + mapped + ']'));
 
@@ -689,7 +689,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /**
          * @param e Topology exception.
          */
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 

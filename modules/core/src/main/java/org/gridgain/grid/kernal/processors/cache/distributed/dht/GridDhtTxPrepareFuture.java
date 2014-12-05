@@ -242,7 +242,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new GridTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
 
                     return true;
                 }
@@ -675,7 +675,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 try {
                     cctx.io().send(n, req);
                 }
-                catch (GridTopologyException e) {
+                catch (ClusterTopologyException e) {
                     fut.onResult(e);
                 }
                 catch (GridException e) {
@@ -729,7 +729,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     try {
                         cctx.io().send(nearMapping.node(), req);
                     }
-                    catch (GridTopologyException e) {
+                    catch (ClusterTopologyException e) {
                         fut.onResult(e);
                     }
                     catch (GridException e) {
@@ -938,7 +938,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param e Node failure.
          */
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

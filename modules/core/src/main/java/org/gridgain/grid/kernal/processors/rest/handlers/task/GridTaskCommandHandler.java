@@ -228,7 +228,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                 desc = new TaskDescriptor(true, f.get(), null);
                             }
                             catch (GridException e) {
-                                if (e.hasCause(GridTopologyException.class, GridEmptyProjectionException.class))
+                                if (e.hasCause(ClusterTopologyException.class, ClusterGroupEmptyException.class))
                                     U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
                                         "nodes alive?) [name=" + name + ", clientId=" + req.clientId() +
                                         ", err=" + e + ']');

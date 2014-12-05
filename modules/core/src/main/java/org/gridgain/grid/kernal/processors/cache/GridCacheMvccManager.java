@@ -911,7 +911,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     public IgniteFuture<?> finishAtomicUpdates(long topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
 
-        res.ignoreChildFailures(GridTopologyException.class, GridCachePartialUpdateException.class);
+        res.ignoreChildFailures(ClusterTopologyException.class, GridCachePartialUpdateException.class);
 
         for (GridCacheAtomicFuture<K, ?> fut : atomicFuts.values()) {
             if (fut.waitForPartitionExchange() && fut.topologyVersion() < topVer)

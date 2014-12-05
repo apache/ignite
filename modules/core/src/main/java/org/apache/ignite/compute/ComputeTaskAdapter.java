@@ -68,7 +68,7 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
      * <p>
      * If remote job resulted in exception ({@link ComputeJobResult#getException()} is not {@code null}),
      * then {@link ComputeJobResultPolicy#FAILOVER} policy will be returned if the exception is instance
-     * of {@link org.apache.ignite.cluster.GridTopologyException} or {@link ComputeExecutionRejectedException}, which means that
+     * of {@link org.apache.ignite.cluster.ClusterTopologyException} or {@link ComputeExecutionRejectedException}, which means that
      * remote node either failed or job execution was rejected before it got a chance to start. In all
      * other cases the exception will be rethrown which will ultimately cause task to fail.
      *
@@ -86,7 +86,7 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
         if (e != null) {
             // Don't failover user's code errors.
             if (e instanceof ComputeExecutionRejectedException ||
-                e instanceof GridTopologyException ||
+                e instanceof ClusterTopologyException ||
                 // Failover exception is always wrapped.
                 e.hasCause(ComputeJobFailoverException.class))
                 return ComputeJobResultPolicy.FAILOVER;

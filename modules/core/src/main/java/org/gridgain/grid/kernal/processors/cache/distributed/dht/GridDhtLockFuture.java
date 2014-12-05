@@ -458,7 +458,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new GridTopologyException("Remote node left grid (will ignore): " + nodeId));
+                    f.onResult(new ClusterTopologyException("Remote node left grid (will ignore): " + nodeId));
 
                     found = true;
                 }
@@ -863,8 +863,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     }
                     catch (GridException e) {
                         // Fail the whole thing.
-                        if (e instanceof GridTopologyException)
-                            fut.onResult((GridTopologyException)e);
+                        if (e instanceof ClusterTopologyException)
+                            fut.onResult((ClusterTopologyException)e);
                         else
                             fut.onResult(e);
                     }
@@ -923,7 +923,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                         cctx.io().send(n, req);
                     }
-                    catch (GridTopologyException e) {
+                    catch (ClusterTopologyException e) {
                         fut.onResult(e);
                     }
                     catch (GridException e) {
@@ -1081,7 +1081,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         /**
          * @param e Node failure.
          */
-        void onResult(GridTopologyException e) {
+        void onResult(ClusterTopologyException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 
