@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.managers.collision;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.spi.collision.*;
+import org.apache.ignite.spi.collision.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

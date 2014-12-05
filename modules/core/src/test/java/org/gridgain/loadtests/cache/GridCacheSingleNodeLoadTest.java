@@ -13,7 +13,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
-import org.gridgain.grid.spi.collision.fifoqueue.*;
+import org.apache.ignite.spi.collision.fifoqueue.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;

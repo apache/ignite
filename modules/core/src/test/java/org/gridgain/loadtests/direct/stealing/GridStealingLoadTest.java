@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.loadtest.*;
-import org.gridgain.grid.spi.collision.jobstealing.*;
+import org.apache.ignite.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;

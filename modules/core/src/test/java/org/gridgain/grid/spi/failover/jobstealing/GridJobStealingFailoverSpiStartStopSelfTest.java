@@ -11,7 +11,7 @@ package org.gridgain.grid.spi.failover.jobstealing;
 
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.collision.jobstealing.*;
+import org.apache.ignite.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;

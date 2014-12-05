@@ -42,7 +42,7 @@
         </property>
 
         <property name="collisionSpi">
-            <bean class="org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi">
+            <bean class="org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi">
                 <property name="activeJobsThreshold" value="300" />
                 <property name="waitJobsThreshold" value="300" />
                 <property name="maximumStealingAttempts" value="5"/>

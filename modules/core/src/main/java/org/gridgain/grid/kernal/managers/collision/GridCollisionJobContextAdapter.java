@@ -12,10 +12,10 @@ package org.gridgain.grid.kernal.managers.collision;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.job.*;
-import org.gridgain.grid.spi.collision.*;
+import org.apache.ignite.spi.collision.*;
 
 /**
- * Adapter for {@link org.gridgain.grid.spi.collision.CollisionJobContext}.
+ * Adapter for {@link org.apache.ignite.spi.collision.CollisionJobContext}.
  */
 public abstract class GridCollisionJobContextAdapter implements CollisionJobContext {
     /** */

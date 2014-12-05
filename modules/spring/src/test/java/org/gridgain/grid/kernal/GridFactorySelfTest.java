@@ -18,7 +18,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.collision.*;
+import org.apache.ignite.spi.collision.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;

@@ -12,7 +12,7 @@ package org.gridgain.grid.spi.failover.jobstealing;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.collision.jobstealing.*;
+import org.apache.ignite.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.spi.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi.*;
+import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 import static org.gridgain.grid.spi.failover.jobstealing.GridJobStealingFailoverSpi.*;
 
 /**

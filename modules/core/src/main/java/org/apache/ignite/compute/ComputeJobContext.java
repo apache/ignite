@@ -33,7 +33,7 @@ import java.util.concurrent.*;
  * this job travels to.
  * <p>
  * You can also use {@code GridComputeJobContext} to communicate between SPI's and jobs.
- * For example, if you need to cancel an actively running job from {@link org.gridgain.grid.spi.collision.CollisionSpi}
+ * For example, if you need to cancel an actively running job from {@link org.apache.ignite.spi.collision.CollisionSpi}
  * you may choose to set some context attribute on the job to mark the fact
  * that a job was cancelled by grid and not by a user. Context attributes can
  * also be assigned in {@link GridFailoverSpi} prior to failing over a job.

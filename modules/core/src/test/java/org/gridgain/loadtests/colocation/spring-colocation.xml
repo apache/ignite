@@ -59,7 +59,7 @@
         </property>
 
         <property name="collisionSpi">
-            <bean class="org.gridgain.grid.spi.collision.fifoqueue.FifoQueueCollisionSpi">
+            <bean class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi">
                 <property name="parallelJobsNumber"><util:constant static-field="java.lang.Integer.MAX_VALUE"/></property>
             </bean>
         </property>

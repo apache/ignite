@@ -28,7 +28,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.gridgain.grid.spi.collision.*;
+import org.apache.ignite.spi.collision.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.spi.discovery.*;
@@ -1949,7 +1949,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured collision SPI implementation. If not provided,
-     * {@link org.gridgain.grid.spi.collision.noop.NoopCollisionSpi} is used and jobs get activated immediately
+     * {@link org.apache.ignite.spi.collision.noop.NoopCollisionSpi} is used and jobs get activated immediately
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
@@ -1962,9 +1962,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.gridgain.grid.spi.collision.CollisionSpi}.
+     * Sets fully configured instance of {@link org.apache.ignite.spi.collision.CollisionSpi}.
      *
-     * @param colSpi Fully configured instance of {@link org.gridgain.grid.spi.collision.CollisionSpi} or
+     * @param colSpi Fully configured instance of {@link org.apache.ignite.spi.collision.CollisionSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getCollisionSpi()
      */

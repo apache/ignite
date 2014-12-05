@@ -15,7 +15,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.collision.jobstealing.*;
+import org.apache.ignite.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

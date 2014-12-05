@@ -27,7 +27,7 @@ public interface ComputeJobContinuation {
     /**
      * Holds (suspends) a given job indefinitely until {@link #callcc()} is called.
      * Job will remain in active queue, but its {@link #heldcc()} method will
-     * return {@code true}. Implementations of {@link org.gridgain.grid.spi.collision.CollisionSpi} should check
+     * return {@code true}. Implementations of {@link org.apache.ignite.spi.collision.CollisionSpi} should check
      * if jobs are held or not as needed.
      * <p>
      * All jobs should stop their execution and return right after calling
@@ -48,7 +48,7 @@ public interface ComputeJobContinuation {
      * Holds (suspends) a given job for specified timeout or until {@link #callcc()} is called.
      * Holds (suspends) a given job for specified timeout or until {@link #callcc()} is called.
      * Job will remain in active queue, but its {@link #heldcc()} method will
-     * return {@code true}. Implementations of {@link org.gridgain.grid.spi.collision.CollisionSpi} should check
+     * return {@code true}. Implementations of {@link org.apache.ignite.spi.collision.CollisionSpi} should check
      * if jobs are held or not as needed.
      * <p>
      * All jobs should stop their execution and return right after calling

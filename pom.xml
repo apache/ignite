@@ -651,7 +651,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Collision</title>
-                                            <packages>org.gridgain.grid.spi.collision:org.gridgain.grid.spi.collision.fifoqueue:org.gridgain.grid.spi.collision.jobstealing:org.gridgain.grid.spi.collision.noop:org.gridgain.grid.spi.collision.priorityqueue</packages>
+                                            <packages>org.gridgain.grid.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
@@ -853,7 +853,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Collision</title>
-                                            <packages>org.gridgain.grid.spi.collision:org.gridgain.grid.spi.collision.fifoqueue:org.gridgain.grid.spi.collision.jobstealing:org.gridgain.grid.spi.collision.noop:org.gridgain.grid.spi.collision.priorityqueue</packages>
+                                            <packages>org.gridgain.grid.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>

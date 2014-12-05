@@ -10,9 +10,9 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.collision.fifoqueue.*;
-import org.gridgain.grid.spi.collision.jobstealing.*;
-import org.gridgain.grid.spi.collision.priorityqueue.*;
+import org.apache.ignite.spi.collision.fifoqueue.*;
+import org.apache.ignite.spi.collision.jobstealing.*;
+import org.apache.ignite.spi.collision.priorityqueue.*;
 
 /**
  * Collision SPI self-test suite.

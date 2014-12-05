@@ -52,7 +52,7 @@ import java.util.*;
  * </li>
  * <li>
  *      Upon arrival on the remote node a grid job will be handled by collision SPI
- *      (see {@link org.gridgain.grid.spi.collision.CollisionSpi}) which will determine how a job will be executed
+ *      (see {@link org.apache.ignite.spi.collision.CollisionSpi}) which will determine how a job will be executed
  *      on the remote node (immediately, buffered or canceled).
  * </li>
  * <li>

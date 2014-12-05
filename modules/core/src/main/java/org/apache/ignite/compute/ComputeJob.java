@@ -26,7 +26,7 @@ import java.util.*;
  * <ol>
  * <li>
  *      If collision SPI is defined, then job gets put on waiting list which is passed to underlying
- *      {@link org.gridgain.grid.spi.collision.CollisionSpi} SPI. Otherwise job will be submitted to the executor
+ *      {@link org.apache.ignite.spi.collision.CollisionSpi} SPI. Otherwise job will be submitted to the executor
  *      service responsible for job execution immediately upon arrival.
  * </li>
  * <li>
