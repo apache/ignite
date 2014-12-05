@@ -25,10 +25,10 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
 
     /** SPI context. */
     @GridToStringExclude
-    private volatile GridSpiContext spiCtx;
+    private volatile IgniteSpiContext spiCtx;
 
     /** {@inheritDoc} */
-    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override public void onSpiContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException {
         this.spiCtx = spiCtx;
     }
 
@@ -71,7 +71,7 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
     /**
      * @return SPI context.
      */
-    protected GridSpiContext spiContext() {
+    protected IgniteSpiContext spiContext() {
         return spiCtx;
     }
 }

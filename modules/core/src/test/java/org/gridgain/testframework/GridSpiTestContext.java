@@ -33,7 +33,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Test SPI context.
  */
-public class GridSpiTestContext implements GridSpiContext {
+public class GridSpiTestContext implements IgniteSpiContext {
     /** */
     private final Collection<ClusterNode> rmtNodes = new ConcurrentLinkedQueue<>();
 

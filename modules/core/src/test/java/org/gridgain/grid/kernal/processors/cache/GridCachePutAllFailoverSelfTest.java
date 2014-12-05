@@ -625,7 +625,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * Test failover SPI for master node.
      */
-    @GridSpiConsistencyChecked(optional = true)
+    @IgniteSpiConsistencyChecked(optional = true)
     private static class MasterFailoverSpi extends GridAlwaysFailoverSpi {
         /** */
         private static final String FAILOVER_NUMBER_ATTR = "failover:number:attr";

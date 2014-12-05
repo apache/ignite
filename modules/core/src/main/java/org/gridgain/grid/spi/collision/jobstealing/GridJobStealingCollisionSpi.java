@@ -155,7 +155,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 @GridSpiMultipleInstancesSupport(true)
-@GridSpiConsistencyChecked(optional = true)
+@IgniteSpiConsistencyChecked(optional = true)
 public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
     GridJobStealingCollisionSpiMBean {
     /** Maximum number of attempts to steal job by another node (default is {@code 5}). */
@@ -435,7 +435,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
                 @SuppressWarnings("fallthrough")
@@ -605,7 +605,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
         waitingNum = waitJobs.size();
         runningNum = activeSize;
 
-        GridSpiContext ctx = getSpiContext();
+        IgniteSpiContext ctx = getSpiContext();
 
         int activated = 0;
         int rejected = 0;

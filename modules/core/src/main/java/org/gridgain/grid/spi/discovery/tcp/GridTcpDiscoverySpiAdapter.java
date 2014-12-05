@@ -301,7 +301,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
         ipFinder.onSpiContextInitialized(spiCtx);

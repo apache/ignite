@@ -92,7 +92,7 @@ import java.util.*;
  * @see GridCheckpointSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-@GridSpiConsistencyChecked(optional = false)
+@IgniteSpiConsistencyChecked(optional = false)
 public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi,
     GridSharedFsCheckpointSpiMBean {
     /**

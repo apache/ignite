@@ -134,7 +134,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * @see GridCommunicationSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-@GridSpiConsistencyChecked(optional = false)
+@IgniteSpiConsistencyChecked(optional = false)
 public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     implements GridCommunicationSpi<GridTcpCommunicationMessageAdapter>, GridTcpCommunicationSpiMBean {
     /** IPC error message. */
@@ -1178,7 +1178,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} }*/
-    @Override public void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.registerPort(boundTcpPort, IgnitePortProtocol.TCP);
 
         // SPI can start without shmem port.
@@ -1191,7 +1191,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiContext getSpiContext() {
+    @Override public IgniteSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() > 0) {
             if (log.isDebugEnabled())
                 log.debug("Waiting for context initialization.");
@@ -1393,7 +1393,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkConfigurationConsistency0(GridSpiContext spiCtx, ClusterNode node, boolean starting)
+    @Override protected void checkConfigurationConsistency0(IgniteSpiContext spiCtx, ClusterNode node, boolean starting)
         throws IgniteSpiException {
         // These attributes are set on node startup in any case, so we MUST receive them.
         checkAttributePresence(node, createSpiAttributeName(ATTR_ADDRS));

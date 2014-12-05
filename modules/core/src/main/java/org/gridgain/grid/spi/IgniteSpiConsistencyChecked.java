@@ -21,7 +21,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface GridSpiConsistencyChecked {
+public @interface IgniteSpiConsistencyChecked {
     /**
      * Optional consistency check means that check will be performed only if
      * SPI class names and versions match.

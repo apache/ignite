@@ -150,7 +150,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @GridSpiMultipleInstancesSupport(true)
-@GridSpiConsistencyChecked(optional = true)
+@IgniteSpiConsistencyChecked(optional = true)
 public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
     GridWeightedRandomLoadBalancingSpiMBean {
     /** Random number generator. */
@@ -252,7 +252,7 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
                 assert evt instanceof IgniteTaskEvent || evt instanceof IgniteJobEvent;
@@ -291,7 +291,7 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
         if (evtLsnr != null) {
-            GridSpiContext ctx = getSpiContext();
+            IgniteSpiContext ctx = getSpiContext();
 
             if (ctx != null)
                 ctx.removeLocalEventListener(evtLsnr);

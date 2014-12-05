@@ -81,7 +81,7 @@ import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisi
  * @see GridFailoverSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-@GridSpiConsistencyChecked(optional = true)
+@IgniteSpiConsistencyChecked(optional = true)
 public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi,
     GridJobStealingFailoverSpiMBean {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */

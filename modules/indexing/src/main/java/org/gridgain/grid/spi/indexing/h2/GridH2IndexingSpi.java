@@ -528,7 +528,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         ctxInitLatch.countDown();
 
         if (log.isDebugEnabled())
@@ -536,7 +536,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiContext getSpiContext() {
+    @Override public IgniteSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() != 0) {
             try {
                 U.await(ctxInitLatch);
@@ -2327,7 +2327,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
         /** {@inheritDoc} */
         @Override public Object readFromSwap(Object key) throws GridException {
-            GridSpiContext ctx = getSpiContext();
+            IgniteSpiContext ctx = getSpiContext();
 
             return ctx.readValueFromOffheapAndSwap(schema.spaceName, key, valClsLdr);
         }

@@ -240,7 +240,7 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         if (!isPerTask)
             balancer.onContextInitialized(spiCtx);
         else {
@@ -261,7 +261,7 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
                 balancer.onContextDestroyed();
         }
         else {
-            GridSpiContext spiCtx = getSpiContext();
+            IgniteSpiContext spiCtx = getSpiContext();
 
             if (spiCtx != null)
                 spiCtx.removeLocalEventListener(lsnr);

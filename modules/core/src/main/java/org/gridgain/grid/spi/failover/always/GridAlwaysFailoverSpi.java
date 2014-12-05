@@ -73,7 +73,7 @@ import java.util.*;
  * @see GridFailoverSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-@GridSpiConsistencyChecked(optional = true)
+@IgniteSpiConsistencyChecked(optional = true)
 public class GridAlwaysFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi, GridAlwaysFailoverSpiMBean {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */
     public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 5;

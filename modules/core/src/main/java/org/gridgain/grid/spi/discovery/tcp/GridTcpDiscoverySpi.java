@@ -864,7 +864,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
         ctxInitLatch.countDown();
@@ -873,7 +873,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiContext getSpiContext() {
+    @Override public IgniteSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() > 0) {
             if (log.isDebugEnabled())
                 log.debug("Waiting for context initialization.");

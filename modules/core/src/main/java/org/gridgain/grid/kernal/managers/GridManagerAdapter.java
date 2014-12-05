@@ -265,7 +265,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     @Override public final void onKernalStart() throws GridException {
         for (final IgniteSpi spi : spis) {
             try {
-                spi.onContextInitialized(new GridSpiContext() {
+                spi.onContextInitialized(new IgniteSpiContext() {
                     @Override public Collection<ClusterNode> remoteNodes() {
                         return ctx.discovery().remoteNodes();
                     }

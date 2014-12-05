@@ -299,7 +299,7 @@ import java.util.Map.*;
  * @see GridDeploymentSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-@GridSpiConsistencyChecked(optional = false)
+@IgniteSpiConsistencyChecked(optional = false)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploymentSpi, GridUriDeploymentSpiMBean {
     /**

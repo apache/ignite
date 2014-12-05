@@ -65,7 +65,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
     private String name;
 
     /** Grid SPI context. */
-    private volatile GridSpiContext spiCtx = new GridDummySpiContext(null);
+    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null);
 
     /** Discovery listener. */
     private GridLocalEventListener paramsLsnr;
@@ -132,7 +132,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
     }
 
     /** {@inheritDoc} */
-    @Override public final void onContextInitialized(final GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override public final void onContextInitialized(final IgniteSpiContext spiCtx) throws IgniteSpiException {
         assert spiCtx != null;
 
         this.spiCtx = spiCtx;
@@ -180,7 +180,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @param spiCtx SPI context.
      * @throws IgniteSpiException In case of errors.
      */
-    protected void onContextInitialized0(final GridSpiContext spiCtx) throws IgniteSpiException {
+    protected void onContextInitialized0(final IgniteSpiContext spiCtx) throws IgniteSpiException {
         // No-op.
     }
 
@@ -220,7 +220,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      *
      * @return SPI context.
      */
-    public GridSpiContext getSpiContext() {
+    public IgniteSpiContext getSpiContext() {
         return spiCtx;
     }
 
@@ -356,7 +356,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @return {@code true} if this check is optional.
      */
     private boolean checkOptional() {
-        GridSpiConsistencyChecked ann = U.getAnnotation(getClass(), GridSpiConsistencyChecked.class);
+        IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
 
         return ann != null && ann.optional();
     }
@@ -365,7 +365,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @return {@code true} if this check is optional.
      */
     private boolean checkDaemon() {
-        GridSpiConsistencyChecked ann = U.getAnnotation(getClass(), GridSpiConsistencyChecked.class);
+        IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
 
         return ann != null && ann.checkDaemon();
     }
@@ -374,7 +374,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @return {@code true} if this check is enabled.
      */
     private boolean checkEnabled() {
-        return U.getAnnotation(getClass(), GridSpiConsistencyChecked.class) != null;
+        return U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class) != null;
     }
 
     /**
@@ -385,7 +385,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @param starting If this node is starting or not.
      * @throws IgniteSpiException in case of errors.
      */
-    protected void checkConfigurationConsistency0(GridSpiContext spiCtx, ClusterNode node, boolean starting)
+    protected void checkConfigurationConsistency0(IgniteSpiContext spiCtx, ClusterNode node, boolean starting)
         throws IgniteSpiException {
         // No-op.
     }
@@ -399,7 +399,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @throws IgniteSpiException If check fatally failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private void checkConfigurationConsistency(GridSpiContext spiCtx, ClusterNode node, boolean starting, boolean tip)
+    private void checkConfigurationConsistency(IgniteSpiContext spiCtx, ClusterNode node, boolean starting, boolean tip)
         throws IgniteSpiException {
         assert spiCtx != null;
         assert node != null;
@@ -532,7 +532,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
     /**
      * Temporarily SPI context.
      */
-    private static class GridDummySpiContext implements GridSpiContext {
+    private static class GridDummySpiContext implements IgniteSpiContext {
         /** */
         private final ClusterNode locNode;
 

@@ -29,7 +29,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 class GridRoundRobinGlobalLoadBalancer {
     /** SPI context. */
-    private GridSpiContext ctx;
+    private IgniteSpiContext ctx;
 
     /** Listener for node's events. */
     private GridLocalEventListener lsnr;
@@ -58,7 +58,7 @@ class GridRoundRobinGlobalLoadBalancer {
     /**
      * @param ctx Load balancing context.
      */
-    void onContextInitialized(final GridSpiContext ctx) {
+    void onContextInitialized(final IgniteSpiContext ctx) {
         this.ctx = ctx;
 
         ctx.addLocalEventListener(

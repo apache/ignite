@@ -65,7 +65,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException { return null; }
 
         /** {@inheritDoc} */
-        @Override public void onContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException { /* No-op. */ }
+        @Override public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
         @Override public void spiStart(String gridName) throws IgniteSpiException { /* No-op. */ }

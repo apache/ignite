@@ -74,7 +74,7 @@ public interface IgniteSpi {
      * @param spiCtx Spi context.
      * @throws IgniteSpiException If context initialization failed (grid will be stopped).
      */
-    public void onContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException;
+    public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException;
 
     /**
      * Callback invoked prior to stopping grid before SPI context is destroyed.

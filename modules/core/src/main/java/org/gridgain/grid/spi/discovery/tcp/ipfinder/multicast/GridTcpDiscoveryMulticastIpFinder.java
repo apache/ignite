@@ -355,7 +355,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     }
 
     /** {@inheritDoc} */
-    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override public void onSpiContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onSpiContextInitialized(spiCtx);
 
         spiCtx.registerPort(mcastPort, UDP);

@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * SPI context provides common functionality for all SPI implementations.
  */
-public interface GridSpiContext {
+public interface IgniteSpiContext {
     /**
      * Gets a collection of remote grid nodes. Remote nodes are discovered via underlying
      * {@link GridDiscoverySpi} implementation used. Unlike {@link #nodes()},

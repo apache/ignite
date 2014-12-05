@@ -128,7 +128,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             /** {@inheritDoc} */
             @Override public void onEvent(IgniteEvent evt) {
@@ -162,7 +162,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
         if (evtLsnr != null) {
-            GridSpiContext ctx = getSpiContext();
+            IgniteSpiContext ctx = getSpiContext();
 
             if (ctx != null)
                 ctx.removeLocalEventListener(evtLsnr);

@@ -26,7 +26,7 @@ public interface GridTcpDiscoveryIpFinder {
      * @param spiCtx Spi context.
      * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    public void onSpiContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException;
+    public void onSpiContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException;
 
     /**
      * Callback invoked prior to stopping grid before SPI context is destroyed.
