@@ -28,5 +28,5 @@
     <import resource="spring-streamer-average-base.xml"/>
 
     <!-- Local router configuration. -->
-    <bean id="router.cfg" class="org.gridgain.grid.streamer.router.StreamerLocalEventRouter"/>
+    <bean id="router.cfg" class="org.apache.ignite.streamer.router.StreamerLocalEventRouter"/>
 </beans>

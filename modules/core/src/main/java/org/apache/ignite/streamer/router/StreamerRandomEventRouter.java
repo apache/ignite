@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer.router;
+package org.apache.ignite.streamer.router;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;

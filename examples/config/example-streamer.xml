@@ -83,7 +83,7 @@
                             Use random event router to execute streamer stages on random nodes
                             just for demonstration purposes.
                         -->
-                        <bean class="org.gridgain.grid.streamer.router.StreamerRandomEventRouter"/>
+                        <bean class="org.apache.ignite.streamer.router.StreamerRandomEventRouter"/>
                         <!--
                         <bean class="org.gridgain.grid.streamer.router.GridStreamerLocalEventRouter"/>
                         -->
@@ -141,7 +141,7 @@
                             numbers are pushed to wrong nodes, the counters will become
                             inaccurate.
                         -->
-                        <bean class="org.gridgain.grid.streamer.router.StreamerAffinityEventRouter"/>
+                        <bean class="org.apache.ignite.streamer.router.StreamerAffinityEventRouter"/>
                     </property>
 
                     <!--
@@ -198,7 +198,7 @@
                             For this example we use affinity event router to make sure that
                             quotes for identical instruments are routed to the same node.
                         -->
-                        <bean class="org.gridgain.grid.streamer.router.StreamerAffinityEventRouter"/>
+                        <bean class="org.apache.ignite.streamer.router.StreamerAffinityEventRouter"/>
                     </property>
                 </bean>
 
