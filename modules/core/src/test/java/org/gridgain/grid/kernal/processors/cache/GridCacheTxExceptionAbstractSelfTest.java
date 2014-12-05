@@ -640,38 +640,38 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         /** {@inheritDoc} */
         @Override public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type,
                                            GridIndexingEntity<K> key, GridIndexingEntity<V> val, byte[] ver, long expirationTime)
-            throws GridSpiException {
+            throws IgniteSpiException {
             if (fail) {
                 fail = false;
 
-                throw new GridSpiException("Test exception.");
+                throw new IgniteSpiException("Test exception.");
             }
         }
 
         /** {@inheritDoc} */
         @Override public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> k)
-            throws GridSpiException {
+            throws IgniteSpiException {
             if (fail) {
                 fail = false;
 
-                throw new GridSpiException("Test exception.");
+                throw new IgniteSpiException("Test exception.");
             }
 
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public void registerSpace(String spaceName) throws GridSpiException {
+        @Override public void registerSpace(String spaceName) throws IgniteSpiException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException {
+        @Override public void spiStop() throws IgniteSpiException {
             // No-op.
         }
     }

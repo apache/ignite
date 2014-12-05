@@ -807,7 +807,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             notifyLifecycleBeans(AFTER_GRID_START);
         }
         catch (Throwable e) {
-            GridSpiVersionCheckException verCheckErr = X.cause(e, GridSpiVersionCheckException.class);
+            IgniteSpiVersionCheckException verCheckErr = X.cause(e, IgniteSpiVersionCheckException.class);
 
             if (verCheckErr != null)
                 U.error(log, verCheckErr.getMessage());

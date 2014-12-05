@@ -387,7 +387,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> getNodeAttributes() throws GridSpiException {
+    @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return F.<String, Object>asMap(
             createSpiAttributeName(WAIT_JOBS_THRESHOLD_NODE_ATTR), waitJobsThreshold,
             createSpiAttributeName(ACTIVE_JOBS_THRESHOLD_NODE_ATTR), activeJobsThreshold,
@@ -396,7 +396,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         assertParameter(activeJobsThreshold >= 0, "activeJobsThreshold >= 0");
         assertParameter(waitJobsThreshold >= 0, "waitJobsThreshold >= 0");
         assertParameter(msgExpireTime > 0, "messageExpireTime > 0");
@@ -421,7 +421,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Ack ok stop.
@@ -435,7 +435,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
                 @SuppressWarnings("fallthrough")
@@ -940,7 +940,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
                     // Message is a plain integer represented by 'delta'.
                     getSpiContext().send(next, new GridJobStealingRequest(delta), JOB_STEALING_COMM_TOPIC);
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     U.error(log, "Failed to send job stealing message to node: " + next, e);
 
                     // Rollback.

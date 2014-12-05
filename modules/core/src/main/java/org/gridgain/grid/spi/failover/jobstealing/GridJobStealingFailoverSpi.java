@@ -152,12 +152,12 @@ public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> getNodeAttributes() throws GridSpiException {
+    @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return F.<String, Object>asMap(createSpiAttributeName(MAX_FAILOVER_ATTEMPT_ATTR), maxFailoverAttempts);
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -174,7 +174,7 @@ public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Ack ok stop.

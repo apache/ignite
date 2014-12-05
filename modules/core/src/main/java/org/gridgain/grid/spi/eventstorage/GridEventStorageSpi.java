@@ -51,7 +51,7 @@ public interface GridEventStorageSpi extends IgniteSpi {
      * Records single event.
      *
      * @param evt Event that should be recorded.
-     * @throws GridSpiException If event recording failed for any reason.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If event recording failed for any reason.
      */
-    public void record(IgniteEvent evt) throws GridSpiException;
+    public void record(IgniteEvent evt) throws IgniteSpiException;
 }

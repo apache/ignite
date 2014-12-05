@@ -87,12 +87,12 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     @GridSpiMultipleInstancesSupport(true)
     private static class GridTestRuntimeExceptionSpi extends IgniteSpiAdapter implements GridEventStorageSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws GridSpiException {
+        @Override public void spiStart(String gridName) throws IgniteSpiException {
             startStopwatch();
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException {
+        @Override public void spiStop() throws IgniteSpiException {
             // No-op.
         }
 
@@ -102,7 +102,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void record(IgniteEvent evt) throws GridSpiException {
+        @Override public void record(IgniteEvent evt) throws IgniteSpiException {
             // No-op.
         }
     }
@@ -113,12 +113,12 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     @GridSpiMultipleInstancesSupport(true)
     private static class GridTestCheckedExceptionSpi extends IgniteSpiAdapter implements GridDeploymentSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
             startStopwatch();
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException {
+        @Override public void spiStop() throws IgniteSpiException {
             // No-op.
         }
 
@@ -129,7 +129,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws GridSpiException {
+        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
             throw new GridTestSpiException(TEST_MSG);
         }
 
@@ -148,7 +148,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * Test spi exception.
      */
-    private static class GridTestSpiException extends GridSpiException {
+    private static class GridTestSpiException extends IgniteSpiException {
         /**
          * @param msg Error message.
          */

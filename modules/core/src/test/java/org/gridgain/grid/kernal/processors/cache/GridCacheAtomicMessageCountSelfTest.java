@@ -184,7 +184,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
 
             if (cntr != null)

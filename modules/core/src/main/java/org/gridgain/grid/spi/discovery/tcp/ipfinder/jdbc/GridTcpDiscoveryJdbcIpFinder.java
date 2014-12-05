@@ -88,7 +88,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws GridSpiException {
+    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         init();
 
         Connection conn = null;
@@ -114,7 +114,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
             return addrs;
         }
         catch (SQLException e) {
-            throw new GridSpiException("Failed to get registered addresses version.", e);
+            throw new IgniteSpiException("Failed to get registered addresses version.", e);
         }
         finally {
             U.closeQuiet(rs);
@@ -124,7 +124,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         init();
@@ -172,7 +172,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
         catch (SQLException e) {
             U.rollbackConnectionQuiet(conn);
 
-            throw new GridSpiException("Failed to register addresses: " + addrs, e);
+            throw new IgniteSpiException("Failed to register addresses: " + addrs, e);
         }
         finally {
             if (!committed)
@@ -185,7 +185,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         init();
@@ -220,7 +220,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
         catch (SQLException e) {
             U.rollbackConnectionQuiet(conn);
 
-            throw new GridSpiException("Failed to unregister addresses: " + addrs, e);
+            throw new IgniteSpiException("Failed to unregister addresses: " + addrs, e);
         }
         finally {
             if (!committed)
@@ -258,12 +258,12 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     /**
      * Checks configuration validity.
      *
-     * @throws GridSpiException If any error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
      */
-    private void init() throws GridSpiException {
+    private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
             if (dataSrc == null)
-                throw new GridSpiException("Data source is null (you must configure it via setDataSource(..)" +
+                throw new IgniteSpiException("Data source is null (you must configure it via setDataSource(..)" +
                     " configuration property)");
 
             if (!initSchema) {
@@ -302,7 +302,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
             catch (SQLException e) {
                 U.rollbackConnectionQuiet(conn);
 
-                throw new GridSpiException("Failed to initialize DB schema.", e);
+                throw new IgniteSpiException("Failed to initialize DB schema.", e);
             }
             finally {
                 if (!committed)
@@ -321,14 +321,14 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     /**
      * Checks correctness of existing DB schema.
      *
-     * @throws GridSpiException If schema wasn't properly initialized.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If schema wasn't properly initialized.
      */
-    private void checkSchema() throws GridSpiException {
+    private void checkSchema() throws IgniteSpiException {
         try {
             U.await(initLatch);
         }
         catch (GridInterruptedException e) {
-            throw new GridSpiException("Thread has been interrupted.", e);
+            throw new IgniteSpiException("Thread has been interrupted.", e);
         }
 
         Connection conn = null;
@@ -346,7 +346,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
             stmt.execute(CHK_QRY);
         }
         catch (SQLException e) {
-            throw new GridSpiException("IP finder has not been properly initialized.", e);
+            throw new IgniteSpiException("IP finder has not been properly initialized.", e);
         }
         finally {
             U.closeQuiet(stmt);

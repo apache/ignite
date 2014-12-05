@@ -43,11 +43,11 @@ class GridUriDeploymentSpringDocument {
      *
      * @param clsLdr Class loader.
      * @return Declared tasks.
-     * @throws GridSpiException Thrown if there are no tasks in
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if there are no tasks in
      *      configuration or configuration could not be read.
      */
     @SuppressWarnings({"unchecked"})
-    List<Class<? extends ComputeTask<?, ?>>> getTasks(ClassLoader clsLdr) throws GridSpiException {
+    List<Class<? extends ComputeTask<?, ?>>> getTasks(ClassLoader clsLdr) throws IgniteSpiException {
         assert clsLdr!= null;
 
         try {
@@ -65,7 +65,7 @@ class GridUriDeploymentSpringDocument {
                                 taskCls = clsLdr.loadClass(clsName);
                             }
                             catch (ClassNotFoundException e) {
-                                throw new GridSpiException("Failed to load task class [className=" + clsName + ']', e);
+                                throw new IgniteSpiException("Failed to load task class [className=" + clsName + ']', e);
                             }
 
                             assert taskCls != null;
@@ -77,7 +77,7 @@ class GridUriDeploymentSpringDocument {
             }
         }
         catch (BeansException e) {
-            throw new GridSpiException("Failed to get tasks declared in XML file.", e);
+            throw new IgniteSpiException("Failed to get tasks declared in XML file.", e);
         }
 
         return tasks;

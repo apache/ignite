@@ -189,7 +189,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
                 return null;
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 U.error(log, "Failed to deploy local class with meta: " + meta, e);
 
                 return null;
@@ -334,7 +334,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
             return dep;
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             recordDeployFailed(cls, clsLdr, true);
 
             // Avoid double wrapping.

@@ -27,9 +27,9 @@ public interface GridIndexingEntity<T> {
      * the {@link #bytes()} and return the actual value.
      *
      * @return Indexed value.
-     * @throws GridSpiException If value de-serialization failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If value de-serialization failed.
      */
-    @Nullable public T value() throws GridSpiException;
+    @Nullable public T value() throws IgniteSpiException;
 
     /**
      * Optional bytes for marshaled indexed value. Certain SPI implementations

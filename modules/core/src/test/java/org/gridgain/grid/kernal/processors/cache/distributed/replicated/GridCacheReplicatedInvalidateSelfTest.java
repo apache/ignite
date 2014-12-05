@@ -216,7 +216,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode destNode, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             Object msg0 = ((GridIoMessage)msg).message();
 
             if (!(msg0 instanceof GridClockDeltaSnapshotMessage)) {

@@ -77,13 +77,13 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
+        @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite)
-            throws GridSpiException {
+            throws IgniteSpiException {
             cntr.incrementAndGet();
 
             return true;
@@ -102,12 +102,12 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException {
+        @Override public void spiStop() throws IgniteSpiException {
             // No-op.
         }
     }

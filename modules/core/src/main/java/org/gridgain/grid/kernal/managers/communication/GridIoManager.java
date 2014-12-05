@@ -897,7 +897,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
             try {
                 getSpi().sendMessage(node, ioMsg);
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 throw new GridException("Failed to send message (node may have left the grid or " +
                     "TCP connection cannot be established due to firewall issues) " +
                     "[node=" + node + ", topic=" + topic +
@@ -1245,7 +1245,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 log.debug("Failed to send message to empty nodes collection [topic=" + topic + ", msg=" +
                     msg + ", policy=" + plc + ']');
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to send message (nodes may have left the grid or " +
                 "TCP connection cannot be established due to firewall issues) " +
                 "[nodes=" + nodes + ", topic=" + topic +

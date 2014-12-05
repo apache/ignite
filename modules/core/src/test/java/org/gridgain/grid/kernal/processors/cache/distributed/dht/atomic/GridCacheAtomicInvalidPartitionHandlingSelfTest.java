@@ -290,13 +290,13 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     private static class DelayCommunicationSpi extends GridTcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             try {
                 if (delayMessage((GridIoMessage)msg))
                     U.sleep(ThreadLocalRandom8.current().nextInt(250) + 1);
             }
             catch (GridInterruptedException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
 
             super.sendMessage(node, msg);

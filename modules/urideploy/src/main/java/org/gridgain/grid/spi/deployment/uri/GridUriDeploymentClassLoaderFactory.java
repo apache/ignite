@@ -33,9 +33,9 @@ class GridUriDeploymentClassLoaderFactory {
      * @param file GAR file or directory with unpacked GAR file.
      * @param log Logger.
      * @return Class Loader.
-     * @throws GridSpiException In case of any error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any error.
      */
-    public static ClassLoader create(ClassLoader parent, File file, IgniteLogger log) throws GridSpiException {
+    public static ClassLoader create(ClassLoader parent, File file, IgniteLogger log) throws IgniteSpiException {
         assert parent != null;
         assert file != null;
         assert log != null;
@@ -71,7 +71,7 @@ class GridUriDeploymentClassLoaderFactory {
             return new GridUriDeploymentClassLoader(urls.toArray(new URL[urls.size()]), parent);
         }
         catch (MalformedURLException e) {
-            throw new GridSpiException("Failed to create class loader for GAR file: " + file, e);
+            throw new IgniteSpiException("Failed to create class loader for GAR file: " + file, e);
         }
     }
 

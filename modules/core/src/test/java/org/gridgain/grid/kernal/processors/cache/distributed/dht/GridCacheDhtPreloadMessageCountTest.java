@@ -138,7 +138,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             recordMessage((GridIoMessage)msg);
 
             super.sendMessage(node, msg);

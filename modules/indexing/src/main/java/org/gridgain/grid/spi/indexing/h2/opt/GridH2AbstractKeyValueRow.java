@@ -53,10 +53,10 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     protected GridH2AbstractKeyValueRow(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val,
-        int valType, long expirationTime) throws GridSpiException {
+        int valType, long expirationTime) throws IgniteSpiException {
         super(wrap(key, keyType),
             val == null ? null : wrap(val, valType)); // We remove by key only, so value can be null here.
 
@@ -81,9 +81,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param obj Object.
      * @param type Value type.
      * @return Value.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private static Value wrap(Object obj, int type) throws GridSpiException {
+    private static Value wrap(Object obj, int type) throws IgniteSpiException {
         switch (type) {
             case Value.BOOLEAN:
                 return ValueBoolean.get((Boolean)obj);
@@ -136,7 +136,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                 return ValueGeometry.getFromGeometry(obj);
         }
 
-        throw new GridSpiException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
+        throw new IgniteSpiException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
     }
 
     /**
@@ -154,7 +154,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /**
      * Should be called to remove reference on value.
      *
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public synchronized void onSwap() throws GridException {
         setValue(VAL_COL, null);
@@ -278,7 +278,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         try {
             return wrap(res, desc.fieldType(col));
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw DbException.convert(e);
         }
     }

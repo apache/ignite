@@ -275,7 +275,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 try {
                     out.writeObject(idxEnt.value());
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     throw new IOException("Failed to write indexing entity: " + idxEnt, e);
                 }
             }

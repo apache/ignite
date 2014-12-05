@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Grid SPI exception which may contain more than one failure.
  */
-public class GridSpiMultiException extends GridSpiException {
+public class GridSpiMultiException extends IgniteSpiException {
     /** */
     private static final long serialVersionUID = 0L;
 

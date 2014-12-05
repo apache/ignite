@@ -763,7 +763,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }, GridException.class, null);
 
-            assert X.hasCause(t, GridSpiException.class) : "Unexpected exception: " + t;
+            assert X.hasCause(t, IgniteSpiException.class) : "Unexpected exception: " + t;
         }
         finally {
             stopAllGrids();

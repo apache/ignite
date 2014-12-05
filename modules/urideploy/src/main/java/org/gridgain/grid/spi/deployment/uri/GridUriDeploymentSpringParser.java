@@ -40,12 +40,12 @@ final class GridUriDeploymentSpringParser {
      * @param in Input stream with XML.
      * @param log Logger
      * @return Grid wrapper for the input stream.
-     * @throws GridSpiException Thrown if incoming input stream could not be
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if incoming input stream could not be
      *      read or parsed by {@code Spring} {@link XmlBeanFactory}.
      * @see XmlBeanFactory
      */
     static GridUriDeploymentSpringDocument parseTasksDocument(InputStream in, IgniteLogger log) throws
-        GridSpiException {
+        IgniteSpiException {
         assert in != null;
 
         // Note: use ByteArrayResource instead of InputStreamResource because InputStreamResource doesn't work.
@@ -59,7 +59,7 @@ final class GridUriDeploymentSpringParser {
             return new GridUriDeploymentSpringDocument(factory);
         }
         catch (BeansException | IOException e) {
-            throw new GridSpiException("Failed to parse spring XML file.", e);
+            throw new IgniteSpiException("Failed to parse spring XML file.", e);
         }
         finally{
             U.close(out, log);

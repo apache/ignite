@@ -59,11 +59,11 @@ public interface GridCheckpointSpi extends IgniteSpi {
      * @param key Checkpoint key.
      * @return Loaded data or {@code null} if there is no data for a given
      *      key.
-     * @throws GridSpiException Thrown in case of any error while loading
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error while loading
      *      checkpoint data. Note that in case when given {@code key} is not
      *      found this method will return {@code null}.
      */
-    @Nullable public byte[] loadCheckpoint(String key) throws GridSpiException;
+    @Nullable public byte[] loadCheckpoint(String key) throws IgniteSpiException;
 
     /**
      * Saves checkpoint to the storage.
@@ -78,10 +78,10 @@ public interface GridCheckpointSpi extends IgniteSpi {
      *      provider. Value {@code 0} means that timeout will never expire.
      * @param overwrite Whether or not overwrite checkpoint if it already exists.
      * @return {@code true} if checkpoint has been actually saved, {@code false} otherwise.
-     * @throws GridSpiException Thrown in case of any error while saving
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error while saving
      *    checkpoint data.
      */
-    public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite) throws GridSpiException;
+    public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite) throws IgniteSpiException;
 
     /**
      * This method instructs the checkpoint provider to clean saved data for a

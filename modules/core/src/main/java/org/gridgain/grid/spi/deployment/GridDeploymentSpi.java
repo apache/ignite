@@ -75,9 +75,9 @@ public interface GridDeploymentSpi extends IgniteSpi {
      *      Currently the only alias in the system is {@link org.apache.ignite.compute.ComputeTaskName} for
      *      task classes; in future, there may be others.
      * @return {@code True} if resource was registered.
-     * @throws GridSpiException If registration failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If registration failed.
      */
-    public boolean register(ClassLoader ldr, Class<?> rsrc) throws GridSpiException;
+    public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException;
 
     /**
      * Unregisters all class loaders that have a class with given name or have

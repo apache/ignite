@@ -55,7 +55,7 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
      * @param filter Filename filter.
      * @param lsnr Deployment listener.
      * @param log Logger to use.
-     * @throws GridSpiException Thrown in case of any error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error.
      */
     public GridUriDeploymentHttpScanner(
         String gridName,
@@ -64,7 +64,7 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
         long freq,
         FilenameFilter filter,
         GridUriDeploymentScannerListener lsnr,
-        IgniteLogger log) throws GridSpiException {
+        IgniteLogger log) throws IgniteSpiException {
         super(gridName, uri, deployDir, freq, filter, lsnr, log);
 
         initialize(uri);
@@ -80,9 +80,9 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
     /**
      * @param uri HTTP URI.
-     * @throws GridSpiException Thrown in case of any error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error.
      */
-    private void initialize(URI uri) throws GridSpiException {
+    private void initialize(URI uri) throws IgniteSpiException {
         assert "http".equals(uri.getScheme()) || "https".equals(uri.getScheme());
 
         try {
@@ -91,7 +91,7 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
         catch (MalformedURLException e) {
             scanDir = null;
 
-            throw new GridSpiException("Wrong value for scanned HTTP directory with URI: " + uri, e);
+            throw new IgniteSpiException("Wrong value for scanned HTTP directory with URI: " + uri, e);
         }
 
         try {
@@ -105,10 +105,10 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
             }
         }
         catch (NoSuchAlgorithmException e) {
-            throw new GridSpiException("Failed to initialize SSL context. URI: " + uri, e);
+            throw new IgniteSpiException("Failed to initialize SSL context. URI: " + uri, e);
         }
         catch (KeyManagementException e) {
-            throw new GridSpiException("Failed to initialize SSL context. URI:" + uri, e);
+            throw new IgniteSpiException("Failed to initialize SSL context. URI:" + uri, e);
         }
     }
 

@@ -132,7 +132,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
     }
 
     /** {@inheritDoc} */
-    @Override public final void onContextInitialized(final GridSpiContext spiCtx) throws GridSpiException {
+    @Override public final void onContextInitialized(final GridSpiContext spiCtx) throws IgniteSpiException {
         assert spiCtx != null;
 
         this.spiCtx = spiCtx;
@@ -156,7 +156,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
                             checkConfigurationConsistency(spiCtx, node, false, !secSpi);
                             checkConfigurationConsistency0(spiCtx, node, false);
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             U.error(log, "Spi consistency check failed [node=" + node.id() + ", spi=" + getName() + ']',
                                 e);
                         }
@@ -178,9 +178,9 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * Method to be called in the end of onContextInitialized method.
      *
      * @param spiCtx SPI context.
-     * @throws GridSpiException In case of errors.
+     * @throws IgniteSpiException In case of errors.
      */
-    protected void onContextInitialized0(final GridSpiContext spiCtx) throws GridSpiException {
+    protected void onContextInitialized0(final GridSpiContext spiCtx) throws IgniteSpiException {
         // No-op.
     }
 
@@ -225,7 +225,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> getNodeAttributes() throws GridSpiException {
+    @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return Collections.emptyMap();
     }
 
@@ -244,11 +244,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      *      </pre>
      *      Note that in case when variable name is the same as JavaBean property you
      *      can just copy Java condition expression into description as a string.
-     * @throws GridSpiException Thrown if given condition is {@code false}
+     * @throws IgniteSpiException Thrown if given condition is {@code false}
      */
-    protected final void assertParameter(boolean cond, String condDesc) throws GridSpiException {
+    protected final void assertParameter(boolean cond, String condDesc) throws IgniteSpiException {
         if (!cond)
-            throw new GridSpiException("SPI parameter failed condition check: " + condDesc);
+            throw new IgniteSpiException("SPI parameter failed condition check: " + condDesc);
     }
 
     /**
@@ -312,10 +312,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @param mbeanItf MBean interface (if {@code null}, then standard JMX
      *    naming conventions are used.
      * @param <T> Type of the MBean
-     * @throws GridSpiException If registration failed.
+     * @throws IgniteSpiException If registration failed.
      */
     protected final <T extends GridSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert mbeanItf == null || mbeanItf.isInterface();
         assert jmx != null;
 
@@ -326,16 +326,16 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
                 log.debug("Registered SPI MBean: " + spiMBean);
         }
         catch (JMException e) {
-            throw new GridSpiException("Failed to register SPI MBean: " + spiMBean, e);
+            throw new IgniteSpiException("Failed to register SPI MBean: " + spiMBean, e);
         }
     }
 
     /**
      * Unregisters MBean.
      *
-     * @throws GridSpiException If bean could not be unregistered.
+     * @throws IgniteSpiException If bean could not be unregistered.
      */
-    protected final void unregisterMBean() throws GridSpiException {
+    protected final void unregisterMBean() throws IgniteSpiException {
         // Unregister SPI MBean.
         if (spiMBean != null) {
             assert jmx != null;
@@ -347,7 +347,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
                     log.debug("Unregistered SPI MBean: " + spiMBean);
             }
             catch (JMException e) {
-                throw new GridSpiException("Failed to unregister SPI MBean: " + spiMBean, e);
+                throw new IgniteSpiException("Failed to unregister SPI MBean: " + spiMBean, e);
             }
         }
     }
@@ -383,10 +383,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @param spiCtx SPI context.
      * @param node Remote node.
      * @param starting If this node is starting or not.
-     * @throws GridSpiException in case of errors.
+     * @throws IgniteSpiException in case of errors.
      */
     protected void checkConfigurationConsistency0(GridSpiContext spiCtx, ClusterNode node, boolean starting)
-        throws GridSpiException {
+        throws IgniteSpiException {
         // No-op.
     }
 
@@ -396,11 +396,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @param spiCtx SPI context.
      * @param node Remote node.
      * @param starting Flag indicating whether this method is called during SPI start or not.
-     * @throws GridSpiException If check fatally failed.
+     * @throws IgniteSpiException If check fatally failed.
      */
     @SuppressWarnings("IfMayBeConditional")
     private void checkConfigurationConsistency(GridSpiContext spiCtx, ClusterNode node, boolean starting, boolean tip)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert spiCtx != null;
         assert node != null;
 
@@ -445,14 +445,14 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
 
         if (rmtCls == null) {
             if (!optional && starting)
-                throw new GridSpiException("Remote SPI with the same name is not configured" + tipStr + " [name=" + name +
+                throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr + " [name=" + name +
                     ", loc=" + locCls + ']');
 
             sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
         }
         else if (!locCls.equals(rmtCls)) {
             if (!optional && starting)
-                throw new GridSpiException("Remote SPI with the same name is of different type" + tipStr + " [name=" + name +
+                throw new IgniteSpiException("Remote SPI with the same name is of different type" + tipStr + " [name=" + name +
                     ", loc=" + locCls + ", rmt=" + rmtCls + ']');
 
             sb.a(format(">>> Remote SPI with the same name is of different type: " + name, locCls, rmtCls));

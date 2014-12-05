@@ -74,7 +74,7 @@ public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException {
+    @Override public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws IgniteSpiException {
         GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
         subj.address(authCtx.address());
@@ -92,7 +92,7 @@ public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -104,7 +104,7 @@ public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Ack ok stop.

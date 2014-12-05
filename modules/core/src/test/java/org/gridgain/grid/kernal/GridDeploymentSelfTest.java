@@ -455,7 +455,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private volatile int undeployCnt;
 
         /** {@inheritDoc} */
-        @Override public boolean register(ClassLoader ldr, Class rsrc) throws GridSpiException {
+        @Override public boolean register(ClassLoader ldr, Class rsrc) throws IgniteSpiException {
             if (super.register(ldr, rsrc)) {
                 deployCnt++;
 

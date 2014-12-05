@@ -178,7 +178,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -189,10 +189,10 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
         folder = getNextSharedPath();
 
         if (folder == null)
-            throw new GridSpiException("Failed to create checkpoint directory.");
+            throw new IgniteSpiException("Failed to create checkpoint directory.");
 
         if (!folder.isDirectory())
-            throw new GridSpiException("Checkpoint directory path is not a valid directory: " + curDirPath);
+            throw new IgniteSpiException("Checkpoint directory path is not a valid directory: " + curDirPath);
 
         registerMBean(gridName, this, GridSharedFsCheckpointSpiMBean.class);
 
@@ -206,7 +206,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
             host = U.getLocalHost().getHostName();
         }
         catch (IOException e) {
-            throw new GridSpiException("Failed to get localhost address.", e);
+            throw new IgniteSpiException("Failed to get localhost address.", e);
         }
 
         // Ack ok start.
@@ -215,7 +215,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         if (timeoutTask != null) {
             U.interrupt(timeoutTask);
             U.join(timeoutTask, log);
@@ -236,9 +236,9 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
      * Gets next available shared path if possible or {@code null}.
      *
      * @return File object represented shared directory.
-     * @throws GridSpiException Throws if initializing has filed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Throws if initializing has filed.
      */
-    @Nullable private File getNextSharedPath() throws GridSpiException {
+    @Nullable private File getNextSharedPath() throws IgniteSpiException {
         if (folder != null) {
             folder = null;
 
@@ -271,7 +271,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
                     if (!dirPaths.isEmpty())
                         continue;
                     else
-                        throw new GridSpiException("Failed to resolve directory: " + curDirPath + ']', e);
+                        throw new IgniteSpiException("Failed to resolve directory: " + curDirPath + ']', e);
                 }
 
                 if (log.isDebugEnabled())
@@ -348,7 +348,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
+    @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
         assert key != null;
 
         File file = new File(folder, getUniqueFileName(key));
@@ -364,11 +364,11 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
                     : null;
             }
             catch (GridException e) {
-                throw new GridSpiException("Failed to unmarshal objects in checkpoint file: " +
+                throw new IgniteSpiException("Failed to unmarshal objects in checkpoint file: " +
                     file.getAbsolutePath(), e);
             }
             catch (IOException e) {
-                throw new GridSpiException("Failed to read checkpoint file: " + file.getAbsolutePath(), e);
+                throw new IgniteSpiException("Failed to read checkpoint file: " + file.getAbsolutePath(), e);
             }
 
         return null;
@@ -376,7 +376,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
 
     /** {@inheritDoc} */
     @Override public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert key != null;
 
         long expireTime = 0;
@@ -410,11 +410,11 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
                 if (getNextSharedPath() != null)
                     continue;
                 else
-                    throw new GridSpiException("Failed to write checkpoint data into file: " +
+                    throw new IgniteSpiException("Failed to write checkpoint data into file: " +
                         file.getAbsolutePath(), e);
             }
             catch (GridException e) {
-                throw new GridSpiException("Failed to marshal checkpoint data into file: " +
+                throw new IgniteSpiException("Failed to marshal checkpoint data into file: " +
                     file.getAbsolutePath(), e);
             }
 

@@ -160,7 +160,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
                         }
                     }
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     e.printStackTrace();
 
                     throw new GridRuntimeException(e);

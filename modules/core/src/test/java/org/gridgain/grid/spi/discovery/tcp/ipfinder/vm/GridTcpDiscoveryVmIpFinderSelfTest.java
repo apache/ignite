@@ -48,7 +48,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             assert false;
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
 
             assert e.getMessage().contains("127.0.0.1:475000001");
@@ -59,7 +59,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             assert false;
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
 
             assert e.getMessage().contains("127.0.0.1:-2");
@@ -79,7 +79,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             assert false;
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -88,7 +88,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             assert false;
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -97,7 +97,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             assert false;
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -117,7 +117,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             fail();
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -126,7 +126,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             fail();
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -143,7 +143,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             fail();
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -152,7 +152,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             fail();
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -161,7 +161,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
             fail();
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             info("Caught expected exception: " + e);
         }
 

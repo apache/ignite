@@ -460,7 +460,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         for (GridUriDeploymentScanner scanner : scanners)
             scanner.cancel();
 
@@ -496,7 +496,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -549,7 +549,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
                         newUnitReceived(uri, fileRes.getFile(), tstamp, fileRes.getClassLoader(),
                             fileRes.getTaskClasses(), fileRes.getMd5());
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     U.error(log, "Error when processing file: " + file.getAbsolutePath(), e);
                 }
             }
@@ -619,7 +619,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
                     break;
 
                 default:
-                    throw new GridSpiException("Unsupported protocol: " + proto);
+                    throw new IgniteSpiException("Unsupported protocol: " + proto);
             }
 
             scanners.add(scanner);
@@ -735,7 +735,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws GridSpiException {
+    @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
         A.notNull(ldr, "ldr");
         A.notNull(rsrc, "rsrc");
 
@@ -808,13 +808,13 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      * @param desc Deployment descriptor.
      * @param clss Registered classes array.
      * @return Map of new resources added for registered class loader.
-     * @throws GridSpiException If resource already registered. Exception thrown
+     * @throws org.gridgain.grid.spi.IgniteSpiException If resource already registered. Exception thrown
      * if registered resources conflicts with rule when all task classes must be
      * annotated with different task names.
      */
     @Nullable
     private Map<String, String> addResources(ClassLoader ldr, GridUriDeploymentUnitDescriptor desc, Class<?>[] clss)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert ldr != null;
         assert desc != null;
         assert clss != null;
@@ -836,7 +836,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
 
             // If added classes maps to one alias.
             if (alias != null && alias2Cls.containsKey(alias) && !alias2Cls.get(alias).equals(cls))
-                throw new GridSpiException("Failed to register resources with given task name " +
+                throw new IgniteSpiException("Failed to register resources with given task name " +
                     "(found another class with same task name) [taskName=" + alias +
                     ", cls1=" + cls.getName() + ", cls2=" + alias2Cls.get(alias).getName() + ", ldr=" + ldr + ']');
 
@@ -860,7 +860,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
             if (cls != null) {
                 // Different classes for the same resource name.
                 if (!cls.getName().equals(newName))
-                    throw new GridSpiException("Failed to register resources with given task name " +
+                    throw new IgniteSpiException("Failed to register resources with given task name " +
                         "(found another class with same task name in the same class loader) [taskName=" + newAlias +
                         ", existingCls=" + cls.getName() + ", newCls=" + newName + ", ldr=" + ldr + ']');
             }
@@ -1004,9 +1004,9 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      * Fills in list of URIs with all available URIs and encodes them if
      * encoding is enabled.
      *
-     * @throws GridSpiException Thrown if at least one URI has incorrect syntax.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if at least one URI has incorrect syntax.
      */
-    private void initializeUriList() throws GridSpiException {
+    private void initializeUriList() throws IgniteSpiException {
         for (String uri : uriList) {
             assertParameter(uri != null, "uriList.get(X) != null");
 
@@ -1020,12 +1020,12 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
                 uriObj = new URI(encUri);
             }
             catch (URISyntaxException e) {
-                throw new GridSpiException("Failed to parse URI [uri=" + U.hidePassword(uri) +
+                throw new IgniteSpiException("Failed to parse URI [uri=" + U.hidePassword(uri) +
                     ", encodedUri=" + U.hidePassword(encUri) + ']', e);
             }
 
             if (uriObj.getScheme() == null || uriObj.getScheme().trim().isEmpty())
-                throw new GridSpiException("Failed to get 'scheme' from URI [uri=" +
+                throw new IgniteSpiException("Failed to get 'scheme' from URI [uri=" +
                     U.hidePassword(uri) +
                     ", encodedUri=" + U.hidePassword(encUri) + ']');
 
@@ -1036,9 +1036,9 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
     /**
      * Add configuration for file scanner {@link GridUriDeploymentFileScanner}.
      *
-     * @throws GridSpiException Thrown if default URI syntax is incorrect.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if default URI syntax is incorrect.
      */
-    private void addDefaultUri() throws GridSpiException {
+    private void addDefaultUri() throws IgniteSpiException {
         assert uriEncodedList != null;
 
         URI uri;
@@ -1047,7 +1047,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
             uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, false).toURI();
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to initialize default file scanner", e);
+            throw new IgniteSpiException("Failed to initialize default file scanner", e);
         }
 
         uriEncodedList.add(uri);
@@ -1071,24 +1071,24 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      * system property value if first is {@code null}) and path relative
      * to base one - {@link #DEPLOY_TMP_ROOT_NAME}/{@code local node ID}.
      *
-     * @throws GridSpiException Thrown if temporary directory could not be created.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if temporary directory could not be created.
      */
-    private void initializeTemporaryDirectoryPath() throws GridSpiException {
+    private void initializeTemporaryDirectoryPath() throws IgniteSpiException {
         String tmpDirPath = this.tmpDirPath == null ? System.getProperty("java.io.tmpdir") : this.tmpDirPath;
 
         if (tmpDirPath == null)
-            throw new GridSpiException("Error initializing temporary deployment directory.");
+            throw new IgniteSpiException("Error initializing temporary deployment directory.");
 
         File dir = new File(tmpDirPath + File.separator + DEPLOY_TMP_ROOT_NAME + File.separator + locNodeId);
 
         if (!U.mkdirs(dir))
-            throw new GridSpiException("Error initializing temporary deployment directory: " + dir);
+            throw new IgniteSpiException("Error initializing temporary deployment directory: " + dir);
 
         if (!dir.isDirectory())
-            throw new GridSpiException("Temporary deployment directory path is not a valid directory: " + dir);
+            throw new IgniteSpiException("Temporary deployment directory path is not a valid directory: " + dir);
 
         if (!dir.canRead() || !dir.canWrite())
-            throw new GridSpiException("Can not write to or read from temporary deployment directory: " + dir);
+            throw new IgniteSpiException("Can not write to or read from temporary deployment directory: " + dir);
 
         this.tmpDirPath = tmpDirPath;
 
@@ -1113,7 +1113,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
             try {
                 addResources(newDesc.getClassLoader(), newDesc, clss.toArray(new Class<?>[clss.size()]));
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 U.warn(log, "Failed to register GAR class loader [newDesc=" + newDesc +
                     ", msg=" + e.getMessage() + ']');
             }

@@ -133,9 +133,9 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
     /**
      * @param row Row
      * @return Value.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private Map<String, Object> value(GridIndexingKeyValueRow<Integer, Map<String, Object>> row) throws GridSpiException {
+    private Map<String, Object> value(GridIndexingKeyValueRow<Integer, Map<String, Object>> row) throws IgniteSpiException {
         return row.value().value();
     }
 
@@ -518,7 +518,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T value(Object obj, String field) throws GridSpiException {
+        @Override public <T> T value(Object obj, String field) throws IgniteSpiException {
             assert obj != null;
             assert !F.isEmpty(field);
 
@@ -562,18 +562,18 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         }
 
         /** {@inheritDoc} */
-        @Override public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws GridSpiException {
+        @Override public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException {
             try {
                 return new GridIndexingEntityAdapter<>(
                     (T)marshaller.unmarshal(bytes, getClass().getClassLoader()), bytes);
             }
             catch (GridException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] marshal(GridIndexingEntity<?> entity) throws GridSpiException {
+        @Override public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException {
             if (entity.bytes() != null)
                 return entity.bytes();
 
@@ -583,7 +583,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
                 marshaller.marshal(entity.value(), out);
             }
             catch (GridException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
 
             return out.toByteArray();

@@ -69,7 +69,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
             }
         }
         catch (AmazonClientException e) {
-            throw new GridSpiException("Failed to read checkpoint bucket: " + bucketName, e);
+            throw new IgniteSpiException("Failed to read checkpoint bucket: " + bucketName, e);
         }
     }
 

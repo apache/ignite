@@ -260,9 +260,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param swapSpaceName Swap space name.
      * @param key Key.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public void onSwap(String swapSpaceName, K key) throws GridSpiException {
+    public void onSwap(String swapSpaceName, K key) throws IgniteSpiException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
@@ -280,9 +280,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param key Key.
      * @param val Value
      * @param valBytes Value bytes.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public void onUnswap(K key, V val, byte[] valBytes) throws GridSpiException {
+    public void onUnswap(K key, V val, byte[] valBytes) throws IgniteSpiException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 

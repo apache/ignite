@@ -24,9 +24,9 @@ public interface GridTcpDiscoveryIpFinder {
      * method is completed, SPI context can be stored for future access.
      *
      * @param spiCtx Spi context.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    public void onSpiContextInitialized(GridSpiContext spiCtx) throws GridSpiException;
+    public void onSpiContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException;
 
     /**
      * Callback invoked prior to stopping grid before SPI context is destroyed.
@@ -39,17 +39,17 @@ public interface GridTcpDiscoveryIpFinder {
      * Initializes addresses discovery SPI binds to.
      *
      * @param addrs Addresses discovery SPI binds to.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException;
+    public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
     /**
      * Gets all addresses registered in this finder.
      *
      * @return All known addresses, potentially empty, but never {@code null}.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    public Collection<InetSocketAddress> getRegisteredAddresses() throws GridSpiException;
+    public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException;
 
     /**
      * Checks whether IP finder is shared or not.
@@ -69,9 +69,9 @@ public interface GridTcpDiscoveryIpFinder {
      * is already registered.
      *
      * @param addrs Addresses to register. Not {@code null} and not empty.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    public void registerAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException;
+    public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
     /**
      * Unregisters provided addresses.
@@ -80,9 +80,9 @@ public interface GridTcpDiscoveryIpFinder {
      * registered quietly (just no-op).
      *
      * @param addrs Addresses to unregister. Not {@code null} and not empty.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException;
+    public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
     /**
      * Closes this IP finder and releases any system resources associated with it.

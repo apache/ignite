@@ -103,7 +103,7 @@ public class GridH2Table extends TableBase {
      *
      * @param key Entry key.
      * @return {@code true} If row was found.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public boolean onSwap(Object key) throws GridException {
         return onSwapUnswap(key, null);
@@ -115,7 +115,7 @@ public class GridH2Table extends TableBase {
      * @param key Key.
      * @param val Value.
      * @return {@code true} If row was found.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public boolean onUnswap(Object key, Object val) throws GridException {
         assert val != null : "Key=" + key;
@@ -295,9 +295,9 @@ public class GridH2Table extends TableBase {
      * @param val Value.
      * @param expirationTime Expiration time.
      * @return {@code True} if operation succeeded.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public boolean update(Object key, @Nullable Object val, long expirationTime) throws GridSpiException {
+    public boolean update(Object key, @Nullable Object val, long expirationTime) throws IgniteSpiException {
         GridH2Row row = desc.createRow(key, val, expirationTime);
 
         return doUpdate(row, val == null);
@@ -328,10 +328,10 @@ public class GridH2Table extends TableBase {
      * @param row Row.
      * @param del If given row should be deleted from table.
      * @return {@code True} if operation succeeded.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    boolean doUpdate(GridH2Row row, boolean del) throws GridSpiException {
+    boolean doUpdate(GridH2Row row, boolean del) throws IgniteSpiException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
         GridUnsafeMemory mem = desc == null ? null : desc.memory();

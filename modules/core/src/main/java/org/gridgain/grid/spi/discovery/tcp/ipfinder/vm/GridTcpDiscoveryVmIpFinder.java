@@ -63,7 +63,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
                         try {
                             addrsList.addAll(address(s));
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             throw new GridRuntimeException(e);
                         }
                     }
@@ -116,10 +116,10 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * </ul>
      *
      * @param addrs Known nodes addresses.
-     * @throws GridSpiException If any error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
      */
     @GridSpiConfiguration(optional = true)
-    public synchronized void setAddresses(Collection<String> addrs) throws GridSpiException {
+    public synchronized void setAddresses(Collection<String> addrs) throws IgniteSpiException {
         if (F.isEmpty(addrs))
             return;
 
@@ -137,9 +137,9 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * @param ipStr Address string.
      * @return Socket addresses (may contain 1 or more addresses if provided string
      *      includes port range).
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private static Collection<InetSocketAddress> address(String ipStr) throws GridSpiException {
+    private static Collection<InetSocketAddress> address(String ipStr) throws IgniteSpiException {
         ipStr = ipStr.trim();
 
         String errMsg = "Failed to parse provided address: " + ipStr;
@@ -157,7 +157,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
                 else if (ipStr.endsWith("]"))
                     ipStr = ipStr.substring(0, ipStr.length() - 1);
                 else
-                    throw new GridSpiException(errMsg);
+                    throw new IgniteSpiException(errMsg);
             }
         }
         else {
@@ -180,10 +180,10 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * @param errMsg Error message.
      * @return Socket addresses (may contain 1 or more addresses if provided string
      *      includes port range).
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     private static Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg)
-        throws GridSpiException {
+        throws IgniteSpiException {
         String[] tokens = ipStr.split(regexDelim);
 
         if (tokens.length == 2) {
@@ -196,7 +196,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
                     int port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
 
                     if (port2 < port1 || port1 == port2 || port1 <= 0 || port2 <= 0)
-                        throw new GridSpiException(errMsg);
+                        throw new IgniteSpiException(errMsg);
 
                     Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
 
@@ -207,7 +207,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
                     return res;
                 }
                 catch (IllegalArgumentException e) {
-                    throw new GridSpiException(errMsg, e);
+                    throw new IgniteSpiException(errMsg, e);
                 }
             }
             else {
@@ -217,12 +217,12 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
                     return Collections.singleton(new InetSocketAddress(addrStr, port));
                 }
                 catch (IllegalArgumentException e) {
-                    throw new GridSpiException(errMsg, e);
+                    throw new IgniteSpiException(errMsg, e);
                 }
             }
         }
         else
-            throw new GridSpiException(errMsg);
+            throw new IgniteSpiException(errMsg);
     }
 
     /** {@inheritDoc} */

@@ -328,13 +328,13 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param schema Whether to set schema for connection or not.
      * @return DB connection.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    private Connection connectionForThread(@Nullable String schema) throws GridSpiException {
+    private Connection connectionForThread(@Nullable String schema) throws IgniteSpiException {
         ConnectionWrapper c = connCache.get();
 
         if (c == null)
-            throw new GridSpiException("Failed to get DB connection for thread (check log for details).");
+            throw new IgniteSpiException("Failed to get DB connection for thread (check log for details).");
 
         if (schema != null && !F.eq(c.schema(), schema)) {
             Statement stmt = null;
@@ -350,7 +350,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                 c.schema(schema);
             }
             catch (SQLException e) {
-                throw new GridSpiException("Failed to set schema for DB connection for thread [schema=" +
+                throw new IgniteSpiException("Failed to set schema for DB connection for thread [schema=" +
                     schema + "]", e);
             }
             finally {
@@ -365,9 +365,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * Creates DB schema if it has not been created yet.
      *
      * @param schema Schema name.
-     * @throws GridSpiException If failed to create db schema.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed to create db schema.
      */
-    private void createSchemaIfAbsent(String schema) throws GridSpiException {
+    private void createSchemaIfAbsent(String schema) throws IgniteSpiException {
         executeStatement("CREATE SCHEMA IF NOT EXISTS \"" + schema + '"');
 
         if (log.isDebugEnabled())
@@ -376,9 +376,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
     /**
      * @param sql SQL statement.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private void executeStatement(String sql) throws GridSpiException {
+    private void executeStatement(String sql) throws IgniteSpiException {
         Statement stmt = null;
 
         try {
@@ -391,7 +391,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridSpiException("Failed to execute statement: " + sql, e);
+            throw new IgniteSpiException("Failed to execute statement: " + sql, e);
         }
         finally {
             U.close(stmt, log);
@@ -404,10 +404,10 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param spaceName Space name.
      * @param k Key entity.
      * @param tblToUpdate Table to update.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
     private <K> void removeKey(@Nullable String spaceName, GridIndexingEntity<K> k, TableDescriptor tblToUpdate)
-        throws GridSpiException {
+        throws IgniteSpiException {
         K key = k.value();
 
         try {
@@ -430,7 +430,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             }
         }
         catch (Exception e) {
-            throw new GridSpiException("Failed to remove key: " + key, e);
+            throw new IgniteSpiException("Failed to remove key: " + key, e);
         }
     }
 
@@ -440,9 +440,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param stmt SQL statement.
      * @param idx Index.
      * @param obj Value to store.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws GridSpiException {
+    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteSpiException {
         try {
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
@@ -450,7 +450,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                 stmt.setObject(idx, obj);
         }
         catch (SQLException e) {
-            throw new GridSpiException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ']', e);
+            throw new IgniteSpiException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ']', e);
         }
     }
 
@@ -473,7 +473,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     /** {@inheritDoc} */
     @Override public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type,
         GridIndexingEntity<K> k, GridIndexingEntity<V> v, byte[] ver, long expirationTime)
-        throws GridSpiException {
+        throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -498,7 +498,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> k) throws GridSpiException {
+    @Override public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> k) throws IgniteSpiException {
         assert k != null;
 
         K key = k.value();
@@ -528,7 +528,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         ctxInitLatch.countDown();
 
         if (log.isDebugEnabled())
@@ -550,7 +550,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key) throws GridSpiException {
+    @Override public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key) throws IgniteSpiException {
         Schema schema = schemas.get(schema(spaceName));
 
         if (schema == null)
@@ -566,7 +566,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                             return;
                     }
                     catch (GridException e) {
-                        throw new GridSpiException(e);
+                        throw new IgniteSpiException(e);
                     }
                 }
             }
@@ -578,7 +578,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @Override public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes)
-        throws GridSpiException {
+        throws IgniteSpiException {
         localSpi.set(this);
 
         try {
@@ -589,7 +589,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                             return;
                     }
                     catch (GridException e) {
-                        throw new GridSpiException(e);
+                        throw new IgniteSpiException(e);
                     }
                 }
             }
@@ -603,9 +603,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * Drops table form h2 database and clear all related indexes (h2 text, lucene).
      *
      * @param tbl Table to unregister.
-     * @throws GridSpiException If failed to unregister.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed to unregister.
      */
-    private void removeTable(TableDescriptor tbl) throws GridSpiException {
+    private void removeTable(TableDescriptor tbl) throws IgniteSpiException {
         assert tbl != null;
 
         if (log.isDebugEnabled())
@@ -632,7 +632,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridSpiException("Failed to drop database index table [type=" + tbl.type().name() +
+            throw new IgniteSpiException("Failed to drop database index table [type=" + tbl.type().name() +
                 ", table=" + tbl.fullTableName() + "]", e);
         }
         finally {
@@ -654,7 +654,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
         @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
-        GridIndexingQueryFilter filters) throws GridSpiException {
+        GridIndexingQueryFilter filters) throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl != null && tbl.luceneIdx != null)
@@ -665,7 +665,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @Override public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type)
-        throws GridSpiException {
+        throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl != null)
@@ -676,7 +676,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final GridIndexingQueryFilter filters)
-        throws GridSpiException {
+        throws IgniteSpiException {
         localSpi.set(this);
 
         setFilters(filters);
@@ -704,7 +704,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                     }
                 }
                 catch (SQLException e) {
-                    throw new GridSpiException("Failed to get meta data.", e);
+                    throw new IgniteSpiException("Failed to get meta data.", e);
                 }
             }
 
@@ -737,10 +737,10 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param sql Sql query.
      * @param params Parameters.
      * @return Result.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     @Nullable private ResultSet executeSqlQuery(Connection conn, String sql,
-        @Nullable Collection<Object> params) throws GridSpiException {
+        @Nullable Collection<Object> params) throws IgniteSpiException {
         PreparedStatement stmt;
 
         try {
@@ -750,7 +750,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             if (e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1)
                 return null;
 
-            throw new GridSpiException("Failed to parse SQL query: " + sql, e);
+            throw new IgniteSpiException("Failed to parse SQL query: " + sql, e);
         }
 
         switch (commandType(stmt)) {
@@ -760,7 +760,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             case CommandInterface.ANALYZE:
                 break;
             default:
-                throw new GridSpiException("Failed to execute non-query SQL statement: " + sql);
+                throw new IgniteSpiException("Failed to execute non-query SQL statement: " + sql);
         }
 
         bindParameters(stmt, params);
@@ -769,7 +769,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             return stmt.executeQuery();
         }
         catch (SQLException e) {
-            throw new GridSpiException("Failed to execute SQL query.", e);
+            throw new IgniteSpiException("Failed to execute SQL query.", e);
         }
     }
 
@@ -780,10 +780,10 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param sql Sql query.
      * @param params Parameters.
      * @return Result.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     private ResultSet executeSqlQueryWithTimer(Connection conn, String sql,
-        @Nullable Collection<Object> params) throws GridSpiException {
+        @Nullable Collection<Object> params) throws IgniteSpiException {
         long start = U.currentTimeMillis();
 
         try {
@@ -818,7 +818,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
     }
 
@@ -829,10 +829,10 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param params Query parameters.
      * @param tbl Target table of query to generate select.
      * @return Result set.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     private ResultSet executeQuery(String qry, @Nullable Collection<Object> params,
-        @Nullable TableDescriptor tbl) throws GridSpiException {
+        @Nullable TableDescriptor tbl) throws IgniteSpiException {
         Connection conn = connectionForThread(tbl != null ? tbl.schema() : "PUBLIC");
 
         String sql = generateQuery(qry, tbl);
@@ -845,9 +845,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param stmt Prepared statement.
      * @param params Parameters collection.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws GridSpiException {
+    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteSpiException {
         if (!F.isEmpty(params)) {
             int idx = 1;
 
@@ -866,12 +866,12 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param type Query return type.
      * @param filters Space name and key filters.
      * @return Queried rows.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
         final String qry, @Nullable final Collection<Object> params, GridIndexingTypeDescriptor type,
-        final GridIndexingQueryFilter filters) throws GridSpiException {
+        final GridIndexingQueryFilter filters) throws IgniteSpiException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -910,9 +910,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param qry Query string.
      * @param tbl Table to use.
      * @return Prepared statement.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    private String generateQuery(String qry, @Nullable TableDescriptor tbl) throws GridSpiException {
+    private String generateQuery(String qry, @Nullable TableDescriptor tbl) throws IgniteSpiException {
         boolean needSelect = tbl != null;
 
         String str = qry.trim().toUpperCase();
@@ -931,12 +931,12 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                         String from = st.nextToken();
 
                         if (!"*".equals(wildcard) || !"FROM".equals(from))
-                            throw new GridSpiException(errMsg);
+                            throw new IgniteSpiException(errMsg);
 
                         needSelect = false;
                     }
                     else
-                        throw new GridSpiException(errMsg);
+                        throw new IgniteSpiException(errMsg);
                 }
             }
             else {
@@ -960,10 +960,10 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * This implementation doesn't support type reregistration.
      *
      * @param type Type description.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
     @Override public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor type)
-        throws GridSpiException {
+        throws IgniteSpiException {
         if (!validateTypeDescriptor(spaceName, type))
             return false;
 
@@ -971,7 +971,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             // Need to compare class names rather than classes to define
             // whether a class was previously undeployed.
             if (table.type().valueClass().getClass().getName().equals(type.valueClass().getName()))
-                throw new GridSpiException("Failed to register type in query index because" +
+                throw new IgniteSpiException("Failed to register type in query index because" +
                     " class is already registered (most likely that class with the same name" +
                     " was not properly undeployed): " + type);
 
@@ -998,7 +998,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridSpiException("Failed to register query type: " + type, e);
+            throw new IgniteSpiException("Failed to register query type: " + type, e);
         }
 
         return true;
@@ -1021,10 +1021,10 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param spaceName Space name.
      * @param type Type descriptor.
      * @return True if type is valid.
-     * @throws GridSpiException If validation failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If validation failed.
      */
     private boolean validateTypeDescriptor(@Nullable String spaceName, GridIndexingTypeDescriptor type)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert type != null;
 
         boolean keyPrimitive = isPrimitive(type.keyClass());
@@ -1042,14 +1042,14 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         names.addAll(type.valueFields().keySet());
 
         if (names.size() < type.keyFields().size() + type.valueFields().size())
-            throw new GridSpiException("Found duplicated properties with the same name [keyType=" +
+            throw new IgniteSpiException("Found duplicated properties with the same name [keyType=" +
                 type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
 
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [class=" + type + "]";
 
         for (String name : names) {
             if (name.equals(KEY_FIELD_NAME) || name.equals(VAL_FIELD_NAME))
-                throw new GridSpiException(MessageFormat.format(ptrn, name));
+                throw new IgniteSpiException(MessageFormat.format(ptrn, name));
         }
 
         return true;
@@ -1214,7 +1214,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public long size(@Nullable String spaceName, GridIndexingTypeDescriptor type) throws GridSpiException {
+    @Override public long size(@Nullable String spaceName, GridIndexingTypeDescriptor type) throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -1231,7 +1231,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @SuppressWarnings("NonThreadSafeLazyInitialization")
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
@@ -1268,7 +1268,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             Class.forName("org.h2.Driver");
         }
         catch (ClassNotFoundException e) {
-            throw new GridSpiException("Failed to find org.h2.Driver class", e);
+            throw new IgniteSpiException("Failed to find org.h2.Driver class", e);
         }
 
         for (String schema : schemaNames)
@@ -1295,7 +1295,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             }
         }
         catch (SQLException e) {
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
 
         registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
@@ -1314,10 +1314,10 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     /**
      * Runs initial script.
      *
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      * @throws SQLException If failed.
      */
-    private void runInitScript() throws GridSpiException, SQLException {
+    private void runInitScript() throws IgniteSpiException, SQLException {
         if (initScriptPath == null)
             return;
 
@@ -1332,9 +1332,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * Registers SQL functions.
      *
      * @throws SQLException If failed.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private void createSqlFunctions() throws SQLException, GridSpiException {
+    private void createSqlFunctions() throws SQLException, IgniteSpiException {
         if (F.isEmpty(idxCustomFuncClss))
             return;
 
@@ -1346,7 +1346,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                     int modifiers = m.getModifiers();
 
                     if (!Modifier.isStatic(modifiers) || !Modifier.isPublic(modifiers))
-                        throw new GridSpiException("Method " + m.getName() + " must be public static.");
+                        throw new IgniteSpiException("Method " + m.getName() + " must be public static.");
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
@@ -1373,7 +1373,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
@@ -1403,7 +1403,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                 stmt.execute("SHUTDOWN");
             }
             catch (SQLException e) {
-                throw new GridSpiException("Failed to shutdown database.", e);
+                throw new IgniteSpiException("Failed to shutdown database.", e);
             }
             finally {
                 U.close(stmt, log);
@@ -1729,7 +1729,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
     }
 
     /** {@inheritDoc} */
-    @Override public void registerSpace(String spaceName) throws GridSpiException {
+    @Override public void registerSpace(String spaceName) throws IgniteSpiException {
         schemaNames.add(schema(spaceName));
 
         if (!spaceCfgs.containsKey(spaceName))
@@ -2015,7 +2015,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                 try {
                     luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
                 }
-                catch (GridSpiException e1) {
+                catch (IgniteSpiException e1) {
                     throw new GridRuntimeException(e1);
                 }
             }
@@ -2028,7 +2028,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
                     try {
                         luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
                     }
-                    catch (GridSpiException e1) {
+                    catch (IgniteSpiException e1) {
                         throw new GridRuntimeException(e1);
                     }
                 }
@@ -2070,9 +2070,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
         /**
          * @param data Data.
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
-        protected FieldsIterator(ResultSet data) throws GridSpiException {
+        protected FieldsIterator(ResultSet data) throws IgniteSpiException {
             super(data);
         }
 
@@ -2098,9 +2098,9 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
         /**
          * @param data Data array.
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
-        protected KeyValIterator(ResultSet data) throws GridSpiException {
+        protected KeyValIterator(ResultSet data) throws IgniteSpiException {
             super(data);
         }
 
@@ -2312,14 +2312,14 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
         /** {@inheritDoc} */
         @Override public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
-            throws GridSpiException {
+            throws IgniteSpiException {
             try {
                 return offheap == null ?
                     new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
                     new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
             }
             catch (ClassCastException e) {
-                throw new GridSpiException("Failed to convert key to SQL type. " +
+                throw new IgniteSpiException("Failed to convert key to SQL type. " +
                     "Please make sure that you always store each value type with the same key type or disable " +
                     "'defaultIndexFixedTyping' property on GridH2IndexingSpi.", e);
             }
@@ -2352,7 +2352,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
             try {
                 return type.value(obj, fields[col]);
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 throw DbException.convert(e);
             }
         }

@@ -31,10 +31,10 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param val Value.
      * @param expirationTime Expiration time in millis.
      * @return Row.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
-        throws GridSpiException;
+        throws IgniteSpiException;
 
     /**
      * @param key Cache key.

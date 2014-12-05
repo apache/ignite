@@ -194,7 +194,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean saveCheckpoint(String key, byte[] state, long timeout,
-            boolean overwrite) throws GridSpiException {
+            boolean overwrite) throws IgniteSpiException {
             if (getName().equals(expName))
                 isTaskCheckPntCalled = true;
             else
@@ -204,7 +204,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
+        @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
             if (getName().equals(expName))
                 isJobCheckPntCalled = true;
             else

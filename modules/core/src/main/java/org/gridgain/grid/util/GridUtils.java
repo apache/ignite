@@ -8322,7 +8322,7 @@ public abstract class GridUtils {
                         extAddrs.addAll(extAddrs0);
                 }
                 catch (GridException e) {
-                    throw new GridSpiException("Failed to get mapped external addresses " +
+                    throw new IgniteSpiException("Failed to get mapped external addresses " +
                         "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
                 }
             }

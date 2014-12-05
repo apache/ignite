@@ -126,7 +126,7 @@ public abstract class GridCacheTxReentryAbstractSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             countMsg((GridIoMessage)msg);
 
             super.sendMessage(node, msg);

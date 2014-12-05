@@ -148,7 +148,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
                 }
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 throw new GridException("Failed to get SPI attributes.", e);
             }
         }
@@ -207,7 +207,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             try {
                 spi.spiStart(ctx.gridName());
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 throw new GridException("Failed to start SPI: " + spi, e);
             }
 
@@ -232,7 +232,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                 if (log.isDebugEnabled())
                     log.debug("SPI module stopped OK: " + spi.getClass().getName());
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 throw new GridException("Failed to stop SPI: " + spi, e);
             }
 
@@ -303,7 +303,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Override public void send(ClusterNode node, Serializable msg, String topic)
-                        throws GridSpiException {
+                        throws IgniteSpiException {
                         A.notNull(node, "node");
                         A.notNull(msg, "msg");
                         A.notNull(topic, "topic");
@@ -511,16 +511,16 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                      * @param e Exception to handle.
                      * @return GridSpiException Converted exception.
                      */
-                    private GridSpiException unwrapException(GridException e) {
+                    private IgniteSpiException unwrapException(GridException e) {
                         // Avoid double-wrapping.
-                        if (e.getCause() instanceof GridSpiException)
-                            return (GridSpiException)e.getCause();
+                        if (e.getCause() instanceof IgniteSpiException)
+                            return (IgniteSpiException)e.getCause();
 
-                        return new GridSpiException("Failed to execute SPI context method.", e);
+                        return new IgniteSpiException("Failed to execute SPI context method.", e);
                     }
                 });
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 throw new GridException("Failed to initialize SPI context.", e);
             }
         }

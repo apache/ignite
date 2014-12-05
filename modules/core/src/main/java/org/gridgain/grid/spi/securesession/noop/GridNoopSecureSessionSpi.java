@@ -76,7 +76,7 @@ public class GridNoopSecureSessionSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public boolean validate(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
-        @Nullable Object params) throws GridSpiException {
+        @Nullable Object params) throws IgniteSpiException {
         // Never validate any token - all tokens are invalid.
         return false;
     }
@@ -88,7 +88,7 @@ public class GridNoopSecureSessionSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -100,7 +100,7 @@ public class GridNoopSecureSessionSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Ack ok stop.

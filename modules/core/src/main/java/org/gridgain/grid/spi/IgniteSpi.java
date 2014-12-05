@@ -48,9 +48,9 @@ public interface IgniteSpi {
      * exchanged with other nodes.
      *
      * @return Map of local node attributes this SPI wants to add.
-     * @throws GridSpiException Throws in case of any error.
+     * @throws IgniteSpiException Throws in case of any error.
      */
-    public Map<String, Object> getNodeAttributes() throws GridSpiException;
+    public Map<String, Object> getNodeAttributes() throws IgniteSpiException;
 
     /**
      * This method is called to start SPI. After this method returns
@@ -58,9 +58,9 @@ public interface IgniteSpi {
      *
      * @param gridName Name of grid instance this SPI is being started for
      *    ({@code null} for default grid).
-     * @throws GridSpiException Throws in case of any error during SPI start.
+     * @throws IgniteSpiException Throws in case of any error during SPI start.
      */
-    public void spiStart(@Nullable String gridName) throws GridSpiException;
+    public void spiStart(@Nullable String gridName) throws IgniteSpiException;
 
     /**
      * Callback invoked when SPI context is initialized. SPI implementation
@@ -72,9 +72,9 @@ public interface IgniteSpi {
      * listener, sending a message to remote node, etc...
      *
      * @param spiCtx Spi context.
-     * @throws GridSpiException If context initialization failed (grid will be stopped).
+     * @throws IgniteSpiException If context initialization failed (grid will be stopped).
      */
-    public void onContextInitialized(GridSpiContext spiCtx) throws GridSpiException;
+    public void onContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException;
 
     /**
      * Callback invoked prior to stopping grid before SPI context is destroyed.
@@ -100,7 +100,7 @@ public interface IgniteSpi {
      * will be in when this method is called.
      * </b>
      *
-     * @throws GridSpiException Thrown in case of any error during SPI stop.
+     * @throws IgniteSpiException Thrown in case of any error during SPI stop.
      */
-    public void spiStop() throws GridSpiException;
+    public void spiStop() throws IgniteSpiException;
 }

@@ -23,16 +23,16 @@ public interface GridIndexingMarshaller {
      * @param bytes Bytes.
      * @param <T> Value type.
      * @return Value.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws GridSpiException;
+    public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException;
 
     /**
      * Marshals object to bytes.
      *
      * @param entity Entity.
      * @return Bytes.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public byte[] marshal(GridIndexingEntity<?> entity) throws GridSpiException;
+    public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException;
 }

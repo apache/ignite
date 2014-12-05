@@ -268,7 +268,7 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         startStopwatch();
 
         assertParameter(probe != null, "loadProbe != null");
@@ -284,7 +284,7 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         rwLock.writeLock().lock();
 
         try {
@@ -302,7 +302,7 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
                 switch (evt.type()) {

@@ -233,7 +233,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
 
         cfg.setCommunicationSpi(new GridTcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-                throws GridSpiException {
+                throws IgniteSpiException {
                 if (!F.eq(ignoreMsgNodeId, node.id()) || !ignoredMessage((GridIoMessage)msg))
                     super.sendMessage(node, msg);
             }

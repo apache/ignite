@@ -103,7 +103,7 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws GridSpiException {
+    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         initClient();
 
         Collection<InetSocketAddress> addrs = new LinkedList<>();
@@ -149,14 +149,14 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
             }
         }
         catch (AmazonClientException e) {
-            throw new GridSpiException("Failed to list objects in the bucket: " + bucketName, e);
+            throw new IgniteSpiException("Failed to list objects in the bucket: " + bucketName, e);
         }
 
         return addrs;
     }
 
     /** {@inheritDoc} */
-    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         initClient();
@@ -168,14 +168,14 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
                 s3.putObject(bucketName, key, new ByteArrayInputStream(ENTRY_CONTENT), ENTRY_METADATA);
             }
             catch (AmazonClientException e) {
-                throw new GridSpiException("Failed to put entry [bucketName=" + bucketName +
+                throw new IgniteSpiException("Failed to put entry [bucketName=" + bucketName +
                     ", entry=" + key + ']', e);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         initClient();
@@ -187,7 +187,7 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
                 s3.deleteObject(bucketName, key);
             }
             catch (AmazonClientException e) {
-                throw new GridSpiException("Failed to delete entry [bucketName=" + bucketName +
+                throw new IgniteSpiException("Failed to delete entry [bucketName=" + bucketName +
                     ", entry=" + key + ']', e);
             }
         }
@@ -214,20 +214,20 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
     /**
      * Amazon s3 client initialization.
      *
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
     @SuppressWarnings({"BusyWait"})
-    private void initClient() throws GridSpiException {
+    private void initClient() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true))
             try {
                 if (cred == null)
-                    throw new GridSpiException("AWS credentials are not set.");
+                    throw new IgniteSpiException("AWS credentials are not set.");
 
                 if (cfg == null)
                     U.warn(log, "Amazon client configuration is not set (will use default).");
 
                 if (F.isEmpty(bucketName))
-                    throw new GridSpiException("Bucket name is null or empty (provide bucket name and restart).");
+                    throw new IgniteSpiException("Bucket name is null or empty (provide bucket name and restart).");
 
                 s3 = cfg != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(cred);
 
@@ -243,14 +243,14 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
                                 U.sleep(200);
                             }
                             catch (GridInterruptedException e) {
-                                throw new GridSpiException("Thread has been interrupted.", e);
+                                throw new IgniteSpiException("Thread has been interrupted.", e);
                             }
                     }
                     catch (AmazonClientException e) {
                         if (!s3.doesBucketExist(bucketName)) {
                             s3 = null;
 
-                            throw new GridSpiException("Failed to create bucket: " + bucketName, e);
+                            throw new IgniteSpiException("Failed to create bucket: " + bucketName, e);
                         }
                     }
                 }
@@ -263,11 +263,11 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
                 U.await(initLatch);
             }
             catch (GridInterruptedException e) {
-                throw new GridSpiException("Thread has been interrupted.", e);
+                throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 
             if (s3 == null)
-                throw new GridSpiException("Ip finder has not been initialized properly.");
+                throw new IgniteSpiException("Ip finder has not been initialized properly.");
         }
     }
 

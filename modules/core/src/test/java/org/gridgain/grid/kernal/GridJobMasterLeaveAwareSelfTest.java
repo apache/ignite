@@ -732,7 +732,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             sendMessage0(node, msg);
         }
 
@@ -742,9 +742,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          *
          * @param node Destination node.
          * @param msg Message to be sent.
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
-        private void sendMessage0(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws GridSpiException {
+        private void sendMessage0(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;
 

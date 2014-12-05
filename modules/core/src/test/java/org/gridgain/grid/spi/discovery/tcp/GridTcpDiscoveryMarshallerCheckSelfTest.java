@@ -77,7 +77,7 @@ public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractT
         catch (GridException e) {
             Throwable ex = e.getCause().getCause();
 
-            assertTrue(ex instanceof GridSpiException);
+            assertTrue(ex instanceof IgniteSpiException);
             assertTrue(ex.getMessage().contains("Local node's marshaller differs from remote node's marshaller"));
         }
     }

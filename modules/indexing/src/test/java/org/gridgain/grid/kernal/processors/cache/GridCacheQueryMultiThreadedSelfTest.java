@@ -94,14 +94,14 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         GridH2IndexingSpi indexing = new GridH2IndexingSpi() {
             @Override public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key)
-                throws GridSpiException {
+                throws IgniteSpiException {
                 super.onSwap(spaceName, swapSpaceName, key);
 
                 idxSwapCnt.incrementAndGet();
             }
 
             @Override public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes)
-                throws GridSpiException {
+                throws IgniteSpiException {
                 super.onUnswap(spaceName, key, val, valBytes);
 
                 idxUnswapCnt.incrementAndGet();

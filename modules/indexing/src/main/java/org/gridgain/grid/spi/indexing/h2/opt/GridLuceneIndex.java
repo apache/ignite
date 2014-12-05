@@ -80,10 +80,10 @@ public class GridLuceneIndex implements Closeable {
      * @param spaceName Space name.
      * @param type Type descriptor.
      * @param storeVal Store value in index.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public GridLuceneIndex(GridIndexingMarshaller marshaller, @Nullable GridUnsafeMemory mem,
-        @Nullable String spaceName, GridIndexingTypeDescriptor type, boolean storeVal) throws GridSpiException {
+        @Nullable String spaceName, GridIndexingTypeDescriptor type, boolean storeVal) throws IgniteSpiException {
         this.marshaller = marshaller;
         this.spaceName = spaceName;
         this.type = type;
@@ -96,7 +96,7 @@ public class GridLuceneIndex implements Closeable {
                 Version.LUCENE_30)));
         }
         catch (IOException e) {
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
 
         GridIndexDescriptor idx = null;
@@ -135,10 +135,10 @@ public class GridLuceneIndex implements Closeable {
      * @param val Value.
      * @param ver Version.
      * @param expires Expiration time.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public void store(GridIndexingEntity<?> key, GridIndexingEntity<?> val, byte[] ver, long expires)
-        throws GridSpiException {
+        throws IgniteSpiException {
         Document doc = new Document();
 
         Object k = key.value();
@@ -184,7 +184,7 @@ public class GridLuceneIndex implements Closeable {
             writer.addDocument(doc);
         }
         catch (IOException e) {
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
         finally {
             updateCntr.incrementAndGet();
@@ -195,14 +195,14 @@ public class GridLuceneIndex implements Closeable {
      * Removes entry for given key from this index.
      *
      * @param key Key.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public void remove(GridIndexingEntity<?> key) throws GridSpiException {
+    public void remove(GridIndexingEntity<?> key) throws IgniteSpiException {
         try {
             writer.deleteDocuments(new Term(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key))));
         }
         catch (IOException e) {
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
         finally {
             updateCntr.incrementAndGet();
@@ -215,10 +215,10 @@ public class GridLuceneIndex implements Closeable {
      * @param qry Query.
      * @param filters Filters over result.
      * @return Query result.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String qry,
-        GridIndexingQueryFilter filters) throws GridSpiException {
+        GridIndexingQueryFilter filters) throws IgniteSpiException {
         IndexReader reader;
 
         try {
@@ -233,7 +233,7 @@ public class GridLuceneIndex implements Closeable {
             reader = IndexReader.open(writer, true);
         }
         catch (IOException e) {
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
 
         IndexSearcher searcher = new IndexSearcher(reader);
@@ -251,7 +251,7 @@ public class GridLuceneIndex implements Closeable {
             docs = searcher.search(parser.parse(qry), f, Integer.MAX_VALUE);
         }
         catch (Exception e) {
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
 
         IgniteBiPredicate<K, V> fltr = null;
@@ -261,7 +261,7 @@ public class GridLuceneIndex implements Closeable {
                 fltr = filters.forSpace(spaceName);
             }
             catch (GridException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
         }
 
@@ -306,10 +306,10 @@ public class GridLuceneIndex implements Closeable {
          * @param searcher Searcher.
          * @param docs Docs.
          * @param filters Filters over result.
-         * @throws GridSpiException if failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException if failed.
          */
         private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, IgniteBiPredicate<K, V> filters)
-            throws GridSpiException {
+            throws IgniteSpiException {
             this.reader = reader;
             this.searcher = searcher;
             this.docs = docs;
@@ -332,9 +332,9 @@ public class GridLuceneIndex implements Closeable {
         /**
          * Finds next element.
          *
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
-        private void findNext() throws GridSpiException {
+        private void findNext() throws IgniteSpiException {
             curr = null;
 
             while (idx < docs.length) {
@@ -344,7 +344,7 @@ public class GridLuceneIndex implements Closeable {
                     doc = searcher.doc(docs[idx++].doc);
                 }
                 catch (IOException e) {
-                    throw new GridSpiException(e);
+                    throw new IgniteSpiException(e);
                 }
 
                 String keyStr = doc.get(KEY_FIELD_NAME);

@@ -33,17 +33,17 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     private ConcurrentMap<String, Space> spaces = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(@Nullable String spaceName) throws GridSpiException {
+    @Override public void clear(@Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName);
 
         if (space != null)
@@ -51,14 +51,14 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public long size(@Nullable String spaceName) throws GridSpiException {
+    @Override public long size(@Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName);
 
         return space != null ? space.size() : 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long count(@Nullable String spaceName) throws GridSpiException {
+    @Override public long count(@Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName);
 
         return space != null ? space.count() : 0;
@@ -66,7 +66,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public byte[] read(@Nullable String spaceName, GridSwapKey key, GridSwapContext ctx)
-        throws GridSpiException {
+        throws IgniteSpiException {
         Space space = space(spaceName);
 
         return space != null ? space.read(key) : null;
@@ -74,7 +74,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public Map<GridSwapKey, byte[]> readAll(@Nullable String spaceName, Iterable<GridSwapKey> keys,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         Space space = space(spaceName);
 
         return space != null ? space.readAll(keys) : Collections.<GridSwapKey, byte[]>emptyMap();
@@ -82,7 +82,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         Space space = space(spaceName);
 
         if (space != null)
@@ -91,7 +91,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
+        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws IgniteSpiException {
         Space space = space(spaceName);
 
         if (space != null)
@@ -100,13 +100,13 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public void store(@Nullable String spaceName, GridSwapKey key, @Nullable byte[] val, GridSwapContext ctx)
-        throws GridSpiException {
+        throws IgniteSpiException {
         ensureSpace(spaceName).store(key, val);
     }
 
     /** {@inheritDoc} */
     @Override public void storeAll(@Nullable String spaceName, Map<GridSwapKey, byte[]> pairs, GridSwapContext ctx)
-        throws GridSpiException {
+        throws IgniteSpiException {
         ensureSpace(spaceName).storeAll(pairs);
     }
 
@@ -116,7 +116,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> partitions(@Nullable String spaceName) throws GridSpiException {
+    @Override public Collection<Integer> partitions(@Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName);
 
         return space != null ? space.partitions() : Collections.<Integer>emptyList();
@@ -124,19 +124,19 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public <K> GridSpiCloseableIterator<K> keyIterator(@Nullable String spaceName, GridSwapContext ctx)
-        throws GridSpiException {
+        throws IgniteSpiException {
         return ensureSpace(spaceName).keyIterator();
     }
 
     /** {@inheritDoc} */
     @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
-        throws GridSpiException {
+        throws IgniteSpiException {
         return ensureSpace(spaceName).rawIterator();
     }
 
     /** {@inheritDoc} */
     @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName, int part)
-        throws GridSpiException {
+        throws IgniteSpiException {
         return ensureSpace(spaceName).rawIterator(part);
     }
 

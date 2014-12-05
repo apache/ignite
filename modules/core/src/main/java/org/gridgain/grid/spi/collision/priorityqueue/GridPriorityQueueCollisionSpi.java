@@ -340,12 +340,12 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> getNodeAttributes() throws GridSpiException {
+    @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return F.<String, Object>asMap(createSpiAttributeName(PRIORITY_ATTRIBUTE_KEY), getPriorityAttributeKey());
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         assertParameter(parallelJobsNum > 0, "parallelJobsNum > 0");
         assertParameter(waitJobsNum >= 0, "waitingJobsNum >= 0");
         assertParameter(starvationInc >= 0, "starvationInc >= 0");
@@ -373,7 +373,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Ack ok stop.

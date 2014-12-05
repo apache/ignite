@@ -126,7 +126,7 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -147,7 +147,7 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Reset events.
@@ -213,7 +213,7 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
     }
 
     /** {@inheritDoc} */
-    @Override public void record(IgniteEvent evt) throws GridSpiException {
+    @Override public void record(IgniteEvent evt) throws IgniteSpiException {
         assert evt != null;
 
         // Filter out events.

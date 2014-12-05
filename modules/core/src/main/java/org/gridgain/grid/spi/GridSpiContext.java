@@ -105,9 +105,9 @@ public interface GridSpiContext {
      * @param node Node to send a message to.
      * @param msg Message to send.
      * @param topic Topic to send message to.
-     * @throws GridSpiException If failed to send a message to remote node.
+     * @throws IgniteSpiException If failed to send a message to remote node.
      */
-    public void send(ClusterNode node, Serializable msg, String topic) throws GridSpiException;
+    public void send(ClusterNode node, Serializable msg, String topic) throws IgniteSpiException;
 
     /**
      * Register a message listener to receive messages sent by remote nodes. The underlying

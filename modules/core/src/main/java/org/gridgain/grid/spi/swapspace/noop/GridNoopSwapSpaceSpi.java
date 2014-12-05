@@ -31,63 +31,63 @@ public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         U.warn(log, "Swap space is disabled. To enable use GridFileSwapSpaceSpi.");
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(@Nullable String space) throws GridSpiException {
+    @Override public void clear(@Nullable String space) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public long size(@Nullable String space) throws GridSpiException {
+    @Override public long size(@Nullable String space) throws IgniteSpiException {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long count(@Nullable String space) throws GridSpiException {
+    @Override public long count(@Nullable String space) throws IgniteSpiException {
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public byte[] read(@Nullable String spaceName, GridSwapKey key, GridSwapContext ctx)
-        throws GridSpiException {
+        throws IgniteSpiException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public Map<GridSwapKey, byte[]> readAll(@Nullable String spaceName, Iterable<GridSwapKey> keys,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
+        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void store(@Nullable String spaceName, GridSwapKey key, @Nullable byte[] val,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void storeAll(@Nullable String spaceName, Map<GridSwapKey, byte[]> pairs,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
@@ -97,25 +97,25 @@ public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> partitions(@Nullable String spaceName) throws GridSpiException {
+    @Override public Collection<Integer> partitions(@Nullable String spaceName) throws IgniteSpiException {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
     @Override public <K> GridSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
     }
 
     /** {@inheritDoc} */
     @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
-        @Nullable String spaceName) throws GridSpiException {
+        @Nullable String spaceName) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
     }
 
     /** {@inheritDoc} */
     @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName,
-        int part) throws GridSpiException {
+        int part) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
     }
 

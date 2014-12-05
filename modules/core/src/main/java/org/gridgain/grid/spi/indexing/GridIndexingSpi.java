@@ -55,10 +55,10 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param params Query parameters.
      * @param filters Space name and key filters.
      * @return Query result.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingQueryFilter filters) throws GridSpiException;
+        Collection<Object> params, GridIndexingQueryFilter filters) throws IgniteSpiException;
 
     /**
      * Executes regular query.
@@ -69,11 +69,11 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param type Query return type.
      * @param filters Space name and key filters.
      * @return Queried rows.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName, String qry,
         Collection<Object> params, GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters)
-        throws GridSpiException;
+        throws IgniteSpiException;
 
     /**
      * Executes text query.
@@ -83,10 +83,10 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param type Query return type.
      * @param filters Space name and key filter.
      * @return Queried rows.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable String spaceName, String qry,
-        GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters) throws GridSpiException;
+        GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters) throws IgniteSpiException;
 
     /**
      * Gets size of index for given type or -1 if it is a unknown type.
@@ -94,28 +94,28 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param spaceName Space name.
      * @param desc Type descriptor.
      * @return Objects number.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public long size(@Nullable String spaceName, GridIndexingTypeDescriptor desc) throws GridSpiException;
+    public long size(@Nullable String spaceName, GridIndexingTypeDescriptor desc) throws IgniteSpiException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
      *
      * @param spaceName Space name.
      * @param desc Type descriptor.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor desc) throws GridSpiException;
+    public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor desc) throws IgniteSpiException;
 
     /**
      * Unregisters type and removes all corresponding data.
      *
      * @param spaceName Space name.
      * @param type Type descriptor.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type) throws GridSpiException;
+    public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type) throws IgniteSpiException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
@@ -127,10 +127,10 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param val Value.
      * @param ver Version.
      * @param expirationTime Expiration time or 0 if never expires.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type, GridIndexingEntity<K> key,
-        GridIndexingEntity<V> val, byte[] ver, long expirationTime) throws GridSpiException;
+        GridIndexingEntity<V> val, byte[] ver, long expirationTime) throws IgniteSpiException;
 
     /**
      * Removes index entry by key.
@@ -138,9 +138,9 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param spaceName Space name.
      * @param key Key.
      * @return {@code True} if removed by this operation, {@code false} otherwise.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> key) throws GridSpiException;
+    public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> key) throws IgniteSpiException;
 
     /**
      * Will be called when entry with given key is swapped.
@@ -148,9 +148,9 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param spaceName Space name.
      * @param swapSpaceName Swap space name.
      * @param key Key.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key) throws GridSpiException;
+    public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key) throws IgniteSpiException;
 
     /**
      * Will be called when entry with given key is unswapped.
@@ -159,9 +159,9 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes) throws GridSpiException;
+    public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes) throws IgniteSpiException;
 
     /**
      * Marshaller to be used by SPI.
@@ -174,9 +174,9 @@ public interface GridIndexingSpi extends IgniteSpi {
      * Registers space in this SPI.
      *
      * @param spaceName Space name.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public void registerSpace(String spaceName) throws GridSpiException;
+    public void registerSpace(String spaceName) throws IgniteSpiException;
 
     /**
      * Rebuilds all indexes of given type.

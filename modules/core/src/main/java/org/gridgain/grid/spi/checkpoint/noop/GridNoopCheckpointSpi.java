@@ -28,23 +28,23 @@ public class GridNoopCheckpointSpi extends IgniteSpiAdapter implements GridCheck
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         U.warn(log, "Checkpoints are disabled (to enable configure any GridCheckpointSpi implementation)");
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
+    @Nullable @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite) throws GridSpiException {
+    public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite) throws IgniteSpiException {
         return false;
     }
 

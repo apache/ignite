@@ -35,9 +35,9 @@ abstract class GridH2ResultSetIterator<T> implements GridSpiCloseableIterator<T>
 
     /**
      * @param data Data array.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    protected GridH2ResultSetIterator(ResultSet data) throws GridSpiException {
+    protected GridH2ResultSetIterator(ResultSet data) throws IgniteSpiException {
         this.data = data;
 
         if (data != null) {
@@ -45,7 +45,7 @@ abstract class GridH2ResultSetIterator<T> implements GridSpiCloseableIterator<T>
                 row = new Object[data.getMetaData().getColumnCount()];
             }
             catch (SQLException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
         }
         else

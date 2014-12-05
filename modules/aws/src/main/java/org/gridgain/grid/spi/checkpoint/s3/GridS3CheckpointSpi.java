@@ -238,7 +238,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
 
     /** {@inheritDoc} */
     @SuppressWarnings({"BusyWait"})
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -275,16 +275,16 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
                         U.sleep(200);
                     }
                     catch (GridInterruptedException e) {
-                        throw new GridSpiException("Thread has been interrupted.", e);
+                        throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
             }
             catch (AmazonClientException e) {
                 try {
                     if (!s3.doesBucketExist(bucketName))
-                        throw new GridSpiException("Failed to create bucket: " + bucketName, e);
+                        throw new IgniteSpiException("Failed to create bucket: " + bucketName, e);
                 }
                 catch (AmazonClientException ignored) {
-                    throw new GridSpiException("Failed to create bucket: " + bucketName, e);
+                    throw new IgniteSpiException("Failed to create bucket: " + bucketName, e);
                 }
             }
         }
@@ -313,10 +313,10 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
             }
         }
         catch (AmazonClientException e) {
-            throw new GridSpiException("Failed to read checkpoint bucket: " + bucketName, e);
+            throw new IgniteSpiException("Failed to read checkpoint bucket: " + bucketName, e);
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to marshal/unmarshal objects in bucket: " + bucketName, e);
+            throw new IgniteSpiException("Failed to marshal/unmarshal objects in bucket: " + bucketName, e);
         }
 
         // Track expiration for only those data that are made by this node
@@ -334,7 +334,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         if (timeoutWrk != null) {
             GridUtils.interrupt(timeoutWrk);
             GridUtils.join(timeoutWrk, log);
@@ -348,7 +348,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
+    @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
         assert !F.isEmpty(key);
 
         try {
@@ -361,16 +361,16 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
                 null;
         }
         catch (AmazonClientException e) {
-            throw new GridSpiException("Failed to read checkpoint key: " + key, e);
+            throw new IgniteSpiException("Failed to read checkpoint key: " + key, e);
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to marshal/unmarshal objects in checkpoint key: " + key, e);
+            throw new IgniteSpiException("Failed to marshal/unmarshal objects in checkpoint key: " + key, e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert !F.isEmpty(key);
 
         long expireTime = 0;
@@ -396,11 +396,11 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
             write(data);
         }
         catch (AmazonClientException e) {
-            throw new GridSpiException("Failed to write checkpoint data [key=" + key + ", state=" +
+            throw new IgniteSpiException("Failed to write checkpoint data [key=" + key + ", state=" +
                 Arrays.toString(state) + ']', e);
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to marshal checkpoint data [key=" + key + ", state=" +
+            throw new IgniteSpiException("Failed to marshal checkpoint data [key=" + key + ", state=" +
                 Arrays.toString(state) + ']', e);
         }
 

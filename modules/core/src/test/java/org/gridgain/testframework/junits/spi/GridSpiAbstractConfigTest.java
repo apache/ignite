@@ -87,7 +87,7 @@ public abstract class GridSpiAbstractConfigTest<T extends IgniteSpi> extends Gri
 
                 spi.spiStart(getTestGridName());
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 info("SPI start thrown exception: " + e);
 
                 if (checkExMsg)

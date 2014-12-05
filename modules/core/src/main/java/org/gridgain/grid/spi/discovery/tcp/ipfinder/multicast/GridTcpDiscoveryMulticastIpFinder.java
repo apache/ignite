@@ -221,7 +221,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         // If GRIDGAIN_OVERRIDE_MCAST_GRP system property is set, use its value to override multicast group from
         // configuration. Used for testing purposes.
         String overrideMcastGrp = System.getProperty(GG_OVERRIDE_MCAST_GRP);
@@ -230,16 +230,16 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             mcastGrp = overrideMcastGrp;
 
         if (F.isEmpty(mcastGrp))
-            throw new GridSpiException("Multicast IP address is not specified.");
+            throw new IgniteSpiException("Multicast IP address is not specified.");
 
         if (mcastPort < 0 || mcastPort > 65535)
-            throw new GridSpiException("Invalid multicast port: " + mcastPort);
+            throw new IgniteSpiException("Invalid multicast port: " + mcastPort);
 
         if (resWaitTime <= 0)
-            throw new GridSpiException("Invalid wait time, value greater than zero is expected: " + resWaitTime);
+            throw new IgniteSpiException("Invalid wait time, value greater than zero is expected: " + resWaitTime);
 
         if (addrReqAttempts <= 0)
-            throw new GridSpiException("Invalid number of address request attempts, " +
+            throw new IgniteSpiException("Invalid number of address request attempts, " +
                 "value greater than zero is expected: " + addrReqAttempts);
 
         if (F.isEmpty(getRegisteredAddresses()))
@@ -253,11 +253,11 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             mcastAddr = InetAddress.getByName(mcastGrp);
         }
         catch (UnknownHostException e) {
-            throw new GridSpiException("Unknown multicast group: " + mcastGrp, e);
+            throw new IgniteSpiException("Unknown multicast group: " + mcastGrp, e);
         }
 
         if (!mcastAddr.isMulticastAddress())
-            throw new GridSpiException("Invalid multicast group address: " + mcastAddr);
+            throw new IgniteSpiException("Invalid multicast group address: " + mcastAddr);
 
         Collection<String> locAddrs;
 
@@ -265,7 +265,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
         }
         catch (IOException | GridException e) {
-            throw new GridSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
+            throw new IgniteSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
         }
 
         assert locAddrs != null;
@@ -309,7 +309,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
                 addrSnds.add(new AddressSender(mcastAddr, null, addrs));
             }
             catch (IOException e) {
-                throw new GridSpiException("Failed to create multicast socket [mcastAddr=" + mcastAddr +
+                throw new IgniteSpiException("Failed to create multicast socket [mcastAddr=" + mcastAddr +
                     ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ']', e);
             }
         }
@@ -355,7 +355,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     }
 
     /** {@inheritDoc} */
-    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws GridSpiException {
+    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException {
         super.onSpiContextInitialized(spiCtx);
 
         spiCtx.registerPort(mcastPort, UDP);

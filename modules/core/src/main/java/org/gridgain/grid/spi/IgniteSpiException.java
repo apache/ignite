@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 /**
  * Exception thrown by SPI implementations.
  */
-public class GridSpiException extends GridException {
+public class IgniteSpiException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -23,7 +23,7 @@ public class GridSpiException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridSpiException(String msg) {
+    public IgniteSpiException(String msg) {
         super(msg);
     }
 
@@ -33,7 +33,7 @@ public class GridSpiException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridSpiException(Throwable cause) {
+    public IgniteSpiException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -43,7 +43,7 @@ public class GridSpiException extends GridException {
      * @param msg Error message.
      * @param cause Optional nested message.
      */
-    public GridSpiException(String msg, Throwable cause) {
+    public IgniteSpiException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

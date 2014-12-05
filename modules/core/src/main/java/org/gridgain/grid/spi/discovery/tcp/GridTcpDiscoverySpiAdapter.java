@@ -301,7 +301,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
         ipFinder.onSpiContextInitialized(spiCtx);
@@ -604,9 +604,9 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @return Resolved addresses without duplicates and local address (potentially
      *      empty but never null).
-     * @throws GridSpiException If an error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
      */
-    protected Collection<InetSocketAddress> resolvedAddresses() throws GridSpiException {
+    protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
         List<InetSocketAddress> res = new ArrayList<>();
 
         Collection<InetSocketAddress> addrs;
@@ -618,7 +618,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
 
                 break;
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to get registered addresses from IP finder on start " +
                     "(retrying every 2000 ms).");
             }
@@ -627,7 +627,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
                 U.sleep(2000);
             }
             catch (GridInterruptedException e) {
-                throw new GridSpiException("Thread has been interrupted.", e);
+                throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
 
@@ -660,9 +660,9 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      * port (or 0 port) with {@link #DFLT_PORT}.
      *
      * @return Registered addresses.
-     * @throws GridSpiException If an error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
      */
-    protected Collection<InetSocketAddress> registeredAddresses() throws GridSpiException {
+    protected Collection<InetSocketAddress> registeredAddresses() throws IgniteSpiException {
         Collection<InetSocketAddress> res = new LinkedList<>();
 
         for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
@@ -680,10 +680,10 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      * @param msg Message.
      * @return Error.
      */
-    protected GridSpiException duplicateIdError(GridTcpDiscoveryDuplicateIdMessage msg) {
+    protected IgniteSpiException duplicateIdError(GridTcpDiscoveryDuplicateIdMessage msg) {
         assert msg != null;
 
-        return new GridSpiException("Local node has the same ID as existing node in topology " +
+        return new IgniteSpiException("Local node has the same ID as existing node in topology " +
             "(fix configuration and restart local node) [localNode=" + locNode +
             ", existingNode=" + msg.node() + ']');
     }
@@ -692,10 +692,10 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      * @param msg Message.
      * @return Error.
      */
-    protected GridSpiException authenticationFailedError(GridTcpDiscoveryAuthFailedMessage msg) {
+    protected IgniteSpiException authenticationFailedError(GridTcpDiscoveryAuthFailedMessage msg) {
         assert msg != null;
 
-        return new GridSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+        return new IgniteSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
             msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
     }
 
@@ -703,11 +703,11 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      * @param msg Message.
      * @return Error.
      */
-    protected GridSpiException checkFailedError(GridTcpDiscoveryCheckFailedMessage msg) {
+    protected IgniteSpiException checkFailedError(GridTcpDiscoveryCheckFailedMessage msg) {
         assert msg != null;
 
-        return versionCheckFailed(msg) ? new GridSpiVersionCheckException(msg.error()) :
-            new GridSpiException(msg.error());
+        return versionCheckFailed(msg) ? new IgniteSpiVersionCheckException(msg.error()) :
+            new IgniteSpiException(msg.error());
     }
 
     /**

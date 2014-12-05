@@ -178,7 +178,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             Object obj = ((GridIoMessage)msg).message();
 
             if (obj instanceof GridDistributedTxFinishResponse) {

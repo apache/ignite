@@ -236,7 +236,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(baseDir), "!F.isEmpty(baseDir)");
         assertParameter(maxSparsity >= 0 && maxSparsity < 1, "maxSparsity >= 0 && maxSparsity < 1");
         assertParameter(readStripesNum == -1 || (readStripesNum & (readStripesNum - 1)) == 0,
@@ -268,7 +268,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
             dir = U.resolveWorkDirectory(path, true);
         }
         catch (GridException e) {
-            throw new GridSpiException(e);
+            throw new IgniteSpiException(e);
         }
 
         if (log.isDebugEnabled())
@@ -276,7 +276,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         for (Space space : spaces.values()) {
@@ -298,7 +298,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(@Nullable String spaceName) throws GridSpiException {
+    @Override public void clear(@Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName, false);
 
         if (space == null)
@@ -310,7 +310,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public long size(@Nullable String spaceName) throws GridSpiException {
+    @Override public long size(@Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName, false);
 
         if (space == null)
@@ -320,7 +320,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public long count(@Nullable String spaceName) throws GridSpiException {
+    @Override public long count(@Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName, false);
 
         if (space == null)
@@ -331,7 +331,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] read(@Nullable String spaceName, GridSwapKey key, GridSwapContext ctx)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert key != null;
         assert ctx != null;
 
@@ -349,7 +349,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public Map<GridSwapKey, byte[]> readAll(@Nullable String spaceName, Iterable<GridSwapKey> keys,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         assert keys != null;
         assert ctx != null;
 
@@ -376,7 +376,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         assert key != null;
         assert ctx != null;
 
@@ -395,7 +395,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws GridSpiException {
+        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws IgniteSpiException {
         assert keys != null;
         assert ctx != null;
 
@@ -418,7 +418,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public void store(@Nullable String spaceName, GridSwapKey key, @Nullable byte[] val,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         assert key != null;
         assert ctx != null;
 
@@ -433,7 +433,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public void storeAll(@Nullable String spaceName, Map<GridSwapKey, byte[]> pairs,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         assert pairs != null;
         assert ctx != null;
 
@@ -459,7 +459,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Nullable @Override public Collection<Integer> partitions(@Nullable String spaceName)
-        throws GridSpiException {
+        throws IgniteSpiException {
         Space space = space(spaceName, false);
 
         if (space == null)
@@ -470,7 +470,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Nullable @Override public <K> GridSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
-        GridSwapContext ctx) throws GridSpiException {
+        GridSwapContext ctx) throws IgniteSpiException {
         final Space space = space(spaceName, false);
 
         if (space == null)
@@ -495,7 +495,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Nullable @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
-        @Nullable String spaceName) throws GridSpiException {
+        @Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName, false);
 
         if (space == null)
@@ -506,7 +506,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Nullable @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
-        @Nullable String spaceName, int part) throws GridSpiException {
+        @Nullable String spaceName, int part) throws IgniteSpiException {
         Space space = space(spaceName, false);
 
         if (space == null)
@@ -545,9 +545,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      *
      * @param key Swap key.
      * @return Key bytes.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    private byte[] keyBytes(GridSwapKey key) throws GridSpiException {
+    private byte[] keyBytes(GridSwapKey key) throws IgniteSpiException {
         assert key != null;
 
         byte[] keyBytes = key.keyBytes();
@@ -557,7 +557,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                 keyBytes = marsh.marshal(key.key());
             }
             catch (GridException e) {
-                throw new GridSpiException("Failed to marshal key: " + key.key(), e);
+                throw new IgniteSpiException("Failed to marshal key: " + key.key(), e);
             }
 
             key.keyBytes(keyBytes);
@@ -585,9 +585,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * @param name Space name.
      * @param create Whether to create space if it doesn't exist.
      * @return Space.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    @Nullable private Space space(@Nullable String name, boolean create) throws GridSpiException {
+    @Nullable private Space space(@Nullable String name, boolean create) throws IgniteSpiException {
         String masked = name != null ? name : DFLT_SPACE_NAME;
 
         assert masked != null;
@@ -613,18 +613,18 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * Validates space name.
      *
      * @param name Space name.
-     * @throws GridSpiException If name is invalid.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If name is invalid.
      */
-    private void validateName(@Nullable String name) throws GridSpiException {
+    private void validateName(@Nullable String name) throws IgniteSpiException {
         if (name == null)
             return;
 
         if (name.isEmpty())
-            throw new GridSpiException("Space name cannot be empty: " + name);
+            throw new IgniteSpiException("Space name cannot be empty: " + name);
         else if (DFLT_SPACE_NAME.equalsIgnoreCase(name))
-            throw new GridSpiException("Space name is reserved for default space: " + name);
+            throw new IgniteSpiException("Space name is reserved for default space: " + name);
         else if (name.contains("/") || name.contains("\\"))
-            throw new GridSpiException("Space name contains invalid characters: " + name);
+            throw new IgniteSpiException("Space name contains invalid characters: " + name);
     }
 
     /** {@inheritDoc} */
@@ -673,10 +673,10 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * @param space Space.
          * @return Value.
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
         @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-        @Nullable public synchronized byte[] value(Space space) throws GridSpiException {
+        @Nullable public synchronized byte[] value(Space space) throws IgniteSpiException {
             byte[] v = val;
 
             if (v == null) { // Read value from file.
@@ -703,9 +703,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * @param ch File channel.
          * @return Bytes.
-         * @throws GridSpiException if failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException if failed.
          */
-        @Nullable byte[] readValue(StripedFileChannel ch) throws GridSpiException {
+        @Nullable byte[] readValue(StripedFileChannel ch) throws IgniteSpiException {
             byte[] v = new byte[len];
 
             int res = 0;
@@ -717,7 +717,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                 assert idx == DELETED;
             }
             catch (IOException e) {
-                throw new GridSpiException("Failed to read value.", e);
+                throw new IgniteSpiException("Failed to read value.", e);
             }
 
             if (res < len)
@@ -798,9 +798,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * Adds to queue.
          *
          * @param val Swap value.
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
-        public void add(SwapValue val) throws GridSpiException {
+        public void add(SwapValue val) throws IgniteSpiException {
             lock.lock();
 
             try {
@@ -815,7 +815,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                     mayTake.signalAll();
             }
             catch (InterruptedException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
             finally {
                 lock.unlock();
@@ -1404,9 +1404,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * Initializes space.
          *
-         * @throws GridSpiException If initialization failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If initialization failed.
          */
-        public void initialize() throws GridSpiException {
+        public void initialize() throws IgniteSpiException {
             if (initializer.succeeded())
                 return;
 
@@ -1509,7 +1509,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                 });
             }
             catch (GridException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
         }
 
@@ -1534,9 +1534,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * Clears space.
          *
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
-        public void clear() throws GridSpiException {
+        public void clear() throws IgniteSpiException {
             Iterator<Map.Entry<GridSwapKey, byte[]>> iter = entriesIterator();
 
             while (iter.hasNext())
@@ -1564,9 +1564,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          *
          * @param key Key.
          * @param val Value.
-         * @throws GridSpiException In case of error.
+         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
          */
-        public void store(final GridSwapKey key, @Nullable final byte[] val) throws GridSpiException {
+        public void store(final GridSwapKey key, @Nullable final byte[] val) throws IgniteSpiException {
             assert key != null;
 
             final ConcurrentMap<GridSwapKey, SwapValue> part = partition(key.partition(), true);
@@ -1608,9 +1608,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          *
          * @param key Key.
          * @return Value.
-         * @throws GridSpiException In case of error.
+         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
          */
-        @Nullable public byte[] read(GridSwapKey key) throws GridSpiException {
+        @Nullable public byte[] read(GridSwapKey key) throws IgniteSpiException {
             assert key != null;
 
             final Map<GridSwapKey, SwapValue> part = partition(key.partition(), false);
@@ -1632,9 +1632,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @param key Key.
          * @param read If value has to be read.
          * @return Value.
-         * @throws GridSpiException In case of error.
+         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
          */
-        @Nullable public byte[] remove(GridSwapKey key, boolean read) throws GridSpiException {
+        @Nullable public byte[] remove(GridSwapKey key, boolean read) throws IgniteSpiException {
             assert key != null;
 
             final Map<GridSwapKey, SwapValue> part = partition(key.partition(), false);
@@ -1796,7 +1796,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                         try {
                             bytes = entry.getValue().value(Space.this);
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             throw new GridRuntimeException(e);
                         }
 
@@ -1830,7 +1830,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                     try {
                         Space.this.remove(last.getKey(), false);
                     }
-                    catch (GridSpiException e) {
+                    catch (IgniteSpiException e) {
                         throw new GridRuntimeException(e);
                     }
                     finally {

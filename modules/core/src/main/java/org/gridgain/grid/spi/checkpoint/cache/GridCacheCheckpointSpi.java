@@ -111,7 +111,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(cacheName), "!F.isEmpty(cacheName)");
 
         // Start SPI start stopwatch.
@@ -128,7 +128,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             /** {@inheritDoc} */
             @Override public void onEvent(IgniteEvent evt) {
@@ -151,7 +151,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Ack ok stop.
@@ -170,20 +170,20 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
+    @Nullable @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
         assert key != null;
 
         try {
             return getSpiContext().get(cacheName, key);
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to load checkpoint data [key=" + key + ']', e);
+            throw new IgniteSpiException("Failed to load checkpoint data [key=" + key + ']', e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert key != null;
         assert timeout >= 0;
 
@@ -197,7 +197,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
                 return getSpiContext().putIfAbsent(cacheName, key, state, timeout) == null;
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to save checkpoint data [key=" + key +
+            throw new IgniteSpiException("Failed to save checkpoint data [key=" + key +
                 ", stateSize=" + state.length + ", timeout=" + timeout + ']', e);
         }
     }

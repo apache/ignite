@@ -109,12 +109,12 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
      * Initializes folder to work with.
      *
      * @return Folder.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private File initFolder() throws GridSpiException {
+    private File initFolder() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
             if (path == null)
-                throw new GridSpiException("Shared file system path is null " +
+                throw new IgniteSpiException("Shared file system path is null " +
                     "(it should be configured via setPath(..) configuration property).");
 
             if (path.equals(DFLT_PATH) && warnGuard.compareAndSet(false, true))
@@ -130,17 +130,17 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
                         tmp = U.resolveWorkDirectory(path, false);
                     }
                     catch (GridException e) {
-                        throw new GridSpiException("Failed to resolve directory [path=" + path +
+                        throw new IgniteSpiException("Failed to resolve directory [path=" + path +
                             ", exception=" + e.getMessage() + ']');
                     }
                 }
 
                 if (!tmp.isDirectory())
-                    throw new GridSpiException("Failed to initialize shared file system path " +
+                    throw new IgniteSpiException("Failed to initialize shared file system path " +
                         "(path must point to folder): " + path);
 
                 if (!tmp.canRead() || !tmp.canWrite())
-                    throw new GridSpiException("Failed to initialize shared file system path " +
+                    throw new IgniteSpiException("Failed to initialize shared file system path " +
                         "(path must be readable and writable): " + path);
 
                 folder = tmp;
@@ -154,18 +154,18 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
                 U.await(initLatch);
             }
             catch (GridInterruptedException e) {
-                throw new GridSpiException("Thread has been interrupted.", e);
+                throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 
             if (folder == null)
-                throw new GridSpiException("Failed to initialize shared file system folder (check logs for errors).");
+                throw new IgniteSpiException("Failed to initialize shared file system folder (check logs for errors).");
         }
 
         return folder;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws GridSpiException {
+    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         initFolder();
 
         Collection<InetSocketAddress> addrs = new LinkedList<>();
@@ -198,7 +198,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
     }
 
     /** {@inheritDoc} */
-    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         initFolder();
@@ -211,12 +211,12 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
             }
         }
         catch (IOException e) {
-            throw new GridSpiException("Failed to create file.", e);
+            throw new IgniteSpiException("Failed to create file.", e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         initFolder();
@@ -229,7 +229,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
             }
         }
         catch (SecurityException e) {
-            throw new GridSpiException("Failed to delete file.", e);
+            throw new IgniteSpiException("Failed to delete file.", e);
         }
     }
 

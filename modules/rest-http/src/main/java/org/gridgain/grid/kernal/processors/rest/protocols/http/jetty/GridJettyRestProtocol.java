@@ -129,7 +129,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             cfgUrl = U.resolveGridGainUrl(jettyPath);
 
             if (cfgUrl == null)
-                throw new GridSpiException("Invalid Jetty configuration file: " + jettyPath);
+                throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);
             else if (log.isDebugEnabled())
                 log.debug("Jetty configuration file: " + cfgUrl);
         }
@@ -285,16 +285,16 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 cfg = new XmlConfiguration(cfgUrl);
             }
             catch (FileNotFoundException e) {
-                throw new GridSpiException("Failed to find configuration file: " + cfgUrl, e);
+                throw new IgniteSpiException("Failed to find configuration file: " + cfgUrl, e);
             }
             catch (SAXException e) {
-                throw new GridSpiException("Failed to parse configuration file: " + cfgUrl, e);
+                throw new IgniteSpiException("Failed to parse configuration file: " + cfgUrl, e);
             }
             catch (IOException e) {
-                throw new GridSpiException("Failed to load configuration file: " + cfgUrl, e);
+                throw new IgniteSpiException("Failed to load configuration file: " + cfgUrl, e);
             }
             catch (Exception e) {
-                throw new GridSpiException("Failed to start HTTP server with configuration file: " + cfgUrl, e);
+                throw new IgniteSpiException("Failed to start HTTP server with configuration file: " + cfgUrl, e);
             }
 
             try {

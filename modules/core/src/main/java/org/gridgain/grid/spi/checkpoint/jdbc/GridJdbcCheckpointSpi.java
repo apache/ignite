@@ -425,7 +425,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -470,7 +470,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
                     U.rollbackConnection(conn, log);
 
                     if(++errCnt >= retryNum)
-                        throw new GridSpiException("Failed to create checkpoint table: " + tblName, e);
+                        throw new IgniteSpiException("Failed to create checkpoint table: " + tblName, e);
 
                     if (log.isDebugEnabled()) {
                         log.debug("Failed to create checkpoint table as it may already exist (will try again): " +
@@ -480,7 +480,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
             }
         }
         catch (SQLException e) {
-            throw new GridSpiException("Failed to start jdbc checkpoint SPI: " + tblName, e);
+            throw new IgniteSpiException("Failed to start jdbc checkpoint SPI: " + tblName, e);
         }
         finally {
             U.close(conn, log);
@@ -492,7 +492,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         // Ack ok stop.
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -523,7 +523,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
+    @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
         Connection conn = null;
 
         PreparedStatement st = null;
@@ -543,7 +543,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
             return rs.next() ? rs.getBytes(1) : null;
         }
         catch (SQLException e) {
-            throw new GridSpiException("Failed to load checkpoint [tblName=" + tblName + ", key=" + key + ']', e);
+            throw new IgniteSpiException("Failed to load checkpoint [tblName=" + tblName + ", key=" + key + ']', e);
         }
         finally {
             U.close(rs, log);
@@ -595,7 +595,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
 
     /** {@inheritDoc} */
     @Override public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite)
-        throws GridSpiException {
+        throws IgniteSpiException {
         Time expTime = null;
 
         if (timeout != NON_EXPIRABLE_TIMEOUT)
@@ -610,7 +610,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
 
             while (true) {
                 if (errCnt >= retryNum) {
-                    throw new GridSpiException("Failed to save checkpoint after pre-configured number of " +
+                    throw new IgniteSpiException("Failed to save checkpoint after pre-configured number of " +
                         "retries [tblName=" + tblName + ", key=" + key + ", retryNum=" + retryNum + ']');
                 }
 
@@ -646,7 +646,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
                     U.rollbackConnection(conn, log);
 
                     if(++errCnt >= retryNum) {
-                        throw new GridSpiException("Failed to save checkpoint [tblName=" + tblName + ", key=" + key +
+                        throw new IgniteSpiException("Failed to save checkpoint [tblName=" + tblName + ", key=" + key +
                             ']', e);
                     }
 
@@ -656,7 +656,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
             }
         }
         catch (SQLException e) {
-            throw new GridSpiException("Failed to save checkpoint [tblName=" + tblName +", key=" + key + ']', e);
+            throw new IgniteSpiException("Failed to save checkpoint [tblName=" + tblName +", key=" + key + ']', e);
         }
         finally {
             U.close(conn, log);

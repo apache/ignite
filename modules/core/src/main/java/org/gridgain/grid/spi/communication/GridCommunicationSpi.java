@@ -50,11 +50,11 @@ public interface GridCommunicationSpi<T extends Serializable> extends IgniteSpi 
      *
      * @param destNode Destination node.
      * @param msg Message to send.
-     * @throws GridSpiException Thrown in case of any error during sending the message.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error during sending the message.
      *      Note that this is not guaranteed that failed communication will result
      *      in thrown exception as this is dependant on SPI implementation.
      */
-    public void sendMessage(ClusterNode destNode, T msg) throws GridSpiException;
+    public void sendMessage(ClusterNode destNode, T msg) throws IgniteSpiException;
 
     /**
      * Gets sent messages count.

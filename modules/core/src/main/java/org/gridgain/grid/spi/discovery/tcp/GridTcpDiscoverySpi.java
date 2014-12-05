@@ -643,7 +643,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         spiStart0(false);
     }
 
@@ -651,9 +651,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * Starts or restarts SPI after stop (to reconnect).
      *
      * @param restart {@code True} if SPI is restarted after stop.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private void spiStart0(boolean restart) throws GridSpiException {
+    private void spiStart0(boolean restart) throws IgniteSpiException {
         if (!restart)
             // It is initial start.
             onSpiStart();
@@ -664,7 +664,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
         if (debugMode) {
             if (!log.isInfoEnabled())
-                throw new GridSpiException("Info log level should be enabled for TCP discovery to work " +
+                throw new IgniteSpiException("Info log level should be enabled for TCP discovery to work " +
                     "in debug mode.");
 
             debugLog = new ConcurrentLinkedDeque<>();
@@ -691,7 +691,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             addrs = U.resolveLocalAddresses(locHost);
         }
         catch (IOException | GridException e) {
-            throw new GridSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
+            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
         }
 
         locNode = new GridTcpDiscoveryNode(
@@ -711,7 +711,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 locNodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to resolve local host to addresses: " + locHost, e);
+            throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
         }
 
         locNode.setAttributes(locNodeAttrs);
@@ -732,7 +732,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             registerLocalNodeAddress();
         else {
             if (F.isEmpty(ipFinder.getRegisteredAddresses()))
-                throw new GridSpiException("Non-shared IP finder must have IP addresses specified in " +
+                throw new IgniteSpiException("Non-shared IP finder must have IP addresses specified in " +
                     "GridTcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
                     "(specify list of IP addresses in configuration).");
 
@@ -769,10 +769,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /**
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     @SuppressWarnings("BusyWait")
-    private void registerLocalNodeAddress() throws GridSpiException {
+    private void registerLocalNodeAddress() throws IgniteSpiException {
         // Make sure address registration succeeded.
         while (true) {
             try {
@@ -782,10 +782,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 break;
             }
             catch (IllegalStateException e) {
-                throw new GridSpiException("Failed to register local node address with IP finder: " +
+                throw new IgniteSpiException("Failed to register local node address with IP finder: " +
                     locNode.socketAddresses(), e);
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
                     "(retrying every 2000 ms).");
             }
@@ -794,15 +794,15 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 U.sleep(2000);
             }
             catch (GridInterruptedException e) {
-                throw new GridSpiException("Thread has been interrupted.", e);
+                throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
     }
 
     /**
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private void onSpiStart() throws GridSpiException {
+    private void onSpiStart() throws IgniteSpiException {
         startStopwatch();
 
         assertParameter(ipFinder != null, "ipFinder != null");
@@ -825,7 +825,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             locHost = U.resolveLocalHost(locAddr);
         }
         catch (IOException e) {
-            throw new GridSpiException("Unknown local address: " + locAddr, e);
+            throw new IgniteSpiException("Unknown local address: " + locAddr, e);
         }
 
         if (log.isDebugEnabled()) {
@@ -864,7 +864,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override public void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
         ctxInitLatch.countDown();
@@ -893,7 +893,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         spiStop0(false);
     }
 
@@ -901,9 +901,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * Stops SPI finally or stops SPI for restart.
      *
      * @param disconnect {@code True} if SPI is being disconnected.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    private void spiStop0(boolean disconnect) throws GridSpiException {
+    private void spiStop0(boolean disconnect) throws IgniteSpiException {
         if (ctxInitLatch.getCount() > 0)
             // Safety.
             ctxInitLatch.countDown();
@@ -1056,10 +1056,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /**
-     * @throws GridSpiException If any error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
      * @return {@code true} if IP finder contains local address.
      */
-    private boolean ipFinderHasLocalAddress() throws GridSpiException {
+    private boolean ipFinderHasLocalAddress() throws IgniteSpiException {
         for (InetSocketAddress locAddr : locNodeAddrs) {
             for (InetSocketAddress addr : registeredAddresses())
                 try {
@@ -1149,7 +1149,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param addr Address of the node.
      * @return ID of the remote node if node alive.
-     * @throws GridSpiException If an error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
         throws GridException {
@@ -1228,7 +1228,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void disconnect() throws GridSpiException {
+    @Override public void disconnect() throws IgniteSpiException {
         spiStop0(true);
     }
 
@@ -1240,9 +1240,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * Tries to join this node to topology.
      *
-     * @throws GridSpiException If any error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
      */
-    private void joinTopology() throws GridSpiException {
+    private void joinTopology() throws IgniteSpiException {
         synchronized (mux) {
             assert spiState == CONNECTING || spiState == DISCONNECTED;
 
@@ -1265,7 +1265,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     GridSecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
 
                     if (subj == null)
-                        throw new GridSpiException("Authentication failed for local node: " + locNode.id());
+                        throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
 
                     Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
@@ -1275,7 +1275,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     locNode.setAttributes(attrs);
                 }
                 catch (GridException e) {
-                    throw new GridSpiException("Failed to authenticate local node (will shutdown local node).", e);
+                    throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
                 }
 
                 locNode.order(1);
@@ -1319,7 +1319,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     catch (InterruptedException ignored) {
                         Thread.currentThread().interrupt();
 
-                        throw new GridSpiException("Thread has been interrupted.");
+                        throw new IgniteSpiException("Thread has been interrupted.");
                     }
                 }
 
@@ -1340,7 +1340,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                     String secondNode = locHostLoopback ? "remote" : "local";
 
-                    throw new GridSpiException("Failed to add node to topology because " + firstNode +
+                    throw new IgniteSpiException("Failed to add node to topology because " + firstNode +
                         " node is configured to use loopback address, but " + secondNode + " node is not " +
                         "(consider changing 'localAddress' configuration parameter) " +
                         "[locNodeAddrs=" + U.addressesAsString(locNode) + ", rmtNodeAddrs=" +
@@ -1393,10 +1393,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * sent to first node connection succeeded to.
      *
      * @return {@code true} if send succeeded.
-     * @throws GridSpiException If any error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean sendJoinRequestMessage() throws GridSpiException {
+    private boolean sendJoinRequestMessage() throws IgniteSpiException {
         GridTcpDiscoveryAbstractMessage joinReq = new GridTcpDiscoveryJoinRequestMessage(locNode,
             exchange.collect(locNodeId));
 
@@ -1453,7 +1453,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             break;
                     }
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     if (errs == null)
                         errs = new GridException("Multiple connection attempts failed.");
 
@@ -1478,7 +1478,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     U.sleep(2000);
                 }
                 catch (GridInterruptedException e) {
-                    throw new GridSpiException("Thread has been interrupted.", e);
+                    throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
             else if (!ipFinder.isShared() && !ipFinderHasLocAddr) {
@@ -1491,7 +1491,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     if (noResStart == 0)
                         noResStart = U.currentTimeMillis();
                     else if (U.currentTimeMillis() - noResStart > joinTimeout)
-                        throw new GridSpiException(
+                        throw new IgniteSpiException(
                             "Failed to connect to any address from IP finder within join timeout " +
                                 "(make sure IP finder addresses are correct, and operating system firewalls are disabled " +
                                 "on all host machines, or consider increasing 'joinTimeout' configuration property): " +
@@ -1502,7 +1502,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     U.sleep(2000);
                 }
                 catch (GridInterruptedException e) {
-                    throw new GridSpiException("Thread has been interrupted.", e);
+                    throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
             else
@@ -1518,10 +1518,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @param msg Message to send.
      * @param addr Address to send message to.
      * @return Response read from the recipient or {@code null} if no response is supposed.
-     * @throws GridSpiException If an error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
      */
     @Nullable private Integer sendMessageDirectly(GridTcpDiscoveryAbstractMessage msg, InetSocketAddress addr)
-        throws GridSpiException {
+        throws IgniteSpiException {
         assert msg != null;
         assert addr != null;
 
@@ -1637,7 +1637,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             return RES_OK;
         }
 
-        throw new GridSpiException(
+        throw new IgniteSpiException(
             "Failed to send message to address [addr=" + addr + ", msg=" + msg + ']',
             U.exceptionWithSuppressed("Failed to send message to address " +
                 "[addr=" + addr + ", msg=" + msg + ']', errs));
@@ -1647,9 +1647,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
-     * @throws GridSpiException If marshalling failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If marshalling failed.
      */
-    private void marshalCredentials(GridTcpDiscoveryNode node) throws GridSpiException {
+    private void marshalCredentials(GridTcpDiscoveryNode node) throws IgniteSpiException {
         try {
             // Use security-unsafe getter.
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
@@ -1660,7 +1660,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             node.setAttributes(attrs);
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to marshal node security credentials: " + node.id(), e);
+            throw new IgniteSpiException("Failed to marshal node security credentials: " + node.id(), e);
         }
     }
 
@@ -1669,9 +1669,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param node Node to unmarshall credentials for.
      * @return Security credentials.
-     * @throws GridSpiException If unmarshal fails.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If unmarshal fails.
      */
-    private GridSecurityCredentials unmarshalCredentials(GridTcpDiscoveryNode node) throws GridSpiException {
+    private GridSecurityCredentials unmarshalCredentials(GridTcpDiscoveryNode node) throws IgniteSpiException {
         try {
             byte[] credBytes = (byte[])node.getAttributes().get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
@@ -1681,7 +1681,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             return marsh.unmarshal(credBytes, null);
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to unmarshal node security credentials: " + node.id(), e);
+            throw new IgniteSpiException("Failed to unmarshal node security credentials: " + node.id(), e);
         }
     }
 
@@ -2385,7 +2385,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         log.debug("Registered missing addresses in IP finder: " + missingAddrs);
                 }
             }
-            catch (GridSpiException e) {
+            catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to clean IP finder up.");
             }
         }
@@ -3019,7 +3019,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         trySendMessageDirectly(node, new GridTcpDiscoveryLoopbackProblemMessage(
                             locNodeId, locNode.addresses(), locNode.hostNames()));
                     }
-                    catch (GridSpiException e) {
+                    catch (IgniteSpiException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send loopback problem message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3048,7 +3048,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             trySendMessageDirectly(node, new GridTcpDiscoveryDuplicateIdMessage(locNodeId,
                                 existingNode));
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send duplicate ID message to node " +
                                     "[node=" + node + ", existingNode=" + existingNode +
@@ -3091,7 +3091,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         try {
                             trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send unauthenticated message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3118,7 +3118,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             try {
                                 trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
                             }
-                            catch (GridSpiException e) {
+                            catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to send unauthenticated message to node " +
                                         "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3173,7 +3173,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         trySendMessageDirectly(node,
                             new GridTcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
                     }
-                    catch (GridSpiException e) {
+                    catch (IgniteSpiException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send hash ID resolver validation failed message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3223,7 +3223,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             trySendMessageDirectly(node,
                                 new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3262,7 +3262,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             trySendMessageDirectly(node,
                                 new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3322,7 +3322,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             trySendMessageDirectly(node,
                                 new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3363,7 +3363,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         trySendMessageDirectly(node,
                             new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                     }
-                    catch (GridSpiException e) {
+                    catch (IgniteSpiException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send marshaller check failed message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3395,15 +3395,15 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          *
          * @param node Node to send message to.
          * @param msg Message.
-         * @throws GridSpiException Last failure if all attempts failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException Last failure if all attempts failed.
          */
         private void trySendMessageDirectly(GridTcpDiscoveryNode node, GridTcpDiscoveryAbstractMessage msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             if (node.isClient()) {
                 GridTcpDiscoveryNode routerNode = ring.node(node.clientRouterNodeId());
 
                 if (routerNode == null)
-                    throw new GridSpiException("Router node for client does not exist: " + node);
+                    throw new IgniteSpiException("Router node for client does not exist: " + node);
 
                 assert !routerNode.isClient();
 
@@ -3412,7 +3412,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 return;
             }
 
-            GridSpiException ex = null;
+            IgniteSpiException ex = null;
 
             for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
                 try {
@@ -3422,7 +3422,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                     break;
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     ex = e;
                 }
             }
@@ -3595,7 +3595,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             try {
                                 trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
                             }
-                            catch (GridSpiException e) {
+                            catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to send unauthenticated message to node " +
                                         "[node=" + node + ", err=" + e.getMessage() + ']');
@@ -3793,7 +3793,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     if (ipFinder.isShared() && locNodeCoord)
                         ipFinder.registerAddresses(node.socketAddresses());
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to register new node address [node=" + node +
                             ", err=" + e.getMessage() + ']');
@@ -3848,7 +3848,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         try {
                             ipFinder.unregisterAddresses(locNode.socketAddresses());
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             U.error(log, "Failed to unregister local node address from IP finder.", e);
                         }
                     }
@@ -3923,7 +3923,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         try {
                             ipFinder.unregisterAddresses(leftNode.socketAddresses());
                         }
-                        catch (GridSpiException ignored) {
+                        catch (IgniteSpiException ignored) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to unregister left node address: " + leftNode);
                         }
@@ -4095,7 +4095,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         try {
                             ipFinder.unregisterAddresses(node.socketAddresses());
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to unregister failed node address [node=" + node +
                                     ", err=" + e.getMessage() + ']');
@@ -4193,7 +4193,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 log.debug("Responded to status check message " +
                                     "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
                         }
-                        catch (GridSpiException e) {
+                        catch (IgniteSpiException e) {
                             if (e.hasCause(SocketException.class)) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("Failed to respond to status check message (connection refused) " +
@@ -4429,9 +4429,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /**
          * Constructor.
          *
-         * @throws GridSpiException In case of error.
+         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
          */
-        TcpServer() throws GridSpiException {
+        TcpServer() throws IgniteSpiException {
             super(gridName, "tcp-disco-srvr", log);
 
             setPriority(threadPri);
@@ -4449,7 +4449,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 "[port=" + port + ", localHost=" + locHost + ']');
                     }
                     else {
-                        throw new GridSpiException("Failed to bind TCP server socket (possibly all ports in range " +
+                        throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
                             "are in use) [firstPort=" + locPort + ", lastPort=" + (locPort + locPortRange - 1) +
                             ", addr=" + locHost + ']', e);
                     }

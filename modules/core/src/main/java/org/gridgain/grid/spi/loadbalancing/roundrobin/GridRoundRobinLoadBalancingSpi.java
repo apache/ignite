@@ -211,7 +211,7 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         startStopwatch();
 
         if (log.isDebugEnabled())
@@ -227,7 +227,7 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         balancer = null;
 
         perTaskBalancers.clear();
@@ -240,12 +240,12 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         if (!isPerTask)
             balancer.onContextInitialized(spiCtx);
         else {
             if (!getSpiContext().isEventRecordable(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED))
-                throw new GridSpiException("Required event types are disabled: " +
+                throw new IgniteSpiException("Required event types are disabled: " +
                     U.gridEventName(EVT_TASK_FAILED) + ", " +
                     U.gridEventName(EVT_TASK_FINISHED) + ", " +
                     U.gridEventName(EVT_JOB_MAPPED));

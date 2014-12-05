@@ -429,8 +429,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     cfg.setRestEnabled(false);
 
                     cfg.setDiscoverySpi(new GridTcpDiscoverySpi() {
-                        @Override public void spiStart(String gridName) throws GridSpiException {
-                            throw new GridSpiException("This SPI will never start.");
+                        @Override public void spiStart(String gridName) throws IgniteSpiException {
+                            throw new IgniteSpiException("This SPI will never start.");
                         }
                     });
 
@@ -547,7 +547,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws GridSpiException {
+        @Override public void spiStart(String gridName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 
@@ -557,7 +557,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException {
+        @Override public void spiStop() throws IgniteSpiException {
             // Ack stop.
             if (log.isInfoEnabled())
                 log.info(stopInfo());
@@ -585,7 +585,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws GridSpiException {
+        @Override public void spiStart(String gridName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 
@@ -595,7 +595,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException {
+        @Override public void spiStop() throws IgniteSpiException {
             // Ack stop.
             if (log.isInfoEnabled())
                 log.info(stopInfo());

@@ -244,7 +244,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws GridSpiException {
+        @Override public void spiStart(String gridName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 
@@ -254,7 +254,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException {
+        @Override public void spiStop() throws IgniteSpiException {
             // Ack stop.
             if (log.isInfoEnabled())
                 log.info(stopInfo());

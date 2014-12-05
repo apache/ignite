@@ -60,7 +60,7 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
     private volatile GridDeploymentListener lsnr;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -71,7 +71,7 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         for (ClassLoader ldr : ldrRsrcs.descendingKeySet())
@@ -139,7 +139,7 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws GridSpiException {
+    @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
         assert ldr != null;
         assert rsrc != null;
 
@@ -199,12 +199,12 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
      * @param ldrRsrcs Class loader resources.
      * @param cls Registered classes collection.
      * @return Map of new resources added for registered class loader.
-     * @throws GridSpiException If resource already registered. Exception thrown
+     * @throws org.gridgain.grid.spi.IgniteSpiException If resource already registered. Exception thrown
      * if registered resources conflicts with rule when all task classes must be
      * annotated with different task names.
      */
     @Nullable private Map<String, String> addResource(ClassLoader ldr, ConcurrentMap<String, String> ldrRsrcs,
-        Class<?> cls) throws GridSpiException {
+        Class<?> cls) throws IgniteSpiException {
         assert ldr != null;
         assert ldrRsrcs != null;
         assert cls != null;
@@ -239,7 +239,7 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
 
             if (oldCls != null) {
                 if (!oldCls.equals(entry.getValue()))
-                    throw new GridSpiException("Failed to register resources with given task name " +
+                    throw new IgniteSpiException("Failed to register resources with given task name " +
                         "(found another class with same task name in the same class loader) " +
                         "[taskName=" + entry.getKey() + ", existingCls=" + oldCls +
                         ", newCls=" + entry.getValue() + ", ldr=" + ldr + ']');

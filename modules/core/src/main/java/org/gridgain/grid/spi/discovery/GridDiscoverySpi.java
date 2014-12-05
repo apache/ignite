@@ -110,9 +110,9 @@ public interface GridDiscoverySpi extends IgniteSpi {
      * {@link #spiStop()} with accounting that it is not a full stop,
      * but disconnect due to segmentation.
      *
-     * @throws GridSpiException If any error occurs.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
      */
-    public void disconnect() throws GridSpiException;
+    public void disconnect() throws IgniteSpiException;
 
     /**
      * Sets discovery SPI node authenticator. This method is called before SPI start() method.

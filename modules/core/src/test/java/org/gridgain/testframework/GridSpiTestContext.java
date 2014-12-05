@@ -249,7 +249,7 @@ public class GridSpiTestContext implements GridSpiContext {
 
     /** {@inheritDoc} */
     @Override public void send(ClusterNode node, Serializable msg, String topic)
-        throws GridSpiException {
+        throws IgniteSpiException {
         sentMsgs.put(node, msg);
     }
 

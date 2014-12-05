@@ -142,7 +142,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         try {
             return getSpi().read(spaceName, key, context(ldr));
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to read from swap space [space=" + spaceName + ", key=" + key + ']', e);
         }
     }
@@ -181,7 +181,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         try {
             getSpi().store(spaceName, key, val, context(ldr));
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to write to swap space [space=" + spaceName + ", key=" + key +
                 ", valLen=" + val.length + ']', e);
         }
@@ -234,7 +234,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         try {
             getSpi().remove(spaceName, key, c, context(ldr));
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to remove from swap space [space=" + spaceName + ", key=" + key + ']', e);
         }
     }
@@ -257,7 +257,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         try {
             getSpi().removeAll(spaceName, keys, c, context(ldr));
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to remove from swap space [space=" + spaceName + ", " +
                 "keysCnt=" + keys.size() + ']', e);
         }
@@ -292,7 +292,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         try {
             return getSpi().size(spaceName);
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to get swap size for space: " + spaceName, e);
         }
     }
@@ -308,7 +308,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         try {
             return getSpi().count(spaceName);
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to get swap keys count for space: " + spaceName, e);
         }
     }
@@ -321,7 +321,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         try {
             getSpi().clear(spaceName);
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to clear swap space [space=" + spaceName + ']', e);
         }
     }
@@ -331,7 +331,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      *
      * @param spaceName Space name.
      * @return Iterator over space entries or {@code null} if space is unknown.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
         throws GridException {
@@ -340,7 +340,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
 
             return it == null ? null : new GridSpiCloseableIteratorWrapper<>(it);
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
         }
     }
@@ -354,7 +354,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
             return it == null ? new GridEmptyCloseableIterator<Map.Entry<byte[], byte[]>>() :
                 new GridSpiCloseableIteratorWrapper<>(it);
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
         }
     }
@@ -365,7 +365,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param spaceName Space name.
      * @param ldr Class loader.
      * @return Iterator over space entries or {@code null} if space is unknown.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     @Nullable public <K> GridCloseableIterator<K> keysIterator(@Nullable String spaceName,
         @Nullable ClassLoader ldr) throws GridException {
@@ -374,7 +374,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
 
             return it == null ? null : new GridSpiCloseableIteratorWrapper<>(it);
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
         }
     }

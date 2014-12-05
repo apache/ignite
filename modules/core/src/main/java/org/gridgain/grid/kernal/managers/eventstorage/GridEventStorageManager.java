@@ -255,7 +255,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                 try {
                     getSpi().record(evt);
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     U.error(log, "Failed to record event: " + evt, e);
                 }
 

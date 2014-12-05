@@ -1531,7 +1531,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     try {
                         getSpi().disconnect();
                     }
-                    catch (GridSpiException e) {
+                    catch (IgniteSpiException e) {
                         U.error(log, "Failed to disconnect discovery SPI.", e);
                     }
 
@@ -1545,7 +1545,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     try {
                         getSpi().disconnect();
                     }
-                    catch (GridSpiException e) {
+                    catch (IgniteSpiException e) {
                         U.error(log, "Failed to disconnect discovery SPI.", e);
                     }
 

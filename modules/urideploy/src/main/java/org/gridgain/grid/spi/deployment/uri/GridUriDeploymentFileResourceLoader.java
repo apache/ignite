@@ -43,11 +43,11 @@ class GridUriDeploymentFileResourceLoader {
      * @param ignoreUnknownRsrc Whether unresolved classes should be
      *      ignored or not.
      * @return Loaded class.
-     * @throws GridSpiException If class could not be loaded and
+     * @throws org.gridgain.grid.spi.IgniteSpiException If class could not be loaded and
      *      {@code ignoreUnknownRsrc} parameter is {@code true}.
      */
     @SuppressWarnings("unchecked")
-    Class<? extends ComputeTask<?, ?>> createResource(String fileName, boolean ignoreUnknownRsrc) throws GridSpiException {
+    Class<? extends ComputeTask<?, ?>> createResource(String fileName, boolean ignoreUnknownRsrc) throws IgniteSpiException {
         if (scanPathDir.isDirectory())
             fileName = fileName.substring(scanPathDir.getAbsolutePath().length() + 1);
 
@@ -68,7 +68,7 @@ class GridUriDeploymentFileResourceLoader {
                     // No-op.
                 }
                 else
-                    throw new GridSpiException("Failed to load class: " + str, e);
+                    throw new IgniteSpiException("Failed to load class: " + str, e);
             }
         }
 

@@ -220,7 +220,7 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
                     assert false : "Unknown checkpoint scope: " + scope;
             }
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to save checkpoint [key=" + key + ", val=" + state + ", scope=" +
                 scope + ", timeout=" + timeout + ']', e);
         }
@@ -293,7 +293,7 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
 
             return state;
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             throw new GridException("Failed to load checkpoint: " + key, e);
         }
     }

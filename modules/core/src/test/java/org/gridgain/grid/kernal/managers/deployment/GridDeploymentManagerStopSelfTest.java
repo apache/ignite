@@ -62,16 +62,16 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Object> getNodeAttributes() throws GridSpiException { return null; }
+        @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException { return null; }
 
         /** {@inheritDoc} */
-        @Override public void onContextInitialized(GridSpiContext spiCtx) throws GridSpiException { /* No-op. */ }
+        @Override public void onContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws GridSpiException { /* No-op. */ }
+        @Override public void spiStart(String gridName) throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
-        @Override public void spiStop() throws GridSpiException { /* No-op. */ }
+        @Override public void spiStop() throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
         @Override public void setListener(GridDeploymentListener lsnr) { /* No-op. */ }
@@ -83,7 +83,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         @Override public GridDeploymentResource findResource(String rsrcName) { return null; }
 
         /** {@inheritDoc} */
-        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws GridSpiException { return false; }
+        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException { return false; }
 
         /** {@inheritDoc} */
         @Override public boolean unregister(String rsrcName) { return false; }

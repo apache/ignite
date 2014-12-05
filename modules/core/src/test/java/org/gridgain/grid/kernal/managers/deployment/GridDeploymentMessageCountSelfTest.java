@@ -161,7 +161,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             if (isDeploymentMessage((GridIoMessage)msg))
                 msgCnt.incrementAndGet();
 

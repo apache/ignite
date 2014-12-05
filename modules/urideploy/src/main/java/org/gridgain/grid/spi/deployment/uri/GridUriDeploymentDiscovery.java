@@ -44,11 +44,11 @@ final class GridUriDeploymentDiscovery {
      *      references to them.
      * @return Set of found and loaded classes or empty set if file does not
      *      exist.
-     * @throws GridSpiException Thrown if given JAR file references to none
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if given JAR file references to none
      *      existed class or IOException occurred during processing.
      */
     static Set<Class<? extends ComputeTask<?, ?>>> getClasses(ClassLoader clsLdr, File file)
-        throws GridSpiException {
+        throws IgniteSpiException {
         Set<Class<? extends ComputeTask<?, ?>>> rsrcs = new HashSet<>();
 
         if (file.exists() == false)
@@ -68,7 +68,7 @@ final class GridUriDeploymentDiscovery {
                 }
             }
             catch (IOException e) {
-                throw new GridSpiException("Failed to discover classes in file: " + file.getAbsolutePath(), e);
+                throw new IgniteSpiException("Failed to discover classes in file: " + file.getAbsolutePath(), e);
             }
         }
 
@@ -98,7 +98,7 @@ final class GridUriDeploymentDiscovery {
                 try {
                     rsrc = clsLdr.createResource(file.getAbsolutePath(), true);
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     // Must never happen because we use 'ignoreUnknownRsrc=true'.
                     assert false;
                 }

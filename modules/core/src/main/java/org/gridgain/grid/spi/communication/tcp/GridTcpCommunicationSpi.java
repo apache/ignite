@@ -1045,7 +1045,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> getNodeAttributes() throws GridSpiException {
+    @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         nodeIdMsg = new NodeIdMessage(locNodeId);
 
         assertParameter(locPort > 1023, "locPort > 1023");
@@ -1069,7 +1069,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
             locHost = U.resolveLocalHost(locAddr);
         }
         catch (IOException e) {
-            throw new GridSpiException("Failed to initialize local address: " + locAddr, e);
+            throw new IgniteSpiException("Failed to initialize local address: " + locAddr, e);
         }
 
         try {
@@ -1085,7 +1085,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
             nioSrvr = resetNioServer();
         }
         catch (GridException e) {
-            throw new GridSpiException("Failed to initialize TCP server: " + locHost, e);
+            throw new IgniteSpiException("Failed to initialize TCP server: " + locHost, e);
         }
 
         // Set local node attributes.
@@ -1103,12 +1103,12 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
                 createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
         catch (IOException | GridException e) {
-            throw new GridSpiException("Failed to resolve local host to addresses: " + locHost, e);
+            throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws GridSpiException {
+    @Override public void spiStart(String gridName) throws IgniteSpiException {
         assert locHost != null;
 
         // Start SPI start stopwatch.
@@ -1178,7 +1178,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} }*/
-    @Override public void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override public void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.registerPort(boundTcpPort, GridPortProtocol.TCP);
 
         // SPI can start without shmem port.
@@ -1320,7 +1320,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Stop TCP server.
@@ -1394,7 +1394,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override protected void checkConfigurationConsistency0(GridSpiContext spiCtx, ClusterNode node, boolean starting)
-        throws GridSpiException {
+        throws IgniteSpiException {
         // These attributes are set on node startup in any case, so we MUST receive them.
         checkAttributePresence(node, createSpiAttributeName(ATTR_ADDRS));
         checkAttributePresence(node, createSpiAttributeName(ATTR_HOST_NAMES));
@@ -1415,7 +1415,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws GridSpiException {
+    @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws IgniteSpiException {
         assert node != null;
         assert msg != null;
 
@@ -1444,7 +1444,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
                 sentMsgsCnt.increment();
             }
             catch (GridException e) {
-                throw new GridSpiException("Failed to send message to remote node: " + node, e);
+                throw new IgniteSpiException("Failed to send message to remote node: " + node, e);
             }
             finally {
                 if (client != null && clients.remove(node.id(), client))
@@ -1491,7 +1491,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
                     if (clients.remove(nodeId, client))
                         client.forceClose();
 
-                    throw new GridSpiException("Destination node is not in topology: " + node.id());
+                    throw new IgniteSpiException("Destination node is not in topology: " + node.id());
                 }
             }
 

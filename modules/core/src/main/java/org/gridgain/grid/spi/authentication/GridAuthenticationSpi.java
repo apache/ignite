@@ -65,10 +65,10 @@ public interface GridAuthenticationSpi extends IgniteSpi {
      * @param authCtx Authentication context. Contains all necessary information required to authenticate
      *      the subject.
      * @return Authenticated subject context or {@code null} if authentication did not pass.
-     * @throws GridSpiException If authentication resulted in system error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
-    public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException;
+    public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws IgniteSpiException;
 
     /**
      * Flag indicating whether node authentication should be run on coordinator only or on all nodes

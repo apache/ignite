@@ -26,7 +26,7 @@ public class GridLuceneIndexLoadTest {
      * @param args Arguments.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public static void main(String ... args) throws GridSpiException, FileNotFoundException {
+    public static void main(String ... args) throws IgniteSpiException, FileNotFoundException {
         final IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();
 
         GridIndexingTypeDescriptor desc = new GridIndexingTypeDescriptor() {
@@ -76,21 +76,21 @@ public class GridLuceneIndexLoadTest {
         };
 
         GridLuceneIndex idx = new GridLuceneIndex(new GridIndexingMarshaller() {
-            @Override public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws GridSpiException {
+            @Override public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException {
                 try {
                     return new GridIndexingEntityAdapter<>(m.<T>unmarshal(bytes, null), bytes);
                 }
                 catch (GridException e) {
-                    throw new GridSpiException(e);
+                    throw new IgniteSpiException(e);
                 }
             }
 
-            @Override public byte[] marshal(GridIndexingEntity<?> entity) throws GridSpiException {
+            @Override public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException {
                 try {
                     return m.marshal(entity.value());
                 }
                 catch (GridException e) {
-                    throw new GridSpiException(e);
+                    throw new IgniteSpiException(e);
                 }
             }
         }, null, "spac", desc, false);

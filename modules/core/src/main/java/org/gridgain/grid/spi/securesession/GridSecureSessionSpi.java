@@ -66,11 +66,11 @@ public interface GridSecureSessionSpi extends IgniteSpi {
      * @param tok Token to validate.
      * @param params Additional implementation-specific parameters.
      * @return {@code True} if session token is valid, {@code false} otherwise.
-     * @throws GridSpiException If validation resulted in system error. Note that
+     * @throws org.gridgain.grid.spi.IgniteSpiException If validation resulted in system error. Note that
      *      bad credentials should not cause this exception.
      */
     public boolean validate(GridSecuritySubjectType subjType, UUID subjId, byte[] tok,
-        @Nullable Object params) throws GridSpiException;
+        @Nullable Object params) throws IgniteSpiException;
 
     /**
      * Generates new session token.
@@ -81,5 +81,5 @@ public interface GridSecureSessionSpi extends IgniteSpi {
      * @return Session token that should be used for further validation.
      */
     public byte[] generateSessionToken(GridSecuritySubjectType subjType, UUID subjId, @Nullable Object params)
-        throws GridSpiException;
+        throws IgniteSpiException;
 }

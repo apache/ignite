@@ -12,7 +12,7 @@ package org.gridgain.grid.spi;
 /**
  * Grid SPI exception for version check failure.
  */
-public class GridSpiVersionCheckException extends GridSpiException {
+public class IgniteSpiVersionCheckException extends IgniteSpiException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -21,7 +21,7 @@ public class GridSpiVersionCheckException extends GridSpiException {
      *
      * @param msg Error message.
      */
-    public GridSpiVersionCheckException(String msg) {
+    public IgniteSpiVersionCheckException(String msg) {
         super(msg);
     }
 
@@ -31,7 +31,7 @@ public class GridSpiVersionCheckException extends GridSpiException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridSpiVersionCheckException(Throwable cause) {
+    public IgniteSpiVersionCheckException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -41,7 +41,7 @@ public class GridSpiVersionCheckException extends GridSpiException {
      * @param msg Error message.
      * @param cause Optional nested message.
      */
-    public GridSpiVersionCheckException(String msg, Throwable cause) {
+    public IgniteSpiVersionCheckException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

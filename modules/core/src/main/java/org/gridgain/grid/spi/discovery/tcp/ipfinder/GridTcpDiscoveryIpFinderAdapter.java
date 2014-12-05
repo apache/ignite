@@ -28,7 +28,7 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
     private volatile GridSpiContext spiCtx;
 
     /** {@inheritDoc} */
-    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws GridSpiException {
+    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws IgniteSpiException {
         this.spiCtx = spiCtx;
     }
 
@@ -38,7 +38,7 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
+    @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         registerAddresses(addrs);
     }
 

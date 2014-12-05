@@ -220,12 +220,12 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> getNodeAttributes() throws GridSpiException {
+    @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return F.<String, Object>asMap(createSpiAttributeName(NODE_WEIGHT_ATTR_NAME), nodeWeight);
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         startStopwatch();
 
         assertParameter(nodeWeight > 0, "nodeWeight > 0");
@@ -243,7 +243,7 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         unregisterMBean();
 
         // Ack ok stop.
@@ -252,7 +252,7 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+    @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
                 assert evt instanceof IgniteTaskEvent || evt instanceof IgniteJobEvent;

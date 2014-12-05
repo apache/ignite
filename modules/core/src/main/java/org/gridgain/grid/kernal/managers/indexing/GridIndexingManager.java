@@ -713,9 +713,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param spaceName Space name.
      * @param swapSpaceName Swap space name.
      * @param key key.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public void onSwap(String spi, String spaceName, String swapSpaceName, Object key) throws GridSpiException {
+    public void onSwap(String spi, String spaceName, String swapSpaceName, Object key) throws IgniteSpiException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to process swap event (grid is stopping).");
 
@@ -735,10 +735,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @throws GridSpiException If failed.
+     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     public void onUnswap(String spi, String spaceName, Object key, Object val, byte[] valBytes)
-        throws GridSpiException {
+        throws IgniteSpiException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to process swap event (grid is stopping).");
 
@@ -1197,9 +1197,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          *
          * @param x Object with this property.
          * @return Property value.
-         * @throws GridSpiException If failed.
+         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
          */
-        public abstract Object value(Object x) throws GridSpiException;
+        public abstract Object value(Object x) throws IgniteSpiException;
 
         /**
          * @return Property name.
@@ -1245,7 +1245,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(Object x) throws GridSpiException {
+        @Override public Object value(Object x) throws IgniteSpiException {
             if (parent != null)
                 x = parent.value(x);
 
@@ -1265,7 +1265,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 }
             }
             catch (Exception e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
         }
 
@@ -1334,7 +1334,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(Object obj) throws GridSpiException {
+        @Override public Object value(Object obj) throws IgniteSpiException {
             if (parent != null)
                 obj = parent.value(obj);
 
@@ -1342,14 +1342,14 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 return null;
 
             if (!(obj instanceof PortableObject))
-                throw new GridSpiException("Non-portable object received as a result of property extraction " +
+                throw new IgniteSpiException("Non-portable object received as a result of property extraction " +
                     "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
 
             try {
                 return ((PortableObject)obj).field(propName);
             }
             catch (PortableException e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
         }
 
@@ -1467,14 +1467,14 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T value(Object obj, String field) throws GridSpiException {
+        @Override public <T> T value(Object obj, String field) throws IgniteSpiException {
             assert obj != null;
             assert field != null;
 
             Property prop = props.get(field);
 
             if (prop == null)
-                throw new GridSpiException("Failed to find field '" + field + "' in type '" + name + "'.");
+                throw new IgniteSpiException("Failed to find field '" + field + "' in type '" + name + "'.");
 
             return (T)prop.value(obj);
         }
@@ -1811,13 +1811,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 /** */
                 private byte[] valBytes;
 
-                @Override public T value() throws GridSpiException {
+                @Override public T value() throws IgniteSpiException {
                     if (val == null) {
                         try {
                             val = marsh.unmarshal(new ByteArrayInputStream(bytes, off, len), ldr);
                         }
                         catch (GridException e) {
-                            throw new GridSpiException(e);
+                            throw new IgniteSpiException(e);
                         }
                     }
 
@@ -1843,7 +1843,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] marshal(GridIndexingEntity<?> entity) throws GridSpiException {
+        @Override public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException {
             Object val = entity.value();
 
             ClassLoader ldr = val.getClass().getClassLoader();
@@ -1872,7 +1872,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                     out.write(U.longToBytes(ldrId));
                 }
                 catch (IOException e) {
-                    throw new GridSpiException(e);
+                    throw new IgniteSpiException(e);
                 }
             }
 
@@ -1883,7 +1883,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                     out.write(bytes);
             }
             catch (Exception e) {
-                throw new GridSpiException(e);
+                throw new IgniteSpiException(e);
             }
 
             return out.toByteArray();

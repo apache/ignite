@@ -52,7 +52,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
      * @param filter Found files filter.
      * @param lsnr Scanner listener which should be notifier about changes.
      * @param log Logger.
-     * @throws GridSpiException Thrown if URI is {@code null} or is not a
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if URI is {@code null} or is not a
      *      directory.
      */
     public GridUriDeploymentFileScanner(
@@ -62,7 +62,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
         long freq,
         FilenameFilter filter,
         GridUriDeploymentScannerListener lsnr,
-        IgniteLogger log) throws GridSpiException {
+        IgniteLogger log) throws IgniteSpiException {
         super(gridName, uri, deployDir, freq, filter, lsnr, log);
 
         initialize(uri);
@@ -73,10 +73,10 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
      * directory path and creating file filters.
      *
      * @param uri Scanning URI with "file" scheme.
-     * @throws GridSpiException Thrown if URI is {@code null} or is not a
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if URI is {@code null} or is not a
      *      directory.
      */
-    private void initialize(URI uri) throws GridSpiException {
+    private void initialize(URI uri) throws IgniteSpiException {
         assert "file".equals(getUri().getScheme());
 
         String scanDirPath = uri.getPath();
@@ -87,7 +87,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
         if (scanDir == null || !scanDir.isDirectory()) {
             scanDir = null;
 
-            throw new GridSpiException("URI is either not provided or is not a directory: " +
+            throw new IgniteSpiException("URI is either not provided or is not a directory: " +
                 U.hidePassword(uri.toString()));
         }
 

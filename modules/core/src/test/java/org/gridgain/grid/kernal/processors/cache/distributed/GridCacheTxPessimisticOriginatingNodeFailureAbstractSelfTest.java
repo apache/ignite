@@ -405,7 +405,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
 
         cfg.setCommunicationSpi(new GridTcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-                throws GridSpiException {
+                throws IgniteSpiException {
                 if (getSpiContext().localNode().id().equals(failingNodeId)) {
                     if (ignoredMessage((GridIoMessage)msg) && ignoreMsgNodeIds != null) {
                         for (UUID ignored : ignoreMsgNodeIds) {

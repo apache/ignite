@@ -110,7 +110,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
 
             assert false : "Exception must be thrown for registering with the same name.";
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             // No-op.
         }
 
@@ -129,7 +129,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
 
             assert false : "Exception must be thrown for registering with the same name.";
         }
-        catch (GridSpiException e) {
+        catch (IgniteSpiException e) {
             // No-op.
         }
 

@@ -73,7 +73,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     private volatile long topVer;
 
     /** Join error. */
-    private GridSpiException joinErr;
+    private IgniteSpiException joinErr;
 
     /** Whether reconnect failed. */
     private boolean reconFailed;
@@ -185,7 +185,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         startStopwatch();
 
         assertParameter(ipFinder != null, "ipFinder != null");
@@ -199,7 +199,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
             locHost = U.resolveLocalHost(locAddr);
         }
         catch (IOException e) {
-            throw new GridSpiException("Unknown local address: " + locAddr, e);
+            throw new IgniteSpiException("Unknown local address: " + locAddr, e);
         }
 
         if (log.isDebugEnabled()) {
@@ -226,7 +226,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
             locHost = U.resolveLocalHost(locAddr);
         }
         catch (IOException e) {
-            throw new GridSpiException("Unknown local address: " + locAddr, e);
+            throw new IgniteSpiException("Unknown local address: " + locAddr, e);
         }
 
         if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
@@ -242,7 +242,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
             addrs = U.resolveLocalAddresses(locHost);
         }
         catch (IOException | GridException e) {
-            throw new GridSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
+            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
         }
 
         locNode = new GridTcpDiscoveryNode(
@@ -269,7 +269,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         rmtNodes.clear();
 
         U.interrupt(disconnectHnd);
@@ -356,7 +356,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void disconnect() throws GridSpiException {
+    @Override public void disconnect() throws IgniteSpiException {
         throw new UnsupportedOperationException();
     }
 
@@ -368,9 +368,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     /**
      * @param recon Reconnect flag.
      * @return Whether joined successfully.
-     * @throws GridSpiException In case of error.
+     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
      */
-    private boolean joinTopology(boolean recon) throws GridSpiException {
+    private boolean joinTopology(boolean recon) throws IgniteSpiException {
         if (!recon)
             stats.onJoinStarted();
 
@@ -430,7 +430,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
                                 sockRdr.start();
 
                                 if (U.await(joinLatch, netTimeout, MILLISECONDS)) {
-                                    GridSpiException joinErr0 = joinErr;
+                                    IgniteSpiException joinErr0 = joinErr;
 
                                     if (joinErr0 != null)
                                         throw joinErr0;
@@ -615,7 +615,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                     return;
                 }
-                catch (GridSpiException e) {
+                catch (IgniteSpiException e) {
                     U.error(log, "Failed to reconnect to topology after failure.", e);
                 }
             }
@@ -720,7 +720,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
 
                         stats.onMessageReceived(msg);
 
-                        GridSpiException err = null;
+                        IgniteSpiException err = null;
 
                         if (joinLatch.getCount() > 0) {
                             if (msg instanceof GridTcpDiscoveryDuplicateIdMessage)

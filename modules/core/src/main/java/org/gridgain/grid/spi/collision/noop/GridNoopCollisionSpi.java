@@ -26,12 +26,12 @@ import org.jetbrains.annotations.*;
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStop() throws GridSpiException {
+    @Override public void spiStop() throws IgniteSpiException {
         // No-op.
     }
 

@@ -49,11 +49,11 @@ final class GridUriDeploymentFileProcessor {
      * @param uri GAR file deployment URI.
      * @param deployDir deployment directory with downloaded GAR files.
      * @param log Logger.
-     * @throws GridSpiException Thrown if file could not be read.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if file could not be read.
      * @return List of tasks from given file.
      */
     @Nullable static GridUriDeploymentFileProcessorResult processFile(File file, String uri, File deployDir,
-        IgniteLogger log) throws GridSpiException {
+        IgniteLogger log) throws IgniteSpiException {
         File gar = file;
 
         if (!checkIntegrity(file, log)) {
@@ -72,7 +72,7 @@ final class GridUriDeploymentFileProcessor {
                 U.unzip(file, gar, log);
             }
             catch (IOException e) {
-                throw new GridSpiException("IO error when unzipping GAR file: " + file.getAbsolutePath(), e);
+                throw new IgniteSpiException("IO error when unzipping GAR file: " + file.getAbsolutePath(), e);
             }
         }
 
@@ -108,7 +108,7 @@ final class GridUriDeploymentFileProcessor {
                 }
             }
             catch (IOException e) {
-                throw new GridSpiException("IO error when parsing GAR directory: " + gar.getAbsolutePath(), e);
+                throw new IgniteSpiException("IO error when parsing GAR directory: " + gar.getAbsolutePath(), e);
             }
         }
 
@@ -310,12 +310,12 @@ final class GridUriDeploymentFileProcessor {
      * @param file GAR file.
      * @param uri GAR file deployment URI.
      * @param log Logger.
-     * @throws GridSpiException Thrown if it's impossible to open file.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if it's impossible to open file.
      * @return List of tasks from descriptor.
      */
     @SuppressWarnings({"ClassLoader2Instantiation"})
     private static GridUriDeploymentFileProcessorResult processWithDescriptorFile(GridUriDeploymentSpringDocument doc,
-        File file, String uri, IgniteLogger log) throws GridSpiException {
+        File file, String uri, IgniteLogger log) throws IgniteSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
         List<Class<? extends ComputeTask<?, ?>>> tasks = doc.getTasks(clsLdr);
@@ -360,11 +360,11 @@ final class GridUriDeploymentFileProcessor {
      * @param file GAR file or directory.
      * @param uri GAR file deployment URI.
      * @param log Logger.
-     * @throws GridSpiException Thrown if file reading error happened.
+     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if file reading error happened.
      * @return List of tasks from given file.
      */
     private static GridUriDeploymentFileProcessorResult processNoDescriptorFile(File file, String uri, IgniteLogger log)
-        throws GridSpiException {
+        throws IgniteSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
         Set<Class<? extends ComputeTask<?, ?>>> clss = GridUriDeploymentDiscovery.getClasses(clsLdr, file);
