@@ -94,7 +94,7 @@ import java.text.*;
  */
 @SuppressWarnings({"JDBCResourceOpenedButNotSafelyClosed", "JDBCExecuteWithNonConstantString"})
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi, GridJdbcCheckpointSpiMBean {
+public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, GridJdbcCheckpointSpiMBean {
     /** Default number of retries in case of errors (value is {@code 2}). */
     public static final int DFLT_NUMBER_OF_RETRIES = 2;
 
@@ -223,7 +223,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
     private String selExpSql;
 
     /** Listener. */
-    private GridCheckpointListener lsnr;
+    private CheckpointListener lsnr;
 
     /** {@inheritDoc} */
     @Override public int getNumberOfRetries() {
@@ -570,7 +570,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
             if (st.executeUpdate() > 0) {
                 rmv = true;
 
-                GridCheckpointListener tmp = lsnr;
+                CheckpointListener tmp = lsnr;
 
                 if (tmp != null)
                     tmp.onCheckpointRemoved(key);
@@ -827,7 +827,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
 
         Time time = new Time(U.currentTimeMillis());
 
-        GridCheckpointListener tmp = lsnr;
+        CheckpointListener tmp = lsnr;
 
         try {
             if (tmp != null) {
@@ -860,7 +860,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(GridCheckpointListener lsnr) {
+    @Override public void setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
     }
 }

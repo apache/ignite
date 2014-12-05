@@ -20,9 +20,9 @@ import java.util.*;
 /**
  * Tests multiple shared directories.
  */
-@GridSpiTest(spi = GridSharedFsCheckpointSpi.class, group = "Checkpoint SPI")
+@GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Checkpoint SPI")
 public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
-    GridSpiAbstractTest<GridSharedFsCheckpointSpi> {
+    GridSpiAbstractTest<SharedFsCheckpointSpi> {
     /** */
     private static final String PATH1 = "cp/test-shared-fs1";
 

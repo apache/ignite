@@ -17,7 +17,7 @@ import org.gridgain.testframework.junits.spi.*;
  * @param <T> Concrete SPI class.
  */
 @SuppressWarnings({"CatchGenericClass"})
-public abstract class GridCheckpointSpiAbstractTest<T extends GridCheckpointSpi>
+public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
     extends GridSpiAbstractTest<T> {
     /** */
     private static final int CHECK_POINT_COUNT = 10;

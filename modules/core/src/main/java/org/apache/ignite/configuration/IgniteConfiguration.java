@@ -368,7 +368,7 @@ public class IgniteConfiguration {
     private GridDeploymentSpi deploySpi;
 
     /** Checkpoint SPI. */
-    private GridCheckpointSpi[] cpSpi;
+    private CheckpointSpi[] cpSpi;
 
     /** Failover SPI. */
     private GridFailoverSpi[] failSpi;
@@ -2044,17 +2044,17 @@ public class IgniteConfiguration {
      *
      * @return Grid checkpoint SPI implementation or {@code null} to use default implementation.
      */
-    public GridCheckpointSpi[] getCheckpointSpi() {
+    public CheckpointSpi[] getCheckpointSpi() {
         return cpSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridCheckpointSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi}.
      *
-     * @param cpSpi Fully configured instance of {@link GridCheckpointSpi}.
+     * @param cpSpi Fully configured instance of {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi}.
      * @see IgniteConfiguration#getCheckpointSpi()
      */
-    public void setCheckpointSpi(GridCheckpointSpi... cpSpi) {
+    public void setCheckpointSpi(CheckpointSpi... cpSpi) {
         this.cpSpi = cpSpi;
     }
 

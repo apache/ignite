@@ -71,7 +71,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @return Checkpoint SPI.
      */
-    private GridCheckpointSpi checkpointSpi() {
+    private CheckpointSpi checkpointSpi() {
         GridCacheCheckpointSpi spi = new GridCacheCheckpointSpi();
 
         spi.setCacheName(CACHE_NAME);

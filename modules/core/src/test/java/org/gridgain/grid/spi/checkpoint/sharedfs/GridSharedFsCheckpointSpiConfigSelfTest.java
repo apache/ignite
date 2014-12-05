@@ -15,13 +15,13 @@ import java.util.*;
 /**
  * Grid shared file system checkpoint SPI config self test.
  */
-@GridSpiTest(spi = GridSharedFsCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridSharedFsCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridSharedFsCheckpointSpi> {
+@GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Checkpoint SPI")
+public class GridSharedFsCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<SharedFsCheckpointSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridSharedFsCheckpointSpi(), "directoryPaths", null);
-        checkNegativeSpiProperty(new GridSharedFsCheckpointSpi(), "directoryPaths", new LinkedList<String>());
+        checkNegativeSpiProperty(new SharedFsCheckpointSpi(), "directoryPaths", null);
+        checkNegativeSpiProperty(new SharedFsCheckpointSpi(), "directoryPaths", new LinkedList<String>());
     }
 }

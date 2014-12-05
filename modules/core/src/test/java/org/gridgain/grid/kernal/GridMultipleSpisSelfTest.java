@@ -179,7 +179,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private class GridTestCheckpointSpi extends GridSharedFsCheckpointSpi {
+    private class GridTestCheckpointSpi extends SharedFsCheckpointSpi {
         /** */
         private String expName;
 

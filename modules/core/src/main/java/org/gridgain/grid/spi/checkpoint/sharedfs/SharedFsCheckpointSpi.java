@@ -23,7 +23,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * This class defines shared file system {@link GridCheckpointSpi} implementation for
+ * This class defines shared file system {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi} implementation for
  * checkpoint SPI. All checkpoints are stored on shared storage and available for all
  * nodes in the grid. Note that every node must have access to the shared directory. The
  * reason the directory needs to be {@code shared} is because a job state
@@ -45,7 +45,7 @@ import java.util.*;
  * <li>Directory paths (see {@link #setDirectoryPaths(Collection)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * {@link GridSharedFsCheckpointSpi} can be configured as follows:
+ * {@link SharedFsCheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
  *
@@ -67,7 +67,7 @@ import java.util.*;
  * G.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * {@link GridSharedFsCheckpointSpi} can be configured from Spring XML configuration file:
+ * {@link SharedFsCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
@@ -89,12 +89,12 @@ import java.util.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridCheckpointSpi
+ * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi,
-    GridSharedFsCheckpointSpiMBean {
+public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi,
+    SharedFsCheckpointSpiMBean {
     /**
      * Default checkpoint directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
      * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
@@ -137,15 +137,15 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
     private String gridName;
 
     /** Task that takes care about outdated files. */
-    private GridSharedFsTimeoutTask timeoutTask;
+    private SharedFsTimeoutTask timeoutTask;
 
     /** Listener. */
-    private GridCheckpointListener lsnr;
+    private CheckpointListener lsnr;
 
     /**
      * Initializes default directory paths.
      */
-    public GridSharedFsCheckpointSpi() {
+    public SharedFsCheckpointSpi() {
         dirPaths.offer(DFLT_DIR_PATH);
     }
 
@@ -194,7 +194,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
         if (!folder.isDirectory())
             throw new IgniteSpiException("Checkpoint directory path is not a valid directory: " + curDirPath);
 
-        registerMBean(gridName, this, GridSharedFsCheckpointSpiMBean.class);
+        registerMBean(gridName, this, SharedFsCheckpointSpiMBean.class);
 
         // Ack parameters.
         if (log.isDebugEnabled()) {
@@ -282,7 +282,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
         }
 
         if (folder != null) {
-            Map<File, GridSharedFsTimeData> files = new HashMap<>();
+            Map<File, SharedFsTimeData> files = new HashMap<>();
 
             // Track expiration for only those files that are made by this node
             // to avoid file access conflicts.
@@ -292,10 +292,10 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
                         log.debug("Checking checkpoint file: " + file.getAbsolutePath());
 
                     try {
-                        GridSharedFsCheckpointData data = GridSharedFsUtils.read(file, marsh, log);
+                        SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
 
                         if (data.getHost().equals(host)) {
-                            files.put(file, new GridSharedFsTimeData(data.getExpireTime(), file.lastModified(),
+                            files.put(file, new SharedFsTimeData(data.getExpireTime(), file.lastModified(),
                                 data.getKey()));
 
                             if (log.isDebugEnabled())
@@ -312,7 +312,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
                 }
             }
 
-            timeoutTask = new GridSharedFsTimeoutTask(gridName, marsh, log);
+            timeoutTask = new SharedFsTimeoutTask(gridName, marsh, log);
 
             timeoutTask.setCheckpointListener(lsnr);
 
@@ -355,7 +355,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
 
         if (file.exists())
             try {
-                GridSharedFsCheckpointData data = GridSharedFsUtils.read(file, marsh, log);
+                SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
 
                 return data != null ?
                     data.getExpireTime() == 0 || data.getExpireTime() > U.currentTimeMillis() ?
@@ -402,7 +402,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
             }
 
             try {
-                GridSharedFsUtils.write(file, new GridSharedFsCheckpointData(state, expireTime, host, key),
+                SharedFsUtils.write(file, new SharedFsCheckpointData(state, expireTime, host, key),
                     marsh, log);
             }
             catch (IOException e) {
@@ -419,7 +419,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
             }
 
             if (timeout > 0)
-                timeoutTask.add(file, new GridSharedFsTimeData(expireTime, file.lastModified(), key));
+                timeoutTask.add(file, new SharedFsTimeData(expireTime, file.lastModified(), key));
 
             saved = true;
         }
@@ -455,7 +455,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
         boolean rmv = file.delete();
 
         if (rmv) {
-            GridCheckpointListener lsnr = this.lsnr;
+            CheckpointListener lsnr = this.lsnr;
 
             if (lsnr != null)
                 lsnr.onCheckpointRemoved(key);
@@ -465,7 +465,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(GridCheckpointListener lsnr) {
+    @Override public void setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
 
         if (timeoutTask != null)
@@ -474,6 +474,6 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSharedFsCheckpointSpi.class, this);
+        return S.toString(SharedFsCheckpointSpi.class, this);
     }
 }

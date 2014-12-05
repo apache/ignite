@@ -13,10 +13,10 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Helper class that keeps checkpoint expiration date and last file
- * access date inside. This class used by {@link GridSharedFsTimeoutTask}
+ * access date inside. This class used by {@link SharedFsTimeoutTask}
  * to track and delete obsolete files.
  */
-class GridSharedFsTimeData {
+class SharedFsTimeData {
     /** Checkpoint expiration date. */
     private long expTime;
 
@@ -33,7 +33,7 @@ class GridSharedFsTimeData {
      * @param lastAcsTime File last access time.
      * @param key Key of checkpoint.
      */
-    GridSharedFsTimeData(long expTime, long lastAcsTime, String key) {
+    SharedFsTimeData(long expTime, long lastAcsTime, String key) {
         assert expTime >= 0;
         assert lastAcsTime > 0;
 
@@ -94,6 +94,6 @@ class GridSharedFsTimeData {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSharedFsTimeData.class, this);
+        return S.toString(SharedFsTimeData.class, this);
     }
 }

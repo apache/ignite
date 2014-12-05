@@ -13,7 +13,6 @@ import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;
 import org.gridgain.grid.spi.checkpoint.noop.*;
-import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -40,7 +39,7 @@ import org.jetbrains.annotations.*;
  * GridGain provides the following {@code GridCheckpointSpi} implementations:
  * <ul>
  * <li>{@link GridNoopCheckpointSpi} - default</li>
- * <li>{@link GridSharedFsCheckpointSpi}</li>
+ * <li>{@link org.gridgain.grid.spi.checkpoint.sharedfs.SharedFsCheckpointSpi}</li>
  * <li>{@gglink org.gridgain.grid.spi.checkpoint.s3.GridS3CheckpointSpi}</li>
  * <li>{@link GridJdbcCheckpointSpi}</li>
  * <li>{@link GridCacheCheckpointSpi}</li>
@@ -52,7 +51,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridCheckpointSpi extends IgniteSpi {
+public interface CheckpointSpi extends IgniteSpi {
     /**
      * Loads checkpoint from storage by its unique key.
      *
@@ -98,5 +97,5 @@ public interface GridCheckpointSpi extends IgniteSpi {
      *
      * @param lsnr The listener to set or {@code null}.
      */
-    public void setCheckpointListener(GridCheckpointListener lsnr);
+    public void setCheckpointListener(CheckpointListener lsnr);
 }

@@ -19,7 +19,7 @@ import java.util.*;
  * about shared file system checkpoints.
  */
 @IgniteMBeanDescription("MBean for shared file system based checkpoint SPI.")
-public interface GridSharedFsCheckpointSpiMBean extends IgniteSpiManagementMBean {
+public interface SharedFsCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets path to the directory where all checkpoints are saved.
      *

@@ -28,7 +28,7 @@ import java.util.*;
 @GridCommonTest(group = "Task Session")
 public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    protected static GridCheckpointSpi spi;
+    protected static CheckpointSpi spi;
 
     /** */
     private static final int SPLIT_COUNT = 5;

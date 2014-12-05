@@ -73,10 +73,10 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridCheckpointSpi
+ * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi, GridCacheCheckpointSpiMBean {
+public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, GridCacheCheckpointSpiMBean {
     /** Default cache name (value is <tt>checkpoints</tt>). */
     public static final String DFLT_CACHE_NAME = "checkpoints";
 
@@ -88,7 +88,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     private String cacheName = DFLT_CACHE_NAME;
 
     /** Listener. */
-    private GridCheckpointListener lsnr;
+    private CheckpointListener lsnr;
 
     /** Grid event listener. */
     private GridLocalEventListener evtLsnr;
@@ -141,7 +141,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
                     return;
 
                 if (e.oldValue() != null) {
-                    GridCheckpointListener tmp = lsnr;
+                    CheckpointListener tmp = lsnr;
 
                     if (tmp != null)
                         tmp.onCheckpointRemoved((String)e.key());
@@ -217,7 +217,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(GridCheckpointListener lsnr) {
+    @Override public void setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
     }
 

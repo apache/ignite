@@ -18,10 +18,10 @@ import java.util.Collection;
 /**
  * Grid shared file system checkpoint SPI self test.
  */
-@GridSpiTest(spi = GridSharedFsCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridSharedFsCheckpointSpiSelfTest extends GridCheckpointSpiAbstractTest<GridSharedFsCheckpointSpi> {
+@GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Checkpoint SPI")
+public class GridSharedFsCheckpointSpiSelfTest extends GridCheckpointSpiAbstractTest<SharedFsCheckpointSpi> {
     /** */
-    private static final String PATH = GridSharedFsCheckpointSpi.DFLT_DIR_PATH + "/" +
+    private static final String PATH = SharedFsCheckpointSpi.DFLT_DIR_PATH + "/" +
         GridSharedFsCheckpointSpiSelfTest.class.getSimpleName();
 
     /**

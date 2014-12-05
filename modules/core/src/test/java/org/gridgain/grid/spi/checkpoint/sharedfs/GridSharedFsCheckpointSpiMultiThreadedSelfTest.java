@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.*;
 /**
  * Tests SPI in multi-threaded environment.
  */
-@GridSpiTest(spi = GridSharedFsCheckpointSpi.class, group = "Checkpoint SPI")
+@GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Checkpoint SPI")
 public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
-    GridSpiAbstractTest<GridSharedFsCheckpointSpi> {
+    GridSpiAbstractTest<SharedFsCheckpointSpi> {
     /** */
     private static final String PATH = "work/cp/test-shared-fs-multi-threaded";
 

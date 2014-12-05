@@ -1470,7 +1470,7 @@ public class GridGainEx {
             AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
             GridSecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             GridDeploymentSpi deploySpi = cfg.getDeploymentSpi();
-            GridCheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
+            CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
             GridFailoverSpi[] failSpi = cfg.getFailoverSpi();
             GridLoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             GridSwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
@@ -1695,7 +1695,7 @@ public class GridGainEx {
                 deploySpi = new GridLocalDeploymentSpi();
 
             if (cpSpi == null)
-                cpSpi = new GridCheckpointSpi[] {new GridNoopCheckpointSpi()};
+                cpSpi = new CheckpointSpi[] {new GridNoopCheckpointSpi()};
 
             if (failSpi == null)
                 failSpi = new GridFailoverSpi[] {new GridAlwaysFailoverSpi()};

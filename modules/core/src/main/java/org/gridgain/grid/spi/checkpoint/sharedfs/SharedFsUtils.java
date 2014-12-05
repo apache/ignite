@@ -19,11 +19,11 @@ import java.io.*;
  * Utility class that helps to manage files. It provides read/write
  * methods that simplify file operations.
  */
-final class GridSharedFsUtils {
+final class SharedFsUtils {
     /**
      * Enforces singleton.
      */
-    private GridSharedFsUtils() {
+    private SharedFsUtils() {
         // No-op.
     }
 
@@ -36,10 +36,10 @@ final class GridSharedFsUtils {
      * @param log Messages logger.
      * @return Checkpoint data object read from given file.
      * @throws GridException Thrown if data could not be converted
-     *    to {@link GridSharedFsCheckpointData} object.
+     *    to {@link SharedFsCheckpointData} object.
      * @throws IOException Thrown if file read error occurred.
      */
-    static GridSharedFsCheckpointData read(File file, IgniteMarshaller m, IgniteLogger log)
+    static SharedFsCheckpointData read(File file, IgniteMarshaller m, IgniteLogger log)
         throws IOException, GridException {
         assert file != null;
         assert m != null;
@@ -48,7 +48,7 @@ final class GridSharedFsUtils {
         InputStream in = new FileInputStream(file);
 
         try {
-            return (GridSharedFsCheckpointData)m.unmarshal(in, U.gridClassLoader());
+            return (SharedFsCheckpointData)m.unmarshal(in, U.gridClassLoader());
         }
         finally {
             U.close(in, log);
@@ -66,7 +66,7 @@ final class GridSharedFsUtils {
      * @throws GridException Thrown if data could not be marshalled.
      * @throws IOException Thrown if file write operation failed.
      */
-    static void write(File file, GridSharedFsCheckpointData data, IgniteMarshaller m, IgniteLogger log)
+    static void write(File file, SharedFsCheckpointData data, IgniteMarshaller m, IgniteLogger log)
         throws IOException, GridException {
         assert file != null;
         assert m != null;

@@ -39,7 +39,7 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
  * This class defines a checkpoint manager.
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
-public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi> {
+public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_SESS = 10240;
 
@@ -70,8 +70,8 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
         if (ctx.config().isDaemon())
             return;
 
-        for (GridCheckpointSpi spi : getSpis()) {
-            spi.setCheckpointListener(new GridCheckpointListener() {
+        for (CheckpointSpi spi : getSpis()) {
+            spi.setCheckpointListener(new CheckpointListener() {
                 @Override public void onCheckpointRemoved(String key) {
                     record(EVT_CHECKPOINT_REMOVED, key);
                 }
@@ -237,7 +237,7 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
 
         boolean rmv = false;
 
-        for (GridCheckpointSpi spi : getSpis())
+        for (CheckpointSpi spi : getSpis())
             if (spi.removeCheckpoint(key))
                 rmv = true;
 

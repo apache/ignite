@@ -84,16 +84,16 @@ import java.util.*;
  * </pre>
  * <p>
  * Note that storing data in AWS S3 service will result in charges to your AWS account.
- * Choose another implementation of {@link GridCheckpointSpi} for local or
+ * Choose another implementation of {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi} for local or
  * home network tests.
  * <p>
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridCheckpointSpi
+ * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi, GridS3CheckpointSpiMBean {
+public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, GridS3CheckpointSpiMBean {
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource
@@ -107,7 +107,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
     private GridS3TimeoutWorker timeoutWrk;
 
     /** Listener. */
-    private GridCheckpointListener lsnr;
+    private CheckpointListener lsnr;
 
     /** Prefix to use in bucket name generation. */
     public static final String BUCKET_NAME_PREFIX = "gridgain-checkpoint-";
@@ -426,7 +426,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
         }
 
         if (rmv) {
-            GridCheckpointListener tmpLsnr = lsnr;
+            CheckpointListener tmpLsnr = lsnr;
 
             if (tmpLsnr != null)
                 tmpLsnr.onCheckpointRemoved(key);
@@ -536,7 +536,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(GridCheckpointListener lsnr) {
+    @Override public void setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
     }
 
@@ -612,7 +612,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
                     }
                 }
 
-                GridCheckpointListener tmpLsnr = lsnr;
+                CheckpointListener tmpLsnr = lsnr;
 
                 if (tmpLsnr != null)
                     for (String key : rmvKeys)

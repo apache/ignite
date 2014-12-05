@@ -17,10 +17,10 @@ import java.io.*;
  * extends every checkpoint with expiration time and host name
  * which created this checkpoint.
  * <p>
- * Host name is used by {@link GridSharedFsCheckpointSpi} SPI to give node
+ * Host name is used by {@link SharedFsCheckpointSpi} SPI to give node
  * correct files if it is restarted.
  */
-class GridSharedFsCheckpointData implements Serializable {
+class SharedFsCheckpointData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ class GridSharedFsCheckpointData implements Serializable {
      * @param host Name of host that created this checkpoint.
      * @param key Key of checkpoint.
      */
-    GridSharedFsCheckpointData(byte[] state, long expTime, String host, String key) {
+    SharedFsCheckpointData(byte[] state, long expTime, String host, String key) {
         assert expTime >= 0;
         assert host != null;
 
@@ -92,6 +92,6 @@ class GridSharedFsCheckpointData implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSharedFsCheckpointData.class, this);
+        return S.toString(SharedFsCheckpointData.class, this);
     }
 }

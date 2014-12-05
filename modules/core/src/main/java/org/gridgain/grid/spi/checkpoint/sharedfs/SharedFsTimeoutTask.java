@@ -27,9 +27,9 @@ import java.util.*;
  * If this file was not accessed then it is deleted. If file access time is
  * different from modification date new expiration date is set.
  */
-class GridSharedFsTimeoutTask extends IgniteSpiThread {
+class SharedFsTimeoutTask extends IgniteSpiThread {
     /** Map of files to their access and expiration date. */
-    private Map<File, GridSharedFsTimeData> files = new HashMap<>();
+    private Map<File, SharedFsTimeData> files = new HashMap<>();
 
     /** Messages logger. */
     private IgniteLogger log;
@@ -41,7 +41,7 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
     private final Object mux = new Object();
 
     /** Timeout listener. */
-    private GridCheckpointListener lsnr;
+    private CheckpointListener lsnr;
 
     /**
      * Creates new instance of task that looks after files.
@@ -50,7 +50,7 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
      * @param marshaller Messages marshaller.
      * @param log Messages logger.
      */
-    GridSharedFsTimeoutTask(String gridName, IgniteMarshaller marshaller, IgniteLogger log) {
+    SharedFsTimeoutTask(String gridName, IgniteMarshaller marshaller, IgniteLogger log) {
         super(gridName, "grid-sharedfs-timeout-worker", log);
 
         assert marshaller != null;
@@ -89,7 +89,7 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
                     }
                 }
 
-                Map<File, GridSharedFsTimeData> snapshot = new HashMap<>(files);
+                Map<File, SharedFsTimeData> snapshot = new HashMap<>(files);
 
                 long now = U.currentTimeMillis();
 
@@ -97,14 +97,14 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
 
                 // Check files one by one and physically remove
                 // if (now - last modification date) > expiration time
-                for (Map.Entry<File, GridSharedFsTimeData> entry : snapshot.entrySet()) {
+                for (Map.Entry<File, SharedFsTimeData> entry : snapshot.entrySet()) {
                     File file = entry.getKey();
 
-                    GridSharedFsTimeData timeData = entry.getValue();
+                    SharedFsTimeData timeData = entry.getValue();
 
                     try {
                         if (timeData.getLastAccessTime() != file.lastModified())
-                            timeData.setExpireTime(GridSharedFsUtils.read(file, marshaller, log).getExpireTime());
+                            timeData.setExpireTime(SharedFsUtils.read(file, marshaller, log).getExpireTime());
                     }
                     catch (GridException e) {
                         U.error(log, "Failed to marshal/unmarshal in checkpoint file: " + file.getAbsolutePath(), e);
@@ -141,7 +141,7 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
                 }
             }
 
-            GridCheckpointListener lsnr = this.lsnr;
+            CheckpointListener lsnr = this.lsnr;
 
             if (lsnr != null)
                 for (String key : rmvKeys)
@@ -159,7 +159,7 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
      * @param file File being watched.
      * @param timeData File expiration and access information.
      */
-    void add(File file, GridSharedFsTimeData timeData) {
+    void add(File file, SharedFsTimeData timeData) {
         assert file != null;
         assert timeData != null;
 
@@ -175,7 +175,7 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
      *
      * @param newFiles List of files.
      */
-    void add(Map<File, GridSharedFsTimeData> newFiles) {
+    void add(Map<File, SharedFsTimeData> newFiles) {
         assert newFiles != null;
 
         synchronized (mux) {
@@ -217,12 +217,12 @@ class GridSharedFsTimeoutTask extends IgniteSpiThread {
      *
      * @param lsnr Listener.
      */
-    void setCheckpointListener(GridCheckpointListener lsnr) {
+    void setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSharedFsTimeoutTask.class, this);
+        return S.toString(SharedFsTimeoutTask.class, this);
     }
 }

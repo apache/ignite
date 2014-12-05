@@ -15,7 +15,7 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Grid shared file system checkpoint SPI start stop self test.
  */
-@GridSpiTest(spi = GridSharedFsCheckpointSpi.class, group = "Collision SPI")
-public class GridSharedFsCheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridSharedFsCheckpointSpi> {
+@GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Collision SPI")
+public class GridSharedFsCheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<SharedFsCheckpointSpi> {
     // No-op.
 }

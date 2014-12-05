@@ -81,7 +81,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopCheckpointManager() throws Exception {
-        GridSharedFsCheckpointSpi spi = new GridSharedFsCheckpointSpi();
+        SharedFsCheckpointSpi spi = new SharedFsCheckpointSpi();
 
         injectLogger(spi);
 

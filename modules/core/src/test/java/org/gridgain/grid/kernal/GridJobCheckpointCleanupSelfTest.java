@@ -22,7 +22,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
     private final AtomicInteger cntr = new AtomicInteger();
 
     /** Checkpoint. */
-    private GridCheckpointSpi checkpointSpi;
+    private CheckpointSpi checkpointSpi;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -62,7 +62,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
      * Test checkpoint SPI.
      */
     @IgniteSpiMultipleInstancesSupport(true)
-    private static class TestCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi {
+    private static class TestCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
         /** Counter. */
         private final AtomicInteger cntr;
 
@@ -97,7 +97,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setCheckpointListener(GridCheckpointListener lsnr) {
+        @Override public void setCheckpointListener(CheckpointListener lsnr) {
             // No-op.
         }
 

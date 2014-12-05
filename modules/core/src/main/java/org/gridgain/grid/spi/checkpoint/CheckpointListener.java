@@ -10,9 +10,9 @@
 package org.gridgain.grid.spi.checkpoint;
 
 /**
- * Listener for notifications of checkpoints removed by {@link GridCheckpointSpi}.
+ * Listener for notifications of checkpoints removed by {@link CheckpointSpi}.
  */
-public interface GridCheckpointListener {
+public interface CheckpointListener {
     /**
      * Notification for removed checkpoint.
      *

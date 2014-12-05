@@ -17,12 +17,12 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
- * No-op implementation of {@link GridCheckpointSpi}. This is default implementation
+ * No-op implementation of {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi}. This is default implementation
  * since {@code 4.5.0} version.
  */
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridNoopCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi {
+public class GridNoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Logger. */
     @IgniteLoggerResource
     private IgniteLogger log;
@@ -54,7 +54,7 @@ public class GridNoopCheckpointSpi extends IgniteSpiAdapter implements GridCheck
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(GridCheckpointListener lsnr) {
+    @Override public void setCheckpointListener(CheckpointListener lsnr) {
         // No-op.
     }
 

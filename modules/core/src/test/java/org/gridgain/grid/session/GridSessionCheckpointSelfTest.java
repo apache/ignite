@@ -28,7 +28,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
     public void testSharedFsCheckpoint() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
-        cfg.setCheckpointSpi(spi = new GridSharedFsCheckpointSpi());
+        cfg.setCheckpointSpi(spi = new SharedFsCheckpointSpi());
 
         checkCheckpoints(cfg);
     }

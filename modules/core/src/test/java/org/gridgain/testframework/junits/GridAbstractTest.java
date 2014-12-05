@@ -998,9 +998,9 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     protected String getDefaultCheckpointPath(IgniteMarshaller marshaller) {
         if (marshaller instanceof IgniteJdkMarshaller)
-            return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
+            return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
-            return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
+            return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
     }
 
     /**
@@ -1076,7 +1076,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridSharedFsCheckpointSpi cpSpi = new GridSharedFsCheckpointSpi();
+        SharedFsCheckpointSpi cpSpi = new SharedFsCheckpointSpi();
 
         Collection<String> paths = new ArrayList<>();
 
