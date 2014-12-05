@@ -43,7 +43,7 @@ import static org.gridgain.grid.kernal.GridProductImpl.*;
  * this startup and you can use them as an example.
  */
 @SuppressWarnings({"CallToSystemExit"})
-public final class IgniteCommandLineStartup {
+public final class CommandLineStartup {
     /** Quite log flag. */
     private static final boolean QUITE;
 
@@ -85,7 +85,7 @@ public final class IgniteCommandLineStartup {
 
             String icoPath = "ggcube_node_128x128.png";
 
-            URL url = IgniteCommandLineStartup.class.getResource(icoPath);
+            URL url = CommandLineStartup.class.getResource(icoPath);
 
             assert url != null : "Unknown icon path: " + icoPath;
 
@@ -96,14 +96,14 @@ public final class IgniteCommandLineStartup {
             // Setting Up about dialog
             Class<?> aboutHndCls = Class.forName("com.apple.eawt.AboutHandler");
 
-            final URL bannerUrl = IgniteCommandLineStartup.class.getResource("ggcube_node_48x48.png");
+            final URL bannerUrl = CommandLineStartup.class.getResource("ggcube_node_48x48.png");
 
             Object aboutHndProxy = Proxy.newProxyInstance(
                 appCls.getClassLoader(),
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        IgniteAboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), VER,
+                        AboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), VER,
                             releaseDate, COPYRIGHT);
 
                         return null;
@@ -121,7 +121,7 @@ public final class IgniteCommandLineStartup {
     /**
      * Enforces singleton.
      */
-    private IgniteCommandLineStartup() {
+    private CommandLineStartup() {
         // No-op.
     }
 

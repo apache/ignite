@@ -55,7 +55,7 @@ fi
 . "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
 CP="${GRIDGAIN_LIBS}"
 
-RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.gridgain.grid.startup.cmdline.GridCommandLineRandomNumberGenerator)
+RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
 RESTART_SUCCESS_FILE="${GRIDGAIN_HOME}/work/gridgain_success_${RANDOM_NUMBER}"
 RESTART_SUCCESS_OPT="-DGRIDGAIN_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
@@ -117,7 +117,7 @@ fi
 # Set main class to start service (grid node by default).
 #
 if [ "${MAIN_CLASS}" = "" ]; then
-    MAIN_CLASS=org.gridgain.grid.startup.cmdline.GridCommandLineStartup
+    MAIN_CLASS=org.apache.ignite.startup.cmdline.CommandLineStartup
 fi
 
 #

@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Generates a random number and prints it to the console.
  */
-public class IgniteCommandLineRandomNumberGenerator {
+public class CommandLineRandomNumberGenerator {
     /**
      * Main method.
      *

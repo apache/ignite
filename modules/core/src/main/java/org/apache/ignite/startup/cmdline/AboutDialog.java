@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * About dialog.
  */
-public class IgniteAboutDialog extends JDialog {
+public class AboutDialog extends JDialog {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class IgniteAboutDialog extends JDialog {
     private static final Color VALUE_BORDER_COLOR = new Color(0xcdcdcd);
 
     /** Global reference to about dialog to prevent double open. */
-    private static IgniteAboutDialog aboutDlg;
+    private static AboutDialog aboutDlg;
 
     /** Application name */
     private final String appName;
@@ -58,7 +58,7 @@ public class IgniteAboutDialog extends JDialog {
      * @param release Release date.
      * @param copyright Copyright.
      */
-    IgniteAboutDialog(String appName, String bannerSpec, String ver, Date release, String copyright) {
+    AboutDialog(String appName, String bannerSpec, String ver, Date release, String copyright) {
         this.appName = appName;
 
         this.bannerSpec = bannerSpec;
@@ -305,7 +305,7 @@ public class IgniteAboutDialog extends JDialog {
             @Override public void run() {
                 if (aboutDlg == null) {
                     try {
-                        aboutDlg = new IgniteAboutDialog(appName, bannerSpec, ver, release, copyright);
+                        aboutDlg = new AboutDialog(appName, bannerSpec, ver, release, copyright);
 
                         aboutDlg.setLocationRelativeTo(null);
                         aboutDlg.setVisible(true);

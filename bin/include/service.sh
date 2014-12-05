@@ -33,7 +33,7 @@ case "$1" in
         #
         # Resolve parameters.
         #
-        MAIN_CLASS="org.gridgain.grid.startup.cmdline.GridCommandLineStartup"
+        MAIN_CLASS="org.apache.ignite.startup.cmdline.CommandLineStartup"
         DEFAULT_CONFIG="default-config.xml"
 
         # Is needed for setenv

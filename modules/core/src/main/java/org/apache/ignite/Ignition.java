@@ -25,7 +25,7 @@ import java.util.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
- * <li>{@link org.apache.ignite.startup.cmdline.IgniteCommandLineStartup}</li>
+ * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
  * <li>{@gglink org.gridgain.grid.startup.servlet.GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>

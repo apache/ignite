@@ -112,7 +112,7 @@ if %ERRORLEVEL% neq 0 (
 ::
 :: Process 'restart'.
 ::
-set RANDOM_NUMBER_COMMAND="%JAVA_HOME%\bin\java.exe" -cp %CP% org.gridgain.grid.startup.cmdline.GridCommandLineRandomNumberGenerator
+set RANDOM_NUMBER_COMMAND="%JAVA_HOME%\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator
 for /f "usebackq tokens=*" %%i in (`"%RANDOM_NUMBER_COMMAND%"`) do set RANDOM_NUMBER=%%i
 
 set RESTART_SUCCESS_FILE="%GRIDGAIN_HOME%\work\gridgain_success_%RANDOM_NUMBER%"
@@ -184,7 +184,7 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS=%JVM_OPTS% -ea
 :: Set main class to start service (grid node by default).
 ::
 
-if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.gridgain.grid.startup.cmdline.GridCommandLineStartup
+if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.startup.cmdline.CommandLineStartup
 
 ::
 :: Remote debugging (JPDA).

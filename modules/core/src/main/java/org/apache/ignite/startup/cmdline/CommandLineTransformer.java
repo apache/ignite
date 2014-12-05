@@ -29,12 +29,12 @@ import java.util.*;
  * @see <a href="http://jcommander.org/">JCommander command line parameters parsing library</a>
  */
 @SuppressWarnings("FieldCanBeLocal")
-public class IgniteCommandLineTransformer {
+public class CommandLineTransformer {
     /** Prefix for every custom JVM option. */
     static final String JVM_OPTION_PREFIX = "-J";
 
     /** Flag to check in step 5 of the Workaround before splitting the output. */
-    private static final String TRANSFORMATION_FAILED_FLAG = "GridCommandLineTransformerError";
+    private static final String TRANSFORMATION_FAILED_FLAG = "CommandLineTransformerError";
 
     /** Delimiter used in step 5 of the Workaround. */
     private static final String ARGS_DELIMITER = " ";
@@ -57,7 +57,7 @@ public class IgniteCommandLineTransformer {
     /**
      * Private constructor to promote usage of a factory method {@link #transform(String...)}.
      */
-    private IgniteCommandLineTransformer() {
+    private CommandLineTransformer() {
         // No-op
     }
 
@@ -92,7 +92,7 @@ public class IgniteCommandLineTransformer {
     public static String transform(String... args) {
         assert args != null;
 
-        return new IgniteCommandLineTransformer().doTransformation(args);
+        return new CommandLineTransformer().doTransformation(args);
     }
 
     /**

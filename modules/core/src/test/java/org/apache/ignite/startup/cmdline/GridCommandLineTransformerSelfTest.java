@@ -9,7 +9,6 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import org.apache.ignite.startup.cmdline.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -26,7 +25,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DGRIDGAIN_QUIET=true\" \"NO_PAUSE=0\" " +
             "\"JVM_XOPTS=\" \"CONFIG=\"",
-            IgniteCommandLineTransformer.transform());
+            CommandLineTransformer.transform());
     }
 
     /**
@@ -36,7 +35,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @SuppressWarnings("NullArgumentToVariableArgMethod")
             @Override public Object call() throws Exception {
-                return IgniteCommandLineTransformer.transform(null);
+                return CommandLineTransformer.transform(null);
             }
         }, AssertionError.class, null);
     }
@@ -50,7 +49,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfUnsupportedOptions() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return IgniteCommandLineTransformer.transform("-z", "qwerty", "asd");
+                return CommandLineTransformer.transform("-z", "qwerty", "asd");
             }
         }, RuntimeException.class, "Unrecognised parameter has been found: qwerty");
     }
@@ -61,18 +60,18 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfUnsupportedJvmOptions() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return IgniteCommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnError=\"dir c:\\\"");
+                return CommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnError=\"dir c:\\\"");
             }
-        }, RuntimeException.class, IgniteCommandLineTransformer.JVM_OPTION_PREFIX +
+        }, RuntimeException.class, CommandLineTransformer.JVM_OPTION_PREFIX +
             " JVM parameters for GridGain batch scripts " +
             "with double quotes are not supported. " +
             "Use JVM_OPTS environment variable to pass any custom JVM option.");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return IgniteCommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnOutOfMemoryError=\"dir c:\\\"");
+                return CommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnOutOfMemoryError=\"dir c:\\\"");
             }
-        }, RuntimeException.class, IgniteCommandLineTransformer.JVM_OPTION_PREFIX +
+        }, RuntimeException.class, CommandLineTransformer.JVM_OPTION_PREFIX +
             " JVM parameters for GridGain batch scripts " +
             "with double quotes are not supported. " +
             "Use JVM_OPTS environment variable to pass any custom JVM option.");
@@ -84,7 +83,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfSeveralArgumentsWithoutDashPrefix() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return IgniteCommandLineTransformer.transform("c:\\qw.xml", "abc", "d");
+                return CommandLineTransformer.transform("c:\\qw.xml", "abc", "d");
             }
         }, RuntimeException.class, "Unrecognised parameter has been found: abc");
     }
@@ -96,7 +95,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DGRIDGAIN_QUIET=true\" \"NO_PAUSE=0\" " +
             "\"JVM_XOPTS=\" \"CONFIG=c:\\qw.xml\"",
-            IgniteCommandLineTransformer.transform("c:\\qw.xml"));
+            CommandLineTransformer.transform("c:\\qw.xml"));
     }
 
     /**
@@ -107,7 +106,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
             "\"INTERACTIVE=1\" \"QUIET=-DGRIDGAIN_QUIET=false\" \"NO_PAUSE=1\" " +
             "\"JVM_XOPTS=-Xmx1g -Xms1m\" " +
             "\"CONFIG=\"c:\\path to\\русский каталог\"\"",
-            IgniteCommandLineTransformer.transform("-i", "-np", "-v", "-J-Xmx1g", "-J-Xms1m",
+            CommandLineTransformer.transform("-i", "-np", "-v", "-J-Xmx1g", "-J-Xms1m",
                 "\"c:\\path to\\русский каталог\""));
     }
 }
