@@ -64,7 +64,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * SPI maintains a counter of how many times a jobs was stolen and
  * hence traveled to another node. {@code GridJobStealingCollisionSpi}
  * checks this counter and will not allow a job to be stolen if this counter
- * exceeds a certain threshold {@link GridJobStealingCollisionSpi#setMaximumStealingAttempts(int)}.
+ * exceeds a certain threshold {@link JobStealingCollisionSpi#setMaximumStealingAttempts(int)}.
  * </i>
  * <p>
  * <h1 class="header">Configuration</h1>
@@ -156,8 +156,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
-    GridJobStealingCollisionSpiMBean {
+public class JobStealingCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
+    JobStealingCollisionSpiMBean {
     /** Maximum number of attempts to steal job by another node (default is {@code 5}). */
     public static final int DFLT_MAX_STEALING_ATTEMPTS = 5;
 
@@ -413,7 +413,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Col
             log.debug(configInfo("maxStealingAttempts", maxStealingAttempts));
         }
 
-        registerMBean(gridName, this, GridJobStealingCollisionSpiMBean.class);
+        registerMBean(gridName, this, JobStealingCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -529,7 +529,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Col
                     int stealReqs0;
 
                     synchronized (info) {
-                        GridJobStealingRequest req = (GridJobStealingRequest)msg;
+                        JobStealingRequest req = (JobStealingRequest)msg;
 
                         // Increment total number of steal requests.
                         // Note that it is critical to increment total
@@ -627,7 +627,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Col
                 }
             }
             else if (stealReqs.get() > 0) {
-                if (waitCtx.getJob().getClass().isAnnotationPresent(GridJobStealingDisabled.class))
+                if (waitCtx.getJob().getClass().isAnnotationPresent(JobStealingDisabled.class))
                     continue;
 
                 // Collision count attribute.
@@ -938,7 +938,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Col
 
                     // Send request to remote node to steal jobs.
                     // Message is a plain integer represented by 'delta'.
-                    getSpiContext().send(next, new GridJobStealingRequest(delta), JOB_STEALING_COMM_TOPIC);
+                    getSpiContext().send(next, new JobStealingRequest(delta), JOB_STEALING_COMM_TOPIC);
                 }
                 catch (IgniteSpiException e) {
                     U.error(log, "Failed to send job stealing message to node: " + next, e);
@@ -967,7 +967,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Col
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridJobStealingCollisionSpi.class, this);
+        return S.toString(JobStealingCollisionSpi.class, this);
     }
 
     /**

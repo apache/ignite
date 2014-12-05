@@ -10,9 +10,6 @@
 package org.gridgain.grid.spi.collision;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.collision.fifoqueue.*;
-import org.gridgain.grid.spi.collision.jobstealing.*;
-import org.gridgain.grid.spi.collision.priorityqueue.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -30,9 +27,9 @@ import org.jetbrains.annotations.*;
  * grid jobs should be executed on a destination grid node. GridGain comes with the following
  * ready implementations for collision resolution that cover most popular strategies:
  * <ul>
- *      <li>{@link GridFifoQueueCollisionSpi}</li>
- *      <li>{@link GridPriorityQueueCollisionSpi}</li>
- *      <li>{@link GridJobStealingCollisionSpi}</li>
+ *      <li>{@link org.gridgain.grid.spi.collision.fifoqueue.FifoQueueCollisionSpi}</li>
+ *      <li>{@link org.gridgain.grid.spi.collision.priorityqueue.PriorityQueueCollisionSpi}</li>
+ *      <li>{@link org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when

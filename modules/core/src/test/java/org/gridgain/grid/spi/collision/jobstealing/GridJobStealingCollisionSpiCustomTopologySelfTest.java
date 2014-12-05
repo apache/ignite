@@ -24,14 +24,14 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi.*;
+import static org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 
 /**
  * Job stealing collision SPI topology test.
  */
-@GridSpiTest(spi = GridJobStealingCollisionSpi.class, group = "Collision SPI")
+@GridSpiTest(spi = JobStealingCollisionSpi.class, group = "Collision SPI")
 public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
-    GridSpiAbstractTest<GridJobStealingCollisionSpi> {
+    GridSpiAbstractTest<JobStealingCollisionSpi> {
     /** */
     private GridTestNode rmtNode1;
 
@@ -127,7 +127,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
             new GridTestCollisionJobContext(createTaskSession(node), IgniteUuid.randomUuid()));
 
         // Emulate message to steal 2 jobs.
-        getSpiContext().triggerMessage(rmtNode2, new GridJobStealingRequest(2));
+        getSpiContext().triggerMessage(rmtNode2, new JobStealingRequest(2));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 

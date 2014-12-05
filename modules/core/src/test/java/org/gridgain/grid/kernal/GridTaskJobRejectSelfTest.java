@@ -48,7 +48,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridFifoQueueCollisionSpi collision = new GridFifoQueueCollisionSpi();
+        FifoQueueCollisionSpi collision = new FifoQueueCollisionSpi();
 
         collision.setParallelJobsNumber(1);
 

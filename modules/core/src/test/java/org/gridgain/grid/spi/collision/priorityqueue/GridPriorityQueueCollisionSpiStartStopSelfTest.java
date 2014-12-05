@@ -15,7 +15,7 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Priority queue collision SPI start-stop test.
  */
-@GridSpiTest(spi = GridPriorityQueueCollisionSpi.class, group = "Collision SPI")
-public class GridPriorityQueueCollisionSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridPriorityQueueCollisionSpi> {
+@GridSpiTest(spi = PriorityQueueCollisionSpi.class, group = "Collision SPI")
+public class GridPriorityQueueCollisionSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<PriorityQueueCollisionSpi> {
     // No-op.
 }

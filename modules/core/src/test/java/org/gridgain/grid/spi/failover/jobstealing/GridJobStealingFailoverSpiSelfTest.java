@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.spi.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi.*;
+import static org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 import static org.gridgain.grid.spi.failover.jobstealing.GridJobStealingFailoverSpi.*;
 
 /**
@@ -55,7 +55,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If failed.
      */
     private void addSpiDependency(GridTestNode node) throws Exception {
-        node.addAttribute(ATTR_SPI_CLASS, GridJobStealingCollisionSpi.class.getName());
+        node.addAttribute(ATTR_SPI_CLASS, JobStealingCollisionSpi.class.getName());
 
         node.setAttribute(U.spiAttribute(getSpi(), ATTR_SPI_CLASS), getSpi().getClass().getName());
     }

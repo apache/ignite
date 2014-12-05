@@ -30,6 +30,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridJobStealingDisabled {
+public @interface JobStealingDisabled {
     // No-op.
 }

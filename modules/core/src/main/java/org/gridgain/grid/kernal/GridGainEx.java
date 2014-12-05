@@ -1683,7 +1683,7 @@ public class GridGainEx {
                 evtSpi = new GridMemoryEventStorageSpi();
 
             if (colSpi == null)
-                colSpi = new GridNoopCollisionSpi();
+                colSpi = new NoopCollisionSpi();
 
             if (authSpi == null)
                 authSpi = new NoopAuthenticationSpi();

@@ -17,10 +17,10 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Unit tests for {@link GridFifoQueueCollisionSpi}.
+ * Unit tests for {@link FifoQueueCollisionSpi}.
  */
-@GridSpiTest(spi = GridFifoQueueCollisionSpi.class, group = "Collision SPI")
-public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridFifoQueueCollisionSpi> {
+@GridSpiTest(spi = FifoQueueCollisionSpi.class, group = "Collision SPI")
+public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQueueCollisionSpi> {
     /**
      * @throws Exception If failed.
      */

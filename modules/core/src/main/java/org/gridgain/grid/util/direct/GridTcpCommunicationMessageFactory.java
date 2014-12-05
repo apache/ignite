@@ -253,7 +253,7 @@ public class GridTcpCommunicationMessageFactory {
                         return new GridStreamerResponse();
 
                     case 78:
-                        return new GridJobStealingRequest();
+                        return new JobStealingRequest();
 
                     case 79:
                         return new GridDhtAffinityAssignmentRequest();

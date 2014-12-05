@@ -14,7 +14,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.util.typedef.*;
@@ -22,19 +21,19 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi.*;
+import static org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 
 /**
  * Job stealing failover SPI needs to always be used in conjunction with
- * {@link GridJobStealingCollisionSpi} SPI. When {@link GridJobStealingCollisionSpi}
+ * {@link org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi} SPI. When {@link org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi}
  * receives a <b>steal</b> request and rejects jobs so they can be routed to the
  * appropriate node, it is the responsibility of this {@code GridJobStealingFailoverSpi}
  * SPI to make sure that the job is indeed re-routed to the node that has sent the initial
  * request to <b>steal</b> it.
  * <p>
  * {@code GridJobStealingFailoverSpi} knows where to route a job based on the
- * {@link GridJobStealingCollisionSpi#THIEF_NODE_ATTR} job context attribute (see {@link org.apache.ignite.compute.ComputeJobContext}).
- * Prior to rejecting a job,  {@link GridJobStealingCollisionSpi} will populate this
+ * {@link org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi#THIEF_NODE_ATTR} job context attribute (see {@link org.apache.ignite.compute.ComputeJobContext}).
+ * Prior to rejecting a job,  {@link org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi} will populate this
  * attribute with the ID of the node that wants to <b>steal</b> this job.
  * Then {@code GridJobStealingFailoverSpi} will read the value of this attribute and
  * route the job to the node specified.

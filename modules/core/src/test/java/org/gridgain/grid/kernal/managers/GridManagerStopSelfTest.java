@@ -96,7 +96,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopCollisionManager() throws Exception {
-        CollisionSpi spi = new GridFifoQueueCollisionSpi();
+        CollisionSpi spi = new FifoQueueCollisionSpi();
 
         injectLogger(spi);
 

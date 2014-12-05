@@ -107,7 +107,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
     /**
      * Test collision spi.
      */
-    private static class GridSessionCollisionSpi extends GridFifoQueueCollisionSpi {
+    private static class GridSessionCollisionSpi extends FifoQueueCollisionSpi {
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;

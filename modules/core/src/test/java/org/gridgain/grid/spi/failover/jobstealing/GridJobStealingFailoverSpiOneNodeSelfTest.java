@@ -46,11 +46,11 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
     private ClusterNode addSpiDependency(GridTestNode node) throws Exception {
         node.addAttribute(
             U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_CLASS),
-            GridJobStealingCollisionSpi.class.getName());
+            JobStealingCollisionSpi.class.getName());
 
         node.addAttribute(
             U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_CLASS),
-            GridJobStealingCollisionSpi.class.getName());
+            JobStealingCollisionSpi.class.getName());
 
         return node;
     }
@@ -63,7 +63,7 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
 
         GridTestJobResult failed = new GridTestJobResult(rmt);
 
-        failed.getJobContext().setAttribute(GridJobStealingCollisionSpi.THIEF_NODE_ATTR,
+        failed.getJobContext().setAttribute(JobStealingCollisionSpi.THIEF_NODE_ATTR,
             getSpiContext().localNode().id());
 
         ClusterNode other = getSpi().failover(new GridFailoverTestContext(new GridTestTaskSession(), failed),

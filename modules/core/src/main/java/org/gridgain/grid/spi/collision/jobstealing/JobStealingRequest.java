@@ -18,7 +18,7 @@ import java.nio.*;
 /**
  * Job stealing request.
  */
-public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
+public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -28,14 +28,14 @@ public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridJobStealingRequest() {
+    public JobStealingRequest() {
         // No-op.
     }
 
     /**
      * @param delta Delta.
      */
-    GridJobStealingRequest(int delta) {
+    JobStealingRequest(int delta) {
         this.delta = delta;
     }
 
@@ -49,7 +49,7 @@ public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
-        GridJobStealingRequest _clone = new GridJobStealingRequest();
+        JobStealingRequest _clone = new JobStealingRequest();
 
         clone0(_clone);
 
@@ -58,7 +58,7 @@ public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
-        GridJobStealingRequest _clone = (GridJobStealingRequest)_msg;
+        JobStealingRequest _clone = (JobStealingRequest)_msg;
 
         _clone.delta = delta;
     }
@@ -113,6 +113,6 @@ public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridJobStealingRequest.class, this);
+        return S.toString(JobStealingRequest.class, this);
     }
 }

@@ -14,17 +14,17 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Priority queue collision SPI config test.
  */
-@GridSpiTest(spi = GridPriorityQueueCollisionSpi.class, group = "Collision SPI")
+@GridSpiTest(spi = PriorityQueueCollisionSpi.class, group = "Collision SPI")
 public class GridPriorityQueueCollisionSpiConfigSelfTest
-    extends GridSpiAbstractConfigTest<GridPriorityQueueCollisionSpi> {
+    extends GridSpiAbstractConfigTest<PriorityQueueCollisionSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridPriorityQueueCollisionSpi(), "parallelJobsNumber", 0);
-        checkNegativeSpiProperty(new GridPriorityQueueCollisionSpi(), "waitingJobsNumber", -1);
-        checkNegativeSpiProperty(new GridPriorityQueueCollisionSpi(), "starvationIncrement", -1);
-        checkNegativeSpiProperty(new GridPriorityQueueCollisionSpi(), "priorityAttributeKey", null);
-        checkNegativeSpiProperty(new GridPriorityQueueCollisionSpi(), "jobPriorityAttributeKey", null);
+        checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "parallelJobsNumber", 0);
+        checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "waitingJobsNumber", -1);
+        checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "starvationIncrement", -1);
+        checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "priorityAttributeKey", null);
+        checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "jobPriorityAttributeKey", null);
     }
 }

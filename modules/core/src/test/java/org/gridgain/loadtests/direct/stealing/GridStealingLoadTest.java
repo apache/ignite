@@ -55,10 +55,10 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        GridJobStealingCollisionSpi colSpi = new GridJobStealingCollisionSpi();
+        JobStealingCollisionSpi colSpi = new JobStealingCollisionSpi();
 
-        assert colSpi.getActiveJobsThreshold() == GridJobStealingCollisionSpi.DFLT_ACTIVE_JOBS_THRESHOLD;
-        assert colSpi.getWaitJobsThreshold() == GridJobStealingCollisionSpi.DFLT_WAIT_JOBS_THRESHOLD;
+        assert colSpi.getActiveJobsThreshold() == JobStealingCollisionSpi.DFLT_ACTIVE_JOBS_THRESHOLD;
+        assert colSpi.getWaitJobsThreshold() == JobStealingCollisionSpi.DFLT_WAIT_JOBS_THRESHOLD;
 
         // One job at a time.
         colSpi.setActiveJobsThreshold(5);

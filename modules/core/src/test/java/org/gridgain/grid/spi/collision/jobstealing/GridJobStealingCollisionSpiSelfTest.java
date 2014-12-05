@@ -25,13 +25,13 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi.*;
+import static org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 
 /**
  * Job stealing SPI test.
  */
-@GridSpiTest(spi = GridJobStealingCollisionSpi.class, group = "Collision SPI")
-public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<GridJobStealingCollisionSpi> {
+@GridSpiTest(spi = JobStealingCollisionSpi.class, group = "Collision SPI")
+public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<JobStealingCollisionSpi> {
     /** */
     public GridJobStealingCollisionSpiSelfTest() {
         super(true /*start spi*/);
@@ -146,7 +146,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -179,7 +179,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -215,7 +215,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         // Emulate message to steal 2 jobs.
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(2));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(2));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -254,7 +254,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
         // Emulate message to steal 2 jobs.
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(2));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(2));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -300,7 +300,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -327,7 +327,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, empty));
 
@@ -350,7 +350,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
-        GridJobStealingRequest sentMsg = (GridJobStealingRequest)getSpiContext().getSentMessage(rmtNode);
+        JobStealingRequest sentMsg = (JobStealingRequest)getSpiContext().getSentMessage(rmtNode);
 
         assert sentMsg != null;
 
@@ -389,7 +389,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
         excluded.getJobContext().setAttribute(STEALING_ATTEMPT_COUNT_ATTR, 1);
 
         // Emulate message to steal 2 jobs.
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(2));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(2));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 

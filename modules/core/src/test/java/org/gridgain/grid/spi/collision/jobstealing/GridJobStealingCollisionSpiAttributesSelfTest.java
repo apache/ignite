@@ -22,13 +22,13 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi.*;
+import static org.gridgain.grid.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 
 /**
  * Job stealing attributes test.
  */
-@GridSpiTest(spi = GridJobStealingCollisionSpi.class, group = "Collision SPI")
-public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstractTest<GridJobStealingCollisionSpi> {
+@GridSpiTest(spi = JobStealingCollisionSpi.class, group = "Collision SPI")
+public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstractTest<JobStealingCollisionSpi> {
     /** */
     private static GridTestNode rmtNode;
 
@@ -124,7 +124,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         rmtNode.setAttribute("useCollision", true);
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         // Set up the same attribute and value as for remote node.
         getSpi().setStealingAttributes(F.asMap("useCollision", true));
@@ -155,7 +155,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         // Set up the same attribute and value as for remote node.
         getSpi().setStealingAttributes(F.asMap("useCollision", true));
@@ -189,7 +189,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         rmtNode.setAttribute("useCollision", true);
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -216,7 +216,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
        rmtNode.setAttribute("useCollision1", true);
 
-       getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+       getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
        // Set up the same attribute and value as for remote node.
        getSpi().setStealingAttributes(F.asMap("useCollision2", true));
@@ -252,7 +252,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -281,7 +281,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         getSpi().setStealingEnabled(false);
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
@@ -309,7 +309,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         getSpi().setStealingEnabled(true);
 
-        getSpiContext().triggerMessage(rmtNode, new GridJobStealingRequest(1));
+        getSpiContext().triggerMessage(rmtNode, new JobStealingRequest(1));
 
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 

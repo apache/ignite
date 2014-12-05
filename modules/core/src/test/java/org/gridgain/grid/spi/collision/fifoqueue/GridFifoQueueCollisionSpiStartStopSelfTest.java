@@ -13,9 +13,9 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.testframework.junits.spi.*;
 
 /**
- * Unit tests for {@link GridFifoQueueCollisionSpi} start-stop.
+ * Unit tests for {@link FifoQueueCollisionSpi} start-stop.
  */
-@GridSpiTest(spi = GridFifoQueueCollisionSpi.class, group = "Collision SPI")
-public class GridFifoQueueCollisionSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridFifoQueueCollisionSpi> {
+@GridSpiTest(spi = FifoQueueCollisionSpi.class, group = "Collision SPI")
+public class GridFifoQueueCollisionSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<FifoQueueCollisionSpi> {
     // No-op.
 }

@@ -63,8 +63,8 @@ import java.util.*;
  * </pre>
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
-    GridFifoQueueCollisionSpiMBean {
+public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
+    FifoQueueCollisionSpiMBean {
     /**
      * Default number of parallel jobs allowed (value is {@code 95} which is
      * slightly less same as default value of threads in the execution thread pool
@@ -155,7 +155,7 @@ public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements Colli
         if (log.isDebugEnabled())
             log.debug(configInfo("parallelJobsNum", parallelJobsNum));
 
-        registerMBean(gridName, this, GridFifoQueueCollisionSpiMBean.class);
+        registerMBean(gridName, this, FifoQueueCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -240,6 +240,6 @@ public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements Colli
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridFifoQueueCollisionSpi.class, this);
+        return S.toString(FifoQueueCollisionSpi.class, this);
     }
 }

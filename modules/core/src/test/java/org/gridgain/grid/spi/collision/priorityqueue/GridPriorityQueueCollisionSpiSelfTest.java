@@ -16,13 +16,13 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi.*;
+import static org.gridgain.grid.spi.collision.priorityqueue.PriorityQueueCollisionSpi.*;
 
 /**
  * Priority queue collision SPI test.
  */
-@GridSpiTest(spi = GridPriorityQueueCollisionSpi.class, group = "Collision SPI")
-public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridPriorityQueueCollisionSpi> {
+@GridSpiTest(spi = PriorityQueueCollisionSpi.class, group = "Collision SPI")
+public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<PriorityQueueCollisionSpi> {
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         getSpi().setParallelJobsNumber(DFLT_PARALLEL_JOBS_NUM);

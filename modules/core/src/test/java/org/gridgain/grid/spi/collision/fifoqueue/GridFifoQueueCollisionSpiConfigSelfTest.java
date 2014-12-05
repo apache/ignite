@@ -12,15 +12,15 @@ package org.gridgain.grid.spi.collision.fifoqueue;
 import org.gridgain.testframework.junits.spi.*;
 
 /**
- * Unit tests for {@link GridFifoQueueCollisionSpi} config.
+ * Unit tests for {@link FifoQueueCollisionSpi} config.
  */
-@GridSpiTest(spi = GridFifoQueueCollisionSpi.class, group = "Collision SPI")
-public class GridFifoQueueCollisionSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridFifoQueueCollisionSpi> {
+@GridSpiTest(spi = FifoQueueCollisionSpi.class, group = "Collision SPI")
+public class GridFifoQueueCollisionSpiConfigSelfTest extends GridSpiAbstractConfigTest<FifoQueueCollisionSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridFifoQueueCollisionSpi(), "parallelJobsNumber", 0);
-        checkNegativeSpiProperty(new GridFifoQueueCollisionSpi(), "waitingJobsNumber", -1);
+        checkNegativeSpiProperty(new FifoQueueCollisionSpi(), "parallelJobsNumber", 0);
+        checkNegativeSpiProperty(new FifoQueueCollisionSpi(), "waitingJobsNumber", -1);
     }
 }

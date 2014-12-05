@@ -21,9 +21,9 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 /**
  * Job stealing collision SPI start-stop test.
  */
-@GridSpiTest(spi = GridJobStealingCollisionSpi.class, group = "Collision SPI")
+@GridSpiTest(spi = JobStealingCollisionSpi.class, group = "Collision SPI")
 public class GridJobStealingCollisionSpiStartStopSelfTest
-    extends GridSpiStartStopAbstractTest<GridJobStealingCollisionSpi> {
+    extends GridSpiStartStopAbstractTest<JobStealingCollisionSpi> {
     /** {@inheritDoc} */
     @Override protected GridSpiTestContext initSpiContext() throws Exception {
         GridSpiTestContext ctx = super.initSpiContext();

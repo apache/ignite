@@ -19,7 +19,7 @@ import java.util.*;
  * Management MBean for job stealing based collision SPI.
  */
 @IgniteMBeanDescription("MBean for job stealing based collision SPI.")
-public interface GridJobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
+public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets current number of jobs to be stolen. This is outstanding
      * requests number.
@@ -155,7 +155,7 @@ public interface GridJobStealingCollisionSpiMBean extends IgniteSpiManagementMBe
 
     /**
      * Gets maximum number of attempts to steal job by another node.
-     * If not specified, {@link GridJobStealingCollisionSpi#DFLT_MAX_STEALING_ATTEMPTS}
+     * If not specified, {@link JobStealingCollisionSpi#DFLT_MAX_STEALING_ATTEMPTS}
      * value will be used.
      *
      * @return Maximum number of attempts to steal job by another node.
@@ -165,7 +165,7 @@ public interface GridJobStealingCollisionSpiMBean extends IgniteSpiManagementMBe
 
     /**
      * Gets maximum number of attempts to steal job by another node.
-     * If not specified, {@link GridJobStealingCollisionSpi#DFLT_MAX_STEALING_ATTEMPTS}
+     * If not specified, {@link JobStealingCollisionSpi#DFLT_MAX_STEALING_ATTEMPTS}
      * value will be used.
      *
      * @param maximumStealingAttempts Maximum number of attempts to steal job by another node.

@@ -14,15 +14,15 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Job stealing collision SPI config test.
  */
-@GridSpiTest(spi = GridJobStealingCollisionSpi.class, group = "Collision SPI")
-public class GridJobStealingCollisionSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridJobStealingCollisionSpi> {
+@GridSpiTest(spi = JobStealingCollisionSpi.class, group = "Collision SPI")
+public class GridJobStealingCollisionSpiConfigSelfTest extends GridSpiAbstractConfigTest<JobStealingCollisionSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridJobStealingCollisionSpi(), "messageExpireTime", 0);
-        checkNegativeSpiProperty(new GridJobStealingCollisionSpi(), "waitJobsThreshold", -1);
-        checkNegativeSpiProperty(new GridJobStealingCollisionSpi(), "activeJobsThreshold", -1);
-        checkNegativeSpiProperty(new GridJobStealingCollisionSpi(), "maximumStealingAttempts", 0);
+        checkNegativeSpiProperty(new JobStealingCollisionSpi(), "messageExpireTime", 0);
+        checkNegativeSpiProperty(new JobStealingCollisionSpi(), "waitJobsThreshold", -1);
+        checkNegativeSpiProperty(new JobStealingCollisionSpi(), "activeJobsThreshold", -1);
+        checkNegativeSpiProperty(new JobStealingCollisionSpi(), "maximumStealingAttempts", 0);
     }
 }

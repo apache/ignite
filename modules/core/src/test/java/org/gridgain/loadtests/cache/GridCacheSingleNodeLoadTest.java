@@ -108,7 +108,7 @@ public class GridCacheSingleNodeLoadTest {
 
         c.setDiscoverySpi(disco);
 
-        GridFifoQueueCollisionSpi cols = new GridFifoQueueCollisionSpi();
+        FifoQueueCollisionSpi cols = new FifoQueueCollisionSpi();
 
         cols.setParallelJobsNumber(Integer.MAX_VALUE);
 

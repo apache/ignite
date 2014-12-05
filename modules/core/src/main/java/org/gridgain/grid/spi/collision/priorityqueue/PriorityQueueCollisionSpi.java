@@ -151,8 +151,8 @@ import java.util.*;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
-    GridPriorityQueueCollisionSpiMBean {
+public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
+    PriorityQueueCollisionSpiMBean {
     /**
      * Default number of parallel jobs allowed (value is {@code 95} which is
      * slightly less same as default value of threads in the execution thread pool
@@ -365,7 +365,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements C
             log.debug(configInfo("preventStarvation", preventStarvation));
         }
 
-        registerMBean(gridName, this, GridPriorityQueueCollisionSpiMBean.class);
+        registerMBean(gridName, this, PriorityQueueCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -544,7 +544,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements C
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPriorityQueueCollisionSpi.class, this);
+        return S.toString(PriorityQueueCollisionSpi.class, this);
     }
 
     /**
