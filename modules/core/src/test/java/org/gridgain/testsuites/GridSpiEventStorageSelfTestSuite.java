@@ -10,7 +10,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.eventstorage.memory.*;
+import org.apache.ignite.spi.eventstorage.memory.*;
 
 /**
  * Event storage test suite.

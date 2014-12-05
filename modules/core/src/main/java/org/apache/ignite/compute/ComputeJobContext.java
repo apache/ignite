@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  * For example, if you need to cancel an actively running job from {@link org.apache.ignite.spi.collision.CollisionSpi}
  * you may choose to set some context attribute on the job to mark the fact
  * that a job was cancelled by grid and not by a user. Context attributes can
- * also be assigned in {@link org.gridgain.grid.spi.failover.FailoverSpi} prior to failing over a job.
+ * also be assigned in {@link org.apache.ignite.spi.failover.FailoverSpi} prior to failing over a job.
  * <p>
  * From within {@link ComputeTask#result(ComputeJobResult, List)} or {@link ComputeTask#reduce(List)} methods,
  * job context is available via {@link ComputeJobResult#getJobContext()} method which gives user the

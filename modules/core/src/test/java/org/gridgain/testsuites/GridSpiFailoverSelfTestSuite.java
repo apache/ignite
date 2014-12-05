@@ -10,9 +10,9 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.failover.always.*;
-import org.gridgain.grid.spi.failover.jobstealing.*;
-import org.gridgain.grid.spi.failover.never.*;
+import org.apache.ignite.spi.failover.always.*;
+import org.apache.ignite.spi.failover.jobstealing.*;
+import org.apache.ignite.spi.failover.never.*;
 
 /**
  * Failover SPI self-test suite.

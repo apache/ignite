@@ -679,11 +679,11 @@
                                         </group>
                                         <group>
                                             <title>SPI: Failover</title>
-                                            <packages>org.gridgain.grid.spi.failover:org.gridgain.grid.spi.failover.never:org.gridgain.grid.spi.failover.jobstealing:org.gridgain.grid.spi.failover.always</packages>
+                                            <packages>org.gridgain.grid.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Event Storage</title>
-                                            <packages>org.gridgain.grid.spi.eventstorage:org.gridgain.grid.spi.eventstorage.memory</packages>
+                                            <packages>org.gridgain.grid.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
                                         </group>
                                         <group>
                                             <title>Segmentation Detection</title>
@@ -881,11 +881,11 @@
                                         </group>
                                         <group>
                                             <title>SPI: Failover</title>
-                                            <packages>org.gridgain.grid.spi.failover:org.gridgain.grid.spi.failover.never:org.gridgain.grid.spi.failover.jobstealing:org.gridgain.grid.spi.failover.always</packages>
+                                            <packages>org.gridgain.grid.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Event Storage</title>
-                                            <packages>org.gridgain.grid.spi.eventstorage:org.gridgain.grid.spi.eventstorage.memory</packages>
+                                            <packages>org.gridgain.grid.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
                                         </group>
                                         <group>
                                             <title>Segmentation Detection</title>

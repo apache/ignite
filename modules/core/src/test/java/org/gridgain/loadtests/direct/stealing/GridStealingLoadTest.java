@@ -16,7 +16,7 @@ import org.gridgain.grid.loadtest.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.gridgain.grid.spi.failover.jobstealing.*;
+import org.apache.ignite.spi.failover.jobstealing.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;

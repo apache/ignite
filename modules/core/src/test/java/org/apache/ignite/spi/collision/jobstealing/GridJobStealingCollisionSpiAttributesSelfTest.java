@@ -12,7 +12,7 @@ package org.apache.ignite.spi.collision.jobstealing;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.discovery.*;
-import org.gridgain.grid.spi.failover.jobstealing.*;
+import org.apache.ignite.spi.failover.jobstealing.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

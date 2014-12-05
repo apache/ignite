@@ -97,7 +97,7 @@
         </property>
 
         <property name="failoverSpi">
-            <bean class="org.gridgain.grid.spi.failover.always.AlwaysFailoverSpi">
+            <bean class="org.apache.ignite.spi.failover.always.AlwaysFailoverSpi">
                 <property name="maximumFailoverAttempts" value="1"/>
             </bean>
         </property>

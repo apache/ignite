@@ -14,7 +14,7 @@ import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.spi.failover.*;
+import org.apache.ignite.spi.failover.*;
 import java.util.*;
 
 /**

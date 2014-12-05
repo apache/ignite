@@ -72,7 +72,7 @@ import java.util.*;
  *      <li>
  *          If {@link ComputeJobResultPolicy#FAILOVER} policy is returned, then job will
  *          be failed over to another node for execution. The node to which job will get
- *          failed over is decided by {@link org.gridgain.grid.spi.failover.FailoverSpi} SPI implementation.
+ *          failed over is decided by {@link org.apache.ignite.spi.failover.FailoverSpi} SPI implementation.
  *          Note that if you use {@link ComputeTaskAdapter} adapter for {@code GridComputeTask}
  *          implementation, then it will automatically fail jobs to another node for 2
  *          known failure cases:

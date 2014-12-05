@@ -14,8 +14,8 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.failover.*;
-import org.gridgain.grid.spi.failover.always.*;
+import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.failover.always.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 

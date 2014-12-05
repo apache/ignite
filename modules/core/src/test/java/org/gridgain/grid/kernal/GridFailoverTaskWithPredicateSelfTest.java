@@ -8,8 +8,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.failover.*;
-import org.gridgain.grid.spi.failover.always.*;
+import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.failover.always.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;

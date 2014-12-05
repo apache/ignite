@@ -18,7 +18,7 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
-import org.gridgain.grid.spi.failover.jobstealing.*;
+import org.apache.ignite.spi.failover.jobstealing.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;

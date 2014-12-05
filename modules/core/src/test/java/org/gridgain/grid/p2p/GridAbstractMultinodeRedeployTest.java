@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.failover.never.*;
+import org.apache.ignite.spi.failover.never.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;

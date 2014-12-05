@@ -63,7 +63,7 @@ import java.util.concurrent.*;
  * or has rejected execution due to lack of resources. By default, in case of failover, next
  * load balanced node will be picked for job execution. Also jobs will never be re-routed to the
  * nodes they have failed on. This behavior can be changed by configuring any of the existing or a custom
- * {@link org.gridgain.grid.spi.failover.FailoverSpi} in grid configuration.
+ * {@link org.apache.ignite.spi.failover.FailoverSpi} in grid configuration.
  * <h1 class="header">Resource Injection</h1>
  * All compute jobs, including closures, runnables, callables, and tasks can be injected with
  * grid resources. Both, field and method based injections are supported. The following grid
