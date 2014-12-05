@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.ggfs.mapreduce.*;
+import org.apache.ignite.fs.mapreduce.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

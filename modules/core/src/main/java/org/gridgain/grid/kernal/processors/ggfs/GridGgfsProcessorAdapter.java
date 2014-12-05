@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.ggfs.mapreduce.*;
+import org.apache.ignite.fs.mapreduce.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.ipc.*;

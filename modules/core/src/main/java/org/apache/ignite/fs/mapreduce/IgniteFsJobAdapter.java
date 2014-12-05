@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs.mapreduce;
+package org.apache.ignite.fs.mapreduce;
 
 /**
  * Adapter for {@link IgniteFsJob} with no-op implementation of {@link #cancel()} method.

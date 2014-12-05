@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs.mapreduce;
+package org.apache.ignite.fs.mapreduce;
 
 import org.apache.ignite.fs.*;
 

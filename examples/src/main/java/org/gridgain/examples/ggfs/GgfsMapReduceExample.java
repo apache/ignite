@@ -12,15 +12,15 @@ package org.gridgain.examples.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.fs.mapreduce.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows how to use {@link org.gridgain.grid.ggfs.mapreduce.IgniteFsTask} to find lines matching particular pattern in the file in pretty
+ * Example that shows how to use {@link org.apache.ignite.fs.mapreduce.IgniteFsTask} to find lines matching particular pattern in the file in pretty
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes
