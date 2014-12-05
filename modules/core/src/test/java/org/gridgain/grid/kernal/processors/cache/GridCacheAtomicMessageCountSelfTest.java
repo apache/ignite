@@ -178,7 +178,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     /**
      * Test communication SPI.
      */
-    private static class TestCommunicationSpi extends GridTcpCommunicationSpi {
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** Counters map. */
         private Map<Class<?>, AtomicInteger> cntMap = new HashMap<>();
 

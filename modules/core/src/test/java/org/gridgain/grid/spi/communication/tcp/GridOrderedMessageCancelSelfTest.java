@@ -137,7 +137,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     /**
      * Communication SPI.
      */
-    private static class CommunicationSpi extends GridTcpCommunicationSpi {
+    private static class CommunicationSpi extends TcpCommunicationSpi {
         /** */
         @IgniteMarshallerResource
         private IgniteMarshaller marsh;

@@ -42,7 +42,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        CommunicationSpi commSpi = new GridTcpCommunicationSpi();
+        CommunicationSpi commSpi = new TcpCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
 

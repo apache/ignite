@@ -45,7 +45,7 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If any exception occurs.
      */
     public void testA() throws Exception {
-        Class cls1 = GridTcpCommunicationSpi.class;
+        Class cls1 = TcpCommunicationSpi.class;
 
         ctx.ports().registerPort(40000, TCP, cls1);
         ctx.ports().registerPort(40000, TCP, cls1);
@@ -101,7 +101,7 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
                     }
 
                     for (int j = 1; j <= cnt; j++)
-                        ctx.ports().registerPort(j + k, TCP, GridTcpCommunicationSpi.class);
+                        ctx.ports().registerPort(j + k, TCP, TcpCommunicationSpi.class);
 
                     finishLatch.countDown();
                 }

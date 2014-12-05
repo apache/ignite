@@ -30,7 +30,6 @@ import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.communication.*;
-import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.discovery.*;
@@ -1931,7 +1930,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured SPI communication  implementation. If not provided,
-     * {@link GridTcpCommunicationSpi} will be used by default.
+     * {@link org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi} will be used by default.
      *
      * @return Grid communication SPI implementation or {@code null} to use default implementation.
      */

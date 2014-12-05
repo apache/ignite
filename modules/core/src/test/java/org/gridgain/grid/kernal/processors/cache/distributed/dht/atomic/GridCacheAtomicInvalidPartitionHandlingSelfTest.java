@@ -287,7 +287,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      *
      */
-    private static class DelayCommunicationSpi extends GridTcpCommunicationSpi {
+    private static class DelayCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws IgniteSpiException {

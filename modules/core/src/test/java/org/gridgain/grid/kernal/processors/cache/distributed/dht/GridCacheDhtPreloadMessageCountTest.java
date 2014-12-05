@@ -132,7 +132,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     /**
      * Communication SPI that will count single partition update messages.
      */
-    private static class TestCommunicationSpi extends GridTcpCommunicationSpi {
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** Recorded messages. */
         private Collection<GridDhtPartitionsSingleMessage> sentMsgs = new ConcurrentLinkedQueue<>();
 

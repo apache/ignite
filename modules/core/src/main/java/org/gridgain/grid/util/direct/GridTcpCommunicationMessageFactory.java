@@ -282,7 +282,7 @@ public class GridTcpCommunicationMessageFactory {
      * @return New message.
      */
     public static GridTcpCommunicationMessageAdapter create(byte type) {
-        return type == GridTcpCommunicationSpi.NODE_ID_MSG_TYPE ? new GridTcpCommunicationSpi.NodeIdMessage() :
+        return type == TcpCommunicationSpi.NODE_ID_MSG_TYPE ? new TcpCommunicationSpi.NodeIdMessage() :
             create0(type);
     }
 

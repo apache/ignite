@@ -16,8 +16,8 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * TCP communication SPI config start-stop test.
  */
-@GridSpiTest(spi = GridTcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridTcpCommunicationSpi> {
+@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
+public class GridTcpCommunicationSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<TcpCommunicationSpi> {
     /**
      * @return Local port.
      * @throws Exception If failed.

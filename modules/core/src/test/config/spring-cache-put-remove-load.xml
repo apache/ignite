@@ -48,7 +48,7 @@
         </property>
 
         <property name="communicationSpi">
-            <bean class="org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi">
+            <bean class="org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi">
                 <property name="sharedMemoryPort" value="-1"/>
             </bean>
         </property>

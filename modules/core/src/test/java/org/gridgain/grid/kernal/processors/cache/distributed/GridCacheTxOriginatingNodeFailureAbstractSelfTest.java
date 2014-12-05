@@ -231,7 +231,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCommunicationSpi(new GridTcpCommunicationSpi() {
+        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
                 throws IgniteSpiException {
                 if (!F.eq(ignoreMsgNodeId, node.id()) || !ignoredMessage((GridIoMessage)msg))

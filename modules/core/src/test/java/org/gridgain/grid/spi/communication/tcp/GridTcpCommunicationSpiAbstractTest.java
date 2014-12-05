@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Test for {@link GridTcpCommunicationSpi}
+ * Test for {@link TcpCommunicationSpi}
  */
 abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi> {
     /** */
@@ -43,7 +43,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
 
     /** {@inheritDoc} */
     @Override protected CommunicationSpi getSpi(int idx) {
-        GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         if (!useShmem)
             spi.setSharedMemoryPort(-1);

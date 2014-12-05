@@ -7,7 +7,7 @@ import org.apache.ignite.spi.*;
  * MBean provide access to TCP-based communication SPI.
  */
 @IgniteMBeanDescription("MBean provide access to TCP-based communication SPI.")
-public interface GridTcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
+public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets local host address for socket binding.
      * Beside loopback address physical node could have
@@ -171,7 +171,7 @@ public interface GridTcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * This frequency defines how often system will advice to flush
      * connection buffer.
      * <p>
-     * If not provided, default value is {@link GridTcpCommunicationSpi#DFLT_CONN_BUF_FLUSH_FREQ}.
+     * If not provided, default value is {@link TcpCommunicationSpi#DFLT_CONN_BUF_FLUSH_FREQ}.
      * <p>
      * This property is used only if {@link #getConnectionBufferSize()} is greater than {@code 0}.
      *
@@ -202,7 +202,7 @@ public interface GridTcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets receive buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@link GridTcpCommunicationSpi#DFLT_SOCK_BUF_SIZE}.
+     * If not provided, default is {@link TcpCommunicationSpi#DFLT_SOCK_BUF_SIZE}.
      *
      * @return Socket receive buffer size.
      */
@@ -212,7 +212,7 @@ public interface GridTcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets send buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@link GridTcpCommunicationSpi#DFLT_SOCK_BUF_SIZE}.
+     * If not provided, default is {@link TcpCommunicationSpi#DFLT_SOCK_BUF_SIZE}.
      *
      * @return Socket send buffer size.
      */

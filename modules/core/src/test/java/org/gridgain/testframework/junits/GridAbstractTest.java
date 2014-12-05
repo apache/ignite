@@ -1039,7 +1039,7 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);
 
-        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         commSpi.setTcpNoDelay(true);

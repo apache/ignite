@@ -155,7 +155,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     /**
      *
      */
-    private static class TestCommunicationSpi extends GridTcpCommunicationSpi {
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** */
         private final AtomicInteger msgCnt = new AtomicInteger();
 

@@ -14,28 +14,28 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * TCP communication SPI config test.
  */
-@GridSpiTest(spi = GridTcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridTcpCommunicationSpi> {
+@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
+public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfigTest<TcpCommunicationSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "localPort", 1023);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "localPort", 65636);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "localPortRange", -1);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "idleConnectionTimeout", 0);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "connectionBufferSize", -1);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "connectionBufferFlushFrequency", 0);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "socketReceiveBuffer", -1);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "socketSendBuffer", -1);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "messageQueueLimit", -1);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "sharedMemoryPort", 0);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "sharedMemoryPort", -2);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "reconnectCount", 0);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "selectorsCount", 0);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "minimumBufferedMessageCount", -1);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "bufferSizeRatio", 0);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "connectTimeout", -1);
-        checkNegativeSpiProperty(new GridTcpCommunicationSpi(), "maxConnectTimeout", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 1023);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 65636);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPortRange", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "idleConnectionTimeout", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionBufferSize", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionBufferFlushFrequency", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "socketReceiveBuffer", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "socketSendBuffer", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "messageQueueLimit", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "sharedMemoryPort", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "sharedMemoryPort", -2);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "reconnectCount", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "selectorsCount", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "minimumBufferedMessageCount", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "bufferSizeRatio", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectTimeout", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "maxConnectTimeout", -1);
     }
 }

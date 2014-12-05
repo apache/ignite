@@ -94,7 +94,7 @@ public class GridCacheStoreValueBytesNode {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
         commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);

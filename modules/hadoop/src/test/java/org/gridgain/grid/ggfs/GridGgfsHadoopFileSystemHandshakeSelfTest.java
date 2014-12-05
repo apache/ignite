@@ -192,7 +192,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 

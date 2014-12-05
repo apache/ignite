@@ -135,8 +135,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class GridTcpCommunicationSpi extends IgniteSpiAdapter
-    implements CommunicationSpi<GridTcpCommunicationMessageAdapter>, GridTcpCommunicationSpiMBean {
+public class TcpCommunicationSpi extends IgniteSpiAdapter
+    implements CommunicationSpi<GridTcpCommunicationMessageAdapter>, TcpCommunicationSpiMBean {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower). For troubleshooting see " +
@@ -1148,7 +1148,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
             U.quietAndWarn(log, "'TCP_NO_DELAY' for communication is off, which should be used with caution " +
                 "since may produce significant delays with some scenarios.");
 
-        registerMBean(gridName, this, GridTcpCommunicationSpiMBean.class);
+        registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
 
         if (shmemSrv != null) {
             shmemAcceptWorker = new ShmemAcceptWorker(shmemSrv);
@@ -1411,7 +1411,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
         if (node.attribute(attrName) == null)
             U.warn(log, "Remote node has inconsistent configuration (required attribute was not found) " +
                 "[attrName=" + attrName + ", nodeId=" + node.id() +
-                "spiCls=" + U.getSimpleName(GridTcpCommunicationSpi.class) + ']');
+                "spiCls=" + U.getSimpleName(TcpCommunicationSpi.class) + ']');
     }
 
     /** {@inheritDoc} */
@@ -1898,7 +1898,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpCommunicationSpi.class, this);
+        return S.toString(TcpCommunicationSpi.class, this);
     }
 
     /** Internal exception class for proper timeout handling. */
@@ -1984,7 +1984,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
                     endpoint,
                     msgWriter,
                     srvLsnr,
-                    new GridNioCodecFilter(new GridDirectParser(msgReader, GridTcpCommunicationSpi.this), log, true),
+                    new GridNioCodecFilter(new GridDirectParser(msgReader, TcpCommunicationSpi.this), log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 

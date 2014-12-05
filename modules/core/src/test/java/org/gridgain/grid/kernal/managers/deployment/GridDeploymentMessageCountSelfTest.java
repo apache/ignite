@@ -155,7 +155,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class MessageCountingCommunicationSpi extends GridTcpCommunicationSpi {
+    private class MessageCountingCommunicationSpi extends TcpCommunicationSpi {
         /** */
         private AtomicInteger msgCnt = new AtomicInteger();
 

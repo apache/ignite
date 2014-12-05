@@ -50,7 +50,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration();
 
         /* Uncomment following code if you start it manually. */
-            CommunicationSpi commSpi = new GridTcpCommunicationSpi();
+            CommunicationSpi commSpi = new TcpCommunicationSpi();
 
             cfg.setCommunicationSpi(commSpi);
 

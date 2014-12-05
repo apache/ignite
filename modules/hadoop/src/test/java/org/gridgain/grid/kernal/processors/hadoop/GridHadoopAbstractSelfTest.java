@@ -81,7 +81,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
 
         cfg.setHadoopConfiguration(hadoopConfiguration(gridName));
 
-        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 

@@ -443,7 +443,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
      * @return SPI instance.
      */
     private CommunicationSpi getCommunication() {
-        GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setTcpNoDelay(true);
         spi.setSharedMemoryPort(-1);

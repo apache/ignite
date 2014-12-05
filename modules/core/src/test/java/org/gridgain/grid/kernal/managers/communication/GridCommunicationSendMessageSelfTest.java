@@ -58,7 +58,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
 
         c.setDiscoverySpi(discoSpi);
 
-        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setConnectionBufferSize(bufSize);
 

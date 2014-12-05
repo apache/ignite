@@ -14,7 +14,7 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  *
  */
-@GridSpiTest(spi = GridTcpCommunicationSpi.class, group = "Communication SPI")
+@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class GridTcpCommunicationSpiShmemSelfTest extends GridTcpCommunicationSpiAbstractTest {
     /** */
     public GridTcpCommunicationSpiShmemSelfTest() {

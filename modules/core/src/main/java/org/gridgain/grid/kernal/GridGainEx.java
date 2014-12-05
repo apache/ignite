@@ -1667,7 +1667,7 @@ public class GridGainEx {
              */
 
             if (commSpi == null)
-                commSpi = new GridTcpCommunicationSpi();
+                commSpi = new TcpCommunicationSpi();
 
             if (discoSpi == null)
                 discoSpi = new GridTcpDiscoverySpi();

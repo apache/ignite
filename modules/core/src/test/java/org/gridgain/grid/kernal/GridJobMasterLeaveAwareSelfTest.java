@@ -713,7 +713,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Communication SPI which could optionally block outgoing messages.
      */
-    private static class CommunicationSpi extends GridTcpCommunicationSpi {
+    private static class CommunicationSpi extends TcpCommunicationSpi {
         /** Marshaller. */
         @IgniteMarshallerResource
         private IgniteMarshaller marsh;

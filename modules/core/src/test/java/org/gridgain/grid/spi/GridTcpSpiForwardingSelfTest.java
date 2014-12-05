@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi} and {@link GridTcpCommunicationSpi}.
+ * Test for {@link GridTcpDiscoverySpi} and {@link org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi}.
  */
 public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /** */
@@ -93,7 +93,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         cfg.setRestEnabled(false);
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi() {
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi() {
             @Override protected GridCommunicationClient createTcpClient(ClusterNode node) throws GridException {
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
                 attrs.remove(createSpiAttributeName(ATTR_PORT));

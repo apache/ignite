@@ -26,10 +26,10 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Class for multithreaded {@link GridTcpCommunicationSpi} test.
+ * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
-public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpCommunicationSpi> {
+public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
     /** Connection idle timeout */
     public static final int IDLE_CONN_TIMEOUT = 2000;
 
@@ -43,7 +43,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpC
     private GridTestResources spiRsrc;
 
     /** SPI */
-    private GridTcpCommunicationSpi spi;
+    private TcpCommunicationSpi spi;
 
     /** Listener. */
     private MessageListener lsnr;
@@ -186,8 +186,8 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpC
     /**
      * @return Spi.
      */
-    private GridTcpCommunicationSpi createSpi() {
-        GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
+    private TcpCommunicationSpi createSpi() {
+        TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(IDLE_CONN_TIMEOUT);
@@ -230,7 +230,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpC
 
         remoteNode.setAttributes(attrs);
 
-        remoteNode.setAttribute(U.spiAttribute(spi, GridTcpCommunicationSpi.ATTR_ADDRS),
+        remoteNode.setAttribute(U.spiAttribute(spi, TcpCommunicationSpi.ATTR_ADDRS),
             Collections.singleton(remoteAddr));
 
         ctx.remoteNodes().add(remoteNode);

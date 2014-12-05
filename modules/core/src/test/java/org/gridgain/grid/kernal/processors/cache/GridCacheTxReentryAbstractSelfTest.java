@@ -114,7 +114,7 @@ public abstract class GridCacheTxReentryAbstractSelfTest extends GridCommonAbstr
     }
 
     /** Counting communication SPI. */
-    protected static class CountingCommunicationSpi extends GridTcpCommunicationSpi {
+    protected static class CountingCommunicationSpi extends TcpCommunicationSpi {
         /** Distributed lock requests. */
         private AtomicInteger distLocks = new AtomicInteger();
 

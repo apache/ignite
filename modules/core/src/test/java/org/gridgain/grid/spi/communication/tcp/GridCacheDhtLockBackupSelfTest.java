@@ -225,7 +225,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /**
      * Test communication spi that delays message sending.
      */
-    private class TestCommunicationSpi extends GridTcpCommunicationSpi {
+    private class TestCommunicationSpi extends TcpCommunicationSpi {
         /** Class of delayed messages. */
         private Class<?> delayedMsgCls;
 

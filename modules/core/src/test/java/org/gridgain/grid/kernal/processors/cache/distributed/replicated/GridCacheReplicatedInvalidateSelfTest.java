@@ -189,7 +189,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    private class TestCommunicationSpi extends GridTcpCommunicationSpi {
+    private class TestCommunicationSpi extends TcpCommunicationSpi {
         /** */
         private final Map<UUID, Integer> msgCntMap = new HashMap<>();
 

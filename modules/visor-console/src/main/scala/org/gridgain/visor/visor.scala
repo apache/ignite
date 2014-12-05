@@ -34,7 +34,7 @@ import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
+import org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
@@ -1525,7 +1525,7 @@ object visor extends VisorTag {
                 var ioSpi = cfg.getCommunicationSpi
 
                 if (ioSpi == null)
-                    ioSpi = new GridTcpCommunicationSpi()
+                    ioSpi = new TcpCommunicationSpi()
 
                 cfg
             }

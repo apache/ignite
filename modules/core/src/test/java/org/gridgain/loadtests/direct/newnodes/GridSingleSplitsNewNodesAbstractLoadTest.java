@@ -45,7 +45,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCommunicationSpi(new GridTcpCommunicationSpi());
+        cfg.setCommunicationSpi(new TcpCommunicationSpi());
 
         cfg.setDiscoverySpi(getDiscoverySpi(cfg));
 

@@ -403,7 +403,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCommunicationSpi(new GridTcpCommunicationSpi() {
+        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
                 throws IgniteSpiException {
                 if (getSpiContext().localNode().id().equals(failingNodeId)) {

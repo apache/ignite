@@ -40,7 +40,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        cfg.setCommunicationSpi(new GridTcpCommunicationSpi());
+        cfg.setCommunicationSpi(new TcpCommunicationSpi());
         cfg.setDiscoverySpi(new GridTcpDiscoverySpi());
 
         IgniteLog4jLogger log = (IgniteLog4jLogger)cfg.getGridLogger().getLogger(null);

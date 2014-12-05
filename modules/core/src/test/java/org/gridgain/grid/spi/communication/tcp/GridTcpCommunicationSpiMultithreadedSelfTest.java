@@ -31,10 +31,10 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Class for multithreaded {@link GridTcpCommunicationSpi} test.
+ * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
-public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstractTest<GridTcpCommunicationSpi> {
+public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
     /** Connection idle timeout */
     public static final int IDLE_CONN_TIMEOUT = 2000;
 
@@ -317,7 +317,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                     while (run.get() && !Thread.currentThread().isInterrupted()) {
                         U.sleep(interval * 3 / 2);
 
-                        ((GridTcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.id());
+                        ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.id());
                     }
                 }
                 catch (GridInterruptedException ignored) {
@@ -395,7 +395,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
      * @return Spi.
      */
     private CommunicationSpi<GridTcpCommunicationMessageAdapter> newCommunicationSpi() {
-        GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
+        TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         if (!useShmem)
             spi.setSharedMemoryPort(-1);

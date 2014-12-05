@@ -388,8 +388,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         // Our SPI tests should not have the same parameters otherwise they
         // will find each other.
-        if (spi instanceof GridTcpCommunicationSpi)
-            ((GridTcpCommunicationSpi)spi).setLocalPort(GridTestUtils.getNextCommPort(getClass()));
+        if (spi instanceof TcpCommunicationSpi)
+            ((TcpCommunicationSpi)spi).setLocalPort(GridTestUtils.getNextCommPort(getClass()));
 
         if (spi instanceof GridTcpDiscoverySpi) {
             GridTcpDiscoveryIpFinder ipFinder = ((GridTcpDiscoverySpi)spi).getIpFinder();

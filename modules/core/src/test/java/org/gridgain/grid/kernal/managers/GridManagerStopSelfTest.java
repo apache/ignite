@@ -111,7 +111,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopCommunicationManager() throws Exception {
-        CommunicationSpi spi = new GridTcpCommunicationSpi();
+        CommunicationSpi spi = new TcpCommunicationSpi();
 
         injectLogger(spi);
 
