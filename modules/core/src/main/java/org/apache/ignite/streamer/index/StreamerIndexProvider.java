@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer.index;
+package org.apache.ignite.streamer.index;
 
 import org.gridgain.grid.*;
 

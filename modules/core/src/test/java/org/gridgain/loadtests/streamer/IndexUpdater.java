@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.streamer;
 
-import org.gridgain.grid.streamer.index.*;
+import org.apache.ignite.streamer.index.*;
 import org.jetbrains.annotations.*;
 
 /**

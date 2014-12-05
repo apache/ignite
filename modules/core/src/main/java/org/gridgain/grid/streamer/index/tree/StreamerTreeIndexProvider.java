@@ -10,8 +10,8 @@
 package org.gridgain.grid.streamer.index.tree;
 
 import com.romix.scala.collection.concurrent.*;
+import org.apache.ignite.streamer.index.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.index.*;
 import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -21,10 +21,10 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
+import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
 
 /**
- * Tree index implementation of a {@link org.gridgain.grid.streamer.index.StreamerIndexProvider}.
+ * Tree index implementation of a {@link org.apache.ignite.streamer.index.StreamerIndexProvider}.
  * <p>
  * The advantage of a tree index is that it maintains entries in a
  * sorted order, which is invaluable for many kinds of tasks, where

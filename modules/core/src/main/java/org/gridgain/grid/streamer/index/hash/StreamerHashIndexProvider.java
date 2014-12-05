@@ -10,18 +10,18 @@
 package org.gridgain.grid.streamer.index.hash;
 
 import com.romix.scala.collection.concurrent.*;
+import org.apache.ignite.streamer.index.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.index.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
+import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
 
 /**
- * Hash index implementation of a {@link org.gridgain.grid.streamer.index.StreamerIndexProvider}.
+ * Hash index implementation of a {@link org.apache.ignite.streamer.index.StreamerIndexProvider}.
  * <p>
  * This implementation uses a concurrent hash map, which is extremely
  * efficient for CRUD operations. It does not, however, maintain the

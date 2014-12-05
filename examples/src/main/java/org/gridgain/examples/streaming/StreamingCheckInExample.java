@@ -12,9 +12,9 @@ package org.gridgain.examples.streaming;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.index.*;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.index.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -512,7 +512,7 @@ public class StreamingCheckInExample {
     }
 
     /**
-     * Index updater for check-in events. Updaters are specified for {@link org.gridgain.grid.streamer.index.StreamerIndexProviderAdapter} in
+     * Index updater for check-in events. Updaters are specified for {@link org.apache.ignite.streamer.index.StreamerIndexProviderAdapter} in
      * streamer configuration.
      */
     private static class CheckInEventIndexUpdater implements StreamerIndexUpdater<CheckInEvent, String, Location> {
@@ -543,7 +543,7 @@ public class StreamingCheckInExample {
     }
 
     /**
-     * Index updater for location info. Updaters are specified for {@link org.gridgain.grid.streamer.index.StreamerIndexProviderAdapter} in
+     * Index updater for location info. Updaters are specified for {@link org.apache.ignite.streamer.index.StreamerIndexProviderAdapter} in
      * streamer configuration.
      */
     private static class PlacesIndexUpdater implements StreamerIndexUpdater<LocationInfo, String, Place> {

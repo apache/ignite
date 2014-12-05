@@ -12,7 +12,6 @@ package org.apache.ignite.streamer.index;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.index.*;
 import org.gridgain.grid.streamer.index.hash.*;
 import org.gridgain.grid.streamer.index.tree.*;
 import org.gridgain.grid.util.typedef.*;
@@ -23,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
+import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**

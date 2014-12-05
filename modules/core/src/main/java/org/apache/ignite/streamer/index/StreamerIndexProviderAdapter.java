@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer.index;
+package org.apache.ignite.streamer.index;
 
 import com.romix.scala.*;
 import com.romix.scala.collection.concurrent.*;
@@ -23,7 +23,7 @@ import org.pcollections.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
+import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
 
 /**
  * Convenient {@link StreamerIndexProvider} adapter implementing base configuration methods.

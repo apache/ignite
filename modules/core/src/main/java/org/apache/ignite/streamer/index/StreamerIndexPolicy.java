@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer.index;
+package org.apache.ignite.streamer.index;
 
 /**
  * Streamer index policy, which defines how events

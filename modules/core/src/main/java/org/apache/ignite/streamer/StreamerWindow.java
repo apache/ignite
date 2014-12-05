@@ -9,8 +9,8 @@
 
 package org.apache.ignite.streamer;
 
+import org.apache.ignite.streamer.index.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.index.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
