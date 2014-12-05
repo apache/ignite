@@ -15,7 +15,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.lang.*;
@@ -129,13 +128,6 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
         assert g != null;
 
         return g.product();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridDr dr() {
-        assert g != null;
-
-        return g.dr();
     }
 
     /** {@inheritDoc} */

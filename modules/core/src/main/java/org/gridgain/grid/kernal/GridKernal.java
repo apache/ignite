@@ -21,7 +21,6 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
@@ -3185,12 +3184,6 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             throw new UnsupportedOperationException("Portables interface available in Enterprise edition only.");
 
         return portables;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDr dr() {
-        // FIXME 9341.
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

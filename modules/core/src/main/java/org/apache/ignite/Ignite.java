@@ -15,7 +15,6 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
@@ -196,13 +195,6 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of {@code GridPortables} interface.
      */
     public IgnitePortables portables();
-
-    /**
-     * Gets an instance of Data Center Replication.
-     *
-     * @return Instance of Data Center Replication.
-     */
-    public GridDr dr();
 
     /**
      * Gets the cache instance for the given name, if one does not

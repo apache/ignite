@@ -16,8 +16,6 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.dr.cache.receiver.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -334,12 +332,6 @@ public class GridCacheConfiguration {
     private long preloadThrottle = DFLT_PRELOAD_THROTTLE;
 
     /** */
-    private GridDrReceiverCacheConfiguration drRcvCacheCfg;
-
-    /** */
-    private GridDrSenderCacheConfiguration drSndCacheCfg;
-
-    /** */
     private GridCacheInterceptor<?, ?> interceptor;
 
     /** */
@@ -376,10 +368,6 @@ public class GridCacheConfiguration {
         dgcRmvLocks = cc.isDgcRemoveLocks();
         dgcSuspectLockTimeout = cc.getDgcSuspectLockTimeout();
         distro = cc.getDistributionMode();
-        drSndCacheCfg = cc.getDrSenderConfiguration() != null ?
-            new GridDrSenderCacheConfiguration(cc.getDrSenderConfiguration()) : null;
-        drRcvCacheCfg = cc.getDrReceiverConfiguration() != null ?
-            new GridDrReceiverCacheConfiguration(cc.getDrReceiverConfiguration()) : null;
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
         evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
@@ -1729,42 +1717,6 @@ public class GridCacheConfiguration {
     @Deprecated
     public void setContinuousQueryMaximumBufferSize(int contQryMaxBufSize) {
         // No-op.
-    }
-
-    /**
-     * Gets data center replication send configuration.
-     *
-     * @return Data center replication send configuration.
-     */
-    @Nullable public GridDrSenderCacheConfiguration getDrSenderConfiguration() {
-        return drSndCacheCfg;
-    }
-
-    /**
-     * Sets data center replication send configuration. See {@link #getDrSenderConfiguration} for more information.
-     *
-     * @param drSndCacheCfg Data center replication send configuration.
-     */
-    public void setDrSenderConfiguration(GridDrSenderCacheConfiguration drSndCacheCfg) {
-        this.drSndCacheCfg = drSndCacheCfg;
-    }
-
-    /**
-     * Gets data center replication receive configuration.
-     *
-     * @return Data center replication receive configuration.
-     */
-    @Nullable public GridDrReceiverCacheConfiguration getDrReceiverConfiguration() {
-        return drRcvCacheCfg;
-    }
-
-    /**
-     * Sets data center replication receive configuration. See {@link #getDrReceiverConfiguration} for more information.
-     *
-     * @param drRcvCacheCfg Data center replication receive configuration.
-     */
-    public void setDrReceiverConfiguration(GridDrReceiverCacheConfiguration drRcvCacheCfg) {
-        this.drRcvCacheCfg = drRcvCacheCfg;
     }
 
     /**

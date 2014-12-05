@@ -23,8 +23,6 @@ import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dotnet.*;
-import org.gridgain.grid.dr.hub.receiver.*;
-import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
@@ -513,15 +511,6 @@ public class IgniteConfiguration {
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
 
-    /** Data center receiver hub configuration. */
-    private GridDrReceiverHubConfiguration drRcvHubCfg;
-
-    /** Data center sender hub configuration. */
-    private GridDrSenderHubConfiguration drSndHubCfg;
-
-    /** Data center ID. */
-    private byte dataCenterId;
-
     /** Security credentials. */
     private GridSecurityCredentialsProvider securityCred;
 
@@ -584,13 +573,8 @@ public class IgniteConfiguration {
         clientMsgInterceptor = cfg.getClientMessageInterceptor();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
-        dataCenterId = cfg.getDataCenterId();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
-        drRcvHubCfg = cfg.getDrReceiverHubConfiguration() != null ?
-            new GridDrReceiverHubConfiguration(cfg.getDrReceiverHubConfiguration()) : null;
-        drSndHubCfg = cfg.getDrSenderHubConfiguration() != null ?
-            new GridDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration()) : null;
         execSvc = cfg.getExecutorService();
         execSvcShutdown = cfg.getExecutorServiceShutdown();
         ggHome = cfg.getGridGainHome();
@@ -3012,66 +2996,6 @@ public class IgniteConfiguration {
      */
     public void setStreamerConfiguration(StreamerConfiguration... streamerCfg) {
         this.streamerCfg = streamerCfg;
-    }
-
-    /**
-     * Set data center receiver hub configuration.
-     *
-     * @return Data center receiver hub configuration.
-     */
-    public GridDrReceiverHubConfiguration getDrReceiverHubConfiguration() {
-        return drRcvHubCfg;
-    }
-
-    /**
-     * Set data center sender hub configuration.
-     *
-     * @param drRcvHubCfg Data center sender hub configuration.
-     */
-    public void setDrReceiverHubConfiguration(GridDrReceiverHubConfiguration drRcvHubCfg) {
-        this.drRcvHubCfg = drRcvHubCfg;
-    }
-
-    /**
-     * Get data center sender hub configuration.
-     *
-     * @return Data center sender hub configuration.
-     */
-    public GridDrSenderHubConfiguration getDrSenderHubConfiguration() {
-        return drSndHubCfg;
-    }
-
-    /**
-     * Set data center receiver hub configuration.
-     *
-     * @param drSndHubCfg Data center receiver hub configuration.
-     */
-    public void setDrSenderHubConfiguration(GridDrSenderHubConfiguration drSndHubCfg) {
-        this.drSndHubCfg = drSndHubCfg;
-    }
-
-    /**
-     * Gets data center ID of the grid.
-     * <p>
-     * It is expected that data center ID will be unique among all the topologies participating in data center
-     * replication and the same for all the nodes that belong the given topology.
-     *
-     * @return Data center ID or {@code 0} if it is not set.
-     */
-    public byte getDataCenterId() {
-        return dataCenterId;
-    }
-
-    /**
-     * Sets data center ID of the grid.
-     * <p>
-     * It is expected that data center ID will be unique among all the topologies participating in data center
-     * replication and the same for all the nodes that belong the given topology.
-     *
-     * @param dataCenterId Data center ID.
-     */
-    public void setDataCenterId(byte dataCenterId) {
-        this.dataCenterId = dataCenterId;
     }
 
     /**
