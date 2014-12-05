@@ -344,12 +344,12 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerPort(int port, GridPortProtocol proto) {
+    @Override public void registerPort(int port, IgnitePortProtocol proto) {
         /* No-op. */
     }
 
     /** {@inheritDoc} */
-    @Override public void deregisterPort(int port, GridPortProtocol proto) {
+    @Override public void deregisterPort(int port, IgnitePortProtocol proto) {
         /* No-op. */
     }
 
@@ -478,7 +478,7 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

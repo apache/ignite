@@ -103,7 +103,7 @@ public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridC
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setParallelJobsNumber(int parallelJobsNum) {
         A.ensure(parallelJobsNum > 0, "parallelJobsNum > 0");
 
@@ -116,7 +116,7 @@ public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridC
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setWaitingJobsNumber(int waitJobsNum) {
         A.ensure(waitJobsNum >= 0, "waitingJobsNum >= 0");
 

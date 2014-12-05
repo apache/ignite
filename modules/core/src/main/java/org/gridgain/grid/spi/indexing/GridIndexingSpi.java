@@ -71,7 +71,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return Queried rows.
      * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName, String qry,
+    public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName, String qry,
         Collection<Object> params, GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters)
         throws IgniteSpiException;
 
@@ -85,7 +85,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return Queried rows.
      * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable String spaceName, String qry,
+    public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable String spaceName, String qry,
         GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters) throws IgniteSpiException;
 
     /**

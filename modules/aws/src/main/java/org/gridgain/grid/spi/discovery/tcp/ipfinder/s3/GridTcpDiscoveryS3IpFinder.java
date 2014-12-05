@@ -276,7 +276,7 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
      *
      * @param bucketName Bucket name.
      */
-    @GridSpiConfiguration(optional = false)
+    @IgniteSpiConfiguration(optional = false)
     public void setBucketName(String bucketName) {
         this.bucketName = bucketName;
     }
@@ -288,7 +288,7 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
      *
      * @param cfg Amazon client configuration.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setClientConfiguration(ClientConfiguration cfg) {
         this.cfg = cfg;
     }
@@ -300,7 +300,7 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
      *
      * @param cred AWS credentials.
      */
-    @GridSpiConfiguration(optional = false)
+    @IgniteSpiConfiguration(optional = false)
     public void setAwsCredentials(AWSCredentials cred) {
         this.cred = cred;
     }

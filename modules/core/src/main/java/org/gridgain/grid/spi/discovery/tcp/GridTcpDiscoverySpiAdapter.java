@@ -154,7 +154,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param locAddr IP address.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
@@ -187,7 +187,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param ipFinder IP finder.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setIpFinder(GridTcpDiscoveryIpFinder ipFinder) {
         this.ipFinder = ipFinder;
     }
@@ -203,7 +203,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param sockTimeout Socket connection timeout.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setSocketTimeout(long sockTimeout) {
         this.sockTimeout = sockTimeout;
     }
@@ -218,7 +218,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param ackTimeout Acknowledgement timeout.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setAckTimeout(long ackTimeout) {
         this.ackTimeout = ackTimeout;
     }
@@ -230,7 +230,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param netTimeout Network timeout.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setNetworkTimeout(long netTimeout) {
         this.netTimeout = netTimeout;
     }
@@ -242,7 +242,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param threadPri Thread priority.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setThreadPriority(int threadPri) {
         this.threadPri = threadPri;
     }
@@ -255,7 +255,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param hbFreq Heartbeat frequency in milliseconds.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setHeartbeatFrequency(long hbFreq) {
         this.hbFreq = hbFreq;
     }
@@ -273,7 +273,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @param topHistSize Size of topology snapshots history.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setTopHistorySize(int topHistSize) {
         if (topHistSize < DFLT_TOP_HISTORY_SIZE) {
             U.warn(log, "Topology history size should be greater than or equal to default size. " +

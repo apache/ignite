@@ -100,7 +100,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
      *
      * @param path Shared path.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setPath(String path) {
         this.path = path;
     }

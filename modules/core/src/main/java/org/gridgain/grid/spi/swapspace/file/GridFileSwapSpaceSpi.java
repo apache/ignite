@@ -166,7 +166,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      *
      * @param baseDir Base directory.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setBaseDirectory(String baseDir) {
         this.baseDir = baseDir;
     }
@@ -469,7 +469,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> GridSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
+    @Nullable @Override public <K> IgniteSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
         GridSwapContext ctx) throws IgniteSpiException {
         final Space space = space(spaceName, false);
 
@@ -494,7 +494,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
+    @Nullable @Override public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         @Nullable String spaceName) throws IgniteSpiException {
         Space space = space(spaceName, false);
 
@@ -505,7 +505,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
+    @Nullable @Override public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         @Nullable String spaceName, int part) throws IgniteSpiException {
         Space space = space(spaceName, false);
 
@@ -521,7 +521,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * @param iter Entries iterator.
      * @return Raw iterator.
      */
-    private GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
+    private IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         final Iterator<Map.Entry<GridSwapKey, byte[]>> iter) {
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
             @Override protected Map.Entry<byte[], byte[]> onNext() throws GridException {

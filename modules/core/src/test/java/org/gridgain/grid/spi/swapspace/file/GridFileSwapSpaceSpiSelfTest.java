@@ -227,7 +227,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                             break;
 
                         case 6: // iterateKeys
-                            GridSpiCloseableIterator<Integer> kIt = spi.keyIterator(space, context());
+                            IgniteSpiCloseableIterator<Integer> kIt = spi.keyIterator(space, context());
 
                             if (kIt == null)
                                 break;
@@ -240,7 +240,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                             break;
 
                         case 7: // iterate
-                            GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(space);
+                            IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(space);
 
                             if (iter == null)
                                 break;
@@ -325,7 +325,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         int cnt = 0;
 
-        GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(space);
+        IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(space);
 
         while (iter.hasNext()) {
             Map.Entry<byte[], byte[]> entry = iter.next();

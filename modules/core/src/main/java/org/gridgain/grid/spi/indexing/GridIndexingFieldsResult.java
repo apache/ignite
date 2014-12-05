@@ -31,5 +31,5 @@ public interface GridIndexingFieldsResult {
      *
      * @return Iterator over queried fields.
      */
-    GridSpiCloseableIterator<List<GridIndexingEntity<?>>> iterator();
+    IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> iterator();
 }

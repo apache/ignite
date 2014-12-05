@@ -53,7 +53,7 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
      *
      * @param shared {@code true} if this IP finder is shared.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setShared(boolean shared) {
         this.shared = shared;
     }

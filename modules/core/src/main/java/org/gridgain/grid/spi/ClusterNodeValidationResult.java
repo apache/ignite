@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Result of joining node validation.
  */
-public class GridNodeValidationResult {
+public class ClusterNodeValidationResult {
     /** Offending node ID. */
     private final UUID nodeId;
 
@@ -29,7 +29,7 @@ public class GridNodeValidationResult {
      * @param msg Message logged locally.
      * @param sndMsg Message sent to joining node.
      */
-    public GridNodeValidationResult(UUID nodeId, String msg, String sndMsg) {
+    public ClusterNodeValidationResult(UUID nodeId, String msg, String sndMsg) {
         this.nodeId = nodeId;
         this.msg = msg;
         this.sndMsg = sndMsg;

@@ -388,7 +388,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      *
      * @param tmpDirPath Temporary directory path.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setTemporaryDirectoryPath(String tmpDirPath) {
         this.tmpDirPath = tmpDirPath;
     }
@@ -404,7 +404,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      *
      * @param uriList GAR file URIs.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setUriList(List<String> uriList) {
         this.uriList = uriList;
     }
@@ -415,7 +415,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      *
      * @param checkMd5 new value for the property
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setCheckMd5(boolean checkMd5) {
         this.checkMd5 = checkMd5;
     }
@@ -439,7 +439,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      * @param encodeUri {@code true} if every URI should be encoded and
      *      {@code false} otherwise.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setEncodeUri(boolean encodeUri) {
         this.encodeUri = encodeUri;
     }

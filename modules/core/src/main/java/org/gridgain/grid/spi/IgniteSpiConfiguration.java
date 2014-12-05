@@ -20,7 +20,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface GridSpiConfiguration {
+public @interface IgniteSpiConfiguration {
     /**
      * Whether this configuration setting is optional or not.
      */

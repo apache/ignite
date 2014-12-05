@@ -362,11 +362,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             ctx.event().record(evt);
                     }
 
-                    @Override public void registerPort(int port, GridPortProtocol proto) {
+                    @Override public void registerPort(int port, IgnitePortProtocol proto) {
                         ctx.ports().registerPort(port, proto, spi.getClass());
                     }
 
-                    @Override public void deregisterPort(int port, GridPortProtocol proto) {
+                    @Override public void deregisterPort(int port, IgnitePortProtocol proto) {
                         ctx.ports().deregisterPort(port, proto, spi.getClass());
                     }
 
@@ -451,9 +451,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.swap().remove(spaceName, key, null, ldr);
                     }
 
-                    @Override public GridNodeValidationResult validateNode(ClusterNode node) {
+                    @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
                         for (GridComponent comp : ctx) {
-                            GridNodeValidationResult err = comp.validateNode(node);
+                            ClusterNodeValidationResult err = comp.validateNode(node);
 
                             if (err != null)
                                 return err;
@@ -588,7 +588,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

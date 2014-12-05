@@ -102,19 +102,19 @@ public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public <K> GridSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
+    @Override public <K> IgniteSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
         GridSwapContext ctx) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
+    @Override public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         @Nullable String spaceName) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName,
+    @Override public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName,
         int part) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
     }

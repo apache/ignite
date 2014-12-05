@@ -45,7 +45,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.spi.GridPortProtocol.*;
+import static org.gridgain.grid.spi.IgnitePortProtocol.*;
 import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiState.*;
 import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeartbeatMessage.*;
 import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatusCheckMessage.*;
@@ -288,7 +288,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param addrRslvr Address resolver.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @IgniteAddressResolverResource
     public void setAddressResolver(IgniteAddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
@@ -321,7 +321,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @param reconCnt Number of retries during message sending.
      * @see #setAckTimeout(long)
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setReconnectCount(int reconCnt) {
         this.reconCnt = reconCnt;
     }
@@ -343,7 +343,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param maxAckTimeout Maximum acknowledgement timeout.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMaxAckTimeout(long maxAckTimeout) {
         this.maxAckTimeout = maxAckTimeout;
     }
@@ -367,7 +367,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @see GridTcpDiscoveryIpFinder#isShared()
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setJoinTimeout(long joinTimeout) {
         this.joinTimeout = joinTimeout;
     }
@@ -386,7 +386,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param locPort Local port to bind.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLocalPort(int locPort) {
         this.locPort = locPort;
     }
@@ -405,7 +405,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param locPortRange Local port range to bind.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLocalPortRange(int locPortRange) {
         this.locPortRange = locPortRange;
     }
@@ -422,7 +422,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param maxMissedHbs Max missed heartbeats.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMaxMissedHeartbeats(int maxMissedHbs) {
         this.maxMissedHbs = maxMissedHbs;
     }
@@ -439,7 +439,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param maxMissedClientHbs Max missed client heartbeats.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMaxMissedClientHeartbeats(int maxMissedClientHbs) {
         this.maxMissedClientHbs = maxMissedClientHbs;
     }
@@ -460,7 +460,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param statsPrintFreq Statistics print frequency in milliseconds.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setStatisticsPrintFrequency(long statsPrintFreq) {
         this.statsPrintFreq = statsPrintFreq;
     }
@@ -477,7 +477,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param ipFinderCleanFreq IP finder clean frequency.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setIpFinderCleanFrequency(long ipFinderCleanFreq) {
         this.ipFinderCleanFreq = ipFinderCleanFreq;
     }
@@ -3148,7 +3148,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     return;
                 }
 
-                GridNodeValidationResult err = getSpiContext().validateNode(node);
+                ClusterNodeValidationResult err = getSpiContext().validateNode(node);
 
                 if (err != null) {
                     boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());

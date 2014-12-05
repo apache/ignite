@@ -33,7 +33,7 @@ import org.gridgain.grid.spi.*;
  * }
  * </pre>
  */
-public interface GridCloseableIterator<T> extends GridIterator<T>, GridSpiCloseableIterator<T>, AutoCloseable {
+public interface GridCloseableIterator<T> extends GridIterator<T>, IgniteSpiCloseableIterator<T>, AutoCloseable {
     /**
      * Closes the iterator and frees all the resources held by the iterator.
      * Iterator can not be used any more after calling this method.

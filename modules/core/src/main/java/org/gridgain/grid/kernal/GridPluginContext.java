@@ -72,12 +72,12 @@ public class GridPluginContext implements PluginContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerPort(int port, GridPortProtocol proto, Class<?> cls) {
+    @Override public void registerPort(int port, IgnitePortProtocol proto, Class<?> cls) {
         ctx.ports().registerPort(port, proto, cls);
     }
 
     /** {@inheritDoc} */
-    @Override public void deregisterPort(int port, GridPortProtocol proto, Class<?> cls) {
+    @Override public void deregisterPort(int port, IgnitePortProtocol proto, Class<?> cls) {
         ctx.ports().deregisterPort(port, proto, cls);
     }
 

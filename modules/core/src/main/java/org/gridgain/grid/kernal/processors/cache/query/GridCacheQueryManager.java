@@ -1153,7 +1153,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
-                GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
+                IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
                 GridCacheQueryType type;
 
                 QueryResult<K, V> res;
@@ -2842,7 +2842,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Cached result.
      */
-    private abstract static class CachedResult<R> extends GridFutureAdapter<GridSpiCloseableIterator<R>> {
+    private abstract static class CachedResult<R> extends GridFutureAdapter<IgniteSpiCloseableIterator<R>> {
         /** */
         private CircularQueue<R> queue;
 
@@ -2900,7 +2900,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable GridSpiCloseableIterator<R> res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable IgniteSpiCloseableIterator<R> res, @Nullable Throwable err) {
             assert !isDone();
 
             synchronized (recipients) {
@@ -2935,10 +2935,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param recipient ID of the recipient.
          * @throws GridException If failed.
          */
-        public GridSpiCloseableIterator<R> iterator(Object recipient) throws GridException {
+        public IgniteSpiCloseableIterator<R> iterator(Object recipient) throws GridException {
             assert recipient != null;
 
-            GridSpiCloseableIterator<R> it = get();
+            IgniteSpiCloseableIterator<R> it = get();
 
             assert it != null;
 
@@ -2951,7 +2951,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          *
          */
         @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
-        private class QueueIterator implements GridSpiCloseableIterator<R>, Comparable<QueueIterator> {
+        private class QueueIterator implements IgniteSpiCloseableIterator<R>, Comparable<QueueIterator> {
             /** */
             private static final long serialVersionUID = 0L;
 
@@ -3004,7 +3004,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             private boolean fillNext() {
                 assert next.isEmpty();
 
-                GridSpiCloseableIterator<R> it;
+                IgniteSpiCloseableIterator<R> it;
 
                 try {
                     it = get();

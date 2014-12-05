@@ -192,7 +192,7 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
      * @param isUseWeights If {@code true} then random load is distributed according
      *      to node weights.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setUseWeights(boolean isUseWeights) {
         this.isUseWeights = isUseWeights;
     }
@@ -209,7 +209,7 @@ public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter impleme
      *
      * @param nodeWeight Weight of this node.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setNodeWeight(int nodeWeight) {
         this.nodeWeight = nodeWeight;
     }

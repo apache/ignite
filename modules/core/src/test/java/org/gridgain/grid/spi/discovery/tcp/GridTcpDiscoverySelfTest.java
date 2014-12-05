@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.spi.GridPortProtocol.*;
+import static org.gridgain.grid.spi.IgnitePortProtocol.*;
 
 /**
  * Test for {@link GridTcpDiscoverySpi}.

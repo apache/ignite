@@ -230,7 +230,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setParallelJobsNumber(int parallelJobsNum) {
         A.ensure(parallelJobsNum > 0,  "parallelJobsNum > 0");
 
@@ -243,7 +243,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setWaitingJobsNumber(int waitJobsNum) {
         A.ensure(waitJobsNum >= 0, "waitJobsNum >= 0");
 
@@ -278,7 +278,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
      *
      * @param taskPriAttrKey Priority session attribute key.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setPriorityAttributeKey(String taskPriAttrKey) {
         this.taskPriAttrKey = taskPriAttrKey;
     }
@@ -291,7 +291,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
      *
      * @param jobPriAttrKey Job priority attribute key.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setJobPriorityAttributeKey(String jobPriAttrKey) {
         this.jobPriAttrKey = jobPriAttrKey;
     }
@@ -312,7 +312,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setDefaultPriority(int dfltPri) {
         this.dfltPri = dfltPri;
     }
@@ -323,7 +323,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setStarvationIncrement(int starvationInc) {
         this.starvationInc = starvationInc;
     }
@@ -334,7 +334,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setStarvationPreventionEnabled(boolean preventStarvation) {
         this.preventStarvation = preventStarvation;
     }

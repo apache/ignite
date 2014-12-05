@@ -238,7 +238,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
      *
      * @param dataSrc Data source.
      */
-    @GridSpiConfiguration(optional = false)
+    @IgniteSpiConfiguration(optional = false)
     public void setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
     }
@@ -250,7 +250,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
      * @param initSchema {@code True} if DB schema should be initialized by GridGain (default behaviour),
      *      {code @false} if schema was explicitly created by user.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setInitSchema(boolean initSchema) {
         this.initSchema = initSchema;
     }

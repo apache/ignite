@@ -136,7 +136,7 @@ public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements Grid
      * @param maxFailoverAttempts Maximum number of attempts to execute a failed
      *      job on another node.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMaximumFailoverAttempts(int maxFailoverAttempts) {
         this.maxFailoverAttempts = maxFailoverAttempts;
     }

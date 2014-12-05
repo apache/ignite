@@ -100,7 +100,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridChec
      *
      * @param cacheName Cache name.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setCacheName(String cacheName) {
         this.cacheName = cacheName;
     }

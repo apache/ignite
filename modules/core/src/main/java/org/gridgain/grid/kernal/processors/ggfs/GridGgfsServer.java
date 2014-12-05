@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.spi.GridPortProtocol.*;
+import static org.gridgain.grid.spi.IgnitePortProtocol.*;
 
 /**
  * GGFS server. Handles requests passed from GGFS clients.

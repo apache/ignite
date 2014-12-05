@@ -16,7 +16,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.spi.GridPortProtocol.*;
+import static org.gridgain.grid.spi.IgnitePortProtocol.*;
 
 /**
  *

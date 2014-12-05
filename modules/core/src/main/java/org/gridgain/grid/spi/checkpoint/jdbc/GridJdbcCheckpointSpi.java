@@ -290,7 +290,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param dataSrc DataSource object to set.
      */
-    @GridSpiConfiguration(optional = false)
+    @IgniteSpiConfiguration(optional = false)
     public void setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
     }
@@ -301,7 +301,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param retryNum Number of retries in case of any database errors.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setNumberOfRetries(int retryNum) {
         this.retryNum = retryNum;
     }
@@ -313,7 +313,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      * @param user Checkpoint database user name to set.
      * @see #setPwd(String)
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setUser(String user) {
         this.user = user;
     }
@@ -325,7 +325,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      * @param pwd Checkpoint database password to set.
      * @see #setUser(String)
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setPwd(String pwd) {
         this.pwd = pwd;
     }
@@ -335,7 +335,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param tblName Checkpoint table name to set.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setCheckpointTableName(String tblName) {
         this.tblName = tblName;
     }
@@ -347,7 +347,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param keyName Checkpoint key field name to set.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setKeyFieldName(String keyName) {
         this.keyName = keyName;
     }
@@ -359,7 +359,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param keyType Checkpoint key field type to set.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setKeyFieldType(String keyType) {
         this.keyType = keyType;
     }
@@ -371,7 +371,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param valName Checkpoint value field name to set.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setValueFieldName(String valName) {
         this.valName = valName;
     }
@@ -384,7 +384,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param valType Checkpoint value field type to set.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setValueFieldType(String valType) {
         this.valType = valType;
     }
@@ -397,7 +397,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param expDateName Checkpoint expiration date field name to set.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setExpireDateFieldName(String expDateName) {
         this.expDateName = expDateName;
     }
@@ -409,7 +409,7 @@ public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheck
      *
      * @param expDateType Checkpoint expiration date field type to set.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setExpireDateFieldType(String expDateType) {
         this.expDateType = expDateType;
     }

@@ -98,11 +98,11 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         nodeDesc = comm.localProcessDescriptor();
 
-        ctx.kernalContext().ports().registerPort(nodeDesc.tcpPort(), GridPortProtocol.TCP,
+        ctx.kernalContext().ports().registerPort(nodeDesc.tcpPort(), IgnitePortProtocol.TCP,
             GridHadoopExternalTaskExecutor.class);
 
         if (nodeDesc.sharedMemoryPort() != -1)
-            ctx.kernalContext().ports().registerPort(nodeDesc.sharedMemoryPort(), GridPortProtocol.TCP,
+            ctx.kernalContext().ports().registerPort(nodeDesc.sharedMemoryPort(), IgnitePortProtocol.TCP,
                 GridHadoopExternalTaskExecutor.class);
 
         jobTracker = ctx.jobTracker();

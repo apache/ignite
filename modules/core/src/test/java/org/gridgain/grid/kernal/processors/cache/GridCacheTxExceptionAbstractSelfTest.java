@@ -589,14 +589,14 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(
+        @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(
             @Nullable String spaceName, String qry, Collection<Object> params, GridIndexingTypeDescriptor type,
             GridIndexingQueryFilter filters) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
+        @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
             @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
             GridIndexingQueryFilter filters) {
             throw new UnsupportedOperationException();

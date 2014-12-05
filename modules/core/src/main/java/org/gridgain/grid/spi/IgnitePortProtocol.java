@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 /**
  * Protocols supported by port processor.
  */
-public enum GridPortProtocol {
+public enum IgnitePortProtocol {
     /**
      * TCP protocol.
      */
@@ -26,7 +26,7 @@ public enum GridPortProtocol {
     UDP;
 
     /** Enumerated values. */
-    private static final GridPortProtocol[] VALS = values();
+    private static final IgnitePortProtocol[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -34,7 +34,7 @@ public enum GridPortProtocol {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridPortProtocol fromOrdinal(byte ord) {
+    @Nullable public static IgnitePortProtocol fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

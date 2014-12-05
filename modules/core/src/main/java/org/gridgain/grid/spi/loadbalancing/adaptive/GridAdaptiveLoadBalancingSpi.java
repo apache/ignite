@@ -260,7 +260,7 @@ public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements Gr
      *
      * @param probe Implementation of node load probe
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLoadProbe(GridAdaptiveLoadProbe probe) {
         A.ensure(probe != null, "probe != null");
 

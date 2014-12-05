@@ -32,14 +32,14 @@ public class GridNoopIndexingSpi extends IgniteSpiAdapter implements GridIndexin
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
+    @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
         String qry, Collection<Object> params, GridIndexingTypeDescriptor type,
         GridIndexingQueryFilter filters) throws IgniteSpiException {
         throw spiException();
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable
+    @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable
         String spaceName, String qry, GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters)
         throws IgniteSpiException {
         throw spiException();

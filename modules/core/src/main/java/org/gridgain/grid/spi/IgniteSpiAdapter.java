@@ -126,7 +126,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      *
      * @param name SPI name.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setName(String name) {
         this.name = name;
     }
@@ -561,12 +561,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
         }
 
         /** {@inheritDoc} */
-        @Override public void registerPort(int port, GridPortProtocol proto) {
+        @Override public void registerPort(int port, IgnitePortProtocol proto) {
             /* No-op. */
         }
 
         /** {@inheritDoc} */
-        @Override public void deregisterPort(int port, GridPortProtocol proto) {
+        @Override public void deregisterPort(int port, IgnitePortProtocol proto) {
             /* No-op. */
         }
 
@@ -694,7 +694,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
+        @Nullable @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
             return null;
         }
 

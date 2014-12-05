@@ -62,7 +62,7 @@ public class GridPortProcessor extends GridProcessorAdapter {
      * @param proto Protocol.
      * @param cls Class.
      */
-    public void registerPort(int port, GridPortProtocol proto, Class cls) {
+    public void registerPort(int port, IgnitePortProtocol proto, Class cls) {
         assert port > 0 && port < 65535;
         assert proto != null;
         assert cls != null;
@@ -101,7 +101,7 @@ public class GridPortProcessor extends GridProcessorAdapter {
      * @param proto Protocol.
      * @param cls Class.
      */
-    public void deregisterPort(int port, GridPortProtocol proto, Class cls) {
+    public void deregisterPort(int port, IgnitePortProtocol proto, Class cls) {
         assert port > 0 && port < 65535;
         assert proto != null;
         assert cls != null;

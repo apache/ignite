@@ -169,7 +169,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
      * @param dirPaths Absolute or GridGain installation home folder relative path where checkpoints
      * will be stored.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDirectoryPaths(Collection<String> dirPaths) {
         A.ensure(!F.isEmpty(dirPaths), "!F.isEmpty(dirPaths)");
 

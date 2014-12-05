@@ -474,7 +474,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
             assertArrayEquals(str2ByteArray("value" + i),
                 spi.read(SPACE1, new GridSwapKey("key" + i, i), context()));
 
-        try (GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1)) {
+        try (IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1)) {
             assertNotNull(iter);
 
             int i = 0;
@@ -514,7 +514,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
             assertArrayEquals(str2ByteArray("value" + i),
                 spi.read(SPACE1, new GridSwapKey("key" + i, i), context()));
 
-        try (GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1, 5)) {
+        try (IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1, 5)) {
             assertNotNull(iter);
 
             int i = 0;
@@ -552,7 +552,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         for (int i = 0; i < cnt; i++)
             spi.store(SPACE1, new GridSwapKey("key" + i, i), str2ByteArray("value" + i), context());
 
-        GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1);
+        IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1);
 
         assertNotNull(iter);
 

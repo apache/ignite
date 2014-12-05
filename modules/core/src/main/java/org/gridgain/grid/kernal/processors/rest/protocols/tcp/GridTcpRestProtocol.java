@@ -298,7 +298,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             srv.start();
 
-            ctx.ports().registerPort(port, GridPortProtocol.TCP, getClass());
+            ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
             return true;
         }

@@ -97,7 +97,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
      *
      * @param disconnectCheckInt Disconnect check interval.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDisconnectCheckInterval(long disconnectCheckInt) {
         this.disconnectCheckInt = disconnectCheckInt;
     }

@@ -312,7 +312,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
      */
     private int getRegisteredPort(Class<? extends GridRestProtocol> protoCls, int def) {
         for (GridPortRecord r : ctx.ports().records()) {
-            if (r.protocol() == GridPortProtocol.TCP && protoCls.isAssignableFrom(r.clazz()))
+            if (r.protocol() == IgnitePortProtocol.TCP && protoCls.isAssignableFrom(r.clazz()))
                 return r.port();
         }
 

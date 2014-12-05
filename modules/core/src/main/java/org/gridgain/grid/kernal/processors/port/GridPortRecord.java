@@ -20,7 +20,7 @@ public class GridPortRecord {
     private int port;
 
     /** Protocol. */
-    private GridPortProtocol proto;
+    private IgnitePortProtocol proto;
 
     /** Class which uses port. */
     private Class cls;
@@ -30,7 +30,7 @@ public class GridPortRecord {
      * @param proto Protocol.
      * @param cls Class.
      */
-    GridPortRecord(int port, GridPortProtocol proto, Class cls) {
+    GridPortRecord(int port, IgnitePortProtocol proto, Class cls) {
         this.port = port;
         this.proto = proto;
         this.cls = cls;
@@ -46,7 +46,7 @@ public class GridPortRecord {
     /**
      * @return Protocol.
      */
-    public GridPortProtocol protocol() {
+    public IgnitePortProtocol protocol() {
         return proto;
     }
 

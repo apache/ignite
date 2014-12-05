@@ -277,7 +277,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     private Comparator<GridCollisionJobContext> cmp;
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setActiveJobsThreshold(int activeJobsThreshold) {
         A.ensure(activeJobsThreshold >= 0, "activeJobsThreshold >= 0");
 
@@ -290,7 +290,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setWaitJobsThreshold(int waitJobsThreshold) {
         A.ensure(waitJobsThreshold >= 0, "waitJobsThreshold >= 0");
 
@@ -303,7 +303,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setMessageExpireTime(long msgExpireTime) {
         A.ensure(msgExpireTime > 0, "messageExpireTime > 0");
 
@@ -316,7 +316,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setStealingEnabled(boolean isStealingEnabled) {
         this.isStealingEnabled = isStealingEnabled;
     }
@@ -327,7 +327,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setMaximumStealingAttempts(int maxStealingAttempts) {
         A.ensure(maxStealingAttempts > 0, "maxStealingAttempts > 0");
 
@@ -346,7 +346,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
      *
      * @param stealAttrs Node attributes to enable job stealing for.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setStealingAttributes(Map<String, ? extends Serializable> stealAttrs) {
         this.stealAttrs = stealAttrs;
     }

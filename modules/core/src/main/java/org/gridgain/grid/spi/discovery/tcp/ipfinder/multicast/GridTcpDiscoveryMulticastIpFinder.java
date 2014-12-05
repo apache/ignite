@@ -27,7 +27,7 @@ import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.spi.GridPortProtocol.*;
+import static org.gridgain.grid.spi.IgnitePortProtocol.*;
 
 /**
  * Multicast-based IP finder.
@@ -114,7 +114,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      *
      * @param mcastGrp Multicast IP address.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMulticastGroup(String mcastGrp) {
         this.mcastGrp = mcastGrp;
     }
@@ -135,7 +135,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      *
      * @param mcastPort Multicast port number.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMulticastPort(int mcastPort) {
         this.mcastPort = mcastPort;
     }
@@ -157,7 +157,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      *
      * @param resWaitTime Time IP finder waits for reply to multicast address request.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setResponseWaitTime(int resWaitTime) {
         this.resWaitTime = resWaitTime;
     }
@@ -180,7 +180,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      *
      * @param addrReqAttempts Number of attempts to send multicast address request.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setAddressRequestAttempts(int addrReqAttempts) {
         this.addrReqAttempts = addrReqAttempts;
     }
@@ -206,7 +206,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      * @param locAddr Local host address.
      * @see GridTcpDiscoverySpi#setLocalAddress(String)
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLocalAddress(String locAddr) {
         this.locAddr = locAddr;
     }

@@ -336,7 +336,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
         throws GridException {
         try {
-            GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> it = getSpi().rawIterator(spaceName);
+            IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> it = getSpi().rawIterator(spaceName);
 
             return it == null ? null : new GridSpiCloseableIteratorWrapper<>(it);
         }
@@ -349,7 +349,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName, int part)
         throws GridException{
         try {
-            GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> it = getSpi().rawIterator(spaceName, part);
+            IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> it = getSpi().rawIterator(spaceName, part);
 
             return it == null ? new GridEmptyCloseableIterator<Map.Entry<byte[], byte[]>>() :
                 new GridSpiCloseableIteratorWrapper<>(it);
@@ -370,7 +370,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
     @Nullable public <K> GridCloseableIterator<K> keysIterator(@Nullable String spaceName,
         @Nullable ClassLoader ldr) throws GridException {
         try {
-            GridSpiCloseableIterator<K> it = getSpi().keyIterator(spaceName, context(ldr));
+            IgniteSpiCloseableIterator<K> it = getSpi().keyIterator(spaceName, context(ldr));
 
             return it == null ? null : new GridSpiCloseableIteratorWrapper<>(it);
         }

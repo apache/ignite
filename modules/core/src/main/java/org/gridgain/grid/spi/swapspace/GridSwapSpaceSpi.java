@@ -178,7 +178,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @return Iterator over space entries or {@code null} if space is unknown.
      * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    @Nullable <K> GridSpiCloseableIterator<K> keyIterator(@Nullable String spaceName, GridSwapContext ctx)
+    @Nullable <K> IgniteSpiCloseableIterator<K> keyIterator(@Nullable String spaceName, GridSwapContext ctx)
         throws IgniteSpiException;
 
     /**
@@ -188,7 +188,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @return Iterator over space entries or {@code null} if space is unknown.
      * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    @Nullable public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
+    @Nullable public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
         throws IgniteSpiException;
 
     /**
@@ -199,6 +199,6 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @return Iterator over space entries or {@code null} if space is unknown.
      * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
-    @Nullable public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName,
+    @Nullable public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName,
         int part) throws IgniteSpiException;
 }

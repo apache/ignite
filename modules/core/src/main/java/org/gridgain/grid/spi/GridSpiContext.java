@@ -170,7 +170,7 @@ public interface GridSpiContext {
      * @param port Port.
      * @param proto Protocol.
      */
-    public void registerPort(int port, GridPortProtocol proto);
+    public void registerPort(int port, IgnitePortProtocol proto);
 
     /**
      * Deregisters closed port.
@@ -178,7 +178,7 @@ public interface GridSpiContext {
      * @param port Port.
      * @param proto Protocol.
      */
-    public void deregisterPort(int port, GridPortProtocol proto);
+    public void deregisterPort(int port, IgnitePortProtocol proto);
 
     /**
      * Deregisters all closed ports.
@@ -339,7 +339,7 @@ public interface GridSpiContext {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public GridNodeValidationResult validateNode(ClusterNode node);
+    @Nullable public ClusterNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Writes delta for provided node and message type.

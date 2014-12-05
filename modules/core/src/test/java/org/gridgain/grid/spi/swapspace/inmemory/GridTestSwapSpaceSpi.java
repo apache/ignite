@@ -123,19 +123,19 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public <K> GridSpiCloseableIterator<K> keyIterator(@Nullable String spaceName, GridSwapContext ctx)
+    @Override public <K> IgniteSpiCloseableIterator<K> keyIterator(@Nullable String spaceName, GridSwapContext ctx)
         throws IgniteSpiException {
         return ensureSpace(spaceName).keyIterator();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
+    @Override public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
         throws IgniteSpiException {
         return ensureSpace(spaceName).rawIterator();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName, int part)
+    @Override public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName, int part)
         throws IgniteSpiException {
         return ensureSpace(spaceName).rawIterator(part);
     }
@@ -310,10 +310,10 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
             return parts;
         }
 
-        public <K> GridSpiCloseableIterator<K> keyIterator() {
+        public <K> IgniteSpiCloseableIterator<K> keyIterator() {
             final Iterator<GridSwapKey> it = data.keySet().iterator();
 
-            return new GridSpiCloseableIterator<K>() {
+            return new IgniteSpiCloseableIterator<K>() {
                 @Override public void close() {
                     // No-op.
                 }
@@ -334,10 +334,10 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
             };
         }
 
-        public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator() {
+        public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator() {
             final Iterator<Map.Entry<GridSwapKey, byte[]>> it = data.entrySet().iterator();
 
-            return new GridSpiCloseableIterator<Map.Entry<byte[], byte[]>>() {
+            return new IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>>() {
                 @Override public void close() {
                     // No-op.
                 }
@@ -370,10 +370,10 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
             };
         }
 
-        public GridSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(final int part) {
+        public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(final int part) {
             final Iterator<Map.Entry<GridSwapKey, byte[]>> it = data.entrySet().iterator();
 
-            return new GridSpiCloseableIterator<Map.Entry<byte[], byte[]>>() {
+            return new IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>>() {
                 /** Next entry in this iterator. */
                 private Map.Entry<GridSwapKey, byte[]> next;
 

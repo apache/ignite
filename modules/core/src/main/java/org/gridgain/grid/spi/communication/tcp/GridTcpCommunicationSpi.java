@@ -578,7 +578,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param addrRslvr Address resolver.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @IgniteAddressResolverResource
     public void setAddressResolver(IgniteAddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
@@ -603,7 +603,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      * @param locAddr IP address. Default value is any available local
      *      IP address.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
@@ -623,7 +623,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param locPort Port number.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLocalPort(int locPort) {
         this.locPort = locPort;
     }
@@ -649,7 +649,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param locPortRange New local port range.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLocalPortRange(int locPortRange) {
         this.locPortRange = locPortRange;
     }
@@ -668,7 +668,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param shmemPort Port number.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setSharedMemoryPort(int shmemPort) {
         this.shmemPort = shmemPort;
     }
@@ -686,7 +686,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param idleConnTimeout Maximum idle connection time.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setIdleConnectionTimeout(long idleConnTimeout) {
         this.idleConnTimeout = idleConnTimeout;
     }
@@ -704,7 +704,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      * @param connBufSize Connection buffer size.
      * @see #setConnectionBufferFlushFrequency(long)
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setConnectionBufferSize(int connBufSize) {
         this.connBufSize = connBufSize;
     }
@@ -715,7 +715,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     @Override public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
         this.connBufFlushFreq = connBufFlushFreq;
     }
@@ -735,7 +735,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param connTimeout Connect timeout.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setConnectTimeout(long connTimeout) {
         this.connTimeout = connTimeout;
     }
@@ -757,7 +757,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param maxConnTimeout Maximum connect timeout.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMaxConnectTimeout(long maxConnTimeout) {
         this.maxConnTimeout = maxConnTimeout;
     }
@@ -775,7 +775,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param reconCnt Maximum number of reconnection attempts.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setReconnectCount(int reconCnt) {
         this.reconCnt = reconCnt;
     }
@@ -794,7 +794,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param directBuf Flag indicates to allocate direct or heap buffer in SPI.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDirectBuffer(boolean directBuf) {
         this.directBuf = directBuf;
     }
@@ -816,7 +816,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param directSndBuf {@code True} to use direct buffers for send.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDirectSendBuffer(boolean directSndBuf) {
         this.directSndBuf = directSndBuf;
     }
@@ -828,7 +828,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param selectorsCnt Selectors count.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setSelectorsCount(int selectorsCnt) {
         this.selectorsCnt = selectorsCnt;
     }
@@ -851,7 +851,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param asyncSnd {@code True} if asynchronous IO should be used to send messages.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setAsyncSend(boolean asyncSnd) {
         this.asyncSnd = asyncSnd;
     }
@@ -870,7 +870,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param tcpNoDelay {@code True} to disable TCP delay.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
     }
@@ -887,7 +887,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param sockRcvBuf Socket receive buffer size.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setSocketReceiveBuffer(int sockRcvBuf) {
         this.sockRcvBuf = sockRcvBuf;
     }
@@ -904,7 +904,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param sockSndBuf Socket send buffer size.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setSocketSendBuffer(int sockSndBuf) {
         this.sockSndBuf = sockSndBuf;
     }
@@ -927,7 +927,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param dualSockConn Whether dual-socket connection should be enforced.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDualSocketConnection(boolean dualSockConn) {
         this.dualSockConn = dualSockConn;
     }
@@ -949,7 +949,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param msgQueueLimit Send queue size limit.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMessageQueueLimit(int msgQueueLimit) {
         this.msgQueueLimit = msgQueueLimit;
     }
@@ -968,7 +968,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param minBufferedMsgCnt Minimum buffered message count.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMinimumBufferedMessageCount(int minBufferedMsgCnt) {
         this.minBufferedMsgCnt = minBufferedMsgCnt;
     }
@@ -987,7 +987,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param bufSizeRatio Buffer size ratio.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setBufferSizeRatio(double bufSizeRatio) {
         this.bufSizeRatio = bufSizeRatio;
     }
@@ -1179,11 +1179,11 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} }*/
     @Override public void onContextInitialized0(GridSpiContext spiCtx) throws IgniteSpiException {
-        spiCtx.registerPort(boundTcpPort, GridPortProtocol.TCP);
+        spiCtx.registerPort(boundTcpPort, IgnitePortProtocol.TCP);
 
         // SPI can start without shmem port.
         if (boundTcpShmemPort > 0)
-            spiCtx.registerPort(boundTcpShmemPort, GridPortProtocol.TCP);
+            spiCtx.registerPort(boundTcpShmemPort, IgnitePortProtocol.TCP);
 
         spiCtx.addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 

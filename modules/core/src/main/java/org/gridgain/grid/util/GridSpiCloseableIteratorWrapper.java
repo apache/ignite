@@ -14,19 +14,19 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
- * Wrapper used to covert {@link GridSpiCloseableIterator} to {@link GridCloseableIterator}.
+ * Wrapper used to covert {@link org.gridgain.grid.spi.IgniteSpiCloseableIterator} to {@link GridCloseableIterator}.
  */
 public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAdapter<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridSpiCloseableIterator<T> iter;
+    private final IgniteSpiCloseableIterator<T> iter;
 
     /**
      * @param iter Spi iterator.
      */
-    public GridSpiCloseableIteratorWrapper(GridSpiCloseableIterator<T> iter) {
+    public GridSpiCloseableIteratorWrapper(IgniteSpiCloseableIterator<T> iter) {
         assert iter != null;
 
         this.iter = iter;

@@ -205,7 +205,7 @@ public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements 
      * @param isPerTask Configuration parameter indicating whether a new round robin order should
      *      be created for every task. Default is {@code false}.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setPerTask(boolean isPerTask) {
         this.isPerTask = isPerTask;
     }

@@ -78,7 +78,7 @@ public class VisorSpisConfiguration implements Serializable {
         res.put("Class Name", compactClass(spi));
 
         for (Method mtd : spiCls.getDeclaredMethods()) {
-            if (mtd.isAnnotationPresent(GridSpiConfiguration.class) && !mtd.isAnnotationPresent(Deprecated.class)) {
+            if (mtd.isAnnotationPresent(IgniteSpiConfiguration.class) && !mtd.isAnnotationPresent(Deprecated.class)) {
                 String mtdName = mtd.getName();
 
                 if (mtdName.startsWith("set")) {

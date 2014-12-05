@@ -22,7 +22,7 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
     private final List<GridIndexingFieldMetadata> metaData;
 
     /** Result iterator. */
-    private final GridSpiCloseableIterator<List<GridIndexingEntity<?>>> it;
+    private final IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> it;
 
     /**
      * Creates query field result composed of field metadata and iterator
@@ -32,7 +32,7 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
      * @param it Result iterator.
      */
     public GridIndexingFieldsResultAdapter(@Nullable List<GridIndexingFieldMetadata> metaData,
-        GridSpiCloseableIterator<List<GridIndexingEntity<?>>> it) {
+        IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> it) {
         this.metaData = metaData != null ? Collections.unmodifiableList(metaData) : null;
         this.it = it;
     }
@@ -43,7 +43,7 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
     }
 
     /** {@inheritDoc} */
-    @Override public GridSpiCloseableIterator<List<GridIndexingEntity<?>>> iterator() {
+    @Override public IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> iterator() {
         return it;
     }
 }

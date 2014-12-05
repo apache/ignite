@@ -17,7 +17,7 @@ import java.util.*;
 /**
  *  Closeable iterator.
  */
-public interface GridSpiCloseableIterator<T> extends Iterator<T>, AutoCloseable, Serializable {
+public interface IgniteSpiCloseableIterator<T> extends Iterator<T>, AutoCloseable, Serializable {
     /**
      * Closes the iterator and frees all the resources held by the iterator.
      * Iterator can not be used any more after calling this method.

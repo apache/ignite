@@ -120,7 +120,7 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
      *
      * @param filter Filter to use.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setFilter(IgnitePredicate<IgniteEvent> filter) {
         this.filter = filter;
     }
@@ -166,7 +166,7 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
      *
      * @param expireAgeMs Expiration time in milliseconds.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setExpireAgeMs(long expireAgeMs) {
         this.expireAgeMs = expireAgeMs;
     }
@@ -178,7 +178,7 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
      *
      * @param expireCnt Maximum queue size.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setExpireCount(long expireCnt) {
         this.expireCnt = expireCnt;
     }

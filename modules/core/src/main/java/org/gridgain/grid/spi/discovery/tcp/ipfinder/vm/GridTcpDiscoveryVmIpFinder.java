@@ -118,7 +118,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * @param addrs Known nodes addresses.
      * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public synchronized void setAddresses(Collection<String> addrs) throws IgniteSpiException {
         if (F.isEmpty(addrs))
             return;

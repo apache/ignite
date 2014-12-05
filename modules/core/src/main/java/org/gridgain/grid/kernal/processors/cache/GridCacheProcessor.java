@@ -937,7 +937,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
         return validateHashIdResolvers(node);
     }
 
@@ -945,7 +945,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable private GridNodeValidationResult validateHashIdResolvers(ClusterNode node) {
+    @Nullable private ClusterNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
             GridCacheConfiguration cfg = cache.configuration();
 
@@ -972,7 +972,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
                             topNode.id() + ']';
 
-                        return new GridNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                        return new ClusterNodeValidationResult(topNode.id(), errMsg, sndMsg);
                     }
                 }
             }

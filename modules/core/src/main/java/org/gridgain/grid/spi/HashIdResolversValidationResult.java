@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Result of hash id resolvers validation.
  */
-public class GridHashIdResolversValidationResult {
+public class HashIdResolversValidationResult {
     /** Offending cache name. */
     private String cacheName;
 
@@ -29,7 +29,7 @@ public class GridHashIdResolversValidationResult {
      * @param rslvrCls Hash ID resolver class name.
      * @param nodeId Offending node ID.
      */
-    public GridHashIdResolversValidationResult(String cacheName, String rslvrCls, UUID nodeId) {
+    public HashIdResolversValidationResult(String cacheName, String rslvrCls, UUID nodeId) {
         this.cacheName = cacheName;
         this.rslvrCls = rslvrCls;
         this.nodeId = nodeId;

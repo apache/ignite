@@ -652,7 +652,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
+    @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
         @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
         GridIndexingQueryFilter filters) throws IgniteSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
@@ -869,7 +869,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
+    @Override public <K, V> IgniteSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
         final String qry, @Nullable final Collection<Object> params, GridIndexingTypeDescriptor type,
         final GridIndexingQueryFilter filters) throws IgniteSpiException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
@@ -1220,7 +1220,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
         if (tbl == null)
             return -1;
 
-        GridSpiCloseableIterator<List<GridIndexingEntity<?>>> iter = queryFields(spaceName,
+        IgniteSpiCloseableIterator<List<GridIndexingEntity<?>>> iter = queryFields(spaceName,
             "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null).iterator();
 
         if (!iter.hasNext())
@@ -1468,7 +1468,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param longQryExecTimeout Long query execution timeout.
      * @see #setLongQueryExplain(boolean)
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLongQueryExecutionTimeout(long longQryExecTimeout) {
         this.longQryExecTimeout = longQryExecTimeout;
     }
@@ -1488,7 +1488,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      * @param longQryExplain Flag marking SPI should print SQL execution plan for long queries (explain SQL query).
      * @see #setLongQueryExecutionTimeout(long)
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setLongQueryExplain(boolean longQryExplain) {
         this.longQryExplain = longQryExplain;
     }
@@ -1529,7 +1529,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param dfltIdxPrimitiveVal Flag value.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDefaultIndexPrimitiveValue(boolean dfltIdxPrimitiveVal) {
         this.dfltIdxPrimitiveVal = dfltIdxPrimitiveVal;
     }
@@ -1549,7 +1549,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param dfltIdxPrimitiveKey Flag value.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDefaultIndexPrimitiveKey(boolean dfltIdxPrimitiveKey) {
         this.dfltIdxPrimitiveKey = dfltIdxPrimitiveKey;
     }
@@ -1580,7 +1580,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param dfltIdxFixedTyping FLag value.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDefaultIndexFixedTyping(boolean dfltIdxFixedTyping) {
         this.dfltIdxFixedTyping = dfltIdxFixedTyping;
     }
@@ -1605,7 +1605,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param maxOffHeapMemory Maximum memory in bytes available to off-heap memory space.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMaxOffHeapMemory(long maxOffHeapMemory) {
         this.maxOffHeapMemory = maxOffHeapMemory;
     }
@@ -1636,7 +1636,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param size Cache size in items.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setMaxOffheapRowsCacheSize(int size) {
         A.ensure(size >= 128, "Offheap rows cache size must be not less than 128.");
 
@@ -1649,7 +1649,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param searchPath Search path.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setSearchPath(String... searchPath) {
         this.searchPath = searchPath;
     }
@@ -1670,7 +1670,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param initScriptPath Script path.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setInitialScriptPath(String initScriptPath) {
         this.initScriptPath = initScriptPath;
     }
@@ -1688,7 +1688,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param dfltEscapeAll Default flag value.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setDefaultEscapeAll(boolean dfltEscapeAll) {
         this.dfltEscapeAll = dfltEscapeAll;
     }
@@ -1741,7 +1741,7 @@ public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingS
      *
      * @param spaceCfgs Space configurations list.
      */
-    @GridSpiConfiguration(optional = true)
+    @IgniteSpiConfiguration(optional = true)
     public void setSpaceConfigurations(GridH2IndexingSpaceConfiguration... spaceCfgs) {
         Map<String , GridH2IndexingSpaceConfiguration> map = new HashMap<>();
 

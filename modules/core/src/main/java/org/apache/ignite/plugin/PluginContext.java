@@ -71,7 +71,7 @@ public interface PluginContext {
      * @param proto Protocol.
      * @param cls Class.
      */
-    public void registerPort(int port, GridPortProtocol proto, Class<?> cls);
+    public void registerPort(int port, IgnitePortProtocol proto, Class<?> cls);
 
     /**
      * Deregisters closed port.
@@ -80,7 +80,7 @@ public interface PluginContext {
      * @param proto Protocol.
      * @param cls Class.
      */
-    public void deregisterPort(int port, GridPortProtocol proto, Class<?> cls);
+    public void deregisterPort(int port, IgnitePortProtocol proto, Class<?> cls);
 
     /**
      * Deregisters all closed ports.
