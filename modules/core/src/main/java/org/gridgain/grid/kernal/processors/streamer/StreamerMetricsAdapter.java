@@ -78,11 +78,11 @@ public class StreamerMetricsAdapter implements StreamerMetrics {
 
     /** */
     @GridToStringInclude
-    private Map<String, GridStreamerStageMetrics> stageMetrics;
+    private Map<String, StreamerStageMetrics> stageMetrics;
 
     /** */
     @GridToStringInclude
-    private Map<String, GridStreamerWindowMetrics> windowMetrics;
+    private Map<String, StreamerWindowMetrics> windowMetrics;
 
     /**
      * Empty constructor.
@@ -117,17 +117,17 @@ public class StreamerMetricsAdapter implements StreamerMetrics {
         stageWaitingExecCnt = metrics.stageWaitingExecutionCount();
 
         // Stage metrics.
-        Map<String, GridStreamerStageMetrics> map = U.newLinkedHashMap(metrics.stageMetrics().size());
+        Map<String, StreamerStageMetrics> map = U.newLinkedHashMap(metrics.stageMetrics().size());
 
-        for (GridStreamerStageMetrics m : metrics.stageMetrics())
-            map.put(m.name(), new GridStreamerStageMetricsAdapter(m));
+        for (StreamerStageMetrics m : metrics.stageMetrics())
+            map.put(m.name(), new StreamerStageMetricsAdapter(m));
 
         stageMetrics = Collections.unmodifiableMap(map);
 
-        Map<String, GridStreamerWindowMetrics> map0 = U.newLinkedHashMap(metrics.windowMetrics().size());
+        Map<String, StreamerWindowMetrics> map0 = U.newLinkedHashMap(metrics.windowMetrics().size());
 
-        for (GridStreamerWindowMetrics m : metrics.windowMetrics())
-            map0.put(m.name(), new GridStreamerWindowMetricsAdapter(m));
+        for (StreamerWindowMetrics m : metrics.windowMetrics())
+            map0.put(m.name(), new StreamerWindowMetricsAdapter(m));
 
         windowMetrics = Collections.unmodifiableMap(map0);
     }
@@ -228,8 +228,8 @@ public class StreamerMetricsAdapter implements StreamerMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerStageMetrics stageMetrics(String stageName) {
-        GridStreamerStageMetrics metrics = stageMetrics.get(stageName);
+    @Override public StreamerStageMetrics stageMetrics(String stageName) {
+        StreamerStageMetrics metrics = stageMetrics.get(stageName);
 
         if (metrics == null)
             throw new IllegalArgumentException("Streamer stage is not configured: " + stageName);
@@ -238,13 +238,13 @@ public class StreamerMetricsAdapter implements StreamerMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridStreamerStageMetrics> stageMetrics() {
+    @Override public Collection<StreamerStageMetrics> stageMetrics() {
         return stageMetrics.values();
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerWindowMetrics windowMetrics(String winName) {
-        GridStreamerWindowMetrics metrics = windowMetrics.get(winName);
+    @Override public StreamerWindowMetrics windowMetrics(String winName) {
+        StreamerWindowMetrics metrics = windowMetrics.get(winName);
 
         if (metrics == null)
             throw new IllegalArgumentException("Streamer window is not configured: " + winName);
@@ -253,7 +253,7 @@ public class StreamerMetricsAdapter implements StreamerMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridStreamerWindowMetrics> windowMetrics() {
+    @Override public Collection<StreamerWindowMetrics> windowMetrics() {
         return windowMetrics.values();
     }
 

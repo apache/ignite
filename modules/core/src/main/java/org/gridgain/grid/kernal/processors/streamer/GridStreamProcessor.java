@@ -76,11 +76,11 @@ public class GridStreamProcessor extends GridProcessorAdapter {
             }
 
             // Add mbeans for stages.
-            for (GridStreamerStage stage : s.configuration().getStages()) {
+            for (StreamerStage stage : s.configuration().getStages()) {
                 try {
                     mBeans.add(U.registerMBean(mBeanSrv, ctx.gridName(), U.maskName(s.name()), "Stage-" + stage.name(),
-                        new GridStreamerStageMBeanAdapter(stage.name(), stage.getClass().getName(), s),
-                        GridStreamerStageMBean.class));
+                        new StreamerStageMBeanAdapter(stage.name(), stage.getClass().getName(), s),
+                        StreamerStageMBean.class));
 
                     if (log.isDebugEnabled())
                         log.debug("Registered MBean for streamer stage [streamer=" + s.name() +
@@ -93,13 +93,13 @@ public class GridStreamProcessor extends GridProcessorAdapter {
             }
 
             // Add mbeans for windows.
-            for (GridStreamerWindow win : s.configuration().getWindows()) {
+            for (StreamerWindow win : s.configuration().getWindows()) {
                 try {
-                    if (hasInterface(win.getClass(), GridStreamerWindowMBean.class)) {
+                    if (hasInterface(win.getClass(), StreamerWindowMBean.class)) {
                         mBeans.add(U.registerMBean(mBeanSrv, ctx.gridName(), U.maskName(s.name()),
                             "Window-" + win.name(),
-                            (GridStreamerWindowMBean)win,
-                            GridStreamerWindowMBean.class));
+                            (StreamerWindowMBean)win,
+                            StreamerWindowMBean.class));
 
                         if (log.isDebugEnabled())
                             log.debug("Registered MBean for streamer window [streamer=" + s.name() +

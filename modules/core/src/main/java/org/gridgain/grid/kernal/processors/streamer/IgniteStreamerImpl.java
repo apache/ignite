@@ -78,14 +78,14 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
     /** Stages. */
     @GridToStringInclude
-    private Map<String, GridStreamerStageWrapper> stages;
+    private Map<String, StreamerStageWrapper> stages;
 
     /** Windows. */
     @GridToStringInclude
-    private Map<String, GridStreamerWindow> winMap;
+    private Map<String, StreamerWindow> winMap;
 
     /** Default streamer window. */
-    private GridStreamerWindow dfltWin;
+    private StreamerWindow dfltWin;
 
     /** */
     private String firstStage;
@@ -191,9 +191,9 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
         int stageIdx = 0;
 
-        GridStreamerStageWrapper prev = null;
+        StreamerStageWrapper prev = null;
 
-        for (GridStreamerStage s : c.getStages()) {
+        for (StreamerStage s : c.getStages()) {
             String sName = s.name();
 
             if (F.isEmpty(sName))
@@ -207,7 +207,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             if (firstStage == null)
                 firstStage = sName;
 
-            GridStreamerStageWrapper wrapper = new GridStreamerStageWrapper(s, stageIdx);
+            StreamerStageWrapper wrapper = new StreamerStageWrapper(s, stageIdx);
 
             stages.put(sName, wrapper);
 
@@ -221,7 +221,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
         winMap = new LinkedHashMap<>();
 
-        for (GridStreamerWindow w : c.getWindows()) {
+        for (StreamerWindow w : c.getWindows()) {
             String wName = w.name();
 
             if (F.isEmpty(wName))
@@ -292,7 +292,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @throws GridException If failed.
      */
     private void prepareResources() throws GridException {
-        for (GridStreamerStage s : c.getStages())
+        for (StreamerStage s : c.getStages())
             ctx.resource().injectGeneric(s);
 
         if (router == null)
@@ -300,7 +300,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
         ctx.resource().injectGeneric(router);
 
-        for (GridStreamerWindow w : c.getWindows())
+        for (StreamerWindow w : c.getWindows())
             ctx.resource().injectGeneric(w);
     }
 
@@ -359,7 +359,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             }
         }
 
-        for (GridStreamerStageWrapper stage : stages.values()) {
+        for (StreamerStageWrapper stage : stages.values()) {
             try {
                 ctx.resource().cleanupGeneric(stage.unwrap());
             }
@@ -482,7 +482,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         winLock.writeLock();
 
         try {
-            for (GridStreamerWindow win : winMap.values())
+            for (StreamerWindow win : winMap.values())
                 win.reset();
 
             streamerCtx.localSpace().clear();
@@ -494,22 +494,22 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        GridStreamerStageMetricsHolder[] stageHolders = new GridStreamerStageMetricsHolder[c.getStages().size()];
+        StreamerStageMetricsHolder[] stageHolders = new StreamerStageMetricsHolder[c.getStages().size()];
 
         int idx = 0;
 
-        for (GridStreamerStage stage : c.getStages()) {
-            stageHolders[idx] = new GridStreamerStageMetricsHolder(stage.name());
+        for (StreamerStage stage : c.getStages()) {
+            stageHolders[idx] = new StreamerStageMetricsHolder(stage.name());
 
             idx++;
         }
 
-        GridStreamerWindowMetricsHolder[] windowHolders = new GridStreamerWindowMetricsHolder[c.getWindows().size()];
+        StreamerWindowMetricsHolder[] windowHolders = new StreamerWindowMetricsHolder[c.getWindows().size()];
 
         idx = 0;
 
-        for (GridStreamerWindow w : c.getWindows()) {
-            windowHolders[idx] = new GridStreamerWindowMetricsHolder(w);
+        for (StreamerWindow w : c.getWindows()) {
+            windowHolders[idx] = new StreamerWindowMetricsHolder(w);
 
             idx++;
         }
@@ -523,13 +523,13 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <E> GridStreamerWindow<E> window() {
-        return (GridStreamerWindow<E>)dfltWin;
+    @Override public <E> StreamerWindow<E> window() {
+        return (StreamerWindow<E>)dfltWin;
     }
 
     /** {@inheritDoc} */
-    @Override public <E> GridStreamerWindow<E> window(String windowName) {
-        return (GridStreamerWindow<E>)winMap.get(windowName);
+    @Override public <E> StreamerWindow<E> window(String windowName) {
+        return (StreamerWindow<E>)winMap.get(windowName);
     }
 
     /**
@@ -712,7 +712,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             if (log.isDebugEnabled())
                 log.debug("Scheduling local batch execution [futId=" + futId + ", stageName=" + batch.stageName() + ']');
 
-            GridStreamerStageWrapper wrapper = stages.get(batch.stageName());
+            StreamerStageWrapper wrapper = stages.get(batch.stageName());
 
             if (wrapper == null) {
                 completeParentStage(ctx.localNodeId(), batch.futureId(),
@@ -1226,7 +1226,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         private GridStreamerExecutionBatch batch;
 
         /** */
-        private GridStreamerStageWrapper stageWrapper;
+        private StreamerStageWrapper stageWrapper;
 
         /** Streamer metrics holder. */
         private StreamerMetricsHolder streamerHolder;
@@ -1246,7 +1246,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
          */
         private BatchWorker(
             GridStreamerExecutionBatch batch,
-            GridStreamerStageWrapper stageWrapper,
+            StreamerStageWrapper stageWrapper,
             StreamerMetricsHolder streamerHolder
         ) {
             super(ctx.gridName(), "streamer-batch-worker-" + batch.stageName(), log);

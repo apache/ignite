@@ -17,7 +17,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link GridStreamerStageMetrics}.
+ * Data transfer object for {@link org.gridgain.grid.streamer.StreamerStageMetrics}.
  */
 public class VisorStreamerStageMetrics implements Serializable {
     /** */
@@ -60,7 +60,7 @@ public class VisorStreamerStageMetrics implements Serializable {
     private int failuresFreq = -1;
 
     /** Create data transfer object for given metrics. */
-    public static VisorStreamerStageMetrics from(GridStreamerStageMetrics m) {
+    public static VisorStreamerStageMetrics from(StreamerStageMetrics m) {
         assert m != null;
 
         VisorStreamerStageMetrics metrics = new VisorStreamerStageMetrics();
@@ -88,7 +88,7 @@ public class VisorStreamerStageMetrics implements Serializable {
 
         Collection<VisorStreamerStageMetrics> res = new ArrayList<>();
 
-        for (GridStreamerStageMetrics m : streamer.metrics().stageMetrics())
+        for (StreamerStageMetrics m : streamer.metrics().stageMetrics())
             res.add(from(m));
 
         return res;

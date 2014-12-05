@@ -14,14 +14,14 @@ import org.gridgain.grid.streamer.*;
 /**
  * Streamer window metrics holder.
  */
-public class GridStreamerWindowMetricsHolder implements GridStreamerWindowMetrics {
+public class StreamerWindowMetricsHolder implements StreamerWindowMetrics {
     /** Window instance. */
-    private GridStreamerWindow window;
+    private StreamerWindow window;
 
     /**
      * @param window Streamer window.
      */
-    public GridStreamerWindowMetricsHolder(GridStreamerWindow window) {
+    public StreamerWindowMetricsHolder(StreamerWindow window) {
         this.window = window;
     }
 

@@ -9,98 +9,77 @@
 
 package org.gridgain.grid.streamer;
 
-import org.apache.ignite.mbean.*;
-
 /**
- * Streamer stage MBean.
+ * Streamer stage metrics.
  */
-@IgniteMBeanDescription("MBean that provides access to streamer stage description and metrics.")
-public interface GridStreamerStageMBean {
+public interface StreamerStageMetrics {
     /**
      * Gets stage name.
      *
      * @return Stage name.
      */
-    @IgniteMBeanDescription("Stage name.")
-    public String getName();
-
-    /**
-     * Gets stage class name.
-     *
-     * @return Stage class name.
-     */
-    @IgniteMBeanDescription("Stage class name.")
-    public String getStageClassName();
+    public String name();
 
     /**
      * Gets stage minimum execution time.
      *
      * @return Stage minimum execution time.
      */
-    @IgniteMBeanDescription("Stage minimum execution time.")
-    public long getMinimumExecutionTime();
+    public long minimumExecutionTime();
 
     /**
      * Gets stage maximum execution time.
      *
      * @return Stage maximum execution time.
      */
-    @IgniteMBeanDescription("Stage maximum execution time.")
-    public long getMaximumExecutionTime();
+    public long maximumExecutionTime();
 
     /**
      * Gets stage average execution time.
      *
      * @return Stage average execution time.
      */
-    @IgniteMBeanDescription("Stage average execution time.")
-    public long getAverageExecutionTime();
+    public long averageExecutionTime();
 
     /**
      * Gets stage minimum waiting time.
      *
      * @return Stage minimum waiting time.
      */
-    @IgniteMBeanDescription("Stage minimum waiting time.")
-    public long getMinimumWaitingTime();
+    public long minimumWaitingTime();
 
     /**
      * Gets stage maximum waiting time.
      *
      * @return Stage maximum waiting time.
      */
-    @IgniteMBeanDescription("Stage maximum waiting time.")
-    public long getMaximumWaitingTime();
+    public long maximumWaitingTime();
 
     /**
      * Stage average waiting time.
      *
      * @return Stage average waiting time.
      */
-    @IgniteMBeanDescription("Stage average waiting time.")
-    public long getAverageWaitingTime();
+    public long averageWaitingTime();
 
     /**
      * Gets total stage execution count since last reset.
      *
      * @return Number of times this stage was executed.
      */
-    @IgniteMBeanDescription("Number of times this stage was executed.")
-    public long getTotalExecutionCount();
+    public long totalExecutionCount();
 
     /**
      * Gets stage failure count.
      *
      * @return Stage failure count.
      */
-    @IgniteMBeanDescription("Stage failure count.")
-    public int getFailuresCount();
+    public int failuresCount();
 
     /**
      * Gets flag indicating if stage is being currently executed by at least one thread on current node.
      *
      * @return {@code True} if stage is executing now.
      */
-    @IgniteMBeanDescription("Whether stage is currently being executed.")
-    public boolean isExecuting();
+    public boolean executing();
 }

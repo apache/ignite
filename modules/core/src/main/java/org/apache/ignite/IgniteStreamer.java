@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Streamer interface. Streamer provides an easy way to process large (possibly infinite) stream of
  * events. Event can be of any object type, different types of events can be submitted to streamer. Each event
- * is processed by one or more {@link org.gridgain.grid.streamer.GridStreamerStage}, a set of stages event passed through is called pipeline.
+ * is processed by one or more {@link org.gridgain.grid.streamer.StreamerStage}, a set of stages event passed through is called pipeline.
  * <p>
  * For each submitted group of events streamer determines one or more execution nodes that will process this
  * group of events. Execution nodes are determined by {@link org.gridgain.grid.streamer.StreamerEventRouter}. Execution nodes run stages
@@ -36,7 +36,7 @@ import java.util.*;
  * of failure and will try to execute pipeline from the beginning. If failover cannot be succeeded or maximum number
  * of failover attempts is exceeded, then listener will be notified on node which originated pipeline execution.
  *
- * @see org.gridgain.grid.streamer.GridStreamerStage
+ * @see org.gridgain.grid.streamer.StreamerStage
  * @see org.gridgain.grid.streamer.StreamerEventRouter
  */
 public interface IgniteStreamer {
@@ -124,7 +124,7 @@ public interface IgniteStreamer {
     public StreamerMetrics metrics();
 
     /**
-     * Resets all configured streamer windows by calling {@link GridStreamerWindow#reset()} on each and
+     * Resets all configured streamer windows by calling {@link org.gridgain.grid.streamer.StreamerWindow#reset()} on each and
      * clears local space.
      * <p>
      * This is local method, it will clear only local windows and local space. Note that windows and

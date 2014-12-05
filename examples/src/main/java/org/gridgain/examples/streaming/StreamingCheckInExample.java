@@ -165,7 +165,7 @@ public class StreamingCheckInExample {
                         new IgniteClosure<StreamerContext, Map<String, Place>>() {
                             @Override public Map<String, Place> apply(
                                 StreamerContext ctx) {
-                                GridStreamerWindow<LocationInfo> win =
+                                StreamerWindow<LocationInfo> win =
                                     ctx.window(DetectPlacesStage.class.getSimpleName());
 
                                 assert win != null;
@@ -416,7 +416,7 @@ public class StreamingCheckInExample {
      * with unique index to block repetitive check-ins.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class AddToWindowStage implements GridStreamerStage<CheckInEvent> {
+    public static class AddToWindowStage implements StreamerStage<CheckInEvent> {
         /** {@inheritDoc} */
         @Override public String name() {
             return getClass().getSimpleName();
@@ -425,7 +425,7 @@ public class StreamingCheckInExample {
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(
             StreamerContext ctx, Collection<CheckInEvent> evts) throws GridException {
-            GridStreamerWindow<CheckInEvent> win = ctx.window(name());
+            StreamerWindow<CheckInEvent> win = ctx.window(name());
 
             assert win != null;
 
@@ -464,7 +464,7 @@ public class StreamingCheckInExample {
      * Check-in event processing stage that detects the
      * check-in places.
      */
-    private static class DetectPlacesStage implements GridStreamerStage<CheckInEvent> {
+    private static class DetectPlacesStage implements StreamerStage<CheckInEvent> {
         /** {@inheritDoc} */
         @Override public String name() {
             return getClass().getSimpleName();
@@ -473,7 +473,7 @@ public class StreamingCheckInExample {
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx,
             Collection<CheckInEvent> evts) throws GridException {
-            GridStreamerWindow<LocationInfo> win = ctx.window(name());
+            StreamerWindow<LocationInfo> win = ctx.window(name());
 
             assert win != null;
 

@@ -19,9 +19,9 @@ import java.util.*;
 /**
  * Stage wrapper that handles metrics calculation and time measurement.
  */
-public class GridStreamerStageWrapper implements GridStreamerStage<Object> {
+public class StreamerStageWrapper implements StreamerStage<Object> {
     /** Stage delegate. */
-    private GridStreamerStage<Object> delegate;
+    private StreamerStage<Object> delegate;
 
     /** Stage index. */
     private int idx;
@@ -33,7 +33,7 @@ public class GridStreamerStageWrapper implements GridStreamerStage<Object> {
      * @param delegate Delegate stage.
      * @param idx Index.
      */
-    public GridStreamerStageWrapper(GridStreamerStage<Object> delegate, int idx) {
+    public StreamerStageWrapper(StreamerStage<Object> delegate, int idx) {
         this.delegate = delegate;
         this.idx = idx;
     }
@@ -73,12 +73,12 @@ public class GridStreamerStageWrapper implements GridStreamerStage<Object> {
     /**
      * @return Delegate.
      */
-    public GridStreamerStage unwrap() {
+    public StreamerStage unwrap() {
         return delegate;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerStageWrapper.class, this);
+        return S.toString(StreamerStageWrapper.class, this);
     }
 }

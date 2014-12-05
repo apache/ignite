@@ -40,7 +40,7 @@ public interface StreamerContext {
      *
      * @return Default window.
      */
-    public <E> GridStreamerWindow<E> window();
+    public <E> StreamerWindow<E> window();
 
     /**
      * Gets streamer event window by window name, if no window with such
@@ -49,10 +49,10 @@ public interface StreamerContext {
      * @param winName Window name.
      * @return Window instance.
      */
-    public <E> GridStreamerWindow<E> window(String winName);
+    public <E> StreamerWindow<E> window(String winName);
 
     /**
-     * For context passed to {@link GridStreamerStage#run(StreamerContext, Collection)} this method will
+     * For context passed to {@link StreamerStage#run(StreamerContext, Collection)} this method will
      * return next stage name in execution pipeline. For context obtained from streamer object, this method will
      * return first stage name.
      *

@@ -74,13 +74,13 @@ public class GridStreamerContextImpl implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <E> GridStreamerWindow<E> window() {
+    @Override public <E> StreamerWindow<E> window() {
         return streamer.window();
     }
 
     /** {@inheritDoc} */
-    @Override public <E> GridStreamerWindow<E> window(String winName) {
-        GridStreamerWindow<E> window = streamer.window(winName);
+    @Override public <E> StreamerWindow<E> window(String winName) {
+        StreamerWindow<E> window = streamer.window(winName);
 
         if (window == null)
             throw new IllegalArgumentException("Streamer window is not configured: " + winName);

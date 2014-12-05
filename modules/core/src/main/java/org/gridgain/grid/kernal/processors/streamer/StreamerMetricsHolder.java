@@ -89,13 +89,13 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     private LongAdder failuresCnt = new LongAdder();
 
     /** Stages metrics. */
-    private final GridStreamerStageMetricsHolder[] stageMetrics;
+    private final StreamerStageMetricsHolder[] stageMetrics;
 
     /** Stage metrics map. */
-    private final Map<String, GridStreamerStageMetrics> stageMetricsMap;
+    private final Map<String, StreamerStageMetrics> stageMetricsMap;
 
     /** Window metrics map. */
-    private final Map<String, GridStreamerWindowMetrics> windowMetricsMap;
+    private final Map<String, StreamerWindowMetrics> windowMetricsMap;
 
     /** Executor service capacity. */
     private final int execSvcCap;
@@ -106,23 +106,23 @@ public class StreamerMetricsHolder implements StreamerMetrics {
      * @param execSvcCap Executor service capacity.
      */
     public StreamerMetricsHolder(
-        GridStreamerStageMetricsHolder[] stageMetrics,
-        GridStreamerWindowMetricsHolder[] windowMetrics,
+        StreamerStageMetricsHolder[] stageMetrics,
+        StreamerWindowMetricsHolder[] windowMetrics,
         int execSvcCap
     ) {
         this.execSvcCap = execSvcCap;
         this.stageMetrics = stageMetrics;
 
-        Map<String, GridStreamerStageMetrics> map = new LinkedHashMap<>();
+        Map<String, StreamerStageMetrics> map = new LinkedHashMap<>();
 
-        for (GridStreamerStageMetricsHolder holder : stageMetrics)
+        for (StreamerStageMetricsHolder holder : stageMetrics)
             map.put(holder.name(), holder);
 
         stageMetricsMap = Collections.unmodifiableMap(map);
 
-        Map<String, GridStreamerWindowMetrics> map0 = new LinkedHashMap<>();
+        Map<String, StreamerWindowMetrics> map0 = new LinkedHashMap<>();
 
-        for (GridStreamerWindowMetricsHolder holder : windowMetrics)
+        for (StreamerWindowMetricsHolder holder : windowMetrics)
             map0.put(holder.name(), holder);
 
         windowMetricsMap = Collections.unmodifiableMap(map0);
@@ -248,8 +248,8 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerStageMetrics stageMetrics(String stageName) {
-        GridStreamerStageMetrics metrics = stageMetricsMap.get(stageName);
+    @Override public StreamerStageMetrics stageMetrics(String stageName) {
+        StreamerStageMetrics metrics = stageMetricsMap.get(stageName);
 
         if (metrics == null)
             throw new IllegalArgumentException("Streamer stage is not configured: " + stageName);
@@ -258,13 +258,13 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridStreamerStageMetrics> stageMetrics() {
+    @Override public Collection<StreamerStageMetrics> stageMetrics() {
         return stageMetricsMap.values();
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerWindowMetrics windowMetrics(String winName) {
-        GridStreamerWindowMetrics metrics = windowMetricsMap.get(winName);
+    @Override public StreamerWindowMetrics windowMetrics(String winName) {
+        StreamerWindowMetrics metrics = windowMetricsMap.get(winName);
 
         if (metrics == null)
             throw new IllegalArgumentException("Streamer window is not configured: " + winName);
@@ -273,7 +273,7 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridStreamerWindowMetrics> windowMetrics() {
+    @Override public Collection<StreamerWindowMetrics> windowMetrics() {
         return windowMetricsMap.values();
     }
 

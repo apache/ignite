@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Streamer window metrics adapter.
  */
-public class GridStreamerWindowMetricsAdapter implements GridStreamerWindowMetrics {
+public class StreamerWindowMetricsAdapter implements StreamerWindowMetrics {
     /** Window name. */
     private String name;
 
@@ -28,7 +28,7 @@ public class GridStreamerWindowMetricsAdapter implements GridStreamerWindowMetri
     /**
      * @param m Metrics to copy.
      */
-    public GridStreamerWindowMetricsAdapter(GridStreamerWindowMetrics m) {
+    public StreamerWindowMetricsAdapter(StreamerWindowMetrics m) {
         // Preserve alphabetic order for maintenance.
         evictionQueueSize = m.evictionQueueSize();
         name = m.name();
@@ -52,6 +52,6 @@ public class GridStreamerWindowMetricsAdapter implements GridStreamerWindowMetri
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerWindowMetricsAdapter.class, this);
+        return S.toString(StreamerWindowMetricsAdapter.class, this);
     }
 }

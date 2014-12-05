@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * Stage for average benchmark.
  */
-class TestStage implements GridStreamerStage<Integer> {
+class TestStage implements StreamerStage<Integer> {
     /** {@inheritDoc} */
     @Override public String name() {
         return "stage";
@@ -38,7 +38,7 @@ class TestStage implements GridStreamerStage<Integer> {
         for (Integer e : evts)
             avg.increment(e, 1);
 
-        GridStreamerWindow<Integer> win = ctx.window();
+        StreamerWindow<Integer> win = ctx.window();
 
         win.enqueueAll(evts);
 

@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Streamer stage metrics adapter.
  */
-public class GridStreamerStageMetricsAdapter implements GridStreamerStageMetrics {
+public class StreamerStageMetricsAdapter implements StreamerStageMetrics {
     /** */
     private String name;
 
@@ -49,14 +49,14 @@ public class GridStreamerStageMetricsAdapter implements GridStreamerStageMetrics
     /**
      * Empty constructor.
      */
-    public GridStreamerStageMetricsAdapter() {
+    public StreamerStageMetricsAdapter() {
         // No-op.
     }
 
     /**
      * @param metrics Metrics.
      */
-    public GridStreamerStageMetricsAdapter(GridStreamerStageMetrics metrics) {
+    public StreamerStageMetricsAdapter(StreamerStageMetrics metrics) {
         // Preserve alphabetic order for maintenance.
         avgExecTime = metrics.averageExecutionTime();
         avgWaitTime = metrics.averageWaitingTime();
@@ -122,6 +122,6 @@ public class GridStreamerStageMetricsAdapter implements GridStreamerStageMetrics
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerStageMetricsAdapter.class, this);
+        return S.toString(StreamerStageMetricsAdapter.class, this);
     }
 }

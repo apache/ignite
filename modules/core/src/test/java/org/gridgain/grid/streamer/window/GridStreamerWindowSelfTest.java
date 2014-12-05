@@ -702,7 +702,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @param win Window.
      * @throws Exception If failed.
      */
-    private void checkIterator(GridStreamerWindow<Integer> win) throws Exception {
+    private void checkIterator(StreamerWindow<Integer> win) throws Exception {
         win.reset();
 
         assert win.size() == 0;
@@ -751,7 +751,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @param maxSize Max window size.
      * @throws GridException If failed.
      */
-    private void finalChecks(GridStreamerWindow<Integer> win, int maxSize) throws GridException {
+    private void finalChecks(StreamerWindow<Integer> win, int maxSize) throws GridException {
         int evictQueueSize = win.evictionQueueSize();
 
         info("Eviction queue size for final checks: " + evictQueueSize);
@@ -775,7 +775,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkWindowMultithreaded(
-        final GridStreamerWindow<Integer> win,
+        final StreamerWindow<Integer> win,
         final int iterCnt,
         int threadCnt,
         final int range

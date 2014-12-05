@@ -31,7 +31,7 @@ public interface IgniteStreamerEx extends IgniteStreamer {
      *
      * @return Streamer window.
      */
-    public <E> GridStreamerWindow<E> window();
+    public <E> StreamerWindow<E> window();
 
     /**
      * Gets streamer window by window name.
@@ -39,7 +39,7 @@ public interface IgniteStreamerEx extends IgniteStreamer {
      * @param windowName Window name.
      * @return Streamer window.
      */
-    @Nullable public <E> GridStreamerWindow<E> window(String windowName);
+    @Nullable public <E> StreamerWindow<E> window(String windowName);
 
     /**
      * Called before execution requests are sent to remote nodes or scheduled for local execution.

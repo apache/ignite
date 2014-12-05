@@ -25,7 +25,7 @@ import java.util.*;
  * this method, while node execution graph is controlled by
  * {@link StreamerEventRouter#route(StreamerContext, String, Object)} method.
  */
-public interface GridStreamerStage<IN> {
+public interface StreamerStage<IN> {
     /**
      * Gets streamer stage name.
      *

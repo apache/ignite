@@ -16,7 +16,7 @@ import org.jdk8.backport.*;
 /**
  * Streamer stage metrics holder.
  */
-public class GridStreamerStageMetricsHolder implements GridStreamerStageMetrics {
+public class StreamerStageMetricsHolder implements StreamerStageMetrics {
     /** Stage name. */
     private String name;
 
@@ -50,7 +50,7 @@ public class GridStreamerStageMetricsHolder implements GridStreamerStageMetrics 
     /**
      * @param name Stage name.
      */
-    public GridStreamerStageMetricsHolder(String name) {
+    public StreamerStageMetricsHolder(String name) {
         this.name = name;
     }
 

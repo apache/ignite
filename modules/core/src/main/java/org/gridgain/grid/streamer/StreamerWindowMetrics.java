@@ -12,7 +12,7 @@ package org.gridgain.grid.streamer;
 /**
  * Streamer window metrics.
  */
-public interface GridStreamerWindowMetrics {
+public interface StreamerWindowMetrics {
     /**
      * Gets window name.
      *

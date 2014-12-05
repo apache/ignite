@@ -30,14 +30,14 @@ public class StreamerConfiguration {
     private String name;
 
     /** Window. */
-    private Collection<GridStreamerWindow> win;
+    private Collection<StreamerWindow> win;
 
     /** Router. */
     private StreamerEventRouter router;
 
     /** Stages. */
     @GridToStringInclude
-    private Collection<GridStreamerStage> stages;
+    private Collection<StreamerStage> stages;
 
     /** At least once flag. */
     private boolean atLeastOnce;
@@ -119,7 +119,7 @@ public class StreamerConfiguration {
      *
      * @return Streamer windows.
      */
-    public Collection<GridStreamerWindow> getWindows() {
+    public Collection<StreamerWindow> getWindows() {
         return win;
     }
 
@@ -128,7 +128,7 @@ public class StreamerConfiguration {
      *
      * @param win Window.
      */
-    public void setWindows(Collection<GridStreamerWindow> win) {
+    public void setWindows(Collection<StreamerWindow> win) {
         this.win = win;
     }
 
@@ -138,7 +138,7 @@ public class StreamerConfiguration {
      *
      * @return Collection of streamer stages.
      */
-    public Collection<GridStreamerStage> getStages() {
+    public Collection<StreamerStage> getStages() {
         return stages;
     }
 
@@ -147,7 +147,7 @@ public class StreamerConfiguration {
      *
      * @param stages Stages.
      */
-    public void setStages(Collection<GridStreamerStage> stages) {
+    public void setStages(Collection<StreamerStage> stages) {
         this.stages = stages;
     }
 

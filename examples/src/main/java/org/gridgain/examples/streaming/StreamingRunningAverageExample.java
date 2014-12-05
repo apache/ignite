@@ -141,7 +141,7 @@ public class StreamingRunningAverageExample {
     /**
      * Sample streamer stage to compute average.
      */
-    public static class StreamerStage implements GridStreamerStage<Integer> {
+    public static class StreamerStage implements org.gridgain.grid.streamer.StreamerStage<Integer> {
         /** {@inheritDoc} */
         @Override public String name() {
             return "exampleStage";
@@ -166,7 +166,7 @@ public class StreamingRunningAverageExample {
             for (Integer e : evts)
                 avg.add(e, 1);
 
-            GridStreamerWindow<Integer> win = ctx.window();
+            StreamerWindow<Integer> win = ctx.window();
 
             // Add input events to window.
             win.enqueueAll(evts);

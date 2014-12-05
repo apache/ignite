@@ -25,8 +25,8 @@ import java.util.*;
 /**
  * Streamer window adapter.
  */
-public abstract class GridStreamerWindowAdapter<E> implements LifecycleAware, GridStreamerWindow<E>,
-    GridStreamerWindowMBean {
+public abstract class GridStreamerWindowAdapter<E> implements LifecycleAware, StreamerWindow<E>,
+    StreamerWindowMBean {
     /** Default window name. */
     private String name = getClass().getSimpleName();
 

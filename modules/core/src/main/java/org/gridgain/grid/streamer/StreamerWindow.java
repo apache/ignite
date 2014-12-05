@@ -35,7 +35,7 @@ import java.util.*;
  * <p>
  * Streamer window is configured via {@link StreamerConfiguration#getWindows()} method.
  */
-public interface GridStreamerWindow<E> extends Iterable<E> {
+public interface StreamerWindow<E> extends Iterable<E> {
     /**
      * Gets window name.
      *

@@ -37,7 +37,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
     private static final int EVENTS_COUNT = 10;
 
     /** Test stages. */
-    private Collection<GridStreamerStage> stages;
+    private Collection<StreamerStage> stages;
 
     /** Event router. */
     private StreamerEventRouter router;
@@ -72,7 +72,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
         window.setName("window1");
         window.setTimeInterval(60000);
 
-        cfg.setWindows(F.asList((GridStreamerWindow)window));
+        cfg.setWindows(F.asList((StreamerWindow)window));
 
         cfg.setStages(stages);
 
@@ -100,7 +100,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
 
-                GridStreamerWindow win = ctx.window("window1");
+                StreamerWindow win = ctx.window("window1");
 
                 // Add new events to the window.
                 win.enqueueAll(evts);
@@ -128,7 +128,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
+        stages = F.asList((StreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
 
         startGrids(2);
 

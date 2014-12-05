@@ -48,7 +48,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     private boolean atLeastOnce = true;
 
     /** Test stages. */
-    private Collection<GridStreamerStage> stages;
+    private Collection<StreamerStage> stages;
 
     /** Event router. */
     private StreamerEventRouter router;
@@ -88,7 +88,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         cfg.setRouter(router);
 
-        cfg.setWindows(F.asList((GridStreamerWindow)new GridStreamerUnboundedWindow()));
+        cfg.setWindows(F.asList((StreamerWindow)new GridStreamerUnboundedWindow()));
 
         cfg.setStages(stages);
 
@@ -103,7 +103,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch finishLatch = new CountDownLatch(evtCnt);
 
-        stages = F.<GridStreamerStage>asList(new GridStreamerStage() {
+        stages = F.<StreamerStage>asList(new StreamerStage() {
             @IgniteInstanceResource
             private Ignite g;
 
@@ -172,7 +172,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("a", stage), new GridTestStage("b", stage),
+        stages = F.asList((StreamerStage)new GridTestStage("a", stage), new GridTestStage("b", stage),
             new GridTestStage("c", stage));
 
         startGrids(4);
@@ -289,7 +289,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage),
+        stages = F.asList((StreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage),
             new GridTestStage("2", stage), new GridTestStage("3", stage), new GridTestStage("4", stage));
 
         startGrids(4);
@@ -338,7 +338,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
+        stages = F.asList((StreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
 
         startGrids(2);
 
@@ -402,7 +402,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
+        stages = F.asList((StreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
 
         startGrids(2);
 
@@ -465,7 +465,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("a", stage), new GridTestStage("b", stage),
+        stages = F.asList((StreamerStage)new GridTestStage("a", stage), new GridTestStage("b", stage),
             new GridTestStage("c", stage));
         router = new GridTestStreamerEventRouter();
         atLeastOnce = true;
@@ -554,7 +554,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("a", stage), new GridTestStage("b", stage),
+        stages = F.asList((StreamerStage)new GridTestStage("a", stage), new GridTestStage("b", stage),
             new GridTestStage("c", stage), new GridTestStage("d", stage));
 
         startGrids(4);
@@ -689,7 +689,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage),new GridTestStage("1", stage),
+        stages = F.asList((StreamerStage)new GridTestStage("0", stage),new GridTestStage("1", stage),
             new GridTestStage("2", stage));
 
         startGrids(1);
@@ -753,7 +753,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             assertEquals(0, metrics.pipelineAverageExecutionTime());
         }
 
-        GridStreamerStageMetrics stageMetrics = streamer.metrics().stageMetrics(stage);
+        StreamerStageMetrics stageMetrics = streamer.metrics().stageMetrics(stage);
 
         assertNotNull(stageMetrics);
 
@@ -773,7 +773,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         for (String stage : stages) {
             IgniteStreamer streamer = ignite.streamer(null);
 
-            GridStreamerStageMetrics metrics = streamer.metrics().stageMetrics(stage);
+            StreamerStageMetrics metrics = streamer.metrics().stageMetrics(stage);
 
             assertNotNull(metrics);
 

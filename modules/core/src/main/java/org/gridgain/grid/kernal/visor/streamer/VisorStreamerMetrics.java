@@ -81,7 +81,7 @@ public class VisorStreamerMetrics implements Serializable {
 
         int windowSz = 0;
 
-        for (GridStreamerWindowMetrics wm : m.windowMetrics())
+        for (StreamerWindowMetrics wm : m.windowMetrics())
             windowSz += wm.size();
 
         VisorStreamerMetrics metrics = new VisorStreamerMetrics();

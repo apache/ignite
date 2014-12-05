@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Test stage.
  */
-class GridTestStage implements GridStreamerStage<Object> {
+class GridTestStage implements StreamerStage<Object> {
     /** Stage name. */
     private String name;
 

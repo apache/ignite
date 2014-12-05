@@ -10,11 +10,10 @@
 package org.gridgain.grid.streamer.index;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.window.*;
 
 /**
- * Represents an actual instance of an index. Used by a {@link GridStreamerWindow}
+ * Represents an actual instance of an index. Used by a {@link org.gridgain.grid.streamer.StreamerWindow}
  * to perform event indexing.
  * <p>
  * To configure index for a streamer window, use

@@ -15,7 +15,7 @@ import org.gridgain.grid.streamer.*;
  * Streamer stage MBean adapter.
  */
 @SuppressWarnings("ConstantConditions")
-public class GridStreamerStageMBeanAdapter implements GridStreamerStageMBean {
+public class StreamerStageMBeanAdapter implements StreamerStageMBean {
     /** Stage name. */
     private String stageName;
 
@@ -30,7 +30,7 @@ public class GridStreamerStageMBeanAdapter implements GridStreamerStageMBean {
      * @param stageClsName Stage class name.
      * @param streamer Streamer implementation.
      */
-    public GridStreamerStageMBeanAdapter(String stageName, String stageClsName, IgniteStreamerImpl streamer) {
+    public StreamerStageMBeanAdapter(String stageName, String stageClsName, IgniteStreamerImpl streamer) {
         this.stageName = stageName;
         this.stageClsName = stageClsName;
         this.streamer = streamer;

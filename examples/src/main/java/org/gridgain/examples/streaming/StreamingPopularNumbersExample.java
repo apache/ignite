@@ -193,7 +193,7 @@ public class StreamingPopularNumbersExample {
      * Sample streamer stage to compute average.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class StreamerStage implements GridStreamerStage<Integer> {
+    public static class StreamerStage implements org.gridgain.grid.streamer.StreamerStage<Integer> {
         /** {@inheritDoc} */
         @Override public String name() {
             return "exampleStage";
@@ -202,7 +202,7 @@ public class StreamingPopularNumbersExample {
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> nums)
             throws GridException {
-            GridStreamerWindow<Integer> win = ctx.window();
+            StreamerWindow<Integer> win = ctx.window();
 
             // Add numbers to window.
             win.enqueueAll(nums);

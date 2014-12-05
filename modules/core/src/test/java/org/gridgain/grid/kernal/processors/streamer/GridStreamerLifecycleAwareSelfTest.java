@@ -46,7 +46,7 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
     /**
      */
-    private static class TestStage extends TestLifecycleAware implements GridStreamerStage {
+    private static class TestStage extends TestLifecycleAware implements StreamerStage {
         /**
          */
         TestStage() {
@@ -66,7 +66,7 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
     /**
      */
-    private static class TestWindow extends TestLifecycleAware implements GridStreamerWindow {
+    private static class TestWindow extends TestLifecycleAware implements StreamerWindow {
         /**
          */
         TestWindow() {
@@ -187,13 +187,13 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
         TestStage stage = new TestStage();
 
-        streamerCfg.setStages(F.asList((GridStreamerStage)stage));
+        streamerCfg.setStages(F.asList((StreamerStage)stage));
 
         lifecycleAwares.add(stage);
 
         TestWindow window = new TestWindow();
 
-        streamerCfg.setWindows(F.asList((GridStreamerWindow)window));
+        streamerCfg.setWindows(F.asList((StreamerWindow)window));
 
         lifecycleAwares.add(window);
 

@@ -174,14 +174,14 @@ public interface StreamerMetrics {
      * @param stageName Stage name.
      * @return Stage metrics.
      */
-    public GridStreamerStageMetrics stageMetrics(String stageName);
+    public StreamerStageMetrics stageMetrics(String stageName);
 
     /**
      * Gets metrics for all stages. Stage metrics order is the same as stage order in configuration.
      *
      * @return Stage metrics collection.
      */
-    public Collection<GridStreamerStageMetrics> stageMetrics();
+    public Collection<StreamerStageMetrics> stageMetrics();
 
     /**
      * Gets current window metrics, if window with given name is not configured
@@ -190,12 +190,12 @@ public interface StreamerMetrics {
      * @param winName Window name.
      * @return Window metrics.
      */
-    public GridStreamerWindowMetrics windowMetrics(String winName);
+    public StreamerWindowMetrics windowMetrics(String winName);
 
     /**
      * Gets metrics for all windows.
      *
      * @return Collection of window metrics.
      */
-    public Collection<GridStreamerWindowMetrics> windowMetrics();
+    public Collection<StreamerWindowMetrics> windowMetrics();
 }

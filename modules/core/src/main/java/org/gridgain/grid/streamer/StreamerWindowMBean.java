@@ -15,7 +15,7 @@ import org.apache.ignite.mbean.*;
  * Streamer window MBean.
  */
 @IgniteMBeanDescription("MBean that provides access to streamer window description.")
-public interface GridStreamerWindowMBean {
+public interface StreamerWindowMBean {
     /**
      * Gets window name.
      *

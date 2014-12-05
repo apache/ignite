@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.streamer.index;
 
-import org.gridgain.grid.streamer.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -17,11 +16,11 @@ import java.util.*;
 /**
  * User view on streamer index. Streamer indexes are used for fast look ups into streamer windows.
  * <p>
- * Streamer index can be accessed from {@link GridStreamerWindow} via any of the following methods:
+ * Streamer index can be accessed from {@link org.gridgain.grid.streamer.StreamerWindow} via any of the following methods:
  * <ul>
- * <li>{@link GridStreamerWindow#index()}</li>
- * <li>{@link GridStreamerWindow#index(String)}</li>
- * <li>{@link GridStreamerWindow#indexes()}</li>
+ * <li>{@link org.gridgain.grid.streamer.StreamerWindow#index()}</li>
+ * <li>{@link org.gridgain.grid.streamer.StreamerWindow#index(String)}</li>
+ * <li>{@link org.gridgain.grid.streamer.StreamerWindow#indexes()}</li>
  * </ul>
  * <p>
  * Indexes are created and provided for streamer windows by {@link GridStreamerIndexProvider} which is

@@ -59,7 +59,7 @@ public class GridStreamerAttributes implements Externalizable {
         stages = new LinkedList<>();
 
         if (!F.isEmpty(cfg.getStages())) {
-            for (GridStreamerStage stage : cfg.getStages())
+            for (StreamerStage stage : cfg.getStages())
                 stages.add(F.t(stage.name(), stage.getClass().getName()));
         }
     }

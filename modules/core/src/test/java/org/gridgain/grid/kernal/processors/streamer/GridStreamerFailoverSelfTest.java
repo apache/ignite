@@ -71,7 +71,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
         window.setMaximumSize(100);
 
-        cfg.setWindows(F.asList((GridStreamerWindow)window));
+        cfg.setWindows(F.asList((StreamerWindow)window));
 
         cfg.setMaximumConcurrentSessions(maxConcurrentSess);
 
@@ -104,7 +104,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        cfg.setStages(F.asList((GridStreamerStage)new GridTestStage("pass", pass), new GridTestStage("put", put)));
+        cfg.setStages(F.asList((StreamerStage)new GridTestStage("pass", pass), new GridTestStage("put", put)));
 
         return cfg;
     }

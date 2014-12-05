@@ -48,12 +48,12 @@ public class GridStreamerContextDelegate implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <E> GridStreamerWindow<E> window() {
+    @Override public <E> StreamerWindow<E> window() {
         return delegate.window();
     }
 
     /** {@inheritDoc} */
-    @Override public <E> GridStreamerWindow<E> window(String winName) {
+    @Override public <E> StreamerWindow<E> window(String winName) {
         return delegate.window(winName);
     }
 

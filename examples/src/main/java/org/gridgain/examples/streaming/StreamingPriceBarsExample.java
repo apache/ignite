@@ -364,7 +364,7 @@ public class StreamingPriceBarsExample {
      * The first stage where 1 second bars are built.
      */
     @SuppressWarnings({ "PublicInnerClass", "unchecked" })
-    public static class FirstStage implements GridStreamerStage<Quote> {
+    public static class FirstStage implements StreamerStage<Quote> {
         /** {@inheritDoc} */
         @Override public String name() {
             return getClass().getSimpleName();
@@ -373,7 +373,7 @@ public class StreamingPriceBarsExample {
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Quote> quotes)
             throws GridException {
-            GridStreamerWindow win = ctx.window("stage1");
+            StreamerWindow win = ctx.window("stage1");
 
             // Add numbers to window.
             win.enqueueAll(quotes);
@@ -405,7 +405,7 @@ public class StreamingPriceBarsExample {
      * The second stage where 2 second bars are built.
      */
     @SuppressWarnings({ "PublicInnerClass", "unchecked" })
-    public static class SecondStage implements GridStreamerStage<Bar> {
+    public static class SecondStage implements StreamerStage<Bar> {
         /** {@inheritDoc} */
         @Override public String name() {
             return getClass().getSimpleName();
@@ -416,7 +416,7 @@ public class StreamingPriceBarsExample {
             throws GridException {
             ConcurrentMap<String, Bar> loc = ctx.localSpace();
 
-            GridStreamerWindow win = ctx.window("stage2");
+            StreamerWindow win = ctx.window("stage2");
 
             // Add numbers to window.
             win.enqueueAll(bars);
