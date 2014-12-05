@@ -63,7 +63,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private final ConcurrentMap<UUID, Collection<UUID>> waitForStopAck = new ConcurrentHashMap8<>();
 
     /** Threads started by this processor. */
-    private final Collection<GridThread> threads = new GridConcurrentHashSet<>();
+    private final Collection<IgniteThread> threads = new GridConcurrentHashSet<>();
 
     /** Pending start requests. */
     private final Map<UUID, Collection<GridContinuousMessage>> pending = new HashMap<>();
@@ -895,7 +895,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (doRegister) {
             if (interval > 0) {
-                GridThread checker = new GridThread(new GridWorker(ctx.gridName(), "continuous-buffer-checker", log) {
+                IgniteThread checker = new IgniteThread(new GridWorker(ctx.gridName(), "continuous-buffer-checker", log) {
                     @SuppressWarnings("ConstantConditions")
                     @Override protected void body() {
                         long interval0 = interval;

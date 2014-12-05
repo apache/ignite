@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class GridStripedThreadPoolExecutor implements ExecutorService {
+public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     /** */
     public static final int DFLT_SEG_POOL_SIZE = 8;
 
@@ -36,10 +36,10 @@ public class GridStripedThreadPoolExecutor implements ExecutorService {
     /**
      *
      */
-    public GridStripedThreadPoolExecutor() {
+    public IgniteStripedThreadPoolExecutor() {
         execs = new ExecutorService[DFLT_CONCUR_LVL];
 
-        ThreadFactory factory = new GridThreadFactory(null);
+        ThreadFactory factory = new IgniteThreadFactory(null);
 
         for (int i = 0; i < DFLT_CONCUR_LVL; i++)
             execs[i] = Executors.newFixedThreadPool(DFLT_SEG_POOL_SIZE, factory);
@@ -211,6 +211,6 @@ public class GridStripedThreadPoolExecutor implements ExecutorService {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStripedThreadPoolExecutor.class, this);
+        return S.toString(IgniteStripedThreadPoolExecutor.class, this);
     }
 }

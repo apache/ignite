@@ -216,7 +216,7 @@ object visor extends VisorTag {
     @volatile private var logStarted = false
 
     /** Internal thread pool. */
-    @volatile var pool: ExecutorService = new GridThreadPoolExecutor()
+    @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor()
 
     /** Configuration file path, if any. */
     @volatile var cfgPath: String = null
@@ -1514,7 +1514,7 @@ object visor extends VisorTag {
 
                 cfg.setClientConnectionConfiguration(null)
 
-                def createExecutor = new GridThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
+                def createExecutor = new IgniteThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
 
                 // All thread pools are overridden to have size equal to number of CPUs.
                 cfg.setExecutorService(createExecutor)
@@ -2149,7 +2149,7 @@ object visor extends VisorTag {
                         Thread.currentThread.interrupt()
                 }
 
-                pool = new GridThreadPoolExecutor()
+                pool = new IgniteThreadPoolExecutor()
             }
 
             // Call all close callbacks.

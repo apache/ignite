@@ -63,7 +63,7 @@ class GridMarshallerResourceBean implements Serializable {
         marshaller = new IgniteJdkMarshaller();
         mbeanSrv = ManagementFactory.getPlatformMBeanServer();
         ses = new GridTestTaskSession();
-        execSvc = new GridThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        execSvc = new IgniteThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
         appCtx = new GenericApplicationContext();
         jobCtx = new GridTestJobContext();
         balancer = new LoadBalancer();

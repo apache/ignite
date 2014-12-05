@@ -134,7 +134,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     void start() {
         if (poolSize > 0) {
             for (DemandWorker w : dmdWorkers)
-                new GridThread(cctx.gridName(), "preloader-demand-worker", w).start();
+                new IgniteThread(cctx.gridName(), "preloader-demand-worker", w).start();
         }
     }
 

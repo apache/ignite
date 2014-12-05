@@ -17,7 +17,7 @@ import java.util.concurrent.*;
  * This class provides implementation of {@link ThreadFactory} factory
  * for creating grid threads.
  */
-public class GridThreadFactory implements ThreadFactory {
+public class IgniteThreadFactory implements ThreadFactory {
     /** Grid name. */
     private final String gridName;
 
@@ -30,7 +30,7 @@ public class GridThreadFactory implements ThreadFactory {
      *
      * @param gridName Grid name.
      */
-    public GridThreadFactory(String gridName) {
+    public IgniteThreadFactory(String gridName) {
         this(gridName, "gridgain");
     }
 
@@ -41,13 +41,13 @@ public class GridThreadFactory implements ThreadFactory {
      * @param gridName Grid name.
      * @param threadName Thread name.
      */
-    public GridThreadFactory(String gridName, String threadName) {
+    public IgniteThreadFactory(String gridName, String threadName) {
         this.gridName = gridName;
         this.threadName = threadName;
     }
 
     /** {@inheritDoc} */
     @Override public Thread newThread(@NotNull Runnable r) {
-        return new GridThread(gridName, threadName, r);
+        return new IgniteThread(gridName, threadName, r);
     }
 }

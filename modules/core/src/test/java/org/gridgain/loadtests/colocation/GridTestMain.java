@@ -111,7 +111,7 @@ public class GridTestMain {
     private static void localPoolRun() {
         X.println("Local thread pool run...");
 
-        ExecutorService exe = new GridThreadPoolExecutor(400, 400, 0, new ArrayBlockingQueue<Runnable>(400) {
+        ExecutorService exe = new IgniteThreadPoolExecutor(400, 400, 0, new ArrayBlockingQueue<Runnable>(400) {
             @Override public boolean offer(Runnable runnable) {
                 try {
                     put(runnable);

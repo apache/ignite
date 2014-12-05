@@ -71,7 +71,7 @@
         <property name="deploymentMode" value="SHARED"/>
 
         <property name="executorService">
-            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
                 <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
                 <constructor-arg type="long">
@@ -84,7 +84,7 @@
         </property>
 
         <property name="systemExecutorService">
-            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
                 <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
                 <constructor-arg type="long">

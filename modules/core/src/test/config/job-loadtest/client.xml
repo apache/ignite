@@ -45,7 +45,7 @@
 
         <!-- Disable pools -->
         <property name="executorService">
-            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="20"/>
                 <constructor-arg type="int" value="20"/>
                 <constructor-arg type="long">
@@ -58,7 +58,7 @@
         </property>
 
         <property name="systemExecutorService">
-            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="20"/>
                 <constructor-arg type="int" value="20"/>
                 <constructor-arg type="long">
@@ -71,7 +71,7 @@
         </property>
 
         <property name="peerClassLoadingExecutorService">
-            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="2"/>
                 <constructor-arg type="int" value="2"/>
                 <constructor-arg type="long">

@@ -364,7 +364,7 @@ public class GridDrSenderHubFsStore implements GridDrSenderHubStore, LifecycleAw
 
         checkPntWorker = new CheckPointWorker(gridName, log, checkPoints);
 
-        new GridThread(checkPntWorker).start();
+        new IgniteThread(checkPntWorker).start();
     }
 
     /**

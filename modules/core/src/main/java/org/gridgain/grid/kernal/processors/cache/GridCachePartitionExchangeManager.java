@@ -200,7 +200,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         GridDhtPartitionsExchangeFuture<K, V> fut = exchangeFuture(exchId, discoEvt);
 
-        new GridThread(cctx.gridName(), "exchange-worker", exchWorker).start();
+        new IgniteThread(cctx.gridName(), "exchange-worker", exchWorker).start();
 
         onDiscoveryEvent(cctx.localNodeId(), fut);
 

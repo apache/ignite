@@ -44,7 +44,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws GridException {
         if (cleanupWorker != null)
-            new GridThread(cleanupWorker).start();
+            new IgniteThread(cleanupWorker).start();
     }
 
     /** {@inheritDoc} */

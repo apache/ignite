@@ -91,7 +91,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
         ggfsCtx.kernalContext().io().addMessageListener(topic, fragmentizerWorker);
 
-        new GridThread(fragmentizerWorker).start();
+        new IgniteThread(fragmentizerWorker).start();
     }
 
     /** {@inheritDoc} */
@@ -205,7 +205,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                         if (fragmentizerCrd == null && !stopping) {
                             fragmentizerCrd = new FragmentizerCoordinator();
 
-                            new GridThread(fragmentizerCrd).start();
+                            new IgniteThread(fragmentizerCrd).start();
                         }
                     }
                 }

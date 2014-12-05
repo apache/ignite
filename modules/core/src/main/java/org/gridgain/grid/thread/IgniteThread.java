@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.*;
  * </ul>
  * <b>Note</b>: this class is intended for internal use only.
  */
-public class GridThread extends Thread {
+public class IgniteThread extends Thread {
     /** Default thread's group. */
     private static final ThreadGroup DFLT_GRP = new ThreadGroup("gridgain");
 
@@ -39,7 +39,7 @@ public class GridThread extends Thread {
      *
      * @param worker Runnable to create thread with.
      */
-    public GridThread(GridWorker worker) {
+    public IgniteThread(GridWorker worker) {
         this(DFLT_GRP, worker.gridName(), worker.name(), worker);
     }
 
@@ -50,7 +50,7 @@ public class GridThread extends Thread {
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      */
-    public GridThread(String gridName, String threadName, Runnable r) {
+    public IgniteThread(String gridName, String threadName, Runnable r) {
         this(DFLT_GRP, gridName, threadName, r);
     }
 
@@ -63,7 +63,7 @@ public class GridThread extends Thread {
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      */
-    public GridThread(ThreadGroup grp, String gridName, String threadName, Runnable r) {
+    public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r) {
         super(grp, r, createName(threadCntr.incrementAndGet(), threadName, gridName));
     }
 
@@ -95,6 +95,6 @@ public class GridThread extends Thread {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridThread.class, this, "name", getName());
+        return S.toString(IgniteThread.class, this, "name", getName());
     }
 }

@@ -65,7 +65,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
         }
 
         if (bindWorker != null)
-            new GridThread(bindWorker).start();
+            new IgniteThread(bindWorker).start();
     }
 
     /**

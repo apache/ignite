@@ -1152,7 +1152,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         if (shmemSrv != null) {
             shmemAcceptWorker = new ShmemAcceptWorker(shmemSrv);
 
-            new GridThread(shmemAcceptWorker).start();
+            new IgniteThread(shmemAcceptWorker).start();
         }
 
         nioSrvr.start();
@@ -1938,7 +1938,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                     shmemWorkers.add(e);
 
-                    new GridThread(e).start();
+                    new IgniteThread(e).start();
                 }
             }
             catch (GridException e) {

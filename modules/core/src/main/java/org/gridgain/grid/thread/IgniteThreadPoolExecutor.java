@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class GridThreadPoolExecutor extends ThreadPoolExecutor {
+public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
     /** Default core pool size (value is {@code 100}). */
     public static final int DFLT_CORE_POOL_SIZE = 100;
 
@@ -46,13 +46,13 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
      * </tr>
      * </table>
      */
-    public GridThreadPoolExecutor() {
+    public IgniteThreadPoolExecutor() {
         this(
             DFLT_CORE_POOL_SIZE,
             DFLT_CORE_POOL_SIZE,
             0,
             new LinkedBlockingDeque<Runnable>(),
-            new GridThreadFactory(null),
+            new IgniteThreadFactory(null),
             null
         );
     }
@@ -67,7 +67,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
      * @param workQueue The queue to use for holding tasks before they are executed. This queue will hold only
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      */
-    public GridThreadPoolExecutor(
+    public IgniteThreadPoolExecutor(
         int corePoolSize,
         int maxPoolSize,
         long keepAliveTime,
@@ -77,7 +77,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
             maxPoolSize,
             keepAliveTime,
             workQueue,
-            new GridThreadFactory(null),
+            new IgniteThreadFactory(null),
             null
         );
     }
@@ -95,7 +95,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
      *      capacities are reached. If {@code null} then {@code AbortPolicy}
      *      handler is used by default.
      */
-    public GridThreadPoolExecutor(
+    public IgniteThreadPoolExecutor(
         int corePoolSize,
         int maxPoolSize,
         long keepAliveTime,
@@ -106,7 +106,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
             maxPoolSize,
             keepAliveTime,
             workQ,
-            new GridThreadFactory(null),
+            new IgniteThreadFactory(null),
             hnd
         );
     }
@@ -139,13 +139,13 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
      *
      * @param gridName Name of the grid.
      */
-    public GridThreadPoolExecutor(String gridName) {
+    public IgniteThreadPoolExecutor(String gridName) {
         this(
             DFLT_CORE_POOL_SIZE,
             DFLT_CORE_POOL_SIZE,
             0,
             new LinkedBlockingDeque<Runnable>(),
-            new GridThreadFactory(gridName),
+            new IgniteThreadFactory(gridName),
             null
         );
     }
@@ -161,7 +161,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
      * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      */
-    public GridThreadPoolExecutor(
+    public IgniteThreadPoolExecutor(
         String gridName,
         int corePoolSize,
         int maxPoolSize,
@@ -173,7 +173,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
             keepAliveTime,
             TimeUnit.MILLISECONDS,
             workQ,
-            new GridThreadFactory(gridName)
+            new IgniteThreadFactory(gridName)
         );
     }
 
@@ -191,7 +191,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
      *      capacities are reached. If {@code null} then {@code AbortPolicy}
      *      handler is used by default.
      */
-    public GridThreadPoolExecutor(
+    public IgniteThreadPoolExecutor(
         String gridName,
         int corePoolSize,
         int maxPoolSize,
@@ -203,7 +203,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
             maxPoolSize,
             keepAliveTime,
             workQ,
-            new GridThreadFactory(gridName),
+            new IgniteThreadFactory(gridName),
             hnd
         );
     }
@@ -222,7 +222,7 @@ public class GridThreadPoolExecutor extends ThreadPoolExecutor {
      *      capacities are reached. If {@code null} then {@code AbortPolicy}
      *      handler is used by default.
      */
-    public GridThreadPoolExecutor(
+    public IgniteThreadPoolExecutor(
         int corePoolSize,
         int maxPoolSize,
         long keepAliveTime,

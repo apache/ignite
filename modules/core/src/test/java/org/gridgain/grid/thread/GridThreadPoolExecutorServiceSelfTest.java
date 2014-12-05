@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.*;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
- * Test for {@link GridThreadPoolExecutor}.
+ * Test for {@link IgniteThreadPoolExecutor}.
  */
 @GridCommonTest(group = "Utils")
 public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTest {
@@ -49,7 +49,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testSingleGridThreadExecutor() throws Exception {
-        ExecutorService exec = Executors.newSingleThreadExecutor(new GridThreadFactory("gridName"));
+        ExecutorService exec = Executors.newSingleThreadExecutor(new IgniteThreadFactory("gridName"));
 
         exec.submit(new InterruptingRunnable()).get();
 
@@ -70,7 +70,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      * @throws ExecutionException If failed.
      */
     public void testGridThreadPoolExecutor() throws Exception {
-        GridThreadPoolExecutor exec = new GridThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
 
         exec.submit(new InterruptingRunnable()).get();
 
@@ -86,7 +86,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      * @throws ExecutionException If failed.
      */
     public void testGridThreadPoolExecutorRejection() throws Exception {
-        GridThreadPoolExecutor exec = new GridThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
 
         for (int i = 0; i < 10; i++)
             exec.submit(new TestRunnable());
@@ -104,7 +104,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
         final CountDownLatch startLatch = new CountDownLatch(THREAD_CNT);
         final CountDownLatch stopLatch = new CountDownLatch(THREAD_CNT);
 
-        GridThreadPoolExecutor exec = new GridThreadPoolExecutor(
+        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
             THREAD_CNT, THREAD_CNT, Long.MAX_VALUE,
             new LinkedBlockingQueue<Runnable>(),
             new ThreadFactory() {

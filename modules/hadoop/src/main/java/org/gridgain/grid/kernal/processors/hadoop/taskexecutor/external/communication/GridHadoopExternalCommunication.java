@@ -546,7 +546,7 @@ public class GridHadoopExternalCommunication {
         if (shmemSrv != null) {
             shmemAcceptWorker = new ShmemAcceptWorker(shmemSrv);
 
-            new GridThread(shmemAcceptWorker).start();
+            new IgniteThread(shmemAcceptWorker).start();
         }
 
         nioSrvr.start();
@@ -860,7 +860,7 @@ public class GridHadoopExternalCommunication {
 
                 client = new GridHadoopTcpNioCommunicationClient(ses);
 
-                new GridThread(worker).start();
+                new IgniteThread(worker).start();
 
                 fin.await(connTimeout0);
             }
@@ -1089,7 +1089,7 @@ public class GridHadoopExternalCommunication {
 
                     shmemWorkers.add(e);
 
-                    new GridThread(e).start();
+                    new IgniteThread(e).start();
                 }
             }
             catch (GridException e) {

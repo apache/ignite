@@ -179,7 +179,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
         gcWorker = new GcWorker(gridName, "ipc-shmem-gc", log);
 
-        new GridThread(gcWorker).start();
+        new IgniteThread(gcWorker).start();
 
         if (log.isInfoEnabled())
             log.info("IPC shared memory server endpoint started [port=" + port +

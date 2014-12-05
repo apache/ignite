@@ -202,7 +202,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             int coresCnt = Runtime.getRuntime().availableProcessors();
 
             // Note that we do not pre-start threads here as GGFS pool may not be needed.
-            putExecSvc = new GridThreadPoolExecutor(coresCnt, coresCnt, 0, new LinkedBlockingDeque<Runnable>());
+            putExecSvc = new IgniteThreadPoolExecutor(coresCnt, coresCnt, 0, new LinkedBlockingDeque<Runnable>());
 
             putExecSvcShutdown = true;
         }

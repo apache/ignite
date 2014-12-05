@@ -102,7 +102,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     private SegmentCheckWorker segChkWrk;
 
     /** Network segment check thread. */
-    private GridThread segChkThread;
+    private IgniteThread segChkThread;
 
     /** Last logged topology. */
     private final AtomicLong lastLoggedTop = new AtomicLong();
@@ -228,7 +228,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             checkSegmentOnStart();
         }
 
-        new GridThread(metricsUpdater).start();
+        new IgniteThread(metricsUpdater).start();
 
         getSpi().setMetricsProvider(createMetricsProvider());
 
@@ -378,7 +378,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         if (hasRslvrs && segChkFreq > 0) {
             segChkWrk = new SegmentCheckWorker();
 
-            segChkThread = new GridThread(segChkWrk);
+            segChkThread = new IgniteThread(segChkWrk);
 
             segChkThread.start();
         }
@@ -395,7 +395,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
 
         // Start discovery worker.
-        new GridThread(discoWrk).start();
+        new IgniteThread(discoWrk).start();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

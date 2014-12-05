@@ -274,7 +274,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
             for (int i = 0; i < flushThreads.length; i++) {
                 flushThreads[i] = new Flusher(gridName, "flusher-" + i, log);
 
-                new GridThread(flushThreads[i]).start();
+                new IgniteThread(flushThreads[i]).start();
             }
         }
     }

@@ -28,8 +28,8 @@ public class GridNioBackPressureControl {
     public static boolean threadProcessingMessage() {
         Thread th = Thread.currentThread();
 
-        if (th instanceof GridThread)
-            return ((GridThread)th).processingMessage();
+        if (th instanceof IgniteThread)
+            return ((IgniteThread)th).processingMessage();
 
         return threadProcMsg.get();
     }
@@ -40,8 +40,8 @@ public class GridNioBackPressureControl {
     public static void threadProcessingMessage(boolean processing) {
         Thread th = Thread.currentThread();
 
-        if (th instanceof GridThread)
-            ((GridThread)th).processingMessage(processing);
+        if (th instanceof IgniteThread)
+            ((IgniteThread)th).processingMessage(processing);
         else
             threadProcMsg.set(processing);
     }

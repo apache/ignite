@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** */
-    private final GridThread timeoutWorker;
+    private final IgniteThread timeoutWorker;
 
     /** Time-based sorted set for timeout objects. */
     private final GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjs =
@@ -47,7 +47,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     public GridTimeoutProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        timeoutWorker = new GridThread(ctx.config().getGridName(), "grid-timeout-worker",
+        timeoutWorker = new IgniteThread(ctx.config().getGridName(), "grid-timeout-worker",
             new TimeoutWorker());
     }
 

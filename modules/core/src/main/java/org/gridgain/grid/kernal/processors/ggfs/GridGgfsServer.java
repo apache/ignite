@@ -133,7 +133,7 @@ public class GridGgfsServer {
     public void onKernalStart() {
         // Accept connections only when grid is ready.
         if (srvEndpoint != null)
-            new GridThread(acceptWorker).start();
+            new IgniteThread(acceptWorker).start();
     }
 
     /**
@@ -392,7 +392,7 @@ public class GridGgfsServer {
 
                     ClientWorker worker = new ClientWorker(client, acceptCnt++);
 
-                    GridThread workerThread = new GridThread(worker);
+                    IgniteThread workerThread = new IgniteThread(worker);
 
                     ConcurrentLinkedDeque8.Node<ClientWorker> node = clientWorkers.addx(worker);
 

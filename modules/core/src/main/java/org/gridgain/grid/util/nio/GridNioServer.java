@@ -66,10 +66,10 @@ public class GridNioServer<T> {
 
     /** Accept worker thread. */
     @GridToStringExclude
-    private final GridThread acceptThread;
+    private final IgniteThread acceptThread;
 
     /** Read worker threads. */
-    private final GridThread[] clientThreads;
+    private final IgniteThread[] clientThreads;
 
     /** Read workers. */
     private final List<AbstractNioClientWorker> clientWorkers;
@@ -222,7 +222,7 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new GridThread(new GridNioAcceptWorker(gridName, "nio-acceptor", log, acceptSelector));
+            acceptThread = new IgniteThread(new GridNioAcceptWorker(gridName, "nio-acceptor", log, acceptSelector));
         }
         else {
             locAddr = null;
@@ -230,7 +230,7 @@ public class GridNioServer<T> {
         }
 
         clientWorkers = new ArrayList<>(selectorCnt);
-        clientThreads = new GridThread[selectorCnt];
+        clientThreads = new IgniteThread[selectorCnt];
 
         for (int i = 0; i < selectorCnt; i++) {
             AbstractNioClientWorker worker = directMode ?
@@ -239,7 +239,7 @@ public class GridNioServer<T> {
 
             clientWorkers.add(worker);
 
-            clientThreads[i] = new GridThread(worker);
+            clientThreads[i] = new IgniteThread(worker);
 
             clientThreads[i].setDaemon(daemon);
         }
@@ -267,7 +267,7 @@ public class GridNioServer<T> {
         if (acceptThread != null)
             acceptThread.start();
 
-        for (GridThread thread : clientThreads)
+        for (IgniteThread thread : clientThreads)
             thread.start();
     }
 

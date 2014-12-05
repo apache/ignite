@@ -54,7 +54,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
         // Set up new executor service because we have 1 per test and thus all
         // nodes have the same executor service. As soon as node get stopped
         // it stops executor service and may fail active nodes.
-        cfg.setExecutorService(new GridThreadPoolExecutor());
+        cfg.setExecutorService(new IgniteThreadPoolExecutor());
 
         ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
 

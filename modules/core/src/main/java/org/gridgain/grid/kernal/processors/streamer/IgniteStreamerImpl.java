@@ -241,7 +241,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         execSvc = c.getExecutorService();
 
         if (execSvc == null) {
-            execSvc = new GridThreadPoolExecutor(
+            execSvc = new IgniteThreadPoolExecutor(
                 ctx.gridName(),
                 Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().availableProcessors(),

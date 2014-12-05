@@ -230,7 +230,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                         if (timeCoord == null && !stopping) {
                             timeCoord = new TimeCoordinator(discoEvt);
 
-                            GridThread th = new GridThread(timeCoord);
+                            IgniteThread th = new IgniteThread(timeCoord);
 
                             th.setPriority(Thread.MAX_PRIORITY);
 

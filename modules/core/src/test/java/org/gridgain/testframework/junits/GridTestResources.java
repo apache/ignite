@@ -134,7 +134,7 @@ public class GridTestResources {
      * @param prestart Prestart flag.
      */
     public void startThreads(boolean prestart) {
-        execSvc = new GridThreadPoolExecutor(nodeId.toString(), 40, 40, Long.MAX_VALUE,
+        execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), 40, 40, Long.MAX_VALUE,
             new LinkedBlockingQueue<Runnable>());
 
         // Improve concurrency for testing.

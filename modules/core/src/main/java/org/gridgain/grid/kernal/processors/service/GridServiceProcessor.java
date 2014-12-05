@@ -66,7 +66,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Thread factory. */
-    private ThreadFactory threadFactory = new GridThreadFactory(ctx.gridName());
+    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.gridName());
 
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();

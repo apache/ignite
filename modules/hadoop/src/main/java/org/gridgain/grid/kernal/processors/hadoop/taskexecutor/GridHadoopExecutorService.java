@@ -186,7 +186,7 @@ public class GridHadoopExecutorService {
         if (shutdown)
             w.cancel();
 
-        new GridThread(w).start();
+        new IgniteThread(w).start();
     }
 
     /**

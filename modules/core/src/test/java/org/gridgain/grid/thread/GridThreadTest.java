@@ -14,7 +14,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 /**
- * Test for {@link GridThread}.
+ * Test for {@link IgniteThread}.
  */
 @GridCommonTest(group = "Utils")
 public class GridThreadTest extends GridCommonAbstractTest {
@@ -25,20 +25,20 @@ public class GridThreadTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAssertion() throws Exception {
-        Collection<GridThread> ts = new ArrayList<>();
+        Collection<IgniteThread> ts = new ArrayList<>();
 
         for (int i = 0; i < THREAD_CNT; i++) {
-            ts.add(new GridThread("test-grid-" + i, "test-thread", new Runnable() {
+            ts.add(new IgniteThread("test-grid-" + i, "test-thread", new Runnable() {
                 @Override public void run() {
                     assert false : "Expected assertion.";
                 }
             }));
         }
 
-        for (GridThread t : ts)
+        for (IgniteThread t : ts)
             t.start();
 
-        for (GridThread t : ts)
+        for (IgniteThread t : ts)
             t.join();
     }
 }

@@ -101,7 +101,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private BackupWorker backupWorker;
 
     /** Backup entries worker thread. */
-    private GridThread backupWorkerThread;
+    private IgniteThread backupWorkerThread;
 
     /** Busy lock. */
     private final GridBusyLock busyLock = new GridBusyLock();
@@ -245,7 +245,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             backupWorker.addEvent(new IgniteDiscoveryEvent(cctx.localNode(), "Dummy event.",
                 EVT_NODE_JOINED, cctx.localNode()));
 
-            backupWorkerThread = new GridThread(backupWorker);
+            backupWorkerThread = new IgniteThread(backupWorker);
             backupWorkerThread.start();
         }
     }

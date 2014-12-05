@@ -72,7 +72,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        flusher = new GridThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
+        flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException, GridInterruptedException {
                 while (!isCancelled()) {
                     IgniteDataLoaderImpl<K, V> ldr = flushQ.take();

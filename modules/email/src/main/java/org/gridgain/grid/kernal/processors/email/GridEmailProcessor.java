@@ -34,7 +34,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
     private Deque<GridEmailHolder> q;
 
     /** */
-    private GridThread snd;
+    private IgniteThread snd;
 
     /** */
     private GridWorker worker;
@@ -87,7 +87,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
 
             q = new LinkedList<>();
 
-            snd = new GridThread(ctx.config().getGridName(), "email-sender-thread", worker);
+            snd = new IgniteThread(ctx.config().getGridName(), "email-sender-thread", worker);
 
             snd.start();
         }

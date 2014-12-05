@@ -80,9 +80,9 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
 //        c.setPeerClassLoadingLocalClassPathExclude(GridCachePreloadLifecycleAbstractTest.class.getName(),
 //            MyValue.class.getName());
 
-        c.setExecutorService(new GridThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
-        c.setSystemExecutorService(new GridThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
-        c.setPeerClassLoadingExecutorService(new GridThreadPoolExecutor(3, 3, 0, new LinkedBlockingQueue<Runnable>()));
+        c.setExecutorService(new IgniteThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
+        c.setSystemExecutorService(new IgniteThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
+        c.setPeerClassLoadingExecutorService(new IgniteThreadPoolExecutor(3, 3, 0, new LinkedBlockingQueue<Runnable>()));
 
         c.setLifecycleBeans(lifecycleBean);
 

@@ -93,7 +93,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      */
     void start() {
         for (SupplyWorker w : workers)
-            new GridThread(cctx.gridName(), "preloader-supply-worker", w).start();
+            new IgniteThread(cctx.gridName(), "preloader-supply-worker", w).start();
     }
 
     /**

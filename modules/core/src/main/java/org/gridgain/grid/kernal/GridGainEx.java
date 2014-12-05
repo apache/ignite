@@ -1484,7 +1484,7 @@ public class GridGainEx {
             if (execSvc == null) {
                 isAutoExecSvc = true;
 
-                execSvc = new GridThreadPoolExecutor(
+                execSvc = new IgniteThreadPoolExecutor(
                     "pub-" + cfg.getGridName(),
                     DFLT_PUBLIC_CORE_THREAD_CNT,
                     DFLT_PUBLIC_MAX_THREAD_CNT,
@@ -1500,7 +1500,7 @@ public class GridGainEx {
 
                 // Note that since we use 'LinkedBlockingQueue', number of
                 // maximum threads has no effect.
-                sysExecSvc = new GridThreadPoolExecutor(
+                sysExecSvc = new IgniteThreadPoolExecutor(
                     "sys-" + cfg.getGridName(),
                     DFLT_SYSTEM_CORE_THREAD_CNT,
                     DFLT_SYSTEM_MAX_THREAD_CNT,
@@ -1518,7 +1518,7 @@ public class GridGainEx {
                 // maximum threads has no effect.
                 // Note, that we do not pre-start threads here as management pool may
                 // not be needed.
-                mgmtExecSvc = new GridThreadPoolExecutor(
+                mgmtExecSvc = new IgniteThreadPoolExecutor(
                     "mgmt-" + cfg.getGridName(),
                     DFLT_MGMT_THREAD_CNT,
                     DFLT_MGMT_THREAD_CNT,
@@ -1533,7 +1533,7 @@ public class GridGainEx {
                 // maximum threads has no effect.
                 // Note, that we do not pre-start threads here as class loading pool may
                 // not be needed.
-                p2pExecSvc = new GridThreadPoolExecutor(
+                p2pExecSvc = new IgniteThreadPoolExecutor(
                     "p2p-" + cfg.getGridName(),
                     DFLT_P2P_THREAD_CNT,
                     DFLT_P2P_THREAD_CNT,
@@ -1547,7 +1547,7 @@ public class GridGainEx {
                 int procCnt = Runtime.getRuntime().availableProcessors();
 
                 // Note that we do not pre-start threads here as ggfs pool may not be needed.
-                ggfsExecSvc = new GridThreadPoolExecutor(
+                ggfsExecSvc = new IgniteThreadPoolExecutor(
                     "ggfs-" + cfg.getGridName(),
                     procCnt,
                     procCnt,
@@ -1564,7 +1564,7 @@ public class GridGainEx {
             else if (restExecSvc == null && clientCfg != null) {
                 isAutoRestSvc = true;
 
-                restExecSvc = new GridThreadPoolExecutor(
+                restExecSvc = new IgniteThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
                     DFLT_REST_CORE_THREAD_CNT,
                     DFLT_REST_MAX_THREAD_CNT,
@@ -1575,7 +1575,7 @@ public class GridGainEx {
                 clientCfg.setRestExecutorService(restExecSvc);
             }
 
-            utilityCacheExecSvc = new GridThreadPoolExecutor(
+            utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility-" + cfg.getGridName(),
                 DFLT_SYSTEM_CORE_THREAD_CNT,
                 DFLT_SYSTEM_MAX_THREAD_CNT,

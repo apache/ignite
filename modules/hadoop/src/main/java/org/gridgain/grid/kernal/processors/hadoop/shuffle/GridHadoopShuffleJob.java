@@ -159,7 +159,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 }
             };
 
-            new GridThread(snd).start();
+            new IgniteThread(snd).start();
         }
 
         ioInitLatch.countDown();

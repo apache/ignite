@@ -90,7 +90,7 @@ public class GridClockServer {
     public void afterStart() {
         readWorker = new ReadWorker();
 
-        GridThread th = new GridThread(readWorker);
+        IgniteThread th = new IgniteThread(readWorker);
 
         th.setPriority(Thread.MAX_PRIORITY);
 
